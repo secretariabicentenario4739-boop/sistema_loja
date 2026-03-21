@@ -6,7 +6,7 @@
 <div class="container-fluid py-4">
     <div class="container">
         <!-- Cabeçalho com botões -->
-        <div class="d-flex justify-content-between align-items-center mb-4">
+        <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
             <h2>
                 <i class="bi bi-person-circle"></i> 
                 Detalhes do Obreiro
@@ -18,7 +18,7 @@
                 </a>
                 {% endif %}
                 
-                <!-- Botão de Documentos (visível para admin e para o próprio obreiro) -->
+                <!-- Botão de Documentos -->
                 <a href="/obreiros/{{ obreiro.id }}/documentos" class="btn btn-info">
                     <i class="bi bi-folder2-open"></i> Documentos
                 </a>
@@ -43,8 +43,8 @@
 
         <div class="row">
             <!-- Coluna da esquerda - Informações Pessoais -->
-            <div class="col-md-4">
-                <div class="card shadow mb-4">
+            <div class="col-md-4 col-12 mb-4">
+                <div class="card shadow">
                     <div class="card-header bg-primary text-white">
                         <h5 class="mb-0">
                             <i class="bi bi-person-badge"></i> 
@@ -52,57 +52,34 @@
                         </h5>
                     </div>
                     <div class="card-body">
-                        <table class="table table-sm">
-                            <tr>
-                                <th style="width: 40%">Usuário:</th>
-                                <td><strong>{{ obreiro.usuario }}</strong></td>
-                            </tr>
-                            <tr>
-                                <th>Nome Completo:</th>
-                                <td>{{ obreiro.nome_completo }}</td>
-                            </tr>
-                            <tr>
-                                <th>Nome Maçônico:</th>
-                                <td>{{ obreiro.nome_maconico or '-' }}</td>
-                            </tr>
-                            <tr>
-                                <th>CIM Nº:</th>
-                                <td>{{ obreiro.cim_numero or '-' }}</td>
-                            </tr>
-                            {% if session.tipo == 'admin' %}
-                            <tr>
-                                <th>Tipo:</th>
-                                <td>
-                                    {% if obreiro.tipo == 'admin' %}
-                                        <span class="badge bg-danger">Administrador</span>
-                                    {% elif obreiro.tipo == 'sindicante' %}
-                                        <span class="badge bg-success">Sindicante</span>
-                                    {% else %}
-                                        <span class="badge bg-info">Obreiro</span>
-                                    {% endif %}
-                                </td>
-                            </tr>
-                            <tr>
-                                <th>Status:</th>
-                                <td>
-                                    {% if obreiro.ativo == 1 %}
-                                        <span class="badge bg-success">Ativo</span>
-                                    {% else %}
-                                        <span class="badge bg-secondary">Inativo</span>
-                                    {% endif %}
-                                </td>
-                            </tr>
-                            <tr>
-                                <th>Data Cadastro:</th>
-                                <td>{{ obreiro.data_cadastro[:10] if obreiro.data_cadastro else '-' }}</td>
-                            </tr>
+                        <p><strong>Usuário:</strong> {{ obreiro.usuario }}</p>
+                        <p><strong>Nome Completo:</strong> {{ obreiro.nome_completo }}</p>
+                        <p><strong>Nome Maçônico:</strong> {{ obreiro.nome_maconico or '-' }}</p>
+                        <p><strong>CIM Nº:</strong> {{ obreiro.cim_numero or '-' }}</p>
+                        {% if session.tipo == 'admin' %}
+                        <p><strong>Tipo:</strong> 
+                            {% if obreiro.tipo == 'admin' %}
+                                <span class="badge bg-danger">Administrador</span>
+                            {% elif obreiro.tipo == 'sindicante' %}
+                                <span class="badge bg-success">Sindicante</span>
+                            {% else %}
+                                <span class="badge bg-info">Obreiro</span>
                             {% endif %}
-                        </table>
+                        </p>
+                        <p><strong>Status:</strong> 
+                            {% if obreiro.ativo == 1 %}
+                                <span class="badge bg-success">Ativo</span>
+                            {% else %}
+                                <span class="badge bg-secondary">Inativo</span>
+                            {% endif %}
+                        </p>
+                        <p><strong>Data Cadastro:</strong> {{ obreiro.data_cadastro[:10] if obreiro.data_cadastro else '-' }}</p>
+                        {% endif %}
                     </div>
                 </div>
 
                 <!-- Card de Contato -->
-                <div class="card shadow mb-4">
+                <div class="card shadow mt-4">
                     <div class="card-header bg-info text-white">
                         <h5 class="mb-0">
                             <i class="bi bi-telephone"></i> 
@@ -110,25 +87,14 @@
                         </h5>
                     </div>
                     <div class="card-body">
-                        <table class="table table-sm">
-                            <tr>
-                                <th style="width: 30%">Telefone:</th>
-                                <td>{{ obreiro.telefone or '-' }}</td>
-                            </tr>
-                            <tr>
-                                <th>E-mail:</th>
-                                <td>{{ obreiro.email or '-' }}</td>
-                            </tr>
-                            <tr>
-                                <th>Endereço:</th>
-                                <td>{{ obreiro.endereco or '-' }}</td>
-                            </tr>
-                        </table>
+                        <p><strong>Telefone:</strong> {{ obreiro.telefone or '-' }}</p>
+                        <p><strong>E-mail:</strong> {{ obreiro.email or '-' }}</p>
+                        <p><strong>Endereço:</strong> {{ obreiro.endereco or '-' }}</p>
                     </div>
                 </div>
 
                 <!-- Card da Loja -->
-                <div class="card shadow mb-4">
+                <div class="card shadow mt-4">
                     <div class="card-header bg-secondary text-white">
                         <h5 class="mb-0">
                             <i class="bi bi-building"></i> 
@@ -136,29 +102,18 @@
                         </h5>
                     </div>
                     <div class="card-body">
-                        <table class="table table-sm">
-                            <tr>
-                                <th style="width: 40%">Nome:</th>
-                                <td>{{ obreiro.loja_nome or '-' }}</td>
-                            </tr>
-                            <tr>
-                                <th>Nº:</th>
-                                <td>{{ obreiro.loja_numero or '-' }}</td>
-                            </tr>
-                            <tr>
-                                <th>Oriente:</th>
-                                <td>{{ obreiro.loja_orient or '-' }}</td>
-                            </tr>
-                        </table>
+                        <p><strong>Nome:</strong> {{ obreiro.loja_nome or '-' }}</p>
+                        <p><strong>Nº:</strong> {{ obreiro.loja_numero or '-' }}</p>
+                        <p><strong>Oriente:</strong> {{ obreiro.loja_orient or '-' }}</p>
                     </div>
                 </div>
             </div>
 
             <!-- Coluna da direita - Graus e Cargos -->
-            <div class="col-md-8">
+            <div class="col-md-8 col-12">
                 <!-- Card de Graus -->
-                <div class="card shadow mb-4">
-                    <div class="card-header bg-success text-white d-flex justify-content-between align-items-center">
+                <div class="card shadow">
+                    <div class="card-header bg-success text-white d-flex justify-content-between align-items-center flex-wrap gap-2">
                         <h5 class="mb-0">
                             <i class="bi bi-bar-chart-steps"></i> 
                             Graus Maçônicos
@@ -170,7 +125,6 @@
                         {% endif %}
                     </div>
                     <div class="card-body">
-                        <!-- Grau Atual -->
                         <div class="alert alert-info">
                             <strong>Grau Atual:</strong> 
                             {% if obreiro.grau_atual == 3 %}
@@ -184,9 +138,8 @@
                             {% endif %}
                         </div>
 
-                        <!-- Datas Importantes -->
                         <div class="row mt-3">
-                            <div class="col-md-4">
+                            <div class="col-md-4 col-12 mb-2">
                                 <div class="card bg-light">
                                     <div class="card-body text-center">
                                         <small class="text-muted">Iniciação</small>
@@ -194,7 +147,7 @@
                                     </div>
                                 </div>
                             </div>
-                            <div class="col-md-4">
+                            <div class="col-md-4 col-12 mb-2">
                                 <div class="card bg-light">
                                     <div class="card-body text-center">
                                         <small class="text-muted">Elevação</small>
@@ -202,7 +155,7 @@
                                     </div>
                                 </div>
                             </div>
-                            <div class="col-md-4">
+                            <div class="col-md-4 col-12 mb-2">
                                 <div class="card bg-light">
                                     <div class="card-body text-center">
                                         <small class="text-muted">Exaltação</small>
@@ -212,32 +165,19 @@
                             </div>
                         </div>
 
-                        <!-- Histórico de Graus -->
                         {% if historico_graus %}
                         <hr>
                         <h6 class="mt-3">Histórico de Graus</h6>
                         <div class="table-responsive">
-                            <table class="table table-sm table-hover">
+                            <table class="table table-sm">
                                 <thead>
-                                    <tr>
-                                        <th>Data</th>
-                                        <th>Grau</th>
-                                        <th>Observação</th>
-                                    </tr>
+                                    <tr><th>Data</th><th>Grau</th><th>Observação</th></tr>
                                 </thead>
                                 <tbody>
                                     {% for h in historico_graus %}
                                     <tr>
                                         <td>{{ h.data }}</td>
-                                        <td>
-                                            {% if h.grau == 3 %}
-                                                Mestre
-                                            {% elif h.grau == 2 %}
-                                                Companheiro
-                                            {% else %}
-                                                Aprendiz
-                                            {% endif %}
-                                        </td>
+                                        <td>{% if h.grau == 3 %}Mestre{% elif h.grau == 2 %}Companheiro{% else %}Aprendiz{% endif %}</td>
                                         <td>{{ h.observacao or '-' }}</td>
                                     </tr>
                                     {% endfor %}
@@ -249,8 +189,8 @@
                 </div>
 
                 <!-- Card de Cargos -->
-                <div class="card shadow mb-4">
-                    <div class="card-header bg-warning text-dark d-flex justify-content-between align-items-center">
+                <div class="card shadow mt-4">
+                    <div class="card-header bg-warning text-dark d-flex justify-content-between align-items-center flex-wrap gap-2">
                         <h5 class="mb-0">
                             <i class="bi bi-diagram-3"></i> 
                             Cargos na Loja
@@ -264,18 +204,9 @@
                     <div class="card-body">
                         {% if cargos %}
                         <div class="table-responsive">
-                            <table class="table table-sm table-hover">
+                            <table class="table table-sm">
                                 <thead>
-                                    <tr>
-                                        <th>Cargo</th>
-                                        <th>Gestão</th>
-                                        <th>Data Início</th>
-                                        <th>Data Fim</th>
-                                        <th>Status</th>
-                                        {% if session.tipo == 'admin' %}
-                                        <th>Ações</th>
-                                        {% endif %}
-                                    </tr>
+                                    <tr><th>Cargo</th><th>Gestão</th><th>Data Início</th><th>Data Fim</th><th>Status</th>{% if session.tipo == 'admin' %}<th>Ações</th>{% endif %}</tr>
                                 </thead>
                                 <tbody>
                                     {% for c in cargos %}
@@ -284,23 +215,9 @@
                                         <td>{{ c.gestao or '-' }}</td>
                                         <td>{{ c.data_inicio }}</td>
                                         <td>{{ c.data_fim or 'Atual' }}</td>
-                                        <td>
-                                            {% if c.ativo == 1 %}
-                                                <span class="badge bg-success">Ativo</span>
-                                            {% else %}
-                                                <span class="badge bg-secondary">Inativo</span>
-                                            {% endif %}
-                                        </td>
+                                        <td>{% if c.ativo == 1 %}<span class="badge bg-success">Ativo</span>{% else %}<span class="badge bg-secondary">Inativo</span>{% endif %}</td>
                                         {% if session.tipo == 'admin' %}
-                                        <td>
-                                            {% if c.ativo == 1 %}
-                                            <a href="/obreiros/cargo/{{ c.id }}/remover" 
-                                               class="btn btn-sm btn-outline-danger"
-                                               onclick="return confirm('Remover este cargo?')">
-                                                <i class="bi bi-trash"></i>
-                                            </a>
-                                            {% endif %}
-                                        </td>
+                                        <td>{% if c.ativo == 1 %}<a href="/obreiros/cargo/{{ c.id }}/remover" class="btn btn-sm btn-outline-danger" onclick="return confirm('Remover este cargo?')"><i class="bi bi-trash"></i></a>{% endif %}</td>
                                         {% endif %}
                                     </tr>
                                     {% endfor %}
@@ -308,9 +225,7 @@
                             </table>
                         </div>
                         {% else %}
-                        <p class="text-muted text-center py-3">
-                            Nenhum cargo atribuído a este obreiro.
-                        </p>
+                        <p class="text-muted text-center py-3">Nenhum cargo atribuído a este obreiro.</p>
                         {% endif %}
                     </div>
                 </div>
@@ -319,16 +234,13 @@
     </div>
 </div>
 
-<!-- Modal para Registrar Grau (apenas admin) -->
+<!-- Modais (Grau e Cargo) -->
 {% if session.tipo == 'admin' %}
 <div class="modal fade" id="modalGrau" tabindex="-1">
     <div class="modal-dialog">
         <div class="modal-content">
             <div class="modal-header bg-success text-white">
-                <h5 class="modal-title">
-                    <i class="bi bi-bar-chart-steps"></i> 
-                    Registrar Novo Grau
-                </h5>
+                <h5 class="modal-title"><i class="bi bi-bar-chart-steps"></i> Registrar Novo Grau</h5>
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
             </div>
             <form action="/obreiros/{{ obreiro.id }}/grau" method="POST">
@@ -353,24 +265,18 @@
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-                    <button type="submit" class="btn btn-success">
-                        <i class="bi bi-check-lg"></i> Registrar
-                    </button>
+                    <button type="submit" class="btn btn-success">Registrar</button>
                 </div>
             </form>
         </div>
     </div>
 </div>
 
-<!-- Modal para Atribuir Cargo (apenas admin) -->
 <div class="modal fade" id="modalCargo" tabindex="-1">
     <div class="modal-dialog">
         <div class="modal-content">
             <div class="modal-header bg-warning">
-                <h5 class="modal-title">
-                    <i class="bi bi-diagram-3"></i> 
-                    Atribuir Cargo
-                </h5>
+                <h5 class="modal-title"><i class="bi bi-diagram-3"></i> Atribuir Cargo</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <form action="/obreiros/{{ obreiro.id }}/cargo" method="POST">
@@ -395,9 +301,7 @@
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-                    <button type="submit" class="btn btn-warning">
-                        <i class="bi bi-check-lg"></i> Atribuir
-                    </button>
+                    <button type="submit" class="btn btn-warning">Atribuir</button>
                 </div>
             </form>
         </div>

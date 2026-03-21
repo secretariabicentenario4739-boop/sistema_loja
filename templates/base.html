@@ -2,7 +2,7 @@
 <html lang="pt-br">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
     <title>{% block title %}Sistema Maçônico{% endblock %}</title>
     <!-- Google Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&family=Playfair+Display:wght@400;700&display=swap" rel="stylesheet">
@@ -27,17 +27,17 @@
             color: #2c3e50;
         }
 
-        /* Navbar ultra compacta */
+        /* Navbar refinada */
         .navbar {
             background: linear-gradient(135deg, var(--primary) 0%, #1a2632 100%);
-            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
-            padding: 0.4rem 0;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+            padding: 0.6rem 0;
         }
 
         .navbar-brand {
             font-family: 'Playfair Display', serif;
             font-weight: 700;
-            font-size: 1.3rem;
+            font-size: 1.4rem;
             letter-spacing: 1px;
             color: var(--secondary) !important;
         }
@@ -51,9 +51,9 @@
             color: rgba(255,255,255,0.85);
             font-weight: 500;
             font-size: 0.85rem;
-            padding: 0.3rem 0.7rem;
-            transition: all 0.2s ease;
-            border-radius: 5px;
+            padding: 0.4rem 0.8rem;
+            transition: all 0.3s ease;
+            border-radius: 6px;
             margin: 0 1px;
         }
 
@@ -63,26 +63,30 @@
             transform: translateY(-1px);
         }
 
-        .navbar-nav .nav-link.active {
-            color: var(--secondary);
-            background-color: rgba(201,160,61,0.1);
-        }
-
-        /* Dropdown compacto */
+        /* Dropdown ultra compacto */
         .dropdown-menu {
-            min-width: 170px;
-            padding: 0.3rem 0;
+            min-width: 160px;
+            padding: 0.2rem 0;
             border: none;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
             border-radius: 8px;
             margin-top: 4px;
         }
 
         .dropdown-item {
-            padding: 0.25rem 0.75rem;
-            font-size: 0.8rem;
+            padding: 0.25rem 0.6rem;
+            font-size: 0.75rem;
             font-weight: 500;
             transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .dropdown-item i {
+            font-size: 0.8rem;
+            width: 18px;
+            text-align: center;
         }
 
         .dropdown-item:hover {
@@ -92,21 +96,13 @@
         }
 
         .dropdown-divider {
-            margin: 0.2rem 0;
+            margin: 0.15rem 0;
         }
 
         .dropdown-item-text {
-            padding: 0.2rem 0.75rem;
+            padding: 0.2rem 0.6rem;
             font-size: 0.7rem;
-            line-height: 1.3;
-        }
-
-        /* Badge do tipo de usuário */
-        .badge {
-            padding: 0.2rem 0.4rem;
-            font-size: 0.65rem;
-            font-weight: 500;
-            border-radius: 20px;
+            line-height: 1.2;
         }
 
         /* Conteúdo principal */
@@ -144,38 +140,12 @@
             transition: all 0.3s;
         }
 
-        .btn-primary {
-            background: linear-gradient(135deg, var(--primary) 0%, #1a2632 100%);
-            border: none;
-        }
-
-        .btn-primary:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(44,62,80,0.3);
-        }
-
-        .btn-success {
-            background: linear-gradient(135deg, #27ae60 0%, #2ecc71 100%);
-            border: none;
-        }
-
-        .btn-warning {
-            background: linear-gradient(135deg, #f39c12 0%, #e67e22 100%);
-            border: none;
-            color: white;
-        }
-
-        .btn-danger {
-            background: linear-gradient(135deg, #c0392b 0%, #e74c3c 100%);
-            border: none;
-        }
-
         /* Footer refinado */
         .footer {
             background: linear-gradient(135deg, #1a2632 0%, #0f1720 100%);
             color: #adb7be;
-            padding: 0.8rem 0;
-            margin-top: 1.5rem;
+            padding: 1rem 0;
+            margin-top: 2rem;
             font-size: 0.75rem;
         }
 
@@ -185,44 +155,21 @@
             transition: color 0.3s;
         }
 
-        .footer a:hover {
-            color: white;
+        .badge {
+            padding: 0.25rem 0.5rem;
+            font-weight: 500;
+            border-radius: 20px;
+            font-size: 0.65rem;
         }
 
-        /* Tabelas refinadas */
-        .table {
-            border-radius: 16px;
-            overflow: hidden;
-        }
-
+        /* Tabelas */
         .table thead th {
             background-color: var(--primary);
             color: white;
             font-weight: 500;
             border: none;
-            padding: 8px;
+            padding: 10px;
             font-size: 0.8rem;
-        }
-
-        .table-hover tbody tr:hover {
-            background-color: rgba(44,62,80,0.05);
-        }
-
-        /* Alertas refinados */
-        .alert {
-            border-radius: 16px;
-            border: none;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
-        }
-
-        /* Animações */
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(20px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-
-        main {
-            animation: fadeIn 0.5s ease-out;
         }
 
         /* Responsividade */
@@ -230,20 +177,44 @@
             .navbar-brand {
                 font-size: 1.1rem;
             }
+            
             .navbar-nav .nav-link {
-                padding: 0.25rem 0.6rem;
+                padding: 0.3rem 0.6rem;
                 font-size: 0.8rem;
+            }
+            
+            .dropdown-menu {
+                min-width: 140px;
+                padding: 0.15rem 0;
+            }
+            
+            .dropdown-item {
+                padding: 0.2rem 0.5rem;
+                font-size: 0.7rem;
+            }
+            
+            .dropdown-item i {
+                font-size: 0.7rem;
+                width: 16px;
+            }
+            
+            .card-header h5 {
+                font-size: 0.9rem;
+            }
+            
+            h2 {
+                font-size: 1.2rem;
             }
         }
     </style>
     {% block extra_css %}{% endblock %}
 </head>
 <body>
-    <!-- Navbar refinada e compacta -->
+    <!-- Navbar refinada -->
     <nav class="navbar navbar-expand-lg sticky-top">
         <div class="container">
             <a class="navbar-brand" href="/dashboard">
-                <i class="bi bi-building"></i> Sistema Maçônico
+                <i class="bi bi-building"></i> Sistema
             </a>
             <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
                 <span class="navbar-toggler-icon"></span>
@@ -268,12 +239,7 @@
                         </li>
                         <li class="nav-item">
                             <a class="nav-link" href="/presenca/estatisticas">
-                                <i class="bi bi-bar-chart"></i> Estatísticas
-                            </a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link" href="/presenca/alertas">
-                                <i class="bi bi-exclamation-triangle"></i> Alertas
+                                <i class="bi bi-bar-chart"></i> Stats
                             </a>
                         </li>
                         <li class="nav-item">
@@ -283,28 +249,27 @@
                         </li>
                         <li class="nav-item">
                             <a class="nav-link" href="/comunicados">
-                                <i class="bi bi-megaphone"></i> Comunicados
+                                <i class="bi bi-megaphone"></i> Avisos
                             </a>
                         </li>
-                        <!-- Dropdown Administração -->
-						<li class="nav-item dropdown">
+                        <!-- Dropdown Administração Ultra Compacto -->
+                        <li class="nav-item dropdown">
                             <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
-                                <i class="bi bi-gear"></i> Administração
+                                <i class="bi bi-gear"></i> Admin
                             </a>
                             <ul class="dropdown-menu">
-								<li><a class="dropdown-item" href="/atas"><i class="bi bi-file-text"></i> Atas</a></li>
-								<li><a class="dropdown-item" href="/cargos"><i class="bi bi-diagram-3"></i> Cargos</a></li>
-								<li><a class="dropdown-item" href="/candidatos"><i class="bi bi-person-badge"></i> Candidatos</a></li>
-								<li><a class="dropdown-item" href="/sindicantes"><i class="bi bi-person-gear"></i> Sindicantes</a></li>
-								<li><a class="dropdown-item" href="/lojas"><i class="bi bi-building"></i> Lojas</a></li>
-								<li><a class="dropdown-item" href="/tipos_ausencia"><i class="bi bi-exclamation-triangle"></i> Tipos Ausência</a></li>
-								<li><hr class="dropdown-divider"></li>
-								<li><a class="dropdown-item" href="/relatorios/consolidados"><i class="bi bi-file-pdf"></i> Relatórios Consolidados</a></li>
-								<li><a class="dropdown-item" href="/exportar/presenca"><i class="bi bi-file-excel"></i> Exportar Presença</a></li>
-								<li><a class="dropdown-item" href="/backup"><i class="bi bi-database"></i> Backup Banco</a></li>
-								<li><a class="dropdown-item" href="/restaurar"><i class="bi bi-arrow-repeat"></i> Restaurar Backup</a></li>
-								<li><a class="dropdown-item" href="/auditoria"><i class="bi bi-journal-text"></i> Log de Atividades</a></li>
-							</ul>
+                                <li><a class="dropdown-item" href="/cargos"><i class="bi bi-diagram-3"></i> Cargos</a></li>
+                                <li><a class="dropdown-item" href="/candidatos"><i class="bi bi-person-badge"></i> Cand.</a></li>
+                                <li><a class="dropdown-item" href="/sindicantes"><i class="bi bi-person-gear"></i> Sind.</a></li>
+                                <li><a class="dropdown-item" href="/lojas"><i class="bi bi-building"></i> Lojas</a></li>
+                                <li><a class="dropdown-item" href="/tipos_ausencia"><i class="bi bi-exclamation-triangle"></i> Aus.</a></li>
+                                <li><hr class="dropdown-divider"></li>
+                                <li><a class="dropdown-item" href="/relatorios/consolidados"><i class="bi bi-file-pdf"></i> Relat.</a></li>
+                                <li><a class="dropdown-item" href="/exportar/presenca"><i class="bi bi-file-excel"></i> Excel</a></li>
+                                <li><a class="dropdown-item" href="/backup"><i class="bi bi-database"></i> Backup</a></li>
+                                <li><a class="dropdown-item" href="/restaurar"><i class="bi bi-arrow-repeat"></i> Rest.</a></li>
+                                <li><a class="dropdown-item" href="/auditoria"><i class="bi bi-journal-text"></i> Logs</a></li>
+                            </ul>
                         </li>
                     {% elif session.tipo == 'sindicante' %}
                         <li class="nav-item">
@@ -319,7 +284,7 @@
                         </li>
                         <li class="nav-item">
                             <a class="nav-link" href="/minhas_sindicancias">
-                                <i class="bi bi-person-badge"></i> Sindicâncias
+                                <i class="bi bi-person-badge"></i> Sind.
                             </a>
                         </li>
                     {% else %}
@@ -335,7 +300,7 @@
                         </li>
                         <li class="nav-item">
                             <a class="nav-link" href="/comunicados">
-                                <i class="bi bi-megaphone"></i> Comunicados
+                                <i class="bi bi-megaphone"></i> Avisos
                             </a>
                         </li>
                     {% endif %}
@@ -345,22 +310,22 @@
                         <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
                             <i class="bi bi-person-circle"></i> 
                             {% if session.nome_completo %}
-                                {{ session.nome_completo.split()[0] if session.nome_completo.split() else session.usuario }}
+                                {{ session.nome_completo.split()[0][:10] if session.nome_completo.split() else session.usuario[:10] }}
                             {% else %}
-                                {{ session.usuario }}
+                                {{ session.usuario[:10] }}
                             {% endif %}
                             <span class="badge {% if session.tipo == 'admin' %}bg-primary{% elif session.tipo == 'sindicante' %}bg-success{% else %}bg-info{% endif %} ms-1">
-                                {{ session.tipo }}
+                                {{ session.tipo[:3] }}
                             </span>
                         </a>
                         <ul class="dropdown-menu dropdown-menu-end">
-                            <li><a class="dropdown-item" href="/perfil"><i class="bi bi-person-gear"></i> Meu Perfil</a></li>
+                            <li><a class="dropdown-item" href="/perfil"><i class="bi bi-person-gear"></i> Perfil</a></li>
                             {% if session.tipo == 'sindicante' and session.loja_nome %}
                             <li><hr class="dropdown-divider"></li>
                             <li><span class="dropdown-item-text small text-muted">
-                                <i class="bi bi-building"></i> {{ session.loja_nome }} - Nº {{ session.loja_numero or '' }}<br>
-                                <i class="bi bi-geo-alt"></i> {{ session.loja_orient or 'Oriente' }} | 
-                                <i class="bi bi-card-text"></i> CIM: {{ session.cim_numero or 'N/I' }}
+                                <i class="bi bi-building"></i> {{ session.loja_nome|truncate(20) }}<br>
+                                <i class="bi bi-geo-alt"></i> {{ session.loja_orient|truncate(15) }}<br>
+                                <i class="bi bi-card-text"></i> CIM: {{ session.cim_numero|default('N/I') }}
                             </span></li>
                             {% endif %}
                             <li><hr class="dropdown-divider"></li>
@@ -383,18 +348,17 @@
             <div class="row">
                 <div class="col-md-6 mb-2 mb-md-0">
                     <small>
-                        <i class="bi bi-building"></i> Sistema Maçônico &copy; 
+                        <i class="bi bi-building"></i> Sistema &copy; 
                         {% if now %}
                             {{ now.year }}
                         {% else %}
                             {{ datetime.now().year }}
                         {% endif %}
-                        - Todos os direitos reservados
                     </small>
                 </div>
                 <div class="col-md-6">
                     <small>
-                        <i class="bi bi-envelope"></i> <a href="mailto:suporte@loja.com">suporte@loja.com</a> |
+                        <i class="bi bi-envelope"></i> <a href="mailto:suporte@loja.com">suporte</a> |
                         <i class="bi bi-shield-check"></i> <a href="#">Segurança</a>
                     </small>
                 </div>
@@ -402,11 +366,32 @@
         </div>
     </footer>
 
+    <!-- Botão Voltar ao Topo -->
+    <button onclick="topFunction()" id="btnTopo" class="btn btn-primary rounded-circle position-fixed bottom-0 end-0 m-3" style="display: none; width: 40px; height: 40px; z-index: 99; box-shadow: 0 2px 10px rgba(0,0,0,0.2);">
+        <i class="bi bi-arrow-up"></i>
+    </button>
+
     <!-- Scripts globais -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
     <script src="https://cdn.datatables.net/1.13.7/js/jquery.dataTables.min.js"></script>
     <script src="https://cdn.datatables.net/1.13.7/js/dataTables.bootstrap5.min.js"></script>
+    
+    <script>
+        window.onscroll = function() {
+            const btn = document.getElementById("btnTopo");
+            if (document.body.scrollTop > 300 || document.documentElement.scrollTop > 300) {
+                btn.style.display = "block";
+            } else {
+                btn.style.display = "none";
+            }
+        };
+        
+        function topFunction() {
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+    </script>
+    
     {% block extra_js %}{% endblock %}
 </body>
 </html>

@@ -27,13 +27,28 @@
         max-height: 100px;
         object-fit: cover;
     }
+    
+    @media (max-width: 768px) {
+        .file-icon {
+            font-size: 1.8rem;
+        }
+        .categoria-badge {
+            font-size: 0.6rem;
+        }
+        table {
+            font-size: 0.7rem;
+        }
+        .btn-group .btn {
+            padding: 0.2rem 0.4rem;
+        }
+    }
 </style>
 {% endblock %}
 
 {% block content %}
 <div class="container-fluid py-4">
     <div class="container">
-        <div class="d-flex justify-content-between align-items-center mb-4">
+        <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
             <h2>
                 <i class="bi bi-folder2-open"></i> 
                 Documentos de {{ obreiro_nome }}
@@ -65,33 +80,35 @@
                 <h5 class="mb-0"><i class="bi bi-cloud-upload"></i> Adicionar Documento</h5>
             </div>
             <div class="card-body">
-                <form method="POST" action="/obreiros/{{ obreiro_id }}/documentos/upload" enctype="multipart/form-data" class="row g-3">
-                    <div class="col-md-4">
-                        <label class="form-label">Título *</label>
-                        <input type="text" class="form-control" name="titulo" placeholder="Título do documento">
-                        <small class="text-muted">Deixe em branco para usar o nome do arquivo</small>
-                    </div>
-                    <div class="col-md-3">
-                        <label class="form-label">Categoria</label>
-                        <select class="form-select" name="categoria">
-                            {% for cat in categorias %}
-                            <option value="{{ cat.nome }}">{{ cat.nome }}</option>
-                            {% endfor %}
-                        </select>
-                    </div>
-                    <div class="col-md-5">
-                        <label class="form-label">Arquivo *</label>
-                        <input type="file" class="form-control" name="arquivo" required>
-                        <small class="text-muted">PDF, imagens, Word, Excel, ZIP (max 50MB)</small>
-                    </div>
-                    <div class="col-12">
-                        <label class="form-label">Descrição</label>
-                        <textarea class="form-control" name="descricao" rows="2" placeholder="Descrição do documento..."></textarea>
-                    </div>
-                    <div class="col-12 text-end">
-                        <button type="submit" class="btn btn-success">
-                            <i class="bi bi-cloud-upload"></i> Enviar Documento
-                        </button>
+                <form method="POST" action="/obreiros/{{ obreiro_id }}/documentos/upload" enctype="multipart/form-data">
+                    <div class="row g-3">
+                        <div class="col-md-4 col-sm-12">
+                            <label class="form-label">Título *</label>
+                            <input type="text" class="form-control" name="titulo" placeholder="Título do documento">
+                            <small class="text-muted">Deixe em branco para usar o nome do arquivo</small>
+                        </div>
+                        <div class="col-md-3 col-sm-12">
+                            <label class="form-label">Categoria</label>
+                            <select class="form-select" name="categoria">
+                                {% for cat in categorias %}
+                                <option value="{{ cat.nome }}">{{ cat.nome }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-5 col-sm-12">
+                            <label class="form-label">Arquivo *</label>
+                            <input type="file" class="form-control" name="arquivo" required>
+                            <small class="text-muted">PDF, imagens, Word, Excel, ZIP (max 50MB)</small>
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label">Descrição</label>
+                            <textarea class="form-control" name="descricao" rows="2" placeholder="Descrição do documento..."></textarea>
+                        </div>
+                        <div class="col-12 text-end">
+                            <button type="submit" class="btn btn-success">
+                                <i class="bi bi-cloud-upload"></i> Enviar Documento
+                            </button>
+                        </div>
                     </div>
                 </form>
             </div>
@@ -119,7 +136,8 @@
                                     <th>Data Upload</th>
                                     <th>Tamanho</th>
                                     <th>Ações</th>
-                                 </thead>
+                                </tr>
+                            </thead>
                             <tbody>
                                 {% for doc in documentos %}
                                 <tr>
@@ -189,7 +207,9 @@
             language: {
                 url: '//cdn.datatables.net/plug-ins/1.13.7/i18n/pt-BR.json'
             },
-            order: [[4, 'desc']]
+            order: [[4, 'desc']],
+            responsive: true,
+            autoWidth: false
         });
     });
 </script>
