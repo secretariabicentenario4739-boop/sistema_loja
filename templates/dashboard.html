@@ -130,177 +130,10 @@
                 {% endif %}
             {% endwith %}
 
-            <!-- Cards de Estatísticas (apenas admin) -->
-            {% if tipo == "admin" %}
-            <div class="row g-4 mb-4">
-                <div class="col-md-3">
-                    <div class="card stat-card shadow h-100">
-                        <div class="card-body">
-                            <div class="d-flex justify-content-between align-items-center">
-                                <div>
-                                    <h6 class="text-muted mb-2">Total de Candidatos</h6>
-                                    <h2 class="mb-0">{{ total_candidatos }}</h2>
-                                </div>
-                                <div class="bg-primary bg-opacity-10 p-3 rounded-circle">
-                                    <i class="bi bi-people-fill text-primary fs-3"></i>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                
-                <div class="col-md-3">
-                    <div class="card stat-card shadow h-100 border-warning">
-                        <div class="card-body">
-                            <div class="d-flex justify-content-between align-items-center">
-                                <div>
-                                    <h6 class="text-muted mb-2">Em Análise</h6>
-                                    <h2 class="mb-0 text-warning">{{ em_analise }}</h2>
-                                </div>
-                                <div class="bg-warning bg-opacity-10 p-3 rounded-circle">
-                                    <i class="bi bi-hourglass-split text-warning fs-3"></i>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                
-                <div class="col-md-3">
-                    <div class="card stat-card shadow h-100 border-success">
-                        <div class="card-body">
-                            <div class="d-flex justify-content-between align-items-center">
-                                <div>
-                                    <h6 class="text-muted mb-2">Aprovados</h6>
-                                    <h2 class="mb-0 text-success">{{ aprovados }}</h2>
-                                </div>
-                                <div class="bg-success bg-opacity-10 p-3 rounded-circle">
-                                    <i class="bi bi-check-circle-fill text-success fs-3"></i>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                
-                <div class="col-md-3">
-                    <div class="card stat-card shadow h-100 border-danger">
-                        <div class="card-body">
-                            <div class="d-flex justify-content-between align-items-center">
-                                <div>
-                                    <h6 class="text-muted mb-2">Reprovados</h6>
-                                    <h2 class="mb-0 text-danger">{{ reprovados }}</h2>
-                                </div>
-                                <div class="bg-danger bg-opacity-10 p-3 rounded-circle">
-                                    <i class="bi bi-x-circle-fill text-danger fs-3"></i>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            {% endif %}
-
-            <!-- Alertas e Pendências (apenas admin) -->
-            {% if tipo == "admin" %}
-            <div class="row g-4 mb-4">
-                <!-- Pareceres Pendentes -->
-                <div class="col-md-6">
-                    <div class="card alert-card shadow border-warning">
-                        <div class="card-header bg-warning bg-opacity-10 border-warning">
-                            <h5 class="mb-0">
-                                <i class="bi bi-clock-history"></i> Pareceres Pendentes
-                                <span class="badge bg-dark ms-2">{{ pendentes|length }}</span>
-                            </h5>
-                        </div>
-                        <div class="card-body">
-                            {% if pendentes %}
-                                <div class="list-group list-group-flush">
-                                    {% for p in pendentes %}
-                                        <div class="list-group-item px-0">
-                                            <div class="d-flex justify-content-between align-items-center">
-                                                <div>
-                                                    <strong>{{ p.candidato.nome }}</strong>
-                                                    <br>
-                                                    <small class="text-muted">
-                                                        Aguardando: {{ p.faltam | join(", ") }}
-                                                    </small>
-                                                </div>
-                                                <span class="badge bg-warning text-dark">
-                                                    {{ p.faltam|length }} pendente(s)
-                                                </span>
-                                            </div>
-                                        </div>
-                                    {% endfor %}
-                                </div>
-                            {% else %}
-                                <div class="text-center py-4">
-                                    <i class="bi bi-check-circle-fill text-success fs-1"></i>
-                                    <p class="text-success mt-2 mb-0">Todos os pareceres estão em dia!</p>
-                                </div>
-                            {% endif %}
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Prazo Vencido -->
-                <div class="col-md-6">
-                    <div class="card alert-card shadow border-danger">
-                        <div class="card-header bg-danger bg-opacity-10 border-danger">
-                            <h5 class="mb-0">
-                                <i class="bi bi-exclamation-triangle"></i> Prazo Vencido (>7 dias)
-                                <span class="badge bg-dark ms-2">{{ prazo_vencido|length }}</span>
-                            </h5>
-                        </div>
-                        <div class="card-body">
-                            {% if prazo_vencido %}
-                                <div class="list-group list-group-flush">
-                                    {% for c in prazo_vencido %}
-                                        <div class="list-group-item px-0">
-                                            <div class="d-flex justify-content-between align-items-center">
-                                                <div>
-                                                    <strong>{{ c.nome }}</strong>
-                                                    <br>
-                                                    <small class="text-muted">
-                                                        Aberto em: {{ c.data_criacao[:10] if c.data_criacao else 'N/A' }}
-                                                    </small>
-                                                </div>
-                                                <a href="/candidatos" class="btn btn-sm btn-outline-danger">
-                                                    Verificar
-                                                </a>
-                                            </div>
-                                        </div>
-                                    {% endfor %}
-                                </div>
-                            {% else %}
-                                <div class="text-center py-4">
-                                    <i class="bi bi-emoji-smile text-success fs-1"></i>
-                                    <p class="text-success mt-2 mb-0">Nenhum processo atrasado!</p>
-                                </div>
-                            {% endif %}
-                        </div>
-                    </div>
-                </div>
-            </div>
-            {% endif %}
-
-            <!-- AÇÕES RÁPIDAS - DIFERENTE PARA CADA TIPO DE USUÁRIO -->
-            
-			<div class="row g-4 mt-2">
+            <!-- ========== SEÇÃO SUPERIOR: AÇÕES RÁPIDAS ========== -->
+            <div class="row g-4 mt-2">
                 {% if tipo == "admin" %}
                     <!-- ADMIN: Todos os cards -->
-					<div class="col-md-3">
-    <div class="card shadow-sm h-100 border-info">
-        <div class="card-body text-center">
-            <i class="bi bi-file-pdf fs-1 text-info"></i>
-            <h5 class="mt-2">Relatórios Consolidados</h5>
-            <p class="text-muted small">
-                Gere relatórios anuais, mensais ou por período
-            </p>
-            <a href="/relatorios/consolidados" class="btn btn-info text-white w-100">
-                <i class="bi bi-file-pdf"></i> Gerar PDF
-            </a>
-        </div>
-    </div>
-</div>
                     <div class="col-md-3">
                         <div class="card shadow-sm h-100 border-primary">
                             <div class="card-body text-center">
@@ -346,21 +179,6 @@
                     </div>
 
                     <div class="col-md-3">
-                        <div class="card shadow-sm h-100 border-warning">
-                            <div class="card-body text-center">
-                                <i class="bi bi-person-badge fs-1 text-warning"></i>
-                                <h5 class="mt-2">Candidatos</h5>
-                                <p class="text-muted small">
-                                    Gerencie os candidatos em sindicância
-                                </p>
-                                <a href="/candidatos" class="btn btn-warning w-100">
-                                    <i class="bi bi-arrow-right-circle"></i> Acessar
-                                </a>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="col-md-3">
                         <div class="card shadow-sm h-100 border-info">
                             <div class="card-body text-center">
                                 <i class="bi bi-building fs-1 text-info"></i>
@@ -396,10 +214,40 @@
                                 <i class="bi bi-file-pdf fs-1 text-danger"></i>
                                 <h5 class="mt-2">Relatórios</h5>
                                 <p class="text-muted small">
-                                    Relatórios completos das sindicâncias
+                                    Gere relatórios completos em PDF
                                 </p>
                                 <a href="/candidatos" class="btn btn-danger w-100">
-                                    <i class="bi bi-file-earmark-pdf"></i> Sindicâncias
+                                    <i class="bi bi-file-earmark-pdf"></i> Gerar Relatórios
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="col-md-3">
+                        <div class="card shadow-sm h-100 border-info">
+                            <div class="card-body text-center">
+                                <i class="bi bi-file-pdf fs-1 text-info"></i>
+                                <h5 class="mt-2">Relatórios Consolidados</h5>
+                                <p class="text-muted small">
+                                    Gere relatórios anuais, mensais ou por período
+                                </p>
+                                <a href="/relatorios/consolidados" class="btn btn-info text-white w-100">
+                                    <i class="bi bi-file-pdf"></i> Gerar PDF
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="col-md-3">
+                        <div class="card shadow-sm h-100 border-success">
+                            <div class="card-body text-center">
+                                <i class="bi bi-file-excel fs-1 text-success"></i>
+                                <h5 class="mt-2">Exportar Presença</h5>
+                                <p class="text-muted small">
+                                    Exporte os dados de presença para Excel
+                                </p>
+                                <a href="/exportar/presenca" class="btn btn-success w-100">
+                                    <i class="bi bi-download"></i> Exportar
                                 </a>
                             </div>
                         </div>
@@ -496,10 +344,9 @@
                 {% endif %}
             </div>
 
-            <!-- Cards de Estatísticas (admin) -->
+            <!-- ========== ESTATÍSTICAS DE OBREIROS E REUNIÕES (apenas admin) ========== -->
             {% if tipo == "admin" %}
             <div class="row mt-4">
-                <!-- Estatísticas de Obreiros -->
                 <div class="col-md-6">
                     <div class="card shadow-sm">
                         <div class="card-header bg-dark text-white">
@@ -539,7 +386,6 @@
                     </div>
                 </div>
 
-                <!-- Estatísticas de Reuniões -->
                 <div class="col-md-6">
                     <div class="card shadow-sm">
                         <div class="card-header bg-dark text-white">
@@ -597,9 +443,161 @@
             </div>
             {% endif %}
 
-            <!-- Lista de Sindicantes (apenas admin) -->
+            <!-- ========== SEÇÃO DE SINDICÂNCIA (agrupada na parte inferior, apenas admin) ========== -->
             {% if tipo == "admin" %}
-            <div class="card shadow mb-4 mt-4">
+            <div class="mt-5">
+                <hr class="my-4">
+                <h3 class="mb-4"><i class="bi bi-gavel"></i> Gestão de Sindicâncias</h3>
+            </div>
+
+            <!-- Cards de Estatísticas da Sindicância -->
+            <div class="row g-4 mb-4">
+                <div class="col-md-3">
+                    <div class="card stat-card shadow h-100">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <h6 class="text-muted mb-2">Total de Candidatos</h6>
+                                    <h2 class="mb-0">{{ total_candidatos }}</h2>
+                                </div>
+                                <div class="bg-primary bg-opacity-10 p-3 rounded-circle">
+                                    <i class="bi bi-people-fill text-primary fs-3"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="col-md-3">
+                    <div class="card stat-card shadow h-100 border-warning">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <h6 class="text-muted mb-2">Em Análise</h6>
+                                    <h2 class="mb-0 text-warning">{{ em_analise }}</h2>
+                                </div>
+                                <div class="bg-warning bg-opacity-10 p-3 rounded-circle">
+                                    <i class="bi bi-hourglass-split text-warning fs-3"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="col-md-3">
+                    <div class="card stat-card shadow h-100 border-success">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <h6 class="text-muted mb-2">Aprovados</h6>
+                                    <h2 class="mb-0 text-success">{{ aprovados }}</h2>
+                                </div>
+                                <div class="bg-success bg-opacity-10 p-3 rounded-circle">
+                                    <i class="bi bi-check-circle-fill text-success fs-3"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="col-md-3">
+                    <div class="card stat-card shadow h-100 border-danger">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <h6 class="text-muted mb-2">Reprovados</h6>
+                                    <h2 class="mb-0 text-danger">{{ reprovados }}</h2>
+                                </div>
+                                <div class="bg-danger bg-opacity-10 p-3 rounded-circle">
+                                    <i class="bi bi-x-circle-fill text-danger fs-3"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Alertas e Pendências -->
+            <div class="row g-4 mb-4">
+                <div class="col-md-6">
+                    <div class="card alert-card shadow border-warning">
+                        <div class="card-header bg-warning bg-opacity-10 border-warning">
+                            <h5 class="mb-0">
+                                <i class="bi bi-clock-history"></i> Pareceres Pendentes
+                                <span class="badge bg-dark ms-2">{{ pendentes|length }}</span>
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            {% if pendentes %}
+                                <div class="list-group list-group-flush">
+                                    {% for p in pendentes %}
+                                        <div class="list-group-item px-0">
+                                            <div class="d-flex justify-content-between align-items-center">
+                                                <div>
+                                                    <strong>{{ p.candidato.nome }}</strong>
+                                                    <br>
+                                                    <small class="text-muted">
+                                                        Aguardando: {{ p.faltam | join(", ") }}
+                                                    </small>
+                                                </div>
+                                                <span class="badge bg-warning text-dark">
+                                                    {{ p.faltam|length }} pendente(s)
+                                                </span>
+                                            </div>
+                                        </div>
+                                    {% endfor %}
+                                </div>
+                            {% else %}
+                                <div class="text-center py-4">
+                                    <i class="bi bi-check-circle-fill text-success fs-1"></i>
+                                    <p class="text-success mt-2 mb-0">Todos os pareceres estão em dia!</p>
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-md-6">
+                    <div class="card alert-card shadow border-danger">
+                        <div class="card-header bg-danger bg-opacity-10 border-danger">
+                            <h5 class="mb-0">
+                                <i class="bi bi-exclamation-triangle"></i> Prazo Vencido (>7 dias)
+                                <span class="badge bg-dark ms-2">{{ prazo_vencido|length }}</span>
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            {% if prazo_vencido %}
+                                <div class="list-group list-group-flush">
+                                    {% for c in prazo_vencido %}
+                                        <div class="list-group-item px-0">
+                                            <div class="d-flex justify-content-between align-items-center">
+                                                <div>
+                                                    <strong>{{ c.nome }}</strong>
+                                                    <br>
+                                                    <small class="text-muted">
+                                                        Aberto em: {{ c.data_criacao[:10] if c.data_criacao else 'N/A' }}
+                                                    </small>
+                                                </div>
+                                                <a href="/candidatos" class="btn btn-sm btn-outline-danger">
+                                                    Verificar
+                                                </a>
+                                            </div>
+                                        </div>
+                                    {% endfor %}
+                                </div>
+                            {% else %}
+                                <div class="text-center py-4">
+                                    <i class="bi bi-emoji-smile text-success fs-1"></i>
+                                    <p class="text-success mt-2 mb-0">Nenhum processo atrasado!</p>
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Lista de Sindicantes -->
+            <div class="card shadow mb-4">
                 <div class="card-header bg-primary bg-opacity-10 d-flex justify-content-between align-items-center">
                     <h5 class="mb-0">
                         <i class="bi bi-people"></i> Sindicantes Ativos
@@ -624,8 +622,7 @@
                                         <th>Usuário</th>
                                         <th>Loja</th>
                                         <th>CIM</th>
-                                    </tr>
-                                </thead>
+                                    </thead>
                                 <tbody>
                                     {% for s in sindicantes %}
                                     <tr>
@@ -658,10 +655,8 @@
                     {% endif %}
                 </div>
             </div>
-            {% endif %}
 
-            <!-- Card de Pareceres Conclusivos (apenas admin) -->
-            {% if tipo == "admin" %}
+            <!-- Card de Pareceres Conclusivos Recentes -->
             <div class="card shadow mb-4">
                 <div class="card-header bg-dark text-white d-flex justify-content-between align-items-center">
                     <h5 class="mb-0">
@@ -684,14 +679,11 @@
                                         <th>Conclusão</th>
                                         <th>Data</th>
                                         <th style="width: 100px;">Ações</th>
-                                    </tr>
-                                </thead>
+                                    </thead>
                                 <tbody>
                                     {% for pc in pareceres_conclusivos %}
                                     <tr>
-                                        <td>
-                                            <strong>{{ pc.candidato_nome }}</strong>
-                                        </td>
+                                        <td><strong>{{ pc.candidato_nome }}</strong></td>
                                         <td>
                                             <i class="bi bi-person-circle"></i> 
                                             {{ pc.sindicante_nome or pc.sindicante }}

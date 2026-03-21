@@ -2786,6 +2786,115 @@ def baixar_parecer_conclusivo(id):
     except Exception as e:
         flash(f"Erro ao gerar PDF: {str(e)}", "danger")
         return redirect("/dashboard")
+        
+# =============================
+# ROTAS DE COMUNICADOS
+# =============================        
+        
+@app.route("/comunicados")
+@login_required
+def listar_comunicados():
+    conn = get_db()
+    cursor = conn.cursor()
+    hoje = datetime.now().strftime("%Y-%m-%d")
+    # Buscar comunicados ativos dentro do período
+    cursor.execute("""
+        SELECT c.*, u.nome_completo as autor_nome,
+               (SELECT COUNT(*) FROM visualizacoes_comunicado WHERE comunicado_id = c.id AND obreiro_id = ?) as ja_visto
+        FROM comunicados c
+        JOIN usuarios u ON c.criado_por = u.id
+        WHERE c.ativo = 1
+          AND c.data_inicio <= ?
+          AND (c.data_fim IS NULL OR c.data_fim >= ?)
+        ORDER BY c.prioridade = 'urgente' DESC, c.data_criacao DESC
+    """, (session["user_id"], hoje, hoje))
+    comunicados = cursor.fetchall()
+    conn.close()
+    return render_template("comunicados/lista.html", comunicados=comunicados)
+
+@app.route("/comunicados/novo", methods=["GET", "POST"])
+@admin_required
+def novo_comunicado():
+    if request.method == "POST":
+        titulo = request.form.get("titulo")
+        conteudo = request.form.get("conteudo")
+        tipo = request.form.get("tipo")
+        prioridade = request.form.get("prioridade")
+        data_inicio = request.form.get("data_inicio")
+        data_fim = request.form.get("data_fim") or None
+        conn = get_db()
+        cursor = conn.cursor()
+        cursor.execute("""
+            INSERT INTO comunicados (titulo, conteudo, tipo, prioridade, data_inicio, data_fim, criado_por)
+            VALUES (?, ?, ?, ?, ?, ?, ?)
+        """, (titulo, conteudo, tipo, prioridade, data_inicio, data_fim, session["user_id"]))
+        conn.commit()
+        conn.close()
+        flash("Comunicado publicado com sucesso!", "success")
+        return redirect("/comunicados")
+    return render_template("comunicados/novo.html")
+
+@app.route("/comunicados/<int:id>/visualizar")
+@login_required
+def visualizar_comunicado(id):
+    conn = get_db()
+    cursor = conn.cursor()
+    # Registrar visualização
+    cursor.execute("""
+        INSERT OR IGNORE INTO visualizacoes_comunicado (comunicado_id, obreiro_id)
+        VALUES (?, ?)
+    """, (id, session["user_id"]))
+    conn.commit()
+    # Buscar comunicado
+    cursor.execute("""
+        SELECT c.*, u.nome_completo as autor_nome
+        FROM comunicados c
+        JOIN usuarios u ON c.criado_por = u.id
+        WHERE c.id = ?
+    """, (id,))
+    comunicado = cursor.fetchone()
+    conn.close()
+    if not comunicado:
+        flash("Comunicado não encontrado", "danger")
+        return redirect("/comunicados")
+    return render_template("comunicados/detalhes.html", comunicado=comunicado)
+
+@app.route("/comunicados/<int:id>/editar", methods=["GET", "POST"])
+@admin_required
+def editar_comunicado(id):
+    conn = get_db()
+    cursor = conn.cursor()
+    if request.method == "POST":
+        titulo = request.form.get("titulo")
+        conteudo = request.form.get("conteudo")
+        tipo = request.form.get("tipo")
+        prioridade = request.form.get("prioridade")
+        data_inicio = request.form.get("data_inicio")
+        data_fim = request.form.get("data_fim") or None
+        ativo = 1 if request.form.get("ativo") else 0
+        cursor.execute("""
+            UPDATE comunicados
+            SET titulo=?, conteudo=?, tipo=?, prioridade=?, data_inicio=?, data_fim=?, ativo=?
+            WHERE id=?
+        """, (titulo, conteudo, tipo, prioridade, data_inicio, data_fim, ativo, id))
+        conn.commit()
+        flash("Comunicado atualizado com sucesso!", "success")
+        return redirect("/comunicados")
+    cursor.execute("SELECT * FROM comunicados WHERE id = ?", (id,))
+    comunicado = cursor.fetchone()
+    conn.close()
+    return render_template("comunicados/editar.html", comunicado=comunicado)
+
+@app.route("/comunicados/<int:id>/excluir")
+@admin_required
+def excluir_comunicado(id):
+    conn = get_db()
+    cursor = conn.cursor()
+    cursor.execute("DELETE FROM comunicados WHERE id = ?", (id,))
+    conn.commit()
+    conn.close()
+    flash("Comunicado excluído com sucesso!", "success")
+    return redirect("/comunicados")
 
 # =============================
 # ROTAS DE SINDICANTES
