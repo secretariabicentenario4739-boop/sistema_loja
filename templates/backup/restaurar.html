@@ -1,0 +1,129 @@
+{% extends "base.html" %}
+
+{% block title %}Restaurar Banco de Dados{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="container">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h2>
+                <i class="bi bi-database"></i> 
+                Restaurar Banco de Dados
+            </h2>
+            <div>
+                <a href="/backup" class="btn btn-info me-2">
+                    <i class="bi bi-download"></i> Fazer Backup
+                </a>
+                <a href="/dashboard" class="btn btn-outline-secondary">
+                    <i class="bi bi-arrow-left"></i> Voltar
+                </a>
+            </div>
+        </div>
+
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+                        {{ message }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
+        <div class="row">
+            <div class="col-md-8 mx-auto">
+                <div class="card shadow">
+                    <div class="card-header bg-warning text-dark">
+                        <h5 class="mb-0">
+                            <i class="bi bi-exclamation-triangle"></i> 
+                            Atenção!
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="alert alert-danger">
+                            <i class="bi bi-exclamation-circle"></i>
+                            <strong>Esta operação é irreversível!</strong>
+                            <p class="mb-0 mt-2">
+                                Ao restaurar um backup, todos os dados atuais serão substituídos pelos dados do arquivo de backup.
+                                Um backup automático do banco atual será criado antes da restauração.
+                            </p>
+                        </div>
+
+                        <div class="alert alert-info">
+                            <i class="bi bi-info-circle"></i>
+                            <strong>Formatos aceitos:</strong> .db, .sqlite, .sqlite3
+                            <br>
+                            <strong>Tamanho máximo:</strong> 50MB
+                        </div>
+
+                        <form method="POST" enctype="multipart/form-data" id="formRestaurar">
+                            <div class="mb-4">
+                                <label class="form-label">Selecione o arquivo de backup</label>
+                                <input type="file" class="form-control" name="backup_file" id="backup_file" accept=".db,.sqlite,.sqlite3" required>
+                                <small class="text-muted">Escolha um arquivo de backup válido</small>
+                            </div>
+
+                            <div class="mb-4">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="confirmar" required>
+                                    <label class="form-check-label" for="confirmar">
+                                        <strong>Confirmo que desejo restaurar o banco de dados</strong> e entendo que os dados atuais serão substituídos.
+                                    </label>
+                                </div>
+                            </div>
+
+                            <div class="text-center">
+                                <button type="submit" class="btn btn-warning btn-lg px-5" id="btnRestaurar" disabled>
+                                    <i class="bi bi-arrow-repeat"></i> Restaurar Banco
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+
+                <div class="card shadow mt-4">
+                    <div class="card-header bg-primary text-white">
+                        <h5 class="mb-0">Dicas</h5>
+                    </div>
+                    <div class="card-body">
+                        <ul class="mb-0">
+                            <li>Use arquivos de backup gerados pelo sistema (extensão .db)</li>
+                            <li>Recomenda-se fazer um backup antes de restaurar</li>
+                            <li>Após a restauração, o sistema reiniciará automaticamente a sessão</li>
+                            <li>Em caso de erro, o sistema mantém um backup do banco anterior</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    document.getElementById('confirmar').addEventListener('change', function() {
+        const btn = document.getElementById('btnRestaurar');
+        btn.disabled = !this.checked;
+    });
+
+    document.getElementById('formRestaurar').addEventListener('submit', function(e) {
+        const file = document.getElementById('backup_file').files[0];
+        if (!file) {
+            e.preventDefault();
+            alert('Selecione um arquivo de backup');
+            return;
+        }
+        
+        // Verificar tamanho (50MB = 50 * 1024 * 1024)
+        if (file.size > 50 * 1024 * 1024) {
+            e.preventDefault();
+            alert('Arquivo muito grande. Tamanho máximo: 50MB');
+            return;
+        }
+        
+        if (!confirm('Tem certeza que deseja restaurar o banco de dados? Esta ação não pode ser desfeita.')) {
+            e.preventDefault();
+        }
+    });
+</script>
+{% endblock %}

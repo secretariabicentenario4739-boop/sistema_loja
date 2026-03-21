@@ -1,0 +1,78 @@
+{% extends "base.html" %}
+
+{% block title %}Backups{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="container">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h2><i class="bi bi-archive"></i> Backups do Banco de Dados</h2>
+            <div>
+                <a href="/backup/manual" class="btn btn-success">
+                    <i class="bi bi-plus-circle"></i> Gerar Backup Agora
+                </a>
+                <a href="/dashboard" class="btn btn-outline-secondary ms-2">
+                    <i class="bi bi-arrow-left"></i> Voltar
+                </a>
+            </div>
+        </div>
+
+        <div class="card shadow">
+            <div class="card-header bg-dark text-white">
+                <h5 class="mb-0">Lista de Backups</h5>
+            </div>
+            <div class="card-body">
+                {% if backups %}
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Nome do Arquivo</th>
+                                <th>Data</th>
+                                <th>Tamanho</th>
+                                <th>Ações</th>
+                            </thead>
+                        <tbody>
+                            {% for b in backups %}
+                             <tr>
+                                <td><code>{{ b.nome }}</code></td>
+                                <td>{{ b.data.strftime('%d/%m/%Y %H:%M:%S') }}</td>
+                                <td>{{ (b.tamanho / 1024)|round(1) }} KB</td>
+                                <td>
+                                    <div class="btn-group btn-group-sm">
+                                        <a href="/backup/download/{{ b.nome }}" class="btn btn-outline-primary">
+                                            <i class="bi bi-download"></i> Baixar
+                                        </a>
+                                        <a href="/backup/excluir/{{ b.nome }}" class="btn btn-outline-danger"
+                                           onclick="return confirm('Excluir este backup?')">
+                                            <i class="bi bi-trash"></i> Excluir
+                                        </a>
+                                    </div>
+                                </td>
+                             </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="text-center py-4">
+                    <i class="bi bi-archive text-muted fs-1"></i>
+                    <p class="text-muted mt-2">Nenhum backup encontrado.</p>
+                    <a href="/backup/manual" class="btn btn-primary">Gerar primeiro backup</a>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="alert alert-info mt-4">
+            <i class="bi bi-info-circle"></i>
+            <strong>Informações:</strong>
+            <ul class="mb-0 mt-2">
+                <li>Os backups são armazenados na pasta <code>backups/</code> do sistema.</li>
+                <li>Backups automáticos são gerados semanalmente (se configurado).</li>
+                <li>Recomenda-se manter cópias em local seguro (nuvem, HD externo).</li>
+            </ul>
+        </div>
+    </div>
+</div>
+{% endblock %}

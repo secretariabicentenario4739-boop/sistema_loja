@@ -133,266 +133,88 @@
             <!-- ========== SEÇÃO SUPERIOR: AÇÕES RÁPIDAS ========== -->
             <div class="row g-4 mt-2">
                 {% if tipo == "admin" %}
-                    <!-- ADMIN: Todos os cards -->
-                    <div class="col-md-3">
+                    <!-- ADMIN: Cards de ações rápidas (6 cards) -->
+                    <div class="col-md-2">
                         <div class="card shadow-sm h-100 border-primary">
                             <div class="card-body text-center">
                                 <i class="bi bi-people-fill fs-1 text-primary"></i>
                                 <h5 class="mt-2">Obreiros</h5>
-                                <p class="text-muted small">
-                                    Gerencie o quadro de obreiros,<br>graus e cargos
-                                </p>
+                                <p class="text-muted small">Gerencie o quadro de obreiros</p>
                                 <div class="d-grid gap-2">
-                                    <a href="/obreiros" class="btn btn-primary">
-                                        <i class="bi bi-eye"></i> Ver Obreiros
-                                    </a>
-                                    <a href="/obreiros/novo" class="btn btn-outline-primary btn-sm">
-                                        <i class="bi bi-person-plus"></i> Novo Obreiro
-                                    </a>
+                                    <a href="/obreiros" class="btn btn-primary btn-sm">Ver Obreiros</a>
+                                    <a href="/obreiros/novo" class="btn btn-outline-primary btn-sm">Novo Obreiro</a>
                                 </div>
                             </div>
                         </div>
                     </div>
 
-                    <div class="col-md-3">
+                    <div class="col-md-2">
                         <div class="card shadow-sm h-100 border-success">
                             <div class="card-body text-center">
                                 <i class="bi bi-calendar-event fs-1 text-success"></i>
                                 <h5 class="mt-2">Reuniões</h5>
-                                <p class="text-muted small">
-                                    {% if proxima_reuniao %}
-                                        Próxima: {{ proxima_reuniao.data[:10] }}
-                                    {% else %}
-                                        Gerencie reuniões, presenças e atas
-                                    {% endif %}
-                                </p>
+                                <p class="text-muted small">Gerencie reuniões, presenças e atas</p>
                                 <div class="d-grid gap-2">
-                                    <a href="/reunioes" class="btn btn-success">
-                                        <i class="bi bi-list"></i> Ver Reuniões
-                                    </a>
-                                    <a href="/reunioes/calendario" class="btn btn-outline-success btn-sm">
-                                        <i class="bi bi-calendar"></i> Calendário
-                                    </a>
+                                    <a href="/reunioes" class="btn btn-success btn-sm">Ver Reuniões</a>
+                                    <a href="/reunioes/calendario" class="btn btn-outline-success btn-sm">Calendário</a>
                                 </div>
                             </div>
                         </div>
                     </div>
 
-                    <div class="col-md-3">
+                    <div class="col-md-2">
                         <div class="card shadow-sm h-100 border-info">
                             <div class="card-body text-center">
                                 <i class="bi bi-building fs-1 text-info"></i>
                                 <h5 class="mt-2">Lojas</h5>
-                                <p class="text-muted small">
-                                    Cadastre e gerencie as lojas
-                                </p>
-                                <a href="/lojas" class="btn btn-info text-white w-100">
-                                    <i class="bi bi-building"></i> Gerenciar
-                                </a>
+                                <p class="text-muted small">Cadastre e gerencie as lojas</p>
+                                <a href="/lojas" class="btn btn-info text-white btn-sm w-100">Gerenciar</a>
                             </div>
                         </div>
                     </div>
 
-                    <div class="col-md-3">
-                        <div class="card shadow-sm h-100 border-secondary">
-                            <div class="card-body text-center">
-                                <i class="bi bi-person-gear fs-1 text-secondary"></i>
-                                <h5 class="mt-2">Sindicantes</h5>
-                                <p class="text-muted small">
-                                    Cadastre e gerencie os sindicantes
-                                </p>
-                                <a href="/sindicantes" class="btn btn-secondary w-100">
-                                    <i class="bi bi-person-plus"></i> Gerenciar
-                                </a>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="col-md-3">
+                    <div class="col-md-2">
                         <div class="card shadow-sm h-100 border-danger">
                             <div class="card-body text-center">
                                 <i class="bi bi-file-pdf fs-1 text-danger"></i>
                                 <h5 class="mt-2">Relatórios</h5>
-                                <p class="text-muted small">
-                                    Gere relatórios completos em PDF
-                                </p>
-                                <a href="/candidatos" class="btn btn-danger w-100">
-                                    <i class="bi bi-file-earmark-pdf"></i> Gerar Relatórios
-                                </a>
+                                <p class="text-muted small">Gere relatórios completos em PDF</p>
+                                <a href="/candidatos" class="btn btn-danger btn-sm w-100">Gerar Relatórios</a>
                             </div>
                         </div>
                     </div>
 
-                    <div class="col-md-3">
+                    <div class="col-md-2">
                         <div class="card shadow-sm h-100 border-info">
                             <div class="card-body text-center">
                                 <i class="bi bi-file-pdf fs-1 text-info"></i>
                                 <h5 class="mt-2">Relatórios Consolidados</h5>
-                                <p class="text-muted small">
-                                    Gere relatórios anuais, mensais ou por período
-                                </p>
-                                <a href="/relatorios/consolidados" class="btn btn-info text-white w-100">
-                                    <i class="bi bi-file-pdf"></i> Gerar PDF
-                                </a>
+                                <p class="text-muted small">Gere relatórios anuais, mensais ou por período</p>
+                                <a href="/relatorios/consolidados" class="btn btn-info text-white btn-sm w-100">Gerar PDF</a>
                             </div>
                         </div>
                     </div>
 
-                    <div class="col-md-3">
+                    <div class="col-md-2">
                         <div class="card shadow-sm h-100 border-success">
                             <div class="card-body text-center">
                                 <i class="bi bi-file-excel fs-1 text-success"></i>
                                 <h5 class="mt-2">Exportar Presença</h5>
-                                <p class="text-muted small">
-                                    Exporte os dados de presença para Excel
-                                </p>
-                                <a href="/exportar/presenca" class="btn btn-success w-100">
-                                    <i class="bi bi-download"></i> Exportar
-                                </a>
-                            </div>
-                        </div>
-                    </div>
-
-                {% elif tipo == "sindicante" %}
-                    <!-- SINDICANTE: Cards específicos -->
-                    <div class="col-md-4">
-                        <div class="card shadow-sm h-100 border-primary">
-                            <div class="card-body text-center">
-                                <i class="bi bi-people-fill fs-1 text-primary"></i>
-                                <h5 class="mt-2">Obreiros</h5>
-                                <p class="text-muted small">
-                                    Consulte o quadro de obreiros da loja
-                                </p>
-                                <a href="/obreiros" class="btn btn-primary w-100">
-                                    <i class="bi bi-eye"></i> Ver Obreiros
-                                </a>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="col-md-4">
-                        <div class="card shadow-sm h-100 border-success">
-                            <div class="card-body text-center">
-                                <i class="bi bi-calendar-event fs-1 text-success"></i>
-                                <h5 class="mt-2">Reuniões</h5>
-                                <p class="text-muted small">
-                                    Acompanhe as reuniões agendadas
-                                </p>
-                                <div class="d-grid gap-2">
-                                    <a href="/reunioes" class="btn btn-success">
-                                        <i class="bi bi-list"></i> Ver Reuniões
-                                    </a>
-                                    <a href="/reunioes/calendario" class="btn btn-outline-success btn-sm">
-                                        <i class="bi bi-calendar"></i> Calendário
-                                    </a>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="col-md-4">
-                        <div class="card shadow-sm h-100 border-warning">
-                            <div class="card-body text-center">
-                                <i class="bi bi-person-badge fs-1 text-warning"></i>
-                                <h5 class="mt-2">Sindicâncias</h5>
-                                <p class="text-muted small">
-                                    Gerencie seus pareceres de candidatos
-                                </p>
-                                <a href="/minhas_sindicancias" class="btn btn-warning w-100">
-                                    <i class="bi bi-list-check"></i> Meus Pareceres
-                                </a>
-                            </div>
-                        </div>
-                    </div>
-
-                {% else %}
-                    <!-- OBREIRO: Apenas cards de Obreiros e Reuniões -->
-                    <div class="col-md-6">
-                        <div class="card shadow-sm h-100 border-primary">
-                            <div class="card-body text-center">
-                                <i class="bi bi-people-fill fs-1 text-primary"></i>
-                                <h5 class="mt-2">Obreiros</h5>
-                                <p class="text-muted small">
-                                    Consulte o quadro de obreiros da loja
-                                </p>
-                                <a href="/obreiros" class="btn btn-primary w-100">
-                                    <i class="bi bi-eye"></i> Ver Obreiros
-                                </a>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="col-md-6">
-                        <div class="card shadow-sm h-100 border-success">
-                            <div class="card-body text-center">
-                                <i class="bi bi-calendar-event fs-1 text-success"></i>
-                                <h5 class="mt-2">Reuniões</h5>
-                                <p class="text-muted small">
-                                    Acompanhe as reuniões agendadas
-                                </p>
-                                <div class="d-grid gap-2">
-                                    <a href="/reunioes" class="btn btn-success">
-                                        <i class="bi bi-list"></i> Ver Reuniões
-                                    </a>
-                                    <a href="/reunioes/calendario" class="btn btn-outline-success btn-sm">
-                                        <i class="bi bi-calendar"></i> Calendário
-                                    </a>
-                                </div>
+                                <p class="text-muted small">Exporte os dados de presença para Excel</p>
+                                <a href="/exportar/presenca" class="btn btn-success btn-sm w-100">Exportar</a>
                             </div>
                         </div>
                     </div>
                 {% endif %}
             </div>
 
-            <!-- ========== ESTATÍSTICAS DE OBREIROS E REUNIÕES (apenas admin) ========== -->
+            <!-- ========== ESTATÍSTICAS DE REUNIÕES (full‑width) ========== -->
             {% if tipo == "admin" %}
             <div class="row mt-4">
-                <div class="col-md-6">
+                <div class="col-md-12">
                     <div class="card shadow-sm">
                         <div class="card-header bg-dark text-white">
-                            <h5 class="mb-0">
-                                <i class="bi bi-bar-chart"></i> 
-                                Estatísticas do Quadro de Obreiros
-                            </h5>
-                        </div>
-                        <div class="card-body">
-                            <div class="row text-center">
-                                <div class="col-3">
-                                    <div class="p-2">
-                                        <h4 class="text-primary mb-0">{{ total_obreiros or 0 }}</h4>
-                                        <small class="text-muted">Total</small>
-                                    </div>
-                                </div>
-                                <div class="col-3">
-                                    <div class="p-2">
-                                        <h4 class="text-success mb-0">{{ mestres or 0 }}</h4>
-                                        <small class="text-muted">Mestres</small>
-                                    </div>
-                                </div>
-                                <div class="col-3">
-                                    <div class="p-2">
-                                        <h4 class="text-info mb-0">{{ companheiros or 0 }}</h4>
-                                        <small class="text-muted">Companheiros</small>
-                                    </div>
-                                </div>
-                                <div class="col-3">
-                                    <div class="p-2">
-                                        <h4 class="text-secondary mb-0">{{ aprendizes or 0 }}</h4>
-                                        <small class="text-muted">Aprendizes</small>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="col-md-6">
-                    <div class="card shadow-sm">
-                        <div class="card-header bg-dark text-white">
-                            <h5 class="mb-0">
-                                <i class="bi bi-calendar-check"></i> 
-                                Estatísticas de Reuniões
-                            </h5>
+                            <h5 class="mb-0"><i class="bi bi-calendar-check"></i> Estatísticas de Reuniões</h5>
                         </div>
                         <div class="card-body">
                             <div class="row text-center">
@@ -425,13 +247,9 @@
                                         <div>
                                             <strong>{{ r.titulo }}</strong>
                                             <br>
-                                            <small class="text-muted">
-                                                {{ r.data[:10] }} às {{ r.hora_inicio[:5] }}
-                                            </small>
+                                            <small class="text-muted">{{ r.data[:10] }} às {{ r.hora_inicio[:5] }}</small>
                                         </div>
-                                        <a href="/reunioes/{{ r.id }}" class="btn btn-sm btn-outline-primary">
-                                            <i class="bi bi-eye"></i>
-                                        </a>
+                                        <a href="/reunioes/{{ r.id }}" class="btn btn-sm btn-outline-primary"><i class="bi bi-eye"></i></a>
                                     </div>
                                 </div>
                                 {% endfor %}
@@ -443,7 +261,48 @@
             </div>
             {% endif %}
 
-            <!-- ========== SEÇÃO DE SINDICÂNCIA (agrupada na parte inferior, apenas admin) ========== -->
+            <!-- ========== ESTATÍSTICAS DO QUADRO DE OBREIROS (full‑width) ========== -->
+            {% if tipo == "admin" %}
+            <div class="row mt-4">
+                <div class="col-md-12">
+                    <div class="card shadow-sm">
+                        <div class="card-header bg-dark text-white">
+                            <h5 class="mb-0"><i class="bi bi-bar-chart"></i> Estatísticas do Quadro de Obreiros</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="row text-center">
+                                <div class="col-3">
+                                    <div class="p-2">
+                                        <h4 class="text-primary mb-0">{{ total_obreiros or 0 }}</h4>
+                                        <small class="text-muted">Total</small>
+                                    </div>
+                                </div>
+                                <div class="col-3">
+                                    <div class="p-2">
+                                        <h4 class="text-success mb-0">{{ mestres or 0 }}</h4>
+                                        <small class="text-muted">Mestres</small>
+                                    </div>
+                                </div>
+                                <div class="col-3">
+                                    <div class="p-2">
+                                        <h4 class="text-info mb-0">{{ companheiros or 0 }}</h4>
+                                        <small class="text-muted">Companheiros</small>
+                                    </div>
+                                </div>
+                                <div class="col-3">
+                                    <div class="p-2">
+                                        <h4 class="text-secondary mb-0">{{ aprendizes or 0 }}</h4>
+                                        <small class="text-muted">Aprendizes</small>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- ========== SEÇÃO DE SINDICÂNCIA (apenas admin) ========== -->
             {% if tipo == "admin" %}
             <div class="mt-5">
                 <hr class="my-4">
@@ -456,61 +315,38 @@
                     <div class="card stat-card shadow h-100">
                         <div class="card-body">
                             <div class="d-flex justify-content-between align-items-center">
-                                <div>
-                                    <h6 class="text-muted mb-2">Total de Candidatos</h6>
-                                    <h2 class="mb-0">{{ total_candidatos }}</h2>
-                                </div>
-                                <div class="bg-primary bg-opacity-10 p-3 rounded-circle">
-                                    <i class="bi bi-people-fill text-primary fs-3"></i>
-                                </div>
+                                <div><h6 class="text-muted mb-2">Total de Candidatos</h6><h2 class="mb-0">{{ total_candidatos }}</h2></div>
+                                <div class="bg-primary bg-opacity-10 p-3 rounded-circle"><i class="bi bi-people-fill text-primary fs-3"></i></div>
                             </div>
                         </div>
                     </div>
                 </div>
-                
                 <div class="col-md-3">
                     <div class="card stat-card shadow h-100 border-warning">
                         <div class="card-body">
                             <div class="d-flex justify-content-between align-items-center">
-                                <div>
-                                    <h6 class="text-muted mb-2">Em Análise</h6>
-                                    <h2 class="mb-0 text-warning">{{ em_analise }}</h2>
-                                </div>
-                                <div class="bg-warning bg-opacity-10 p-3 rounded-circle">
-                                    <i class="bi bi-hourglass-split text-warning fs-3"></i>
-                                </div>
+                                <div><h6 class="text-muted mb-2">Em Análise</h6><h2 class="mb-0 text-warning">{{ em_analise }}</h2></div>
+                                <div class="bg-warning bg-opacity-10 p-3 rounded-circle"><i class="bi bi-hourglass-split text-warning fs-3"></i></div>
                             </div>
                         </div>
                     </div>
                 </div>
-                
                 <div class="col-md-3">
                     <div class="card stat-card shadow h-100 border-success">
                         <div class="card-body">
                             <div class="d-flex justify-content-between align-items-center">
-                                <div>
-                                    <h6 class="text-muted mb-2">Aprovados</h6>
-                                    <h2 class="mb-0 text-success">{{ aprovados }}</h2>
-                                </div>
-                                <div class="bg-success bg-opacity-10 p-3 rounded-circle">
-                                    <i class="bi bi-check-circle-fill text-success fs-3"></i>
-                                </div>
+                                <div><h6 class="text-muted mb-2">Aprovados</h6><h2 class="mb-0 text-success">{{ aprovados }}</h2></div>
+                                <div class="bg-success bg-opacity-10 p-3 rounded-circle"><i class="bi bi-check-circle-fill text-success fs-3"></i></div>
                             </div>
                         </div>
                     </div>
                 </div>
-                
                 <div class="col-md-3">
                     <div class="card stat-card shadow h-100 border-danger">
                         <div class="card-body">
                             <div class="d-flex justify-content-between align-items-center">
-                                <div>
-                                    <h6 class="text-muted mb-2">Reprovados</h6>
-                                    <h2 class="mb-0 text-danger">{{ reprovados }}</h2>
-                                </div>
-                                <div class="bg-danger bg-opacity-10 p-3 rounded-circle">
-                                    <i class="bi bi-x-circle-fill text-danger fs-3"></i>
-                                </div>
+                                <div><h6 class="text-muted mb-2">Reprovados</h6><h2 class="mb-0 text-danger">{{ reprovados }}</h2></div>
+                                <div class="bg-danger bg-opacity-10 p-3 rounded-circle"><i class="bi bi-x-circle-fill text-danger fs-3"></i></div>
                             </div>
                         </div>
                     </div>
@@ -522,94 +358,58 @@
                 <div class="col-md-6">
                     <div class="card alert-card shadow border-warning">
                         <div class="card-header bg-warning bg-opacity-10 border-warning">
-                            <h5 class="mb-0">
-                                <i class="bi bi-clock-history"></i> Pareceres Pendentes
-                                <span class="badge bg-dark ms-2">{{ pendentes|length }}</span>
-                            </h5>
+                            <h5 class="mb-0"><i class="bi bi-clock-history"></i> Pareceres Pendentes <span class="badge bg-dark ms-2">{{ pendentes|length }}</span></h5>
                         </div>
                         <div class="card-body">
                             {% if pendentes %}
                                 <div class="list-group list-group-flush">
                                     {% for p in pendentes %}
-                                        <div class="list-group-item px-0">
-                                            <div class="d-flex justify-content-between align-items-center">
-                                                <div>
-                                                    <strong>{{ p.candidato.nome }}</strong>
-                                                    <br>
-                                                    <small class="text-muted">
-                                                        Aguardando: {{ p.faltam | join(", ") }}
-                                                    </small>
-                                                </div>
-                                                <span class="badge bg-warning text-dark">
-                                                    {{ p.faltam|length }} pendente(s)
-                                                </span>
-                                            </div>
+                                    <div class="list-group-item px-0">
+                                        <div class="d-flex justify-content-between align-items-center">
+                                            <div><strong>{{ p.candidato.nome }}</strong><br><small class="text-muted">Aguardando: {{ p.faltam | join(", ") }}</small></div>
+                                            <span class="badge bg-warning text-dark">{{ p.faltam|length }} pendente(s)</span>
                                         </div>
+                                    </div>
                                     {% endfor %}
                                 </div>
                             {% else %}
-                                <div class="text-center py-4">
-                                    <i class="bi bi-check-circle-fill text-success fs-1"></i>
-                                    <p class="text-success mt-2 mb-0">Todos os pareceres estão em dia!</p>
-                                </div>
+                                <div class="text-center py-4"><i class="bi bi-check-circle-fill text-success fs-1"></i><p class="text-success mt-2 mb-0">Todos os pareceres estão em dia!</p></div>
                             {% endif %}
                         </div>
                     </div>
                 </div>
-
                 <div class="col-md-6">
                     <div class="card alert-card shadow border-danger">
                         <div class="card-header bg-danger bg-opacity-10 border-danger">
-                            <h5 class="mb-0">
-                                <i class="bi bi-exclamation-triangle"></i> Prazo Vencido (>7 dias)
-                                <span class="badge bg-dark ms-2">{{ prazo_vencido|length }}</span>
-                            </h5>
+                            <h5 class="mb-0"><i class="bi bi-exclamation-triangle"></i> Prazo Vencido (>7 dias) <span class="badge bg-dark ms-2">{{ prazo_vencido|length }}</span></h5>
                         </div>
                         <div class="card-body">
                             {% if prazo_vencido %}
                                 <div class="list-group list-group-flush">
                                     {% for c in prazo_vencido %}
-                                        <div class="list-group-item px-0">
-                                            <div class="d-flex justify-content-between align-items-center">
-                                                <div>
-                                                    <strong>{{ c.nome }}</strong>
-                                                    <br>
-                                                    <small class="text-muted">
-                                                        Aberto em: {{ c.data_criacao[:10] if c.data_criacao else 'N/A' }}
-                                                    </small>
-                                                </div>
-                                                <a href="/candidatos" class="btn btn-sm btn-outline-danger">
-                                                    Verificar
-                                                </a>
-                                            </div>
+                                    <div class="list-group-item px-0">
+                                        <div class="d-flex justify-content-between align-items-center">
+                                            <div><strong>{{ c.nome }}</strong><br><small class="text-muted">Aberto em: {{ c.data_criacao[:10] if c.data_criacao else 'N/A' }}</small></div>
+                                            <a href="/candidatos" class="btn btn-sm btn-outline-danger">Verificar</a>
                                         </div>
+                                    </div>
                                     {% endfor %}
                                 </div>
                             {% else %}
-                                <div class="text-center py-4">
-                                    <i class="bi bi-emoji-smile text-success fs-1"></i>
-                                    <p class="text-success mt-2 mb-0">Nenhum processo atrasado!</p>
-                                </div>
+                                <div class="text-center py-4"><i class="bi bi-emoji-smile text-success fs-1"></i><p class="text-success mt-2 mb-0">Nenhum processo atrasado!</p></div>
                             {% endif %}
                         </div>
                     </div>
                 </div>
             </div>
 
-            <!-- Lista de Sindicantes -->
+            <!-- Lista de Sindicantes Ativos -->
             <div class="card shadow mb-4">
                 <div class="card-header bg-primary bg-opacity-10 d-flex justify-content-between align-items-center">
-                    <h5 class="mb-0">
-                        <i class="bi bi-people"></i> Sindicantes Ativos
-                        <span class="badge bg-success ms-2">{{ total_sindicantes }}</span>
-                    </h5>
+                    <h5 class="mb-0"><i class="bi bi-people"></i> Sindicantes Ativos <span class="badge bg-success ms-2">{{ total_sindicantes }}</span></h5>
                     <div>
-                        <a href="/lojas" class="btn btn-sm btn-outline-info me-2">
-                            <i class="bi bi-building"></i> Lojas
-                        </a>
-                        <a href="/sindicantes" class="btn btn-sm btn-outline-primary">
-                            <i class="bi bi-gear"></i> Gerenciar
-                        </a>
+                        <a href="/lojas" class="btn btn-sm btn-outline-info me-2"><i class="bi bi-building"></i> Lojas</a>
+                        <a href="/sindicantes" class="btn btn-sm btn-outline-primary"><i class="bi bi-gear"></i> Gerenciar</a>
                     </div>
                 </div>
                 <div class="card-body">
@@ -617,27 +417,13 @@
                         <div class="table-responsive">
                             <table class="table table-hover table-sindicantes">
                                 <thead class="table-light">
-                                    <tr>
-                                        <th>Nome</th>
-                                        <th>Usuário</th>
-                                        <th>Loja</th>
-                                        <th>CIM</th>
-                                    </thead>
+                                    <tr><th>Nome</th><th>Usuário</th><th>Loja</th><th>CIM</th> </thead>
                                 <tbody>
                                     {% for s in sindicantes %}
                                     <tr>
-                                        <td>
-                                            <i class="bi bi-person-circle"></i> 
-                                            {{ s.nome_completo or s.usuario }}
-                                        </td>
+                                        <td><i class="bi bi-person-circle"></i> {{ s.nome_completo or s.usuario }}</td>
                                         <td><small>@{{ s.usuario }}</small></td>
-                                        <td>
-                                            {% if s.loja_nome %}
-                                                <small>{{ s.loja_nome }} - {{ s.loja_numero or '' }}</small>
-                                            {% else %}
-                                                <small class="text-muted">Não informado</small>
-                                            {% endif %}
-                                        </td>
+                                        <td>{% if s.loja_nome %}<small>{{ s.loja_nome }} - {{ s.loja_numero or '' }}</small>{% else %}<small class="text-muted">Não informado</small>{% endif %}</td>
                                         <td><small>{{ s.cim_numero or '-' }}</small></td>
                                     </tr>
                                     {% endfor %}
@@ -645,13 +431,7 @@
                             </table>
                         </div>
                     {% else %}
-                        <div class="text-center py-4">
-                            <i class="bi bi-people text-muted fs-1"></i>
-                            <p class="text-muted mt-2">Nenhum sindicante ativo</p>
-                            <a href="/sindicantes" class="btn btn-primary btn-sm">
-                                <i class="bi bi-plus-circle"></i> Adicionar Sindicante
-                            </a>
-                        </div>
+                        <div class="text-center py-4"><i class="bi bi-people text-muted fs-1"></i><p class="text-muted mt-2">Nenhum sindicante ativo</p><a href="/sindicantes" class="btn btn-primary btn-sm"><i class="bi bi-plus-circle"></i> Adicionar Sindicante</a></div>
                     {% endif %}
                 </div>
             </div>
@@ -659,61 +439,25 @@
             <!-- Card de Pareceres Conclusivos Recentes -->
             <div class="card shadow mb-4">
                 <div class="card-header bg-dark text-white d-flex justify-content-between align-items-center">
-                    <h5 class="mb-0">
-                        <i class="bi bi-file-text"></i> 
-                        Pareceres Conclusivos Recentes
-                        <span class="badge bg-light text-dark ms-2">{{ pareceres_conclusivos|length }}</span>
-                    </h5>
-                    <a href="/candidatos" class="btn btn-sm btn-outline-light">
-                        <i class="bi bi-eye"></i> Ver todos
-                    </a>
+                    <h5 class="mb-0"><i class="bi bi-file-text"></i> Pareceres Conclusivos Recentes <span class="badge bg-light text-dark ms-2">{{ pareceres_conclusivos|length }}</span></h5>
+                    <a href="/candidatos" class="btn btn-sm btn-outline-light"><i class="bi bi-eye"></i> Ver todos</a>
                 </div>
                 <div class="card-body">
                     {% if pareceres_conclusivos and pareceres_conclusivos|length > 0 %}
                         <div class="table-responsive">
                             <table class="table table-hover table-sm">
-                                <thead class="table-light">
-                                    <tr>
-                                        <th>Candidato</th>
-                                        <th>Sindicante</th>
-                                        <th>Conclusão</th>
-                                        <th>Data</th>
-                                        <th style="width: 100px;">Ações</th>
-                                    </thead>
+                                <thead class="table-light"> <tr><th>Candidato</th><th>Sindicante</th><th>Conclusão</th><th>Data</th><th style="width:100px">Ações</th></tr> </thead>
                                 <tbody>
                                     {% for pc in pareceres_conclusivos %}
                                     <tr>
                                         <td><strong>{{ pc.candidato_nome }}</strong></td>
-                                        <td>
-                                            <i class="bi bi-person-circle"></i> 
-                                            {{ pc.sindicante_nome or pc.sindicante }}
-                                        </td>
-                                        <td>
-                                            {% if pc.conclusao == "APROVADO" %}
-                                                <span class="badge bg-success">APROVADO</span>
-                                            {% else %}
-                                                <span class="badge bg-danger">REPROVADO</span>
-                                            {% endif %}
-                                        </td>
-                                        <td>
-                                            <small class="text-muted">
-                                                <i class="bi bi-calendar"></i> 
-                                                {{ pc.data_parecer }}
-                                            </small>
-                                        </td>
+                                        <td><i class="bi bi-person-circle"></i> {{ pc.sindicante_nome or pc.sindicante }}</td>
+                                        <td>{% if pc.conclusao == "APROVADO" %}<span class="badge bg-success">APROVADO</span>{% else %}<span class="badge bg-danger">REPROVADO</span>{% endif %}</td>
+                                        <td><small class="text-muted">{{ pc.data_parecer }}</small></td>
                                         <td>
                                             <div class="btn-group btn-group-sm">
-                                                <a href="/visualizar_parecer_conclusivo/{{ pc.candidato_id }}?sindicante={{ pc.sindicante }}" 
-                                                   class="btn btn-outline-primary"
-                                                   title="Visualizar"
-                                                   target="_blank">
-                                                    <i class="bi bi-eye"></i>
-                                                </a>
-                                                <a href="/baixar_parecer_conclusivo/{{ pc.candidato_id }}?sindicante={{ pc.sindicante }}" 
-                                                   class="btn btn-outline-success"
-                                                   title="Baixar PDF">
-                                                    <i class="bi bi-download"></i>
-                                                </a>
+                                                <a href="/visualizar_parecer_conclusivo/{{ pc.candidato_id }}?sindicante={{ pc.sindicante }}" class="btn btn-outline-primary" title="Visualizar" target="_blank"><i class="bi bi-eye"></i></a>
+                                                <a href="/baixar_parecer_conclusivo/{{ pc.candidato_id }}?sindicante={{ pc.sindicante }}" class="btn btn-outline-success" title="Baixar PDF"><i class="bi bi-download"></i></a>
                                             </div>
                                         </td>
                                     </tr>
@@ -721,56 +465,21 @@
                                 </tbody>
                             </table>
                         </div>
-                        
-                        <!-- Estatísticas rápidas dos pareceres conclusivos -->
                         {% set aprovados_count = pareceres_conclusivos|selectattr('conclusao', 'equalto', 'APROVADO')|list|length %}
                         {% set reprovados_count = pareceres_conclusivos|selectattr('conclusao', 'equalto', 'REPROVADO')|list|length %}
-                        
                         <div class="row mt-3 g-2">
-                            <div class="col-md-4">
-                                <div class="card bg-success bg-opacity-10">
-                                    <div class="card-body text-center py-2">
-                                        <h6 class="mb-0 text-success">
-                                            <i class="bi bi-check-circle"></i> 
-                                            Aprovados: {{ aprovados_count }}
-                                        </h6>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="col-md-4">
-                                <div class="card bg-danger bg-opacity-10">
-                                    <div class="card-body text-center py-2">
-                                        <h6 class="mb-0 text-danger">
-                                            <i class="bi bi-x-circle"></i> 
-                                            Reprovados: {{ reprovados_count }}
-                                        </h6>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="col-md-4">
-                                <div class="card bg-info bg-opacity-10">
-                                    <div class="card-body text-center py-2">
-                                        <h6 class="mb-0 text-info">
-                                            <i class="bi bi-file-text"></i> 
-                                            Total: {{ pareceres_conclusivos|length }}
-                                        </h6>
-                                    </div>
-                                </div>
-                            </div>
+                            <div class="col-md-4"><div class="card bg-success bg-opacity-10"><div class="card-body text-center py-2"><h6 class="mb-0 text-success"><i class="bi bi-check-circle"></i> Aprovados: {{ aprovados_count }}</h6></div></div></div>
+                            <div class="col-md-4"><div class="card bg-danger bg-opacity-10"><div class="card-body text-center py-2"><h6 class="mb-0 text-danger"><i class="bi bi-x-circle"></i> Reprovados: {{ reprovados_count }}</h6></div></div></div>
+                            <div class="col-md-4"><div class="card bg-info bg-opacity-10"><div class="card-body text-center py-2"><h6 class="mb-0 text-info"><i class="bi bi-file-text"></i> Total: {{ pareceres_conclusivos|length }}</h6></div></div></div>
                         </div>
                     {% else %}
-                        <div class="text-center py-4">
-                            <i class="bi bi-file-text text-muted fs-1"></i>
-                            <p class="text-muted mt-2">Nenhum parecer conclusivo emitido ainda.</p>
-                            <p class="small text-muted">Os pareceres conclusivos aparecerão aqui quando os sindicantes preencherem.</p>
-                        </div>
+                        <div class="text-center py-4"><i class="bi bi-file-text text-muted fs-1"></i><p class="text-muted mt-2">Nenhum parecer conclusivo emitido ainda.</p><p class="small text-muted">Os pareceres conclusivos aparecerão aqui quando os sindicantes preencherem.</p></div>
                     {% endif %}
                 </div>
             </div>
             {% endif %}
         </div>
     </div>
-
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>

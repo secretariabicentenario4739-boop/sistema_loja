@@ -1,10 +1,27 @@
-from flask import Flask, render_template, request, redirect, session, flash, jsonify, send_file
+from flask import Flask, render_template, request, redirect, session, flash, jsonify, send_file, after_this_request
 import sqlite3
 from datetime import datetime
 from werkzeug.security import generate_password_hash, check_password_hash
 from functools import wraps
 import os
 import json
+import openpyxl
+from openpyxl.styles import Font, Alignment, PatternFill
+from openpyxl.utils import get_column_letter
+import shutil
+import tempfile
+from werkzeug.utils import secure_filename
+import os
+
+# Configuração de uploads
+UPLOAD_FOLDER = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'uploads', 'documentos')
+ALLOWED_EXTENSIONS = {'pdf', 'jpg', 'jpeg', 'png', 'gif', 'doc', 'docx', 'xls', 'xlsx', 'txt', 'zip', 'rar'}
+
+# Criar pasta se não existir
+os.makedirs(UPLOAD_FOLDER, exist_ok=True)
+
+def allowed_file(filename):
+    return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
 app = Flask(__name__)
 app.secret_key = os.urandom(24)  # Chave segura aleatória
@@ -54,12 +71,51 @@ def get_db():
     conn.row_factory = sqlite3.Row
     return conn
 
+# =============================
+# FUNÇÃO DE AUDITORIA
+# =============================
+def registrar_log(acao, entidade=None, entidade_id=None, dados_anteriores=None, dados_novos=None):
+    """Registra uma ação no log de auditoria"""
+    if "user_id" not in session:
+        return
+    
+    try:
+        conn = get_db()
+        cursor = conn.cursor()
+        
+        if dados_anteriores and isinstance(dados_anteriores, dict):
+            dados_anteriores = json.dumps(dados_anteriores, ensure_ascii=False, default=str)
+        if dados_novos and isinstance(dados_novos, dict):
+            dados_novos = json.dumps(dados_novos, ensure_ascii=False, default=str)
+        
+        cursor.execute("""
+            INSERT INTO logs_auditoria 
+            (usuario_id, usuario_nome, acao, entidade, entidade_id, dados_anteriores, dados_novos, ip, user_agent)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+        """, (
+            session["user_id"],
+            session.get("nome_completo", session["usuario"]),
+            acao,
+            entidade,
+            entidade_id,
+            dados_anteriores,
+            dados_novos,
+            request.remote_addr,
+            request.headers.get('User-Agent', '')[:500]
+        ))
+        conn.commit()
+        conn.close()
+    except Exception as e:
+        print(f"Erro ao registrar log: {e}")
+
+# =============================
+# INICIALIZAÇÃO DO BANCO
+# =============================
 def init_db():
     """Inicializa o banco de dados com todas as tabelas"""
     conn = get_db()
     cursor = conn.cursor()
 
-    # ==================== TABELAS EXISTENTES ====================
     # Candidatos
     cursor.execute("""
     CREATE TABLE IF NOT EXISTS candidatos (
@@ -359,6 +415,92 @@ def init_db():
     )
     """)
 
+    # Comunicados
+    cursor.execute("""
+    CREATE TABLE IF NOT EXISTS comunicados (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        titulo TEXT NOT NULL,
+        conteudo TEXT NOT NULL,
+        tipo TEXT DEFAULT 'informativo',
+        prioridade TEXT DEFAULT 'normal',
+        data_inicio DATE NOT NULL,
+        data_fim DATE,
+        ativo INTEGER DEFAULT 1,
+        criado_por INTEGER NOT NULL,
+        data_criacao TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (criado_por) REFERENCES usuarios (id)
+    )
+    """)
+
+    cursor.execute("""
+    CREATE TABLE IF NOT EXISTS visualizacoes_comunicado (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        comunicado_id INTEGER NOT NULL,
+        obreiro_id INTEGER NOT NULL,
+        data_visualizacao TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (comunicado_id) REFERENCES comunicados (id) ON DELETE CASCADE,
+        FOREIGN KEY (obreiro_id) REFERENCES usuarios (id) ON DELETE CASCADE,
+        UNIQUE(comunicado_id, obreiro_id)
+    )
+    """)
+
+    # Email settings
+    cursor.execute("""
+    CREATE TABLE IF NOT EXISTS email_settings (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        server TEXT NOT NULL,
+        port INTEGER NOT NULL,
+        use_tls INTEGER DEFAULT 1,
+        username TEXT NOT NULL,
+        password TEXT NOT NULL,
+        sender TEXT NOT NULL,
+        sender_name TEXT,
+        active INTEGER DEFAULT 1
+    )
+    """)
+
+    cursor.execute("""
+    CREATE TABLE IF NOT EXISTS notificacoes_log (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        destinatario TEXT NOT NULL,
+        assunto TEXT NOT NULL,
+        corpo TEXT NOT NULL,
+        tipo TEXT,
+        status TEXT,
+        data_envio TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        erro TEXT
+    )
+    """)
+
+    cursor.execute("""
+    CREATE TABLE IF NOT EXISTS preferencias_notificacao (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        obreiro_id INTEGER NOT NULL,
+        lembrete_reuniao INTEGER DEFAULT 1,
+        alerta_ausencia INTEGER DEFAULT 1,
+        email TEXT,
+        FOREIGN KEY (obreiro_id) REFERENCES usuarios (id)
+    )
+    """)
+
+    # LOGS DE AUDITORIA
+    cursor.execute("""
+    CREATE TABLE IF NOT EXISTS logs_auditoria (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        usuario_id INTEGER NOT NULL,
+        usuario_nome TEXT NOT NULL,
+        acao TEXT NOT NULL,
+        entidade TEXT,
+        entidade_id INTEGER,
+        dados_anteriores TEXT,
+        dados_novos TEXT,
+        ip TEXT,
+        user_agent TEXT,
+        data_hora TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (usuario_id) REFERENCES usuarios (id)
+    )
+    """)
+
     # ==================== DADOS PADRÃO ====================
     # Loja padrão
     cursor.execute("SELECT COUNT(*) as count FROM lojas")
@@ -505,6 +647,7 @@ def login():
             session["loja_numero"] = user["loja_numero"] or ""
             session["loja_orient"] = user["loja_orient"] or ""
 
+            registrar_log("login", "usuarios", user["id"], dados_novos={"usuario": usuario})
             flash(f"Bem-vindo, {user['nome_completo'] or user['usuario']}!", "success")
             return redirect("/dashboard")
         else:
@@ -517,6 +660,7 @@ def login():
 # =============================
 @app.route("/logout")
 def logout():
+    registrar_log("logout", "usuarios", session.get("user_id"))
     session.clear()
     flash("Logout realizado com sucesso", "info")
     return redirect("/")
@@ -614,6 +758,7 @@ def dashboard():
         """)
         proximas_reunioes = cursor.fetchall()
         proxima_reuniao = proximas_reunioes[0] if proximas_reunioes else None
+
     else:
         em_analise = 0
         aprovados = 0
@@ -682,6 +827,10 @@ def perfil():
         loja_numero = request.form.get("loja_numero", "")
         loja_orient = request.form.get("loja_orient", "")
 
+        # Buscar dados antigos
+        cursor.execute("SELECT * FROM usuarios WHERE id = ?", (session["user_id"],))
+        dados_antigos = dict(cursor.fetchone())
+
         cursor.execute("""
             UPDATE usuarios 
             SET nome_completo = ?, cim_numero = ?, loja_nome = ?, loja_numero = ?, loja_orient = ?
@@ -695,6 +844,10 @@ def perfil():
         session["loja_nome"] = loja_nome
         session["loja_numero"] = loja_numero
         session["loja_orient"] = loja_orient
+
+        registrar_log("editar", "perfil", session["user_id"], 
+                     dados_anteriores=dados_antigos,
+                     dados_novos={"nome_completo": nome_completo, "loja_nome": loja_nome})
 
         flash("Perfil atualizado com sucesso!", "success")
 
@@ -714,22 +867,65 @@ def perfil():
 def listar_obreiros():
     conn = get_db()
     cursor = conn.cursor()
-    cursor.execute("""
+    
+    nome = request.args.get('nome', '').strip()
+    grau = request.args.get('grau', '')
+    cargo = request.args.get('cargo', '')
+    loja = request.args.get('loja', '')
+    status = request.args.get('status', '')
+
+    query = """
         SELECT u.*, l.nome as loja_nome, 
                CASE 
                    WHEN u.grau_atual = 1 THEN 'Aprendiz'
                    WHEN u.grau_atual = 2 THEN 'Companheiro'
                    WHEN u.grau_atual = 3 THEN 'Mestre'
                    ELSE 'Não informado'
-               END as grau_descricao
+               END as grau_descricao,
+               (SELECT COUNT(*) FROM ocupacao_cargos oc WHERE oc.obreiro_id = u.id AND oc.ativo = 1) as total_cargos
         FROM usuarios u
         LEFT JOIN lojas l ON u.loja_nome = l.nome
-        WHERE u.ativo = 1
-        ORDER BY u.nome_completo
-    """)
+        WHERE 1=1
+    """
+    params = []
+
+    if nome:
+        query += " AND (u.nome_completo LIKE ? OR u.usuario LIKE ?)"
+        params.extend([f"%{nome}%", f"%{nome}%"])
+    if grau:
+        query += " AND u.grau_atual = ?"
+        params.append(grau)
+    if cargo:
+        query += " AND EXISTS (SELECT 1 FROM ocupacao_cargos oc WHERE oc.obreiro_id = u.id AND oc.cargo_id = ? AND oc.ativo = 1)"
+        params.append(cargo)
+    if loja:
+        query += " AND u.loja_nome = ?"
+        params.append(loja)
+    if status:
+        query += " AND u.ativo = ?"
+        params.append(status)
+    else:
+        query += " AND u.ativo = 1"
+
+    query += " ORDER BY u.nome_completo"
+
+    cursor.execute(query, params)
     obreiros = cursor.fetchall()
+
+    cursor.execute("SELECT DISTINCT grau_atual FROM usuarios WHERE grau_atual IS NOT NULL ORDER BY grau_atual")
+    graus = cursor.fetchall()
+    cursor.execute("SELECT id, nome FROM cargos WHERE ativo = 1 ORDER BY ordem")
+    cargos_list = cursor.fetchall()
+    cursor.execute("SELECT DISTINCT loja_nome FROM usuarios WHERE loja_nome IS NOT NULL ORDER BY loja_nome")
+    lojas = cursor.fetchall()
+
     conn.close()
-    return render_template("obreiros/lista.html", obreiros=obreiros)
+    return render_template("obreiros/lista.html", 
+                          obreiros=obreiros,
+                          graus=graus,
+                          cargos=cargos_list,
+                          lojas=lojas,
+                          filtros={'nome': nome, 'grau': grau, 'cargo': cargo, 'loja': loja, 'status': status})
 
 @app.route("/obreiros/novo", methods=["GET", "POST"])
 @admin_required
@@ -777,14 +973,18 @@ def novo_obreiro():
                       loja_nome, loja_numero, loja_orient))
 
                 conn.commit()
+                obreiro_id = cursor.lastrowid
 
                 if data_iniciacao:
                     cursor.execute("""
                         INSERT INTO historico_graus (obreiro_id, grau, data, observacao)
-                        VALUES ((SELECT id FROM usuarios WHERE usuario = ?), ?, ?, ?)
-                    """, (usuario, 1, data_iniciacao, "Iniciação"))
+                        VALUES (?, ?, ?, ?)
+                    """, (obreiro_id, 1, data_iniciacao, "Iniciação"))
 
                 conn.commit()
+                
+                registrar_log("criar", "obreiro", obreiro_id, 
+                             dados_novos={"nome": nome_completo, "usuario": usuario})
                 flash(f"Obreiro '{nome_completo}' adicionado com sucesso!", "success")
                 return redirect("/obreiros")
 
@@ -867,6 +1067,10 @@ def editar_obreiro(id):
         loja_numero = request.form.get("loja_numero")
         loja_orient = request.form.get("loja_orient")
 
+        # Buscar dados antigos
+        cursor.execute("SELECT * FROM usuarios WHERE id = ?", (id,))
+        dados_antigos = dict(cursor.fetchone())
+
         if session["tipo"] == "admin":
             tipo = request.form.get("tipo")
             grau_atual = request.form.get("grau_atual")
@@ -906,6 +1110,10 @@ def editar_obreiro(id):
             session["loja_numero"] = loja_numero
             session["loja_orient"] = loja_orient
 
+        registrar_log("editar", "obreiro", id, 
+                     dados_anteriores=dados_antigos,
+                     dados_novos={"nome": nome_completo, "email": email, "telefone": telefone})
+
         flash("Perfil atualizado com sucesso!", "success")
         return redirect(f"/obreiros/{id}")
 
@@ -935,6 +1143,8 @@ def atribuir_cargo(id):
         VALUES (?, ?, ?, ?, 1)
     """, (id, cargo_id, data_inicio, gestao))
     conn.commit()
+    
+    registrar_log("atribuir_cargo", "cargo", cargo_id, dados_novos={"obreiro_id": id, "cargo_id": cargo_id})
     conn.close()
     flash("Cargo atribuído com sucesso!", "success")
     return redirect(f"/obreiros/{id}")
@@ -944,11 +1154,15 @@ def atribuir_cargo(id):
 def remover_cargo(id):
     conn = get_db()
     cursor = conn.cursor()
-    cursor.execute("SELECT obreiro_id FROM ocupacao_cargos WHERE id = ?", (id,))
+    cursor.execute("SELECT obreiro_id, cargo_id FROM ocupacao_cargos WHERE id = ?", (id,))
     cargo = cursor.fetchone()
     obreiro_id = cargo["obreiro_id"] if cargo else None
+    cargo_id = cargo["cargo_id"] if cargo else None
+    
     cursor.execute("UPDATE ocupacao_cargos SET ativo = 0 WHERE id = ?", (id,))
     conn.commit()
+    
+    registrar_log("remover_cargo", "cargo", cargo_id, dados_anteriores={"obreiro_id": obreiro_id})
     conn.close()
     flash("Cargo removido com sucesso!", "success")
     return redirect(f"/obreiros/{obreiro_id}")
@@ -968,6 +1182,8 @@ def registrar_grau(id):
     """, (id, grau, data, observacao))
     cursor.execute("UPDATE usuarios SET grau_atual = ? WHERE id = ?", (grau, id))
     conn.commit()
+    
+    registrar_log("registrar_grau", "obreiro", id, dados_novos={"grau": grau, "data": data})
     conn.close()
     flash("Grau registrado com sucesso!", "success")
     return redirect(f"/obreiros/{id}")
@@ -1005,6 +1221,8 @@ def novo_cargo():
                 VALUES (?, ?, ?, ?, ?, 1)
             """, (nome, sigla, ordem, grau_minimo, descricao))
             conn.commit()
+            cargo_id = cursor.lastrowid
+            registrar_log("criar", "cargo", cargo_id, dados_novos={"nome": nome, "sigla": sigla})
             conn.close()
             flash(f"Cargo '{nome}' adicionado com sucesso!", "success")
             return redirect("/cargos")
@@ -1015,6 +1233,7 @@ def novo_cargo():
 def editar_cargo(id):
     conn = get_db()
     cursor = conn.cursor()
+    
     if request.method == "POST":
         nome = request.form.get("nome")
         sigla = request.form.get("sigla")
@@ -1023,12 +1242,18 @@ def editar_cargo(id):
         descricao = request.form.get("descricao")
         ativo = request.form.get("ativo", 1)
 
+        cursor.execute("SELECT * FROM cargos WHERE id = ?", (id,))
+        dados_antigos = dict(cursor.fetchone())
+        
         cursor.execute("""
             UPDATE cargos 
             SET nome = ?, sigla = ?, ordem = ?, grau_minimo = ?, descricao = ?, ativo = ?
             WHERE id = ?
         """, (nome, sigla, ordem, grau_minimo, descricao, ativo, id))
         conn.commit()
+        
+        registrar_log("editar", "cargo", id, dados_anteriores=dados_antigos,
+                     dados_novos={"nome": nome, "sigla": sigla})
         flash("Cargo atualizado com sucesso!", "success")
         return redirect("/cargos")
 
@@ -1045,6 +1270,10 @@ def editar_cargo(id):
 def excluir_cargo(id):
     conn = get_db()
     cursor = conn.cursor()
+    
+    cursor.execute("SELECT * FROM cargos WHERE id = ?", (id,))
+    dados = dict(cursor.fetchone()) if cursor.fetchone() else None
+    
     cursor.execute("SELECT COUNT(*) as total FROM ocupacao_cargos WHERE cargo_id = ?", (id,))
     resultado = cursor.fetchone()
     if resultado and resultado["total"] > 0:
@@ -1052,7 +1281,9 @@ def excluir_cargo(id):
     else:
         cursor.execute("DELETE FROM cargos WHERE id = ?", (id,))
         conn.commit()
+        registrar_log("excluir", "cargo", id, dados_anteriores=dados)
         flash("Cargo excluído com sucesso!", "success")
+    
     conn.close()
     return redirect("/cargos")
 
@@ -1064,7 +1295,15 @@ def excluir_cargo(id):
 def listar_reunioes():
     conn = get_db()
     cursor = conn.cursor()
-    cursor.execute("""
+    
+    data_ini = request.args.get('data_ini', '')
+    data_fim = request.args.get('data_fim', '')
+    tipo = request.args.get('tipo', '')
+    status = request.args.get('status', '')
+    grau = request.args.get('grau', '')
+    local = request.args.get('local', '')
+
+    query = """
         SELECT r.*, l.nome as loja_nome, t.cor,
                COUNT(p.id) as total_presentes,
                (SELECT COUNT(*) FROM presenca WHERE reuniao_id = r.id AND presente = 1) as presentes_confirmados
@@ -1072,12 +1311,48 @@ def listar_reunioes():
         LEFT JOIN lojas l ON r.loja_id = l.id
         LEFT JOIN tipos_reuniao t ON r.tipo = t.nome
         LEFT JOIN presenca p ON r.id = p.reuniao_id
-        GROUP BY r.id
-        ORDER BY r.data DESC, r.hora_inicio DESC
-    """)
+        WHERE 1=1
+    """
+    params = []
+
+    if data_ini:
+        query += " AND r.data >= ?"
+        params.append(data_ini)
+    if data_fim:
+        query += " AND r.data <= ?"
+        params.append(data_fim)
+    if tipo:
+        query += " AND r.tipo = ?"
+        params.append(tipo)
+    if status:
+        query += " AND r.status = ?"
+        params.append(status)
+    if grau:
+        query += " AND r.grau = ?"
+        params.append(grau)
+    if local:
+        query += " AND r.local LIKE ?"
+        params.append(f"%{local}%")
+
+    query += " GROUP BY r.id ORDER BY r.data DESC, r.hora_inicio DESC"
+
+    cursor.execute(query, params)
     reunioes = cursor.fetchall()
+
+    cursor.execute("SELECT DISTINCT tipo FROM reunioes ORDER BY tipo")
+    tipos = cursor.fetchall()
+    cursor.execute("SELECT DISTINCT status FROM reunioes ORDER BY status")
+    status_list = cursor.fetchall()
+    cursor.execute("SELECT DISTINCT grau FROM reunioes WHERE grau IS NOT NULL ORDER BY grau")
+    graus = cursor.fetchall()
+
     conn.close()
-    return render_template("reunioes/lista.html", reunioes=reunioes)
+    return render_template("reunioes/lista.html", 
+                          reunioes=reunioes,
+                          tipos=tipos,
+                          status_list=status_list,
+                          graus=graus,
+                          filtros={'data_ini': data_ini, 'data_fim': data_fim, 'tipo': tipo, 'status': status, 'grau': grau, 'local': local})
 
 @app.route("/reunioes/calendario")
 @login_required
@@ -1129,6 +1404,7 @@ def api_reunioes():
 def nova_reuniao():
     conn = get_db()
     cursor = conn.cursor()
+    
     if request.method == "POST":
         titulo = request.form.get("titulo")
         tipo = request.form.get("tipo")
@@ -1148,6 +1424,8 @@ def nova_reuniao():
         """, (titulo, tipo, grau, data, hora_inicio, hora_termino, local, loja_id, pauta, observacoes, session["user_id"]))
         conn.commit()
         reuniao_id = cursor.lastrowid
+        
+        registrar_log("criar", "reuniao", reuniao_id, dados_novos={"titulo": titulo, "data": data, "tipo": tipo})
         flash("Reunião agendada com sucesso!", "success")
         return redirect(f"/reunioes/{reuniao_id}")
 
@@ -1178,14 +1456,13 @@ def detalhes_reuniao(id):
         flash("Reunião não encontrada", "danger")
         return redirect("/reunioes")
 
-    # Verifica se já existe ata
-    cursor.execute("SELECT id, aprovada FROM atas WHERE reuniao_id = ?", (id,))
+    cursor.execute("SELECT id, aprovada, numero_ata, ano_ata FROM atas WHERE reuniao_id = ?", (id,))
     ata_row = cursor.fetchone()
     ata_id = ata_row["id"] if ata_row else None
     ata_aprovada = ata_row["aprovada"] if ata_row else None
+    ata_numero = ata_row["numero_ata"] if ata_row else None
+    ata_ano = ata_row["ano_ata"] if ata_row else None
 
-
-    # Lista de presença
     cursor.execute("""
         SELECT u.id, u.nome_completo, u.grau_atual, 
                p.id as presenca_id, p.presente, p.tipo_ausencia, 
@@ -1209,7 +1486,9 @@ def detalhes_reuniao(id):
                           presentes=presentes,
                           ausentes=ausentes,
                           ata_id=ata_id,
-                          ata_aprovada=ata_aprovada)
+                          ata_aprovada=ata_aprovada,
+                          ata_numero=ata_numero,
+                          ata_ano=ata_ano)
 
 @app.route("/reunioes/<int:id>/presenca", methods=["POST"])
 @admin_required
@@ -1229,6 +1508,9 @@ def registrar_presenca(id):
     """, (id, obreiro_id, presente, justificativa, session["user_id"], tipo_ausencia,
           presente, justificativa, session["user_id"], tipo_ausencia))
     conn.commit()
+    
+    registrar_log("registrar_presenca", "presenca", id, 
+                 dados_novos={"obreiro_id": obreiro_id, "presente": presente})
     conn.close()
     flash("Presença registrada com sucesso!", "success")
     return redirect(f"/reunioes/{id}")
@@ -1238,6 +1520,7 @@ def registrar_presenca(id):
 def redigir_ata(id):
     conn = get_db()
     cursor = conn.cursor()
+    
     if request.method == "POST":
         conteudo = request.form.get("conteudo")
         aprovada = request.form.get("aprovada", 0)
@@ -1252,6 +1535,8 @@ def redigir_ata(id):
               conteudo, session["user_id"], aprovada,
               datetime.now().date() if aprovada else None))
         conn.commit()
+        ata_id = cursor.lastrowid if cursor.lastrowid else id
+        registrar_log("criar" if not cursor.lastrowid else "editar", "ata", ata_id)
         flash("Ata salva com sucesso!", "success")
         return redirect(f"/reunioes/{id}")
 
@@ -1267,6 +1552,7 @@ def redigir_ata(id):
 def editar_reuniao(id):
     conn = get_db()
     cursor = conn.cursor()
+    
     if request.method == "POST":
         titulo = request.form.get("titulo")
         tipo = request.form.get("tipo")
@@ -1279,6 +1565,9 @@ def editar_reuniao(id):
         observacoes = request.form.get("observacoes")
         status = request.form.get("status")
 
+        cursor.execute("SELECT * FROM reunioes WHERE id = ?", (id,))
+        dados_antigos = dict(cursor.fetchone())
+        
         cursor.execute("""
             UPDATE reunioes 
             SET titulo = ?, tipo = ?, grau = ?, data = ?, hora_inicio = ?, 
@@ -1286,6 +1575,9 @@ def editar_reuniao(id):
             WHERE id = ?
         """, (titulo, tipo, grau, data, hora_inicio, hora_termino, local, pauta, observacoes, status, id))
         conn.commit()
+        
+        registrar_log("editar", "reuniao", id, dados_anteriores=dados_antigos,
+                     dados_novos={"titulo": titulo, "data": data, "status": status})
         flash("Reunião atualizada com sucesso!", "success")
         return redirect(f"/reunioes/{id}")
 
@@ -1301,13 +1593,19 @@ def editar_reuniao(id):
 def excluir_reuniao(id):
     conn = get_db()
     cursor = conn.cursor()
+    
+    cursor.execute("SELECT * FROM reunioes WHERE id = ?", (id,))
+    dados = dict(cursor.fetchone()) if cursor.fetchone() else None
+    
     cursor.execute("SELECT id FROM atas WHERE reuniao_id = ?", (id,))
     if cursor.fetchone():
         flash("Não é possível excluir uma reunião que já possui ata.", "danger")
     else:
         cursor.execute("DELETE FROM reunioes WHERE id = ?", (id,))
         conn.commit()
+        registrar_log("excluir", "reuniao", id, dados_anteriores=dados)
         flash("Reunião excluída com sucesso!", "success")
+    
     conn.close()
     return redirect("/reunioes")
 
@@ -1321,7 +1619,6 @@ def estatisticas_presenca():
     cursor = conn.cursor()
     ano = request.args.get('ano', datetime.now().year)
 
-    # Estatísticas individuais
     cursor.execute("""
         SELECT 
             u.id, u.nome_completo, u.grau_atual,
@@ -1339,7 +1636,6 @@ def estatisticas_presenca():
     rows = cursor.fetchall()
     estatisticas = [dict(row) for row in rows]
 
-    # Estatísticas mensais
     cursor.execute("""
         SELECT 
             strftime('%m', r.data) as mes,
@@ -1383,6 +1679,9 @@ def justificar_ausencia(id):
         cursor.execute("SELECT reuniao_id FROM presenca WHERE id = ?", (id,))
         presenca = cursor.fetchone()
         reuniao_id = presenca["reuniao_id"] if presenca else None
+        
+        registrar_log("justificar_ausencia", "presenca", id, 
+                     dados_novos={"tipo_ausencia": tipo_ausencia})
         conn.close()
         flash("Ausência justificada com sucesso!", "success")
         return redirect(f"/reunioes/{reuniao_id}")
@@ -1422,6 +1721,7 @@ def validar_ausencia(id):
                 observacao_validacao = ?
             WHERE id = ?
         """, (session["user_id"], observacao, id))
+        registrar_log("validar_ausencia", "presenca", id, dados_novos={"validado": True})
         flash("Ausência validada com sucesso!", "success")
     else:
         cursor.execute("""
@@ -1431,6 +1731,7 @@ def validar_ausencia(id):
                 observacao_validacao = ?
             WHERE id = ?
         """, (observacao, id))
+        registrar_log("rejeitar_ausencia", "presenca", id)
         flash("Validação removida!", "success")
 
     conn.commit()
@@ -1467,6 +1768,7 @@ def resolver_alerta(id):
         WHERE id = ?
     """, (session["user_id"], id))
     conn.commit()
+    registrar_log("resolver_alerta", "alerta", id)
     conn.close()
     flash("Alerta marcado como resolvido", "success")
     return redirect("/presenca/alertas")
@@ -1479,7 +1781,6 @@ def gerar_alertas():
     mes_atual = datetime.now().strftime('%Y-%m')
     ano_atual = datetime.now().year
 
-    # 1. Alertas por ausências injustificadas (>=3 no mês)
     cursor.execute("""
         SELECT 
             p.obreiro_id,
@@ -1502,13 +1803,9 @@ def gerar_alertas():
         cursor.execute("""
             INSERT INTO alertas_presenca (obreiro_id, tipo, mensagem)
             VALUES (?, ?, ?)
-        """, (
-            a["obreiro_id"],
-            "limite_atingido",
-            f"{a['nome_completo']} possui {a['ausencias']} ausências injustificadas em {a['mes']}"
-        ))
+        """, (a["obreiro_id"], "limite_atingido",
+               f"{a['nome_completo']} possui {a['ausencias']} ausências injustificadas em {a['mes']}"))
 
-    # 2. Alertas por percentual de presença (crítico e atenção)
     cursor.execute("""
         SELECT 
             u.id,
@@ -1533,166 +1830,21 @@ def gerar_alertas():
             cursor.execute("""
                 INSERT INTO alertas_presenca (obreiro_id, tipo, mensagem)
                 VALUES (?, ?, ?)
-            """, (
-                e["id"],
-                "presenca_critica",
-                f"{e['nome_completo']} tem apenas {percentual:.1f}% de presença no ano {ano_atual} (CRÍTICO)"
-            ))
+            """, (e["id"], "presenca_critica",
+                   f"{e['nome_completo']} tem apenas {percentual:.1f}% de presença no ano {ano_atual} (CRÍTICO)"))
         elif percentual < 75:
             cursor.execute("""
                 INSERT INTO alertas_presenca (obreiro_id, tipo, mensagem)
                 VALUES (?, ?, ?)
-            """, (
-                e["id"],
-                "presenca_atencao",
-                f"{e['nome_completo']} tem {percentual:.1f}% de presença no ano {ano_atual} (ATENÇÃO)"
-            ))
+            """, (e["id"], "presenca_atencao",
+                   f"{e['nome_completo']} tem {percentual:.1f}% de presença no ano {ano_atual} (ATENÇÃO)"))
 
     conn.commit()
-    total_alertas = len(alertas_ausencias) + len(estatisticas)  # não é o número exato, apenas para feedback
+    registrar_log("gerar_alertas", "alertas", None, dados_novos={"quantidade": len(alertas_ausencias)})
     conn.close()
 
     flash(f"Alertas gerados! ({len(alertas_ausencias)} por ausências + alertas de presença)", "success")
     return redirect("/presenca/alertas")
-    
-import openpyxl
-from openpyxl.styles import Font, Alignment, PatternFill
-from openpyxl.utils import get_column_letter
-
-@app.route("/exportar/presenca", methods=["GET", "POST"])
-@admin_required
-def exportar_presenca():
-    if request.method == "POST":
-        ano = request.form.get("ano")
-        mes = request.form.get("mes")
-        tipo = request.form.get("tipo", "ano")  # 'ano', 'mes', 'periodo'
-        data_inicio = request.form.get("data_inicio")
-        data_fim = request.form.get("data_fim")
-
-        conn = get_db()
-        cursor = conn.cursor()
-
-        # Construir a consulta conforme o filtro
-        if tipo == "ano":
-            reunioes = cursor.execute("""
-                SELECT r.*, 
-                       (SELECT COUNT(*) FROM presenca WHERE reuniao_id = r.id) as total,
-                       (SELECT SUM(presente) FROM presenca WHERE reuniao_id = r.id) as presentes
-                FROM reunioes r
-                WHERE strftime('%Y', r.data) = ? AND r.status = 'realizada'
-                ORDER BY r.data
-            """, (str(ano),)).fetchall()
-            filtro_desc = f"Ano {ano}"
-        elif tipo == "mes":
-            reunioes = cursor.execute("""
-                SELECT r.*, 
-                       (SELECT COUNT(*) FROM presenca WHERE reuniao_id = r.id) as total,
-                       (SELECT SUM(presente) FROM presenca WHERE reuniao_id = r.id) as presentes
-                FROM reunioes r
-                WHERE strftime('%Y-%m', r.data) = ? AND r.status = 'realizada'
-                ORDER BY r.data
-            """, (f"{ano}-{int(mes):02d}",)).fetchall()
-            filtro_desc = f"{int(mes):02d}/{ano}"
-        elif tipo == "periodo":
-            reunioes = cursor.execute("""
-                SELECT r.*, 
-                       (SELECT COUNT(*) FROM presenca WHERE reuniao_id = r.id) as total,
-                       (SELECT SUM(presente) FROM presenca WHERE reuniao_id = r.id) as presentes
-                FROM reunioes r
-                WHERE r.data BETWEEN ? AND ? AND r.status = 'realizada'
-                ORDER BY r.data
-            """, (data_inicio, data_fim)).fetchall()
-            filtro_desc = f"{data_inicio} a {data_fim}"
-        else:
-            flash("Período inválido", "danger")
-            return redirect("/exportar/presenca")
-
-        if not reunioes:
-            flash("Nenhuma reunião encontrada no período selecionado", "warning")
-            return redirect("/exportar/presenca")
-
-        # Criar a planilha
-        wb = openpyxl.Workbook()
-        ws = wb.active
-        ws.title = "Presença"
-
-        # Cabeçalhos
-        headers = ["Reunião", "Data", "Obreiro", "Grau", "Presença", "Tipo Ausência", "Justificativa", "Validado Por"]
-        ws.append(headers)
-
-        # Estilo para cabeçalho
-        for col in range(1, len(headers)+1):
-            cell = ws.cell(row=1, column=col)
-            cell.font = Font(bold=True, color="FFFFFF")
-            cell.fill = PatternFill(start_color="2C3E50", end_color="2C3E50", fill_type="solid")
-            cell.alignment = Alignment(horizontal="center", vertical="center")
-
-        # Preencher os dados
-        row = 2
-        for reuniao in reunioes:
-            # Obter lista de presença para esta reunião
-            cursor.execute("""
-                SELECT u.nome_completo, u.grau_atual, p.presente, p.tipo_ausencia, p.justificativa, 
-                       u2.nome_completo as validado_por
-                FROM presenca p
-                JOIN usuarios u ON p.obreiro_id = u.id
-                LEFT JOIN usuarios u2 ON p.validado_por = u2.id
-                WHERE p.reuniao_id = ?
-                ORDER BY u.grau_atual DESC, u.nome_completo
-            """, (reuniao["id"],))
-            presencas = cursor.fetchall()
-
-            for p in presencas:
-                grau_texto = "Mestre" if p["grau_atual"] == 3 else ("Companheiro" if p["grau_atual"] == 2 else "Aprendiz")
-                presente_texto = "Presente" if p["presente"] == 1 else "Ausente"
-                tipo_ausencia = p["tipo_ausencia"] if p["tipo_ausencia"] else ""
-                justificativa = p["justificativa"] if p["justificativa"] else ""
-                validado = p["validado_por"] if p["validado_por"] else ""
-
-                ws.append([
-                    reuniao["titulo"],
-                    reuniao["data"][:10],
-                    p["nome_completo"],
-                    grau_texto,
-                    presente_texto,
-                    tipo_ausencia,
-                    justificativa,
-                    validado
-                ])
-                row += 1
-
-        conn.close()
-
-        # Ajustar largura das colunas automaticamente
-        for col in ws.columns:
-            max_length = 0
-            col_letter = get_column_letter(col[0].column)
-            for cell in col:
-                try:
-                    if cell.value:
-                        max_length = max(max_length, len(str(cell.value)))
-                except:
-                    pass
-            adjusted_width = min(max_length + 2, 30)
-            ws.column_dimensions[col_letter].width = adjusted_width
-
-        # Salvar no buffer
-        from io import BytesIO
-        output = BytesIO()
-        wb.save(output)
-        output.seek(0)
-
-        nome_arquivo = f"presenca_{filtro_desc}.xlsx".replace("/", "-").replace(" ", "_")
-        return send_file(
-            output,
-            as_attachment=True,
-            download_name=nome_arquivo,
-            mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-        )
-
-    # GET – exibir formulário de seleção
-    anos = range(2020, datetime.now().year + 1)
-    return render_template("exportar/presenca.html", anos=anos)
 
 # =============================
 # ROTAS DE ATAS
@@ -1702,7 +1854,13 @@ def exportar_presenca():
 def listar_atas():
     conn = get_db()
     cursor = conn.cursor()
-    cursor.execute("""
+    
+    data_ini = request.args.get('data_ini', '')
+    data_fim = request.args.get('data_fim', '')
+    aprovada = request.args.get('aprovada', '')
+    reuniao_titulo = request.args.get('reuniao_titulo', '')
+
+    query = """
         SELECT a.*, 
                r.titulo as reuniao_titulo,
                r.data as reuniao_data,
@@ -1711,11 +1869,29 @@ def listar_atas():
         FROM atas a
         JOIN reunioes r ON a.reuniao_id = r.id
         LEFT JOIN usuarios u ON a.redator_id = u.id
-        ORDER BY a.data_criacao DESC
-    """)
+        WHERE 1=1
+    """
+    params = []
+
+    if data_ini:
+        query += " AND r.data >= ?"
+        params.append(data_ini)
+    if data_fim:
+        query += " AND r.data <= ?"
+        params.append(data_fim)
+    if aprovada != '':
+        query += " AND a.aprovada = ?"
+        params.append(aprovada)
+    if reuniao_titulo:
+        query += " AND r.titulo LIKE ?"
+        params.append(f"%{reuniao_titulo}%")
+
+    query += " ORDER BY a.data_criacao DESC"
+
+    cursor.execute(query, params)
     atas = cursor.fetchall()
     conn.close()
-    return render_template("atas/lista.html", atas=atas)
+    return render_template("atas/lista.html", atas=atas, filtros={'data_ini': data_ini, 'data_fim': data_fim, 'aprovada': aprovada, 'reuniao_titulo': reuniao_titulo})
 
 @app.route("/atas/nova/<int:reuniao_id>", methods=["GET", "POST"])
 @admin_required
@@ -1747,7 +1923,8 @@ def nova_ata(reuniao_id):
         """, (reuniao_id, conteudo, session["user_id"], modelo_id, numero_ata, ano, reuniao["tipo"]))
         ata_id = cursor.lastrowid
         conn.commit()
-        conn.close()
+        
+        registrar_log("criar", "ata", ata_id, dados_novos={"reuniao_id": reuniao_id, "numero": numero_ata, "ano": ano})
         flash(f"Ata nº {numero_ata}/{ano} criada com sucesso!", "success")
         return redirect(f"/atas/{ata_id}")
 
@@ -1782,7 +1959,6 @@ def visualizar_ata(id):
         flash("Ata não encontrada", "danger")
         return redirect("/atas")
 
-    # Lista de presença da reunião
     cursor.execute("""
         SELECT u.nome_completo, u.grau_atual,
                p.presente, p.tipo_ausencia,
@@ -1819,6 +1995,7 @@ def visualizar_ata(id):
 def editar_ata(id):
     conn = get_db()
     cursor = conn.cursor()
+    
     if request.method == "POST":
         conteudo = request.form.get("conteudo")
         cursor.execute("""
@@ -1827,7 +2004,7 @@ def editar_ata(id):
             WHERE id = ?
         """, (conteudo, id))
         conn.commit()
-        conn.close()
+        registrar_log("editar", "ata", id)
         flash("Ata atualizada com sucesso!", "success")
         return redirect(f"/atas/{id}")
 
@@ -1851,7 +2028,7 @@ def aprovar_ata(id):
         WHERE id = ?
     """, (session["user_id"], id))
     conn.commit()
-    conn.close()
+    registrar_log("aprovar", "ata", id, dados_novos={"aprovada": 1})
     flash("Ata aprovada com sucesso!", "success")
     return redirect(f"/atas/{id}")
 
@@ -1875,6 +2052,7 @@ def assinar_ata(id):
             VALUES (?, ?, ?, ?)
         """, (id, session["user_id"], cargo["cargo_id"] if cargo else None, request.remote_addr))
         conn.commit()
+        registrar_log("assinar", "ata", id)
         flash("Ata assinada com sucesso!", "success")
     conn.close()
     return redirect(f"/atas/{id}")
@@ -1938,7 +2116,6 @@ def gerar_pdf_ata(id):
         styles = getSampleStyleSheet()
         elementos = []
 
-        # Título
         styles.add(ParagraphStyle(name='CenteredTitle',
                                  parent=styles['Title'],
                                  alignment=1,
@@ -1947,7 +2124,6 @@ def gerar_pdf_ata(id):
         elementos.append(titulo)
         elementos.append(Spacer(1, 0.5*cm))
 
-        # Informações da reunião
         info_data = [
             ["Reunião:", ata["reuniao_titulo"]],
             ["Data:", f"{ata['reuniao_data']} {ata['hora_inicio']} às {ata['hora_termino']}"],
@@ -1965,13 +2141,11 @@ def gerar_pdf_ata(id):
         elementos.append(info_table)
         elementos.append(Spacer(1, 0.5*cm))
 
-        # Conteúdo
         elementos.append(Paragraph("<b>ATA DA REUNIÃO</b>", styles['Heading2']))
         elementos.append(Spacer(1, 0.3*cm))
         elementos.append(Paragraph(ata["conteudo"].replace('\n', '<br/>'), styles['Normal']))
         elementos.append(Spacer(1, 0.5*cm))
 
-        # Lista de presença
         elementos.append(Paragraph("<b>LISTA DE PRESENÇA</b>", styles['Heading2']))
         elementos.append(Spacer(1, 0.3*cm))
         presenca_data = [["Obreiro", "Status"]]
@@ -1988,7 +2162,6 @@ def gerar_pdf_ata(id):
         elementos.append(presenca_table)
         elementos.append(Spacer(1, 0.5*cm))
 
-        # Assinaturas
         if assinaturas:
             elementos.append(Paragraph("<b>ASSINATURAS</b>", styles['Heading2']))
             elementos.append(Spacer(1, 0.3*cm))
@@ -2008,25 +2181,16 @@ def gerar_pdf_ata(id):
                 elementos.append(linha_table)
                 elementos.append(Spacer(1, 0.3*cm))
 
-        # Rodapé
         elementos.append(Spacer(1, 1*cm))
         data_emissao = datetime.now().strftime("%d/%m/%Y %H:%M")
-        rodape = Paragraph(
-            f"<i>Documento gerado em {data_emissao} - Sistema Maçônico</i>",
-            styles['Italic']
-        )
+        rodape = Paragraph(f"<i>Documento gerado em {data_emissao} - Sistema Maçônico</i>", styles['Italic'])
         elementos.append(rodape)
 
         doc.build(elementos)
         buffer.seek(0)
 
         nome_arquivo = f"ata_{ata['numero_ata']}_{ata['ano_ata']}.pdf"
-        return send_file(
-            buffer,
-            as_attachment=True,
-            download_name=nome_arquivo,
-            mimetype='application/pdf'
-        )
+        return send_file(buffer, as_attachment=True, download_name=nome_arquivo, mimetype='application/pdf')
     except ImportError:
         flash("Biblioteca reportlab não instalada. Execute: pip install reportlab", "warning")
         return redirect("/atas")
@@ -2044,7 +2208,6 @@ def listar_modelos():
     modelos = []
     for row in rows:
         modelo = dict(row)
-        # Converte o campo estrutura de JSON string para dicionário
         try:
             modelo["estrutura_dict"] = json.loads(modelo["estrutura"])
         except:
@@ -2052,8 +2215,6 @@ def listar_modelos():
         modelos.append(modelo)
     conn.close()
     return render_template("atas/modelos.html", modelos=modelos)
-    
-    
 
 @app.route("/atas/modelos/novo", methods=["GET", "POST"])
 @admin_required
@@ -2073,288 +2234,174 @@ def novo_modelo():
                 VALUES (?, ?, ?, ?, ?)
             """, (nome, descricao, tipo, estrutura, session["user_id"]))
             conn.commit()
-            conn.close()
+            modelo_id = cursor.lastrowid
+            registrar_log("criar", "modelo_ata", modelo_id, dados_novos={"nome": nome})
             flash("Modelo criado com sucesso!", "success")
             return redirect("/atas/modelos")
     return render_template("atas/modelo_form.html")
 
-@app.route("/atas/modelos/editar/<int:id>", methods=["GET", "POST"])
-@admin_required
-def editar_modelo(id):
+# =============================
+# ROTAS DE COMUNICADOS
+# =============================
+@app.route("/comunicados")
+@login_required
+def listar_comunicados():
     conn = get_db()
     cursor = conn.cursor()
-    if request.method == "POST":
-        nome = request.form.get("nome")
-        descricao = request.form.get("descricao")
-        tipo = request.form.get("tipo")
-        estrutura = request.form.get("estrutura")
-        ativo = 1 if request.form.get("ativo") else 0
+    
+    tipo = request.args.get('tipo', '')
+    prioridade = request.args.get('prioridade', '')
+    data_ini = request.args.get('data_ini', '')
+    data_fim = request.args.get('data_fim', '')
+    ativo = request.args.get('ativo', '')
 
-        if not nome or not estrutura:
-            flash("Nome e estrutura são obrigatórios", "danger")
-        else:
-            cursor.execute("""
-                UPDATE modelos_ata 
-                SET nome = ?, descricao = ?, tipo = ?, estrutura = ?, ativo = ?
-                WHERE id = ?
-            """, (nome, descricao, tipo, estrutura, ativo, id))
-            conn.commit()
-            flash("Modelo atualizado com sucesso!", "success")
-            return redirect("/atas/modelos")
+    hoje = datetime.now().strftime("%Y-%m-%d")
 
-    cursor.execute("SELECT * FROM modelos_ata WHERE id = ?", (id,))
-    row = cursor.fetchone()
-    if not row:
-        flash("Modelo não encontrado", "danger")
-        return redirect("/atas/modelos")
-    modelo = dict(row)
-    conn.close()
-    return render_template("atas/modelo_editar.html", modelo=modelo)
+    query = """
+        SELECT c.*, u.nome_completo as autor_nome,
+               (SELECT COUNT(*) FROM visualizacoes_comunicado WHERE comunicado_id = c.id AND obreiro_id = ?) as ja_visto
+        FROM comunicados c
+        JOIN usuarios u ON c.criado_por = u.id
+        WHERE 1=1
+    """
+    params = [session["user_id"]]
 
-@app.route("/atas/modelos/excluir/<int:id>")
-@admin_required
-def excluir_modelo(id):
-    conn = get_db()
-    cursor = conn.cursor()
-    # Verificar se o modelo está sendo usado por alguma ata
-    cursor.execute("SELECT id FROM atas WHERE modelo_id = ?", (id,))
-    if cursor.fetchone():
-        flash("Não é possível excluir um modelo que está em uso.", "danger")
+    if tipo:
+        query += " AND c.tipo = ?"
+        params.append(tipo)
+    if prioridade:
+        query += " AND c.prioridade = ?"
+        params.append(prioridade)
+    if data_ini:
+        query += " AND c.data_inicio >= ?"
+        params.append(data_ini)
+    if data_fim:
+        query += " AND c.data_fim <= ?"
+        params.append(data_fim)
+    if ativo != '':
+        query += " AND c.ativo = ?"
+        params.append(ativo)
     else:
-        cursor.execute("DELETE FROM modelos_ata WHERE id = ?", (id,))
-        conn.commit()
-        flash("Modelo excluído com sucesso!", "success")
+        query += " AND c.ativo = 1 AND c.data_inicio <= ? AND (c.data_fim IS NULL OR c.data_fim >= ?)"
+        params.extend([hoje, hoje])
+
+    query += " ORDER BY c.prioridade = 'urgente' DESC, c.data_criacao DESC"
+
+    cursor.execute(query, params)
+    comunicados = cursor.fetchall()
+
+    cursor.execute("SELECT DISTINCT tipo FROM comunicados ORDER BY tipo")
+    tipos = cursor.fetchall()
+    cursor.execute("SELECT DISTINCT prioridade FROM comunicados ORDER BY prioridade")
+    prioridades = cursor.fetchall()
+
     conn.close()
-    return redirect("/atas/modelos")
-@app.route("/relatorios/consolidados", methods=["GET", "POST"])
+    return render_template("comunicados/lista.html", 
+                          comunicados=comunicados,
+                          tipos=tipos,
+                          prioridades=prioridades,
+                          filtros={'tipo': tipo, 'prioridade': prioridade, 'data_ini': data_ini, 'data_fim': data_fim, 'ativo': ativo})
+
+@app.route("/comunicados/novo", methods=["GET", "POST"])
 @admin_required
-def relatorios_consolidados():
+def novo_comunicado():
     if request.method == "POST":
-        tipo = request.form.get("tipo", "ano")
-        ano_str = request.form.get("ano")
-        mes_str = request.form.get("mes")
+        titulo = request.form.get("titulo")
+        conteudo = request.form.get("conteudo")
+        tipo = request.form.get("tipo")
+        prioridade = request.form.get("prioridade")
         data_inicio = request.form.get("data_inicio")
-        data_fim = request.form.get("data_fim")
-
-        # Converte para inteiros com tratamento de erro
-        try:
-            ano = int(ano_str) if ano_str else datetime.now().year
-        except ValueError:
-            ano = datetime.now().year
-        try:
-            mes = int(mes_str) if mes_str else 1
-        except ValueError:
-            mes = 1
-
+        data_fim = request.form.get("data_fim") or None
         conn = get_db()
         cursor = conn.cursor()
+        cursor.execute("""
+            INSERT INTO comunicados (titulo, conteudo, tipo, prioridade, data_inicio, data_fim, criado_por)
+            VALUES (?, ?, ?, ?, ?, ?, ?)
+        """, (titulo, conteudo, tipo, prioridade, data_inicio, data_fim, session["user_id"]))
+        conn.commit()
+        comunicado_id = cursor.lastrowid
+        
+        registrar_log("criar", "comunicado", comunicado_id, dados_novos={"titulo": titulo, "prioridade": prioridade})
+        flash("Comunicado publicado com sucesso!", "success")
+        return redirect("/comunicados")
+    hoje = datetime.now().strftime("%Y-%m-%d")
+    return render_template("comunicados/novo.html", hoje=hoje)
 
-        if tipo == "ano":
-            reunioes = cursor.execute("""
-                SELECT * FROM reunioes 
-                WHERE strftime('%Y', data) = ? AND status = 'realizada'
-                ORDER BY data
-            """, (str(ano),)).fetchall()
-            periodo_desc = f"Ano {ano}"
-        elif tipo == "mes":
-            reunioes = cursor.execute("""
-                SELECT * FROM reunioes 
-                WHERE strftime('%Y-%m', data) = ? AND status = 'realizada'
-                ORDER BY data
-            """, (f"{ano}-{mes:02d}",)).fetchall()
-            periodo_desc = f"{mes:02d}/{ano}"
-        elif tipo == "periodo":
-            reunioes = cursor.execute("""
-                SELECT * FROM reunioes 
-                WHERE data BETWEEN ? AND ? AND status = 'realizada'
-                ORDER BY data
-            """, (data_inicio, data_fim)).fetchall()
-            periodo_desc = f"{data_inicio} a {data_fim}"
-        else:
-            flash("Período inválido", "danger")
-            return redirect("/relatorios/consolidados")
+@app.route("/comunicados/<int:id>/visualizar")
+@login_required
+def visualizar_comunicado(id):
+    conn = get_db()
+    cursor = conn.cursor()
+    cursor.execute("""
+        INSERT OR IGNORE INTO visualizacoes_comunicado (comunicado_id, obreiro_id)
+        VALUES (?, ?)
+    """, (id, session["user_id"]))
+    conn.commit()
+    cursor.execute("""
+        SELECT c.*, u.nome_completo as autor_nome
+        FROM comunicados c
+        JOIN usuarios u ON c.criado_por = u.id
+        WHERE c.id = ?
+    """, (id,))
+    comunicado = cursor.fetchone()
+    conn.close()
+    if not comunicado:
+        flash("Comunicado não encontrado", "danger")
+        return redirect("/comunicados")
+    return render_template("comunicados/detalhes.html", comunicado=comunicado)
 
-        # Lista de obreiros ativos
-        obreiros = cursor.execute("""
-            SELECT id, nome_completo, grau_atual 
-            FROM usuarios 
-            WHERE ativo = 1 
-            ORDER BY grau_atual DESC, nome_completo
-        """).fetchall()
-
-        # Estatísticas por obreiro
-        stats = []
-        for o in obreiros:
-            total_reunioes = len(reunioes)
-            # Presenças do obreiro nas reuniões do período
-            # Construir placeholder para IN
-            placeholders = ','.join('?' * len(reunioes))
-            presentes = cursor.execute(f"""
-                SELECT COUNT(*) as count
-                FROM presenca p
-                JOIN reunioes r ON p.reuniao_id = r.id
-                WHERE p.obreiro_id = ? 
-                  AND p.presente = 1
-                  AND r.id IN ({placeholders})
-            """, [o["id"]] + [r["id"] for r in reunioes]).fetchone()["count"]
-            stats.append({
-                "nome": o["nome_completo"],
-                "grau": o["grau_atual"],
-                "total": total_reunioes,
-                "presentes": presentes,
-                "ausentes": total_reunioes - presentes,
-                "percentual": (presentes / total_reunioes * 100) if total_reunioes > 0 else 0
-            })
-
-        # Estatísticas gerais
-        total_reunioes = len(reunioes)
-        total_presencas = sum(s["presentes"] for s in stats)
-        total_ausencias = sum(s["ausentes"] for s in stats)
-        media_presenca = (total_presencas / (total_reunioes * len(obreiros)) * 100) if total_reunioes > 0 and obreiros else 0
-
-        conn.close()
-
-        # Gerar PDF (mesmo código da versão anterior, sem alterações)
-        try:
-            from reportlab.lib import colors
-            from reportlab.lib.pagesizes import A4
-            from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle
-            from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
-            from reportlab.lib.units import cm
-            from io import BytesIO
-            from flask import send_file
-
-            buffer = BytesIO()
-            doc = SimpleDocTemplate(buffer, pagesize=A4,
-                                   rightMargin=72, leftMargin=72,
-                                   topMargin=72, bottomMargin=72)
-            styles = getSampleStyleSheet()
-            elementos = []
-
-            # Título
-            styles.add(ParagraphStyle(name='CenteredTitle',
-                                     parent=styles['Title'],
-                                     alignment=1,
-                                     spaceAfter=30))
-            titulo = Paragraph(f"RELATÓRIO CONSOLIDADO - {periodo_desc}", styles['CenteredTitle'])
-            elementos.append(titulo)
-            elementos.append(Spacer(1, 0.5*cm))
-
-            # Resumo geral
-            elementos.append(Paragraph("<b>RESUMO GERAL</b>", styles['Heading2']))
-            elementos.append(Spacer(1, 0.3*cm))
-            resumo = [
-                ["Período:", periodo_desc],
-                ["Total de reuniões realizadas:", str(total_reunioes)],
-                ["Total de obreiros:", str(len(obreiros))],
-                ["Total de presenças:", str(total_presencas)],
-                ["Total de ausências:", str(total_ausencias)],
-                ["Média de presença:", f"{media_presenca:.1f}%"]
-            ]
-            resumo_table = Table(resumo, colWidths=[5*cm, 10*cm])
-            resumo_table.setStyle(TableStyle([
-                ('FONTNAME', (0, 0), (-1, -1), 'Helvetica'),
-                ('FONTSIZE', (0, 0), (-1, -1), 10),
-                ('GRID', (0, 0), (-1, -1), 0.5, colors.grey),
-                ('BACKGROUND', (0, 0), (0, -1), colors.HexColor('#ecf0f1')),
-            ]))
-            elementos.append(resumo_table)
-            elementos.append(Spacer(1, 0.5*cm))
-
-            # Estatísticas individuais
-            elementos.append(Paragraph("<b>ESTATÍSTICAS INDIVIDUAIS</b>", styles['Heading2']))
-            elementos.append(Spacer(1, 0.3*cm))
-
-            dados = [["Obreiro", "Grau", "Total", "Presentes", "Ausentes", "% Presença"]]
-            for s in stats:
-                grau_str = "Mestre" if s["grau"] == 3 else ("Companheiro" if s["grau"] == 2 else "Aprendiz")
-                dados.append([
-                    s["nome"],
-                    grau_str,
-                    str(s["total"]),
-                    str(s["presentes"]),
-                    str(s["ausentes"]),
-                    f"{s['percentual']:.1f}%"
-                ])
-
-            col_widths = [5*cm, 2.5*cm, 2*cm, 2*cm, 2*cm, 2.5*cm]
-            tabela = Table(dados, colWidths=col_widths)
-            tabela.setStyle(TableStyle([
-                ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#2c3e50')),
-                ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
-                ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
-                ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
-                ('FONTSIZE', (0, 0), (-1, 0), 10),
-                ('BACKGROUND', (0, 1), (-1, -1), colors.HexColor('#f8f9fa')),
-                ('GRID', (0, 0), (-1, -1), 1, colors.grey),
-                ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
-            ]))
-            elementos.append(tabela)
-            elementos.append(Spacer(1, 1*cm))
-
-            # Lista de reuniões
-            if total_reunioes > 0:
-                elementos.append(Paragraph("<b>REUNIÕES REALIZADAS NO PERÍODO</b>", styles['Heading2']))
-                elementos.append(Spacer(1, 0.3*cm))
-                reunioes_dados = [["Data", "Título", "Presenças", "Total Obreiros"]]
-                for r in reunioes:
-                    # Buscar presenças e total para cada reunião
-                    # (como já temos conexão fechada, precisamos reabrir ou passar os dados)
-                    # Vamos reabrir conexão ou usar os dados já obtidos? Podemos recriar conexão.
-                    conn2 = get_db()
-                    cur2 = conn2.cursor()
-                    cur2.execute("""
-                        SELECT COUNT(*) as total, SUM(CASE WHEN presente = 1 THEN 1 ELSE 0 END) as presentes
-                        FROM presenca WHERE reuniao_id = ?
-                    """, (r["id"],))
-                    res = cur2.fetchone()
-                    conn2.close()
-                    reunioes_dados.append([
-                        r["data"][:10],
-                        r["titulo"],
-                        str(res["presentes"]),
-                        str(res["total"])
-                    ])
-                reunioes_table = Table(reunioes_dados, colWidths=[3*cm, 6*cm, 3*cm, 3*cm])
-                reunioes_table.setStyle(TableStyle([
-                    ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#2c3e50')),
-                    ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
-                    ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
-                    ('GRID', (0, 0), (-1, -1), 0.5, colors.grey),
-                ]))
-                elementos.append(reunioes_table)
-
-            # Rodapé
-            elementos.append(Spacer(1, 1*cm))
-            data_emissao = datetime.now().strftime("%d/%m/%Y %H:%M")
-            rodape = Paragraph(f"<i>Relatório gerado em {data_emissao} - Sistema Maçônico</i>", styles['Italic'])
-            elementos.append(rodape)
-
-            doc.build(elementos)
-            buffer.seek(0)
-
-            nome_arquivo = f"relatorio_consolidado_{periodo_desc}.pdf"
-            nome_arquivo = nome_arquivo.replace(" ", "_").replace("/", "-")
-            return send_file(
-                buffer,
-                as_attachment=True,
-                download_name=nome_arquivo,
-                mimetype='application/pdf'
-            )
-
-        except ImportError:
-            flash("Biblioteca reportlab não instalada. Execute: pip install reportlab", "warning")
-            return redirect("/relatorios/consolidados")
-        except Exception as e:
-            flash(f"Erro ao gerar relatório: {str(e)}", "danger")
-            return redirect("/relatorios/consolidados")
-
-    # GET: mostrar formulário
-    anos = range(2020, datetime.now().year + 1)
-    return render_template("relatorios/consolidados.html", anos=anos)    
+@app.route("/comunicados/<int:id>/editar", methods=["GET", "POST"])
+@admin_required
+def editar_comunicado(id):
+    conn = get_db()
+    cursor = conn.cursor()
     
+    if request.method == "POST":
+        titulo = request.form.get("titulo")
+        conteudo = request.form.get("conteudo")
+        tipo = request.form.get("tipo")
+        prioridade = request.form.get("prioridade")
+        data_inicio = request.form.get("data_inicio")
+        data_fim = request.form.get("data_fim") or None
+        ativo = 1 if request.form.get("ativo") else 0
+        
+        cursor.execute("SELECT * FROM comunicados WHERE id = ?", (id,))
+        dados_antigos = dict(cursor.fetchone())
+        
+        cursor.execute("""
+            UPDATE comunicados
+            SET titulo=?, conteudo=?, tipo=?, prioridade=?, data_inicio=?, data_fim=?, ativo=?
+            WHERE id=?
+        """, (titulo, conteudo, tipo, prioridade, data_inicio, data_fim, ativo, id))
+        conn.commit()
+        
+        registrar_log("editar", "comunicado", id, dados_anteriores=dados_antigos,
+                     dados_novos={"titulo": titulo, "prioridade": prioridade})
+        flash("Comunicado atualizado com sucesso!", "success")
+        return redirect("/comunicados")
     
+    cursor.execute("SELECT * FROM comunicados WHERE id = ?", (id,))
+    comunicado = cursor.fetchone()
+    conn.close()
+    return render_template("comunicados/editar.html", comunicado=comunicado)
+
+@app.route("/comunicados/<int:id>/excluir")
+@admin_required
+def excluir_comunicado(id):
+    conn = get_db()
+    cursor = conn.cursor()
     
+    cursor.execute("SELECT * FROM comunicados WHERE id = ?", (id,))
+    dados = dict(cursor.fetchone()) if cursor.fetchone() else None
+    
+    cursor.execute("DELETE FROM comunicados WHERE id = ?", (id,))
+    conn.commit()
+    
+    registrar_log("excluir", "comunicado", id, dados_anteriores=dados)
+    flash("Comunicado excluído com sucesso!", "success")
+    conn.close()
+    return redirect("/comunicados")
+
 # =============================
 # ROTAS DE CANDIDATOS E SINDICÂNCIA
 # =============================
@@ -2369,6 +2416,8 @@ def gerenciar_candidatos():
             agora = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
             cursor.execute("INSERT INTO candidatos (nome, data_criacao) VALUES (?, ?)", (nome, agora))
             conn.commit()
+            candidato_id = cursor.lastrowid
+            registrar_log("criar", "candidato", candidato_id, dados_novos={"nome": nome})
             flash(f"Candidato '{nome}' adicionado com sucesso!", "success")
         else:
             flash("Nome do candidato não pode estar vazio", "danger")
@@ -2382,8 +2431,11 @@ def gerenciar_candidatos():
 def excluir_candidato(id):
     conn = get_db()
     cursor = conn.cursor()
+    cursor.execute("SELECT * FROM candidatos WHERE id = ?", (id,))
+    dados = dict(cursor.fetchone()) if cursor.fetchone() else None
     cursor.execute("DELETE FROM candidatos WHERE id = ?", (id,))
     conn.commit()
+    registrar_log("excluir", "candidato", id, dados_anteriores=dados)
     conn.close()
     flash("Candidato excluído com sucesso!", "success")
     return redirect("/candidatos")
@@ -2416,8 +2468,9 @@ def visualizar_sindicancia(id):
             DO UPDATE SET parecer = ?, data_envio = ?
         """, (id, usuario, parecer, agora, parecer, agora))
         conn.commit()
+        registrar_log("emitir_parecer", "sindicancia", id, dados_novos={"parecer": parecer})
         flash("Parecer enviado com sucesso!", "success")
-        # verificar fechamento automático
+        
         cursor.execute("SELECT COUNT(*) as total FROM usuarios WHERE tipo = 'sindicante' AND ativo = 1")
         total_sindicantes = cursor.fetchone()["total"]
         cursor.execute("SELECT COUNT(*) as votos FROM sindicancias WHERE candidato_id = ?", (id,))
@@ -2438,6 +2491,7 @@ def visualizar_sindicancia(id):
                 WHERE id = ?
             """, (status, agora, f"{res['positivos']} votos positivos, {res['negativos']} negativos", id))
             conn.commit()
+            registrar_log("fechar_sindicancia", "sindicancia", id, dados_novos={"status": status})
 
     cursor.execute("""
         SELECT s.*, u.usuario, u.nome_completo
@@ -2488,6 +2542,7 @@ def excluir_parecer(candidato_id):
     if candidato and candidato["fechado"] == 0:
         cursor.execute("DELETE FROM sindicancias WHERE candidato_id = ? AND sindicante = ?", (candidato_id, session["usuario"]))
         conn.commit()
+        registrar_log("excluir_parecer", "sindicancia", candidato_id)
         flash("Parecer excluído com sucesso!", "success")
     else:
         flash("Não é possível excluir parecer de uma sindicância fechada", "danger")
@@ -2504,16 +2559,25 @@ def fechar_sindicancia_manual(id):
     if not pareceres:
         flash("Não é possível fechar: nenhum parecer enviado", "warning")
         return redirect("/candidatos")
+    
+    cursor.execute("SELECT * FROM candidatos WHERE id = ?", (id,))
+    dados_antigos = dict(cursor.fetchone())
+    
     positivos = sum(1 for p in pareceres if p["parecer"] == "positivo")
     negativos = len(pareceres) - positivos
     status = "Aprovado" if positivos > negativos else "Reprovado"
     agora = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    
     cursor.execute("""
         UPDATE candidatos 
         SET status = ?, fechado = 1, data_fechamento = ?, resultado_final = ?
         WHERE id = ?
     """, (status, agora, f"{positivos} votos positivos, {negativos} negativos", id))
     conn.commit()
+    
+    registrar_log("fechar_sindicancia_manual", "sindicancia", id, 
+                 dados_anteriores=dados_antigos,
+                 dados_novos={"status": status})
     conn.close()
     flash(f"Sindicância fechada! Resultado: {status}", "success")
     return redirect("/candidatos")
@@ -2636,8 +2700,10 @@ def salvar_parecer_conclusivo(id):
               cim_numero, data_parecer, agora, fontes_json,
               loja_nome, loja_numero, loja_orient))
         conn.commit()
+        registrar_log("salvar_parecer_conclusivo", "parecer_conclusivo", id, 
+                     dados_novos={"conclusao": conclusao})
         flash("Parecer conclusivo salvo com sucesso!", "success")
-        # Atualizar parecer simples
+        
         parecer_simples = "positivo" if conclusao == "APROVADO" else "negativo"
         cursor.execute("""
             INSERT INTO sindicancias (candidato_id, sindicante, parecer, data_envio)
@@ -2786,115 +2852,6 @@ def baixar_parecer_conclusivo(id):
     except Exception as e:
         flash(f"Erro ao gerar PDF: {str(e)}", "danger")
         return redirect("/dashboard")
-        
-# =============================
-# ROTAS DE COMUNICADOS
-# =============================        
-        
-@app.route("/comunicados")
-@login_required
-def listar_comunicados():
-    conn = get_db()
-    cursor = conn.cursor()
-    hoje = datetime.now().strftime("%Y-%m-%d")
-    # Buscar comunicados ativos dentro do período
-    cursor.execute("""
-        SELECT c.*, u.nome_completo as autor_nome,
-               (SELECT COUNT(*) FROM visualizacoes_comunicado WHERE comunicado_id = c.id AND obreiro_id = ?) as ja_visto
-        FROM comunicados c
-        JOIN usuarios u ON c.criado_por = u.id
-        WHERE c.ativo = 1
-          AND c.data_inicio <= ?
-          AND (c.data_fim IS NULL OR c.data_fim >= ?)
-        ORDER BY c.prioridade = 'urgente' DESC, c.data_criacao DESC
-    """, (session["user_id"], hoje, hoje))
-    comunicados = cursor.fetchall()
-    conn.close()
-    return render_template("comunicados/lista.html", comunicados=comunicados)
-
-@app.route("/comunicados/novo", methods=["GET", "POST"])
-@admin_required
-def novo_comunicado():
-    if request.method == "POST":
-        titulo = request.form.get("titulo")
-        conteudo = request.form.get("conteudo")
-        tipo = request.form.get("tipo")
-        prioridade = request.form.get("prioridade")
-        data_inicio = request.form.get("data_inicio")
-        data_fim = request.form.get("data_fim") or None
-        conn = get_db()
-        cursor = conn.cursor()
-        cursor.execute("""
-            INSERT INTO comunicados (titulo, conteudo, tipo, prioridade, data_inicio, data_fim, criado_por)
-            VALUES (?, ?, ?, ?, ?, ?, ?)
-        """, (titulo, conteudo, tipo, prioridade, data_inicio, data_fim, session["user_id"]))
-        conn.commit()
-        conn.close()
-        flash("Comunicado publicado com sucesso!", "success")
-        return redirect("/comunicados")
-    return render_template("comunicados/novo.html")
-
-@app.route("/comunicados/<int:id>/visualizar")
-@login_required
-def visualizar_comunicado(id):
-    conn = get_db()
-    cursor = conn.cursor()
-    # Registrar visualização
-    cursor.execute("""
-        INSERT OR IGNORE INTO visualizacoes_comunicado (comunicado_id, obreiro_id)
-        VALUES (?, ?)
-    """, (id, session["user_id"]))
-    conn.commit()
-    # Buscar comunicado
-    cursor.execute("""
-        SELECT c.*, u.nome_completo as autor_nome
-        FROM comunicados c
-        JOIN usuarios u ON c.criado_por = u.id
-        WHERE c.id = ?
-    """, (id,))
-    comunicado = cursor.fetchone()
-    conn.close()
-    if not comunicado:
-        flash("Comunicado não encontrado", "danger")
-        return redirect("/comunicados")
-    return render_template("comunicados/detalhes.html", comunicado=comunicado)
-
-@app.route("/comunicados/<int:id>/editar", methods=["GET", "POST"])
-@admin_required
-def editar_comunicado(id):
-    conn = get_db()
-    cursor = conn.cursor()
-    if request.method == "POST":
-        titulo = request.form.get("titulo")
-        conteudo = request.form.get("conteudo")
-        tipo = request.form.get("tipo")
-        prioridade = request.form.get("prioridade")
-        data_inicio = request.form.get("data_inicio")
-        data_fim = request.form.get("data_fim") or None
-        ativo = 1 if request.form.get("ativo") else 0
-        cursor.execute("""
-            UPDATE comunicados
-            SET titulo=?, conteudo=?, tipo=?, prioridade=?, data_inicio=?, data_fim=?, ativo=?
-            WHERE id=?
-        """, (titulo, conteudo, tipo, prioridade, data_inicio, data_fim, ativo, id))
-        conn.commit()
-        flash("Comunicado atualizado com sucesso!", "success")
-        return redirect("/comunicados")
-    cursor.execute("SELECT * FROM comunicados WHERE id = ?", (id,))
-    comunicado = cursor.fetchone()
-    conn.close()
-    return render_template("comunicados/editar.html", comunicado=comunicado)
-
-@app.route("/comunicados/<int:id>/excluir")
-@admin_required
-def excluir_comunicado(id):
-    conn = get_db()
-    cursor = conn.cursor()
-    cursor.execute("DELETE FROM comunicados WHERE id = ?", (id,))
-    conn.commit()
-    conn.close()
-    flash("Comunicado excluído com sucesso!", "success")
-    return redirect("/comunicados")
 
 # =============================
 # ROTAS DE SINDICANTES
@@ -2922,6 +2879,8 @@ def gerenciar_sindicantes():
                     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """, (usuario, senha_hash, "sindicante", agora, 1, nome_completo, cim_numero, loja_nome, loja_numero, loja_orient))
                 conn.commit()
+                sindicante_id = cursor.lastrowid
+                registrar_log("criar", "sindicante", sindicante_id, dados_novos={"usuario": usuario})
                 flash(f"Sindicante '{usuario}' adicionado!", "success")
             except sqlite3.IntegrityError:
                 flash("Usuário já existe", "danger")
@@ -2941,11 +2900,14 @@ def gerenciar_sindicantes():
 def excluir_sindicante(id):
     conn = get_db()
     cursor = conn.cursor()
+    cursor.execute("SELECT * FROM usuarios WHERE id = ?", (id,))
+    dados = dict(cursor.fetchone()) if cursor.fetchone() else None
     cursor.execute("SELECT tipo FROM usuarios WHERE id = ?", (id,))
     usuario = cursor.fetchone()
     if usuario and usuario["tipo"] == "sindicante":
         cursor.execute("UPDATE usuarios SET ativo = 0 WHERE id = ?", (id,))
         conn.commit()
+        registrar_log("desativar", "sindicante", id, dados_anteriores=dados)
         flash("Sindicante removido com sucesso!", "success")
     else:
         flash("Usuário não encontrado ou não é sindicante", "danger")
@@ -2962,6 +2924,7 @@ def reativar_sindicante(id):
     if usuario and usuario["tipo"] == "sindicante":
         cursor.execute("UPDATE usuarios SET ativo = 1 WHERE id = ?", (id,))
         conn.commit()
+        registrar_log("reativar", "sindicante", id)
         flash("Sindicante reativado com sucesso!", "success")
     else:
         flash("Usuário não encontrado ou não é sindicante", "danger")
@@ -2979,14 +2942,22 @@ def editar_sindicante(id):
         loja_nome = request.form.get("loja_nome", "")
         loja_numero = request.form.get("loja_numero", "")
         loja_orient = request.form.get("loja_orient", "")
+        
+        cursor.execute("SELECT * FROM usuarios WHERE id = ?", (id,))
+        dados_antigos = dict(cursor.fetchone())
+        
         cursor.execute("""
             UPDATE usuarios 
             SET nome_completo = ?, cim_numero = ?, loja_nome = ?, loja_numero = ?, loja_orient = ?
             WHERE id = ?
         """, (nome_completo, cim_numero, loja_nome, loja_numero, loja_orient, id))
         conn.commit()
+        
+        registrar_log("editar", "sindicante", id, dados_anteriores=dados_antigos,
+                     dados_novos={"nome_completo": nome_completo})
         flash("Sindicante atualizado!", "success")
         return redirect("/sindicantes")
+    
     cursor.execute("SELECT * FROM usuarios WHERE id = ?", (id,))
     sindicante = cursor.fetchone()
     cursor.execute("SELECT * FROM lojas")
@@ -3015,6 +2986,8 @@ def gerenciar_lojas():
                 VALUES (?, ?, ?, ?, ?, ?)
             """, (nome, numero, oriente, cidade, estado, data_fundacao))
             conn.commit()
+            loja_id = cursor.lastrowid
+            registrar_log("criar", "loja", loja_id, dados_novos={"nome": nome, "numero": numero})
             flash("Loja adicionada!", "success")
     cursor.execute("SELECT * FROM lojas ORDER BY nome")
     lojas = cursor.fetchall()
@@ -3026,11 +2999,589 @@ def gerenciar_lojas():
 def excluir_loja(id):
     conn = get_db()
     cursor = conn.cursor()
+    cursor.execute("SELECT * FROM lojas WHERE id = ?", (id,))
+    dados = dict(cursor.fetchone()) if cursor.fetchone() else None
     cursor.execute("DELETE FROM lojas WHERE id = ?", (id,))
     conn.commit()
+    registrar_log("excluir", "loja", id, dados_anteriores=dados)
     conn.close()
     flash("Loja excluída!", "success")
     return redirect("/lojas")
+
+# =============================
+# ROTAS DE BACKUP E RESTAURAÇÃO
+# =============================
+@app.route("/backup")
+@admin_required
+def backup_banco():
+    db_path = "banco.db"
+    if not os.path.exists(db_path):
+        flash("Arquivo do banco de dados não encontrado.", "danger")
+        return redirect("/dashboard")
+    
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    backup_filename = f"backup_banco_{timestamp}.db"
+    
+    temp_dir = tempfile.gettempdir()
+    temp_path = os.path.join(temp_dir, backup_filename)
+    shutil.copy2(db_path, temp_path)
+    
+    registrar_log("backup", "banco", None, dados_novos={"arquivo": backup_filename})
+    
+    response = send_file(
+        temp_path,
+        as_attachment=True,
+        download_name=backup_filename,
+        mimetype="application/x-sqlite3"
+    )
+    
+    def remove_file():
+        try:
+            os.remove(temp_path)
+        except:
+            pass
+    
+    response.call_on_close(remove_file)
+    return response
+
+ALLOWED_EXTENSIONS = {'db', 'sqlite', 'sqlite3'}
+
+def allowed_file(filename):
+    return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
+
+@app.route("/restaurar")
+@admin_required
+def restaurar_page():
+    return render_template("backup/restaurar.html")
+
+@app.route("/restaurar", methods=["POST"])
+@admin_required
+def restaurar_banco():
+    if 'backup_file' not in request.files:
+        flash("Nenhum arquivo selecionado", "danger")
+        return redirect("/restaurar")
+    
+    file = request.files['backup_file']
+    
+    if file.filename == '':
+        flash("Nenhum arquivo selecionado", "danger")
+        return redirect("/restaurar")
+    
+    if not allowed_file(file.filename):
+        flash("Formato de arquivo não permitido. Use .db, .sqlite ou .sqlite3", "danger")
+        return redirect("/restaurar")
+    
+    try:
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        backup_atual = f"backup_antes_restauracao_{timestamp}.db"
+        backup_path = os.path.join(tempfile.gettempdir(), backup_atual)
+        shutil.copy2("banco.db", backup_path)
+        
+        filename = secure_filename(file.filename)
+        temp_path = os.path.join(tempfile.gettempdir(), f"restore_temp_{timestamp}.db")
+        file.save(temp_path)
+        
+        try:
+            test_conn = sqlite3.connect(temp_path)
+            test_conn.cursor().execute("SELECT name FROM sqlite_master WHERE type='table'")
+            test_conn.close()
+        except sqlite3.DatabaseError:
+            os.remove(temp_path)
+            flash("Arquivo inválido: não é um banco de dados SQLite válido", "danger")
+            return redirect("/restaurar")
+        
+        shutil.copy2(temp_path, "banco.db")
+        os.remove(temp_path)
+        
+        registrar_log("restaurar", "banco", None, dados_novos={"arquivo": file.filename, "backup_anterior": backup_atual})
+        flash(f"Banco de dados restaurado com sucesso! Backup do banco anterior salvo como: {backup_atual}", "success")
+        return redirect("/dashboard")
+        
+    except Exception as e:
+        flash(f"Erro ao restaurar banco de dados: {str(e)}", "danger")
+        return redirect("/restaurar")
+
+# =============================
+# ROTAS DE AUDITORIA
+# =============================
+@app.route("/auditoria")
+@admin_required
+def listar_logs():
+    conn = get_db()
+    cursor = conn.cursor()
+    
+    data_ini = request.args.get('data_ini', '')
+    data_fim = request.args.get('data_fim', '')
+    acao = request.args.get('acao', '')
+    entidade = request.args.get('entidade', '')
+    usuario = request.args.get('usuario', '')
+    
+    query = """
+        SELECT l.*, u.usuario
+        FROM logs_auditoria l
+        LEFT JOIN usuarios u ON l.usuario_id = u.id
+        WHERE 1=1
+    """
+    params = []
+    
+    if data_ini:
+        query += " AND date(l.data_hora) >= ?"
+        params.append(data_ini)
+    if data_fim:
+        query += " AND date(l.data_hora) <= ?"
+        params.append(data_fim)
+    if acao:
+        query += " AND l.acao = ?"
+        params.append(acao)
+    if entidade:
+        query += " AND l.entidade = ?"
+        params.append(entidade)
+    if usuario:
+        query += " AND l.usuario_nome LIKE ?"
+        params.append(f"%{usuario}%")
+    
+    query += " ORDER BY l.data_hora DESC LIMIT 1000"
+    
+    cursor.execute(query, params)
+    logs = cursor.fetchall()
+    
+    cursor.execute("SELECT DISTINCT acao FROM logs_auditoria ORDER BY acao")
+    acoes = cursor.fetchall()
+    cursor.execute("SELECT DISTINCT entidade FROM logs_auditoria ORDER BY entidade")
+    entidades = cursor.fetchall()
+    
+    conn.close()
+    
+    return render_template("auditoria/logs.html", 
+                          logs=logs, 
+                          acoes=acoes, 
+                          entidades=entidades,
+                          filtros={'data_ini': data_ini, 'data_fim': data_fim, 
+                                  'acao': acao, 'entidade': entidade, 'usuario': usuario})
+
+@app.route("/auditoria/<int:id>")
+@admin_required
+def detalhes_log(id):
+    conn = get_db()
+    cursor = conn.cursor()
+    cursor.execute("""
+        SELECT l.*, u.usuario, u.nome_completo
+        FROM logs_auditoria l
+        LEFT JOIN usuarios u ON l.usuario_id = u.id
+        WHERE l.id = ?
+    """, (id,))
+    log = cursor.fetchone()
+    conn.close()
+    
+    if not log:
+        flash("Registro não encontrado", "danger")
+        return redirect("/auditoria")
+    
+    return render_template("auditoria/detalhes.html", log=log)
+
+@app.route("/auditoria/exportar")
+@admin_required
+def exportar_logs():
+    conn = get_db()
+    cursor = conn.cursor()
+    
+    data_ini = request.args.get('data_ini', '')
+    data_fim = request.args.get('data_fim', '')
+    
+    query = """
+        SELECT l.*, u.usuario
+        FROM logs_auditoria l
+        LEFT JOIN usuarios u ON l.usuario_id = u.id
+        WHERE 1=1
+    """
+    params = []
+    
+    if data_ini:
+        query += " AND date(l.data_hora) >= ?"
+        params.append(data_ini)
+    if data_fim:
+        query += " AND date(l.data_hora) <= ?"
+        params.append(data_fim)
+    
+    query += " ORDER BY l.data_hora DESC"
+    
+    cursor.execute(query, params)
+    logs = cursor.fetchall()
+    conn.close()
+    
+    import csv
+    from io import StringIO
+    
+    output = StringIO()
+    writer = csv.writer(output, delimiter=';')
+    
+    # Cabeçalho
+    writer.writerow(['ID', 'Data/Hora', 'Usuário', 'Ação', 'Entidade', 'ID Entidade', 'IP', 'Dados Anteriores', 'Dados Novos'])
+    
+    for log in logs:
+        # Tratamento de valores None
+        dados_anteriores = log['dados_anteriores'] if log['dados_anteriores'] is not None else ''
+        dados_novos = log['dados_novos'] if log['dados_novos'] is not None else ''
+        
+        writer.writerow([
+            log['id'],
+            log['data_hora'],
+            log['usuario_nome'],
+            log['acao'],
+            log['entidade'] or '',
+            log['entidade_id'] or '',
+            log['ip'] or '',
+            dados_anteriores,
+            dados_novos
+        ])
+    
+    output.seek(0)
+    
+    registrar_log("exportar_logs", "auditoria", None, dados_novos={"periodo": f"{data_ini} a {data_fim}"})
+    
+    # Usando Response diretamente (não precisa de make_response)
+    from flask import Response
+    return Response(
+        output.getvalue(),
+        mimetype="text/csv; charset=utf-8",
+        headers={"Content-Disposition": f"attachment;filename=logs_auditoria_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv"}
+    )
+
+# =============================
+# ROTAS DE RELATÓRIOS E EXPORTAÇÕES
+# =============================
+@app.route("/relatorios/consolidados", methods=["GET", "POST"])
+@admin_required
+def relatorios_consolidados():
+    if request.method == "POST":
+        tipo = request.form.get("tipo", "ano")
+        ano_str = request.form.get("ano")
+        mes_str = request.form.get("mes")
+        data_inicio = request.form.get("data_inicio")
+        data_fim = request.form.get("data_fim")
+
+        try:
+            ano = int(ano_str) if ano_str else datetime.now().year
+        except ValueError:
+            ano = datetime.now().year
+        try:
+            mes = int(mes_str) if mes_str else 1
+        except ValueError:
+            mes = 1
+
+        conn = get_db()
+        cursor = conn.cursor()
+
+        if tipo == "ano":
+            reunioes = cursor.execute("""
+                SELECT * FROM reunioes 
+                WHERE strftime('%Y', data) = ? AND status = 'realizada'
+                ORDER BY data
+            """, (str(ano),)).fetchall()
+            periodo_desc = f"Ano {ano}"
+        elif tipo == "mes":
+            reunioes = cursor.execute("""
+                SELECT * FROM reunioes 
+                WHERE strftime('%Y-%m', data) = ? AND status = 'realizada'
+                ORDER BY data
+            """, (f"{ano}-{mes:02d}",)).fetchall()
+            periodo_desc = f"{mes:02d}/{ano}"
+        elif tipo == "periodo":
+            reunioes = cursor.execute("""
+                SELECT * FROM reunioes 
+                WHERE data BETWEEN ? AND ? AND status = 'realizada'
+                ORDER BY data
+            """, (data_inicio, data_fim)).fetchall()
+            periodo_desc = f"{data_inicio} a {data_fim}"
+        else:
+            flash("Período inválido", "danger")
+            return redirect("/relatorios/consolidados")
+
+        obreiros = cursor.execute("""
+            SELECT id, nome_completo, grau_atual 
+            FROM usuarios 
+            WHERE ativo = 1 
+            ORDER BY grau_atual DESC, nome_completo
+        """).fetchall()
+
+        stats = []
+        for o in obreiros:
+            total_reunioes = len(reunioes)
+            placeholders = ','.join('?' * len(reunioes))
+            presentes = cursor.execute(f"""
+                SELECT COUNT(*) as count
+                FROM presenca p
+                JOIN reunioes r ON p.reuniao_id = r.id
+                WHERE p.obreiro_id = ? 
+                  AND p.presente = 1
+                  AND r.id IN ({placeholders})
+            """, [o["id"]] + [r["id"] for r in reunioes]).fetchone()["count"]
+            stats.append({
+                "nome": o["nome_completo"],
+                "grau": o["grau_atual"],
+                "total": total_reunioes,
+                "presentes": presentes,
+                "ausentes": total_reunioes - presentes,
+                "percentual": (presentes / total_reunioes * 100) if total_reunioes > 0 else 0
+            })
+
+        total_reunioes = len(reunioes)
+        total_presencas = sum(s["presentes"] for s in stats)
+        total_ausencias = sum(s["ausentes"] for s in stats)
+        media_presenca = (total_presencas / (total_reunioes * len(obreiros)) * 100) if total_reunioes > 0 and obreiros else 0
+
+        conn.close()
+
+        try:
+            from reportlab.lib import colors
+            from reportlab.lib.pagesizes import A4
+            from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle
+            from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+            from reportlab.lib.units import cm
+            from io import BytesIO
+            from flask import send_file
+
+            buffer = BytesIO()
+            doc = SimpleDocTemplate(buffer, pagesize=A4,
+                                   rightMargin=72, leftMargin=72,
+                                   topMargin=72, bottomMargin=72)
+            styles = getSampleStyleSheet()
+            elementos = []
+
+            styles.add(ParagraphStyle(name='CenteredTitle',
+                                     parent=styles['Title'],
+                                     alignment=1,
+                                     spaceAfter=30))
+            titulo = Paragraph(f"RELATÓRIO CONSOLIDADO - {periodo_desc}", styles['CenteredTitle'])
+            elementos.append(titulo)
+            elementos.append(Spacer(1, 0.5*cm))
+
+            elementos.append(Paragraph("<b>RESUMO GERAL</b>", styles['Heading2']))
+            elementos.append(Spacer(1, 0.3*cm))
+            resumo = [
+                ["Período:", periodo_desc],
+                ["Total de reuniões realizadas:", str(total_reunioes)],
+                ["Total de obreiros:", str(len(obreiros))],
+                ["Total de presenças:", str(total_presencas)],
+                ["Total de ausências:", str(total_ausencias)],
+                ["Média de presença:", f"{media_presenca:.1f}%"]
+            ]
+            resumo_table = Table(resumo, colWidths=[5*cm, 10*cm])
+            resumo_table.setStyle(TableStyle([
+                ('FONTNAME', (0, 0), (-1, -1), 'Helvetica'),
+                ('FONTSIZE', (0, 0), (-1, -1), 10),
+                ('GRID', (0, 0), (-1, -1), 0.5, colors.grey),
+                ('BACKGROUND', (0, 0), (0, -1), colors.HexColor('#ecf0f1')),
+            ]))
+            elementos.append(resumo_table)
+            elementos.append(Spacer(1, 0.5*cm))
+
+            elementos.append(Paragraph("<b>ESTATÍSTICAS INDIVIDUAIS</b>", styles['Heading2']))
+            elementos.append(Spacer(1, 0.3*cm))
+
+            dados = [["Obreiro", "Grau", "Total", "Presentes", "Ausentes", "% Presença"]]
+            for s in stats:
+                grau_str = "Mestre" if s["grau"] == 3 else ("Companheiro" if s["grau"] == 2 else "Aprendiz")
+                dados.append([
+                    s["nome"],
+                    grau_str,
+                    str(s["total"]),
+                    str(s["presentes"]),
+                    str(s["ausentes"]),
+                    f"{s['percentual']:.1f}%"
+                ])
+
+            col_widths = [5*cm, 2.5*cm, 2*cm, 2*cm, 2*cm, 2.5*cm]
+            tabela = Table(dados, colWidths=col_widths)
+            tabela.setStyle(TableStyle([
+                ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#2c3e50')),
+                ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
+                ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+                ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+                ('FONTSIZE', (0, 0), (-1, 0), 10),
+                ('BACKGROUND', (0, 1), (-1, -1), colors.HexColor('#f8f9fa')),
+                ('GRID', (0, 0), (-1, -1), 1, colors.grey),
+                ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
+            ]))
+            elementos.append(tabela)
+            elementos.append(Spacer(1, 1*cm))
+
+            if total_reunioes > 0:
+                elementos.append(Paragraph("<b>REUNIÕES REALIZADAS NO PERÍODO</b>", styles['Heading2']))
+                elementos.append(Spacer(1, 0.3*cm))
+                reunioes_dados = [["Data", "Título", "Presenças", "Total Obreiros"]]
+                for r in reunioes:
+                    conn2 = get_db()
+                    cur2 = conn2.cursor()
+                    cur2.execute("""
+                        SELECT COUNT(*) as total, SUM(CASE WHEN presente = 1 THEN 1 ELSE 0 END) as presentes
+                        FROM presenca WHERE reuniao_id = ?
+                    """, (r["id"],))
+                    res = cur2.fetchone()
+                    conn2.close()
+                    reunioes_dados.append([
+                        r["data"][:10],
+                        r["titulo"],
+                        str(res["presentes"]),
+                        str(res["total"])
+                    ])
+                reunioes_table = Table(reunioes_dados, colWidths=[3*cm, 6*cm, 3*cm, 3*cm])
+                reunioes_table.setStyle(TableStyle([
+                    ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#2c3e50')),
+                    ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
+                    ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+                    ('GRID', (0, 0), (-1, -1), 0.5, colors.grey),
+                ]))
+                elementos.append(reunioes_table)
+
+            elementos.append(Spacer(1, 1*cm))
+            data_emissao = datetime.now().strftime("%d/%m/%Y %H:%M")
+            rodape = Paragraph(f"<i>Relatório gerado em {data_emissao} - Sistema Maçônico</i>", styles['Italic'])
+            elementos.append(rodape)
+
+            doc.build(elementos)
+            buffer.seek(0)
+
+            nome_arquivo = f"relatorio_consolidado_{periodo_desc}.pdf"
+            nome_arquivo = nome_arquivo.replace(" ", "_").replace("/", "-")
+            registrar_log("exportar_relatorio", "relatorios", None, dados_novos={"periodo": periodo_desc})
+            return send_file(buffer, as_attachment=True, download_name=nome_arquivo, mimetype='application/pdf')
+        except ImportError:
+            flash("Biblioteca reportlab não instalada. Execute: pip install reportlab", "warning")
+            return redirect("/relatorios/consolidados")
+        except Exception as e:
+            flash(f"Erro ao gerar relatório: {str(e)}", "danger")
+            return redirect("/relatorios/consolidados")
+
+    anos = range(2020, datetime.now().year + 1)
+    return render_template("relatorios/consolidados.html", anos=anos)
+
+@app.route("/exportar/presenca", methods=["GET", "POST"])
+@admin_required
+def exportar_presenca():
+    if request.method == "POST":
+        ano = request.form.get("ano")
+        mes = request.form.get("mes")
+        tipo = request.form.get("tipo", "ano")
+        data_inicio = request.form.get("data_inicio")
+        data_fim = request.form.get("data_fim")
+
+        conn = get_db()
+        cursor = conn.cursor()
+
+        if tipo == "ano":
+            reunioes = cursor.execute("""
+                SELECT r.*, 
+                       (SELECT COUNT(*) FROM presenca WHERE reuniao_id = r.id) as total,
+                       (SELECT SUM(presente) FROM presenca WHERE reuniao_id = r.id) as presentes
+                FROM reunioes r
+                WHERE strftime('%Y', r.data) = ? AND r.status = 'realizada'
+                ORDER BY r.data
+            """, (str(ano),)).fetchall()
+            filtro_desc = f"Ano {ano}"
+        elif tipo == "mes":
+            reunioes = cursor.execute("""
+                SELECT r.*, 
+                       (SELECT COUNT(*) FROM presenca WHERE reuniao_id = r.id) as total,
+                       (SELECT SUM(presente) FROM presenca WHERE reuniao_id = r.id) as presentes
+                FROM reunioes r
+                WHERE strftime('%Y-%m', r.data) = ? AND r.status = 'realizada'
+                ORDER BY r.data
+            """, (f"{ano}-{int(mes):02d}",)).fetchall()
+            filtro_desc = f"{int(mes):02d}/{ano}"
+        elif tipo == "periodo":
+            reunioes = cursor.execute("""
+                SELECT r.*, 
+                       (SELECT COUNT(*) FROM presenca WHERE reuniao_id = r.id) as total,
+                       (SELECT SUM(presente) FROM presenca WHERE reuniao_id = r.id) as presentes
+                FROM reunioes r
+                WHERE r.data BETWEEN ? AND ? AND r.status = 'realizada'
+                ORDER BY r.data
+            """, (data_inicio, data_fim)).fetchall()
+            filtro_desc = f"{data_inicio} a {data_fim}"
+        else:
+            flash("Período inválido", "danger")
+            return redirect("/exportar/presenca")
+
+        if not reunioes:
+            flash("Nenhuma reunião encontrada no período selecionado", "warning")
+            return redirect("/exportar/presenca")
+
+        wb = openpyxl.Workbook()
+        ws = wb.active
+        ws.title = "Presença"
+
+        headers = ["Reunião", "Data", "Obreiro", "Grau", "Presença", "Tipo Ausência", "Justificativa", "Validado Por"]
+        ws.append(headers)
+
+        for col in range(1, len(headers)+1):
+            cell = ws.cell(row=1, column=col)
+            cell.font = Font(bold=True, color="FFFFFF")
+            cell.fill = PatternFill(start_color="2C3E50", end_color="2C3E50", fill_type="solid")
+            cell.alignment = Alignment(horizontal="center", vertical="center")
+
+        row = 2
+        for reuniao in reunioes:
+            cursor.execute("""
+                SELECT u.nome_completo, u.grau_atual, p.presente, p.tipo_ausencia, p.justificativa, 
+                       u2.nome_completo as validado_por
+                FROM presenca p
+                JOIN usuarios u ON p.obreiro_id = u.id
+                LEFT JOIN usuarios u2 ON p.validado_por = u2.id
+                WHERE p.reuniao_id = ?
+                ORDER BY u.grau_atual DESC, u.nome_completo
+            """, (reuniao["id"],))
+            presencas = cursor.fetchall()
+
+            for p in presencas:
+                grau_texto = "Mestre" if p["grau_atual"] == 3 else ("Companheiro" if p["grau_atual"] == 2 else "Aprendiz")
+                presente_texto = "Presente" if p["presente"] == 1 else "Ausente"
+                tipo_ausencia = p["tipo_ausencia"] if p["tipo_ausencia"] else ""
+                justificativa = p["justificativa"] if p["justificativa"] else ""
+                validado = p["validado_por"] if p["validado_por"] else ""
+
+                ws.append([
+                    reuniao["titulo"],
+                    reuniao["data"][:10],
+                    p["nome_completo"],
+                    grau_texto,
+                    presente_texto,
+                    tipo_ausencia,
+                    justificativa,
+                    validado
+                ])
+                row += 1
+
+        conn.close()
+
+        for col in ws.columns:
+            max_length = 0
+            col_letter = get_column_letter(col[0].column)
+            for cell in col:
+                try:
+                    if cell.value:
+                        max_length = max(max_length, len(str(cell.value)))
+                except:
+                    pass
+            adjusted_width = min(max_length + 2, 30)
+            ws.column_dimensions[col_letter].width = adjusted_width
+
+        from io import BytesIO
+        output = BytesIO()
+        wb.save(output)
+        output.seek(0)
+
+        nome_arquivo = f"presenca_{filtro_desc}.xlsx".replace("/", "-").replace(" ", "_")
+        registrar_log("exportar_presenca", "presenca", None, dados_novos={"periodo": filtro_desc})
+        return send_file(
+            output,
+            as_attachment=True,
+            download_name=nome_arquivo,
+            mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+        )
+
+    anos = range(2020, datetime.now().year + 1)
+    return render_template("exportar/presenca.html", anos=anos)
 
 # =============================
 # ROTA DE RELATÓRIO PDF (SINDICÂNCIA)
@@ -3171,6 +3722,7 @@ def gerar_relatorio(id):
         buffer.seek(0)
         nome_arquivo = f"relatorio_sindicancia_{candidato['nome']}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.pdf"
         nome_arquivo = nome_arquivo.replace(" ", "_").replace("/", "_")
+        registrar_log("gerar_relatorio", "relatorio", id, dados_novos={"candidato": candidato["nome"]})
         return send_file(buffer, as_attachment=True, download_name=nome_arquivo, mimetype='application/pdf')
     except ImportError:
         flash("Biblioteca reportlab não instalada. Execute: pip install reportlab", "warning")
@@ -3178,6 +3730,193 @@ def gerar_relatorio(id):
     except Exception as e:
         flash(f"Erro ao gerar relatório: {str(e)}", "danger")
         return redirect("/candidatos")
+        
+# =============================
+# ROTAS DE DOCUMENTOS DOS OBREIROS
+# =============================
+from werkzeug.utils import secure_filename
+import os
+
+@app.route("/obreiros/<int:id>/documentos")
+@login_required
+def listar_documentos(id):
+    # Verificar permissão
+    if session["tipo"] != "admin" and session["user_id"] != id:
+        flash("Você não tem permissão para acessar esta página", "danger")
+        return redirect("/obreiros")
+    
+    conn = get_db()
+    cursor = conn.cursor()
+    
+    # Buscar obreiro
+    cursor.execute("SELECT nome_completo FROM usuarios WHERE id = ?", (id,))
+    obreiro = cursor.fetchone()
+    if not obreiro:
+        flash("Obreiro não encontrado", "danger")
+        return redirect("/obreiros")
+    
+    # Buscar documentos do obreiro
+    cursor.execute("""
+        SELECT d.*, c.nome as categoria_nome, c.icone
+        FROM documentos_obreiro d
+        LEFT JOIN categorias_documentos c ON d.categoria = c.nome
+        WHERE d.obreiro_id = ?
+        ORDER BY d.data_upload DESC
+    """, (id,))
+    documentos = cursor.fetchall()
+    
+    # Buscar categorias para o filtro
+    cursor.execute("SELECT * FROM categorias_documentos WHERE ativo = 1 ORDER BY nome")
+    categorias = cursor.fetchall()
+    
+    conn.close()
+    
+    return render_template("obreiros/documentos.html", 
+                          obreiro_id=id, 
+                          obreiro_nome=obreiro["nome_completo"],
+                          documentos=documentos,
+                          categorias=categorias)
+
+@app.route("/obreiros/<int:id>/documentos/upload", methods=["POST"])
+@login_required
+def upload_documento(id):
+    # Verificar permissão
+    if session["tipo"] != "admin" and session["user_id"] != id:
+        flash("Você não tem permissão para esta ação", "danger")
+        return redirect(f"/obreiros/{id}/documentos")
+    
+    if 'arquivo' not in request.files:
+        flash("Nenhum arquivo selecionado", "danger")
+        return redirect(f"/obreiros/{id}/documentos")
+    
+    arquivo = request.files['arquivo']
+    if arquivo.filename == '':
+        flash("Nenhum arquivo selecionado", "danger")
+        return redirect(f"/obreiros/{id}/documentos")
+    
+    if not allowed_file(arquivo.filename):
+        flash("Tipo de arquivo não permitido. Use: PDF, imagens, Word, Excel, TXT, ZIP", "danger")
+        return redirect(f"/obreiros/{id}/documentos")
+    
+    try:
+        titulo = request.form.get('titulo', '')
+        descricao = request.form.get('descricao', '')
+        categoria = request.form.get('categoria', 'outros')
+        
+        if not titulo:
+            titulo = arquivo.filename
+        
+        # Salvar arquivo
+        filename = secure_filename(arquivo.filename)
+        # Adicionar timestamp para evitar conflitos
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        nome_arquivo = f"{id}_{timestamp}_{filename}"
+        caminho = os.path.join(UPLOAD_FOLDER, nome_arquivo)
+        
+        arquivo.save(caminho)
+        
+        # Obter tamanho do arquivo
+        tamanho = os.path.getsize(caminho)
+        
+        conn = get_db()
+        cursor = conn.cursor()
+        
+        cursor.execute("""
+            INSERT INTO documentos_obreiro 
+            (obreiro_id, titulo, descricao, categoria, tipo_arquivo, nome_arquivo, caminho_arquivo, tamanho, uploaded_by)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+        """, (id, titulo, descricao, categoria, filename.split('.')[-1], nome_arquivo, caminho, tamanho, session["user_id"]))
+        
+        conn.commit()
+        doc_id = cursor.lastrowid
+        conn.close()
+        
+        registrar_log("upload_documento", "documento", doc_id, dados_novos={"titulo": titulo, "categoria": categoria})
+        flash(f"Documento '{titulo}' enviado com sucesso!", "success")
+        
+    except Exception as e:
+        flash(f"Erro ao enviar arquivo: {str(e)}", "danger")
+    
+    return redirect(f"/obreiros/{id}/documentos")
+
+@app.route("/documentos/<int:id>/baixar")
+@login_required
+def baixar_documento(id):
+    conn = get_db()
+    cursor = conn.cursor()
+    
+    cursor.execute("""
+        SELECT d.*, u.id as obreiro_id
+        FROM documentos_obreiro d
+        JOIN usuarios u ON d.obreiro_id = u.id
+        WHERE d.id = ?
+    """, (id,))
+    doc = cursor.fetchone()
+    
+    if not doc:
+        flash("Documento não encontrado", "danger")
+        return redirect("/obreiros")
+    
+    # Verificar permissão
+    if session["tipo"] != "admin" and session["user_id"] != doc["obreiro_id"]:
+        flash("Você não tem permissão para baixar este documento", "danger")
+        return redirect(f"/obreiros/{doc['obreiro_id']}/documentos")
+    
+    if not os.path.exists(doc["caminho_arquivo"]):
+        flash("Arquivo não encontrado no servidor", "danger")
+        return redirect(f"/obreiros/{doc['obreiro_id']}/documentos")
+    
+    conn.close()
+    
+    registrar_log("baixar_documento", "documento", id, dados_novos={"titulo": doc["titulo"]})
+    
+    return send_file(
+        doc["caminho_arquivo"],
+        as_attachment=True,
+        download_name=doc["nome_arquivo"],
+        mimetype="application/octet-stream"
+    )
+
+@app.route("/documentos/<int:id>/excluir")
+@login_required
+def excluir_documento(id):
+    conn = get_db()
+    cursor = conn.cursor()
+    
+    cursor.execute("""
+        SELECT d.*, u.id as obreiro_id
+        FROM documentos_obreiro d
+        JOIN usuarios u ON d.obreiro_id = u.id
+        WHERE d.id = ?
+    """, (id,))
+    doc = cursor.fetchone()
+    
+    if not doc:
+        flash("Documento não encontrado", "danger")
+        return redirect("/obreiros")
+    
+    # Verificar permissão (apenas admin ou dono do documento)
+    if session["tipo"] != "admin" and session["user_id"] != doc["obreiro_id"]:
+        flash("Você não tem permissão para excluir este documento", "danger")
+        return redirect(f"/obreiros/{doc['obreiro_id']}/documentos")
+    
+    try:
+        # Remover arquivo físico
+        if os.path.exists(doc["caminho_arquivo"]):
+            os.remove(doc["caminho_arquivo"])
+        
+        # Remover registro do banco
+        cursor.execute("DELETE FROM documentos_obreiro WHERE id = ?", (id,))
+        conn.commit()
+        
+        registrar_log("excluir_documento", "documento", id, dados_anteriores={"titulo": doc["titulo"]})
+        flash("Documento excluído com sucesso!", "success")
+        
+    except Exception as e:
+        flash(f"Erro ao excluir documento: {str(e)}", "danger")
+    
+    conn.close()
+    return redirect(f"/obreiros/{doc['obreiro_id']}/documentos")
 
 # =============================
 # INICIALIZAÇÃO

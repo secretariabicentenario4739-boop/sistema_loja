@@ -2,6 +2,10 @@
 
 {% block title %}Obreiros{% endblock %}
 
+{% block extra_css %}
+<link rel="stylesheet" href="https://cdn.datatables.net/1.13.7/css/dataTables.bootstrap5.min.css">
+{% endblock %}
+
 {% block content %}
 <div class="container-fluid py-4">
     <div class="container">
@@ -22,16 +26,65 @@
             </div>
         </div>
 
-        {% with messages = get_flashed_messages(with_categories=true) %}
-            {% if messages %}
-                {% for category, message in messages %}
-                    <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
-                        {{ message }}
-                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        <!-- Filtros -->
+        <div class="card shadow mb-4">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0"><i class="bi bi-funnel"></i> Filtros</h5>
+            </div>
+            <div class="card-body">
+                <form method="GET" class="row g-3">
+                    <div class="col-md-3">
+                        <label class="form-label">Nome / Usuário</label>
+                        <input type="text" class="form-control" name="nome" value="{{ filtros.nome }}">
                     </div>
-                {% endfor %}
-            {% endif %}
-        {% endwith %}
+                    <div class="col-md-2">
+                        <label class="form-label">Grau</label>
+                        <select class="form-select" name="grau">
+                            <option value="">Todos</option>
+                            {% for g in graus %}
+                            <option value="{{ g.grau_atual }}" {% if filtros.grau|string == g.grau_atual|string %}selected{% endif %}>
+                                {% if g.grau_atual == 1 %}Aprendiz
+                                {% elif g.grau_atual == 2 %}Companheiro
+                                {% elif g.grau_atual == 3 %}Mestre{% endif %}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label">Cargo</label>
+                        <select class="form-select" name="cargo">
+                            <option value="">Todos</option>
+                            {% for c in cargos %}
+                            <option value="{{ c.id }}" {% if filtros.cargo|string == c.id|string %}selected{% endif %}>{{ c.nome }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label">Loja</label>
+                        <select class="form-select" name="loja">
+                            <option value="">Todas</option>
+                            {% for l in lojas %}
+                            <option value="{{ l.loja_nome }}" {% if filtros.loja == l.loja_nome %}selected{% endif %}>{{ l.loja_nome }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label">Status</label>
+                        <select class="form-select" name="status">
+                            <option value="">Ativos (padrão)</option>
+                            <option value="1" {% if filtros.status == '1' %}selected{% endif %}>Ativos</option>
+                            <option value="0" {% if filtros.status == '0' %}selected{% endif %}>Inativos</option>
+                        </select>
+                    </div>
+                    <div class="col-md-1 d-flex align-items-end">
+                        <button type="submit" class="btn btn-primary w-100">Filtrar</button>
+                    </div>
+                    <div class="col-md-1 d-flex align-items-end">
+                        <a href="/obreiros" class="btn btn-secondary w-100">Limpar</a>
+                    </div>
+                </form>
+            </div>
+        </div>
 
         <div class="card shadow">
             <div class="card-header bg-dark text-white">
@@ -53,8 +106,7 @@
                                 <th>Status</th>
                                 {% endif %}
                                 <th>Ações</th>
-                            </tr>
-                        </thead>
+                            </thead>
                         <tbody>
                             {% for o in obreiros %}
                             <tr>
@@ -107,6 +159,12 @@
                         </tbody>
                     </table>
                 </div>
+                {% if not obreiros %}
+                <div class="text-center py-4">
+                    <i class="bi bi-inbox text-muted fs-1"></i>
+                    <p class="text-muted mt-2">Nenhum obreiro encontrado com os filtros selecionados.</p>
+                </div>
+                {% endif %}
             </div>
         </div>
     </div>

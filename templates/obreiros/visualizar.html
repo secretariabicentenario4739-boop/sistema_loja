@@ -5,7 +5,7 @@
 {% block content %}
 <div class="container-fluid py-4">
     <div class="container">
-        <!-- Cabeçalho -->
+        <!-- Cabeçalho com botões -->
         <div class="d-flex justify-content-between align-items-center mb-4">
             <h2>
                 <i class="bi bi-person-circle"></i> 
@@ -17,6 +17,12 @@
                     <i class="bi bi-pencil"></i> Editar
                 </a>
                 {% endif %}
+                
+                <!-- Botão de Documentos (visível para admin e para o próprio obreiro) -->
+                <a href="/obreiros/{{ obreiro.id }}/documentos" class="btn btn-info">
+                    <i class="bi bi-folder2-open"></i> Documentos
+                </a>
+                
                 <a href="/obreiros" class="btn btn-outline-secondary">
                     <i class="bi bi-arrow-left"></i> Voltar
                 </a>

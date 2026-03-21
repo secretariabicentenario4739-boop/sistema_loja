@@ -3,3 +3,4 @@ gunicorn
 reportlab
 werkzeug
 openpyxl
+flask-apscheduler

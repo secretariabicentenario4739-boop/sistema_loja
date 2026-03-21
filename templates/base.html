@@ -4,49 +4,244 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}Sistema Maçônico{% endblock %}</title>
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&family=Playfair+Display:wght@400;700&display=swap" rel="stylesheet">
+    <!-- Bootstrap 5 CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Bootstrap Icons -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
+    <!-- DataTables CSS -->
     <link rel="stylesheet" href="https://cdn.datatables.net/1.13.7/css/dataTables.bootstrap5.min.css">
-    {% block extra_css %}{% endblock %}
     <style>
-        .navbar-brand {
-            font-weight: bold;
-            letter-spacing: 1px;
+        :root {
+            --primary: #2c3e50;
+            --secondary: #c9a03d;
+            --dark: #1a2632;
+            --light: #f8f9fa;
+            --accent: #e67e22;
         }
-        .nav-link {
-            font-size: 0.95rem;
-            padding: 0.5rem 1rem !important;
+
+        body {
+            font-family: 'Poppins', sans-serif;
+            background-color: #f4f7fb;
+            color: #2c3e50;
+        }
+
+        /* Navbar ultra compacta */
+        .navbar {
+            background: linear-gradient(135deg, var(--primary) 0%, #1a2632 100%);
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            padding: 0.4rem 0;
+        }
+
+        .navbar-brand {
+            font-family: 'Playfair Display', serif;
+            font-weight: 700;
+            font-size: 1.3rem;
+            letter-spacing: 1px;
+            color: var(--secondary) !important;
+        }
+
+        .navbar-brand i {
+            color: var(--secondary);
+            margin-right: 6px;
+        }
+
+        .navbar-nav .nav-link {
+            color: rgba(255,255,255,0.85);
+            font-weight: 500;
+            font-size: 0.85rem;
+            padding: 0.3rem 0.7rem;
+            transition: all 0.2s ease;
+            border-radius: 5px;
+            margin: 0 1px;
+        }
+
+        .navbar-nav .nav-link:hover {
+            color: white;
+            background-color: rgba(255,255,255,0.1);
+            transform: translateY(-1px);
+        }
+
+        .navbar-nav .nav-link.active {
+            color: var(--secondary);
+            background-color: rgba(201,160,61,0.1);
+        }
+
+        /* Dropdown compacto */
+        .dropdown-menu {
+            min-width: 170px;
+            padding: 0.3rem 0;
+            border: none;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+            border-radius: 8px;
+            margin-top: 4px;
+        }
+
+        .dropdown-item {
+            padding: 0.25rem 0.75rem;
+            font-size: 0.8rem;
+            font-weight: 500;
+            transition: all 0.2s;
+        }
+
+        .dropdown-item:hover {
+            background-color: #f8f9fa;
+            color: var(--primary);
+            transform: translateX(3px);
+        }
+
+        .dropdown-divider {
+            margin: 0.2rem 0;
+        }
+
+        .dropdown-item-text {
+            padding: 0.2rem 0.75rem;
+            font-size: 0.7rem;
+            line-height: 1.3;
+        }
+
+        /* Badge do tipo de usuário */
+        .badge {
+            padding: 0.2rem 0.4rem;
+            font-size: 0.65rem;
+            font-weight: 500;
+            border-radius: 20px;
+        }
+
+        /* Conteúdo principal */
+        main {
+            min-height: calc(100vh - 140px);
+            padding: 1.5rem 0;
+        }
+
+        /* Cards refinados */
+        .card {
+            border: none;
+            border-radius: 16px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+            transition: all 0.3s ease;
+            overflow: hidden;
+        }
+
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 25px rgba(0,0,0,0.1);
+        }
+
+        .card-header {
+            background-color: white;
+            border-bottom: 2px solid rgba(0,0,0,0.05);
+            padding: 0.8rem 1.2rem;
+            font-weight: 600;
+        }
+
+        .btn {
+            border-radius: 50px;
+            padding: 0.35rem 1rem;
+            font-weight: 500;
+            font-size: 0.8rem;
             transition: all 0.3s;
         }
-        .nav-link:hover {
-            background-color: rgba(255,255,255,0.1);
-            border-radius: 5px;
-        }
-        .nav-link i {
-            margin-right: 5px;
-        }
-        .dropdown-menu {
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--primary) 0%, #1a2632 100%);
             border: none;
-            box-shadow: 0 5px 20px rgba(0,0,0,0.1);
         }
-        .badge {
-            font-weight: 500;
-            padding: 5px 8px;
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(44,62,80,0.3);
         }
-        main {
-            min-height: calc(100vh - 76px);
-            background-color: #f8f9fa;
+
+        .btn-success {
+            background: linear-gradient(135deg, #27ae60 0%, #2ecc71 100%);
+            border: none;
         }
+
+        .btn-warning {
+            background: linear-gradient(135deg, #f39c12 0%, #e67e22 100%);
+            border: none;
+            color: white;
+        }
+
+        .btn-danger {
+            background: linear-gradient(135deg, #c0392b 0%, #e74c3c 100%);
+            border: none;
+        }
+
+        /* Footer refinado */
         .footer {
-            background-color: #f8f9fa;
-            border-top: 1px solid #dee2e6;
+            background: linear-gradient(135deg, #1a2632 0%, #0f1720 100%);
+            color: #adb7be;
+            padding: 0.8rem 0;
+            margin-top: 1.5rem;
+            font-size: 0.75rem;
+        }
+
+        .footer a {
+            color: var(--secondary);
+            text-decoration: none;
+            transition: color 0.3s;
+        }
+
+        .footer a:hover {
+            color: white;
+        }
+
+        /* Tabelas refinadas */
+        .table {
+            border-radius: 16px;
+            overflow: hidden;
+        }
+
+        .table thead th {
+            background-color: var(--primary);
+            color: white;
+            font-weight: 500;
+            border: none;
+            padding: 8px;
+            font-size: 0.8rem;
+        }
+
+        .table-hover tbody tr:hover {
+            background-color: rgba(44,62,80,0.05);
+        }
+
+        /* Alertas refinados */
+        .alert {
+            border-radius: 16px;
+            border: none;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+        }
+
+        /* Animações */
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        main {
+            animation: fadeIn 0.5s ease-out;
+        }
+
+        /* Responsividade */
+        @media (max-width: 768px) {
+            .navbar-brand {
+                font-size: 1.1rem;
+            }
+            .navbar-nav .nav-link {
+                padding: 0.25rem 0.6rem;
+                font-size: 0.8rem;
+            }
         }
     </style>
+    {% block extra_css %}{% endblock %}
 </head>
 <body>
-    <!-- Navbar -->
-    <nav class="navbar navbar-expand-lg navbar-dark bg-dark sticky-top">
-        <div class="container-fluid">
+    <!-- Navbar refinada e compacta -->
+    <nav class="navbar navbar-expand-lg sticky-top">
+        <div class="container">
             <a class="navbar-brand" href="/dashboard">
                 <i class="bi bi-building"></i> Sistema Maçônico
             </a>
@@ -60,101 +255,91 @@
                             <i class="bi bi-speedometer2"></i> Dashboard
                         </a>
                     </li>
-					<li class="nav-item">
-						<a class="nav-link" href="/comunicados">
-							<i class="bi bi-megaphone"></i> Comunicados
-						</a>
-					</li>
-                    
                     {% if session.tipo == 'admin' %}
-                    <!-- Menu Admin -->
-					<li class="nav-item">
-						<a class="nav-link" href="/exportar/presenca">
-					<i class="bi bi-file-excel"></i> Exportar Presença
-						</a>
-					</li>
-					<li class="nav-item">
-                        <a class="nav-link" href="/obreiros">
-                            <i class="bi bi-people"></i> Obreiros
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="/reunioes">
-                            <i class="bi bi-calendar-event"></i> Reuniões
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="/presenca/estatisticas">
-                            <i class="bi bi-bar-chart"></i> Estatísticas
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="/presenca/alertas">
-                            <i class="bi bi-exclamation-triangle"></i> Alertas
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="/cargos">
-                            <i class="bi bi-diagram-3"></i> Cargos
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="/candidatos">
-                            <i class="bi bi-person-badge"></i> Candidatos
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="/sindicantes">
-                            <i class="bi bi-person-gear"></i> Sindicantes
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="/lojas">
-                            <i class="bi bi-building"></i> Lojas
-                        </a>
-                    </li>
-                    
+                        <li class="nav-item">
+                            <a class="nav-link" href="/obreiros">
+                                <i class="bi bi-people"></i> Obreiros
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="/reunioes">
+                                <i class="bi bi-calendar-event"></i> Reuniões
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="/presenca/estatisticas">
+                                <i class="bi bi-bar-chart"></i> Estatísticas
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="/presenca/alertas">
+                                <i class="bi bi-exclamation-triangle"></i> Alertas
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="/atas">
+                                <i class="bi bi-file-text"></i> Atas
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="/comunicados">
+                                <i class="bi bi-megaphone"></i> Comunicados
+                            </a>
+                        </li>
+                        <!-- Dropdown Administração -->
+						<li class="nav-item dropdown">
+                            <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
+                                <i class="bi bi-gear"></i> Administração
+                            </a>
+                            <ul class="dropdown-menu">
+								<li><a class="dropdown-item" href="/atas"><i class="bi bi-file-text"></i> Atas</a></li>
+								<li><a class="dropdown-item" href="/cargos"><i class="bi bi-diagram-3"></i> Cargos</a></li>
+								<li><a class="dropdown-item" href="/candidatos"><i class="bi bi-person-badge"></i> Candidatos</a></li>
+								<li><a class="dropdown-item" href="/sindicantes"><i class="bi bi-person-gear"></i> Sindicantes</a></li>
+								<li><a class="dropdown-item" href="/lojas"><i class="bi bi-building"></i> Lojas</a></li>
+								<li><a class="dropdown-item" href="/tipos_ausencia"><i class="bi bi-exclamation-triangle"></i> Tipos Ausência</a></li>
+								<li><hr class="dropdown-divider"></li>
+								<li><a class="dropdown-item" href="/relatorios/consolidados"><i class="bi bi-file-pdf"></i> Relatórios Consolidados</a></li>
+								<li><a class="dropdown-item" href="/exportar/presenca"><i class="bi bi-file-excel"></i> Exportar Presença</a></li>
+								<li><a class="dropdown-item" href="/backup"><i class="bi bi-database"></i> Backup Banco</a></li>
+								<li><a class="dropdown-item" href="/restaurar"><i class="bi bi-arrow-repeat"></i> Restaurar Backup</a></li>
+								<li><a class="dropdown-item" href="/auditoria"><i class="bi bi-journal-text"></i> Log de Atividades</a></li>
+							</ul>
+                        </li>
                     {% elif session.tipo == 'sindicante' %}
-                    <!-- Menu Sindicante -->
-                    <li class="nav-item">
-                        <a class="nav-link" href="/obreiros">
-                            <i class="bi bi-people"></i> Obreiros
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="/reunioes">
-                            <i class="bi bi-calendar-event"></i> Reuniões
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="/minhas_sindicancias">
-                            <i class="bi bi-person-badge"></i> Sindicâncias
-                        </a>
-                    </li>
-                    
+                        <li class="nav-item">
+                            <a class="nav-link" href="/obreiros">
+                                <i class="bi bi-people"></i> Obreiros
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="/reunioes">
+                                <i class="bi bi-calendar-event"></i> Reuniões
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="/minhas_sindicancias">
+                                <i class="bi bi-person-badge"></i> Sindicâncias
+                            </a>
+                        </li>
                     {% else %}
-                    <!-- Menu Obreiro -->
-                    <li class="nav-item">
-                        <a class="nav-link" href="/obreiros">
-                            <i class="bi bi-people"></i> Obreiros
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="/reunioes">
-                            <i class="bi bi-calendar-event"></i> Reuniões
-                        </a>
-                    </li>
-					
-					<!-- ... outros links ... -->
-					<li class="nav-item">
-						<a class="nav-link" href="/atas">
-							<i class="bi bi-file-text"></i> Atas
-						</a>
-					</li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="/obreiros">
+                                <i class="bi bi-people"></i> Obreiros
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="/reunioes">
+                                <i class="bi bi-calendar-event"></i> Reuniões
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="/comunicados">
+                                <i class="bi bi-megaphone"></i> Comunicados
+                            </a>
+                        </li>
                     {% endif %}
                 </ul>
-                
-                <!-- Menu do Usuário -->
                 <ul class="navbar-nav">
                     <li class="nav-item dropdown">
                         <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
@@ -164,41 +349,22 @@
                             {% else %}
                                 {{ session.usuario }}
                             {% endif %}
-                            <span class="badge {% if session.tipo == 'admin' %}bg-danger{% elif session.tipo == 'sindicante' %}bg-success{% else %}bg-info{% endif %} ms-1">
+                            <span class="badge {% if session.tipo == 'admin' %}bg-primary{% elif session.tipo == 'sindicante' %}bg-success{% else %}bg-info{% endif %} ms-1">
                                 {{ session.tipo }}
                             </span>
                         </a>
                         <ul class="dropdown-menu dropdown-menu-end">
-                            <li>
-                                <a class="dropdown-item" href="/perfil">
-                                    <i class="bi bi-person-gear"></i> Meu Perfil
-                                </a>
-                            </li>
-                            
+                            <li><a class="dropdown-item" href="/perfil"><i class="bi bi-person-gear"></i> Meu Perfil</a></li>
                             {% if session.tipo == 'sindicante' and session.loja_nome %}
-                            <li>
-                                <span class="dropdown-item-text small text-muted">
-                                    <i class="bi bi-building"></i> {{ session.loja_nome }} - Nº {{ session.loja_numero or '' }}
-                                </span>
-                            </li>
-                            <li>
-                                <span class="dropdown-item-text small text-muted">
-                                    <i class="bi bi-geo-alt"></i> {{ session.loja_orient or 'Oriente não informado' }}
-                                </span>
-                            </li>
-                            <li>
-                                <span class="dropdown-item-text small text-muted">
-                                    <i class="bi bi-card-text"></i> CIM: {{ session.cim_numero or 'Não informado' }}
-                                </span>
-                            </li>
                             <li><hr class="dropdown-divider"></li>
+                            <li><span class="dropdown-item-text small text-muted">
+                                <i class="bi bi-building"></i> {{ session.loja_nome }} - Nº {{ session.loja_numero or '' }}<br>
+                                <i class="bi bi-geo-alt"></i> {{ session.loja_orient or 'Oriente' }} | 
+                                <i class="bi bi-card-text"></i> CIM: {{ session.cim_numero or 'N/I' }}
+                            </span></li>
                             {% endif %}
-                            
-                            <li>
-                                <a class="dropdown-item text-danger" href="/logout">
-                                    <i class="bi bi-box-arrow-right"></i> Sair
-                                </a>
-                            </li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li><a class="dropdown-item text-danger" href="/logout"><i class="bi bi-box-arrow-right"></i> Sair</a></li>
                         </ul>
                     </li>
                 </ul>
@@ -211,25 +377,36 @@
         {% block content %}{% endblock %}
     </main>
 
-    <!-- Footer -->
-    <footer class="footer text-center text-muted py-3 mt-4">
-    <small>
-        <i class="bi bi-building"></i> Sistema Maçônico &copy; 
-        {% if now %}
-            {{ now.year }}
-        {% else %}
-            2024
-        {% endif %}
-        - Todos os direitos reservados
-    </small>
-</footer>
+    <!-- Footer refinado -->
+    <footer class="footer">
+        <div class="container text-center">
+            <div class="row">
+                <div class="col-md-6 mb-2 mb-md-0">
+                    <small>
+                        <i class="bi bi-building"></i> Sistema Maçônico &copy; 
+                        {% if now %}
+                            {{ now.year }}
+                        {% else %}
+                            {{ datetime.now().year }}
+                        {% endif %}
+                        - Todos os direitos reservados
+                    </small>
+                </div>
+                <div class="col-md-6">
+                    <small>
+                        <i class="bi bi-envelope"></i> <a href="mailto:suporte@loja.com">suporte@loja.com</a> |
+                        <i class="bi bi-shield-check"></i> <a href="#">Segurança</a>
+                    </small>
+                </div>
+            </div>
+        </div>
+    </footer>
 
     <!-- Scripts globais -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
     <script src="https://cdn.datatables.net/1.13.7/js/jquery.dataTables.min.js"></script>
     <script src="https://cdn.datatables.net/1.13.7/js/dataTables.bootstrap5.min.js"></script>
-    
     {% block extra_js %}{% endblock %}
 </body>
 </html>

@@ -1,0 +1,191 @@
+{% extends "base.html" %}
+
+{% block title %}Log de Atividades{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="https://cdn.datatables.net/1.13.7/css/dataTables.bootstrap5.min.css">
+<style>
+    .acao-badge {
+        padding: 4px 8px;
+        border-radius: 20px;
+        font-size: 0.7rem;
+        font-weight: 500;
+        display: inline-block;
+    }
+    .acao-criar { background-color: #28a745; color: white; }
+    .acao-editar { background-color: #ffc107; color: #212529; }
+    .acao-excluir { background-color: #dc3545; color: white; }
+    .acao-login { background-color: #17a2b8; color: white; }
+    .acao-logout { background-color: #6c757d; color: white; }
+    .acao-aprovar { background-color: #20c997; color: white; }
+    .acao-exportar { background-color: #fd7e14; color: white; }
+    .json-preview {
+        max-width: 250px;
+        max-height: 80px;
+        overflow: auto;
+        font-size: 0.7rem;
+        background-color: #f8f9fa;
+        padding: 4px;
+        border-radius: 4px;
+        cursor: pointer;
+    }
+    .json-preview:hover {
+        background-color: #e9ecef;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="container">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h2>
+                <i class="bi bi-journal-text"></i> 
+                Log de Atividades
+            </h2>
+            <div>
+                <a href="/auditoria/exportar" class="btn btn-success me-2">
+                    <i class="bi bi-download"></i> Exportar CSV
+                </a>
+                <a href="/dashboard" class="btn btn-outline-secondary">
+                    <i class="bi bi-arrow-left"></i> Voltar
+                </a>
+            </div>
+        </div>
+
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+                        {{ message }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
+        <!-- Filtros -->
+        <div class="card shadow mb-4">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0"><i class="bi bi-funnel"></i> Filtros</h5>
+            </div>
+            <div class="card-body">
+                <form method="GET" class="row g-3">
+                    <div class="col-md-2">
+                        <label class="form-label">Data Início</label>
+                        <input type="date" class="form-control" name="data_ini" value="{{ filtros.data_ini }}">
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label">Data Fim</label>
+                        <input type="date" class="form-control" name="data_fim" value="{{ filtros.data_fim }}">
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label">Ação</label>
+                        <select class="form-select" name="acao">
+                            <option value="">Todas</option>
+                            {% for a in acoes %}
+                            <option value="{{ a.acao }}" {% if filtros.acao == a.acao %}selected{% endif %}>{{ a.acao|capitalize }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label">Entidade</label>
+                        <select class="form-select" name="entidade">
+                            <option value="">Todas</option>
+                            {% for e in entidades %}
+                            <option value="{{ e.entidade }}" {% if filtros.entidade == e.entidade %}selected{% endif %}>{{ e.entidade|capitalize }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">Usuário</label>
+                        <input type="text" class="form-control" name="usuario" value="{{ filtros.usuario }}" placeholder="Nome do usuário">
+                    </div>
+                    <div class="col-md-1 d-flex align-items-end">
+                        <button type="submit" class="btn btn-primary w-100">Filtrar</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Tabela de Logs -->
+        <div class="card shadow">
+            <div class="card-header bg-dark text-white">
+                <h5 class="mb-0">Registros de Atividades (últimos 1000)</h5>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-hover" id="tabelaLogs">
+                        <thead>
+                            <tr>
+                                <th>Data/Hora</th>
+                                <th>Usuário</th>
+                                <th>Ação</th>
+                                <th>Entidade</th>
+                                <th>ID</th>
+                                <th>Detalhes</th>
+                                <th>IP</th>
+                            </thead>
+                        <tbody>
+                            {% for log in logs %}
+                            <tr>
+                                <td><small>{{ log.data_hora[:16] }}</small>{% if log.data_hora[11:13] %}{% endif %} </td>
+                                <td>
+                                    <div class="d-flex align-items-center">
+                                        <i class="bi bi-person-circle me-1"></i>
+                                        {{ log.usuario_nome }}
+                                    </div>
+                                 </td>
+                                <td>
+                                    <span class="acao-badge acao-{{ log.acao }}">
+                                        {{ log.acao|upper }}
+                                    </span>
+                                 </td>
+                                <td>{{ log.entidade|default('-')|capitalize }}</td>
+                                <td>{{ log.entidade_id|default('-') }}</td>
+                                <td>
+                                    {% if log.dados_anteriores or log.dados_novos %}
+                                    <div class="json-preview" onclick="verDetalhes({{ log.id }})" title="Clique para ver detalhes">
+                                        {% if log.dados_anteriores %}📄 Antigos: {{ log.dados_anteriores[:50] }}...{% endif %}
+                                        {% if log.dados_novos %}🆕 Novos: {{ log.dados_novos[:50] }}...{% endif %}
+                                    </div>
+                                    {% else %}
+                                    <span class="text-muted">-</span>
+                                    {% endif %}
+                                 </td>
+                                <td><small>{{ log.ip|default('-') }}</small></td>
+                             </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% if not logs %}
+                <div class="text-center py-4">
+                    <i class="bi bi-inbox text-muted fs-1"></i>
+                    <p class="text-muted mt-2">Nenhum registro encontrado.</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+<script src="https://cdn.datatables.net/1.13.7/js/jquery.dataTables.min.js"></script>
+<script src="https://cdn.datatables.net/1.13.7/js/dataTables.bootstrap5.min.js"></script>
+<script>
+    $(document).ready(function() {
+        $('#tabelaLogs').DataTable({
+            language: {
+                url: '//cdn.datatables.net/plug-ins/1.13.7/i18n/pt-BR.json'
+            },
+            order: [[0, 'desc']],
+            pageLength: 50
+        });
+    });
+    
+    function verDetalhes(id) {
+        window.location.href = '/auditoria/' + id;
+    }
+</script>
+{% endblock %}

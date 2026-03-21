@@ -1,0 +1,196 @@
+{% extends "base.html" %}
+
+{% block title %}Documentos - {{ obreiro_nome }}{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="https://cdn.datatables.net/1.13.7/css/dataTables.bootstrap5.min.css">
+<style>
+    .file-icon {
+        font-size: 2.5rem;
+        margin-right: 10px;
+    }
+    .file-card {
+        transition: transform 0.2s, box-shadow 0.2s;
+        cursor: pointer;
+    }
+    .file-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+    }
+    .categoria-badge {
+        padding: 4px 8px;
+        border-radius: 20px;
+        font-size: 0.7rem;
+    }
+    .preview-image {
+        max-width: 100px;
+        max-height: 100px;
+        object-fit: cover;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="container">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h2>
+                <i class="bi bi-folder2-open"></i> 
+                Documentos de {{ obreiro_nome }}
+            </h2>
+            <div>
+                <a href="/obreiros/{{ obreiro_id }}" class="btn btn-outline-info me-2">
+                    <i class="bi bi-person-circle"></i> Perfil
+                </a>
+                <a href="/obreiros" class="btn btn-outline-secondary">
+                    <i class="bi bi-arrow-left"></i> Voltar
+                </a>
+            </div>
+        </div>
+
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+                        {{ message }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
+        <!-- Formulário de Upload -->
+        <div class="card shadow mb-4">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0"><i class="bi bi-cloud-upload"></i> Adicionar Documento</h5>
+            </div>
+            <div class="card-body">
+                <form method="POST" action="/obreiros/{{ obreiro_id }}/documentos/upload" enctype="multipart/form-data" class="row g-3">
+                    <div class="col-md-4">
+                        <label class="form-label">Título *</label>
+                        <input type="text" class="form-control" name="titulo" placeholder="Título do documento">
+                        <small class="text-muted">Deixe em branco para usar o nome do arquivo</small>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">Categoria</label>
+                        <select class="form-select" name="categoria">
+                            {% for cat in categorias %}
+                            <option value="{{ cat.nome }}">{{ cat.nome }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-5">
+                        <label class="form-label">Arquivo *</label>
+                        <input type="file" class="form-control" name="arquivo" required>
+                        <small class="text-muted">PDF, imagens, Word, Excel, ZIP (max 50MB)</small>
+                    </div>
+                    <div class="col-12">
+                        <label class="form-label">Descrição</label>
+                        <textarea class="form-control" name="descricao" rows="2" placeholder="Descrição do documento..."></textarea>
+                    </div>
+                    <div class="col-12 text-end">
+                        <button type="submit" class="btn btn-success">
+                            <i class="bi bi-cloud-upload"></i> Enviar Documento
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Lista de Documentos -->
+        <div class="card shadow">
+            <div class="card-header bg-dark text-white">
+                <h5 class="mb-0">
+                    <i class="bi bi-files"></i> 
+                    Documentos
+                    <span class="badge bg-light text-dark ms-2">{{ documentos|length }}</span>
+                </h5>
+            </div>
+            <div class="card-body">
+                {% if documentos %}
+                    <div class="table-responsive">
+                        <table class="table table-hover" id="tabelaDocumentos">
+                            <thead>
+                                <tr>
+                                    <th>Arquivo</th>
+                                    <th>Título</th>
+                                    <th>Categoria</th>
+                                    <th>Descrição</th>
+                                    <th>Data Upload</th>
+                                    <th>Tamanho</th>
+                                    <th>Ações</th>
+                                 </thead>
+                            <tbody>
+                                {% for doc in documentos %}
+                                <tr>
+                                    <td class="text-center">
+                                        {% if doc.tipo_arquivo in ['jpg', 'jpeg', 'png', 'gif'] %}
+                                            <i class="bi bi-file-image fs-2 text-info"></i>
+                                        {% elif doc.tipo_arquivo == 'pdf' %}
+                                            <i class="bi bi-file-pdf fs-2 text-danger"></i>
+                                        {% elif doc.tipo_arquivo in ['doc', 'docx'] %}
+                                            <i class="bi bi-file-word fs-2 text-primary"></i>
+                                        {% elif doc.tipo_arquivo in ['xls', 'xlsx'] %}
+                                            <i class="bi bi-file-excel fs-2 text-success"></i>
+                                        {% elif doc.tipo_arquivo in ['zip', 'rar'] %}
+                                            <i class="bi bi-file-zip fs-2 text-secondary"></i>
+                                        {% else %}
+                                            <i class="bi bi-file-earmark fs-2 text-muted"></i>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <strong>{{ doc.titulo }}</strong>
+                                        <br>
+                                        <small class="text-muted">{{ doc.tipo_arquivo|upper }}</small>
+                                    </td>
+                                    <td>
+                                        <span class="badge" style="background-color: #e9ecef;">
+                                            <i class="{{ doc.icone or 'bi-folder' }}"></i>
+                                            {{ doc.categoria_nome }}
+                                        </span>
+                                    </td>
+                                    <td><small>{{ doc.descricao|default('-')|truncate(50) }}</small></td>
+                                    <td><small>{{ doc.data_upload[:16] }}</small></td>
+                                    <td><small>{{ (doc.tamanho / 1024)|round(1) }} KB</small></td>
+                                    <td>
+                                        <div class="btn-group btn-group-sm">
+                                            <a href="/documentos/{{ doc.id }}/baixar" class="btn btn-outline-success" title="Baixar">
+                                                <i class="bi bi-download"></i>
+                                            </a>
+                                            <a href="/documentos/{{ doc.id }}/excluir" class="btn btn-outline-danger" 
+                                               onclick="return confirm('Excluir este documento?')" title="Excluir">
+                                                <i class="bi bi-trash"></i>
+                                            </a>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% else %}
+                    <div class="text-center py-5">
+                        <i class="bi bi-folder2-open text-muted" style="font-size: 4rem;"></i>
+                        <h5 class="text-muted mt-3">Nenhum documento cadastrado</h5>
+                        <p>Clique em "Adicionar Documento" para fazer upload de arquivos.</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+<script src="https://cdn.datatables.net/1.13.7/js/jquery.dataTables.min.js"></script>
+<script src="https://cdn.datatables.net/1.13.7/js/dataTables.bootstrap5.min.js"></script>
+<script>
+    $(document).ready(function() {
+        $('#tabelaDocumentos').DataTable({
+            language: {
+                url: '//cdn.datatables.net/plug-ins/1.13.7/i18n/pt-BR.json'
+            },
+            order: [[4, 'desc']]
+        });
+    });
+</script>
+{% endblock %}
