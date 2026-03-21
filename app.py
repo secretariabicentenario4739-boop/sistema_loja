@@ -3007,6 +3007,109 @@ def excluir_loja(id):
     conn.close()
     flash("Loja excluída!", "success")
     return redirect("/lojas")
+# =============================
+# ROTAS DE TIPOS DE AUSÊNCIA
+# =============================
+@app.route("/tipos_ausencia")
+@admin_required
+def listar_tipos_ausencia():
+    conn = get_db()
+    cursor = conn.cursor()
+    cursor.execute("SELECT * FROM tipos_ausencia ORDER BY nome")
+    tipos = cursor.fetchall()
+    conn.close()
+    return render_template("presenca/tipos_ausencia.html", tipos=tipos)
+
+@app.route("/tipos_ausencia/novo", methods=["GET", "POST"])
+@admin_required
+def novo_tipo_ausencia():
+    if request.method == "POST":
+        nome = request.form.get("nome")
+        descricao = request.form.get("descricao")
+        requer_comprovante = 1 if request.form.get("requer_comprovante") else 0
+        cor = request.form.get("cor", "#6c757d")
+        
+        if not nome:
+            flash("Nome é obrigatório", "danger")
+        else:
+            conn = get_db()
+            cursor = conn.cursor()
+            cursor.execute("""
+                INSERT INTO tipos_ausencia (nome, descricao, requer_comprovante, cor, ativo)
+                VALUES (?, ?, ?, ?, 1)
+            """, (nome, descricao, requer_comprovante, cor))
+            conn.commit()
+            tipo_id = cursor.lastrowid
+            registrar_log("criar", "tipo_ausencia", tipo_id, dados_novos={"nome": nome})
+            conn.close()
+            flash(f"Tipo de ausência '{nome}' adicionado com sucesso!", "success")
+            return redirect("/tipos_ausencia")
+    
+    return render_template("presenca/tipo_ausencia_form.html")
+
+@app.route("/tipos_ausencia/editar/<int:id>", methods=["GET", "POST"])
+@admin_required
+def editar_tipo_ausencia(id):
+    conn = get_db()
+    cursor = conn.cursor()
+    
+    if request.method == "POST":
+        nome = request.form.get("nome")
+        descricao = request.form.get("descricao")
+        requer_comprovante = 1 if request.form.get("requer_comprovante") else 0
+        cor = request.form.get("cor", "#6c757d")
+        ativo = 1 if request.form.get("ativo") else 0
+        
+        cursor.execute("SELECT * FROM tipos_ausencia WHERE id = ?", (id,))
+        dados_antigos = dict(cursor.fetchone())
+        
+        cursor.execute("""
+            UPDATE tipos_ausencia 
+            SET nome = ?, descricao = ?, requer_comprovante = ?, cor = ?, ativo = ?
+            WHERE id = ?
+        """, (nome, descricao, requer_comprovante, cor, ativo, id))
+        conn.commit()
+        
+        registrar_log("editar", "tipo_ausencia", id, dados_anteriores=dados_antigos,
+                     dados_novos={"nome": nome})
+        flash("Tipo de ausência atualizado com sucesso!", "success")
+        return redirect("/tipos_ausencia")
+    
+    cursor.execute("SELECT * FROM tipos_ausencia WHERE id = ?", (id,))
+    tipo = cursor.fetchone()
+    conn.close()
+    
+    if not tipo:
+        flash("Tipo de ausência não encontrado", "danger")
+        return redirect("/tipos_ausencia")
+    
+    return render_template("presenca/tipo_ausencia_form.html", tipo=tipo)
+
+@app.route("/tipos_ausencia/excluir/<int:id>")
+@admin_required
+def excluir_tipo_ausencia(id):
+    conn = get_db()
+    cursor = conn.cursor()
+    
+    cursor.execute("SELECT * FROM tipos_ausencia WHERE id = ?", (id,))
+    dados = dict(cursor.fetchone()) if cursor.fetchone() else None
+    
+    # Verificar se está sendo usado
+    cursor.execute("SELECT COUNT(*) as total FROM presenca WHERE tipo_ausencia = (SELECT nome FROM tipos_ausencia WHERE id = ?)", (id,))
+    resultado = cursor.fetchone()
+    
+    if resultado and resultado["total"] > 0:
+        # Se estiver sendo usado, apenas desativa
+        cursor.execute("UPDATE tipos_ausencia SET ativo = 0 WHERE id = ?", (id,))
+        flash("Tipo de ausência desativado pois está em uso.", "warning")
+    else:
+        cursor.execute("DELETE FROM tipos_ausencia WHERE id = ?", (id,))
+        registrar_log("excluir", "tipo_ausencia", id, dados_anteriores=dados)
+        flash("Tipo de ausência excluído com sucesso!", "success")
+    
+    conn.commit()
+    conn.close()
+    return redirect("/tipos_ausencia")
 
 # =============================
 # ROTAS DE BACKUP E RESTAURAÇÃO
