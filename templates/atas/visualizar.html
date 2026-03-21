@@ -1,0 +1,244 @@
+{% extends "base.html" %}
+
+{% block title %}Ata {{ ata.numero_ata }}/{{ ata.ano_ata }} - {{ ata.reuniao_titulo }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="container">
+        <!-- Cabeçalho com botões -->
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h2>
+                <i class="bi bi-file-text"></i> 
+                Ata {{ ata.numero_ata }}/{{ ata.ano_ata }}
+            </h2>
+            <div class="btn-group">
+                <!-- Botão Editar (só admin e se não aprovada) -->
+                {% if session.tipo == 'admin' and ata.aprovada == 0 %}
+                <a href="/atas/{{ ata.id }}/editar" class="btn btn-warning">
+                    <i class="bi bi-pencil"></i> Editar
+                </a>
+                {% endif %}
+                
+                <!-- Botão PDF (sempre visível) -->
+                <a href="/atas/{{ ata.id }}/pdf" class="btn btn-success" target="_blank">
+                    <i class="bi bi-file-pdf"></i> PDF
+                </a>
+                
+                <!-- Botão Voltar -->
+                <a href="/atas" class="btn btn-outline-secondary">
+                    <i class="bi bi-arrow-left"></i> Voltar
+                </a>
+            </div>
+        </div>
+
+        <!-- Status da Ata com botão de aprovação -->
+        <div class="alert {% if ata.aprovada == 1 %}alert-success{% else %}alert-warning{% endif %} d-flex justify-content-between align-items-center">
+            <div>
+                <i class="bi {% if ata.aprovada == 1 %}bi-check-circle-fill{% else %}bi-clock-history{% endif %}"></i>
+                {% if ata.aprovada == 1 %}
+                    <strong>Ata aprovada</strong> em {{ ata.aprovada_em }} por {{ ata.aprovado_por_nome or 'Administrador' }}
+                {% else %}
+                    <strong>Ata pendente de aprovação</strong>
+                {% endif %}
+            </div>
+            
+            <!-- Botão Aprovar (só admin e se pendente) -->
+            {% if session.tipo == 'admin' and ata.aprovada == 0 %}
+            <form method="POST" action="/atas/{{ ata.id }}/aprovar" class="d-inline">
+                <button type="submit" class="btn btn-success" onclick="return confirm('Confirmar aprovação da ata?')">
+                    <i class="bi bi-check-lg"></i> Aprovar Ata
+                </button>
+            </form>
+            {% endif %}
+        </div>
+
+        <div class="row">
+            <!-- Coluna da esquerda - Informações -->
+            <div class="col-md-4">
+                <!-- Card de Informações da Reunião -->
+                <div class="card shadow mb-4">
+                    <div class="card-header bg-primary text-white">
+                        <h5 class="mb-0">Informações da Reunião</h5>
+                    </div>
+                    <div class="card-body">
+                        <table class="table table-sm">
+                            <tr>
+                                <th>Reunião:</th>
+                                <td>{{ ata.reuniao_titulo }}</td>
+                            </tr>
+                            <tr>
+                                <th>Data:</th>
+                                <td>{{ ata.reuniao_data[:10] }}</td>
+                            </tr>
+                            <tr>
+                                <th>Horário:</th>
+                                <td>{{ ata.hora_inicio[:5] }} às {{ ata.hora_termino[:5] }}</td>
+                            </tr>
+                            <tr>
+                                <th>Local:</th>
+                                <td>{{ ata.local or 'Não informado' }}</td>
+                            </tr>
+                            <tr>
+                                <th>Tipo:</th>
+                                <td><span class="badge bg-info">{{ ata.tipo_ata }}</span></td>
+                            </tr>
+                            <tr>
+                                <th>Redator:</th>
+                                <td>{{ ata.redator_nome or 'Sistema' }}</td>
+                            </tr>
+                            <tr>
+                                <th>Criação:</th>
+                                <td><small>{{ ata.data_criacao[:16] }}</small></td>
+                            </tr>
+                            <tr>
+                                <th>Versão:</th>
+                                <td><span class="badge bg-secondary">{{ ata.versao }}</span></td>
+                            </tr>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Card de Lista de Presença -->
+                <div class="card shadow mb-4">
+                    <div class="card-header bg-success text-white">
+                        <h5 class="mb-0">Lista de Presença</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table table-sm">
+                                <thead>
+                                    <tr>
+                                        <th>Obreiro</th>
+                                        <th>Status</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for p in presenca[:5] %}
+                                    <tr>
+                                        <td>{{ p.nome_completo }}</td>
+                                        <td>
+                                            {% if p.presente == 1 %}
+                                                <span class="badge bg-success">Presente</span>
+                                            {% else %}
+                                                <span class="badge bg-danger">Ausente</span>
+                                            {% endif %}
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                        {% if presenca|length > 5 %}
+                        <p class="text-center">
+                            <small class="text-muted">... e mais {{ presenca|length - 5 }} obreiros</small>
+                        </p>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <!-- Card de Assinaturas com botão Assinar -->
+                <div class="card shadow mb-4">
+                    <div class="card-header bg-warning text-dark">
+                        <h5 class="mb-0">
+                            <i class="bi bi-pen"></i> 
+                            Assinaturas ({{ assinaturas|length }})
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        {% if assinaturas %}
+                            <div class="list-group mb-3">
+                                {% for ass in assinaturas %}
+                                <div class="list-group-item">
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <div>
+                                            <strong>{{ ass.nome_completo }}</strong>
+                                            <br>
+                                            <small class="text-muted">{{ ass.cargo_nome or 'Obreiro' }}</small>
+                                        </div>
+                                        <i class="bi bi-check-circle-fill text-success"></i>
+                                    </div>
+                                    <small class="text-success">
+                                        Assinado em {{ ass.data_assinatura[:16] }}
+                                    </small>
+                                </div>
+                                {% endfor %}
+                            </div>
+                        {% else %}
+                            <p class="text-muted text-center">Nenhuma assinatura registrada</p>
+                        {% endif %}
+                        
+                        <!-- Botão Assinar (visível para todos logados, exceto se já assinou) -->
+                        {% set ja_assinou = false %}
+                        {% for ass in assinaturas %}
+                            {% if ass.obreiro_id == session.user_id %}
+                                {% set ja_assinou = true %}
+                            {% endif %}
+                        {% endfor %}
+                        
+                        {% if not ja_assinou and ata.aprovada == 0 %}
+                        <form method="POST" action="/atas/{{ ata.id }}/assinar">
+                            <button type="submit" class="btn btn-warning w-100">
+                                <i class="bi bi-pen"></i> Assinar Ata
+                            </button>
+                        </form>
+                        {% elif ja_assinou %}
+                        <div class="alert alert-success text-center mb-0">
+                            <i class="bi bi-check-circle"></i> Você já assinou esta ata
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Coluna da direita - Conteúdo da Ata -->
+            <div class="col-md-8">
+                <div class="card shadow">
+                    <div class="card-header bg-dark text-white d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0">Conteúdo da Ata</h5>
+                        {% if ata.versao > 1 %}
+                        <span class="badge bg-info">Versão {{ ata.versao }}</span>
+                        {% endif %}
+                    </div>
+                    <div class="card-body">
+                        <div class="p-4 bg-light rounded" style="white-space: pre-line; font-family: 'Times New Roman', serif; min-height: 400px;">
+                            {{ ata.conteudo }}
+                        </div>
+                        
+                        <hr class="my-4">
+                        
+                        <!-- Linhas de assinatura no rodapé -->
+                        <div class="row mt-4">
+                            <div class="col-6 text-center">
+                                <p>____________________________________</p>
+                                <p><strong>Venerável Mestre</strong></p>
+                            </div>
+                            <div class="col-6 text-center">
+                                <p>____________________________________</p>
+                                <p><strong>Secretário</strong></p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    /* Estilo para o conteúdo da ata */
+    .bg-light {
+        background-color: #f8f9fa !important;
+        border: 1px solid #dee2e6;
+    }
+    
+    /* Hover nos cards */
+    .card {
+        transition: transform 0.2s;
+    }
+    
+    .card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(0,0,0,0.1) !important;
+    }
+</style>
+{% endblock %}

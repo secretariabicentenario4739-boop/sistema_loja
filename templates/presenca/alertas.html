@@ -1,0 +1,69 @@
+{% extends "base.html" %}
+
+{% block title %}Alertas de Presença{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="container">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h2>
+                <i class="bi bi-exclamation-triangle"></i> 
+                Alertas de Presença
+            </h2>
+            <div>
+                <a href="/api/gerar_alertas" class="btn btn-warning me-2">
+                    <i class="bi bi-arrow-repeat"></i> Gerar Alertas
+                </a>
+                <a href="/presenca/estatisticas" class="btn btn-info me-2">
+                    <i class="bi bi-bar-chart"></i> Estatísticas
+                </a>
+                <a href="/reunioes" class="btn btn-outline-secondary">
+                    <i class="bi bi-arrow-left"></i> Voltar
+                </a>
+            </div>
+        </div>
+
+        {% if alertas %}
+            <div class="row">
+                {% for alerta in alertas %}
+                <div class="col-md-6 mb-3">
+                    <div class="card border-{% if 'limite' in alerta.tipo %}danger{% else %}warning{% endif %} shadow">
+                        <div class="card-header bg-{% if 'limite' in alerta.tipo %}danger{% else %}warning{% endif %} text-white">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <h6 class="mb-0">
+                                    <i class="bi bi-exclamation-circle"></i> 
+                                    {{ alerta.tipo|replace('_', ' ')|title }}
+                                </h6>
+                                <small>{{ alerta.data_gerado[:16] }}</small>
+                            </div>
+                        </div>
+                        <div class="card-body">
+                            <h6 class="card-title">{{ alerta.nome_completo }}</h6>
+                            <p class="card-text">{{ alerta.mensagem }}</p>
+                            
+                            {% if alerta.resolvido_por_nome %}
+                            <small class="text-muted">
+                                Resolvido por: {{ alerta.resolvido_por_nome }}
+                            </small>
+                            {% else %}
+                            <form method="POST" action="/presenca/alerta/{{ alerta.id }}/resolver" class="mt-2">
+                                <button type="submit" class="btn btn-sm btn-success">
+                                    <i class="bi bi-check-lg"></i> Marcar como Resolvido
+                                </button>
+                            </form>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <div class="text-center py-5">
+                <i class="bi bi-check-circle text-success" style="font-size: 4rem;"></i>
+                <h4 class="text-success mt-3">Nenhum Alerta Pendente</h4>
+                <p class="text-muted">Todos os obreiros estão com a presença regular.</p>
+            </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

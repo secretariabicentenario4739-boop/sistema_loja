@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Minhas Sindicâncias</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
+    <style>
+        .candidato-card {
+            transition: all 0.3s;
+            border: none;
+            border-radius: 15px;
+            overflow: hidden;
+        }
+        .candidato-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.15) !important;
+        }
+        .card-header-pendente {
+            background: linear-gradient(135deg, #ffc107 0%, #ff9800 100%);
+            color: white;
+        }
+        .card-header-enviado {
+            background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+            color: white;
+        }
+        .card-header-fechado {
+            background: linear-gradient(135deg, #6c757d 0%, #495057 100%);
+            color: white;
+        }
+        .status-badge {
+            font-size: 0.9rem;
+            padding: 8px 15px;
+            border-radius: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container-fluid py-4">
+        <div class="container">
+            <!-- Cabeçalho -->
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <div>
+                    <h2>
+                        <i class="bi bi-list-check"></i> 
+                        Minhas Sindicâncias
+                    </h2>
+                    <p class="text-muted">
+                        <i class="bi bi-person-circle"></i> 
+                        {{ session.usuario }} | 
+                        <span class="badge bg-success">Sindicante</span>
+                    </p>
+                </div>
+                <a href="/dashboard" class="btn btn-outline-secondary">
+                    <i class="bi bi-arrow-left"></i> Voltar ao Dashboard
+                </a>
+            </div>
+
+            <!-- Mensagens Flash -->
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    {% for category, message in messages %}
+                        <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+                            {{ message }}
+                            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                        </div>
+                    {% endfor %}
+                {% endif %}
+            {% endwith %}
+
+            <!-- Estatísticas Rápidas -->
+            <div class="row g-3 mb-4">
+                <div class="col-md-4">
+                    <div class="card text-center shadow-sm">
+                        <div class="card-body">
+                            <h5 class="text-warning">
+                                <i class="bi bi-hourglass-split"></i> 
+                                Pendentes
+                            </h5>
+                            <h2>{{ candidatos|selectattr('parecer_enviado', 'equalto', 0)|selectattr('fechado', 'equalto', 0)|list|length }}</h2>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="card text-center shadow-sm">
+                        <div class="card-body">
+                            <h5 class="text-success">
+                                <i class="bi bi-check-circle"></i> 
+                                Já Votados
+                            </h5>
+                            <h2>{{ candidatos|selectattr('parecer_enviado', 'equalto', 1)|list|length }}</h2>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="card text-center shadow-sm">
+                        <div class="card-body">
+                            <h5 class="text-secondary">
+                                <i class="bi bi-lock"></i> 
+                                Encerrados
+                            </h5>
+                            <h2>{{ candidatos|selectattr('fechado', 'equalto', 1)|list|length }}</h2>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Lista de Candidatos -->
+            {% if candidatos %}
+                <div class="row g-4">
+                    {% for item in candidatos %}
+                        <div class="col-md-6 col-lg-4">
+                            <div class="card candidato-card shadow h-100">
+                                <!-- Cabeçalho do Card baseado no status -->
+                                <div class="card-header 
+                                    {% if item.fechado %}
+                                        card-header-fechado
+                                    {% elif item.parecer_enviado %}
+                                        card-header-enviado
+                                    {% else %}
+                                        card-header-pendente
+                                    {% endif %}">
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <h6 class="mb-0 text-truncate" style="max-width: 200px;">
+                                            <i class="bi bi-person-badge"></i> 
+                                            {{ item.nome }}
+                                        </h6>
+                                        {% if item.fechado %}
+                                            <span class="badge bg-light text-dark">Encerrado</span>
+                                        {% elif item.parecer_enviado %}
+                                            <span class="badge bg-light text-success">Voto registrado</span>
+                                        {% else %}
+                                            <span class="badge bg-light text-warning">Aguardando</span>
+                                        {% endif %}
+                                    </div>
+                                </div>
+
+                                <div class="card-body">
+                                    <!-- Status do Candidato -->
+                                    <div class="mb-3">
+                                        <strong>Status Geral:</strong><br>
+                                        {% if item.status == "Aprovado" %}
+                                            <span class="badge bg-success status-badge w-100">
+                                                <i class="bi bi-check-circle"></i> Aprovado
+                                            </span>
+                                        {% elif item.status == "Reprovado" %}
+                                            <span class="badge bg-danger status-badge w-100">
+                                                <i class="bi bi-x-circle"></i> Reprovado
+                                            </span>
+                                        {% else %}
+                                            <span class="badge bg-warning text-dark status-badge w-100">
+                                                <i class="bi bi-hourglass-split"></i> Em análise
+                                            </span>
+                                        {% endif %}
+                                    </div>
+
+                                    <!-- Data de Abertura -->
+                                    <p class="mb-2">
+                                        <i class="bi bi-calendar"></i> 
+                                        <small class="text-muted">
+                                            Aberto em: {{ item.data_criacao[:10] }}
+                                        </small>
+                                    </p>
+
+                                    <!-- Seu Parecer -->
+                                    <div class="mb-3">
+                                        <strong>Seu Parecer:</strong><br>
+                                        {% if item.parecer_enviado %}
+                                            {% if item.parecer == "positivo" %}
+                                                <span class="badge bg-success">
+                                                    <i class="bi bi-hand-thumbs-up"></i> Positivo
+                                                </span>
+                                            {% else %}
+                                                <span class="badge bg-danger">
+                                                    <i class="bi bi-hand-thumbs-down"></i> Negativo
+                                                </span>
+                                            {% endif %}
+                                            <br>
+                                            <small class="text-muted">
+                                                Enviado em: {{ item.data_envio[:16] if item.data_envio else 'N/A' }}
+                                            </small>
+                                        {% else %}
+                                            <span class="badge bg-warning text-dark">
+                                                <i class="bi bi-clock"></i> Parecer não enviado
+                                            </span>
+                                        {% endif %}
+                                    </div>
+
+                                    <!-- Data de Fechamento (se encerrado) -->
+                                    {% if item.fechado and item.data_fechamento %}
+                                        <p class="mb-2">
+                                            <i class="bi bi-calendar-check"></i> 
+                                            <small class="text-muted">
+                                                Encerrado em: {{ item.data_fechamento[:10] }}
+                                            </small>
+                                        </p>
+                                    {% endif %}
+                                </div>
+
+                                <div class="card-footer bg-transparent">
+                                    <div class="d-grid">
+                                        <a href="/sindicancia/{{ item.id }}" 
+                                           class="btn 
+                                              {% if item.fechado %}
+                                                  btn-secondary
+                                              {% elif item.parecer_enviado %}
+                                                  btn-outline-primary
+                                              {% else %}
+                                                  btn-primary
+                                              {% endif %}">
+                                            <i class="bi bi-eye"></i> 
+                                            {% if item.fechado %}
+                                                Visualizar Resultado
+                                            {% elif item.parecer_enviado %}
+                                                Visualizar / Atualizar Parecer
+                                            {% else %}
+                                                Emitir Parecer
+                                            {% endif %}
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <!-- Mensagem quando não há candidatos -->
+                <div class="text-center py-5">
+                    <div class="mb-4">
+                        <i class="bi bi-inbox text-muted" style="font-size: 5rem;"></i>
+                    </div>
+                    <h3 class="text-muted">Nenhuma sindicância disponível</h3>
+                    <p class="text-muted mb-4">
+                        No momento não há candidatos para você avaliar.
+                    </p>
+                    <a href="/dashboard" class="btn btn-primary">
+                        <i class="bi bi-house"></i> Voltar ao Dashboard
+                    </a>
+                </div>
+            {% endif %}
+
+            <!-- Rodapé com legenda -->
+            <div class="row mt-4">
+                <div class="col-12">
+                    <div class="card bg-light">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-center gap-4">
+                                <span>
+                                    <i class="bi bi-square-fill text-warning"></i> 
+                                    Aguardando parecer
+                                </span>
+                                <span>
+                                    <i class="bi bi-square-fill text-success"></i> 
+                                    Parecer enviado
+                                </span>
+                                <span>
+                                    <i class="bi bi-square-fill text-secondary"></i> 
+                                    Sindicância encerrada
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

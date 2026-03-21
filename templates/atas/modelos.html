@@ -1,0 +1,81 @@
+{% extends "base.html" %}
+
+{% block title %}Modelos de Ata{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="container">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h2>
+                <i class="bi bi-diagram-3"></i> 
+                Modelos de Ata
+            </h2>
+            <div>
+                <a href="/atas/modelos/novo" class="btn btn-success">
+                    <i class="bi bi-plus-circle"></i> Novo Modelo
+                </a>
+                <a href="/atas" class="btn btn-outline-secondary">
+                    <i class="bi bi-arrow-left"></i> Voltar
+                </a>
+            </div>
+        </div>
+
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+                        {{ message }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
+        <div class="row">
+            {% for modelo in modelos %}
+            <div class="col-md-4 mb-4">
+                <div class="card h-100 shadow">
+                    <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0">{{ modelo.nome }}</h5>
+                        <div>
+                            <a href="/atas/modelos/editar/{{ modelo.id }}" class="btn btn-sm btn-light text-dark me-1" title="Editar">
+                                <i class="bi bi-pencil"></i>
+                            </a>
+                            <a href="/atas/modelos/excluir/{{ modelo.id }}" class="btn btn-sm btn-light text-danger" title="Excluir" onclick="return confirm('Tem certeza que deseja excluir este modelo?')">
+                                <i class="bi bi-trash"></i>
+                            </a>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <p><strong>Tipo:</strong> {{ modelo.tipo }}</p>
+                        <p class="small">{{ modelo.descricao or 'Sem descrição' }}</p>
+                        
+                        <hr>
+                        
+                        <h6>Estrutura:</h6>
+                        <ul class="small">
+                            {% set estrutura = modelo.estrutura_dict %}
+                            {% if estrutura.cabecalho %}
+                                <li>Cabeçalho: {{ estrutura.cabecalho|length }} itens</li>
+                            {% endif %}
+                            {% if estrutura.expediente %}
+                                <li>Expediente: {{ estrutura.expediente|length }} itens</li>
+                            {% endif %}
+                            {% if estrutura.ordem_do_dia %}
+                                <li>Ordem do Dia: {{ estrutura.ordem_do_dia|length }} itens</li>
+                            {% endif %}
+                            {% if estrutura.encerramento %}
+                                <li>Encerramento: {{ estrutura.encerramento|length }} itens</li>
+                            {% endif %}
+                        </ul>
+                    </div>
+                    <div class="card-footer bg-transparent">
+                        <small class="text-muted">Criado em: {{ modelo.created_at[:10] }}</small>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+{% endblock %}

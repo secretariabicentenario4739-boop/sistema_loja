@@ -1,0 +1,133 @@
+{% extends "base.html" %}
+
+{% block title %}Reuniões{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="https://cdn.datatables.net/1.13.7/css/dataTables.bootstrap5.min.css">
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="container">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h2>
+                <i class="bi bi-calendar-event"></i> 
+                Reuniões
+            </h2>
+            <div>
+                <a href="/reunioes/calendario" class="btn btn-outline-primary me-2">
+                    <i class="bi bi-calendar"></i> Calendário
+                </a>
+                {% if session.tipo == 'admin' %}
+                <a href="/reunioes/nova" class="btn btn-success">
+                    <i class="bi bi-plus-circle"></i> Nova Reunião
+                </a>
+                {% endif %}
+                <a href="/dashboard" class="btn btn-outline-secondary ms-2">
+                    <i class="bi bi-arrow-left"></i> Voltar
+                </a>
+            </div>
+        </div>
+
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+                        {{ message }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
+        <div class="card shadow">
+            <div class="card-header bg-dark text-white">
+                <h5 class="mb-0">Lista de Reuniões</h5>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-hover" id="tabelaReunioes">
+                        <thead>
+                            <tr>
+                                <th>Data</th>
+                                <th>Hora</th>
+                                <th>Título</th>
+                                <th>Tipo</th>
+                                <th>Grau</th>
+                                <th>Local</th>
+                                <th>Status</th>
+                                <th>Presença</th>
+                                <th>Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for r in reunioes %}
+                            <tr>
+                                <td>{{ r.data[:10] }}</td>
+                                <td>{{ r.hora_inicio[:5] if r.hora_inicio else '-' }}</td>
+                                <td>
+                                    <strong>{{ r.titulo }}</strong>
+                                </td>
+                                <td>
+                                    <span class="badge" style="background-color: {{ r.cor or '#6c757d' }}">
+                                        {{ r.tipo }}
+                                    </span>
+                                </td>
+                                <td>
+                                    {% if r.grau == 3 %}
+                                        <span class="badge bg-primary">Mestre</span>
+                                    {% elif r.grau == 2 %}
+                                        <span class="badge bg-info">Companheiro</span>
+                                    {% elif r.grau == 1 %}
+                                        <span class="badge bg-secondary">Aprendiz</span>
+                                    {% else %}
+                                        <span class="badge bg-light text-dark">Todos</span>
+                                    {% endif %}
+                                </td>
+                                <td>{{ r.local or '-' }}</td>
+                                <td>
+                                    {% if r.status == 'realizada' %}
+                                        <span class="badge bg-success">Realizada</span>
+                                    {% elif r.status == 'cancelada' %}
+                                        <span class="badge bg-danger">Cancelada</span>
+                                    {% else %}
+                                        <span class="badge bg-warning text-dark">Agendada</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <small>{{ r.presentes_confirmados or 0 }}/{{ r.total_presentes or 0 }}</small>
+                                </td>
+                                <td>
+                                    <a href="/reunioes/{{ r.id }}" class="btn btn-sm btn-outline-primary">
+                                        <i class="bi bi-eye"></i>
+                                    </a>
+                                    {% if session.tipo == 'admin' %}
+                                    <a href="/reunioes/{{ r.id }}/editar" class="btn btn-sm btn-outline-warning">
+                                        <i class="bi bi-pencil"></i>
+                                    </a>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+<script src="https://cdn.datatables.net/1.13.7/js/jquery.dataTables.min.js"></script>
+<script src="https://cdn.datatables.net/1.13.7/js/dataTables.bootstrap5.min.js"></script>
+<script>
+    $(document).ready(function() {
+        $('#tabelaReunioes').DataTable({
+            language: {
+                url: '//cdn.datatables.net/plug-ins/1.13.7/i18n/pt-BR.json'
+            },
+            order: [[0, 'desc']]
+        });
+    });
+</script>
+{% endblock %}

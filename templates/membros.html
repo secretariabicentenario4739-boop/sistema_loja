@@ -1,0 +1,19 @@
+# =============================
+# templates/membros.html
+# =============================
+"""
+<h1>Membros</h1>
+<form method="POST">
+    Nome: <input name="nome">
+    Cargo: <input name="cargo">
+    <button type="submit">Salvar</button>
+</form>
+
+<ul>
+{% for m in membros %}
+    <li>{{ m[1] }} - {{ m[2] }}</li>
+{% endfor %}
+</ul>
+
+<a href="/">Voltar</a>
+"""

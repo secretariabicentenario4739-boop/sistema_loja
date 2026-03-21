@@ -1,0 +1,75 @@
+{% extends "base.html" %}
+
+{% block title %}Editar Modelo de Ata{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="container">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h2>
+                <i class="bi bi-pencil-square"></i> 
+                Editar Modelo: {{ modelo.nome }}
+            </h2>
+            <a href="/atas/modelos" class="btn btn-outline-secondary">
+                <i class="bi bi-arrow-left"></i> Voltar
+            </a>
+        </div>
+
+        <div class="card shadow">
+            <div class="card-header bg-warning">
+                <h5 class="mb-0">Dados do Modelo</h5>
+            </div>
+            <div class="card-body">
+                <form method="POST">
+                    <div class="row">
+                        <div class="col-md-8 mb-3">
+                            <label class="form-label">Nome do Modelo *</label>
+                            <input type="text" class="form-control" name="nome" value="{{ modelo.nome }}" required>
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label">Tipo</label>
+                            <select class="form-select" name="tipo">
+                                <option value="Ordinária" {% if modelo.tipo == 'Ordinária' %}selected{% endif %}>Ordinária</option>
+                                <option value="Magna" {% if modelo.tipo == 'Magna' %}selected{% endif %}>Magna</option>
+                                <option value="Extraordinária" {% if modelo.tipo == 'Extraordinária' %}selected{% endif %}>Extraordinária</option>
+                                <option value="Administrativa" {% if modelo.tipo == 'Administrativa' %}selected{% endif %}>Administrativa</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Descrição</label>
+                        <textarea class="form-control" name="descricao" rows="2">{{ modelo.descricao or '' }}</textarea>
+                    </div>
+
+                    <hr>
+                    <h6 class="mb-3">Estrutura da Ata (JSON)</h6>
+                    <div class="mb-3">
+                        <label class="form-label">Estrutura *</label>
+                        <textarea class="form-control" name="estrutura" rows="10" required>{{ modelo.estrutura }}</textarea>
+                        <small class="text-muted">
+                            Formato JSON com as seções: cabecalho, expediente, ordem_do_dia, encerramento
+                        </small>
+                    </div>
+
+                    <div class="mb-3">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" name="ativo" id="ativo" value="1"
+                                   {% if modelo.ativo == 1 %}checked{% endif %}>
+                            <label class="form-check-label" for="ativo">
+                                Ativo
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="text-center mt-4">
+                        <button type="submit" class="btn btn-warning btn-lg px-5">
+                            <i class="bi bi-save"></i> Salvar Alterações
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

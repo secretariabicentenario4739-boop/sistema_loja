@@ -1,0 +1,112 @@
+{% extends "base.html" %}
+
+{% block title %}Justificar Ausência{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="container">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h2>
+                <i class="bi bi-pencil-square"></i> 
+                Justificar Ausência
+            </h2>
+            <a href="javascript:history.back()" class="btn btn-outline-secondary">
+                <i class="bi bi-arrow-left"></i> Voltar
+            </a>
+        </div>
+
+        <div class="row">
+            <div class="col-md-8 mx-auto">
+                <div class="card shadow">
+                    <div class="card-header bg-warning text-white">
+                        <h5 class="mb-0">Detalhes da Ausência</h5>
+                    </div>
+                    <div class="card-body">
+                        <!-- Informações da ausência -->
+                        <div class="alert alert-info">
+                            <p><strong>Obreiro:</strong> {{ presenca.nome_completo }}</p>
+                            <p><strong>Reunião:</strong> {{ presenca.titulo }}</p>
+                            <p><strong>Data:</strong> 
+                                {% if presenca.reuniao_data %}
+                                    {{ presenca.reuniao_data[:10] }}
+                                    {% if presenca.hora_inicio %}
+                                        às {{ presenca.hora_inicio[:5] }}
+                                    {% endif %}
+                                {% else %}
+                                    Data não disponível
+                                {% endif %}
+                            </p>
+                        </div>
+                        
+                        <hr>
+                        
+                        <form method="POST" enctype="multipart/form-data">
+                            <div class="mb-3">
+                                <label class="form-label">Tipo de Ausência *</label>
+                                <select class="form-select" name="tipo_ausencia" id="tipo_ausencia" required>
+                                    <option value="">Selecione...</option>
+                                    {% for tipo in tipos_ausencia %}
+                                    <option value="{{ tipo.nome }}" 
+                                            data-requer="{{ tipo.requer_comprovante }}"
+                                            {% if presenca.tipo_ausencia == tipo.nome %}selected{% endif %}>
+                                        {{ tipo.nome }}
+                                    </option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label class="form-label">Justificativa *</label>
+                                <textarea class="form-control" name="justificativa" rows="5" 
+                                          placeholder="Descreva o motivo da sua ausência..." required>{{ presenca.justificativa or '' }}</textarea>
+                            </div>
+                            
+                            <div class="mb-3" id="campoComprovante" style="display: none;">
+                                <label class="form-label">Comprovante (opcional)</label>
+                                <input type="file" class="form-control" name="comprovante" accept=".pdf,.jpg,.jpeg,.png">
+                                <small class="text-muted">Anexe atestado, declaração, etc. Formatos aceitos: PDF, JPG, PNG</small>
+                                {% if presenca.comprovante %}
+                                <div class="mt-2">
+                                    <small class="text-info">
+                                        <i class="bi bi-paperclip"></i> Comprovante já anexado anteriormente
+                                    </small>
+                                </div>
+                                {% endif %}
+                            </div>
+                            
+                            <div class="alert alert-warning">
+                                <i class="bi bi-info-circle"></i>
+                                Sua justificativa ficará como <strong>"Pendente"</strong> até que um administrador valide.
+                            </div>
+                            
+                            <div class="text-center mt-4">
+                                <button type="submit" class="btn btn-warning btn-lg px-5">
+                                    <i class="bi bi-check-lg"></i> Salvar Justificativa
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    document.getElementById('tipo_ausencia').addEventListener('change', function() {
+        var option = this.options[this.selectedIndex];
+        var requerComprovante = option.dataset.requer == '1';
+        document.getElementById('campoComprovante').style.display = requerComprovante ? 'block' : 'none';
+    });
+
+    // Mostrar campo de comprovante se já houver um tipo selecionado que requer
+    window.onload = function() {
+        var select = document.getElementById('tipo_ausencia');
+        if (select.value) {
+            var option = select.options[select.selectedIndex];
+            var requerComprovante = option.dataset.requer == '1';
+            document.getElementById('campoComprovante').style.display = requerComprovante ? 'block' : 'none';
+        }
+    };
+</script>
+{% endblock %}

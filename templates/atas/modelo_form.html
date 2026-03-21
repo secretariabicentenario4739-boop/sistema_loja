@@ -1,0 +1,86 @@
+{% extends "base.html" %}
+
+{% block title %}Novo Modelo de Ata{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="container">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h2>
+                <i class="bi bi-diagram-3"></i> 
+                Novo Modelo de Ata
+            </h2>
+            <a href="/atas/modelos" class="btn btn-outline-secondary">
+                <i class="bi bi-arrow-left"></i> Voltar
+            </a>
+        </div>
+
+        <div class="card shadow">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0">Dados do Modelo</h5>
+            </div>
+            <div class="card-body">
+                <form method="POST">
+                    <div class="row">
+                        <div class="col-md-8 mb-3">
+                            <label class="form-label">Nome do Modelo *</label>
+                            <input type="text" class="form-control" name="nome" required>
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label">Tipo</label>
+                            <select class="form-select" name="tipo">
+                                <option value="Ordinária">Ordinária</option>
+                                <option value="Magna">Magna</option>
+                                <option value="Extraordinária">Extraordinária</option>
+                                <option value="Administrativa">Administrativa</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Descrição</label>
+                        <textarea class="form-control" name="descricao" rows="2"></textarea>
+                    </div>
+
+                    <hr>
+                    <h6 class="mb-3">Estrutura da Ata (JSON)</h6>
+                    <div class="mb-3">
+                        <label class="form-label">Estrutura *</label>
+                        <textarea class="form-control" name="estrutura" rows="10" required>{
+    "cabecalho": [
+        "Abertura",
+        "Verificação de quórum",
+        "Leitura da ata anterior"
+    ],
+    "expediente": [
+        "Comunicações",
+        "Propostas",
+        "Informações"
+    ],
+    "ordem_do_dia": [
+        "Assuntos em pauta",
+        "Votações",
+        "Deliberações"
+    ],
+    "encerramento": [
+        "Palavra final",
+        "Marcação próxima reunião",
+        "Encerramento"
+    ]
+}</textarea>
+                        <small class="text-muted">
+                            Formato JSON com as seções: cabecalho, expediente, ordem_do_dia, encerramento
+                        </small>
+                    </div>
+
+                    <div class="text-center mt-4">
+                        <button type="submit" class="btn btn-success btn-lg px-5">
+                            <i class="bi bi-save"></i> Salvar Modelo
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

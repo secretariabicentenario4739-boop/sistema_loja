@@ -1,0 +1,117 @@
+{% extends "base.html" %}
+
+{% block title %}Ata da Reunião - {{ reuniao.titulo }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="container">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h2>
+                <i class="bi bi-file-text"></i> 
+                Ata da Reunião: {{ reuniao.titulo }}
+            </h2>
+            <div>
+                <a href="/reunioes/{{ reuniao.id }}" class="btn btn-outline-primary me-2">
+                    <i class="bi bi-arrow-left"></i> Voltar
+                </a>
+                {% if session.tipo == 'admin' %}
+                <button type="button" class="btn btn-success" onclick="window.print()">
+                    <i class="bi bi-printer"></i> Imprimir
+                </button>
+                {% endif %}
+            </div>
+        </div>
+
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+                        {{ message }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
+        <div class="row">
+            <div class="col-md-4">
+                <div class="card shadow mb-4">
+                    <div class="card-header bg-info text-white">
+                        <h5 class="mb-0">Informações da Reunião</h5>
+                    </div>
+                    <div class="card-body">
+                        <p><strong>Data:</strong> {{ reuniao.data[:10] }}</p>
+                        <p><strong>Horário:</strong> {{ reuniao.hora_inicio[:5] }} às {{ reuniao.hora_termino[:5] }}</p>
+                        <p><strong>Tipo:</strong> {{ reuniao.tipo }}</p>
+                        <p><strong>Local:</strong> {{ reuniao.local or 'Não informado' }}</p>
+                        <p><strong>Status:</strong> 
+                            {% if reuniao.status == 'realizada' %}
+                                <span class="badge bg-success">Realizada</span>
+                            {% else %}
+                                <span class="badge bg-warning text-dark">Agendada</span>
+                            {% endif %}
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-8">
+                <div class="card shadow">
+                    <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0">
+                            <i class="bi bi-pencil-square"></i> 
+                            {% if ata %}Editar Ata{% else %}Redigir Ata{% endif %}
+                        </h5>
+                        {% if ata %}
+                        <span class="badge bg-light text-dark">Versão {{ ata.versao }}</span>
+                        {% endif %}
+                    </div>
+                    <div class="card-body">
+                        <form method="POST">
+                            <div class="mb-3">
+                                <label class="form-label">Conteúdo da Ata</label>
+                                <textarea class="form-control" name="conteudo" rows="15" required 
+                                          placeholder="Descreva detalhadamente o que ocorreu na reunião...">{{ ata.conteudo if ata else '' }}</textarea>
+                                <small class="text-muted">
+                                    Inclua: abertura, leitura da ata anterior, expediente, ordem do dia, encerramento.
+                                </small>
+                            </div>
+
+                            {% if session.tipo == 'admin' %}
+                            <div class="mb-3 form-check">
+                                <input type="checkbox" class="form-check-input" name="aprovada" id="aprovada" value="1"
+                                       {% if ata and ata.aprovada == 1 %}checked{% endif %}>
+                                <label class="form-check-label" for="aprovada">
+                                    Ata aprovada na reunião
+                                </label>
+                            </div>
+                            {% endif %}
+
+                            <div class="text-center">
+                                <button type="submit" class="btn btn-success btn-lg px-5">
+                                    <i class="bi bi-save"></i> Salvar Ata
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    @media print {
+        .btn, .navbar, .card-header, footer {
+            display: none !important;
+        }
+        .card {
+            border: none !important;
+            box-shadow: none !important;
+        }
+        body {
+            background: white;
+        }
+    }
+</style>
+{% endblock %}

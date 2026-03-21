@@ -1,0 +1,163 @@
+{% extends "base.html" %}
+
+{% block title %}Estatísticas de Presença{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="https://cdn.datatables.net/1.13.7/css/dataTables.bootstrap5.min.css">
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="container">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h2>
+                <i class="bi bi-bar-chart"></i> 
+                Estatísticas de Presença
+            </h2>
+            <div>
+                <select class="form-select d-inline-block w-auto" id="selectAno" onchange="mudarAno()">
+                    {% for a in anos %}
+                    <option value="{{ a }}" {% if a == ano %}selected{% endif %}>{{ a }}</option>
+                    {% endfor %}
+                </select>
+                <a href="/reunioes" class="btn btn-outline-secondary ms-2">
+                    <i class="bi bi-arrow-left"></i> Voltar
+                </a>
+            </div>
+        </div>
+
+        <!-- Gráfico Mensal -->
+        <div class="card shadow mb-4">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0">Presença por Mês - {{ ano }}</h5>
+            </div>
+            <div class="card-body">
+                <canvas id="graficoMensal" style="height: 300px;"></canvas>
+            </div>
+        </div>
+
+        <!-- Tabela de Estatísticas -->
+        <div class="card shadow">
+            <div class="card-header bg-dark text-white">
+                <h5 class="mb-0">Estatísticas Individuais - {{ ano }}</h5>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-hover" id="tabelaEstatisticas">
+                        <thead>
+                            <tr>
+                                <th>Obreiro</th>
+                                <th>Grau</th>
+                                <th>Total Reuniões</th>
+                                <th>Presenças</th>
+                                <th>Ausências Justificadas</th>
+                                <th>Ausências Injustificadas</th>
+                                <th>% Presença</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for e in estatisticas %}
+                            {% set percentual = (e.presencas / e.total_reunioes * 100) if e.total_reunioes > 0 else 0 %}
+                            <tr>
+                                <td>{{ e.nome_completo }}</td>
+                                <td>
+                                    {% if e.grau_atual == 3 %}
+                                        <span class="badge bg-primary">Mestre</span>
+                                    {% elif e.grau_atual == 2 %}
+                                        <span class="badge bg-info">Companheiro</span>
+                                    {% else %}
+                                        <span class="badge bg-secondary">Aprendiz</span>
+                                    {% endif %}
+                                </td>
+                                <td>{{ e.total_reunioes }}</td>
+                                <td class="text-success">{{ e.presencas }}</td>
+                                <td class="text-warning">{{ e.ausencias_justificadas }}</td>
+                                <td class="text-danger">{{ e.ausencias_injustificadas }}</td>
+                                <td>
+                                    <strong>{{ "%.1f"|format(percentual) }}%</strong>
+                                </td>
+                                <td>
+                                    {% if percentual >= 75 %}
+                                        <span class="badge bg-success">Regular</span>
+                                    {% elif percentual >= 50 %}
+                                        <span class="badge bg-warning text-dark">Atenção</span>
+                                    {% else %}
+                                        <span class="badge bg-danger">Crítico</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    function mudarAno() {
+        var ano = document.getElementById('selectAno').value;
+        window.location.href = '/presenca/estatisticas?ano=' + ano;
+    }
+
+    // Gráfico
+    var ctx = document.getElementById('graficoMensal').getContext('2d');
+    var meses = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
+    var dados = {{ mensal|tojson }};
+    
+    var dadosGrafico = {
+        labels: [],
+        reunioes: [],
+        presencas: []
+    };
+    
+    for (var i = 1; i <= 12; i++) {
+        var mes = i.toString().padStart(2, '0');
+        var encontrado = dados.find(d => d.mes == mes);
+        dadosGrafico.labels.push(meses[i-1]);
+        dadosGrafico.reunioes.push(encontrado ? encontrado.total_reunioes : 0);
+        dadosGrafico.presencas.push(encontrado ? encontrado.presencas : 0);
+    }
+    
+    new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: dadosGrafico.labels,
+            datasets: [{
+                label: 'Total de Reuniões',
+                data: dadosGrafico.reunioes,
+                borderColor: '#17a2b8',
+                backgroundColor: 'rgba(23, 162, 184, 0.1)',
+                tension: 0.4
+            }, {
+                label: 'Presenças',
+                data: dadosGrafico.presencas,
+                borderColor: '#28a745',
+                backgroundColor: 'rgba(40, 167, 69, 0.1)',
+                tension: 0.4
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'bottom'
+                }
+            }
+        }
+    });
+
+    $(document).ready(function() {
+        $('#tabelaEstatisticas').DataTable({
+            language: {
+                url: '//cdn.datatables.net/plug-ins/1.13.7/i18n/pt-BR.json'
+            },
+            order: [[7, 'asc'], [1, 'desc']]
+        });
+    });
+</script>
+{% endblock %}

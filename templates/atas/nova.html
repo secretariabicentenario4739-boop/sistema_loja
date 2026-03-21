@@ -1,0 +1,116 @@
+{% extends "base.html" %}
+
+{% block title %}Nova Ata - {{ reuniao.titulo }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="container">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h2>
+                <i class="bi bi-file-text"></i> 
+                Nova Ata: {{ reuniao.titulo }}
+            </h2>
+            <a href="/reunioes/{{ reuniao.id }}" class="btn btn-outline-secondary">
+                <i class="bi bi-arrow-left"></i> Voltar
+            </a>
+        </div>
+
+        <div class="row">
+            <div class="col-md-4">
+                <div class="card shadow mb-4">
+                    <div class="card-header bg-info text-white">
+                        <h5 class="mb-0">Informações da Reunião</h5>
+                    </div>
+                    <div class="card-body">
+                        <p><strong>Data:</strong> {{ reuniao.data[:10] }}</p>
+                        <p><strong>Horário:</strong> {{ reuniao.hora_inicio[:5] }} às {{ reuniao.hora_termino[:5] }}</p>
+                        <p><strong>Tipo:</strong> {{ reuniao.tipo }}</p>
+                        <p><strong>Local:</strong> {{ reuniao.local or 'Não informado' }}</p>
+                        <p><strong>Presentes:</strong> {{ reuniao.presentes or 0 }} obreiros</p>
+                        
+                        {% if reuniao.pauta %}
+                        <hr>
+                        <h6>Pauta:</h6>
+                        <p class="small">{{ reuniao.pauta }}</p>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <div class="card shadow mb-4">
+                    <div class="card-header bg-success text-white">
+                        <h5 class="mb-0">Modelos de Ata</h5>
+                    </div>
+                    <div class="card-body">
+                        <p>Selecione um modelo para começar:</p>
+                        <div class="list-group">
+                            {% for modelo in modelos %}
+                            <button type="button" class="list-group-item list-group-item-action" onclick="carregarModelo({{ modelo.id }})">
+                                <strong>{{ modelo.nome }}</strong>
+                                <br>
+                                <small class="text-muted">{{ modelo.descricao }}</small>
+                            </button>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-8">
+                <div class="card shadow">
+                    <div class="card-header bg-primary text-white">
+                        <h5 class="mb-0">Redigir Ata</h5>
+                    </div>
+                    <div class="card-body">
+                        <form method="POST" id="formAta">
+                            <input type="hidden" name="modelo_id" id="modelo_id" value="1">
+                            
+                            <div class="mb-3">
+                                <label class="form-label">Conteúdo da Ata</label>
+                                <textarea class="form-control" name="conteudo" id="conteudo" rows="20" required>
+Aos {{ reuniao.data[:10] }}, às {{ reuniao.hora_inicio[:5] }} horas, reuniu-se a Loja...
+
+ORDEM DO DIA:
+1. Abertura
+2. Verificação de quórum
+3. Leitura da ata anterior
+4. Expediente
+5. Ordem do dia
+6. Encerramento
+
+____________________________________
+                                </textarea>
+                            </div>
+
+                            <div class="alert alert-info">
+                                <i class="bi bi-info-circle"></i>
+                                A ata será salva com o número automático baseado no ano atual.
+                            </div>
+
+                            <div class="text-center">
+                                <button type="submit" class="btn btn-success btn-lg px-5">
+                                    <i class="bi bi-save"></i> Salvar Ata
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    function carregarModelo(modeloId) {
+        // Aqui você pode implementar a lógica para carregar diferentes modelos
+        // Por enquanto, vamos apenas mostrar um alerta
+        alert('Carregar modelo ' + modeloId);
+        document.getElementById('modelo_id').value = modeloId;
+    }
+
+    // Auto-resize do textarea
+    document.getElementById('conteudo').addEventListener('input', function() {
+        this.style.height = 'auto';
+        this.style.height = (this.scrollHeight) + 'px';
+    });
+</script>
+{% endblock %}

@@ -1,0 +1,68 @@
+{% extends "base.html" %}
+
+{% block title %}Editar Ata {{ ata.numero_ata }}/{{ ata.ano_ata }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="container">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h2>
+                <i class="bi bi-pencil-square"></i> 
+                Editar Ata {{ ata.numero_ata }}/{{ ata.ano_ata }}
+            </h2>
+            <div>
+                <a href="/atas/{{ ata.id }}" class="btn btn-outline-info me-2">
+                    <i class="bi bi-eye"></i> Visualizar
+                </a>
+                <a href="/atas" class="btn btn-outline-secondary">
+                    <i class="bi bi-arrow-left"></i> Voltar
+                </a>
+            </div>
+        </div>
+
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+                        {{ message }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
+        <div class="alert alert-info">
+            <i class="bi bi-info-circle"></i>
+            Versão atual: <strong>{{ ata.versao }}</strong>. Cada edição aumentará a versão em 1.
+        </div>
+
+        <div class="card shadow">
+            <div class="card-header bg-warning">
+                <h5 class="mb-0">Editar Conteúdo da Ata</h5>
+            </div>
+            <div class="card-body">
+                <form method="POST">
+                    <div class="mb-3">
+                        <label class="form-label">Conteúdo da Ata</label>
+                        <textarea class="form-control" name="conteudo" id="conteudo" rows="25" required>{{ ata.conteudo }}</textarea>
+                    </div>
+
+                    <div class="text-center">
+                        <button type="submit" class="btn btn-warning btn-lg px-5">
+                            <i class="bi bi-save"></i> Atualizar Ata
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Auto-resize do textarea
+    document.getElementById('conteudo').addEventListener('input', function() {
+        this.style.height = 'auto';
+        this.style.height = (this.scrollHeight) + 'px';
+    });
+</script>
+{% endblock %}

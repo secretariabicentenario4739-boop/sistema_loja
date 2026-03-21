@@ -1,0 +1,85 @@
+{% extends "base.html" %}
+
+{% block title %}Calendário de Reuniões{% endblock %}
+
+{% block extra_css %}
+<link href="https://cdn.jsdelivr.net/npm/fullcalendar@5.11.3/main.min.css" rel="stylesheet">
+<style>
+    #calendario {
+        max-width: 1100px;
+        margin: 0 auto;
+        padding: 20px;
+    }
+    .fc-event {
+        cursor: pointer;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="container">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h2>
+                <i class="bi bi-calendar"></i> 
+                Calendário de Reuniões
+            </h2>
+            <div>
+                <a href="/reunioes" class="btn btn-outline-primary me-2">
+                    <i class="bi bi-list"></i> Lista
+                </a>
+                {% if session.tipo == 'admin' %}
+                <a href="/reunioes/nova" class="btn btn-success">
+                    <i class="bi bi-plus-circle"></i> Nova Reunião
+                </a>
+                {% endif %}
+                <a href="/dashboard" class="btn btn-outline-secondary ms-2">
+                    <i class="bi bi-arrow-left"></i> Voltar
+                </a>
+            </div>
+        </div>
+
+        <div class="card shadow">
+            <div class="card-body">
+                <div id="calendario"></div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/fullcalendar@5.11.3/main.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/fullcalendar@5.11.3/locales/pt-br.js"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        var calendarEl = document.getElementById('calendario');
+        var calendar = new FullCalendar.Calendar(calendarEl, {
+            locale: 'pt-br',
+            headerToolbar: {
+                left: 'prev,next today',
+                center: 'title',
+                right: 'dayGridMonth,timeGridWeek,timeGridDay'
+            },
+            buttonText: {
+                today: 'Hoje',
+                month: 'Mês',
+                week: 'Semana',
+                day: 'Dia'
+            },
+            events: '/api/reunioes',
+            eventClick: function(info) {
+                window.location.href = info.event.url;
+            },
+            eventDidMount: function(info) {
+                // Tooltip personalizado
+                const props = info.event.extendedProps;
+                info.el.setAttribute('title', 
+                    `${info.event.title}\nTipo: ${props.tipo}\nLocal: ${props.local || 'Não definido'}\nPresença: ${props.presentes}`
+                );
+            }
+        });
+        calendar.render();
+    });
+</script>
+{% endblock %}

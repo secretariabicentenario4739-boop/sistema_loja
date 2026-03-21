@@ -1,0 +1,533 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Parecer Conclusivo - {{ candidato.nome }}</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
+    <style>
+        body {
+            background-color: #f4f1e8;
+            font-family: 'Times New Roman', serif;
+        }
+        .form-container {
+            max-width: 900px;
+            margin: 30px auto;
+            background: white;
+            padding: 40px;
+            box-shadow: 0 0 30px rgba(0,0,0,0.1);
+            border: 1px solid #ccc;
+        }
+        .header-title {
+            text-align: center;
+            font-size: 24px;
+            font-weight: bold;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            border-bottom: 3px double #000;
+            padding-bottom: 15px;
+            margin-bottom: 25px;
+            font-family: 'Times New Roman', serif;
+        }
+        .section-title {
+            background-color: #2c3e50;
+            color: white;
+            padding: 8px 15px;
+            margin: 25px 0 15px 0;
+            font-size: 18px;
+            font-weight: bold;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            border-radius: 5px;
+        }
+        .subsection-title {
+            font-weight: bold;
+            font-size: 16px;
+            margin: 15px 0 10px 0;
+            border-bottom: 1px solid #999;
+            padding-bottom: 5px;
+        }
+        .info-grid {
+            background-color: #f9f9f9;
+            padding: 20px;
+            border: 1px solid #dee2e6;
+            border-radius: 5px;
+            margin-bottom: 20px;
+        }
+        .info-row {
+            display: flex;
+            margin-bottom: 12px;
+            border-bottom: 1px dotted #ccc;
+            padding-bottom: 8px;
+        }
+        .info-label {
+            font-weight: bold;
+            width: 150px;
+            color: #2c3e50;
+        }
+        .info-value {
+            flex: 1;
+            padding-left: 15px;
+        }
+        .form-group {
+            margin-bottom: 20px;
+        }
+        .form-label {
+            font-weight: bold;
+            color: #2c3e50;
+            font-size: 15px;
+        }
+        .form-control, .form-select {
+            border: 1px solid #ccc;
+            border-radius: 0;
+            font-family: 'Times New Roman', serif;
+        }
+        .form-control:focus, .form-select:focus {
+            border-color: #2c3e50;
+            box-shadow: 0 0 0 0.2rem rgba(44,62,80,0.25);
+        }
+        .form-control[readonly] {
+            background-color: #f8f9fa;
+            border: 1px solid #dee2e6;
+        }
+        .fontes-container {
+            background-color: #f8f9fa;
+            padding: 20px;
+            border-left: 4px solid #2c3e50;
+            margin-bottom: 20px;
+        }
+        .fonte-item {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+            padding-bottom: 15px;
+            border-bottom: 1px dashed #ccc;
+            position: relative;
+        }
+        .fonte-item:last-child {
+            border-bottom: none;
+        }
+        .btn-adicionar {
+            border: 2px dashed #2c3e50;
+            background: white;
+            color: #2c3e50;
+            padding: 10px;
+            width: 100%;
+            font-weight: bold;
+            transition: all 0.3s;
+        }
+        .btn-adicionar:hover {
+            background: #2c3e50;
+            color: white;
+        }
+        .btn-remover {
+            position: absolute;
+            top: 0;
+            right: 0;
+            background: none;
+            border: none;
+            color: #dc3545;
+            font-size: 20px;
+            cursor: pointer;
+        }
+        .btn-remover:hover {
+            color: #a71d2a;
+        }
+        .conclusao-box {
+            background-color: #e8f4f8;
+            padding: 25px;
+            border: 2px solid #2c3e50;
+            border-radius: 8px;
+            margin: 30px 0;
+        }
+        .conclusao-opcao {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 40px;
+            margin: 20px 0;
+            flex-wrap: wrap;
+        }
+        .conclusao-opcao .form-check {
+            padding: 15px 25px;
+            border: 2px solid #ccc;
+            border-radius: 8px;
+            transition: all 0.3s;
+            min-width: 200px;
+            text-align: center;
+        }
+        .conclusao-opcao .form-check:hover {
+            border-color: #2c3e50;
+            background-color: #f0f0f0;
+        }
+        .conclusao-opcao .form-check-input:checked + .form-check-label {
+            font-weight: bold;
+        }
+        .form-check-input:checked {
+            background-color: #2c3e50;
+            border-color: #2c3e50;
+        }
+        .assinatura-row {
+            display: flex;
+            gap: 20px;
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 2px solid #333;
+            flex-wrap: wrap;
+        }
+        .assinatura-item {
+            flex: 1;
+            min-width: 200px;
+        }
+        .linha-assinatura {
+            border-bottom: 2px solid #000;
+            margin-top: 30px;
+            margin-bottom: 5px;
+            width: 100%;
+        }
+        .aviso {
+            background-color: #fff3cd;
+            border-left: 4px solid #ffc107;
+            padding: 15px;
+            margin: 20px 0;
+            font-style: italic;
+        }
+        .confidencial {
+            background-color: #f8d7da;
+            border: 2px solid #dc3545;
+            padding: 15px;
+            text-align: center;
+            font-weight: bold;
+            text-transform: uppercase;
+            margin: 20px 0;
+            font-size: 18px;
+        }
+        @media print {
+            .no-print {
+                display: none;
+            }
+            body {
+                background-color: white;
+            }
+            .form-container {
+                box-shadow: none;
+                margin: 0;
+                padding: 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container form-container">
+        <!-- Cabeçalho -->
+        <div class="header-title">
+            SINDICÂNCIA
+        </div>
+
+        <!-- Informações do Candidato -->
+        <div class="info-grid">
+            <div class="info-row">
+                <span class="info-label">Loja Maçônica:</span>
+                <span class="info-value"><strong>{{ loja_nome or 'ARLS Estrela do Oriente' }}</strong></span>
+                <span class="info-label" style="width: 80px;">Nº:</span>
+                <span class="info-value"><strong>{{ loja_numero or '123' }}</strong></span>
+            </div>
+            <div class="info-row">
+                <span class="info-label">Nome do Candidato:</span>
+                <span class="info-value"><strong>{{ candidato.nome }}</strong></span>
+            </div>
+            <div class="info-row">
+                <span class="info-label">Data de Abertura:</span>
+                <span class="info-value"><strong>{{ candidato.data_criacao[:10] }}</strong></span>
+            </div>
+        </div>
+
+        <!-- Instruções -->
+        <div class="aviso">
+            <i class="bi bi-info-circle"></i> 
+            • Será designado em segr∴ pelo Ven∴ Mestre, e deverá abordar os tópicos constantes no artigo 8º, § 1º do RGF.<br>
+            • Usar folha de papel a parte para acrescentar ou esclarecer qualquer informação, se necessário.<br>
+            • Colocar esta ficha de sindicância no Saco de Propostas e Informações na primeira sessão ordinária após a sua designação (Artigo 8º, § 4º do RGF), a contar do seu recebimento.
+        </div>
+
+        <div class="confidencial">
+            <i class="bi bi-lock-fill"></i> CONFIDENCIAL AO VENERÁVEL MESTRE
+        </div>
+
+        <!-- Formulário de Parecer -->
+        <form method="POST" action="/salvar_parecer_conclusivo/{{ candidato.id }}" id="formParecer">
+            
+            <!-- PARECER CONCLUSIVO DO SINDICANTE -->
+            <div class="section-title">
+                PARECER CONCLUSIVO DO SINDICANTE
+            </div>
+            
+            <p class="text-muted mb-4">
+                <i class="bi bi-quote"></i> 
+                O parecer deverá retratar a opinião PESSOAL e MAÇÔNICA do sindicante sobre o candidato, 
+                bem como as informações prestadas por, pelo menos, duas fontes de referências.
+            </p>
+
+            <!-- Fontes de Referência (2 obrigatórias) -->
+            <div class="subsection-title">
+                <i class="bi bi-people-fill"></i> Fontes de Referência (mínimo 2)
+            </div>
+            
+            <div class="fontes-container" id="fontes-container">
+                {% for i in range(1, 3) %}
+                <div class="fonte-item" id="fonte-{{ i }}">
+                    <div class="flex-grow-1">
+                        <label class="form-label">Fonte {{ i }}:</label>
+                        <input type="text" 
+                               class="form-control" 
+                               name="fonte_nome_{{ i }}" 
+                               placeholder="Nome da fonte de referência"
+                               {% if i <= 2 %}required{% endif %}
+                               value="{% if fontes_existentes and fontes_existentes|length >= i %}{{ fontes_existentes[i-1].nome }}{% endif %}">
+                        <small class="text-muted">Relação com o candidato, tempo de conhecimento, etc.</small>
+                    </div>
+                    <div class="flex-grow-1">
+                        <label class="form-label">Informação prestada:</label>
+                        <textarea class="form-control" 
+                                  name="fonte_info_{{ i }}" 
+                                  rows="2"
+                                  {% if i <= 2 %}required{% endif %}>{{ fontes_existentes[i-1].informacao if fontes_existentes and fontes_existentes|length >= i else '' }}</textarea>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+
+            <!-- Botão para adicionar mais fontes (opcional) -->
+            <button type="button" class="btn btn-adicionar mb-4 no-print" onclick="adicionarFonte()">
+                <i class="bi bi-plus-circle"></i> Adicionar outra fonte de referência
+            </button>
+
+            <!-- Parecer do Sindicante -->
+            <div class="form-group">
+                <label class="form-label">Parecer Pessoal e Maçônico:</label>
+                <textarea class="form-control" 
+                          name="parecer_texto" 
+                          rows="8" 
+                          required
+                          placeholder="Descreva sua opinião pessoal e maçônica sobre o candidato, baseado nas informações coletadas e em sua análise...">{{ parecer_existente.parecer_texto if parecer_existente else '' }}</textarea>
+            </div>
+
+            <!-- CONCLUSÃO -->
+            <div class="section-title">
+                CONCLUSÃO
+            </div>
+
+            <div class="conclusao-box">
+                <p class="text-center mb-3">
+                    <strong>À vista do exame e parecer ora oferecidos sobre o candidato, sou de opinião que o mesmo:</strong>
+                </p>
+                
+                <div class="conclusao-opcao">
+                    <div class="form-check">
+                        <input class="form-check-input" 
+                               type="radio" 
+                               name="conclusao" 
+                               id="conclusao_aprovado" 
+                               value="APROVADO"
+                               {% if not parecer_existente or parecer_existente.conclusao == 'APROVADO' %}checked{% endif %}
+                               required>
+                        <label class="form-check-label" for="conclusao_aprovado">
+                            <i class="bi bi-check-circle-fill text-success"></i> 
+                            <strong>DEVERÁ INGRESSAR</strong>
+                        </label>
+                    </div>
+                    
+                    <div class="form-check">
+                        <input class="form-check-input" 
+                               type="radio" 
+                               name="conclusao" 
+                               id="conclusao_reprovado" 
+                               value="REPROVADO"
+                               {% if parecer_existente and parecer_existente.conclusao == 'REPROVADO' %}checked{% endif %}
+                               required>
+                        <label class="form-check-label" for="conclusao_reprovado">
+                            <i class="bi bi-x-circle-fill text-danger"></i> 
+                            <strong>NÃO DEVERÁ INGRESSAR</strong>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Observações Adicionais -->
+                <div class="form-group mt-3">
+                    <label class="form-label">Observações adicionais (se necessário):</label>
+                    <textarea class="form-control" 
+                              name="observacoes" 
+                              rows="3"
+                              placeholder="Acrescente qualquer informação adicional relevante...">{{ parecer_existente.observacoes if parecer_existente else '' }}</textarea>
+                </div>
+            </div>
+
+            <!-- Assinatura e Data -->
+<div class="assinatura-row">
+    <div class="assinatura-item">
+        <label class="form-label">Data:</label>
+        <input type="date" 
+               class="form-control" 
+               name="data_parecer" 
+               value="{{ parecer_existente.data_parecer if parecer_existente else hoje }}" 
+               required>
+    </div>
+    
+    <div class="assinatura-item">
+        <label class="form-label">Nome do Sindicante:</label>
+        <input type="text" 
+               class="form-control" 
+               name="nome_sindicante" 
+               value="{{ nome_completo or session.usuario }}" 
+               readonly>
+        {% if not nome_completo %}
+        <small class="text-warning">
+            <i class="bi bi-exclamation-triangle"></i> 
+            Nome não cadastrado. Edite seu perfil.
+        </small>
+        {% endif %}
+    </div>
+    
+    <div class="assinatura-item">
+        <label class="form-label">CIM Nº:</label>
+        <input type="text" 
+               class="form-control" 
+               name="cim_numero" 
+               value="{{ cim_numero or (parecer_existente.cim_numero if parecer_existente else '') }}" 
+               readonly>
+        {% if not cim_numero and not (parecer_existente and parecer_existente.cim_numero) %}
+        <small class="text-warning">
+            <i class="bi bi-exclamation-triangle"></i> 
+            CIM não cadastrado. Edite seu perfil.
+        </small>
+        {% endif %}
+    </div>
+</div>
+
+            <!-- Loja (campos ocultos para salvar no banco) -->
+            <input type="hidden" name="loja_nome" value="{{ loja_nome }}">
+            <input type="hidden" name="loja_numero" value="{{ loja_numero }}">
+            <input type="hidden" name="loja_orient" value="{{ loja_orient }}">
+
+            <!-- Linha de Assinatura -->
+            <div class="assinatura-item">
+                <label class="form-label">Assinatura:</label>
+                <div class="linha-assinatura"></div>
+                <small class="text-muted">(assinatura digital ou nome completo)</small>
+            </div>
+
+            <!-- Botões de Ação -->
+            <div class="row mt-5 no-print">
+                <div class="col-6">
+                    <a href="/sindicancia/{{ candidato.id }}" class="btn btn-outline-secondary w-100">
+                        <i class="bi bi-arrow-left"></i> Voltar
+                    </a>
+                </div>
+                <div class="col-6">
+                    <button type="submit" class="btn btn-success w-100">
+                        <i class="bi bi-check-lg"></i> Salvar Parecer Conclusivo
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Botão de impressão -->
+            <div class="text-center mt-3 no-print">
+                <button type="button" class="btn btn-outline-primary" onclick="window.print()">
+                    <i class="bi bi-printer"></i> Imprimir / Gerar PDF
+                </button>
+            </div>
+        </form>
+    </div>
+
+    <script>
+        // Função para adicionar mais fontes de referência
+        let fonteCount = 2;
+        
+        // Carregar fontes adicionais existentes
+        document.addEventListener('DOMContentLoaded', function() {
+            {% if fontes_existentes and fontes_existentes|length > 2 %}
+                {% for fonte in fontes_existentes[2:] %}
+                    adicionarFonteComValor('{{ fonte.nome|replace("'", "\\'")|safe }}', '{{ fonte.informacao|replace("'", "\\'")|safe }}');
+                {% endfor %}
+            {% endif %}
+        });
+        
+        function adicionarFonte() {
+            fonteCount++;
+            const container = document.getElementById('fontes-container');
+            
+            const div = document.createElement('div');
+            div.className = 'fonte-item';
+            div.id = `fonte-${fonteCount}`;
+            div.innerHTML = `
+                <div class="flex-grow-1">
+                    <label class="form-label">Fonte ${fonteCount}:</label>
+                    <input type="text" class="form-control" name="fonte_nome_${fonteCount}" placeholder="Nome da fonte de referência">
+                    <small class="text-muted">Relação com o candidato, tempo de conhecimento, etc.</small>
+                </div>
+                <div class="flex-grow-1">
+                    <label class="form-label">Informação prestada:</label>
+                    <textarea class="form-control" name="fonte_info_${fonteCount}" rows="2"></textarea>
+                </div>
+                <button type="button" class="btn-remover" onclick="removerFonte(${fonteCount})">
+                    <i class="bi bi-x-circle-fill"></i>
+                </button>
+            `;
+            
+            container.appendChild(div);
+        }
+        
+        function adicionarFonteComValor(nome, info) {
+            fonteCount++;
+            const container = document.getElementById('fontes-container');
+            
+            const div = document.createElement('div');
+            div.className = 'fonte-item';
+            div.id = `fonte-${fonteCount}`;
+            div.innerHTML = `
+                <div class="flex-grow-1">
+                    <label class="form-label">Fonte ${fonteCount}:</label>
+                    <input type="text" class="form-control" name="fonte_nome_${fonteCount}" value="${nome}" placeholder="Nome da fonte de referência">
+                    <small class="text-muted">Relação com o candidato, tempo de conhecimento, etc.</small>
+                </div>
+                <div class="flex-grow-1">
+                    <label class="form-label">Informação prestada:</label>
+                    <textarea class="form-control" name="fonte_info_${fonteCount}" rows="2">${info}</textarea>
+                </div>
+                <button type="button" class="btn-remover" onclick="removerFonte(${fonteCount})">
+                    <i class="bi bi-x-circle-fill"></i>
+                </button>
+            `;
+            
+            container.appendChild(div);
+        }
+        
+        function removerFonte(id) {
+            const elemento = document.getElementById(`fonte-${id}`);
+            if (elemento) {
+                elemento.remove();
+            }
+        }
+        
+        // Validação antes de enviar
+        document.getElementById('formParecer').addEventListener('submit', function(e) {
+            // Contar fontes preenchidas
+            const fonteNomes = document.querySelectorAll('input[name^="fonte_nome_"]');
+            const fonteInfos = document.querySelectorAll('textarea[name^="fonte_info_"]');
+            let fontesPreenchidas = 0;
+            
+            for (let i = 0; i < fonteNomes.length; i++) {
+                if (fonteNomes[i].value.trim() !== '' && fonteInfos[i] && fonteInfos[i].value.trim() !== '') {
+                    fontesPreenchidas++;
+                }
+            }
+            
+            if (fontesPreenchidas < 2) {
+                e.preventDefault();
+                alert('É necessário preencher pelo menos 2 fontes de referência com nome e informação');
+            }
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,324 @@
+{% extends "base.html" %}
+
+{% block title %}Detalhes da Reunião - {{ reuniao.titulo }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="container">
+        <!-- Cabeçalho -->
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h2>
+                <i class="bi bi-calendar-event"></i> 
+                {{ reuniao.titulo }}
+            </h2>
+            <div class="d-flex gap-2">
+                {% if session.tipo == 'admin' %}
+                <a href="/reunioes/{{ reuniao.id }}/editar" class="btn btn-warning">
+                    <i class="bi bi-pencil"></i> Editar
+                </a>
+                {% endif %}
+                
+                {% if ata_id %}
+                    <div class="dropdown">
+                        <button class="btn btn-info dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                            <i class="bi bi-file-text"></i> Ata
+                            {% if ata_numero and ata_ano %}
+                                ({{ ata_numero }}/{{ ata_ano }})
+                            {% endif %}
+                        </button>
+                        <ul class="dropdown-menu">
+                            <li><a class="dropdown-item" href="/atas/{{ ata_id }}"><i class="bi bi-eye"></i> Visualizar</a></li>
+                            {% if session.tipo == 'admin' and ata_aprovada == 0 %}
+                            <li><a class="dropdown-item" href="/atas/{{ ata_id }}/editar"><i class="bi bi-pencil"></i> Editar</a></li>
+                            {% endif %}
+                            <li><a class="dropdown-item" href="/atas/{{ ata_id }}/pdf" target="_blank"><i class="bi bi-file-pdf"></i> Exportar PDF</a></li>
+                        </ul>
+                    </div>
+                {% else %}
+                    <a href="/reunioes/{{ reuniao.id }}/ata" class="btn btn-info">
+                        <i class="bi bi-file-text"></i> Criar Ata
+                    </a>
+                {% endif %}
+                
+                <a href="/reunioes" class="btn btn-outline-secondary">
+                    <i class="bi bi-arrow-left"></i> Voltar
+                </a>
+            </div>
+        </div>
+
+        <!-- Mensagens Flash -->
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+                        {{ message }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
+        <div class="row">
+            <!-- Coluna da esquerda - Informações da Reunião -->
+            <div class="col-md-4">
+                <div class="card shadow mb-4">
+                    <div class="card-header bg-primary text-white">
+                        <h5 class="mb-0">
+                            <i class="bi bi-info-circle"></i> 
+                            Informações da Reunião
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <p><strong>Data:</strong> {{ reuniao.data[:10] }}</p>
+                        {% if reuniao.hora_inicio %}
+                            <p><strong>Horário:</strong> {{ reuniao.hora_inicio[:5] }} às {{ reuniao.hora_termino[:5] }}</p>
+                        {% endif %}
+                        <p><strong>Tipo:</strong> 
+                            <span class="badge" style="background-color: {{ reuniao.tipo_cor or '#6c757d' }}; color: white;">
+                                {{ reuniao.tipo }}
+                            </span>
+                        </p>
+                        <p><strong>Grau:</strong> 
+                            {% if reuniao.grau == 3 %}
+                                <span class="badge bg-primary">Mestre</span>
+                            {% elif reuniao.grau == 2 %}
+                                <span class="badge bg-info">Companheiro</span>
+                            {% elif reuniao.grau == 1 %}
+                                <span class="badge bg-secondary">Aprendiz</span>
+                            {% else %}
+                                <span class="badge bg-light text-dark">Todos</span>
+                            {% endif %}
+                        </p>
+                        <p><strong>Local:</strong> {{ reuniao.local or 'Não definido' }}</p>
+                        <p><strong>Loja:</strong> {{ reuniao.loja_nome or 'Não definida' }}</p>
+                        <p><strong>Status:</strong> 
+                            {% if reuniao.status == 'realizada' %}
+                                <span class="badge bg-success">Realizada</span>
+                            {% elif reuniao.status == 'cancelada' %}
+                                <span class="badge bg-danger">Cancelada</span>
+                            {% else %}
+                                <span class="badge bg-warning text-dark">Agendada</span>
+                            {% endif %}
+                        </p>
+                        <p><strong>Criado por:</strong> <small>{{ reuniao.criado_por_nome or 'Sistema' }}</small></p>
+                    </div>
+                </div>
+
+                <!-- Card de Estatísticas -->
+                <div class="card shadow mb-4">
+                    <div class="card-header bg-info text-white">
+                        <h5 class="mb-0">
+                            <i class="bi bi-bar-chart"></i> 
+                            Estatísticas
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row text-center">
+                            <div class="col-6">
+                                <h3 class="text-success">{{ presentes }}</h3>
+                                <small>Presentes</small>
+                            </div>
+                            <div class="col-6">
+                                <h3 class="text-danger">{{ ausentes }}</h3>
+                                <small>Ausentes</small>
+                            </div>
+                        </div>
+                        <div class="mt-3">
+                            <div class="progress" style="height: 20px;">
+                                <div class="progress-bar bg-success" 
+                                     style="width: {{ (presentes/total_obreiros*100) if total_obreiros > 0 else 0 }}%">
+                                    {{ "%.1f"|format((presentes/total_obreiros*100) if total_obreiros > 0 else 0) }}%
+                                </div>
+                            </div>
+                            <small class="text-muted">Total de obreiros: {{ total_obreiros }}</small>
+                        </div>
+                        
+                        <!-- Resumo de Justificativas -->
+                        {% set justificadas = 0 %}
+                        {% set pendentes = 0 %}
+                        {% for p in presenca %}
+                            {% if p.presente == 0 and p.tipo_ausencia %}
+                                {% if p.validado_por %}
+                                    {% set justificadas = justificadas + 1 %}
+                                {% else %}
+                                    {% set pendentes = pendentes + 1 %}
+                                {% endif %}
+                            {% endif %}
+                        {% endfor %}
+                        
+                        <hr>
+                        <div class="row text-center small">
+                            <div class="col-4">
+                                <span class="text-success">Justif. Válidas: {{ justificadas }}</span>
+                            </div>
+                            <div class="col-4">
+                                <span class="text-warning">Pendentes: {{ pendentes }}</span>
+                            </div>
+                            <div class="col-4">
+                                <span class="text-danger">Injustificadas: {{ ausentes - justificadas - pendentes }}</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Pauta -->
+                {% if reuniao.pauta %}
+                <div class="card shadow mb-4">
+                    <div class="card-header bg-secondary text-white">
+                        <h5 class="mb-0">
+                            <i class="bi bi-list-task"></i> 
+                            Pauta
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <p class="mb-0" style="white-space: pre-line;">{{ reuniao.pauta }}</p>
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+
+            <!-- Coluna da direita - Lista de Presença -->
+            <div class="col-md-8">
+                <div class="card shadow">
+                    <div class="card-header bg-success text-white d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0">
+                            <i class="bi bi-people"></i> 
+                            Lista de Presença
+                        </h5>
+                        <span class="badge bg-light text-dark">{{ total_obreiros }} obreiros</span>
+                    </div>
+                    <div class="card-body">
+                        {% if presenca %}
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>Obreiro</th>
+                                        <th>Grau</th>
+                                        <th>Presença</th>
+                                        <th>Tipo Ausência</th>
+                                        <th>Justificativa</th>
+                                        <th>Validação</th>
+                                        <th style="width: 100px;">Ações</th>
+                                    </thead>
+                                <tbody>
+                                    {% for p in presenca %}
+                                    <tr>
+                                        <td>{{ p.nome_completo }}</td>
+                                        <td>
+                                            {% if p.grau_atual == 3 %}
+                                                <span class="badge bg-primary">Mestre</span>
+                                            {% elif p.grau_atual == 2 %}
+                                                <span class="badge bg-info">Companheiro</span>
+                                            {% else %}
+                                                <span class="badge bg-secondary">Aprendiz</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            {% if p.presente == 1 %}
+                                                <span class="badge bg-success">Presente</span>
+                                            {% else %}
+                                                <span class="badge bg-danger">Ausente</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            {% if p.presente == 0 %}
+                                                {% if p.tipo_ausencia %}
+                                                    <span class="badge bg-warning text-dark">{{ p.tipo_ausencia }}</span>
+                                                {% else %}
+                                                    <span class="badge bg-secondary">-</span>
+                                                {% endif %}
+                                            {% else %}
+                                                <span class="text-muted">-</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            {% if p.justificativa %}
+                                                <small>{{ p.justificativa[:30] }}...</small>
+                                            {% else %}
+                                                <span class="text-muted">-</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            {% if p.presente == 0 and p.tipo_ausencia %}
+                                                {% if p.validado_por %}
+                                                    <span class="badge bg-success">Validado</span>
+                                                {% else %}
+                                                    <span class="badge bg-warning text-dark">Pendente</span>
+                                                {% endif %}
+                                            {% else %}
+                                                <span class="text-muted">-</span>
+                                            {% endif %}
+                                        </td>
+                                        <td style="width: 100px;">
+                                            <!-- Botão de justificar para o próprio obreiro -->
+                                            {% if p.presente == 0 and not p.tipo_ausencia and session.user_id == p.id %}
+                                                <a href="/presenca/justificar/{{ p.presenca_id }}" 
+                                                   class="btn btn-sm btn-warning w-100">
+                                                    <i class="bi bi-pencil"></i> Justificar
+                                                </a>
+                                            {% endif %}
+
+                                            <!-- Ações de admin -->
+                                            {% if session.tipo == 'admin' %}
+                                                {% if p.presente == 0 and not p.tipo_ausencia %}
+                                                    <a href="/presenca/justificar/{{ p.presenca_id }}" 
+                                                       class="btn btn-sm btn-warning w-100 mb-1">
+                                                        <i class="bi bi-pencil"></i> Justificar
+                                                    </a>
+                                                {% endif %}
+                                                
+                                                {% if p.presente == 0 and p.tipo_ausencia and not p.validado_por %}
+                                                    <div class="btn-group w-100">
+                                                        <form method="POST" action="/presenca/validar/{{ p.presenca_id }}" class="d-inline w-50">
+                                                            <input type="hidden" name="validar" value="true">
+                                                            <button type="submit" class="btn btn-sm btn-success w-100">
+                                                                <i class="bi bi-check-lg"></i>
+                                                            </button>
+                                                        </form>
+                                                        <form method="POST" action="/presenca/validar/{{ p.presenca_id }}" class="d-inline w-50">
+                                                            <input type="hidden" name="validar" value="false">
+                                                            <button type="submit" class="btn btn-sm btn-danger w-100">
+                                                                <i class="bi bi-x-lg"></i>
+                                                            </button>
+                                                        </form>
+                                                    </div>
+                                                {% endif %}
+                                                
+                                                <!-- Botão para alternar presença -->
+                                                {% if p.presente == 1 %}
+                                                <form method="POST" action="/reunioes/{{ reuniao.id }}/presenca" class="d-inline w-100">
+                                                    <input type="hidden" name="obreiro_id" value="{{ p.id }}">
+                                                    <input type="hidden" name="presente" value="0">
+                                                    <button type="submit" class="btn btn-sm btn-outline-danger w-100 mt-1"
+                                                            onclick="return confirm('Marcar como ausente?')">
+                                                        <i class="bi bi-person-x"></i> Ausente
+                                                    </button>
+                                                </form>
+                                                {% else %}
+                                                <form method="POST" action="/reunioes/{{ reuniao.id }}/presenca" class="d-inline w-100">
+                                                    <input type="hidden" name="obreiro_id" value="{{ p.id }}">
+                                                    <input type="hidden" name="presente" value="1">
+                                                    <button type="submit" class="btn btn-sm btn-outline-success w-100 mt-1"
+                                                            onclick="return confirm('Marcar como presente?')">
+                                                        <i class="bi bi-person-check"></i> Presente
+                                                    </button>
+                                                </form>
+                                                {% endif %}
+                                            {% endif %}
+                                        </td>
+                                     </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                        {% else %}
+                        <p class="text-muted text-center py-3">Nenhum obreiro encontrado.</p>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

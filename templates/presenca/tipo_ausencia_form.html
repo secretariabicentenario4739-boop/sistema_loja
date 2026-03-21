@@ -1,0 +1,75 @@
+{% extends "base.html" %}
+
+{% block title %}{{ 'Editar' if tipo else 'Novo' }} Tipo de Ausência{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="container">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h2>
+                <i class="bi bi-exclamation-triangle"></i> 
+                {{ 'Editar' if tipo else 'Novo' }} Tipo de Ausência
+            </h2>
+            <a href="/tipos_ausencia" class="btn btn-outline-secondary">
+                <i class="bi bi-arrow-left"></i> Voltar
+            </a>
+        </div>
+
+        <div class="card shadow">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0">Dados do Tipo de Ausência</h5>
+            </div>
+            <div class="card-body">
+                <form method="POST">
+                    <div class="row">
+                        <div class="col-md-8 mb-3">
+                            <label class="form-label">Nome *</label>
+                            <input type="text" class="form-control" name="nome" 
+                                   value="{{ tipo.nome if tipo else '' }}" required>
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label">Cor</label>
+                            <input type="color" class="form-control form-control-color" 
+                                   name="cor" value="{{ tipo.cor if tipo else '#6c757d' }}">
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Descrição</label>
+                        <textarea class="form-control" name="descricao" rows="3">{{ tipo.descricao if tipo else '' }}</textarea>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" name="requer_comprovante" 
+                                       id="requer_comprovante" value="1"
+                                       {% if tipo and tipo.requer_comprovante == 1 %}checked{% endif %}>
+                                <label class="form-check-label" for="requer_comprovante">
+                                    Requer comprovante
+                                </label>
+                            </div>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" name="ativo" 
+                                       id="ativo" value="1"
+                                       {% if not tipo or tipo.ativo == 1 %}checked{% endif %}>
+                                <label class="form-check-label" for="ativo">
+                                    Ativo
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="text-center mt-4">
+                        <button type="submit" class="btn btn-success btn-lg px-5">
+                            <i class="bi bi-save"></i> Salvar
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

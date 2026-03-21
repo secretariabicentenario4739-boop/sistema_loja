@@ -1,0 +1,132 @@
+{% extends "base.html" %}
+
+{% block title %}Nova Reunião{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="container">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h2>
+                <i class="bi bi-plus-circle"></i> 
+                Nova Reunião
+            </h2>
+            <a href="/reunioes" class="btn btn-outline-secondary">
+                <i class="bi bi-arrow-left"></i> Voltar
+            </a>
+        </div>
+
+        <div class="card shadow">
+            <div class="card-header bg-success text-white">
+                <h5 class="mb-0">
+                    <i class="bi bi-calendar-event"></i> 
+                    Dados da Reunião
+                </h5>
+            </div>
+            <div class="card-body">
+                <form method="POST">
+                    <div class="row">
+                        <div class="col-md-8 mb-3">
+                            <label class="form-label">Título da Reunião *</label>
+                            <input type="text" class="form-control" name="titulo" required 
+                                   placeholder="Ex: Sessão Ordinária, Reunião Magna, etc.">
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label">Tipo *</label>
+                            <select class="form-select" name="tipo" required>
+                                <option value="">Selecione...</option>
+                                {% for tipo in tipos %}
+                                <option value="{{ tipo.nome }}" style="color: {{ tipo.cor }};">
+                                    {{ tipo.nome }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label">Data *</label>
+                            <input type="date" class="form-control" name="data" 
+                                   value="{{ hoje }}" required>
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label">Hora de Início</label>
+                            <input type="time" class="form-control" name="hora_inicio" 
+                                   value="19:30">
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label">Hora de Término</label>
+                            <input type="time" class="form-control" name="hora_termino" 
+                                   value="21:30">
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label">Grau</label>
+                            <select class="form-select" name="grau">
+                                <option value="">Todos os Graus</option>
+                                <option value="1">Aprendiz (1º Grau)</option>
+                                <option value="2">Companheiro (2º Grau)</option>
+                                <option value="3">Mestre (3º Grau)</option>
+                            </select>
+                            <small class="text-muted">Restringir a obreiros de determinado grau</small>
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label">Local</label>
+                            <input type="text" class="form-control" name="local" 
+                                   placeholder="Ex: Templo, Salão Nobre, etc.">
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label">Loja</label>
+                            <select class="form-select" name="loja_id">
+                                <option value="">Selecione...</option>
+                                {% for loja in lojas %}
+                                <option value="{{ loja.id }}">{{ loja.nome }} - Nº {{ loja.numero }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Pauta</label>
+                        <textarea class="form-control" name="pauta" rows="4" 
+                                  placeholder="Descreva os assuntos a serem tratados na reunião..."></textarea>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Observações</label>
+                        <textarea class="form-control" name="observacoes" rows="3" 
+                                  placeholder="Informações adicionais..."></textarea>
+                    </div>
+
+                    <hr>
+                    <div class="alert alert-info">
+                        <i class="bi bi-info-circle"></i>
+                        Após criar a reunião, você poderá registrar a presença dos obreiros e redigir a ata.
+                    </div>
+
+                    <div class="text-center mt-4">
+                        <button type="submit" class="btn btn-success btn-lg px-5">
+                            <i class="bi bi-save"></i> Criar Reunião
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Validar se hora término é maior que hora início
+    document.querySelector('form').addEventListener('submit', function(e) {
+        const inicio = document.querySelector('input[name="hora_inicio"]').value;
+        const termino = document.querySelector('input[name="hora_termino"]').value;
+        
+        if (inicio && termino && inicio >= termino) {
+            e.preventDefault();
+            alert('A hora de término deve ser maior que a hora de início.');
+        }
+    });
+</script>
+{% endblock %}

@@ -1,0 +1,122 @@
+{% extends "base.html" %}
+
+{% block title %}Relatórios Consolidados{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="container">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h2>
+                <i class="bi bi-file-pdf"></i> 
+                Relatórios Consolidados
+            </h2>
+            <a href="/dashboard" class="btn btn-outline-secondary">
+                <i class="bi bi-arrow-left"></i> Voltar
+            </a>
+        </div>
+
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+                        {{ message }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
+        <div class="card shadow">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0">Selecionar Período</h5>
+            </div>
+            <div class="card-body">
+                <form method="POST" id="formRelatorio">
+                    <div class="mb-3">
+                        <label class="form-label">Tipo de Período</label>
+                        <select class="form-select" name="tipo" id="tipoPeriodo" required>
+                            <option value="ano">Ano</option>
+                            <option value="mes">Mês</option>
+                            <option value="periodo">Período Personalizado</option>
+                        </select>
+                    </div>
+
+                    <div id="anoContainer" class="mb-3">
+                        <label class="form-label">Ano</label>
+                        <select class="form-select" name="ano">
+                            {% for a in anos %}
+                            <option value="{{ a }}" {% if a == now.year %}selected{% endif %}>{{ a }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div id="mesContainer" class="mb-3" style="display: none;">
+                        <label class="form-label">Mês</label>
+                        <select class="form-select" name="mes">
+                            <option value="1">Janeiro</option>
+                            <option value="2">Fevereiro</option>
+                            <option value="3">Março</option>
+                            <option value="4">Abril</option>
+                            <option value="5">Maio</option>
+                            <option value="6">Junho</option>
+                            <option value="7">Julho</option>
+                            <option value="8">Agosto</option>
+                            <option value="9">Setembro</option>
+                            <option value="10">Outubro</option>
+                            <option value="11">Novembro</option>
+                            <option value="12">Dezembro</option>
+                        </select>
+                    </div>
+
+                    <div id="periodoContainer" class="mb-3" style="display: none;">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <label class="form-label">Data Início</label>
+                                <input type="date" class="form-control" name="data_inicio">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Data Fim</label>
+                                <input type="date" class="form-control" name="data_fim">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="alert alert-info">
+                        <i class="bi bi-info-circle"></i>
+                        O relatório incluirá estatísticas de presença de todas as reuniões realizadas no período selecionado.
+                    </div>
+
+                    <div class="text-center">
+                        <button type="submit" class="btn btn-success btn-lg px-5">
+                            <i class="bi bi-file-pdf"></i> Gerar PDF
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    const tipoSelect = document.getElementById('tipoPeriodo');
+    const anoDiv = document.getElementById('anoContainer');
+    const mesDiv = document.getElementById('mesContainer');
+    const periodoDiv = document.getElementById('periodoContainer');
+
+    function mostrarCampos() {
+        const tipo = tipoSelect.value;
+        anoDiv.style.display = 'block';
+        mesDiv.style.display = 'none';
+        periodoDiv.style.display = 'none';
+
+        if (tipo === 'mes') {
+            mesDiv.style.display = 'block';
+        } else if (tipo === 'periodo') {
+            periodoDiv.style.display = 'block';
+        }
+    }
+
+    tipoSelect.addEventListener('change', mostrarCampos);
+    mostrarCampos();
+</script>
+{% endblock %}
