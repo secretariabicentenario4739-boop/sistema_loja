@@ -25,62 +25,54 @@
                 <h5 class="mb-0">Gerenciar Tipos de Ausência</h5>
             </div>
             <div class="card-body">
-                <div class="table-responsive">
-                    <table class="table table-hover">
-                        <thead>
-                            <tr>
-                                <th>Nome</th>
-                                <th>Descrição</th>
-                                <th>Comprovante</th>
-                                <th>Cor</th>
-                                <th>Status</th>
-                                <th>Ações</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% for tipo in tipos %}
-                            <tr>
-                                <td>
-                                    <strong>{{ tipo.nome }}</strong>
-                                </td>
-                                <td>{{ tipo.descricao or '-' }}</td>
-                                <td>
-                                    {% if tipo.requer_comprovante == 1 %}
-                                        <span class="badge bg-warning text-dark">Obrigatório</span>
-                                    {% else %}
-                                        <span class="badge bg-secondary">Opcional</span>
-                                    {% endif %}
-                                </td>
-                                <td>
-                                    <span class="badge" style="background-color: {{ tipo.cor }}; color: white;">
-                                        {{ tipo.cor }}
-                                    </span>
-                                </td>
-                                <td>
-                                    {% if tipo.ativo == 1 %}
-                                        <span class="badge bg-success">Ativo</span>
-                                    {% else %}
-                                        <span class="badge bg-secondary">Inativo</span>
-                                    {% endif %}
-                                </td>
-                                <td>
-                                    <a href="/tipos_ausencia/editar/{{ tipo.id }}" 
-                                       class="btn btn-sm btn-outline-primary">
-                                        <i class="bi bi-pencil"></i>
-                                    </a>
-                                    <a href="/tipos_ausencia/excluir/{{ tipo.id }}" 
-                                       class="btn btn-sm btn-outline-danger"
-                                       onclick="return confirm('Excluir este tipo de ausência?')">
-                                        <i class="bi bi-trash"></i>
-                                    </a>
-                                </td>
-                            </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-        </div>
-    </div>
+               <div class="table-responsive">
+    <table class="table table-hover" id="tabelaTipos">
+        <thead>
+            <tr>
+                <th>Nome</th>
+                <th>Descrição</th>
+                <th>Comprovante</th>
+                <th style="width: 60px;">Cor</th>
+                <th>Status</th>
+                <th style="width: 100px;">Ações</th>
+            </thead>
+        <tbody>
+            {% for tipo in tipos %}
+            <tr>
+                <td><strong>{{ tipo.nome }}</strong>{% if tipo.nome == 'Injustificada' %}<span class="badge bg-danger ms-2">Padrão</span>{% endif %}</td>
+                <td>{{ tipo.descricao or '-' }}</td>
+                <td>
+                    {% if tipo.requer_comprovante == 1 %}
+                        <span class="badge bg-warning text-dark">Obrigatório</span>
+                    {% else %}
+                        <span class="badge bg-secondary">Opcional</span>
+                    {% endif %}
+                </td>
+                <td class="text-center">
+                    <span style="display: inline-block; width: 30px; height: 30px; border-radius: 50%; background-color: {{ tipo.cor }}; border: 1px solid #ddd; box-shadow: 0 1px 3px rgba(0,0,0,0.1);" 
+                          title="Código: {{ tipo.cor }}"></span>
+                </td>
+                <td>
+                    {% if tipo.ativo == 1 %}
+                        <span class="badge bg-success">Ativo</span>
+                    {% else %}
+                        <span class="badge bg-secondary">Inativo</span>
+                    {% endif %}
+                </td>
+                <td>
+                    <div class="btn-group btn-group-sm">
+                        <a href="/tipos_ausencia/editar/{{ tipo.id }}" class="btn btn-outline-primary" title="Editar">
+                            <i class="bi bi-pencil"></i>
+                        </a>
+                        <a href="/tipos_ausencia/excluir/{{ tipo.id }}" class="btn btn-outline-danger" 
+                           onclick="return confirm('Excluir este tipo de ausência?')" title="Excluir">
+                            <i class="bi bi-trash"></i>
+                        </a>
+                    </div>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
 </div>
 {% endblock %}

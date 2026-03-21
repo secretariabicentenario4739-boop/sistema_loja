@@ -3833,6 +3833,7 @@ def gerar_relatorio(id):
     except Exception as e:
         flash(f"Erro ao gerar relatório: {str(e)}", "danger")
         return redirect("/candidatos")
+
         
 # =============================
 # ROTAS DE DOCUMENTOS DOS OBREIROS

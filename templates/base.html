@@ -252,6 +252,11 @@
                                 <i class="bi bi-megaphone"></i> Avisos
                             </a>
                         </li>
+						<li class="nav-item">
+							<a class="nav-link" href="/presenca/alertas">
+								<i class="bi bi-exclamation-triangle"></i> Alertas
+							</a>
+						</li>
                         <!-- Dropdown Administração Ultra Compacto -->
                         <li class="nav-item dropdown">
                             <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
@@ -269,6 +274,7 @@
                                 <li><a class="dropdown-item" href="/backup"><i class="bi bi-database"></i> Backup</a></li>
                                 <li><a class="dropdown-item" href="/restaurar"><i class="bi bi-arrow-repeat"></i> Rest.</a></li>
                                 <li><a class="dropdown-item" href="/auditoria"><i class="bi bi-journal-text"></i> Logs</a></li>
+								
                             </ul>
                         </li>
                     {% elif session.tipo == 'sindicante' %}
@@ -303,6 +309,11 @@
                                 <i class="bi bi-megaphone"></i> Avisos
                             </a>
                         </li>
+						<li class="nav-item">
+							<a class="nav-link" href="/presenca/alertas">
+								<i class="bi bi-exclamation-triangle"></i> Alertas
+							</a>
+						</li>
                     {% endif %}
                 </ul>
                 <ul class="navbar-nav">
