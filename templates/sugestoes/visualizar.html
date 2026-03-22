@@ -1,0 +1,199 @@
+{% extends "base.html" %}
+
+{% block title %}{{ sugestao.titulo }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="container">
+        <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+            <h2>
+                <i class="bi bi-lightbulb"></i> 
+                {{ sugestao.titulo }}
+            </h2>
+            <div>
+                {% if session.tipo == 'admin' %}
+                <div class="dropdown d-inline">
+                    <button class="btn btn-warning dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                        <i class="bi bi-gear"></i> Gerenciar
+                    </button>
+                    <ul class="dropdown-menu">
+                        <li><a class="dropdown-item" href="#" data-bs-toggle="modal" data-bs-target="#modalStatus">Alterar Status</a></li>
+                        <li><a class="dropdown-item" href="#" data-bs-toggle="modal" data-bs-target="#modalImplementar">Marcar como Implementada</a></li>
+                    </ul>
+                </div>
+                {% endif %}
+                <a href="/sugestoes" class="btn btn-outline-secondary ms-2">
+                    <i class="bi bi-arrow-left"></i> Voltar
+                </a>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col-md-8">
+                <div class="card shadow">
+                    <div class="card-header bg-primary text-white">
+                        <h5 class="mb-0">Detalhes da Sugestão</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="mb-3">
+                            <span class="badge bg-secondary">{{ sugestao.categoria }}</span>
+                            <span class="badge 
+                                {% if sugestao.prioridade == 'alta' %}bg-danger
+                                {% elif sugestao.prioridade == 'media' %}bg-warning text-dark
+                                {% else %}bg-secondary{% endif %}">
+                                Prioridade: {{ sugestao.prioridade|upper }}
+                            </span>
+                            <span class="badge status-{{ sugestao.status }}">
+                                {{ sugestao.status|replace('_', ' ')|title }}
+                            </span>
+                        </div>
+                        
+                        <div class="mb-4">
+                            <h6>Descrição:</h6>
+                            <p style="white-space: pre-line;">{{ sugestao.descricao }}</p>
+                        </div>
+                        
+                        <hr>
+                        
+                        <div class="row">
+                            <div class="col-md-6">
+                                <p><strong>Autor:</strong> {{ sugestao.autor_nome }}</p>
+                                <p><strong>Data:</strong> {{ sugestao.data_criacao[:16] }}</p>
+                            </div>
+                            <div class="col-md-6 text-end">
+                                <a href="/sugestoes/{{ sugestao.id }}/votar" class="btn btn-outline-primary">
+                                    <i class="bi bi-hand-thumbs-up"></i> Votar ({{ sugestao.votos }})
+                                </a>
+                            </div>
+                        </div>
+                        
+                        {% if sugestao.implementada %}
+                        <div class="alert alert-success mt-3">
+                            <i class="bi bi-check-circle-fill"></i>
+                            <strong>Sugestão implementada!</strong>
+                            <br>
+                            <small>Implementada em: {{ sugestao.data_implementacao[:16] }}</small>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <!-- Comentários -->
+                <div class="card shadow mt-4">
+                    <div class="card-header bg-secondary text-white">
+                        <h5 class="mb-0"><i class="bi bi-chat"></i> Comentários ({{ comentarios|length }})</h5>
+                    </div>
+                    <div class="card-body">
+                        <form method="POST" action="/sugestoes/{{ sugestao.id }}/comentar" class="mb-4">
+                            <textarea class="form-control" name="comentario" rows="3" required 
+                                      placeholder="Adicione um comentário..."></textarea>
+                            <button type="submit" class="btn btn-primary mt-2">
+                                <i class="bi bi-send"></i> Comentar
+                            </button>
+                        </form>
+                        
+                        {% if comentarios %}
+                            {% for c in comentarios %}
+                            <div class="border-bottom pb-3 mb-3">
+                                <div class="d-flex justify-content-between">
+                                    <strong>{{ c.autor_nome }}</strong>
+                                    <small class="text-muted">{{ c.data_comentario[:16] }}</small>
+                                </div>
+                                <p class="mt-2 mb-0">{{ c.comentario }}</p>
+                            </div>
+                            {% endfor %}
+                        {% else %}
+                            <p class="text-muted text-center">Nenhum comentário ainda. Seja o primeiro!</p>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-md-4">
+                <div class="card shadow">
+                    <div class="card-header bg-dark text-white">
+                        <h5 class="mb-0">Informações</h5>
+                    </div>
+                    <div class="card-body">
+                        <p><strong>Status:</strong> 
+                            {% if sugestao.status == 'pendente' %}
+                                <span class="badge bg-warning text-dark">Aguardando análise</span>
+                            {% elif sugestao.status == 'em_andamento' %}
+                                <span class="badge bg-info">Em desenvolvimento</span>
+                            {% elif sugestao.status == 'implementada' %}
+                                <span class="badge bg-success">Implementada</span>
+                            {% else %}
+                                <span class="badge bg-danger">Rejeitada</span>
+                            {% endif %}
+                        </p>
+                        <p><strong>Votos:</strong> {{ sugestao.votos }}</p>
+                        <hr>
+                        <div class="alert alert-info">
+                            <i class="bi bi-info-circle"></i>
+                            <strong>Como funciona:</strong><br>
+                            <small>Vote nas sugestões que você considera importantes. 
+                            As sugestões com mais votos serão priorizadas.</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modais para Admin -->
+{% if session.tipo == 'admin' %}
+<div class="modal fade" id="modalStatus" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-warning">
+                <h5 class="modal-title">Alterar Status</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="POST" action="/sugestoes/{{ sugestao.id }}/atualizar_status">
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">Novo Status</label>
+                        <select class="form-select" name="status" required>
+                            <option value="pendente" {% if sugestao.status == 'pendente' %}selected{% endif %}>Pendente</option>
+                            <option value="em_andamento" {% if sugestao.status == 'em_andamento' %}selected{% endif %}>Em Andamento</option>
+                            <option value="implementada" {% if sugestao.status == 'implementada' %}selected{% endif %}>Implementada</option>
+                            <option value="rejeitada" {% if sugestao.status == 'rejeitada' %}selected{% endif %}>Rejeitada</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Observação</label>
+                        <textarea class="form-control" name="observacao" rows="3"></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-warning">Atualizar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="modalImplementar" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-success text-white">
+                <h5 class="modal-title">Marcar como Implementada</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="POST" action="/sugestoes/{{ sugestao.id }}/implementar">
+                <div class="modal-body">
+                    <p>Confirmar que esta sugestão foi implementada?</p>
+                    <small class="text-muted">A data de implementação será registrada automaticamente.</small>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-success">Confirmar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endif %}
+{% endblock %}

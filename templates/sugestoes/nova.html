@@ -1,0 +1,76 @@
+{% extends "base.html" %}
+
+{% block title %}Nova Sugestão{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="container">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h2>
+                <i class="bi bi-lightbulb"></i> 
+                Nova Sugestão
+            </h2>
+            <a href="/sugestoes" class="btn btn-outline-secondary">
+                <i class="bi bi-arrow-left"></i> Voltar
+            </a>
+        </div>
+
+        <div class="card shadow">
+            <div class="card-header bg-success text-white">
+                <h5 class="mb-0">Compartilhe sua ideia</h5>
+            </div>
+            <div class="card-body">
+                <form method="POST">
+                    <div class="mb-3">
+                        <label class="form-label">Título *</label>
+                        <input type="text" class="form-control" name="titulo" required 
+                               placeholder="Resuma sua sugestão em poucas palavras">
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Categoria *</label>
+                        <select class="form-select" name="categoria" required>
+                            <option value="">Selecione...</option>
+                            {% for cat in categorias %}
+                            <option value="{{ cat.nome }}">
+                                <i class="{{ cat.icone }}"></i> {{ cat.nome }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Prioridade</label>
+                        <select class="form-select" name="prioridade">
+                            <option value="baixa">Baixa</option>
+                            <option value="media" selected>Média</option>
+                            <option value="alta">Alta</option>
+                        </select>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Descrição *</label>
+                        <textarea class="form-control" name="descricao" rows="8" required
+                                  placeholder="Descreva detalhadamente sua sugestão. Inclua:
+- O que você gostaria que fosse implementado?
+- Por que isso é importante?
+- Como isso beneficiaria o sistema?"></textarea>
+                        <small class="text-muted">Seja o mais detalhado possível para facilitar a avaliação.</small>
+                    </div>
+                    
+                    <div class="alert alert-info">
+                        <i class="bi bi-info-circle"></i>
+                        Sua sugestão será analisada pelos administradores. Quanto mais detalhes, melhor!
+                    </div>
+                    
+                    <div class="text-center">
+                        <button type="submit" class="btn btn-success btn-lg px-5">
+                            <i class="bi bi-send"></i> Enviar Sugestão
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

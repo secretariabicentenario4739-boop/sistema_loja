@@ -1,0 +1,123 @@
+{% extends "base.html" %}
+
+{% block title %}Integração WhatsApp{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="container">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h2>
+                <i class="bi bi-whatsapp text-success"></i> 
+                Integração WhatsApp
+            </h2>
+            <a href="/dashboard" class="btn btn-outline-secondary">
+                <i class="bi bi-arrow-left"></i> Voltar
+            </a>
+        </div>
+
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+                        {{ message }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
+        <div class="alert alert-warning">
+            <i class="bi bi-exclamation-triangle"></i>
+            <strong>Atenção:</strong> Para usar o WhatsApp, você precisa:
+            <ul class="mb-0 mt-2">
+                <li>Estar logado no <strong>WhatsApp Web</strong> no navegador</li>
+                <li>Os números devem estar no formato: <strong>5511999999999</strong> (código país + DDD + número)</li>
+                <li>O WhatsApp Web precisa estar aberto em uma aba</li>
+                <li>O primeiro envio pode demorar alguns segundos</li>
+            </ul>
+        </div>
+
+        <div class="row">
+            <div class="col-md-6">
+                <div class="card shadow">
+                    <div class="card-header bg-success text-white">
+                        <h5 class="mb-0">Configurações de Notificação</h5>
+                    </div>
+                    <div class="card-body">
+                        <form method="POST">
+                            <div class="form-check mb-3">
+                                <input class="form-check-input" type="checkbox" name="notificar_ausencia" id="notificar_ausencia" value="1" {% if config and config.notificar_ausencia == 1 %}checked{% endif %}>
+                                <label class="form-check-label" for="notificar_ausencia">
+                                    <i class="bi bi-bell"></i> Notificar quando um obreiro for marcado como ausente
+                                </label>
+                            </div>
+                            <div class="form-check mb-3">
+                                <input class="form-check-input" type="checkbox" name="notificar_nova_reuniao" id="notificar_nova_reuniao" value="1" {% if config and config.notificar_nova_reuniao == 1 %}checked{% endif %}>
+                                <label class="form-check-label" for="notificar_nova_reuniao">
+                                    <i class="bi bi-calendar-plus"></i> Notificar sobre novas reuniões
+                                </label>
+                            </div>
+                            <div class="form-check mb-3">
+                                <input class="form-check-input" type="checkbox" name="notificar_comunicado" id="notificar_comunicado" value="1" {% if config and config.notificar_comunicado == 1 %}checked{% endif %}>
+                                <label class="form-check-label" for="notificar_comunicado">
+                                    <i class="bi bi-megaphone"></i> Notificar sobre novos comunicados
+                                </label>
+                            </div>
+                            <div class="form-check mb-4">
+                                <input class="form-check-input" type="checkbox" name="lembrete_reuniao" id="lembrete_reuniao" value="1" {% if config and config.lembrete_reuniao == 1 %}checked{% endif %}>
+                                <label class="form-check-label" for="lembrete_reuniao">
+                                    <i class="bi bi-clock"></i> Enviar lembrete 24h antes da reunião
+                                </label>
+                            </div>
+                            <button type="submit" class="btn btn-success w-100">
+                                <i class="bi bi-save"></i> Salvar Configurações
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-6">
+                <div class="card shadow">
+                    <div class="card-header bg-primary text-white">
+                        <h5 class="mb-0">Testar Envio</h5>
+                    </div>
+                    <div class="card-body">
+                        <form method="POST" action="/testar_whatsapp">
+                            <div class="mb-3">
+                                <label class="form-label">Número do WhatsApp</label>
+                                <input type="text" class="form-control" name="numero" placeholder="5511999999999" required>
+                                <small class="text-muted">Formato: código do país + DDD + número (ex: 5511999999999)</small>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">Mensagem de Teste</label>
+                                <textarea class="form-control" name="mensagem" rows="3" required>📢 Teste de integração do Sistema Maçônico
+
+Esta é uma mensagem de teste enviada pelo sistema.</textarea>
+                            </div>
+                            <button type="submit" class="btn btn-primary w-100">
+                                <i class="bi bi-send"></i> Enviar Teste
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card shadow mt-4">
+            <div class="card-header bg-info text-white">
+                <h5 class="mb-0">Dicas para funcionamento</h5>
+            </div>
+            <div class="card-body">
+                <ul class="mb-0">
+                    <li>Mantenha o WhatsApp Web aberto em uma aba do navegador</li>
+                    <li>Certifique-se de que os obreiros tenham o número de telefone cadastrado no sistema</li>
+                    <li>O formato do número deve ser: <code>5511999999999</code> (55 para Brasil, 11 para São Paulo, 999999999 para o número)</li>
+                    <li>Para testar, use seu próprio número primeiro</li>
+                    <li>O sistema envia as mensagens em segundo plano para não travar a página</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

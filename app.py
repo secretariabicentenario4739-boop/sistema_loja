@@ -12,6 +12,10 @@ import shutil
 import tempfile
 from werkzeug.utils import secure_filename
 import os
+import webbrowser
+from urllib.parse import quote
+import threading
+import time
 
 # Configuração de uploads
 UPLOAD_FOLDER = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'uploads', 'documentos')
@@ -4021,7 +4025,475 @@ def excluir_documento(id):
     
     conn.close()
     return redirect(f"/obreiros/{doc['obreiro_id']}/documentos")
+# =============================
+# ROTAS DE SUGESTÕES E MELHORIAS
+# =============================
+@app.route("/sugestoes")
+@login_required
+def listar_sugestoes():
+    conn = get_db()
+    cursor = conn.cursor()
+    
+    # Filtros
+    categoria = request.args.get('categoria', '')
+    status = request.args.get('status', '')
+    prioridade = request.args.get('prioridade', '')
+    
+    query = """
+        SELECT s.*, u.nome_completo as autor_nome,
+               (SELECT COUNT(*) FROM comentarios_sugestao WHERE sugestao_id = s.id) as total_comentarios
+        FROM sugestoes s
+        JOIN usuarios u ON s.autor_id = u.id
+        WHERE 1=1
+    """
+    params = []
+    
+    if categoria:
+        query += " AND s.categoria = ?"
+        params.append(categoria)
+    if status:
+        query += " AND s.status = ?"
+        params.append(status)
+    if prioridade:
+        query += " AND s.prioridade = ?"
+        params.append(prioridade)
+    
+    query += " ORDER BY s.prioridade = 'alta' DESC, s.votos DESC, s.data_criacao DESC"
+    
+    cursor.execute(query, params)
+    sugestoes = cursor.fetchall()
+    
+    # Listas para filtros
+    cursor.execute("SELECT * FROM categorias_sugestoes WHERE ativo = 1 ORDER BY nome")
+    categorias = cursor.fetchall()
+    
+    conn.close()
+    
+    return render_template("sugestoes/lista.html", 
+                          sugestoes=sugestoes, 
+                          categorias=categorias,
+                          filtros={'categoria': categoria, 'status': status, 'prioridade': prioridade})
 
+@app.route("/sugestoes/nova", methods=["GET", "POST"])
+@admin_required
+def nova_sugestao():
+    conn = get_db()
+    cursor = conn.cursor()
+    
+    if request.method == "POST":
+        titulo = request.form.get("titulo")
+        descricao = request.form.get("descricao")
+        categoria = request.form.get("categoria")
+        prioridade = request.form.get("prioridade", "media")
+        
+        if not titulo or not descricao or not categoria:
+            flash("Preencha todos os campos obrigatórios", "danger")
+        else:
+            cursor.execute("""
+                INSERT INTO sugestoes (titulo, descricao, categoria, prioridade, autor_id)
+                VALUES (?, ?, ?, ?, ?)
+            """, (titulo, descricao, categoria, prioridade, session["user_id"]))
+            conn.commit()
+            sugestao_id = cursor.lastrowid
+            
+            registrar_log("criar_sugestao", "sugestao", sugestao_id, 
+                         dados_novos={"titulo": titulo, "categoria": categoria})
+            flash("Sugestão enviada com sucesso!", "success")
+            return redirect("/sugestoes")
+    
+    cursor.execute("SELECT * FROM categorias_sugestoes WHERE ativo = 1 ORDER BY nome")
+    categorias = cursor.fetchall()
+    conn.close()
+    
+    return render_template("sugestoes/nova.html", categorias=categorias)
+
+@app.route("/sugestoes/<int:id>")
+@login_required
+def visualizar_sugestao(id):
+    conn = get_db()
+    cursor = conn.cursor()
+    
+    cursor.execute("""
+        SELECT s.*, u.nome_completo as autor_nome, u.id as autor_id
+        FROM sugestoes s
+        JOIN usuarios u ON s.autor_id = u.id
+        WHERE s.id = ?
+    """, (id,))
+    sugestao = cursor.fetchone()
+    
+    if not sugestao:
+        flash("Sugestão não encontrada", "danger")
+        return redirect("/sugestoes")
+    
+    # Buscar comentários
+    cursor.execute("""
+        SELECT c.*, u.nome_completo as autor_nome
+        FROM comentarios_sugestao c
+        JOIN usuarios u ON c.autor_id = u.id
+        WHERE c.sugestao_id = ?
+        ORDER BY c.data_comentario DESC
+    """, (id,))
+    comentarios = cursor.fetchall()
+    
+    conn.close()
+    
+    return render_template("sugestoes/visualizar.html", 
+                          sugestao=sugestao, 
+                          comentarios=comentarios)
+
+@app.route("/sugestoes/<int:id>/comentar", methods=["POST"])
+@login_required
+def comentar_sugestao(id):
+    comentario = request.form.get("comentario")
+    
+    if not comentario:
+        flash("Digite um comentário", "danger")
+        return redirect(f"/sugestoes/{id}")
+    
+    conn = get_db()
+    cursor = conn.cursor()
+    
+    cursor.execute("""
+        INSERT INTO comentarios_sugestao (sugestao_id, autor_id, comentario)
+        VALUES (?, ?, ?)
+    """, (id, session["user_id"], comentario))
+    conn.commit()
+    
+    registrar_log("comentar_sugestao", "sugestao", id, dados_novos={"comentario": comentario[:50]})
+    flash("Comentário adicionado!", "success")
+    conn.close()
+    
+    return redirect(f"/sugestoes/{id}")
+
+@app.route("/sugestoes/<int:id>/votar")
+@login_required
+def votar_sugestao(id):
+    conn = get_db()
+    cursor = conn.cursor()
+    
+    cursor.execute("UPDATE sugestoes SET votos = votos + 1 WHERE id = ?", (id,))
+    conn.commit()
+    
+    registrar_log("votar_sugestao", "sugestao", id)
+    flash("Voto computado com sucesso!", "success")
+    conn.close()
+    
+    return redirect(f"/sugestoes/{id}")
+
+@app.route("/sugestoes/<int:id>/atualizar_status", methods=["POST"])
+@admin_required
+def atualizar_status_sugestao(id):
+    status = request.form.get("status")
+    observacao = request.form.get("observacao", "")
+    
+    conn = get_db()
+    cursor = conn.cursor()
+    
+    cursor.execute("""
+        UPDATE sugestoes 
+        SET status = ?, data_atualizacao = CURRENT_TIMESTAMP
+        WHERE id = ?
+    """, (status, id))
+    conn.commit()
+    
+    # Adicionar comentário automático sobre a mudança de status
+    cursor.execute("""
+        INSERT INTO comentarios_sugestao (sugestao_id, autor_id, comentario)
+        VALUES (?, ?, ?)
+    """, (id, session["user_id"], f"Status alterado para: {status}. {observacao}"))
+    conn.commit()
+    
+    registrar_log("atualizar_status_sugestao", "sugestao", id, dados_novos={"status": status})
+    flash(f"Status atualizado para: {status}", "success")
+    conn.close()
+    
+    return redirect(f"/sugestoes/{id}")
+
+@app.route("/sugestoes/<int:id>/implementar", methods=["POST"])
+@admin_required
+def implementar_sugestao(id):
+    conn = get_db()
+    cursor = conn.cursor()
+    
+    cursor.execute("""
+        UPDATE sugestoes 
+        SET implementada = 1, 
+            data_implementacao = CURRENT_TIMESTAMP,
+            implementado_por = ?,
+            status = 'implementada'
+        WHERE id = ?
+    """, (session["user_id"], id))
+    conn.commit()
+    
+    registrar_log("implementar_sugestao", "sugestao", id)
+    flash("Sugestão marcada como implementada!", "success")
+    conn.close()
+    
+    return redirect(f"/sugestoes/{id}")
+
+@app.route("/sugestoes/estatisticas")
+@admin_required
+def estatisticas_sugestoes():
+    conn = get_db()
+    cursor = conn.cursor()
+    
+    # Estatísticas gerais
+    cursor.execute("SELECT COUNT(*) as total FROM sugestoes")
+    total = cursor.fetchone()["total"]
+    
+    cursor.execute("SELECT COUNT(*) as total FROM sugestoes WHERE status = 'pendente'")
+    pendentes = cursor.fetchone()["total"]
+    
+    cursor.execute("SELECT COUNT(*) as total FROM sugestoes WHERE status = 'em_andamento'")
+    em_andamento = cursor.fetchone()["total"]
+    
+    cursor.execute("SELECT COUNT(*) as total FROM sugestoes WHERE status = 'implementada'")
+    implementadas = cursor.fetchone()["total"]
+    
+    cursor.execute("SELECT COUNT(*) as total FROM sugestoes WHERE status = 'rejeitada'")
+    rejeitadas = cursor.fetchone()["total"]
+    
+    # Por categoria
+    cursor.execute("""
+        SELECT c.nome, COUNT(s.id) as total
+        FROM categorias_sugestoes c
+        LEFT JOIN sugestoes s ON c.nome = s.categoria
+        GROUP BY c.nome
+        ORDER BY total DESC
+    """)
+    por_categoria = cursor.fetchall()
+    
+    # Por prioridade
+    cursor.execute("""
+        SELECT prioridade, COUNT(*) as total
+        FROM sugestoes
+        GROUP BY prioridade
+    """)
+    por_prioridade = cursor.fetchall()
+    
+    conn.close()
+    
+    return render_template("sugestoes/estatisticas.html",
+                          total=total,
+                          pendentes=pendentes,
+                          em_andamento=em_andamento,
+                          implementadas=implementadas,
+                          rejeitadas=rejeitadas,
+                          por_categoria=por_categoria,
+                          por_prioridade=por_prioridade)
+
+# =============================
+# FUNÇÃO DE ENVIO DE WHATSAPP
+# =============================
+import webbrowser
+from urllib.parse import quote
+import time
+
+def enviar_whatsapp(numero, mensagem):
+    """
+    Envia mensagem via WhatsApp abrindo o WhatsApp Web
+    Retorna True se o link foi aberto com sucesso
+    """
+    try:
+        # Remove caracteres não numéricos
+        numero_limpo = ''.join(filter(str.isdigit, numero))
+        
+        # Formata o número para o padrão internacional
+        if len(numero_limpo) == 11:  # 11 dígitos = 55 + DD + 9 + número
+            numero_limpo = '55' + numero_limpo
+        elif len(numero_limpo) == 10:  # 10 dígitos = DD + número (sem 9)
+            numero_limpo = '55' + numero_limpo
+        elif len(numero_limpo) == 13 and numero_limpo.startswith('55'):
+            pass  # Já está no formato correto
+        else:
+            # Se o número já veio formatado, mantém
+            pass
+        
+        # Codifica a mensagem para URL
+        mensagem_codificada = quote(mensagem)
+        
+        # Cria o link do WhatsApp
+        url = f"https://web.whatsapp.com/send?phone={numero_limpo}&text={mensagem_codificada}"
+        
+        # Abre no navegador
+        webbrowser.open(url)
+        
+        print(f"✅ Link do WhatsApp aberto para {numero_limpo}")
+        return True
+        
+    except Exception as e:
+        print(f"❌ Erro ao abrir WhatsApp: {e}")
+        return False
+
+
+# =============================
+# FUNÇÕES DE NOTIFICAÇÃO WHATSAPP
+# =============================
+def notificar_nova_reuniao_whatsapp(reuniao_id, titulo, data, hora):
+    """Notifica todos os obreiros sobre nova reunião via WhatsApp"""
+    try:
+        conn = get_db()
+        cursor = conn.cursor()
+        
+        # Verifica se a configuração está ativa
+        cursor.execute("SELECT lembrete_reuniao FROM whatsapp_config WHERE id = 1")
+        config = cursor.fetchone()
+        
+        if config and config["lembrete_reuniao"] == 1:
+            cursor.execute("SELECT id, telefone, nome_completo FROM usuarios WHERE ativo = 1 AND telefone IS NOT NULL AND telefone != ''")
+            obreiros = cursor.fetchall()
+            
+            for obreiro in obreiros:
+                if obreiro["telefone"]:
+                    numero = obreiro["telefone"]
+                    primeiro_nome = obreiro["nome_completo"].split()[0] if obreiro["nome_completo"] else "Irmão"
+                    
+                    mensagem = f"""📅 *NOVA REUNIÃO AGENDADA*
+
+Olá {primeiro_nome},
+
+Uma nova reunião foi agendada:
+📝 {titulo}
+📅 Data: {data}
+⏰ Horário: {hora}
+
+Acesse o sistema para mais detalhes:
+🔗 http://localhost:5000/reunioes/{reuniao_id}
+
+Atenciosamente,
+Sistema Maçônico"""
+                    
+                    # Envia em thread separada para não bloquear
+                    threading.Thread(target=enviar_whatsapp, args=(numero, mensagem)).start()
+                    time.sleep(0.5)  # Pequeno delay entre envios
+        conn.close()
+    except Exception as e:
+        print(f"Erro ao notificar nova reunião: {e}")
+
+
+def notificar_comunicado_whatsapp(comunicado_id, titulo, conteudo):
+    """Notifica todos os obreiros sobre novo comunicado via WhatsApp"""
+    try:
+        conn = get_db()
+        cursor = conn.cursor()
+        
+        # Verifica se a configuração está ativa
+        cursor.execute("SELECT notificar_comunicado FROM whatsapp_config WHERE id = 1")
+        config = cursor.fetchone()
+        
+        if config and config["notificar_comunicado"] == 1:
+            cursor.execute("SELECT id, telefone, nome_completo FROM usuarios WHERE ativo = 1 AND telefone IS NOT NULL AND telefone != ''")
+            obreiros = cursor.fetchall()
+            
+            for obreiro in obreiros:
+                if obreiro["telefone"]:
+                    numero = obreiro["telefone"]
+                    primeiro_nome = obreiro["nome_completo"].split()[0] if obreiro["nome_completo"] else "Irmão"
+                    
+                    # Limita o conteúdo para não ficar muito longo
+                    conteudo_resumido = conteudo[:200] + "..." if len(conteudo) > 200 else conteudo
+                    
+                    mensagem = f"""📢 *NOVO COMUNICADO*
+
+Olá {primeiro_nome},
+
+{titulo}
+
+{conteudo_resumido}
+
+Acesse para visualizar completo:
+🔗 http://localhost:5000/comunicados/{comunicado_id}
+
+Atenciosamente,
+Sistema Maçônico"""
+                    
+                    threading.Thread(target=enviar_whatsapp, args=(numero, mensagem)).start()
+                    time.sleep(0.5)
+        conn.close()
+    except Exception as e:
+        print(f"Erro ao notificar comunicado: {e}")
+
+
+# =============================
+# ROTAS WHATSAPP
+# =============================
+@app.route("/config/whatsapp", methods=["GET", "POST"])
+@admin_required
+def config_whatsapp():
+    conn = get_db()
+    cursor = conn.cursor()
+    
+    # Cria tabela se não existir
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS whatsapp_config (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            notificar_ausencia INTEGER DEFAULT 1,
+            notificar_nova_reuniao INTEGER DEFAULT 1,
+            notificar_comunicado INTEGER DEFAULT 1,
+            lembrete_reuniao INTEGER DEFAULT 1,
+            grupo_id TEXT,
+            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+    """)
+    conn.commit()
+    
+    # Insere configuração padrão se não existir
+    cursor.execute("SELECT COUNT(*) as total FROM whatsapp_config")
+    if cursor.fetchone()["total"] == 0:
+        cursor.execute("""
+            INSERT INTO whatsapp_config (notificar_ausencia, notificar_nova_reuniao, notificar_comunicado, lembrete_reuniao)
+            VALUES (1, 1, 1, 1)
+        """)
+        conn.commit()
+    
+    if request.method == "POST":
+        notificar_ausencia = 1 if request.form.get("notificar_ausencia") else 0
+        notificar_nova_reuniao = 1 if request.form.get("notificar_nova_reuniao") else 0
+        notificar_comunicado = 1 if request.form.get("notificar_comunicado") else 0
+        lembrete_reuniao = 1 if request.form.get("lembrete_reuniao") else 0
+        grupo_id = request.form.get("grupo_id", "")
+        
+        cursor.execute("""
+            UPDATE whatsapp_config 
+            SET notificar_ausencia = ?, 
+                notificar_nova_reuniao = ?, 
+                notificar_comunicado = ?, 
+                lembrete_reuniao = ?, 
+                grupo_id = ?, 
+                updated_at = CURRENT_TIMESTAMP 
+            WHERE id = 1
+        """, (notificar_ausencia, notificar_nova_reuniao, notificar_comunicado, lembrete_reuniao, grupo_id))
+        conn.commit()
+        
+        registrar_log("configurar_whatsapp", "config", 1, dados_novos={"notificacoes": "atualizadas", "grupo": grupo_id})
+        flash("Configurações do WhatsApp salvas com sucesso!", "success")
+        return redirect("/config/whatsapp")
+    
+    cursor.execute("SELECT * FROM whatsapp_config WHERE id = 1")
+    config = cursor.fetchone()
+    conn.close()
+    
+    return render_template("config/whatsapp.html", config=config)
+
+
+@app.route("/testar_whatsapp", methods=["POST"])
+@admin_required
+def testar_whatsapp():
+    numero = request.form.get("numero")
+    mensagem = request.form.get("mensagem")
+    
+    if not numero or not mensagem:
+        flash("Número e mensagem são obrigatórios", "danger")
+        return redirect("/config/whatsapp")
+    
+    # Envia mensagem de teste
+    if enviar_whatsapp(numero, mensagem):
+        flash("Mensagem de teste aberta no navegador! Verifique se o WhatsApp Web está aberto e clique em enviar.", "success")
+        registrar_log("testar_whatsapp", "whatsapp", None, dados_novos={"numero": numero})
+    else:
+        flash("Erro ao abrir WhatsApp. Verifique o número digitado.", "danger")
+    
+    return redirect("/config/whatsapp")
 # =============================
 # INICIALIZAÇÃO
 # =============================

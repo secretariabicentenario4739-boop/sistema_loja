@@ -1,0 +1,176 @@
+{% extends "base.html" %}
+
+{% block title %}Sugestões e Melhorias{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="https://cdn.datatables.net/1.13.7/css/dataTables.bootstrap5.min.css">
+<style>
+    .sugestao-card {
+        transition: transform 0.2s, box-shadow 0.2s;
+        border-left: 4px solid;
+    }
+    .sugestao-card:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+    }
+    .status-badge {
+        padding: 4px 8px;
+        border-radius: 20px;
+        font-size: 0.7rem;
+    }
+    .status-pendente { background-color: #ffc107; color: #212529; }
+    .status-em_andamento { background-color: #17a2b8; color: white; }
+    .status-implementada { background-color: #28a745; color: white; }
+    .status-rejeitada { background-color: #dc3545; color: white; }
+    .voto-btn {
+        cursor: pointer;
+        transition: transform 0.2s;
+    }
+    .voto-btn:hover {
+        transform: scale(1.1);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="container">
+        <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+            <h2>
+                <i class="bi bi-lightbulb"></i> 
+                Sugestões e Melhorias
+            </h2>
+            <div>
+                <a href="/sugestoes/nova" class="btn btn-success">
+                    <i class="bi bi-plus-circle"></i> Nova Sugestão
+                </a>
+                {% if session.tipo == 'admin' %}
+                <a href="/sugestoes/estatisticas" class="btn btn-info ms-2">
+                    <i class="bi bi-bar-chart"></i> Estatísticas
+                </a>
+                {% endif %}
+                <a href="/dashboard" class="btn btn-outline-secondary ms-2">
+                    <i class="bi bi-arrow-left"></i> Voltar
+                </a>
+            </div>
+        </div>
+
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+                        {{ message }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
+        <!-- Filtros -->
+        <div class="card shadow mb-4">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0"><i class="bi bi-funnel"></i> Filtros</h5>
+            </div>
+            <div class="card-body">
+                <form method="GET" class="row g-3">
+                    <div class="col-md-4">
+                        <label class="form-label">Categoria</label>
+                        <select class="form-select" name="categoria">
+                            <option value="">Todas</option>
+                            {% for cat in categorias %}
+                            <option value="{{ cat.nome }}" {% if filtros.categoria == cat.nome %}selected{% endif %}>{{ cat.nome }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">Status</label>
+                        <select class="form-select" name="status">
+                            <option value="">Todos</option>
+                            <option value="pendente" {% if filtros.status == 'pendente' %}selected{% endif %}>Pendente</option>
+                            <option value="em_andamento" {% if filtros.status == 'em_andamento' %}selected{% endif %}>Em Andamento</option>
+                            <option value="implementada" {% if filtros.status == 'implementada' %}selected{% endif %}>Implementada</option>
+                            <option value="rejeitada" {% if filtros.status == 'rejeitada' %}selected{% endif %}>Rejeitada</option>
+                        </select>
+                    </div>
+                    <div class="col-md-4 d-flex align-items-end">
+                        <button type="submit" class="btn btn-primary w-100">Filtrar</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Lista de Sugestões -->
+        {% if sugestoes %}
+            <div class="row">
+                {% for s in sugestoes %}
+                <div class="col-md-6 col-12 mb-4">
+                    <div class="card sugestao-card shadow h-100"
+                         style="border-left-color: 
+                            {% if s.prioridade == 'alta' %}#dc3545
+                            {% elif s.prioridade == 'media' %}#ffc107
+                            {% else %}#6c757d{% endif %}">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between align-items-start">
+                                <h5 class="card-title">
+                                    <i class="{{ s.icone or 'bi-lightbulb' }}"></i>
+                                    {{ s.titulo }}
+                                </h5>
+                                <span class="status-badge status-{{ s.status }}">
+                                    {{ s.status|replace('_', ' ')|title }}
+                                </span>
+                            </div>
+                            <p class="card-text mt-2">{{ s.descricao[:150] }}{% if s.descricao|length > 150 %}...{% endif %}</p>
+                            
+                            <div class="mt-2">
+                                <span class="badge bg-secondary">
+                                    <i class="bi bi-tag"></i> {{ s.categoria }}
+                                </span>
+                                <span class="badge 
+                                    {% if s.prioridade == 'alta' %}bg-danger
+                                    {% elif s.prioridade == 'media' %}bg-warning text-dark
+                                    {% else %}bg-secondary{% endif %}">
+                                    <i class="bi bi-flag"></i> {{ s.prioridade|upper }}
+                                </span>
+                            </div>
+                            
+                            <div class="mt-3 d-flex justify-content-between align-items-center">
+                                <div class="small text-muted">
+                                    <i class="bi bi-person-circle"></i> {{ s.autor_nome }}<br>
+                                    <i class="bi bi-calendar"></i> {{ s.data_criacao[:16] }}
+                                </div>
+                                <div class="text-center">
+                                    <a href="/sugestoes/{{ s.id }}/votar" class="text-decoration-none voto-btn" title="Votar">
+                                        <i class="bi bi-hand-thumbs-up fs-4"></i>
+                                        <span class="badge bg-primary rounded-pill">{{ s.votos }}</span>
+                                    </a>
+                                    <br>
+                                    <small class="text-muted">votos</small>
+                                </div>
+                            </div>
+                            
+                            <div class="mt-2">
+                                <i class="bi bi-chat"></i> {{ s.total_comentarios }} comentários
+                            </div>
+                        </div>
+                        <div class="card-footer bg-transparent">
+                            <a href="/sugestoes/{{ s.id }}" class="btn btn-sm btn-primary w-100">
+                                <i class="bi bi-eye"></i> Ver detalhes
+                            </a>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <div class="text-center py-5">
+                <i class="bi bi-inbox text-muted fs-1"></i>
+                <h5 class="text-muted mt-3">Nenhuma sugestão encontrada</h5>
+                <p>Seja o primeiro a sugerir uma melhoria!</p>
+                <a href="/sugestoes/nova" class="btn btn-primary">
+                    <i class="bi bi-plus-circle"></i> Nova Sugestão
+                </a>
+            </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

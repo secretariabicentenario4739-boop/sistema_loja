@@ -3,4 +3,5 @@ gunicorn
 reportlab
 werkzeug
 openpyxl
-flask-apscheduler
+pywhatkit
+psycopg2-binary
