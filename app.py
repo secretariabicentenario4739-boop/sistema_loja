@@ -488,8 +488,6 @@ def logout():
 # =============================
 @app.route("/dashboard")
 @login_required
-@app.route("/dashboard")
-@login_required
 def dashboard():
     try:
         cursor, conn = get_db()
