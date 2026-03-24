@@ -1,0 +1,34 @@
+# render.yaml
+services:
+  - type: web
+    name: sistema-maconico
+    runtime: python
+    buildCommand: pip install -r requirements.txt
+    startCommand: gunicorn app:app
+    envVars:
+      - key: DB_HOST
+        fromDatabase:
+          name: sistema-maconico-db
+          property: host
+      - key: DB_PORT
+        fromDatabase:
+          name: sistema-maconico-db
+          property: port
+      - key: DB_NAME
+        fromDatabase:
+          name: sistema-maconico-db
+          property: database
+      - key: DB_USER
+        fromDatabase:
+          name: sistema-maconico-db
+          property: user
+      - key: DB_PASSWORD
+        fromDatabase:
+          name: sistema-maconico-db
+          property: password
+      - key: SECRET_KEY
+        generateValue: true
+
+databases:
+  - name: sistema-maconico-db
+    plan: free
