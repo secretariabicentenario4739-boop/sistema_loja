@@ -1,4 +1,4 @@
-# db_config.py - Versão definitiva
+# db_config.py
 import os
 import psycopg2
 from psycopg2.extras import RealDictCursor
@@ -7,13 +7,14 @@ import atexit
 
 load_dotenv()
 
-# Configuração do banco
+# Configuração do banco de dados
 DB_CONFIG = {
     'host': os.getenv('DB_HOST', 'localhost'),
     'port': os.getenv('DB_PORT', '5432'),
     'dbname': os.getenv('DB_NAME', 'sistema_maconico'),
     'user': os.getenv('DB_USER', 'postgres'),
-    'password': os.getenv('DB_PASSWORD', '')
+    'password': os.getenv('DB_PASSWORD', ''),
+    'sslmode': 'require'  # <-- ADICIONE ESTA LINHA
 }
 
 # Pool de conexões (opcional)
