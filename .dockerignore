@@ -1,0 +1,54 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+.venv/
+.env
+
+# Banco de dados
+*.db
+*.sqlite
+*.sqlite3
+backups/
+*.sql
+
+# Uploads
+uploads/
+*.pdf
+*.jpg
+*.jpeg
+*.png
+*.gif
+*.doc
+*.docx
+*.xls
+*.xlsx
+
+# Git
+.git/
+.gitignore
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Logs
+*.log
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Testes
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Ambiente local
+.env

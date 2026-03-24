@@ -1,0 +1,34 @@
+version: '3.8'
+
+services:
+  web:
+    build: .
+    ports:
+      - "5000:10000"
+    environment:
+      - DB_HOST=db
+      - DB_PORT=5432
+      - DB_NAME=sistema_maconico
+      - DB_USER=postgres
+      - DB_PASSWORD=postgres
+      - SECRET_KEY=dev-secret-key
+      - FLASK_ENV=development
+    depends_on:
+      - db
+    volumes:
+      - ./uploads:/app/uploads
+      - ./backups:/app/backups
+
+  db:
+    image: postgres:15
+    environment:
+      - POSTGRES_DB=sistema_maconico
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+volumes:
+  postgres_data:
