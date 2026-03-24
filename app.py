@@ -23,6 +23,7 @@ import time
 from dotenv import load_dotenv
 import traceback
 import markdown
+
 print("=" * 50)
 print("🚀 INICIANDO APLICAÇÃO")
 print("=" * 50)
@@ -161,14 +162,6 @@ def nivel_ata_required():
 # CONFIGURAÇÕES
 # =============================
 
-# Configuração do banco de dados PostgreSQL
-DB_CONFIG = {
-    'host': os.getenv('DB_HOST', 'localhost'),
-    'port': os.getenv('DB_PORT', '5432'),
-    'dbname': os.getenv('DB_NAME', 'sistema_maconico'),
-    'user': os.getenv('DB_USER', 'postgres'),
-    'password': os.getenv('DB_PASSWORD', '')
-}
 
 # Configuração de uploads
 UPLOAD_FOLDER = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'uploads', 'documentos')
@@ -185,36 +178,49 @@ app.secret_key = os.getenv('SECRET_KEY', os.urandom(24))
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 
 # =============================
-# FUNÇÕES DE BANCO DE DADOS
+# CONEXÃO COM BANCO DE DADOS
 # =============================
 
+import os
+import psycopg2
+from psycopg2.extras import RealDictCursor
+
+# USA APENAS A DATABASE_URL
+DATABASE_URL = os.getenv('DATABASE_URL')
+
+if not DATABASE_URL:
+    print("❌ ERRO: DATABASE_URL não encontrada!")
+    print("   Configure a variável DATABASE_URL no Render")
+    # Fallback para desenvolvimento local
+    DATABASE_URL = "postgresql://postgres:postgres@localhost:5432/sistema_maconico"
+
+print(f"🔗 Conectando ao banco via DATABASE_URL...")
+
 def get_db():
-    """Retorna uma conexão com o PostgreSQL e um cursor"""
+    """Retorna uma conexão com o PostgreSQL"""
     try:
-        conn = psycopg2.connect(**DB_CONFIG)
+        conn = psycopg2.connect(DATABASE_URL)
         cursor = conn.cursor(cursor_factory=RealDictCursor)
         return cursor, conn
     except Exception as e:
-        print(f"❌ Erro ao conectar ao PostgreSQL: {e}")
+        print(f"❌ Erro ao conectar: {e}")
         raise
 
 def return_connection(conn):
-    """Fecha a conexão com o banco"""
+    """Fecha a conexão"""
     if conn:
         conn.close()
 
 def init_db():
-    """Testa a conexão com o banco de dados"""
-    print("✅ Banco de dados PostgreSQL configurado")
+    """Testa a conexão com o banco"""
     try:
         cursor, conn = get_db()
-        cursor.execute("SELECT version()")
-        version = cursor.fetchone()
-        print(f"✅ Conectado ao PostgreSQL: {version['version'][:50]}...")
+        cursor.execute("SELECT 1")
+        print("✅ Conexão com PostgreSQL estabelecida!")
         return_connection(conn)
         return True
     except Exception as e:
-        print(f"❌ Erro ao conectar ao PostgreSQL: {e}")
+        print(f"❌ Erro na conexão: {e}")
         return False
 
 # Inicializar banco
@@ -846,13 +852,6 @@ import os
 
 load_dotenv()
 
-DB_CONFIG = {
-    'host': os.getenv('DB_HOST', 'localhost'),
-    'port': os.getenv('DB_PORT', '5432'),
-    'dbname': os.getenv('DB_NAME', 'sistema_maconico'),
-    'user': os.getenv('DB_USER', 'postgres'),
-    'password': os.getenv('DB_PASSWORD', '')
-}
 
 def atualizar_niveis_acesso():
     try:
