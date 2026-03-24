@@ -776,7 +776,7 @@ def setup_full_database():
     try:
         cursor, conn = get_db()
         
-        print("🔄 Criando todas as tabelas...")
+        print("🔄 Criando TODAS as tabelas do sistema...")
         
         # ==================== TABELAS PRINCIPAIS ====================
         
@@ -804,7 +804,7 @@ def setup_full_database():
                 ativo INTEGER DEFAULT 1
             )
         """)
-        print("✅ Tabela usuarios")
+        print("✅ 1. usuarios")
         
         # 2. Candidatos
         cursor.execute("""
@@ -818,7 +818,7 @@ def setup_full_database():
                 resultado_final TEXT
             )
         """)
-        print("✅ Tabela candidatos")
+        print("✅ 2. candidatos")
         
         # 3. Sindicâncias
         cursor.execute("""
@@ -831,7 +831,7 @@ def setup_full_database():
                 UNIQUE(candidato_id, sindicante)
             )
         """)
-        print("✅ Tabela sindicancias")
+        print("✅ 3. sindicancias")
         
         # 4. Pareceres conclusivos
         cursor.execute("""
@@ -852,7 +852,7 @@ def setup_full_database():
                 UNIQUE(candidato_id, sindicante)
             )
         """)
-        print("✅ Tabela pareceres_conclusivos")
+        print("✅ 4. pareceres_conclusivos")
         
         # 5. Lojas
         cursor.execute("""
@@ -883,7 +883,7 @@ def setup_full_database():
                 ativo INTEGER DEFAULT 1
             )
         """)
-        print("✅ Tabela lojas")
+        print("✅ 5. lojas")
         
         # 6. Tipos de reunião
         cursor.execute("""
@@ -894,7 +894,7 @@ def setup_full_database():
                 cor TEXT DEFAULT '#3788d8'
             )
         """)
-        print("✅ Tabela tipos_reuniao")
+        print("✅ 6. tipos_reuniao")
         
         # 7. Cargos
         cursor.execute("""
@@ -908,7 +908,7 @@ def setup_full_database():
                 ativo INTEGER DEFAULT 1
             )
         """)
-        print("✅ Tabela cargos")
+        print("✅ 7. cargos")
         
         # 8. Ocupação de cargos
         cursor.execute("""
@@ -923,7 +923,7 @@ def setup_full_database():
                 ativo INTEGER DEFAULT 1
             )
         """)
-        print("✅ Tabela ocupacao_cargos")
+        print("✅ 8. ocupacao_cargos")
         
         # 9. Histórico de graus
         cursor.execute("""
@@ -936,7 +936,7 @@ def setup_full_database():
                 observacao TEXT
             )
         """)
-        print("✅ Tabela historico_graus")
+        print("✅ 9. historico_graus")
         
         # 10. Reuniões
         cursor.execute("""
@@ -957,7 +957,7 @@ def setup_full_database():
                 criado_por INTEGER REFERENCES usuarios(id)
             )
         """)
-        print("✅ Tabela reunioes")
+        print("✅ 10. reunioes")
         
         # 11. Presença
         cursor.execute("""
@@ -977,7 +977,7 @@ def setup_full_database():
                 UNIQUE(reuniao_id, obreiro_id)
             )
         """)
-        print("✅ Tabela presenca")
+        print("✅ 11. presenca")
         
         # 12. Atas
         cursor.execute("""
@@ -1006,7 +1006,7 @@ def setup_full_database():
                 impresso_por INTEGER REFERENCES usuarios(id)
             )
         """)
-        print("✅ Tabela atas")
+        print("✅ 12. atas")
         
         # 13. Modelos de ata
         cursor.execute("""
@@ -1022,7 +1022,7 @@ def setup_full_database():
                 created_by INTEGER REFERENCES usuarios(id)
             )
         """)
-        print("✅ Tabela modelos_ata")
+        print("✅ 13. modelos_ata")
         
         # 14. Assinaturas de atas
         cursor.execute("""
@@ -1039,7 +1039,7 @@ def setup_full_database():
                 UNIQUE(ata_id, obreiro_id)
             )
         """)
-        print("✅ Tabela assinaturas_ata")
+        print("✅ 14. assinaturas_ata")
         
         # 15. Tipos de ausência
         cursor.execute("""
@@ -1052,7 +1052,7 @@ def setup_full_database():
                 ativo INTEGER DEFAULT 1
             )
         """)
-        print("✅ Tabela tipos_ausencia")
+        print("✅ 15. tipos_ausencia")
         
         # 16. Graus
         cursor.execute("""
@@ -1067,7 +1067,7 @@ def setup_full_database():
                 created_by INTEGER REFERENCES usuarios(id)
             )
         """)
-        print("✅ Tabela graus")
+        print("✅ 16. graus")
         
         # 17. Tipos de condecorações
         cursor.execute("""
@@ -1083,7 +1083,7 @@ def setup_full_database():
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )
         """)
-        print("✅ Tabela tipos_condecoracoes")
+        print("✅ 17. tipos_condecoracoes")
         
         # 18. Condecorações dos obreiros
         cursor.execute("""
@@ -1101,7 +1101,7 @@ def setup_full_database():
                 UNIQUE(obreiro_id, tipo_id, data_concessao)
             )
         """)
-        print("✅ Tabela condecoracoes_obreiro")
+        print("✅ 18. condecoracoes_obreiro")
         
         # 19. Familiares
         cursor.execute("""
@@ -1119,7 +1119,7 @@ def setup_full_database():
                 created_by INTEGER REFERENCES usuarios(id)
             )
         """)
-        print("✅ Tabela familiares")
+        print("✅ 19. familiares")
         
         # 20. Comunicados
         cursor.execute("""
@@ -1136,9 +1136,21 @@ def setup_full_database():
                 data_criacao TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )
         """)
-        print("✅ Tabela comunicados")
+        print("✅ 20. comunicados")
         
-        # 21. Logs de auditoria
+        # 21. Visualizações de comunicado
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS visualizacoes_comunicado (
+                id SERIAL PRIMARY KEY,
+                comunicado_id INTEGER NOT NULL REFERENCES comunicados(id) ON DELETE CASCADE,
+                obreiro_id INTEGER NOT NULL REFERENCES usuarios(id) ON DELETE CASCADE,
+                data_visualizacao TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                UNIQUE(comunicado_id, obreiro_id)
+            )
+        """)
+        print("✅ 21. visualizacoes_comunicado")
+        
+        # 22. Logs de auditoria
         cursor.execute("""
             CREATE TABLE IF NOT EXISTS logs_auditoria (
                 id SERIAL PRIMARY KEY,
@@ -1154,9 +1166,9 @@ def setup_full_database():
                 data_hora TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )
         """)
-        print("✅ Tabela logs_auditoria")
+        print("✅ 22. logs_auditoria")
         
-        # 22. Sugestões
+        # 23. Sugestões
         cursor.execute("""
             CREATE TABLE IF NOT EXISTS sugestoes (
                 id SERIAL PRIMARY KEY,
@@ -1174,22 +1186,275 @@ def setup_full_database():
                 data_atualizacao TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )
         """)
-        print("✅ Tabela sugestoes")
+        print("✅ 23. sugestoes")
         
-        # ==================== INSERIR DADOS PADRÃO ====================
+        # 24. Categorias de sugestões
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS categorias_sugestoes (
+                id SERIAL PRIMARY KEY,
+                nome TEXT NOT NULL UNIQUE,
+                descricao TEXT,
+                ativo INTEGER DEFAULT 1
+            )
+        """)
+        print("✅ 24. categorias_sugestoes")
         
-        # Graus padrão
-        cursor.execute("SELECT COUNT(*) as total FROM graus")
+        # 25. Comentários de sugestões
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS comentarios_sugestao (
+                id SERIAL PRIMARY KEY,
+                sugestao_id INTEGER NOT NULL REFERENCES sugestoes(id) ON DELETE CASCADE,
+                autor_id INTEGER NOT NULL REFERENCES usuarios(id),
+                comentario TEXT NOT NULL,
+                data_comentario TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        """)
+        print("✅ 25. comentarios_sugestao")
+        
+        # 26. Votos de sugestões
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS votos_sugestao (
+                id SERIAL PRIMARY KEY,
+                sugestao_id INTEGER NOT NULL REFERENCES sugestoes(id) ON DELETE CASCADE,
+                usuario_id INTEGER NOT NULL REFERENCES usuarios(id) ON DELETE CASCADE,
+                data_voto TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                UNIQUE(sugestao_id, usuario_id)
+            )
+        """)
+        print("✅ 26. votos_sugestao")
+        
+        # 27. Email settings
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS email_settings (
+                id SERIAL PRIMARY KEY,
+                server TEXT NOT NULL,
+                port INTEGER NOT NULL,
+                use_tls INTEGER DEFAULT 1,
+                use_ssl INTEGER DEFAULT 0,
+                username TEXT NOT NULL,
+                password TEXT NOT NULL,
+                sender TEXT NOT NULL,
+                sender_name TEXT,
+                active INTEGER DEFAULT 1,
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        """)
+        print("✅ 27. email_settings")
+        
+        # 28. Notificações log
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS notificacoes_log (
+                id SERIAL PRIMARY KEY,
+                destinatario TEXT NOT NULL,
+                assunto TEXT NOT NULL,
+                corpo TEXT NOT NULL,
+                tipo TEXT,
+                status TEXT,
+                data_envio TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                erro TEXT
+            )
+        """)
+        print("✅ 28. notificacoes_log")
+        
+        # 29. Preferências de notificação
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS preferencias_notificacao (
+                id SERIAL PRIMARY KEY,
+                obreiro_id INTEGER NOT NULL REFERENCES usuarios(id),
+                lembrete_reuniao INTEGER DEFAULT 1,
+                alerta_ausencia INTEGER DEFAULT 1,
+                email TEXT,
+                UNIQUE(obreiro_id)
+            )
+        """)
+        print("✅ 29. preferencias_notificacao")
+        
+        # 30. WhatsApp config
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS whatsapp_config (
+                id SERIAL PRIMARY KEY,
+                notificar_ausencia INTEGER DEFAULT 1,
+                notificar_nova_reuniao INTEGER DEFAULT 1,
+                notificar_comunicado INTEGER DEFAULT 1,
+                lembrete_reuniao INTEGER DEFAULT 1,
+                grupo_id TEXT,
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        """)
+        print("✅ 30. whatsapp_config")
+        
+        # 31. Documentos dos obreiros
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS documentos_obreiro (
+                id SERIAL PRIMARY KEY,
+                obreiro_id INTEGER NOT NULL REFERENCES usuarios(id) ON DELETE CASCADE,
+                titulo TEXT NOT NULL,
+                descricao TEXT,
+                categoria TEXT DEFAULT 'outros',
+                tipo_arquivo TEXT,
+                nome_arquivo TEXT NOT NULL,
+                caminho_arquivo TEXT NOT NULL,
+                tamanho INTEGER,
+                data_upload TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                uploaded_by INTEGER REFERENCES usuarios(id)
+            )
+        """)
+        print("✅ 31. documentos_obreiro")
+        
+        # 32. Categorias de documentos
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS categorias_documentos (
+                id SERIAL PRIMARY KEY,
+                nome TEXT NOT NULL UNIQUE,
+                descricao TEXT,
+                icone TEXT,
+                ativo INTEGER DEFAULT 1
+            )
+        """)
+        print("✅ 32. categorias_documentos")
+        
+        # 33. Estatísticas de presença
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS estatisticas_presenca (
+                id SERIAL PRIMARY KEY,
+                obreiro_id INTEGER NOT NULL REFERENCES usuarios(id) ON DELETE CASCADE,
+                ano INTEGER NOT NULL,
+                mes INTEGER NOT NULL,
+                total_reunioes INTEGER DEFAULT 0,
+                presencas INTEGER DEFAULT 0,
+                ausencias_justificadas INTEGER DEFAULT 0,
+                ausencias_injustificadas INTEGER DEFAULT 0,
+                percentual REAL DEFAULT 0,
+                UNIQUE(obreiro_id, ano, mes)
+            )
+        """)
+        print("✅ 33. estatisticas_presenca")
+        
+        # 34. Alertas de presença
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS alertas_presenca (
+                id SERIAL PRIMARY KEY,
+                obreiro_id INTEGER NOT NULL REFERENCES usuarios(id) ON DELETE CASCADE,
+                tipo TEXT NOT NULL,
+                mensagem TEXT NOT NULL,
+                data_gerado TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                resolvido INTEGER DEFAULT 0,
+                data_resolucao TIMESTAMP,
+                resolvido_por INTEGER REFERENCES usuarios(id)
+            )
+        """)
+        print("✅ 34. alertas_presenca")
+        
+        # 35. Anexos de atas
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS anexos_ata (
+                id SERIAL PRIMARY KEY,
+                ata_id INTEGER NOT NULL REFERENCES atas(id) ON DELETE CASCADE,
+                nome_arquivo TEXT NOT NULL,
+                caminho_arquivo TEXT NOT NULL,
+                tipo_arquivo TEXT,
+                tamanho INTEGER,
+                data_upload TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                uploaded_by INTEGER REFERENCES usuarios(id)
+            )
+        """)
+        print("✅ 35. anexos_ata")
+        
+        # 36. Módulos (para permissões)
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS modulos (
+                id SERIAL PRIMARY KEY,
+                nome TEXT NOT NULL,
+                descricao TEXT,
+                icone TEXT,
+                ordem INTEGER DEFAULT 0,
+                ativo INTEGER DEFAULT 1
+            )
+        """)
+        print("✅ 36. modulos")
+        
+        # 37. Permissões
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS permissoes (
+                id SERIAL PRIMARY KEY,
+                modulo_id INTEGER NOT NULL REFERENCES modulos(id) ON DELETE CASCADE,
+                nome TEXT NOT NULL,
+                codigo TEXT NOT NULL UNIQUE,
+                descricao TEXT
+            )
+        """)
+        print("✅ 37. permissoes")
+        
+        # 38. Permissões por grau
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS permissoes_grau (
+                id SERIAL PRIMARY KEY,
+                grau_id INTEGER NOT NULL REFERENCES graus(id) ON DELETE CASCADE,
+                permissao_id INTEGER NOT NULL REFERENCES permissoes(id) ON DELETE CASCADE,
+                UNIQUE(grau_id, permissao_id)
+            )
+        """)
+        print("✅ 38. permissoes_grau")
+        
+        # 39. Permissões por usuário
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS permissoes_usuario (
+                id SERIAL PRIMARY KEY,
+                usuario_id INTEGER NOT NULL REFERENCES usuarios(id) ON DELETE CASCADE,
+                permissao_id INTEGER NOT NULL REFERENCES permissoes(id) ON DELETE CASCADE,
+                permitido INTEGER DEFAULT 1,
+                UNIQUE(usuario_id, permissao_id)
+            )
+        """)
+        print("✅ 39. permissoes_usuario")
+        
+        # ==================== ÍNDICES ====================
+        
+        print("\n🔄 Criando índices...")
+        
+        cursor.execute("CREATE INDEX IF NOT EXISTS idx_usuarios_tipo ON usuarios(tipo);")
+        cursor.execute("CREATE INDEX IF NOT EXISTS idx_usuarios_ativo ON usuarios(ativo);")
+        cursor.execute("CREATE INDEX IF NOT EXISTS idx_usuarios_grau ON usuarios(grau_atual);")
+        cursor.execute("CREATE INDEX IF NOT EXISTS idx_candidatos_status ON candidatos(status);")
+        cursor.execute("CREATE INDEX IF NOT EXISTS idx_sindicancias_candidato ON sindicancias(candidato_id);")
+        cursor.execute("CREATE INDEX IF NOT EXISTS idx_reunioes_data ON reunioes(data);")
+        cursor.execute("CREATE INDEX IF NOT EXISTS idx_presenca_reuniao ON presenca(reuniao_id);")
+        cursor.execute("CREATE INDEX IF NOT EXISTS idx_presenca_obreiro ON presenca(obreiro_id);")
+        cursor.execute("CREATE INDEX IF NOT EXISTS idx_atas_reuniao ON atas(reuniao_id);")
+        cursor.execute("CREATE INDEX IF NOT EXISTS idx_comunicados_datas ON comunicados(data_inicio, data_fim);")
+        cursor.execute("CREATE INDEX IF NOT EXISTS idx_logs_auditoria_data ON logs_auditoria(data_hora);")
+        cursor.execute("CREATE INDEX IF NOT EXISTS idx_logs_auditoria_usuario ON logs_auditoria(usuario_id);")
+        
+        print("✅ Índices criados")
+        
+        # ==================== DADOS PADRÃO ====================
+        
+        print("\n🔄 Inserindo dados padrão...")
+        
+        # Loja padrão
+        cursor.execute("SELECT COUNT(*) as total FROM lojas")
         if cursor.fetchone()['total'] == 0:
-            graus = [
-                ("Aprendiz", "Primeiro grau", 1, 1),
-                ("Companheiro", "Segundo grau", 2, 2),
-                ("Mestre", "Terceiro grau", 3, 3),
-                ("Mestre Instalado", "Grau do Venerável Mestre", 4, 4),
+            cursor.execute("""
+                INSERT INTO lojas (nome, numero, oriente, cidade, estado)
+                VALUES (%s, %s, %s, %s, %s)
+            """, ("ARLS Estrela do Oriente", "123", "Oriente de São Paulo", "São Paulo", "SP"))
+            print("✅ Loja padrão inserida")
+        
+        # Tipos de reunião
+        cursor.execute("SELECT COUNT(*) as total FROM tipos_reuniao")
+        if cursor.fetchone()['total'] == 0:
+            tipos = [
+                ("Ordinária", "Reunião ordinária semanal/mensal", "#28a745"),
+                ("Magna", "Reunião magna solene", "#dc3545"),
+                ("Extraordinária", "Reunião extraordinária convocada", "#ffc107"),
+                ("Administrativa", "Reunião da administração", "#17a2b8"),
+                ("Iniciação", "Sessão de iniciação de novos obreiros", "#6610f2"),
+                ("Elevação", "Sessão de elevação ao grau de Companheiro", "#fd7e14"),
+                ("Exaltação", "Sessão de exaltação ao grau de Mestre", "#20c997")
             ]
-            for g in graus:
-                cursor.execute("INSERT INTO graus (nome, descricao, nivel, ordem, ativo) VALUES (%s, %s, %s, %s, 1)", g)
-            print("✅ Graus padrão inseridos")
+            for t in tipos:
+                cursor.execute("INSERT INTO tipos_reuniao (nome, descricao, cor) VALUES (%s, %s, %s)", t)
+            print("✅ Tipos de reunião inseridos")
         
         # Cargos padrão
         cursor.execute("SELECT COUNT(*) as total FROM cargos")
@@ -1201,70 +1466,199 @@ def setup_full_database():
                 ("Orador", "OR", 3, 4, "Orador da loja"),
                 ("Secretário", "SEC", 2, 5, "Secretário"),
                 ("Tesoureiro", "TES", 2, 6, "Tesoureiro"),
+                ("Chanceler", "CHAN", 2, 7, "Guardião do templo"),
+                ("Mestre de Cerimônias", "MC", 2, 8, "Cerimonialista"),
+                ("1º Diácono", "1D", 2, 9, "Primeiro diácono"),
+                ("2º Diácono", "2D", 2, 10, "Segundo diácono"),
+                ("Cobridor", "COB", 2, 11, "Cobridor interno"),
+                ("Porta-Estandarte", "PE", 1, 12, "Porta estandarte"),
+                ("Porta-Espada", "PESP", 1, 13, "Porta espada"),
+                ("Hospitaleiro", "HOSP", 1, 14, "Responsável pelo ágape"),
             ]
             for c in cargos:
-                cursor.execute("INSERT INTO cargos (nome, sigla, grau_minimo, ordem, descricao, ativo) VALUES (%s, %s, %s, %s, %s, 1)", c)
+                cursor.execute("""
+                    INSERT INTO cargos (nome, sigla, grau_minimo, ordem, descricao, ativo)
+                    VALUES (%s, %s, %s, %s, %s, 1)
+                """, c)
             print("✅ Cargos padrão inseridos")
         
-        # Tipos de condecorações padrão
-        cursor.execute("SELECT COUNT(*) as total FROM tipos_condecoracoes")
+        # Graus padrão
+        cursor.execute("SELECT COUNT(*) as total FROM graus")
         if cursor.fetchone()['total'] == 0:
-            condecoracoes = [
-                ("Medalha do Mérito Maçônico", "Reconhecimento por serviços prestados", 1, "#ffc107", "bi-award", 1),
-                ("Medalha do Mérito Cultural", "Contribuição para a cultura", 2, "#17a2b8", "bi-book", 2),
-                ("Medalha do Mérito Social", "Trabalhos sociais", 2, "#28a745", "bi-heart", 3),
-                ("Colar do Mérito", "Máxima honraria", 4, "#dc3545", "bi-star-fill", 4),
+            graus = [
+                ("Aprendiz", "Primeiro grau da Maçonaria Simbólica", 1, 1),
+                ("Companheiro", "Segundo grau da Maçonaria Simbólica", 2, 2),
+                ("Mestre", "Terceiro grau da Maçonaria Simbólica", 3, 3),
+                ("Mestre Instalado", "Grau conferido ao Venerável Mestre após seu mandato", 4, 4),
             ]
-            for c in condecoracoes:
-                cursor.execute("INSERT INTO tipos_condecoracoes (nome, descricao, nivel, cor, icone, ordem, ativo) VALUES (%s, %s, %s, %s, %s, %s, 1)", c)
-            print("✅ Tipos de condecorações inseridos")
+            for g in graus:
+                cursor.execute("INSERT INTO graus (nome, descricao, nivel, ordem, ativo) VALUES (%s, %s, %s, %s, 1)", g)
+            print("✅ Graus padrão inseridos")
         
-        # Tipos de ausência padrão
+        # Tipos de ausência
         cursor.execute("SELECT COUNT(*) as total FROM tipos_ausencia")
         if cursor.fetchone()['total'] == 0:
             tipos_ausencia = [
-                ("Justificada", "Ausência justificada", 0, "#28a745"),
+                ("Justificada", "Ausência justificada por motivo pessoal", 0, "#28a745"),
                 ("Injustificada", "Ausência sem justificativa", 0, "#dc3545"),
-                ("Licença Saúde", "Licença médica", 1, "#ffc107"),
-                ("Licença Profissional", "Compromisso profissional", 1, "#17a2b8"),
+                ("Licença Saúde", "Licença médica ou problema de saúde", 1, "#ffc107"),
+                ("Licença Profissional", "Compromisso profissional inadiável", 1, "#17a2b8"),
+                ("Licença Particular", "Assuntos particulares", 1, "#6c757d"),
+                ("Viagem", "Viagem a trabalho ou pessoal", 1, "#6610f2"),
                 ("Luto", "Falecimento de familiar", 1, "#6c757d"),
+                ("Doença na Família", "Acompanhamento familiar", 1, "#fd7e14")
             ]
             for t in tipos_ausencia:
-                cursor.execute("INSERT INTO tipos_ausencia (nome, descricao, requer_comprovante, cor, ativo) VALUES (%s, %s, %s, %s, 1)", t)
+                cursor.execute("""
+                    INSERT INTO tipos_ausencia (nome, descricao, requer_comprovante, cor, ativo)
+                    VALUES (%s, %s, %s, %s, 1)
+                """, t)
             print("✅ Tipos de ausência inseridos")
         
-        # Tipos de reunião padrão
-        cursor.execute("SELECT COUNT(*) as total FROM tipos_reuniao")
+        # Modelos de ata
+        cursor.execute("SELECT COUNT(*) as total FROM modelos_ata")
         if cursor.fetchone()['total'] == 0:
-            tipos_reuniao = [
-                ("Ordinária", "Reunião ordinária", "#28a745"),
-                ("Magna", "Reunião magna solene", "#dc3545"),
-                ("Extraordinária", "Reunião extraordinária", "#ffc107"),
-                ("Administrativa", "Reunião administrativa", "#17a2b8"),
+            modelos = [
+                ("Ata Ordinária", "Modelo padrão para reuniões ordinárias", "Ordinária", 
+                 json.dumps({
+                     "cabecalho": ["Abertura", "Verificacao de quorum", "Leitura da ata anterior"],
+                     "expediente": ["Comunicacoes", "Propostas", "Informacoes"],
+                     "ordem_do_dia": ["Assuntos em pauta", "Votacoes", "Deliberacoes"],
+                     "encerramento": ["Palavra final", "Marcacao proxima reuniao", "Encerramento"]
+                 })),
+                ("Ata Magna", "Modelo para reunioes magnas", "Magna",
+                 json.dumps({
+                     "cabecalho": ["Abertura solene", "Composicao da mesa", "Hino"],
+                     "expediente": ["Comunicacoes oficiais", "Propostas especiais"],
+                     "ordem_do_dia": ["Rituais", "Iniciacoes", "Elevacoes", "Exaltacoes"],
+                     "encerramento": ["Palavra do Veneravel", "Encerramento solene"]
+                 })),
+                ("Ata Administrativa", "Modelo para reunioes administrativas", "Administrativa",
+                 json.dumps({
+                     "cabecalho": ["Abertura", "Presentes", "Pauta"],
+                     "expediente": ["Prestacao de contas", "Assuntos financeiros"],
+                     "ordem_do_dia": ["Deliberacoes", "Votacoes", "Planejamento"],
+                     "encerramento": ["Encaminhamentos", "Proxima reuniao", "Encerramento"]
+                 }))
             ]
-            for t in tipos_reuniao:
-                cursor.execute("INSERT INTO tipos_reuniao (nome, descricao, cor) VALUES (%s, %s, %s)", t)
-            print("✅ Tipos de reunião inseridos")
+            for m in modelos:
+                cursor.execute("""
+                    INSERT INTO modelos_ata (nome, descricao, tipo, estrutura)
+                    VALUES (%s, %s, %s, %s)
+                """, m)
+            print("✅ Modelos de ata inseridos")
         
-        # Loja padrão
-        cursor.execute("SELECT COUNT(*) as total FROM lojas")
+        # Tipos de condecorações
+        cursor.execute("SELECT COUNT(*) as total FROM tipos_condecoracoes")
+        if cursor.fetchone()['total'] == 0:
+            condecoracoes = [
+                ("Medalha do Mérito Maçônico", "Reconhecimento por serviços prestados à Maçonaria", 1, "#ffc107", "bi-award", 1),
+                ("Medalha do Mérito Cultural", "Contribuição para a cultura e educação", 2, "#17a2b8", "bi-book", 2),
+                ("Medalha do Mérito Social", "Trabalhos sociais e filantrópicos", 2, "#28a745", "bi-heart", 3),
+                ("Medalha do Mérito Científico", "Contribuições científicas e acadêmicas", 3, "#6f42c1", "bi-flask", 4),
+                ("Colar do Mérito", "Máxima honraria da Loja", 4, "#dc3545", "bi-star-fill", 5),
+                ("Diploma de Honra ao Mérito", "Reconhecimento especial", 3, "#fd7e14", "bi-file-text", 6),
+                ("Carta de Reconhecimento", "Agradecimento por serviços relevantes", 2, "#20c997", "bi-envelope", 7),
+                ("Título de Benemérito", "Contribuições excepcionais", 4, "#e83e8c", "bi-trophy", 8),
+                ("Medalha da Fraternidade", "Espírito de fraternidade e união", 2, "#007bff", "bi-people", 9),
+                ("Insígnia do Trabalho", "Dedicação ao trabalho maçônico", 1, "#6c757d", "bi-briefcase", 10),
+            ]
+            for c in condecoracoes:
+                cursor.execute("""
+                    INSERT INTO tipos_condecoracoes (nome, descricao, nivel, cor, icone, ordem, ativo)
+                    VALUES (%s, %s, %s, %s, %s, %s, 1)
+                """, c)
+            print("✅ Tipos de condecorações inseridos")
+        
+        # Categorias de documentos
+        cursor.execute("SELECT COUNT(*) as total FROM categorias_documentos")
+        if cursor.fetchone()['total'] == 0:
+            categorias_doc = [
+                ("documentos_pessoais", "Documentos pessoais do obreiro", "fa-id-card"),
+                ("certificados", "Certificados de graus e cursos", "fa-certificate"),
+                ("atas", "Atas de reuniões", "fa-file-alt"),
+                ("correspondencias", "Correspondências oficiais", "fa-envelope"),
+                ("outros", "Outros documentos", "fa-file"),
+            ]
+            for c in categorias_doc:
+                cursor.execute("""
+                    INSERT INTO categorias_documentos (nome, descricao, icone, ativo)
+                    VALUES (%s, %s, %s, 1)
+                """, c)
+            print("✅ Categorias de documentos inseridas")
+        
+        # Categorias de sugestões
+        cursor.execute("SELECT COUNT(*) as total FROM categorias_sugestoes")
+        if cursor.fetchone()['total'] == 0:
+            categorias_sug = [
+                ("melhoria_sistema", "Melhorias no sistema", 1),
+                ("nova_funcionalidade", "Nova funcionalidade", 1),
+                ("correcao_bug", "Correção de bug", 1),
+                ("documentacao", "Documentação", 1),
+                ("seguranca", "Segurança", 1),
+                ("outros", "Outros", 1),
+            ]
+            for c in categorias_sug:
+                cursor.execute("""
+                    INSERT INTO categorias_sugestoes (nome, descricao, ativo)
+                    VALUES (%s, %s, %s)
+                """, c)
+            print("✅ Categorias de sugestões inseridas")
+        
+        # WhatsApp config
+        cursor.execute("SELECT COUNT(*) as total FROM whatsapp_config")
         if cursor.fetchone()['total'] == 0:
             cursor.execute("""
-                INSERT INTO lojas (nome, numero, oriente, cidade, estado)
-                VALUES (%s, %s, %s, %s, %s)
-            """, ("ARLS Estrela do Oriente", "123", "Oriente de São Paulo", "São Paulo", "SP"))
-            print("✅ Loja padrão inserida")
+                INSERT INTO whatsapp_config (notificar_ausencia, notificar_nova_reuniao, notificar_comunicado, lembrete_reuniao)
+                VALUES (1, 1, 1, 1)
+            """)
+            print("✅ Configuração WhatsApp inserida")
         
         conn.commit()
         return_connection(conn)
         
         return """
+        <!DOCTYPE html>
         <html>
-        <head><title>Setup Concluído</title></head>
-        <body style="font-family: Arial; text-align: center; padding: 50px;">
-            <h1 style="color: green;">✅ Todas as tabelas foram criadas com sucesso!</h1>
-            <p>O banco de dados está totalmente configurado.</p>
-            <a href="/setup-admin" style="background: #007bff; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px;">Criar usuário Admin</a>
+        <head>
+            <title>Setup Concluído</title>
+            <style>
+                body { font-family: Arial; text-align: center; padding: 50px; background: #f5f5f5; }
+                .container { max-width: 800px; margin: 0 auto; background: white; padding: 30px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+                h1 { color: green; }
+                .success { color: green; }
+                .info { text-align: left; margin: 20px 0; padding: 15px; background: #e8f5e9; border-radius: 5px; }
+                .btn { display: inline-block; padding: 10px 20px; background: #007bff; color: white; text-decoration: none; border-radius: 5px; margin-top: 20px; }
+                .btn:hover { background: #0056b3; }
+            </style>
+        </head>
+        <body>
+            <div class="container">
+                <h1>✅ Setup Concluído!</h1>
+                <p>Todas as <strong>39 tabelas</strong> foram criadas com sucesso!</p>
+                <div class="info">
+                    <p><strong>Tabelas criadas:</strong></p>
+                    <ul style="columns: 2;">
+                        <li>usuarios</li><li>candidatos</li><li>sindicancias</li>
+                        <li>pareceres_conclusivos</li><li>lojas</li><li>tipos_reuniao</li>
+                        <li>cargos</li><li>ocupacao_cargos</li><li>historico_graus</li>
+                        <li>reunioes</li><li>presenca</li><li>atas</li>
+                        <li>modelos_ata</li><li>assinaturas_ata</li><li>tipos_ausencia</li>
+                        <li>graus</li><li>tipos_condecoracoes</li><li>condecoracoes_obreiro</li>
+                        <li>familiares</li><li>comunicados</li><li>visualizacoes_comunicado</li>
+                        <li>logs_auditoria</li><li>sugestoes</li><li>categorias_sugestoes</li>
+                        <li>comentarios_sugestao</li><li>votos_sugestao</li><li>email_settings</li>
+                        <li>notificacoes_log</li><li>preferencias_notificacao</li><li>whatsapp_config</li>
+                        <li>documentos_obreiro</li><li>categorias_documentos</li><li>estatisticas_presenca</li>
+                        <li>alertas_presenca</li><li>anexos_ata</li><li>modulos</li>
+                        <li>permissoes</li><li>permissoes_grau</li><li>permissoes_usuario</li>
+                    </ul>
+                </div>
+                <p>O banco de dados está totalmente configurado!</p>
+                <a href="/setup-admin" class="btn">Criar usuário Admin</a>
+                <br><br>
+                <a href="/" style="color: #666;">Voltar ao login</a>
+            </div>
         </body>
         </html>
         """
@@ -1274,14 +1668,13 @@ def setup_full_database():
         return f"""
         <html>
         <head><title>Erro</title></head>
-        <body>
+        <body style="font-family: Arial; padding: 50px;">
             <h1 style="color: red;">❌ Erro ao criar tabelas</h1>
-            <pre>{traceback.format_exc()}</pre>
+            <pre style="background: #f4f4f4; padding: 15px; overflow-x: auto;">{traceback.format_exc()}</pre>
             <a href="/">Voltar</a>
         </body>
         </html>
-        """       
-@app.route("/setup-admin")
+        """@app.route("/setup-admin")
 def setup_admin():
     """Rota para criar usuário admin"""
     try:
