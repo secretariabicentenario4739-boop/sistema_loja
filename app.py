@@ -754,6 +754,36 @@ def salvar_permissoes_usuario(usuario_id):
     flash("Permissões do usuário atualizadas com sucesso!", "success")
     return redirect("/admin/permissoes")
 
+@app.route("/setup")
+def setup():
+    """Rota temporária para criar as tabelas"""
+    try:
+        from create_tables import create_all_tables
+        create_all_tables()
+        return "✅ Tabelas criadas com sucesso! <a href='/'>Voltar ao login</a>"
+    except Exception as e:
+        return f"❌ Erro: {e}"
+
+@app.route("/create-admin")
+def create_admin():
+    """Rota temporária para criar usuário admin"""
+    try:
+        from werkzeug.security import generate_password_hash
+        cursor, conn = get_db()
+        
+        senha_hash = generate_password_hash("admin123")
+        cursor.execute("""
+            INSERT INTO usuarios (usuario, senha_hash, tipo, data_cadastro, ativo, nome_completo)
+            VALUES ('admin', %s, 'admin', NOW(), 1, 'Administrador')
+            ON CONFLICT (usuario) DO NOTHING
+        """, (senha_hash,))
+        conn.commit()
+        return_connection(conn)
+        
+        return "✅ Admin criado com sucesso! <a href='/'>Fazer login</a>"
+    except Exception as e:
+        return f"❌ Erro: {e}"
+        
 # =============================
 # ROTAS DE PERFIL
 # =============================
