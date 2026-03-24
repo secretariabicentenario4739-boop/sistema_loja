@@ -799,8 +799,258 @@ def create_admin():
         return "✅ Admin criado com sucesso! <a href='/'>Fazer login</a>"
     except Exception as e:
         return f"❌ Erro: {e}"
+@app.route("/setup-tables")
+def setup_tables():
+    """Rota para criar todas as tabelas necessárias"""
+    try:
+        cursor, conn = get_db()
         
-
+        print("🔄 Criando tabelas...")
+        
+        # Criar tabela candidatos
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS candidatos (
+                id SERIAL PRIMARY KEY,
+                nome TEXT NOT NULL,
+                status TEXT DEFAULT 'Em análise',
+                data_criacao TIMESTAMP NOT NULL,
+                data_fechamento TIMESTAMP,
+                fechado INTEGER DEFAULT 0,
+                resultado_final TEXT
+            )
+        """)
+        print("✅ Tabela candidatos criada")
+        
+        # Criar tabela usuarios
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS usuarios (
+                id SERIAL PRIMARY KEY,
+                usuario TEXT UNIQUE NOT NULL,
+                senha_hash TEXT NOT NULL,
+                tipo TEXT NOT NULL,
+                data_cadastro TIMESTAMP NOT NULL,
+                nome_completo TEXT,
+                nome_maconico TEXT,
+                cim_numero TEXT,
+                grau_atual INTEGER DEFAULT 1,
+                data_iniciacao DATE,
+                data_elevacao DATE,
+                data_exaltacao DATE,
+                telefone TEXT,
+                email TEXT,
+                endereco TEXT,
+                loja_nome TEXT,
+                loja_numero TEXT,
+                loja_orient TEXT,
+                ativo INTEGER DEFAULT 1
+            )
+        """)
+        print("✅ Tabela usuarios criada")
+        
+        # Criar tabela sindicancias
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS sindicancias (
+                id SERIAL PRIMARY KEY,
+                candidato_id INTEGER NOT NULL REFERENCES candidatos(id) ON DELETE CASCADE,
+                sindicante TEXT NOT NULL,
+                parecer TEXT NOT NULL,
+                data_envio TIMESTAMP NOT NULL,
+                UNIQUE(candidato_id, sindicante)
+            )
+        """)
+        print("✅ Tabela sindicancias criada")
+        
+        # Criar tabela pareceres_conclusivos
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS pareceres_conclusivos (
+                id SERIAL PRIMARY KEY,
+                candidato_id INTEGER NOT NULL REFERENCES candidatos(id) ON DELETE CASCADE,
+                sindicante TEXT NOT NULL,
+                parecer_texto TEXT NOT NULL,
+                conclusao TEXT NOT NULL,
+                observacoes TEXT,
+                cim_numero TEXT,
+                data_parecer DATE NOT NULL,
+                data_envio TIMESTAMP NOT NULL,
+                fontes TEXT NOT NULL,
+                loja_nome TEXT,
+                loja_numero TEXT,
+                loja_orient TEXT,
+                UNIQUE(candidato_id, sindicante)
+            )
+        """)
+        print("✅ Tabela pareceres_conclusivos criada")
+        
+        # Criar tabela lojas
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS lojas (
+                id SERIAL PRIMARY KEY,
+                nome TEXT NOT NULL,
+                numero TEXT NOT NULL,
+                oriente TEXT,
+                cidade TEXT,
+                estado TEXT,
+                data_fundacao DATE
+            )
+        """)
+        print("✅ Tabela lojas criada")
+        
+        # Criar tabela reunioes
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS reunioes (
+                id SERIAL PRIMARY KEY,
+                titulo TEXT NOT NULL,
+                tipo TEXT DEFAULT 'Ordinária',
+                grau INTEGER,
+                data DATE NOT NULL,
+                hora_inicio TIME,
+                hora_termino TIME,
+                local TEXT,
+                loja_id INTEGER REFERENCES lojas(id),
+                pauta TEXT,
+                observacoes TEXT,
+                status TEXT DEFAULT 'agendada',
+                data_criacao TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                criado_por INTEGER REFERENCES usuarios(id)
+            )
+        """)
+        print("✅ Tabela reunioes criada")
+        
+        # Criar tabela presenca
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS presenca (
+                id SERIAL PRIMARY KEY,
+                reuniao_id INTEGER NOT NULL REFERENCES reunioes(id) ON DELETE CASCADE,
+                obreiro_id INTEGER NOT NULL REFERENCES usuarios(id) ON DELETE CASCADE,
+                presente INTEGER DEFAULT 0,
+                tipo_ausencia TEXT,
+                justificativa TEXT,
+                comprovante TEXT,
+                validado_por INTEGER REFERENCES usuarios(id),
+                data_validacao TIMESTAMP,
+                observacao_validacao TEXT,
+                data_registro TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                registrado_por INTEGER REFERENCES usuarios(id),
+                UNIQUE(reuniao_id, obreiro_id)
+            )
+        """)
+        print("✅ Tabela presenca criada")
+        
+        # Criar tabela atas
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS atas (
+                id SERIAL PRIMARY KEY,
+                reuniao_id INTEGER UNIQUE NOT NULL REFERENCES reunioes(id) ON DELETE CASCADE,
+                conteudo TEXT NOT NULL,
+                redator_id INTEGER REFERENCES usuarios(id),
+                aprovada INTEGER DEFAULT 0,
+                data_aprovacao DATE,
+                versao INTEGER DEFAULT 1,
+                arquivo_pdf TEXT,
+                data_criacao TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                numero_ata INTEGER,
+                ano_ata INTEGER,
+                tipo_ata TEXT DEFAULT 'Ordinária',
+                redator_nome TEXT
+            )
+        """)
+        print("✅ Tabela atas criada")
+        
+        # Criar tabela tipos_ausencia
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS tipos_ausencia (
+                id SERIAL PRIMARY KEY,
+                nome TEXT NOT NULL,
+                descricao TEXT,
+                requer_comprovante INTEGER DEFAULT 0,
+                cor TEXT DEFAULT '#6c757d',
+                ativo INTEGER DEFAULT 1
+            )
+        """)
+        print("✅ Tabela tipos_ausencia criada")
+        
+        # Inserir tipos de ausência padrão
+        cursor.execute("SELECT COUNT(*) as total FROM tipos_ausencia")
+        total = cursor.fetchone()['total']
+        if total == 0:
+            tipos_ausencia = [
+                ("Justificada", "Ausência justificada", 0, "#28a745"),
+                ("Injustificada", "Ausência sem justificativa", 0, "#dc3545"),
+                ("Licença Saúde", "Licença médica", 1, "#ffc107"),
+                ("Licença Profissional", "Compromisso profissional", 1, "#17a2b8"),
+                ("Luto", "Falecimento de familiar", 1, "#6c757d"),
+            ]
+            for t in tipos_ausencia:
+                cursor.execute("""
+                    INSERT INTO tipos_ausencia (nome, descricao, requer_comprovante, cor, ativo)
+                    VALUES (%s, %s, %s, %s, 1)
+                """, t)
+            print("✅ Tipos de ausência inseridos")
+        
+        # Inserir loja padrão
+        cursor.execute("SELECT COUNT(*) as total FROM lojas")
+        total = cursor.fetchone()['total']
+        if total == 0:
+            cursor.execute("""
+                INSERT INTO lojas (nome, numero, oriente, cidade, estado)
+                VALUES (%s, %s, %s, %s, %s)
+            """, ("ARLS Estrela do Oriente", "123", "Oriente de São Paulo", "São Paulo", "SP"))
+            print("✅ Loja padrão inserida")
+        
+        conn.commit()
+        return_connection(conn)
+        
+        return """
+        <html>
+        <head><title>Setup Concluído</title></head>
+        <body style="font-family: Arial; text-align: center; padding: 50px;">
+            <h1 style="color: green;">✅ Todas as tabelas foram criadas com sucesso!</h1>
+            <p>O banco de dados está pronto para uso.</p>
+            <a href="/" style="background: #007bff; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px;">Ir para o Login</a>
+        </body>
+        </html>
+        """
+        
+    except Exception as e:
+        import traceback
+        return f"""
+        <html>
+        <head><title>Erro</title></head>
+        <body>
+            <h1 style="color: red;">❌ Erro ao criar tabelas</h1>
+            <pre>{traceback.format_exc()}</pre>
+            <a href="/">Voltar</a>
+        </body>
+        </html>
+        """        
+@app.route("/setup-admin")
+def setup_admin():
+    """Rota para criar usuário admin"""
+    try:
+        from werkzeug.security import generate_password_hash
+        cursor, conn = get_db()
+        
+        senha_hash = generate_password_hash("admin123")
+        cursor.execute("""
+            INSERT INTO usuarios (usuario, senha_hash, tipo, data_cadastro, ativo, nome_completo)
+            VALUES ('admin', %s, 'admin', NOW(), 1, 'Administrador')
+            ON CONFLICT (usuario) DO NOTHING
+        """, (senha_hash,))
+        conn.commit()
+        return_connection(conn)
+        
+        return """
+        <html>
+        <body style="font-family: Arial; text-align: center; padding: 50px;">
+            <h1 style="color: green;">✅ Admin criado com sucesso!</h1>
+            <p><strong>Usuário:</strong> admin</p>
+            <p><strong>Senha:</strong> admin123</p>
+            <a href="/" style="background: #007bff; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px;">Fazer login</a>
+        </body>
+        </html>
+        """
+    except Exception as e:
+        return f"<h1>❌ Erro: {e}</h1>"
 # =============================
 # ROTAS TEMPORARIA DE CRIAÇÃO DE TABELAS
 # =============================
