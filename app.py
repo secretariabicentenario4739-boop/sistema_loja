@@ -790,6 +790,99 @@ def create_admin():
         return "✅ Admin criado com sucesso! <a href='/'>Fazer login</a>"
     except Exception as e:
         return f"❌ Erro: {e}"
+        
+# =============================
+# ROTAS DEBUG
+# =============================        
+
+@app.route("/debug")
+def debug_info():
+    """Rota para diagnosticar problemas"""
+    import traceback
+    try:
+        # Testar conexão com banco
+        cursor, conn = get_db()
+        cursor.execute("SELECT version()")
+        version = cursor.fetchone()
+        
+        # Testar tabelas
+        cursor.execute("SELECT COUNT(*) as total FROM usuarios")
+        total_usuarios = cursor.fetchone()['total']
+        
+        return_connection(conn)
+        
+        return f"""
+        <html>
+        <body>
+            <h1>🔍 Debug Info</h1>
+            <p><strong>Database:</strong> Conectado</p>
+            <p><strong>PostgreSQL Version:</strong> {version['version'][:50]}</p>
+            <p><strong>Total Usuários:</strong> {total_usuarios}</p>
+            <p><strong>Flask ENV:</strong> {os.getenv('FLASK_ENV', 'development')}</p>
+            <p><strong>DATABASE_URL:</strong> {os.getenv('DATABASE_URL', 'NÃO DEFINIDA')[:50]}...</p>
+            <hr>
+            <a href="/">Voltar</a>
+        </body>
+        </html>
+        """
+    except Exception as e:
+        return f"<h1>❌ Erro: {e}</h1><pre>{traceback.format_exc()}</pre>"
+
+@app.route("/", methods=["GET", "POST"])
+def login():
+    import traceback
+    print("=" * 50)
+    print("🚪 Rota de login acessada")
+    print("=" * 50)
+    
+    if request.method == "POST":
+        usuario = request.form["usuario"]
+        senha = request.form["senha"]
+        
+        print(f"🔍 Tentativa de login: usuario={usuario}")
+        
+        try:
+            cursor, conn = get_db()
+            print("✅ Conexão obtida")
+            
+            cursor.execute(
+                "SELECT * FROM usuarios WHERE usuario = %s AND ativo = 1",
+                (usuario,)
+            )
+            user = cursor.fetchone()
+            
+            if user:
+                print(f"✅ Usuário encontrado: {user['usuario']}")
+                print(f"🔐 Verificando senha...")
+                
+                from werkzeug.security import check_password_hash
+                senha_valida = check_password_hash(user["senha_hash"], senha)
+                print(f"   Senha válida: {senha_valida}")
+                
+                if senha_valida:
+                    print("✅ Login bem-sucedido!")
+                    session["usuario"] = user["usuario"]
+                    session["tipo"] = user["tipo"]
+                    session["user_id"] = user["id"]
+                    session["nome_completo"] = user["nome_completo"] or ""
+                    flash(f"Bem-vindo, {user['nome_completo'] or user['usuario']}!", "success")
+                    return_connection(conn)
+                    return redirect("/dashboard")
+                else:
+                    print("❌ Senha incorreta!")
+            else:
+                print(f"❌ Usuário não encontrado: {usuario}")
+            
+            return_connection(conn)
+            flash("Usuário ou senha inválidos", "danger")
+            
+        except Exception as e:
+            print(f"❌ ERRO no login: {e}")
+            print(traceback.format_exc())
+            flash(f"Erro no servidor: {e}", "danger")
+            return_connection(conn)
+
+    return render_template("login.html")
 
 # =============================
 # ROTAS TEMPORARIA DE CRIAÇÃO DE TABELAS
