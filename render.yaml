@@ -4,32 +4,14 @@ services:
     runtime: image
     dockerfilePath: ./Dockerfile
     envVars:
-      - key: DB_HOST
+      - key: DATABASE_URL
         fromDatabase:
           name: sistema-maconico-db
-          property: host
-      - key: DB_PORT
-        fromDatabase:
-          name: sistema-maconico-db
-          property: port
-      - key: DB_NAME
-        fromDatabase:
-          name: sistema-maconico-db
-          property: database
-      - key: DB_USER
-        fromDatabase:
-          name: sistema-maconico-db
-          property: user
-      - key: DB_PASSWORD
-        fromDatabase:
-          name: sistema-maconico-db
-          property: password
+          property: connectionString
       - key: SECRET_KEY
         generateValue: true
       - key: FLASK_ENV
         value: production
-      - key: PYTHONUNBUFFERED
-        value: 1
 
 databases:
   - name: sistema-maconico-db

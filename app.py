@@ -23,7 +23,12 @@ import time
 from dotenv import load_dotenv
 import traceback
 import markdown
-
+print("=" * 50)
+print("🚀 INICIANDO APLICAÇÃO")
+print("=" * 50)
+print(f"🔧 DATABASE_URL presente: {'Sim' if os.getenv('DATABASE_URL') else 'Não'}")
+print(f"🔧 FLASK_ENV: {os.getenv('FLASK_ENV', 'development')}")
+print("=" * 50)
 
 def tratar_valor_nulo(valor, tipo='string'):
     """
