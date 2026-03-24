@@ -1041,7 +1041,123 @@ def create_admin_user():
         """
         
     except Exception as e:
-        return f"❌ Erro: {e}"        
+        return f"❌ Erro: {e}"
+
+@app.route("/test-admin")
+def test_admin():
+    """Rota para verificar se o admin existe"""
+    try:
+        cursor, conn = get_db()
+        cursor.execute("SELECT id, usuario, senha_hash FROM usuarios WHERE usuario = 'admin'")
+        admin = cursor.fetchone()
+        return_connection(conn)
+        
+        if admin:
+            return f"""
+            <html>
+            <body>
+                <h1>✅ Admin encontrado!</h1>
+                <p>ID: {admin['id']}</p>
+                <p>Usuário: {admin['usuario']}</p>
+                <p>Hash da senha: {admin['senha_hash'][:50]}...</p>
+                <a href="/">Voltar ao login</a>
+            </body>
+            </html>
+            """
+        else:
+            return "<h1>❌ Admin NÃO encontrado!</h1>"
+    except Exception as e:
+        return f"<h1>❌ Erro: {e}</h1>"
+
+@app.route("/test-password")
+def test_password():
+    """Rota para testar a senha do admin"""
+    try:
+        from werkzeug.security import check_password_hash
+        cursor, conn = get_db()
+        cursor.execute("SELECT senha_hash FROM usuarios WHERE usuario = 'admin'")
+        admin = cursor.fetchone()
+        return_connection(conn)
+        
+        if admin:
+            senha_correta = check_password_hash(admin['senha_hash'], 'admin123')
+            return f"""
+            <html>
+            <body>
+                <h1>Teste de Senha</h1>
+                <p>Senha 'admin123' está correta? {senha_correta}</p>
+                <a href="/">Voltar ao login</a>
+            </body>
+            </html>
+            """
+        else:
+            return "<h1>❌ Admin não encontrado</h1>"
+    except Exception as e:
+        return f"<h1>❌ Erro: {e}</h1>"
+
+@app.route("/reset-admin")
+def reset_admin():
+    """Rota para recriar o admin com senha simples"""
+    try:
+        from werkzeug.security import generate_password_hash
+        cursor, conn = get_db()
+        
+        # Remover admin existente
+        cursor.execute("DELETE FROM usuarios WHERE usuario = 'admin'")
+        
+        # Criar novo admin
+        senha_hash = generate_password_hash("admin123")
+        cursor.execute("""
+            INSERT INTO usuarios (usuario, senha_hash, tipo, data_cadastro, ativo, nome_completo)
+            VALUES ('admin', %s, 'admin', NOW(), 1, 'Administrador')
+        """, (senha_hash,))
+        conn.commit()
+        return_connection(conn)
+        
+        return """
+        <html>
+        <body>
+            <h1 style="color: green;">✅ Admin recriado com sucesso!</h1>
+            <p>Usuário: admin</p>
+            <p>Senha: admin123</p>
+            <a href="/">Fazer login</a>
+        </body>
+        </html>
+        """
+    except Exception as e:
+        return f"<h1>❌ Erro: {e}</h1>"
+
+@app.route("/", methods=["GET", "POST"])
+def login():
+    if request.method == "POST":
+        usuario = request.form["usuario"]
+        senha = request.form["senha"]
+        
+        print(f"🔍 Tentativa de login: usuario={usuario}")
+        
+        cursor, conn = get_db()
+        cursor.execute(
+            "SELECT * FROM usuarios WHERE usuario = %s AND ativo = 1",
+            (usuario,)
+        )
+        user = cursor.fetchone()
+        return_connection(conn)
+        
+        if user:
+            print(f"✅ Usuário encontrado: {user['usuario']}")
+            print(f"🔐 Verificando senha...")
+            senha_valida = check_password_hash(user["senha_hash"], senha)
+            print(f"   Senha válida: {senha_valida}")
+            
+            if senha_valida:
+                print("✅ Login bem-sucedido!")
+                # ... resto do código
+            else:
+                print("❌ Senha incorreta!")
+        else:
+            print(f"❌ Usuário não encontrado: {usuario}")
+        
+        # ... resto do código        
         
 # =============================
 # ROTAS DE PERFIL
