@@ -488,7 +488,6 @@ def logout():
 # =============================
 @app.route("/dashboard")
 @login_required
-@app.route("/dashboard")
 def dashboard():
     if "usuario" not in session:
         flash("Faça login para acessar", "warning")
