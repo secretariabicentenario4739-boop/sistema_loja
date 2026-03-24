@@ -1009,8 +1009,42 @@ def install_tables():
         </html>
         """
         
-   @app.route("/test-admin")
-def test_admin_func():
+    except Exception as e:
+        return f"❌ Erro: {e}"
+
+@app.route("/create-admin-user")
+def create_admin_user():
+    """Rota temporária para criar usuário admin"""
+    try:
+        from werkzeug.security import generate_password_hash
+        cursor, conn = get_db()
+        
+        senha_hash = generate_password_hash("admin123")
+        cursor.execute("""
+            INSERT INTO usuarios (usuario, senha_hash, tipo, data_cadastro, ativo, nome_completo)
+            VALUES ('admin', %s, 'admin', NOW(), 1, 'Administrador')
+            ON CONFLICT (usuario) DO NOTHING
+        """, (senha_hash,))
+        conn.commit()
+        return_connection(conn)
+        
+        return """
+        <html>
+        <head><title>Admin Criado</title></head>
+        <body style="font-family: Arial; text-align: center; padding: 50px;">
+            <h1 style="color: green;">✅ Usuário Admin criado com sucesso!</h1>
+            <p><strong>Usuário:</strong> admin</p>
+            <p><strong>Senha:</strong> admin123</p>
+            <a href="/" style="background: #007bff; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px;">Fazer Login</a>
+        </body>
+        </html>
+        """
+        
+    except Exception as e:
+        return f"❌ Erro: {e}"
+
+@app.route("/test-admin")
+def test_admin():
     """Rota para verificar se o admin existe"""
     try:
         cursor, conn = get_db()
@@ -1021,12 +1055,12 @@ def test_admin_func():
         if admin:
             return f"""
             <html>
-            <body style="font-family: Arial; text-align: center; padding: 50px;">
-                <h1 style="color: green;">✅ Admin encontrado!</h1>
+            <body>
+                <h1>✅ Admin encontrado!</h1>
                 <p>ID: {admin['id']}</p>
                 <p>Usuário: {admin['usuario']}</p>
                 <p>Hash da senha: {admin['senha_hash'][:50]}...</p>
-                <a href="/" style="background: #007bff; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px;">Voltar ao login</a>
+                <a href="/">Voltar ao login</a>
             </body>
             </html>
             """
@@ -1036,7 +1070,7 @@ def test_admin_func():
         return f"<h1>❌ Erro: {e}</h1>"
 
 @app.route("/test-password")
-def test_password_func():
+def test_password():
     """Rota para testar a senha do admin"""
     try:
         from werkzeug.security import check_password_hash
@@ -1049,49 +1083,17 @@ def test_password_func():
             senha_correta = check_password_hash(admin['senha_hash'], 'admin123')
             return f"""
             <html>
-            <body style="font-family: Arial; text-align: center; padding: 50px;">
+            <body>
                 <h1>Teste de Senha</h1>
-                <p>Senha 'admin123' está correta? {'✅ Sim' if senha_correta else '❌ Não'}</p>
-                <a href="/" style="background: #007bff; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px;">Voltar ao login</a>
+                <p>Senha 'admin123' está correta? {senha_correta}</p>
+                <a href="/">Voltar ao login</a>
             </body>
             </html>
             """
         else:
             return "<h1>❌ Admin não encontrado</h1>"
     except Exception as e:
-        return f"<h1>❌ Erro: {e}</h1>"
-
-@app.route("/reset-admin")
-def reset_admin_func():
-    """Rota para recriar o admin com senha simples"""
-    try:
-        from werkzeug.security import generate_password_hash
-        cursor, conn = get_db()
-        
-        # Remover admin existente
-        cursor.execute("DELETE FROM usuarios WHERE usuario = 'admin'")
-        
-        # Criar novo admin
-        senha_hash = generate_password_hash("admin123")
-        cursor.execute("""
-            INSERT INTO usuarios (usuario, senha_hash, tipo, data_cadastro, ativo, nome_completo)
-            VALUES ('admin', %s, 'admin', NOW(), 1, 'Administrador')
-        """, (senha_hash,))
-        conn.commit()
-        return_connection(conn)
-        
-        return """
-        <html>
-        <body style="font-family: Arial; text-align: center; padding: 50px;">
-            <h1 style="color: green;">✅ Admin recriado com sucesso!</h1>
-            <p><strong>Usuário:</strong> admin</p>
-            <p><strong>Senha:</strong> admin123</p>
-            <a href="/" style="background: #007bff; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px;">Fazer login</a>
-        </body>
-        </html>
-        """
-    except Exception as e:
-        return f"<h1>❌ Erro: {e}</h1>"      
+        return f"<h1>❌ Erro: {e}</h1>"  
         
 # =============================
 # ROTAS DE PERFIL
