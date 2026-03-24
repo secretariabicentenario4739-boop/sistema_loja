@@ -8,13 +8,9 @@ import atexit
 load_dotenv()
 
 # Configuração do banco de dados
-DB_CONFIG = {
-    'host': os.getenv('DB_HOST', 'localhost'),
-    'port': os.getenv('DB_PORT', '5432'),
-    'dbname': os.getenv('DB_NAME', 'sistema_maconico'),
-    'user': os.getenv('DB_USER', 'postgres'),
-    'password': os.getenv('DB_PASSWORD', ''),
-    'sslmode': 'require'  # <-- ADICIONE ESTA LINHA
+DATABASE_URL = os.getenv("DATABASE_URL")
+
+conn = psycopg2.connect(DATABASE_URL, sslmode='require')
 }
 
 # Pool de conexões (opcional)
