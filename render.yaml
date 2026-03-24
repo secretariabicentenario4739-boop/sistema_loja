@@ -1,11 +1,12 @@
-# render.yaml
 services:
   - type: web
     name: sistema-maconico
     runtime: python
     buildCommand: pip install -r requirements.txt
-    startCommand: gunicorn app:app
+    startCommand: ./start.sh
     envVars:
+      - key: PYTHON_VERSION
+        value: 3.12.0
       - key: DB_HOST
         fromDatabase:
           name: sistema-maconico-db
@@ -28,6 +29,8 @@ services:
           property: password
       - key: SECRET_KEY
         generateValue: true
+      - key: FLASK_ENV
+        value: production
 
 databases:
   - name: sistema-maconico-db
