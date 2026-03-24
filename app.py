@@ -233,93 +233,6 @@ def init_db():
 
 # Testar conexão
 init_db()
-@app.route("/debug")
-def debug_info():
-    """Rota para diagnosticar problemas"""
-    import traceback
-    import os
-    
-    try:
-        from db_config import get_db, return_connection
-        
-        # Testar conexão com banco
-        cursor, conn = get_db()
-        cursor.execute("SELECT version()")
-        version = cursor.fetchone()
-        
-        # Testar tabelas
-        cursor.execute("SELECT COUNT(*) as total FROM usuarios")
-        total_usuarios = cursor.fetchone()['total']
-        
-        return_connection(conn)
-        
-        return f"""
-        <!DOCTYPE html>
-        <html>
-        <head>
-            <title>Debug - Sistema Maçônico</title>
-            <style>
-                body {{ font-family: monospace; padding: 20px; background: #f5f5f5; }}
-                .info {{ background: white; padding: 15px; border-radius: 8px; margin: 10px 0; }}
-                .success {{ color: green; }}
-                .error {{ color: red; }}
-                pre {{ background: #eee; padding: 10px; overflow-x: auto; }}
-            </style>
-        </head>
-        <body>
-            <h1>🔍 Debug Info</h1>
-            
-            <div class="info">
-                <h2>✅ Status Geral</h2>
-                <p><strong>Status:</strong> <span class="success">OK - Sistema funcionando</span></p>
-                <p><strong>Database:</strong> Conectado</p>
-                <p><strong>PostgreSQL Version:</strong> {version['version'][:80]}</p>
-                <p><strong>Total Usuários:</strong> {total_usuarios}</p>
-            </div>
-            
-            <div class="info">
-                <h2>📋 Variáveis de Ambiente</h2>
-                <p><strong>FLASK_ENV:</strong> {os.getenv('FLASK_ENV', 'development')}</p>
-                <p><strong>DATABASE_URL:</strong> {os.getenv('DATABASE_URL', 'NÃO DEFINIDA')[:60] if os.getenv('DATABASE_URL') else 'NÃO DEFINIDA'}...</p>
-                <p><strong>SECRET_KEY:</strong> {'DEFINIDA' if os.getenv('SECRET_KEY') else 'NÃO DEFINIDA'}</p>
-            </div>
-            
-            <div class="info">
-                <h2>🔌 Rotas Disponíveis</h2>
-                <ul>
-                    <li><a href="/">/</a> - Login</li>
-                    <li><a href="/debug">/debug</a> - Esta página</li>
-                    <li><a href="/dashboard">/dashboard</a> - Dashboard</li>
-                    <li><a href="/logout">/logout</a> - Logout</li>
-                </ul>
-            </div>
-            
-            <div class="info">
-                <h2>👤 Teste de Login</h2>
-                <form action="/" method="POST">
-                    <input type="text" name="usuario" placeholder="Usuário" required><br><br>
-                    <input type="password" name="senha" placeholder="Senha" required><br><br>
-                    <button type="submit">Entrar</button>
-                </form>
-            </div>
-            
-            <hr>
-            <a href="/">Voltar ao login</a>
-        </body>
-        </html>
-        """
-    except Exception as e:
-        return f"""
-        <!DOCTYPE html>
-        <html>
-        <head><title>Erro - Debug</title></head>
-        <body>
-            <h1>❌ Erro no Debug</h1>
-            <pre>{traceback.format_exc()}</pre>
-            <a href="/">Voltar</a>
-        </body>
-        </html>
-        """
 
 # =============================
 # CONTEXTO GLOBAL PARA TEMPLATES
@@ -575,145 +488,29 @@ def logout():
 # =============================
 @app.route("/dashboard")
 @login_required
+@app.route("/dashboard")
 def dashboard():
-    cursor, conn = get_db()
-
-    # Candidatos
-    cursor.execute("SELECT * FROM candidatos ORDER BY data_criacao DESC")
-    candidatos = cursor.fetchall()
-
-    # Sindicantes ativos
-    cursor.execute("""
-        SELECT id, usuario, nome_completo, cim_numero, loja_nome, loja_numero, loja_orient, ativo 
-        FROM usuarios 
-        WHERE tipo = 'sindicante' AND ativo = 1
-        ORDER BY nome_completo
-    """)
-    sindicantes = cursor.fetchall()
-
-    # Pareceres conclusivos recentes
-    pareceres_conclusivos = []
-    try:
-        cursor.execute("""
-            SELECT pc.*, c.nome as candidato_nome, u.nome_completo as sindicante_nome
-            FROM pareceres_conclusivos pc
-            JOIN candidatos c ON pc.candidato_id = c.id
-            JOIN usuarios u ON pc.sindicante = u.usuario
-            ORDER BY pc.data_envio DESC
-            LIMIT 10
-        """)
-        pareceres_conclusivos = cursor.fetchall()
-    except:
-        pass
-
-    total_sindicantes_ativos = len(sindicantes)
-    total_candidatos = len(candidatos)
-
-    if session["tipo"] == "admin":
-        em_analise = sum(1 for c in candidatos if c["status"] == "Em análise" and not c["fechado"])
-        aprovados = sum(1 for c in candidatos if c["status"] == "Aprovado")
-        reprovados = sum(1 for c in candidatos if c["status"] == "Reprovado")
-
-        # Pendências
-        pendentes = []
-        for c in candidatos:
-            if not c["fechado"]:
-                cursor.execute("SELECT sindicante FROM sindicancias WHERE candidato_id = %s", (c["id"],))
-                enviados = [r["sindicante"] for r in cursor.fetchall()]
-                faltam = [s["usuario"] for s in sindicantes if s["usuario"] not in enviados]
-                if faltam:
-                    pendentes.append({"candidato": dict(c), "faltam": faltam})
-
-        # Prazo vencido
-        prazo_vencido = []
-        for c in candidatos:
-            if not c["fechado"] and c["status"] == "Em análise" and c["data_criacao"]:
-                try:
-                    data_criacao = c["data_criacao"]
-                    dias = (datetime.now() - data_criacao).days
-                    if dias > 7:
-                        prazo_vencido.append(dict(c))
-                except:
-                    pass
-
-        # Estatísticas de obreiros
-        cursor.execute("SELECT COUNT(*) as total FROM usuarios WHERE tipo IN ('admin', 'sindicante', 'obreiro') AND ativo = 1")
-        total_obreiros = cursor.fetchone()["total"]
-        cursor.execute("SELECT COUNT(*) as total FROM usuarios WHERE grau_atual = 3 AND ativo = 1")
-        mestres = cursor.fetchone()["total"]
-        cursor.execute("SELECT COUNT(*) as total FROM usuarios WHERE grau_atual = 2 AND ativo = 1")
-        companheiros = cursor.fetchone()["total"]
-        cursor.execute("SELECT COUNT(*) as total FROM usuarios WHERE grau_atual = 1 AND ativo = 1")
-        aprendizes = cursor.fetchone()["total"]
-
-        # Estatísticas de reuniões
-        cursor.execute("SELECT COUNT(*) as total FROM reunioes")
-        total_reunioes = cursor.fetchone()["total"]
-        cursor.execute("SELECT COUNT(*) as total FROM reunioes WHERE status = 'realizada'")
-        reunioes_realizadas = cursor.fetchone()["total"]
-        cursor.execute("SELECT COUNT(*) as total FROM reunioes WHERE status = 'agendada'")
-        reunioes_agendadas = cursor.fetchone()["total"]
-        cursor.execute("""
-            SELECT id, titulo, data, hora_inicio 
-            FROM reunioes 
-            WHERE status = 'agendada' AND data >= CURRENT_DATE
-            ORDER BY data ASC, hora_inicio ASC
-            LIMIT 5
-        """)
-        proximas_reunioes = cursor.fetchall()
-        proxima_reuniao = proximas_reunioes[0] if proximas_reunioes else None
-
-    else:
-        em_analise = 0
-        aprovados = 0
-        reprovados = 0
-        pendentes = []
-        prazo_vencido = []
-        total_obreiros = mestres = companheiros = aprendizes = 0
-        total_reunioes = reunioes_realizadas = reunioes_agendadas = 0
-        proximas_reunioes = []
-        proxima_reuniao = None
-
-        for c in candidatos:
-            cursor.execute(
-                "SELECT parecer FROM sindicancias WHERE candidato_id = %s AND sindicante = %s",
-                (c["id"], session["usuario"])
-            )
-            parecer = cursor.fetchone()
-            if parecer:
-                if parecer["parecer"] == "positivo":
-                    aprovados += 1
-                else:
-                    reprovados += 1
-            elif not c["fechado"]:
-                em_analise += 1
-
-    return_connection(conn)
-    now = datetime.now()
-
-    return render_template(
-        "dashboard.html",
-        tipo=session["tipo"],
-        total_candidatos=total_candidatos,
-        total_sindicantes=total_sindicantes_ativos,
-        total_obreiros=total_obreiros,
-        mestres=mestres,
-        companheiros=companheiros,
-        aprendizes=aprendizes,
-        total_reunioes=total_reunioes,
-        reunioes_realizadas=reunioes_realizadas,
-        reunioes_agendadas=reunioes_agendadas,
-        proximas_reunioes=proximas_reunioes,
-        proxima_reuniao=proxima_reuniao,
-        em_analise=em_analise,
-        aprovados=aprovados,
-        reprovados=reprovados,
-        pendentes=pendentes,
-        prazo_vencido=prazo_vencido,
-        sindicantes=sindicantes,
-        pareceres_conclusivos=pareceres_conclusivos,
-        now=now
-    )
+    if "usuario" not in session:
+        flash("Faça login para acessar", "warning")
+        return redirect("/")
+    
+    return f"""
+    <!DOCTYPE html>
+    <html>
+    <head><title>Dashboard</title></head>
+    <body>
+        <h1>✅ Dashboard Funcionando!</h1>
+        <p><strong>Usuário:</strong> {session.get('usuario')}</p>
+        <p><strong>Tipo:</strong> {session.get('tipo')}</p>
+        <p><strong>ID:</strong> {session.get('user_id')}</p>
+        <p><strong>Nome:</strong> {session.get('nome_completo')}</p>
+        <hr>
+        <a href="/logout">Sair</a>
+        <br>
+        <a href="/debug">Voltar ao Debug</a>
+    </body>
+    </html>
+    """
 # =============================
 # ROTAS DE PERMISSÕES
 # =============================
