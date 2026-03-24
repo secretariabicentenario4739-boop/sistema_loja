@@ -785,10 +785,10 @@ def create_admin():
         return f"❌ Erro: {e}"
 
 # =============================
-# ROTAS DE CRIAÇÃO DE TABELAS
+# ROTAS TEMPORARIA DE CRIAÇÃO DE TABELAS
 # =============================
-@app.route("/setup")
-def setup():
+@app.route("/install-tables")
+def install_tables():
     """Rota temporária para criar as tabelas"""
     try:
         cursor, conn = get_db()
@@ -1004,7 +1004,38 @@ def setup():
         <body style="font-family: Arial; text-align: center; padding: 50px;">
             <h1 style="color: green;">✅ Tabelas criadas com sucesso!</h1>
             <p>O banco de dados foi configurado corretamente.</p>
-            <a href="/create-admin" style="background: #007bff; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px;">Próximo: Criar Admin</a>
+            <a href="/create-admin-user" style="background: #007bff; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px;">Próximo: Criar Admin</a>
+        </body>
+        </html>
+        """
+        
+    except Exception as e:
+        return f"❌ Erro: {e}"
+
+@app.route("/create-admin-user")
+def create_admin_user():
+    """Rota temporária para criar usuário admin"""
+    try:
+        from werkzeug.security import generate_password_hash
+        cursor, conn = get_db()
+        
+        senha_hash = generate_password_hash("admin123")
+        cursor.execute("""
+            INSERT INTO usuarios (usuario, senha_hash, tipo, data_cadastro, ativo, nome_completo)
+            VALUES ('admin', %s, 'admin', NOW(), 1, 'Administrador')
+            ON CONFLICT (usuario) DO NOTHING
+        """, (senha_hash,))
+        conn.commit()
+        return_connection(conn)
+        
+        return """
+        <html>
+        <head><title>Admin Criado</title></head>
+        <body style="font-family: Arial; text-align: center; padding: 50px;">
+            <h1 style="color: green;">✅ Usuário Admin criado com sucesso!</h1>
+            <p><strong>Usuário:</strong> admin</p>
+            <p><strong>Senha:</strong> admin123</p>
+            <a href="/" style="background: #007bff; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px;">Fazer Login</a>
         </body>
         </html>
         """
