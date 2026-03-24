@@ -184,17 +184,25 @@ app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 import os
 import psycopg2
 from psycopg2.extras import RealDictCursor
+from dotenv import load_dotenv
 
-# USA APENAS A DATABASE_URL
+load_dotenv()
+
+# Configuração de conexão
 DATABASE_URL = os.getenv('DATABASE_URL')
 
 if not DATABASE_URL:
-    print("❌ ERRO: DATABASE_URL não encontrada!")
-    print("   Configure a variável DATABASE_URL no Render")
     # Fallback para desenvolvimento local
-    DATABASE_URL = "postgresql://postgres:postgres@localhost:5432/sistema_maconico"
+    DB_HOST = os.getenv('DB_HOST', 'localhost')
+    DB_PORT = os.getenv('DB_PORT', '5432')
+    DB_NAME = os.getenv('DB_NAME', 'sistema_maconico')
+    DB_USER = os.getenv('DB_USER', 'postgres')
+    DB_PASSWORD = os.getenv('DB_PASSWORD', 'postgres')
+    
+    DATABASE_URL = f"postgresql://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:{DB_PORT}/{DB_NAME}"
+    print(f"⚠️  Usando conexão local: {DB_HOST}:{DB_PORT}/{DB_NAME}")
 
-print(f"🔗 Conectando ao banco via DATABASE_URL...")
+print(f"🔗 Conectando ao banco...")
 
 def get_db():
     """Retorna uma conexão com o PostgreSQL"""
@@ -223,9 +231,8 @@ def init_db():
         print(f"❌ Erro na conexão: {e}")
         return False
 
-# Inicializar banco
+# Testar conexão
 init_db()
-
 # =============================
 # CONTEXTO GLOBAL PARA TEMPLATES
 # =============================
@@ -1196,7 +1203,7 @@ load_dotenv()
 
 def atualizar_niveis_acesso():
     try:
-        conn = psycopg2.connect(**DB_CONFIG)
+        conn = psycopg2.connect(DATABASE_URL)
         cursor = conn.cursor()
         
         # Adicionar coluna se não existir
