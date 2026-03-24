@@ -1,0 +1,369 @@
+{% extends "base.html" %}
+
+{% block title %}Gerenciar Permissões{% endblock %}
+
+{% block styles %}
+<style>
+    .tree {
+        margin-left: 0;
+        padding-left: 0;
+    }
+    .tree li {
+        list-style-type: none;
+        margin: 0;
+        padding: 5px 0 0 20px;
+        position: relative;
+    }
+    .tree li::before {
+        content: "";
+        position: absolute;
+        top: 0;
+        left: 0;
+        border-left: 1px solid #dee2e6;
+        height: 100%;
+    }
+    .tree li:last-child::before {
+        height: 20px;
+    }
+    .tree li::after {
+        content: "";
+        position: absolute;
+        top: 15px;
+        left: 0;
+        width: 15px;
+        border-top: 1px solid #dee2e6;
+    }
+    .tree li .tree-item {
+        position: relative;
+        padding: 5px 10px;
+        background: #f8f9fa;
+        border-radius: 5px;
+        margin-bottom: 5px;
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+    .tree li .tree-item:hover {
+        background: #e9ecef;
+    }
+    .tree li .tree-item.active {
+        background: #0d6efd;
+        color: white;
+    }
+    .tree li .tree-item .badge {
+        font-size: 0.7rem;
+    }
+    .tree li ul {
+        padding-left: 20px;
+    }
+    .tree-toggle {
+        cursor: pointer;
+        margin-right: 5px;
+        color: #6c757d;
+    }
+    .tree-toggle:hover {
+        color: #0d6efd;
+    }
+    .module-header {
+        font-weight: bold;
+        background: #e9ecef;
+        padding: 8px 12px;
+        border-radius: 5px;
+        margin-bottom: 10px;
+    }
+    .permission-item {
+        padding-left: 30px;
+        margin: 3px 0;
+    }
+    .form-check {
+        margin-bottom: 0.25rem;
+    }
+    .card {
+        border-radius: 10px;
+        overflow: hidden;
+    }
+    .card-header {
+        font-weight: 600;
+    }
+    .nav-tabs .nav-link {
+        color: #495057;
+    }
+    .nav-tabs .nav-link.active {
+        font-weight: bold;
+        color: #0d6efd;
+    }
+    .accordion-button:not(.collapsed) {
+        background-color: #e7f1ff;
+        color: #0d6efd;
+    }
+    .accordion-button:focus {
+        box-shadow: none;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="container">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h2>
+                <i class="bi bi-shield-lock"></i> 
+                Gerenciar Permissões
+            </h2>
+            <a href="/dashboard" class="btn btn-outline-secondary">
+                <i class="bi bi-arrow-left"></i> Voltar
+            </a>
+        </div>
+
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+                        {{ message }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
+        <ul class="nav nav-tabs mb-4" id="permissoesTab" role="tablist">
+            <li class="nav-item" role="presentation">
+                <button class="nav-link active" id="graus-tab" data-bs-toggle="tab" data-bs-target="#graus" type="button" role="tab">
+                    <i class="bi bi-star-fill"></i> Por Grau
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="usuarios-tab" data-bs-toggle="tab" data-bs-target="#usuarios" type="button" role="tab">
+                    <i class="bi bi-person"></i> Por Usuário (Árvore)
+                </button>
+            </li>
+        </ul>
+
+        <div class="tab-content">
+            <!-- Aba: Permissões por Grau (Apenas 3 graus principais) -->
+            <div class="tab-pane fade show active" id="graus" role="tabpanel">
+                <div class="row">
+                    {% for grau in graus %}
+                    <div class="col-md-4 mb-4">
+                        <div class="card shadow h-100">
+                            <div class="card-header {% if grau.nivel == 3 %}bg-success{% elif grau.nivel == 2 %}bg-primary{% else %}bg-secondary{% endif %} text-white">
+                                <h5 class="mb-0">
+                                    <i class="bi bi-star-fill"></i> 
+                                    {{ grau.nome }}
+                                </h5>
+                            </div>
+                            <div class="card-body" style="max-height: 500px; overflow-y: auto;">
+                                <form method="POST" action="/admin/permissoes/grau/{{ grau.id }}">
+                                    <div class="accordion" id="accordionGrau{{ grau.id }}">
+                                        {% for modulo_nome, modulo_data in permissoes_por_modulo.items() %}
+                                        <div class="accordion-item">
+                                            <h2 class="accordion-header">
+                                                <button class="accordion-button collapsed" type="button" 
+                                                        data-bs-toggle="collapse" 
+                                                        data-bs-target="#collapse{{ grau.id }}{{ loop.index }}">
+                                                    <i class="bi {{ modulo_data.icone }} me-2"></i>
+                                                    {{ modulo_nome }}
+                                                    <span class="badge bg-secondary ms-2">{{ modulo_data.permissoes|length }}</span>
+                                                </button>
+                                            </h2>
+                                            <div id="collapse{{ grau.id }}{{ loop.index }}" 
+                                                 class="accordion-collapse collapse" 
+                                                 data-bs-parent="#accordionGrau{{ grau.id }}">
+                                                <div class="accordion-body">
+                                                    {% for permissao in modulo_data.permissoes %}
+                                                    <div class="form-check">
+                                                        <input class="form-check-input" type="checkbox" 
+                                                               name="permissoes" value="{{ permissao.id }}"
+                                                               {% for pg in permissoes_grau %}
+                                                                   {% if pg[0] == grau.id and pg[1] == permissao.id %}
+                                                                       checked
+                                                                   {% endif %}
+                                                               {% endfor %}>
+                                                        <label class="form-check-label small">
+                                                            {{ permissao.nome }}
+                                                            <br>
+                                                            <small class="text-muted">{{ permissao.descricao }}</small>
+                                                        </label>
+                                                    </div>
+                                                    {% endfor %}
+                                                </div>
+                                            </div>
+                                        </div>
+                                        {% endfor %}
+                                    </div>
+                                    <div class="text-center mt-3">
+                                        <button type="submit" class="btn btn-success btn-sm w-100">
+                                            <i class="bi bi-save"></i> Salvar Permissões
+                                        </button>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <!-- Aba: Permissões por Usuário (Visualização em Árvore) -->
+            <div class="tab-pane fade" id="usuarios" role="tabpanel">
+                <div class="row">
+                    {% for usuario in usuarios %}
+                    <div class="col-md-6 mb-4">
+                        <div class="card shadow">
+                            <div class="card-header bg-info text-white">
+                                <h5 class="mb-0">
+                                    <i class="bi bi-person-circle"></i> 
+                                    {{ usuario.nome_completo or usuario.usuario }}
+                                    <span class="badge bg-light text-dark ms-2">
+                                        {% if usuario.tipo == 'admin' %}Admin{% else %}Grau {{ usuario.grau_atual }}{% endif %}
+                                    </span>
+                                </h5>
+                            </div>
+                            <div class="card-body">
+                                <form method="POST" action="/admin/permissoes/usuario/{{ usuario.id }}">
+                                    <div class="alert alert-info small">
+                                        <i class="bi bi-info-circle"></i>
+                                        As permissões do grau se aplicam automaticamente. Use esta seção para 
+                                        <strong>adicionar permissões extras</strong> ou 
+                                        <strong>bloquear permissões específicas</strong>.
+                                    </div>
+                                    
+                                    <div class="row">
+                                        <div class="col-md-6">
+                                            <div class="card h-100">
+                                                <div class="card-header bg-success text-white py-1">
+                                                    <small><i class="bi bi-plus-circle"></i> Permissões Extras</small>
+                                                </div>
+                                                <div class="card-body" style="max-height: 400px; overflow-y: auto;">
+                                                    <div class="accordion" id="accordionExtra{{ usuario.id }}">
+                                                        {% for modulo_nome, modulo_data in permissoes_por_modulo.items() %}
+                                                        <div class="accordion-item">
+                                                            <h2 class="accordion-header">
+                                                                <button class="accordion-button collapsed" type="button" 
+                                                                        data-bs-toggle="collapse" 
+                                                                        data-bs-target="#collapseExtra{{ usuario.id }}{{ loop.index }}">
+                                                                    <i class="bi {{ modulo_data.icone }} me-2"></i>
+                                                                    {{ modulo_nome }}
+                                                                </button>
+                                                            </h2>
+                                                            <div id="collapseExtra{{ usuario.id }}{{ loop.index }}" 
+                                                                 class="accordion-collapse collapse">
+                                                                <div class="accordion-body">
+                                                                    {% for permissao in modulo_data.permissoes %}
+                                                                    <div class="form-check">
+                                                                        <input class="form-check-input" type="checkbox" 
+                                                                               name="permissoes_extra" value="{{ permissao.id }}"
+                                                                               {% for pu in permissoes_usuario %}
+                                                                                   {% if pu[0] == usuario.id and pu[1] == permissao.id and pu[2] == 1 %}
+                                                                                       checked
+                                                                                   {% endif %}
+                                                                               {% endfor %}>
+                                                                        <label class="form-check-label small">
+                                                                            {{ permissao.nome }}
+                                                                        </label>
+                                                                    </div>
+                                                                    {% endfor %}
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                        {% endfor %}
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <div class="card h-100">
+                                                <div class="card-header bg-danger text-white py-1">
+                                                    <small><i class="bi bi-ban"></i> Permissões Bloqueadas</small>
+                                                </div>
+                                                <div class="card-body" style="max-height: 400px; overflow-y: auto;">
+                                                    <div class="accordion" id="accordionBloqueio{{ usuario.id }}">
+                                                        {% for modulo_nome, modulo_data in permissoes_por_modulo.items() %}
+                                                        <div class="accordion-item">
+                                                            <h2 class="accordion-header">
+                                                                <button class="accordion-button collapsed" type="button" 
+                                                                        data-bs-toggle="collapse" 
+                                                                        data-bs-target="#collapseBloqueio{{ usuario.id }}{{ loop.index }}">
+                                                                    <i class="bi {{ modulo_data.icone }} me-2"></i>
+                                                                    {{ modulo_nome }}
+                                                                </button>
+                                                            </h2>
+                                                            <div id="collapseBloqueio{{ usuario.id }}{{ loop.index }}" 
+                                                                 class="accordion-collapse collapse">
+                                                                <div class="accordion-body">
+                                                                    {% for permissao in modulo_data.permissoes %}
+                                                                    <div class="form-check">
+                                                                        <input class="form-check-input" type="checkbox" 
+                                                                               name="permissoes_bloqueadas" value="{{ permissao.id }}"
+                                                                               {% for pu in permissoes_usuario %}
+                                                                                   {% if pu[0] == usuario.id and pu[1] == permissao.id and pu[2] == 0 %}
+                                                                                       checked
+                                                                                   {% endif %}
+                                                                               {% endfor %}>
+                                                                        <label class="form-check-label small">
+                                                                            {{ permissao.nome }}
+                                                                        </label>
+                                                                    </div>
+                                                                    {% endfor %}
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                        {% endfor %}
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="text-center mt-3">
+                                        <button type="submit" class="btn btn-success w-100">
+                                            <i class="bi bi-save"></i> Salvar Permissões do Usuário
+                                        </button>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Função para expandir/colapsar todos os accordions
+    function expandirTodos(containerId) {
+        document.querySelectorAll(`#${containerId} .accordion-collapse`).forEach(el => {
+            el.classList.add('show');
+        });
+    }
+    
+    function recolherTodos(containerId) {
+        document.querySelectorAll(`#${containerId} .accordion-collapse`).forEach(el => {
+            el.classList.remove('show');
+        });
+    }
+    
+    // Adicionar botões de expandir/recolher
+    document.addEventListener('DOMContentLoaded', function() {
+        // Para a aba de graus
+        const grausCards = document.querySelectorAll('#graus .card');
+        grausCards.forEach((card, index) => {
+            const header = card.querySelector('.card-header');
+            if (header) {
+                const btnGroup = document.createElement('div');
+                btnGroup.className = 'btn-group btn-group-sm float-end';
+                btnGroup.innerHTML = `
+                    <button type="button" class="btn btn-light btn-sm" onclick="expandirTodos('accordionGrau${index + 1}')" title="Expandir todos">
+                        <i class="bi bi-arrows-expand"></i>
+                    </button>
+                    <button type="button" class="btn btn-light btn-sm" onclick="recolherTodos('accordionGrau${index + 1}')" title="Recolher todos">
+                        <i class="bi bi-arrows-collapse"></i>
+                    </button>
+                `;
+                header.appendChild(btnGroup);
+            }
+        });
+    });
+</script>
+
+{% endblock %}

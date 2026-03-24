@@ -1,0 +1,363 @@
+{% extends "base.html" %}
+
+{% block title %}Backup e Restauração{% endblock %}
+
+{% block styles %}
+<style>
+    .backup-card {
+        transition: transform 0.2s;
+        cursor: pointer;
+    }
+    .backup-card:hover {
+        transform: translateY(-5px);
+    }
+    .loading {
+        display: none;
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        z-index: 9999;
+        background: rgba(0,0,0,0.8);
+        color: white;
+        padding: 20px;
+        border-radius: 10px;
+        text-align: center;
+    }
+    .spinner-border {
+        width: 3rem;
+        height: 3rem;
+    }
+    .backup-item {
+        transition: background-color 0.2s;
+    }
+    .backup-item:hover {
+        background-color: #f8f9fa;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="container">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h2>
+                <i class="bi bi-database"></i> 
+                Backup e Restauração
+            </h2>
+            <a href="/dashboard" class="btn btn-outline-secondary">
+                <i class="bi bi-arrow-left"></i> Voltar
+            </a>
+        </div>
+
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+                        {{ message }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
+        <div class="row">
+            <!-- Card: Criar Backup -->
+            <div class="col-md-4 mb-4">
+                <div class="card shadow h-100 backup-card" onclick="criarBackup()">
+                    <div class="card-body text-center py-5">
+                        <i class="bi bi-cloud-upload fs-1 text-primary"></i>
+                        <h4 class="mt-3">Criar Backup</h4>
+                        <p class="text-muted">Crie um backup completo do banco de dados</p>
+                        <button class="btn btn-primary" id="btnCriarBackup">
+                            <i class="bi bi-plus-circle"></i> Criar Agora
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Card: Informações -->
+            <div class="col-md-8 mb-4">
+                <div class="card shadow">
+                    <div class="card-header bg-info text-white">
+                        <h5 class="mb-0"><i class="bi bi-info-circle"></i> Informações</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <p><strong><i class="bi bi-folder"></i> Diretório de Backups:</strong><br>
+                                <code>{{ backup_dir }}</code></p>
+                                <p><strong><i class="bi bi-clock-history"></i> Retenção:</strong><br>
+                                Mantém backups dos últimos 30 dias (máx. 20 arquivos)</p>
+                            </div>
+                            <div class="col-md-6">
+                                <p><strong><i class="bi bi-database"></i> Banco de Dados:</strong><br>
+                                <code>{{ db_name }}</code></p>
+                                <p><strong><i class="bi bi-calendar"></i> Último Backup:</strong><br>
+                                <span id="ultimoBackup">Carregando...</span></p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Lista de Backups -->
+        <div class="card shadow">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0"><i class="bi bi-list-ul"></i> Backups Disponíveis</h5>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-hover" id="tabelaBackups">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Nome do Arquivo</th>
+                                <th>Data</th>
+                                <th>Tamanho</th>
+                                <th>Ações</th>
+                            </thead>
+                        <tbody id="listaBackups">
+                            <tr>
+                                <td colspan="4" class="text-center text-muted py-4">
+                                    <i class="bi bi-hourglass-split"></i> Carregando backups...
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal de Confirmação -->
+<div class="modal fade" id="modalConfirmacao" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-warning">
+                <h5 class="modal-title"><i class="bi bi-exclamation-triangle"></i> Confirmar Restauração</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p><strong>Atenção!</strong> A restauração irá sobrescrever todos os dados atuais do banco.</p>
+                <p>Recomenda-se fazer um backup antes de restaurar.</p>
+                <p><strong>Backup selecionado:</strong> <span id="backupSelecionado"></span></p>
+                <div class="alert alert-danger">
+                    <i class="bi bi-exclamation-circle"></i>
+                    Esta ação não pode ser desfeita. Deseja continuar?
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn btn-danger" id="btnConfirmarRestaurar">Restaurar</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Loading Overlay -->
+<div class="loading" id="loadingOverlay">
+    <div class="spinner-border text-light" role="status">
+        <span class="visually-hidden">Carregando...</span>
+    </div>
+    <p class="mt-2 mb-0">Processando...</p>
+</div>
+
+<script>
+    let backupSelecionado = null;
+
+    function mostrarLoading() {
+        document.getElementById('loadingOverlay').style.display = 'block';
+    }
+
+    function esconderLoading() {
+        document.getElementById('loadingOverlay').style.display = 'none';
+    }
+
+    function carregarBackups() {
+        fetch('/api/backup/listar')
+            .then(response => response.json())
+            .then(data => {
+                const tbody = document.getElementById('listaBackups');
+                if (data.backups && data.backups.length > 0) {
+                    tbody.innerHTML = '';
+                    data.backups.forEach(backup => {
+                        const row = tbody.insertRow();
+                        row.className = 'backup-item';
+                        row.innerHTML = `
+                            <td><i class="bi bi-file-zip"></i> ${backup.nome}</td>
+                            <td><i class="bi bi-calendar"></i> ${backup.data}</td>
+                            <td><i class="bi bi-hdd"></i> ${backup.tamanho}</td>
+                            <td>
+                                <div class="btn-group btn-group-sm">
+                                    <a href="/api/backup/baixar/${backup.nome}" class="btn btn-info" title="Baixar">
+                                        <i class="bi bi-download"></i>
+                                    </a>
+                                    <button class="btn btn-warning" onclick="confirmarRestauracao('${backup.nome}')" title="Restaurar">
+                                        <i class="bi bi-arrow-repeat"></i>
+                                    </button>
+                                    <button class="btn btn-danger" onclick="excluirBackup('${backup.nome}')" title="Excluir">
+                                        <i class="bi bi-trash"></i>
+                                    </button>
+                                </div>
+                            </td>
+                        `;
+                    });
+                    
+                    // Atualizar último backup
+                    const ultimo = data.backups[0];
+                    document.getElementById('ultimoBackup').innerHTML = 
+                        `<i class="bi bi-calendar-check"></i> ${ultimo.data} (${ultimo.tamanho})`;
+                } else {
+                    tbody.innerHTML = `
+                        <tr>
+                            <td colspan="4" class="text-center text-muted py-4">
+                                <i class="bi bi-folder2-open fs-1"></i><br>
+                                Nenhum backup encontrado
+                            </td>
+                        </tr>
+                    `;
+                    document.getElementById('ultimoBackup').innerHTML = '<i class="bi bi-calendar-x"></i> Nenhum backup realizado';
+                }
+            })
+            .catch(error => {
+                console.error('Erro:', error);
+                document.getElementById('listaBackups').innerHTML = `
+                    <tr>
+                        <td colspan="4" class="text-center text-danger py-4">
+                            <i class="bi bi-exclamation-triangle"></i> Erro ao carregar backups
+                        </td>
+                    </tr>
+                `;
+            });
+    }
+
+    function criarBackup() {
+        if (!confirm('Deseja criar um novo backup do banco de dados?')) return;
+        
+        mostrarLoading();
+        document.getElementById('btnCriarBackup').disabled = true;
+        
+        fetch('/api/backup/criar', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            esconderLoading();
+            if (data.success) {
+                alert(data.message);
+                carregarBackups();
+            } else {
+                alert('Erro: ' + data.message);
+            }
+        })
+        .catch(error => {
+            esconderLoading();
+            alert('Erro ao criar backup: ' + error);
+        })
+        .finally(() => {
+            document.getElementById('btnCriarBackup').disabled = false;
+        });
+    }
+
+    function confirmarRestauracao(arquivo) {
+        backupSelecionado = arquivo;
+        document.getElementById('backupSelecionado').innerText = arquivo;
+        new bootstrap.Modal(document.getElementById('modalConfirmacao')).show();
+    }
+
+    function restaurarBackup() {
+        if (!backupSelecionado) return;
+        
+        mostrarLoading();
+        
+        const formData = new FormData();
+        formData.append('arquivo', backupSelecionado);
+        
+        fetch('/api/backup/restaurar', {
+            method: 'POST',
+            body: formData
+        })
+        .then(response => response.json())
+        .then(data => {
+            esconderLoading();
+            if (data.success) {
+                alert(data.message + '\n\nO sistema será reiniciado. Faça login novamente.');
+                window.location.href = '/logout';
+            } else {
+                alert('Erro: ' + data.message);
+            }
+        })
+        .catch(error => {
+            esconderLoading();
+            alert('Erro ao restaurar: ' + error);
+        })
+        .finally(() => {
+            bootstrap.Modal.getInstance(document.getElementById('modalConfirmacao')).hide();
+        });
+    }
+
+    function excluirBackup(arquivo) {
+        if (!confirm(`Excluir o backup ${arquivo}?`)) return;
+        
+        mostrarLoading();
+        
+        fetch(`/api/backup/excluir/${arquivo}`, {
+            method: 'DELETE'
+        })
+        .then(response => response.json())
+        .then(data => {
+            esconderLoading();
+            if (data.success) {
+                alert(data.message);
+                carregarBackups();
+            } else {
+                alert('Erro: ' + data.message);
+            }
+        })
+        .catch(error => {
+            esconderLoading();
+            alert('Erro ao excluir: ' + error);
+        });
+    }
+
+    document.getElementById('btnConfirmarRestaurar').addEventListener('click', restaurarBackup);
+
+    // Carregar backups ao iniciar
+    document.addEventListener('DOMContentLoaded', carregarBackups);
+    
+    // Atualizar lista a cada 30 segundos
+    setInterval(carregarBackups, 30000);
+</script>
+
+<style>
+    .backup-card {
+        cursor: pointer;
+    }
+    .backup-card:hover {
+        transform: translateY(-5px);
+    }
+    .loading {
+        display: none;
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        z-index: 9999;
+        background: rgba(0,0,0,0.8);
+        color: white;
+        padding: 20px;
+        border-radius: 10px;
+        text-align: center;
+        min-width: 200px;
+    }
+    .backup-item:hover {
+        background-color: #f8f9fa;
+    }
+</style>
+
+{% endblock %}

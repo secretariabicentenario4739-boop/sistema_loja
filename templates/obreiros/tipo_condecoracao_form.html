@@ -1,0 +1,185 @@
+{% extends "base.html" %}
+
+{% block title %}{% if tipo %}Editar{% else %}Novo{% endif %} Tipo de Condecoração{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="container">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h2>
+                <i class="bi bi-award"></i> 
+                {% if tipo %}
+                    Editar Tipo: {{ tipo.nome }}
+                {% else %}
+                    Novo Tipo de Condecoração
+                {% endif %}
+            </h2>
+            <div>
+                <a href="/tipos_condecoracoes" class="btn btn-outline-secondary">
+                    <i class="bi bi-arrow-left"></i> Voltar
+                </a>
+            </div>
+        </div>
+
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+                        {{ message }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
+        <div class="card shadow">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0"><i class="bi bi-pencil-square"></i> Dados da Condecoração</h5>
+            </div>
+            <div class="card-body">
+                <form method="POST">
+                    <div class="row">
+                        <div class="col-md-8 mb-3">
+                            <label class="form-label">Nome *</label>
+                            <input type="text" class="form-control" name="nome" 
+                                   value="{{ tipo.nome if tipo else '' }}" required>
+                            <small class="text-muted">Ex: Medalha do Mérito Maçônico</small>
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label">Nível *</label>
+                            <select class="form-select" name="nivel" required>
+                                <option value="1" {% if tipo and tipo.nivel == 1 %}selected{% endif %}>Nível 1 - Mérito Básico</option>
+                                <option value="2" {% if tipo and tipo.nivel == 2 %}selected{% endif %}>Nível 2 - Mérito Médio</option>
+                                <option value="3" {% if tipo and tipo.nivel == 3 %}selected{% endif %}>Nível 3 - Alto Mérito</option>
+                                <option value="4" {% if tipo and tipo.nivel == 4 %}selected{% endif %}>Nível 4 - Máxima Honraria</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Cor</label>
+                            <div class="input-group">
+                                <input type="color" class="form-control form-control-color" name="cor" 
+                                       value="{{ tipo.cor if tipo else '#ffc107' }}" style="width: 50px;">
+                                <input type="text" class="form-control" name="cor_text" 
+                                       value="{{ tipo.cor if tipo else '#ffc107' }}" 
+                                       placeholder="#ffc107">
+                            </div>
+                            <small class="text-muted">Cor do destaque da condecoração</small>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Ícone Bootstrap</label>
+                            <div class="input-group">
+                                <span class="input-group-text" id="iconPreview">
+                                    <i class="bi {{ tipo.icone if tipo else 'bi-award' }}"></i>
+                                </span>
+                                <input type="text" class="form-control" name="icone" 
+                                       value="{{ tipo.icone if tipo else 'bi-award' }}" 
+                                       placeholder="bi-award">
+                            </div>
+                            <small class="text-muted">
+                                <a href="https://icons.getbootstrap.com/" target="_blank">
+                                    Ver ícones Bootstrap
+                                </a>
+                            </small>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Ordem</label>
+                            <input type="number" class="form-control" name="ordem" 
+                                   value="{{ tipo.ordem if tipo else 0 }}">
+                            <small class="text-muted">Ordem de exibição (menor primeiro)</small>
+                        </div>
+                        {% if tipo %}
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Status</label>
+                            <select class="form-select" name="ativo">
+                                <option value="1" {% if tipo.ativo == 1 %}selected{% endif %}>Ativo</option>
+                                <option value="0" {% if tipo.ativo == 0 %}selected{% endif %}>Inativo</option>
+                            </select>
+                        </div>
+                        {% endif %}
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Descrição</label>
+                        <textarea class="form-control" name="descricao" rows="3" 
+                                  placeholder="Descreva o significado e os critérios para esta condecoração...">{{ tipo.descricao if tipo else '' }}</textarea>
+                    </div>
+
+                    <div class="alert alert-info">
+                        <i class="bi bi-info-circle"></i>
+                        <strong>Informações:</strong>
+                        <ul class="mb-0 mt-2">
+                            <li><strong>Nível 1</strong> - Mérito Básico (cor amarela)</li>
+                            <li><strong>Nível 2</strong> - Mérito Médio (cor azul)</li>
+                            <li><strong>Nível 3</strong> - Alto Mérito (cor verde)</li>
+                            <li><strong>Nível 4</strong> - Máxima Honraria (cor vermelha)</li>
+                        </ul>
+                    </div>
+
+                    <div class="text-center mt-4">
+                        <a href="/tipos_condecoracoes" class="btn btn-secondary me-2">
+                            <i class="bi bi-x-circle"></i> Cancelar
+                        </a>
+                        <button type="submit" class="btn btn-success btn-lg px-5">
+                            <i class="bi bi-save"></i> {% if tipo %}Salvar Alterações{% else %}Salvar Tipo{% endif %}
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Preview do ícone ao digitar
+    const iconeInput = document.querySelector('input[name="icone"]');
+    const iconPreview = document.querySelector('#iconPreview i');
+    
+    iconeInput.addEventListener('input', function() {
+        const iconeClass = this.value.trim();
+        if (iconeClass) {
+            iconPreview.className = `bi ${iconeClass}`;
+        } else {
+            iconPreview.className = 'bi bi-award';
+        }
+    });
+    
+    // Sincronizar campo de cor
+    const colorPicker = document.querySelector('input[type="color"]');
+    const colorText = document.querySelector('input[name="cor_text"]');
+    
+    colorPicker.addEventListener('input', function() {
+        colorText.value = this.value;
+    });
+    
+    colorText.addEventListener('input', function() {
+        colorPicker.value = this.value;
+    });
+</script>
+
+<style>
+    .card {
+        border-radius: 10px;
+        overflow: hidden;
+    }
+    .card-header {
+        font-weight: 600;
+    }
+    .form-control-color {
+        width: 50px;
+        padding: 0.375rem;
+    }
+    #iconPreview {
+        background-color: #f8f9fa;
+    }
+    #iconPreview i {
+        font-size: 1.2rem;
+    }
+</style>
+
+{% endblock %}

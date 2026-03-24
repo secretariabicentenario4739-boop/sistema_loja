@@ -8,85 +8,86 @@
         <div class="d-flex justify-content-between align-items-center mb-4">
             <h2>
                 <i class="bi bi-file-text"></i> 
-                Nova Ata: {{ reuniao.titulo }}
+                Criar Ata - {{ reuniao.titulo }}
             </h2>
-            <a href="/reunioes/{{ reuniao.id }}" class="btn btn-outline-secondary">
-                <i class="bi bi-arrow-left"></i> Voltar
-            </a>
+            <div>
+                <a href="/reunioes/{{ reuniao.id }}" class="btn btn-outline-secondary">
+                    <i class="bi bi-arrow-left"></i> Voltar
+                </a>
+            </div>
         </div>
 
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+                        {{ message }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
         <div class="row">
-            <div class="col-md-4">
-                <div class="card shadow mb-4">
-                    <div class="card-header bg-info text-white">
-                        <h5 class="mb-0">Informações da Reunião</h5>
-                    </div>
-                    <div class="card-body">
-                        <p><strong>Data:</strong> {{ reuniao.data[:10] }}</p>
-                        <p><strong>Horário:</strong> {{ reuniao.hora_inicio[:5] }} às {{ reuniao.hora_termino[:5] }}</p>
-                        <p><strong>Tipo:</strong> {{ reuniao.tipo }}</p>
-                        <p><strong>Local:</strong> {{ reuniao.local or 'Não informado' }}</p>
-                        <p><strong>Presentes:</strong> {{ reuniao.presentes or 0 }} obreiros</p>
-                        
-                        {% if reuniao.pauta %}
-                        <hr>
-                        <h6>Pauta:</h6>
-                        <p class="small">{{ reuniao.pauta }}</p>
-                        {% endif %}
-                    </div>
-                </div>
-
-                <div class="card shadow mb-4">
-                    <div class="card-header bg-success text-white">
-                        <h5 class="mb-0">Modelos de Ata</h5>
-                    </div>
-                    <div class="card-body">
-                        <p>Selecione um modelo para começar:</p>
-                        <div class="list-group">
-                            {% for modelo in modelos %}
-                            <button type="button" class="list-group-item list-group-item-action" onclick="carregarModelo({{ modelo.id }})">
-                                <strong>{{ modelo.nome }}</strong>
-                                <br>
-                                <small class="text-muted">{{ modelo.descricao }}</small>
-                            </button>
-                            {% endfor %}
-                        </div>
-                    </div>
-                </div>
-            </div>
-
             <div class="col-md-8">
                 <div class="card shadow">
                     <div class="card-header bg-primary text-white">
-                        <h5 class="mb-0">Redigir Ata</h5>
+                        <h5 class="mb-0"><i class="bi bi-pencil-square"></i> Redigir Ata</h5>
                     </div>
                     <div class="card-body">
+                        <!-- Informações da Reunião -->
+                        <div class="alert alert-info mb-4">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <p><strong><i class="bi bi-calendar"></i> Data:</strong> 
+                                        {{ reuniao.data.strftime('%d/%m/%Y') if reuniao.data else '-' }}
+                                    </p>
+                                    <p><strong><i class="bi bi-clock"></i> Horário:</strong> 
+                                        {% if reuniao.hora_inicio %}
+                                            {{ reuniao.hora_inicio.strftime('%H:%M') if reuniao.hora_inicio else '-' }}
+                                            {% if reuniao.hora_termino %}
+                                            às {{ reuniao.hora_termino.strftime('%H:%M') if reuniao.hora_termino else '-' }}
+                                            {% endif %}
+                                        {% else %}
+                                            -
+                                        {% endif %}
+                                    </p>
+                                </div>
+                                <div class="col-md-6">
+                                    <p><strong><i class="bi bi-geo-alt"></i> Local:</strong> {{ reuniao.local or 'Não informado' }}</p>
+                                    <p><strong><i class="bi bi-people"></i> Presentes:</strong> {{ reuniao.presentes or 0 }}</p>
+                                </div>
+                            </div>
+                        </div>
+
                         <form method="POST" id="formAta">
-                            <input type="hidden" name="modelo_id" id="modelo_id" value="1">
-                            
                             <div class="mb-3">
-                                <label class="form-label">Conteúdo da Ata</label>
-                                <textarea class="form-control" name="conteudo" id="conteudo" rows="20" required>
-Aos {{ reuniao.data[:10] }}, às {{ reuniao.hora_inicio[:5] }} horas, reuniu-se a Loja...
-
-ORDEM DO DIA:
-1. Abertura
-2. Verificação de quórum
-3. Leitura da ata anterior
-4. Expediente
-5. Ordem do dia
-6. Encerramento
-
-____________________________________
-                                </textarea>
+                                <label class="form-label">Modelo de Ata</label>
+                                <select class="form-select" name="modelo_id" id="modeloSelect">
+                                    <option value="">Selecione um modelo...</option>
+                                    {% for modelo in modelos %}
+                                    <option value="{{ modelo.id }}" 
+                                            data-estrutura="{{ modelo.estrutura }}">
+                                        {{ modelo.nome }} - {{ modelo.tipo }}
+                                    </option>
+                                    {% endfor %}
+                                </select>
+                                <small class="text-muted">Selecione um modelo para ajudar na estruturação da ata</small>
                             </div>
 
-                            <div class="alert alert-info">
-                                <i class="bi bi-info-circle"></i>
-                                A ata será salva com o número automático baseado no ano atual.
+                            <div class="mb-3">
+                                <label class="form-label">Conteúdo da Ata *</label>
+                                <textarea class="form-control" name="conteudo" id="conteudoAta" rows="20" required></textarea>
+                                <small class="text-muted">
+                                    <i class="bi bi-info-circle"></i> 
+                                    Use markdown para formatação. Inclua todos os pontos importantes da reunião.
+                                </small>
                             </div>
 
-                            <div class="text-center">
+                            <div class="text-center mt-4">
+                                <button type="button" class="btn btn-info me-2" onclick="visualizarAta()">
+                                    <i class="bi bi-eye"></i> Visualizar
+                                </button>
                                 <button type="submit" class="btn btn-success btn-lg px-5">
                                     <i class="bi bi-save"></i> Salvar Ata
                                 </button>
@@ -95,22 +96,300 @@ ____________________________________
                     </div>
                 </div>
             </div>
+
+            <div class="col-md-4">
+                <!-- Dicas para a Ata -->
+                <div class="card shadow mb-4">
+                    <div class="card-header bg-success text-white">
+                        <h5 class="mb-0"><i class="bi bi-lightbulb"></i> Dicas para a Ata</h5>
+                    </div>
+                    <div class="card-body">
+                        <ul class="list-unstyled">
+                            <li class="mb-2">
+                                <i class="bi bi-check-circle-fill text-success"></i> 
+                                Inclua a data e horário da reunião
+                            </li>
+                            <li class="mb-2">
+                                <i class="bi bi-check-circle-fill text-success"></i> 
+                                Liste os presentes e ausentes
+                            </li>
+                            <li class="mb-2">
+                                <i class="bi bi-check-circle-fill text-success"></i> 
+                                Descreva os assuntos discutidos
+                            </li>
+                            <li class="mb-2">
+                                <i class="bi bi-check-circle-fill text-success"></i> 
+                                Registre as deliberações e votações
+                            </li>
+                            <li class="mb-2">
+                                <i class="bi bi-check-circle-fill text-success"></i> 
+                                Inclua data e hora do encerramento
+                            </li>
+                            <li class="mb-2">
+                                <i class="bi bi-check-circle-fill text-success"></i> 
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- Estrutura Sugerida -->
+                <div class="card shadow">
+                    <div class="card-header bg-warning text-dark">
+                        <h5 class="mb-0"><i class="bi bi-list-ul"></i> Estrutura Sugerida</h5>
+                    </div>
+                    <div class="card-body">
+                        <ol class="small">
+                            <li><strong>Abertura</strong> - Data, hora, local</li>
+                            <li><strong>Verificação de Quórum</strong> - Número de presentes</li>
+                            <li><strong>Leitura da Ata Anterior</strong> - Aprovação ou correções</li>
+                            <li><strong>Ordem do Dia</strong> - Assuntos tratados</li>
+                            <li><strong>Palavra Livre</strong> - Manifestações</li>
+                            <li><strong>Encerramento</strong> - Hora e assinaturas</li>
+                        </ol>
+                        <hr>
+                        <button class="btn btn-sm btn-outline-primary w-100" onclick="inserirEstrutura()">
+                            <i class="bi bi-file-text"></i> Inserir Estrutura Básica
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Modal de Visualização -->
+        <div class="modal fade" id="modalVisualizarAta" tabindex="-1">
+            <div class="modal-dialog modal-xl">
+                <div class="modal-content">
+                    <div class="modal-header bg-primary text-white">
+                        <h5 class="modal-title"><i class="bi bi-eye"></i> Visualização da Ata</h5>
+                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body" id="visualizarAtaContent" style="max-height: 70vh; overflow-y: auto;">
+                        <p class="text-muted">Clique em "Visualizar" para ver o conteúdo formatado.</p>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fechar</button>
+                        <button type="button" class="btn btn-primary" onclick="copiarConteudo()">
+                            <i class="bi bi-clipboard"></i> Copiar
+                        </button>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 </div>
 
 <script>
-    function carregarModelo(modeloId) {
-        // Aqui você pode implementar a lógica para carregar diferentes modelos
-        // Por enquanto, vamos apenas mostrar um alerta
-        alert('Carregar modelo ' + modeloId);
-        document.getElementById('modelo_id').value = modeloId;
-    }
+    // Função para carregar modelo selecionado
+    document.getElementById('modeloSelect').addEventListener('change', function() {
+        const selected = this.options[this.selectedIndex];
+        const estrutura = selected.getAttribute('data-estrutura');
+        
+        if (estrutura) {
+            try {
+                const estruturaObj = JSON.parse(estrutura);
+                let conteudoModelo = '';
+                
+                if (estruturaObj.cabecalho) {
+                    conteudoModelo += '## CABEÇALHO\n\n';
+                    estruturaObj.cabecalho.forEach(item => {
+                        conteudoModelo += `- ${item}\n`;
+                    });
+                    conteudoModelo += '\n---\n\n';
+                }
+                
+                if (estruturaObj.expediente) {
+                    conteudoModelo += '## EXPEDIENTE\n\n';
+                    estruturaObj.expediente.forEach(item => {
+                        conteudoModelo += `- ${item}\n`;
+                    });
+                    conteudoModelo += '\n---\n\n';
+                }
+                
+                if (estruturaObj.ordem_do_dia) {
+                    conteudoModelo += '## ORDEM DO DIA\n\n';
+                    estruturaObj.ordem_do_dia.forEach(item => {
+                        conteudoModelo += `- ${item}\n`;
+                    });
+                    conteudoModelo += '\n---\n\n';
+                }
+                
+                if (estruturaObj.encerramento) {
+                    conteudoModelo += '## ENCERRAMENTO\n\n';
+                    estruturaObj.encerramento.forEach(item => {
+                        conteudoModelo += `- ${item}\n`;
+                    });
+                    conteudoModelo += '\n';
+                }
+                
+                document.getElementById('conteudoAta').value = conteudoModelo;
+            } catch(e) {
+                console.error('Erro ao carregar modelo:', e);
+            }
+        }
+    });
+    
+    // Inserir estrutura básica
+    function inserirEstrutura() {
+        const data = "{{ reuniao.data.strftime('%d/%m/%Y') if reuniao.data else '' }}";
+        const horaInicio = "{{ reuniao.hora_inicio.strftime('%H:%M') if reuniao.hora_inicio else '' }}";
+        const horaTermino = "{{ reuniao.hora_termino.strftime('%H:%M') if reuniao.hora_termino else '' }}";
+        const local = "{{ reuniao.local or 'Templo Maçônico' }}";
+        
+        const estruturaBasica = `## ATA DA REUNIÃO - {{ reuniao.titulo }}
 
-    // Auto-resize do textarea
-    document.getElementById('conteudo').addEventListener('input', function() {
-        this.style.height = 'auto';
-        this.style.height = (this.scrollHeight) + 'px';
+### DADOS DA REUNIÃO
+- **Data:** ${data}
+- **Horário:** ${horaInicio} às ${horaTermino}
+- **Local:** ${local}
+
+---
+
+### 1. ABERTURA
+Aos ${data} às ${horaInicio}, foi aberta a reunião...
+
+### 2. VERIFICAÇÃO DE QUÓRUM
+Presentes ___ obreiros, suficiente para deliberação.
+
+### 3. LEITURA DA ATA ANTERIOR
+A ata da reunião anterior foi lida e...
+
+### 4. ORDEM DO DIA
+- 
+
+### 5. PALAVRA LIVRE
+- 
+
+### 6. ENCERRAMENTO
+Nada mais havendo a tratar, a reunião foi encerrada às ${horaTermino}.
+
+---
+
+**Eu, __________________________________, Secretário, lavrei a presente ata que, após lida e aprovada, vai assinada pelos presentes.**
+
+**__________________________________**
+**Venerável Mestre**
+
+**__________________________________**
+**Secretário(a)`
+
+        document.getElementById('conteudoAta').value = estruturaBasica;
+    }
+    
+    // Visualizar ata formatada
+    function visualizarAta() {
+        const conteudo = document.getElementById('conteudoAta').value;
+        const modalBody = document.getElementById('visualizarAtaContent');
+        
+        if (conteudo.trim()) {
+            // Converter markdown básico para HTML
+            let html = conteudo
+                .replace(/\n/g, '<br>')
+                .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+                .replace(/\*(.*?)\*/g, '<em>$1</em>')
+                .replace(/^## (.*)$/gm, '<h4 class="mt-3">$1</h4>')
+                .replace(/^### (.*)$/gm, '<h5 class="mt-2">$1</h5>')
+                .replace(/^- (.*)$/gm, '<li>$1</li>')
+                .replace(/<li>(.*?)<\/li>/g, '<ul class="mb-2"><li>$1</li></ul>')
+                .replace(/<\/ul><ul>/g, '')
+                .replace(/---/g, '<hr>');
+            
+            modalBody.innerHTML = `<div class="p-3 bg-light rounded">${html}</div>`;
+        } else {
+            modalBody.innerHTML = '<p class="text-muted">Nenhum conteúdo para visualizar.</p>';
+        }
+        
+        new bootstrap.Modal(document.getElementById('modalVisualizarAta')).show();
+    }
+    
+    // Copiar conteúdo
+    function copiarConteudo() {
+        const conteudo = document.getElementById('conteudoAta').value;
+        navigator.clipboard.writeText(conteudo).then(() => {
+            alert('Conteúdo copiado para a área de transferência!');
+        });
+    }
+    
+    // Validar formulário antes de enviar
+    document.getElementById('formAta').addEventListener('submit', function(e) {
+        const conteudo = document.getElementById('conteudoAta').value.trim();
+        
+        if (!conteudo) {
+            e.preventDefault();
+            alert('Por favor, preencha o conteúdo da ata!');
+            document.getElementById('conteudoAta').focus();
+            return false;
+        }
+        
+        // Confirmar criação
+        const confirmacao = confirm('Tem certeza que deseja salvar esta ata? Após salva, você poderá editá-la posteriormente.');
+        
+        if (!confirmacao) {
+            e.preventDefault();
+            return false;
+        }
+        
+        // Mostrar loading
+        const btnSubmit = this.querySelector('button[type="submit"]');
+        const originalText = btnSubmit.innerHTML;
+        btnSubmit.innerHTML = '<i class="bi bi-hourglass-split"></i> Salvando...';
+        btnSubmit.disabled = true;
+        
+        setTimeout(() => {
+            btnSubmit.innerHTML = originalText;
+            btnSubmit.disabled = false;
+        }, 3000);
+    });
+    
+    // Atalho Ctrl+S para salvar
+    document.addEventListener('keydown', function(e) {
+        if (e.ctrlKey && e.key === 's') {
+            e.preventDefault();
+            document.getElementById('formAta').submit();
+        }
     });
 </script>
+
+<style>
+    .card {
+        border-radius: 10px;
+        overflow: hidden;
+    }
+    .card-header {
+        font-weight: 600;
+    }
+    textarea {
+        font-family: monospace;
+        font-size: 14px;
+        line-height: 1.5;
+    }
+    .form-control:focus, .form-select:focus {
+        border-color: #0d6efd;
+        box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.25);
+    }
+    .btn {
+        transition: all 0.3s ease;
+    }
+    .btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    }
+    .modal-body ul {
+        padding-left: 1.5rem;
+    }
+    .modal-body li {
+        margin-bottom: 0.5rem;
+    }
+    .alert-info p {
+        margin-bottom: 0.25rem;
+    }
+    @media (max-width: 768px) {
+        .btn-group {
+            flex-direction: column;
+        }
+        .btn-group .btn {
+            margin-bottom: 5px;
+        }
+    }
+</style>
+
 {% endblock %}

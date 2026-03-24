@@ -1,0 +1,155 @@
+{% extends "base.html" %}
+
+{% block title %}Familiares - {{ obreiro.nome_completo }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="container">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h2>
+                <i class="bi bi-people"></i> 
+                Familiares de {{ obreiro.nome_completo }}
+            </h2>
+            <div>
+                <a href="/obreiros/{{ obreiro_id }}" class="btn btn-outline-info me-2">
+                    <i class="bi bi-eye"></i> Ver Obreiro
+                </a>
+                <a href="/obreiros/{{ obreiro_id }}/familiares/novo" class="btn btn-success">
+                    <i class="bi bi-plus-circle"></i> Adicionar Familiar
+                </a>
+            </div>
+        </div>
+
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+                        {{ message }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
+        {% if familiares %}
+        <div class="row">
+            {% for familiar in familiares %}
+            <div class="col-md-6 col-lg-4 mb-4">
+                <div class="card shadow h-100">
+                    <div class="card-header {% if familiar.parentesco == 'esposa' or familiar.parentesco == 'esposo' %}bg-primary text-white{% else %}bg-secondary text-white{% endif %}">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <h5 class="mb-0">
+                                <i class="bi {% if familiar.parentesco == 'esposa' %}bi-heart-fill{% elif familiar.parentesco == 'filho' or familiar.parentesco == 'filha' %}bi-baby{% else %}bi-person{% endif %}"></i>
+                                {{ familiar.nome }}
+                            </h5>
+                            <span class="badge bg-light text-dark">{{ familiar.parentesco|title }}</span>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        {% if familiar.data_nascimento %}
+                        <p>
+                            <strong><i class="bi bi-calendar-heart"></i> Aniversário:</strong><br>
+                            {{ familiar.data_nascimento.strftime('%d/%m/%Y') }}
+                            {% set hoje = now.date() %}
+                            {% set aniversario = familiar.data_nascimento.replace(year=hoje.year) %}
+                            {% if aniversario >= hoje %}
+                                <span class="badge bg-info ms-2">
+                                    Próximo: {{ (aniversario - hoje).days }} dias
+                                </span>
+                            {% else %}
+                                <span class="badge bg-secondary ms-2">
+                                    Já passou este ano
+                                </span>
+                            {% endif %}
+                        </p>
+                        {% endif %}
+                        
+                        {% if familiar.telefone %}
+                        <p><strong><i class="bi bi-telephone"></i> Telefone:</strong><br>
+                        {{ familiar.telefone }}</p>
+                        {% endif %}
+                        
+                        {% if familiar.email %}
+                        <p><strong><i class="bi bi-envelope"></i> E-mail:</strong><br>
+                        {{ familiar.email }}</p>
+                        {% endif %}
+                        
+                        {% if familiar.observacoes %}
+                        <p><strong><i class="bi bi-chat"></i> Observações:</strong><br>
+                        <small>{{ familiar.observacoes }}</small></p>
+                        {% endif %}
+                        
+                        <hr>
+                        <div class="text-muted small">
+                            <i class="bi bi-bell"></i> 
+                            {% if familiar.receber_notificacoes == 1 %}
+                                <span class="text-success">Receberá notificações de aniversário</span>
+                            {% else %}
+                                <span class="text-secondary">Não receberá notificações</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                    <div class="card-footer bg-white">
+                        <div class="btn-group w-100">
+                            <a href="/obreiros/familiares/editar/{{ familiar.id }}" class="btn btn-warning btn-sm">
+                                <i class="bi bi-pencil"></i> Editar
+                            </a>
+                            <a href="/obreiros/familiares/excluir/{{ familiar.id }}" class="btn btn-danger btn-sm"
+                               onclick="return confirm('Excluir este familiar?')">
+                                <i class="bi bi-trash"></i> Excluir
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div class="alert alert-info text-center">
+            <i class="bi bi-info-circle fs-1"></i>
+            <p class="mt-2">Nenhum familiar cadastrado para este obreiro.</p>
+            <a href="/obreiros/{{ obreiro_id }}/familiares/novo" class="btn btn-primary mt-2">
+                <i class="bi bi-plus-circle"></i> Adicionar Primeiro Familiar
+            </a>
+        </div>
+        {% endif %}
+
+        <!-- Botão Voltar -->
+        <div class="mt-4 text-center">
+            <a href="/obreiros/{{ obreiro_id }}" class="btn btn-outline-secondary">
+                <i class="bi bi-arrow-left"></i> Voltar ao Perfil do Obreiro
+            </a>
+        </div>
+    </div>
+</div>
+
+<style>
+    .card {
+        border-radius: 10px;
+        overflow: hidden;
+        transition: transform 0.2s;
+    }
+    .card:hover {
+        transform: translateY(-5px);
+    }
+    .card-header {
+        font-weight: 600;
+    }
+    .btn-group {
+        gap: 5px;
+    }
+    .badge {
+        font-size: 0.75rem;
+        padding: 0.3rem 0.5rem;
+    }
+    @media (max-width: 768px) {
+        .btn-group {
+            flex-direction: column;
+        }
+        .btn-group .btn {
+            margin-bottom: 5px;
+        }
+    }
+</style>
+
+{% endblock %}

@@ -1,0 +1,126 @@
+{% extends "base.html" %}
+
+{% block title %}Editar Sugestão - {{ sugestao.titulo }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="container">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h2>
+                <i class="bi bi-pencil-square"></i> 
+                Editar Sugestão
+            </h2>
+            <div>
+                <a href="/sugestoes/{{ sugestao.id }}" class="btn btn-outline-info me-2">
+                    <i class="bi bi-eye"></i> Visualizar
+                </a>
+                <a href="/sugestoes" class="btn btn-outline-secondary">
+                    <i class="bi bi-arrow-left"></i> Voltar
+                </a>
+            </div>
+        </div>
+
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+                        {{ message }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
+        <div class="card shadow">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0"><i class="bi bi-lightbulb"></i> Editar Sugestão</h5>
+            </div>
+            <div class="card-body">
+                <form method="POST">
+                    <div class="mb-3">
+                        <label class="form-label">Título *</label>
+                        <input type="text" class="form-control" name="titulo" value="{{ sugestao.titulo }}" required>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Categoria *</label>
+                            <select class="form-select" name="categoria" required>
+                                <option value="">Selecione...</option>
+                                {% for cat in categorias %}
+                                <option value="{{ cat.nome }}" {% if sugestao.categoria == cat.nome %}selected{% endif %}>
+                                    {{ cat.nome|replace('_', ' ')|title }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Prioridade</label>
+                            <select class="form-select" name="prioridade">
+                                <option value="baixa" {% if sugestao.prioridade == 'baixa' %}selected{% endif %}>Baixa</option>
+                                <option value="media" {% if sugestao.prioridade == 'media' %}selected{% endif %}>Média</option>
+                                <option value="alta" {% if sugestao.prioridade == 'alta' %}selected{% endif %}>Alta</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Descrição *</label>
+                        <textarea class="form-control" name="descricao" rows="8" required>{{ sugestao.descricao }}</textarea>
+                        <small class="text-muted">Descreva detalhadamente sua sugestão, incluindo benefícios e como implementar.</small>
+                    </div>
+                    
+                    <div class="alert alert-info">
+                        <i class="bi bi-info-circle"></i>
+                        <strong>Informações:</strong>
+                        <ul class="mb-0 mt-2">
+                            <li>Criada em: {{ sugestao.data_criacao.strftime('%d/%m/%Y %H:%M') if sugestao.data_criacao else '-' }}</li>
+                            <li>Autor: {{ sugestao.autor_nome }}</li>
+                            <li>Votos: {{ sugestao.votos }}</li>
+                            <li>Status atual: 
+                                {% if sugestao.status == 'implementada' %}
+                                    <span class="badge bg-success">Implementada</span>
+                                {% elif sugestao.status == 'em_andamento' %}
+                                    <span class="badge bg-info">Em Andamento</span>
+                                {% elif sugestao.status == 'rejeitada' %}
+                                    <span class="badge bg-danger">Rejeitada</span>
+                                {% else %}
+                                    <span class="badge bg-warning">Pendente</span>
+                                {% endif %}
+                            </li>
+                        </ul>
+                    </div>
+                    
+                    <div class="text-center mt-4">
+                        <a href="/sugestoes/{{ sugestao.id }}" class="btn btn-secondary me-2">
+                            <i class="bi bi-x-circle"></i> Cancelar
+                        </a>
+                        <button type="submit" class="btn btn-success btn-lg px-5">
+                            <i class="bi bi-save"></i> Salvar Alterações
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .card {
+        border-radius: 10px;
+        overflow: hidden;
+    }
+    .card-header {
+        font-weight: 600;
+    }
+    textarea {
+        font-family: monospace;
+        font-size: 14px;
+    }
+    .form-control:focus, .form-select:focus {
+        border-color: #0d6efd;
+        box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.25);
+    }
+</style>
+
+{% endblock %}

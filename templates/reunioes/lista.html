@@ -1,35 +1,44 @@
 {% extends "base.html" %}
 
-{% block title %}Reuniões{% endblock %}
-
-{% block extra_css %}
-<link rel="stylesheet" href="https://cdn.datatables.net/1.13.7/css/dataTables.bootstrap5.min.css">
-{% endblock %}
+{% block title %}Lista de Reuniões{% endblock %}
 
 {% block content %}
 <div class="container-fluid py-4">
     <div class="container">
+        <!-- Cabeçalho com botão Nova Reunião e Voltar -->
         <div class="d-flex justify-content-between align-items-center mb-4">
-            <h2><i class="bi bi-calendar-event"></i> Reuniões</h2>
+            <h2>
+                <i class="bi bi-calendar-week"></i> 
+                Reuniões
+                <span class="badge bg-primary">{{ reunioes|length }}</span>
+            </h2>
             <div>
-                <a href="/reunioes/calendario" class="btn btn-outline-primary me-2">
-                    <i class="bi bi-calendar"></i> Calendário
-                </a>
                 {% if session.tipo == 'admin' %}
-                <a href="/reunioes/nova" class="btn btn-success">
+                <a href="/reunioes/nova" class="btn btn-success me-2">
                     <i class="bi bi-plus-circle"></i> Nova Reunião
                 </a>
                 {% endif %}
-                <a href="/dashboard" class="btn btn-outline-secondary ms-2">
-                    <i class="bi bi-arrow-left"></i> Voltar
+                <a href="/dashboard" class="btn btn-outline-secondary">
+                    <i class="bi bi-arrow-left"></i> Voltar ao Dashboard
                 </a>
             </div>
         </div>
 
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+                        {{ message }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
         <!-- Filtros -->
         <div class="card shadow mb-4">
-            <div class="card-header bg-primary text-white">
-                <h5 class="mb-0"><i class="bi bi-funnel"></i> Filtros</h5>
+            <div class="card-header bg-light">
+                <h6 class="mb-0"><i class="bi bi-funnel"></i> Filtros</h6>
             </div>
             <div class="card-body">
                 <form method="GET" class="row g-3">
@@ -46,7 +55,9 @@
                         <select class="form-select" name="tipo">
                             <option value="">Todos</option>
                             {% for t in tipos %}
-                            <option value="{{ t.tipo }}" {% if filtros.tipo == t.tipo %}selected{% endif %}>{{ t.tipo }}</option>
+                            <option value="{{ t.tipo }}" {% if filtros.tipo == t.tipo %}selected{% endif %}>
+                                {{ t.tipo }}
+                            </option>
                             {% endfor %}
                         </select>
                     </div>
@@ -55,7 +66,17 @@
                         <select class="form-select" name="status">
                             <option value="">Todos</option>
                             {% for s in status_list %}
-                            <option value="{{ s.status }}" {% if filtros.status == s.status %}selected{% endif %}>{{ s.status|capitalize }}</option>
+                            <option value="{{ s.status }}" {% if filtros.status == s.status %}selected{% endif %}>
+                                {% if s.status == 'realizada' %}
+                                    Realizada
+                                {% elif s.status == 'agendada' %}
+                                    Agendada
+                                {% elif s.status == 'cancelada' %}
+                                    Cancelada
+                                {% else %}
+                                    {{ s.status }}
+                                {% endif %}
+                            </option>
                             {% endfor %}
                         </select>
                     </div>
@@ -64,72 +85,171 @@
                         <select class="form-select" name="grau">
                             <option value="">Todos</option>
                             {% for g in graus %}
-                            <option value="{{ g.grau }}" {% if filtros.grau|string == g.grau|string %}selected{% endif %}>
-                                {% if g.grau == 1 %}Aprendiz
-                                {% elif g.grau == 2 %}Companheiro
-                                {% elif g.grau == 3 %}Mestre{% endif %}
+                            <option value="{{ g.grau }}" {% if filtros.grau == g.grau|string %}selected{% endif %}>
+                                {% if g.grau == 3 %}
+                                    Mestre
+                                {% elif g.grau == 2 %}
+                                    Companheiro
+                                {% elif g.grau == 1 %}
+                                    Aprendiz
+                                {% else %}
+                                    {{ g.grau }}
+                                {% endif %}
                             </option>
                             {% endfor %}
                         </select>
                     </div>
                     <div class="col-md-2">
                         <label class="form-label">Local</label>
-                        <input type="text" class="form-control" name="local" value="{{ filtros.local }}" placeholder="Pesquisar local">
+                        <input type="text" class="form-control" name="local" value="{{ filtros.local }}" 
+                               placeholder="Buscar local...">
                     </div>
-                    <div class="col-md-12 text-end">
-                        <button type="submit" class="btn btn-primary">Filtrar</button>
-                        <a href="/reunioes" class="btn btn-secondary">Limpar</a>
+                    <div class="col-md-12 d-flex justify-content-end">
+                        <button type="submit" class="btn btn-primary me-2">
+                            <i class="bi bi-search"></i> Filtrar
+                        </button>
+                        <a href="/reunioes" class="btn btn-secondary">
+                            <i class="bi bi-eraser"></i> Limpar
+                        </a>
                     </div>
                 </form>
             </div>
         </div>
 
+        <!-- Lista de Reuniões -->
         <div class="card shadow">
-            <div class="card-header bg-dark text-white">
-                <h5 class="mb-0">Lista de Reuniões</h5>
-            </div>
             <div class="card-body">
                 <div class="table-responsive">
                     <table class="table table-hover" id="tabelaReunioes">
-                        <thead>
-                            <tr>
-                                <th>Data</th>
-                                <th>Hora</th>
+                        <thead class="table-light">
+                             <tr>
                                 <th>Título</th>
+                                <th>Data</th>
+                                <th>Horário</th>
                                 <th>Tipo</th>
-                                <th>Grau</th>
                                 <th>Local</th>
                                 <th>Status</th>
                                 <th>Presença</th>
                                 <th>Ações</th>
-                            </thead>
+                            </tr>
+                        </thead>
                         <tbody>
-                            {% for r in reunioes %}
+                            {% for reuniao in reunioes %}
+                            <tr class="{% if reuniao.status == 'realizada' %}table-success{% elif reuniao.status == 'cancelada' %}table-danger{% elif reuniao.data and reuniao.data < now.date() and reuniao.status != 'realizada' %}table-warning{% endif %}">
+                                <td>
+                                    <strong>{{ reuniao.titulo }}</strong>
+                                    {% if reuniao.grau %}
+                                    <br>
+                                    <small class="text-muted">
+                                        {% if reuniao.grau == 3 %}
+                                            <i class="bi bi-star-fill text-warning"></i> Mestre
+                                        {% elif reuniao.grau == 2 %}
+                                            <i class="bi bi-star text-primary"></i> Companheiro
+                                        {% else %}
+                                            <i class="bi bi-star text-secondary"></i> Aprendiz
+                                        {% endif %}
+                                    </small>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <i class="bi bi-calendar"></i> 
+                                    {{ reuniao.data.strftime('%d/%m/%Y') if reuniao.data else '-' }}
+                                    {% if reuniao.data and reuniao.data < now.date() %}
+                                    <br><span class="badge bg-danger">Atrasada</span>
+                                    {% elif reuniao.data and reuniao.data == now.date() %}
+                                    <br><span class="badge bg-warning">Hoje</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if reuniao.hora_inicio %}
+                                        <i class="bi bi-clock"></i> 
+                                        {{ reuniao.hora_inicio.strftime('%H:%M') if reuniao.hora_inicio else '-' }}
+                                        {% if reuniao.hora_termino %}
+                                        - {{ reuniao.hora_termino.strftime('%H:%M') if reuniao.hora_termino else '-' }}
+                                        {% endif %}
+                                    {% else %}
+                                        -
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <span class="badge" style="background-color: {{ reuniao.cor or '#6c757d' }}; color: white;">
+                                        {{ reuniao.tipo }}
+                                    </span>
+                                </td>
+                                <td>
+                                    <i class="bi bi-geo-alt"></i> 
+                                    {{ reuniao.local or '-' }}
+                                    {% if reuniao.loja_nome %}
+                                    <br><small class="text-muted">{{ reuniao.loja_nome }}</small>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if reuniao.status == 'realizada' %}
+                                        <span class="badge bg-success">
+                                            <i class="bi bi-check-circle"></i> Realizada
+                                        </span>
+                                    {% elif reuniao.status == 'agendada' %}
+                                        <span class="badge bg-warning">
+                                            <i class="bi bi-calendar-check"></i> Agendada
+                                        </span>
+                                    {% elif reuniao.status == 'cancelada' %}
+                                        <span class="badge bg-danger">
+                                            <i class="bi bi-x-circle"></i> Cancelada
+                                        </span>
+                                    {% else %}
+                                        <span class="badge bg-secondary">{{ reuniao.status }}</span>
+                                    {% endif %}
+                                </td>
+                                <td class="text-center">
+                                    {% if reuniao.presentes_confirmados is defined %}
+                                        <div class="progress" style="height: 20px;">
+                                            {% set percentual = (reuniao.presentes_confirmados / reuniao.total_presentes * 100) if reuniao.total_presentes and reuniao.total_presentes > 0 else 0 %}
+                                            <div class="progress-bar bg-success" role="progressbar" 
+                                                 style="width: {{ percentual }}%"
+                                                 title="{{ reuniao.presentes_confirmados or 0 }} presentes">
+                                                {{ "%.0f"|format(percentual) }}%
+                                            </div>
+                                        </div>
+                                        <small class="text-muted">
+                                            {{ reuniao.presentes_confirmados or 0 }}/{{ reuniao.total_presentes or 0 }}
+                                        </small>
+                                    {% else %}
+                                        -
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <div class="btn-group btn-group-sm" role="group">
+                                        <a href="/reunioes/{{ reuniao.id }}" class="btn btn-info" title="Visualizar">
+                                            <i class="bi bi-eye"></i>
+                                        </a>
+                                        {% if session.tipo == 'admin' and reuniao.status != 'realizada' %}
+                                        <a href="/reunioes/{{ reuniao.id }}/editar" class="btn btn-warning" title="Editar">
+                                            <i class="bi bi-pencil"></i>
+                                        </a>
+                                        {% endif %}
+                                        {% if session.tipo == 'admin' and reuniao.status != 'realizada' %}
+                                        <a href="/reunioes/{{ reuniao.id }}/excluir" class="btn btn-danger" 
+                                           title="Excluir" onclick="return confirm('Tem certeza que deseja excluir esta reunião?')">
+                                            <i class="bi bi-trash"></i>
+                                        </a>
+                                        {% endif %}
+                                        {% if reuniao.status == 'realizada' %}
+                                        <a href="/atas/nova/{{ reuniao.id }}" class="btn btn-success" title="Criar Ata">
+                                            <i class="bi bi-file-text"></i>
+                                        </a>
+                                        {% endif %}
+                                    </div>
+                                </td>
+                            </tr>
+                            {% else %}
                             <tr>
-                                <td>{{ r.data[:10] }}</td>
-                                <td>{{ r.hora_inicio[:5] if r.hora_inicio else '-' }}</td>
-                                <td><strong>{{ r.titulo }}</strong></td>
-                                <td><span class="badge" style="background-color: {{ r.cor or '#6c757d' }}">{{ r.tipo }}</span></td>
-                                <td>
-                                    {% if r.grau == 3 %}<span class="badge bg-primary">Mestre</span>
-                                    {% elif r.grau == 2 %}<span class="badge bg-info">Companheiro</span>
-                                    {% elif r.grau == 1 %}<span class="badge bg-secondary">Aprendiz</span>
-                                    {% else %}<span class="badge bg-light text-dark">Todos</span>{% endif %}
-                                </td>
-                                <td>{{ r.local or '-' }}</td>
-                                <td>
-                                    {% if r.status == 'realizada' %}<span class="badge bg-success">Realizada</span>
-                                    {% elif r.status == 'cancelada' %}<span class="badge bg-danger">Cancelada</span>
-                                    {% else %}<span class="badge bg-warning text-dark">Agendada</span>{% endif %}
-                                </td>
-                                <td><small>{{ r.presentes_confirmados or 0 }}/{{ r.total_presentes or 0 }}</small></td>
-                                <td>
-                                    <a href="/reunioes/{{ r.id }}" class="btn btn-sm btn-outline-primary">
-                                        <i class="bi bi-eye"></i>
-                                    </a>
+                                <td colspan="8" class="text-center text-muted py-5">
+                                    <i class="bi bi-inbox fs-1"></i><br>
+                                    Nenhuma reunião encontrada
                                     {% if session.tipo == 'admin' %}
-                                    <a href="/reunioes/{{ r.id }}/editar" class="btn btn-sm btn-outline-warning">
-                                        <i class="bi bi-pencil"></i>
+                                    <br>
+                                    <a href="/reunioes/nova" class="btn btn-primary mt-3">
+                                        <i class="bi bi-plus-circle"></i> Criar primeira reunião
                                     </a>
                                     {% endif %}
                                 </td>
@@ -138,25 +258,76 @@
                         </tbody>
                     </table>
                 </div>
-                {% if not reunioes %}
-                <div class="text-center py-4">
-                    <i class="bi bi-calendar-x text-muted fs-1"></i>
-                    <p class="text-muted mt-2">Nenhuma reunião encontrada com os filtros selecionados.</p>
+            </div>
+        </div>
+
+        <!-- Legenda -->
+        <div class="card shadow mt-4">
+            <div class="card-header bg-light">
+                <h6 class="mb-0"><i class="bi bi-info-circle"></i> Legenda</h6>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-3">
+                        <span class="badge bg-success">Verde</span> = Realizada
+                    </div>
+                    <div class="col-md-3">
+                        <span class="badge bg-warning">Amarelo</span> = Agendada
+                    </div>
+                    <div class="col-md-3">
+                        <span class="badge bg-danger">Vermelho</span> = Cancelada / Atrasada
+                    </div>
+                    <div class="col-md-3">
+                        <i class="bi bi-star-fill text-warning"></i> = Mestre
+                        <i class="bi bi-star text-primary"></i> = Companheiro
+                        <i class="bi bi-star text-secondary"></i> = Aprendiz
+                    </div>
                 </div>
-                {% endif %}
             </div>
         </div>
     </div>
 </div>
 
-<script>
-    $(document).ready(function() {
-        $('#tabelaReunioes').DataTable({
-            language: {
-                url: '//cdn.datatables.net/plug-ins/1.13.7/i18n/pt-BR.json'
-            },
-            order: [[0, 'desc']]
-        });
-    });
-</script>
+<style>
+    .card {
+        border-radius: 10px;
+        overflow: hidden;
+    }
+    .card-header {
+        font-weight: 600;
+    }
+    .progress {
+        border-radius: 10px;
+        overflow: hidden;
+        margin-bottom: 5px;
+    }
+    .progress-bar {
+        transition: width 0.3s ease;
+        font-size: 10px;
+        line-height: 20px;
+    }
+    .table-hover tbody tr:hover {
+        cursor: pointer;
+        background-color: rgba(0, 123, 255, 0.05);
+    }
+    .badge {
+        font-size: 0.8rem;
+        padding: 0.4rem 0.6rem;
+    }
+    .btn-group-sm .btn {
+        padding: 0.25rem 0.5rem;
+    }
+    @media (max-width: 768px) {
+        .btn-group {
+            flex-direction: column;
+        }
+        .btn-group .btn {
+            margin-bottom: 5px;
+        }
+        .table-responsive {
+            font-size: 0.85rem;
+        }
+    }
+</style>
+
 {% endblock %}

@@ -1,124 +1,311 @@
-<!DOCTYPE html>
-<html lang="pt-br">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gerenciar Lojas</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
-</head>
-<body>
-    <div class="container-fluid py-4">
-        <div class="container">
-            <div class="d-flex justify-content-between align-items-center mb-4">
-                <h2><i class="bi bi-building"></i> Lojas Maçônicas</h2>
+{% extends "base.html" %}
+
+{% block title %}Gerenciar Lojas{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="container">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h2>
+                <i class="bi bi-building"></i> 
+                Gerenciar Lojas
+                <span class="badge bg-primary">{{ lojas|length }}</span>
+            </h2>
+            <div>
+                <button type="button" class="btn btn-success me-2" data-bs-toggle="modal" data-bs-target="#modalNovaLoja">
+                    <i class="bi bi-plus-circle"></i> Nova Loja
+                </button>
                 <a href="/dashboard" class="btn btn-outline-secondary">
                     <i class="bi bi-arrow-left"></i> Voltar
                 </a>
             </div>
+        </div>
 
-            {% with messages = get_flashed_messages(with_categories=true) %}
-                {% if messages %}
-                    {% for category, message in messages %}
-                        <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
-                            {{ message }}
-                            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+                        {{ message }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
+        <!-- Lista de Lojas -->
+        <div class="row">
+            {% for loja in lojas %}
+            <div class="col-md-6 col-lg-4 mb-4">
+                <div class="card shadow h-100 {% if loja.ativo == 0 %}opacity-50{% endif %}">
+                    <div class="card-header {% if loja.ativo == 1 %}bg-primary text-white{% else %}bg-secondary text-white{% endif %}">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <h5 class="mb-0">{{ loja.nome }}</h5>
+                            {% if loja.ativo == 1 %}
+                                <span class="badge bg-success">Ativa</span>
+                            {% else %}
+                                <span class="badge bg-danger">Inativa</span>
+                            {% endif %}
                         </div>
-                    {% endfor %}
-                {% endif %}
-            {% endwith %}
-
-            <div class="card shadow mb-4">
-                <div class="card-header bg-success text-white">
-                    <h5 class="mb-0"><i class="bi bi-plus-circle"></i> Adicionar Nova Loja</h5>
+                    </div>
+                    <div class="card-body">
+                        <p><strong><i class="bi bi-hash"></i> Nº:</strong> {{ loja.numero }}</p>
+                        <p><strong><i class="bi bi-compass"></i> Oriente:</strong> {{ loja.oriente or '-' }}</p>
+                        <p><strong><i class="bi bi-geo-alt"></i> Localização:</strong> 
+                            {{ loja.cidade or '-' }}{% if loja.estado %}/{{ loja.estado }}{% endif %}
+                        </p>
+                        {% if loja.endereco %}
+                        <p><strong><i class="bi bi-house-door"></i> Endereço:</strong> {{ loja.endereco }}</p>
+                        {% endif %}
+                        {% if loja.telefone %}
+                        <p><strong><i class="bi bi-telephone"></i> Telefone:</strong> {{ loja.telefone }}</p>
+                        {% endif %}
+                        {% if loja.data_fundacao %}
+                        <p><strong><i class="bi bi-calendar-heart"></i> Fundação:</strong> 
+                            {{ loja.data_fundacao.strftime('%d/%m/%Y') }}
+                        </p>
+                        {% endif %}
+                        <p><strong><i class="bi bi-people"></i> Obreiros:</strong> 
+                            <span class="badge bg-info">{{ loja.total_obreiros or 0 }}</span>
+                        </p>
+                    </div>
+                    <div class="card-footer bg-white">
+                        <div class="btn-group w-100">
+                            <a href="/lojas/editar/{{ loja.id }}" class="btn btn-warning btn-sm">
+                                <i class="bi bi-pencil"></i> Editar
+                            </a>
+                            <a href="/lojas/excluir/{{ loja.id }}" class="btn btn-danger btn-sm"
+                               onclick="return confirm('Excluir esta loja?')">
+                                <i class="bi bi-trash"></i> Excluir
+                            </a>
+                        </div>
+                    </div>
                 </div>
-                <div class="card-body">
-                    <form method="POST" class="row g-3">
-                        <div class="col-md-4">
+            </div>
+            {% else %}
+            <div class="col-12">
+                <div class="alert alert-info text-center">
+                    <i class="bi bi-info-circle fs-1"></i>
+                    <p class="mt-2">Nenhuma loja cadastrada. Clique em "Nova Loja" para começar.</p>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+
+<!-- Modal Nova Loja -->
+<div class="modal fade" id="modalNovaLoja" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title"><i class="bi bi-building-add"></i> Nova Loja</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="POST">
+                <div class="modal-body">
+                    <div class="row">
+                        <div class="col-md-8 mb-3">
                             <label class="form-label">Nome da Loja *</label>
                             <input type="text" class="form-control" name="nome" required>
                         </div>
-                        <div class="col-md-2">
+                        <div class="col-md-4 mb-3">
                             <label class="form-label">Número *</label>
                             <input type="text" class="form-control" name="numero" required>
                         </div>
-                        <div class="col-md-3">
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-12 mb-3">
                             <label class="form-label">Oriente</label>
-                            <input type="text" class="form-control" name="oriente" placeholder="Ex: Oriente de São Paulo">
+                            <input type="text" class="form-control" name="oriente">
                         </div>
-                        <div class="col-md-2">
+                    </div>
+
+                    <h6 class="mt-3"><i class="bi bi-geo-alt"></i> Endereço</h6>
+                    <div class="row">
+                        <div class="col-md-8 mb-3">
+                            <label class="form-label">Endereço</label>
+                            <input type="text" class="form-control" name="endereco">
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label">Bairro</label>
+                            <input type="text" class="form-control" name="bairro">
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-5 mb-3">
                             <label class="form-label">Cidade</label>
                             <input type="text" class="form-control" name="cidade">
                         </div>
-                        <div class="col-md-1">
-                            <label class="form-label">UF</label>
+                        <div class="col-md-3 mb-3">
+                            <label class="form-label">Estado</label>
                             <input type="text" class="form-control" name="estado" maxlength="2">
                         </div>
-                        <div class="col-md-3">
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label">CEP</label>
+                            <input type="text" class="form-control" name="cep" id="cep" placeholder="00000-000">
+                        </div>
+                    </div>
+
+                    <h6 class="mt-3"><i class="bi bi-telephone"></i> Contato</h6>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Telefone</label>
+                            <input type="text" class="form-control" name="telefone" id="telefone" placeholder="(11) 99999-9999">
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">E-mail</label>
+                            <input type="email" class="form-control" name="email">
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Site</label>
+                        <input type="url" class="form-control" name="site" placeholder="https://www.exemplo.com.br">
+                    </div>
+
+                    <h6 class="mt-3"><i class="bi bi-calendar"></i> Datas Importantes</h6>
+                    <div class="row">
+                        <div class="col-md-4 mb-3">
                             <label class="form-label">Data de Fundação</label>
                             <input type="date" class="form-control" name="data_fundacao">
                         </div>
-                        <div class="col-md-12">
-                            <button type="submit" class="btn btn-success">
-                                <i class="bi bi-save"></i> Adicionar Loja
-                            </button>
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label">Data de Instalação</label>
+                            <input type="date" class="form-control" name="data_instalacao">
                         </div>
-                    </form>
-                </div>
-            </div>
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label">Data de Autorização</label>
+                            <input type="date" class="form-control" name="data_autorizacao">
+                        </div>
+                    </div>
 
-            <div class="card shadow">
-                <div class="card-header bg-dark text-white">
-                    <h5 class="mb-0">
-                        <i class="bi bi-list-ul"></i> Lojas Cadastradas
-                        <span class="badge bg-light text-dark ms-2">{{ lojas|length }}</span>
-                    </h5>
-                </div>
-                <div class="card-body">
-                    {% if lojas %}
-                        <div class="table-responsive">
-                            <table class="table table-hover">
-                                <thead class="table-light">
-                                    <tr>
-                                        <th>Nome</th>
-                                        <th>Nº</th>
-                                        <th>Oriente</th>
-                                        <th>Cidade</th>
-                                        <th>UF</th>
-                                        <th>Fundação</th>
-                                        <th>Ações</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {% for loja in lojas %}
-                                    <tr>
-                                        <td><strong>{{ loja.nome }}</strong></td>
-                                        <td>{{ loja.numero }}</td>
-                                        <td>{{ loja.oriente or '-' }}</td>
-                                        <td>{{ loja.cidade or '-' }}</td>
-                                        <td>{{ loja.estado or '-' }}</td>
-                                        <td>{{ loja.data_fundacao or '-' }}</td>
-                                        <td>
-                                            <a href="/excluir_loja/{{ loja.id }}" 
-                                               class="btn btn-sm btn-outline-danger"
-                                               onclick="return confirm('Excluir esta loja?')">
-                                                <i class="bi bi-trash"></i>
-                                            </a>
-                                        </td>
-                                    </tr>
-                                    {% endfor %}
-                                </tbody>
-                            </table>
+                    <h6 class="mt-3"><i class="bi bi-person-badge"></i> Diretoria</h6>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Venerável Mestre</label>
+                            <input type="text" class="form-control" name="veneravel_mestre">
                         </div>
-                    {% else %}
-                        <div class="text-center py-5">
-                            <i class="bi bi-inbox text-muted" style="font-size: 4rem;"></i>
-                            <h5 class="text-muted mt-3">Nenhuma loja cadastrada</h5>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Secretário</label>
+                            <input type="text" class="form-control" name="secretario">
                         </div>
-                    {% endif %}
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Tesoureiro</label>
+                            <input type="text" class="form-control" name="tesoureiro">
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Orador</label>
+                            <input type="text" class="form-control" name="orador">
+                        </div>
+                    </div>
+
+                    <h6 class="mt-3"><i class="bi bi-clock"></i> Reuniões</h6>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Dia da Reunião</label>
+                            <select class="form-select" name="dia_reuniao">
+                                <option value="">Selecione...</option>
+                                <option value="Segunda-feira">Segunda-feira</option>
+                                <option value="Terça-feira">Terça-feira</option>
+                                <option value="Quarta-feira">Quarta-feira</option>
+                                <option value="Quinta-feira">Quinta-feira</option>
+                                <option value="Sexta-feira">Sexta-feira</option>
+                                <option value="Sábado">Sábado</option>
+                                <option value="Domingo">Domingo</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Horário</label>
+                            <input type="time" class="form-control" name="horario_reuniao">
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Rito</label>
+                        <select class="form-select" name="rito">
+                            <option value="">Selecione...</option>
+                            <option value="Rito Escocês Antigo e Aceito">Rito Escocês Antigo e Aceito</option>
+                            <option value="Rito de York">Rito de York</option>
+                            <option value="Rito Francês">Rito Francês</option>
+                            <option value="Rito Brasileiro">Rito Brasileiro</option>
+                            <option value="Rito Adonhiramita">Rito Adonhiramita</option>
+                        </select>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Observações</label>
+                        <textarea class="form-control" name="observacoes" rows="3"></textarea>
+                    </div>
+
+                    <div class="form-check mb-3">
+                        <input class="form-check-input" type="checkbox" name="ativo" value="1" checked>
+                        <label class="form-check-label">Loja Ativa</label>
+                    </div>
                 </div>
-            </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-success">Salvar Loja</button>
+                </div>
+            </form>
         </div>
     </div>
-</body>
-</html>
+</div>
+
+<script>
+    // Máscara para telefone
+    document.getElementById('telefone')?.addEventListener('input', function(e) {
+        let value = e.target.value.replace(/\D/g, '');
+        if (value.length <= 10) {
+            value = value.replace(/^(\d{2})(\d{4})(\d{4})/, '($1) $2-$3');
+        } else {
+            value = value.replace(/^(\d{2})(\d{5})(\d{4})/, '($1) $2-$3');
+        }
+        e.target.value = value;
+    });
+    
+    // Máscara para CEP
+    document.getElementById('cep')?.addEventListener('input', function(e) {
+        let value = e.target.value.replace(/\D/g, '');
+        if (value.length >= 5) {
+            value = value.replace(/^(\d{5})(\d{3})/, '$1-$2');
+        }
+        e.target.value = value;
+    });
+</script>
+
+<style>
+    .card {
+        border-radius: 10px;
+        overflow: hidden;
+        transition: transform 0.2s;
+    }
+    .card:hover {
+        transform: translateY(-5px);
+    }
+    .opacity-50 {
+        opacity: 0.6;
+    }
+    .modal-lg {
+        max-width: 800px;
+    }
+    .btn-group {
+        gap: 5px;
+    }
+    @media (max-width: 768px) {
+        .card {
+            margin-bottom: 1rem;
+        }
+        .btn-group {
+            flex-direction: column;
+        }
+        .btn-group .btn {
+            margin-bottom: 5px;
+        }
+    }
+</style>
+
+{% endblock %}

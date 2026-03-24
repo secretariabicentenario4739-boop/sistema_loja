@@ -1,0 +1,134 @@
+{% extends "base.html" %}
+
+{% block title %}Editar Grau - {{ grau.nome }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="container">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h2>
+                <i class="bi bi-pencil-square"></i> 
+                Editar Grau: {{ grau.nome }}
+            </h2>
+            <div>
+                <a href="/graus" class="btn btn-outline-secondary">
+                    <i class="bi bi-arrow-left"></i> Voltar
+                </a>
+            </div>
+        </div>
+
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+                        {{ message }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
+        <div class="card shadow">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0"><i class="bi bi-star-fill"></i> Editar Dados do Grau</h5>
+            </div>
+            <div class="card-body">
+                <form method="POST">
+                    <div class="row">
+                        <div class="col-md-8 mb-3">
+                            <label class="form-label">Nome do Grau *</label>
+                            <input type="text" class="form-control" name="nome" value="{{ grau.nome }}" required>
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label">Nível</label>
+                            <select class="form-select" name="nivel">
+                                <option value="1" {% if grau.nivel == 1 %}selected{% endif %}>Aprendiz (1º Grau)</option>
+                                <option value="2" {% if grau.nivel == 2 %}selected{% endif %}>Companheiro (2º Grau)</option>
+                                <option value="3" {% if grau.nivel == 3 %}selected{% endif %}>Mestre (3º Grau)</option>
+                                <option value="4" {% if grau.nivel == 4 %}selected{% endif %}>Superior (4º Grau ou superior)</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label">Ordem</label>
+                            <input type="number" class="form-control" name="ordem" value="{{ grau.ordem or '' }}">
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label">Status</label>
+                            <select class="form-select" name="ativo">
+                                <option value="1" {% if grau.ativo == 1 %}selected{% endif %}>Ativo</option>
+                                <option value="0" {% if grau.ativo == 0 %}selected{% endif %}>Inativo</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Descrição</label>
+                        <textarea class="form-control" name="descricao" rows="5">{{ grau.descricao or '' }}</textarea>
+                    </div>
+
+                    {% if grau.id <= 3 %}
+                    <div class="alert alert-warning">
+                        <i class="bi bi-exclamation-triangle"></i>
+                        <strong>Atenção:</strong> Este é um grau fundamental do sistema. Alterações podem afetar o funcionamento do sistema.
+                    </div>
+                    {% endif %}
+
+                    <div class="text-center mt-4">
+                        <a href="/graus" class="btn btn-secondary me-2">
+                            <i class="bi bi-x-circle"></i> Cancelar
+                        </a>
+                        <button type="submit" class="btn btn-success btn-lg px-5">
+                            <i class="bi bi-save"></i> Salvar Alterações
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Informações de uso -->
+        <div class="card shadow mt-4">
+            <div class="card-header bg-light">
+                <h6 class="mb-0"><i class="bi bi-bar-chart"></i> Estatísticas de Uso</h6>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <p><strong>Obreiros com este grau:</strong> 
+                            <span class="badge bg-primary">{{ grau.total_obreiros or 0 }}</span>
+                        </p>
+                    </div>
+                    <div class="col-md-6">
+                        <p><strong>Registros no histórico:</strong> 
+                            <span class="badge bg-info">{{ grau.total_historicos or 0 }}</span>
+                        </p>
+                    </div>
+                </div>
+                {% if grau.total_historicos and grau.total_historicos > 0 %}
+                <div class="alert alert-info mt-2">
+                    <i class="bi bi-info-circle"></i>
+                    Este grau possui registros no histórico de obreiros. Se desativado, continuará visível nos registros antigos.
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .card {
+        border-radius: 10px;
+        overflow: hidden;
+    }
+    .card-header {
+        font-weight: 600;
+    }
+    textarea {
+        font-family: monospace;
+        font-size: 14px;
+    }
+</style>
+
+{% endblock %}

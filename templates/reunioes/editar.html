@@ -8,7 +8,7 @@
         <div class="d-flex justify-content-between align-items-center mb-4">
             <h2>
                 <i class="bi bi-pencil-square"></i> 
-                Editar Reunião
+                Editar Reunião: {{ reuniao.titulo }}
             </h2>
             <div>
                 <a href="/reunioes/{{ reuniao.id }}" class="btn btn-outline-info me-2">
@@ -20,51 +20,73 @@
             </div>
         </div>
 
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+                        {{ message }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
         <div class="card shadow">
-            <div class="card-header bg-warning">
-                <h5 class="mb-0">
-                    <i class="bi bi-calendar-event"></i> 
-                    Editar Dados da Reunião
-                </h5>
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0"><i class="bi bi-calendar-event"></i> Editar Dados da Reunião</h5>
             </div>
             <div class="card-body">
-                <form method="POST">
+                <form method="POST" id="formReuniao">
+                    <!-- Informações Básicas -->
                     <div class="row">
                         <div class="col-md-8 mb-3">
                             <label class="form-label">Título da Reunião *</label>
-                            <input type="text" class="form-control" name="titulo" required 
-                                   value="{{ reuniao.titulo }}">
+                            <input type="text" class="form-control" name="titulo" 
+                                   value="{{ reuniao.titulo }}" required>
                         </div>
                         <div class="col-md-4 mb-3">
-                            <label class="form-label">Tipo *</label>
-                            <select class="form-select" name="tipo" required>
+                            <label class="form-label">Tipo de Reunião *</label>
+                            <select class="form-select" name="tipo" id="tipoReuniao" required>
+                                <option value="">Selecione...</option>
                                 {% for tipo in tipos %}
                                 <option value="{{ tipo.nome }}" 
-                                        {% if tipo.nome == reuniao.tipo %}selected{% endif %}>
+                                        {% if reuniao.tipo == tipo.nome %}selected{% endif %}
+                                        data-cor="{{ tipo.cor }}" 
+                                        data-descricao="{{ tipo.descricao }}">
                                     {{ tipo.nome }}
                                 </option>
                                 {% endfor %}
                             </select>
+                            <small class="text-muted" id="descricaoTipo"></small>
                         </div>
                     </div>
 
                     <div class="row">
-                        <div class="col-md-3 mb-3">
+                        <div class="col-md-4 mb-3">
                             <label class="form-label">Data *</label>
-                            <input type="date" class="form-control" name="data" 
-                                   value="{{ reuniao.data[:10] }}" required>
+                            <input type="date" class="form-control" name="data" id="dataReuniao" 
+                                   value="{{ reuniao.data.strftime('%Y-%m-%d') if reuniao.data else '' }}" required>
                         </div>
-                        <div class="col-md-3 mb-3">
-                            <label class="form-label">Hora Início</label>
-                            <input type="time" class="form-control" name="hora_inicio" 
-                                   value="{{ reuniao.hora_inicio[:5] }}">
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label">Hora Início *</label>
+                            <input type="time" class="form-control" name="hora_inicio" id="horaInicio" 
+                                   value="{{ reuniao.hora_inicio.strftime('%H:%M') if reuniao.hora_inicio else '19:30' }}" required>
                         </div>
-                        <div class="col-md-3 mb-3">
+                        <div class="col-md-4 mb-3">
                             <label class="form-label">Hora Término</label>
-                            <input type="time" class="form-control" name="hora_termino" 
-                                   value="{{ reuniao.hora_termino[:5] }}">
+                            <input type="time" class="form-control" name="hora_termino" id="horaTermino" 
+                                   value="{{ reuniao.hora_termino.strftime('%H:%M') if reuniao.hora_termino else '' }}">
                         </div>
-                        <div class="col-md-3 mb-3">
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Local</label>
+                            <input type="text" class="form-control" name="local" 
+                                   value="{{ reuniao.local or '' }}"
+                                   placeholder="Ex: Templo Maçônico, Rua das Acácias, 123">
+                        </div>
+                        <div class="col-md-6 mb-3">
                             <label class="form-label">Status</label>
                             <select class="form-select" name="status">
                                 <option value="agendada" {% if reuniao.status == 'agendada' %}selected{% endif %}>Agendada</option>
@@ -75,74 +97,218 @@
                     </div>
 
                     <div class="row">
-                        <div class="col-md-4 mb-3">
+                        <div class="col-md-6 mb-3">
                             <label class="form-label">Grau</label>
                             <select class="form-select" name="grau">
-                                <option value="">Todos os Graus</option>
-                                <option value="1" {% if reuniao.grau == 1 %}selected{% endif %}>Aprendiz</option>
-                                <option value="2" {% if reuniao.grau == 2 %}selected{% endif %}>Companheiro</option>
-                                <option value="3" {% if reuniao.grau == 3 %}selected{% endif %}>Mestre</option>
+                                <option value="">Todos os graus</option>
+                                <option value="1" {% if reuniao.grau == 1 %}selected{% endif %}>Aprendiz (1º Grau)</option>
+                                <option value="2" {% if reuniao.grau == 2 %}selected{% endif %}>Companheiro (2º Grau)</option>
+                                <option value="3" {% if reuniao.grau == 3 %}selected{% endif %}>Mestre (3º Grau)</option>
                             </select>
-                        </div>
-                        <div class="col-md-4 mb-3">
-                            <label class="form-label">Local</label>
-                            <input type="text" class="form-control" name="local" 
-                                   value="{{ reuniao.local or '' }}">
-                        </div>
-                        <div class="col-md-4 mb-3">
-                            <label class="form-label">Loja</label>
-                            <input type="text" class="form-control" value="{{ reuniao.loja_nome or 'Não definida' }}" readonly>
+                            <small class="text-muted">Restringir participação a um grau específico</small>
                         </div>
                     </div>
 
+                    <hr>
+                    
+                    <!-- Pauta e Observações -->
+                    <h6 class="mb-3"><i class="bi bi-list-ul"></i> Pauta da Reunião</h6>
                     <div class="mb-3">
-                        <label class="form-label">Pauta</label>
-                        <textarea class="form-control" name="pauta" rows="4">{{ reuniao.pauta or '' }}</textarea>
+                        <textarea class="form-control" name="pauta" rows="8" 
+                                  placeholder="Descreva os assuntos a serem tratados na reunião...">{{ reuniao.pauta or '' }}</textarea>
+                        <small class="text-muted">Você pode usar markdown para formatação</small>
                     </div>
 
+                    <h6 class="mb-3"><i class="bi bi-chat-text"></i> Observações</h6>
                     <div class="mb-3">
-                        <label class="form-label">Observações</label>
-                        <textarea class="form-control" name="observacoes" rows="3">{{ reuniao.observacoes or '' }}</textarea>
+                        <textarea class="form-control" name="observacoes" rows="4" 
+                                  placeholder="Observações adicionais sobre a reunião...">{{ reuniao.observacoes or '' }}</textarea>
                     </div>
 
-                    {% if reuniao.status == 'realizada' %}
-                    <div class="alert alert-success">
-                        <i class="bi bi-check-circle"></i>
-                        Esta reunião já foi realizada. Você pode editar as informações, mas a lista de presença e ata já estão registradas.
-                    </div>
-                    {% endif %}
+                    <hr>
 
+                    <!-- Botões de Ação -->
                     <div class="text-center mt-4">
-                        <button type="submit" class="btn btn-warning btn-lg px-5">
-                            <i class="bi bi-save"></i> Atualizar Reunião
+                        <a href="/reunioes/{{ reuniao.id }}" class="btn btn-secondary me-2">
+                            <i class="bi bi-x-circle"></i> Cancelar
+                        </a>
+                        <button type="submit" class="btn btn-success btn-lg px-5">
+                            <i class="bi bi-save"></i> Salvar Alterações
                         </button>
                     </div>
                 </form>
             </div>
         </div>
 
-        <!-- Área de perigo (excluir) -->
-        {% if session.tipo == 'admin' %}
-        <div class="card mt-4 border-danger">
-            <div class="card-header bg-danger text-white">
-                <h5 class="mb-0">
-                    <i class="bi bi-exclamation-triangle"></i> 
-                    Zona de Perigo
-                </h5>
+        <!-- Cards de Informação -->
+        <div class="row mt-4">
+            <div class="col-md-6">
+                <div class="card border-info">
+                    <div class="card-body text-center">
+                        <i class="bi bi-info-circle fs-1 text-info"></i>
+                        <h6 class="mt-2">Informações da Reunião</h6>
+                        <p class="small">Os campos marcados com * são obrigatórios.</p>
+                    </div>
+                </div>
             </div>
-            <div class="card-body">
-                <p class="text-muted">
-                    Excluir esta reunião removerá todos os registros de presença associados.
-                    Esta ação não pode ser desfeita.
-                </p>
-                <a href="/reunioes/{{ reuniao.id }}/excluir" 
-                   class="btn btn-danger"
-                   onclick="return confirm('Tem certeza que deseja excluir esta reunião? Esta ação é irreversível.')">
-                    <i class="bi bi-trash"></i> Excluir Reunião
-                </a>
+            <div class="col-md-6">
+                <div class="card border-warning">
+                    <div class="card-body text-center">
+                        <i class="bi bi-calendar-check fs-1 text-warning"></i>
+                        <h6 class="mt-2">Dados de Criação</h6>
+                        <p class="small">
+                            Criada em: {{ reuniao.data_criacao.strftime('%d/%m/%Y %H:%M') if reuniao.data_criacao else '-' }}
+                            {% if reuniao.criado_por_nome %}
+                            <br>Por: {{ reuniao.criado_por_nome }}
+                            {% endif %}
+                        </p>
+                    </div>
+                </div>
             </div>
         </div>
-        {% endif %}
     </div>
 </div>
+
+<script>
+    // Validação de horário
+    document.getElementById('horaInicio').addEventListener('change', function() {
+        const horaInicio = this.value;
+        const horaTermino = document.getElementById('horaTermino').value;
+        
+        if (horaTermino && horaInicio >= horaTermino) {
+            alert('O horário de término deve ser maior que o horário de início!');
+            document.getElementById('horaTermino').value = '';
+        }
+    });
+    
+    document.getElementById('horaTermino').addEventListener('change', function() {
+        const horaTermino = this.value;
+        const horaInicio = document.getElementById('horaInicio').value;
+        
+        if (horaInicio && horaTermino <= horaInicio) {
+            alert('O horário de término deve ser maior que o horário de início!');
+            this.value = '';
+        }
+    });
+    
+    // Validação de data
+    document.getElementById('dataReuniao').addEventListener('change', function() {
+        const dataSelecionada = new Date(this.value);
+        const hoje = new Date();
+        hoje.setHours(0, 0, 0, 0);
+        
+        if (dataSelecionada < hoje) {
+            alert('A data da reunião não pode ser anterior à data atual!');
+            this.value = "{{ reuniao.data.strftime('%Y-%m-%d') if reuniao.data else '' }}";
+        }
+    });
+    
+    // Mostrar descrição do tipo de reunião
+    const tipoSelect = document.getElementById('tipoReuniao');
+    const descElement = document.getElementById('descricaoTipo');
+    
+    function atualizarDescricao() {
+        const selected = tipoSelect.options[tipoSelect.selectedIndex];
+        const descricao = selected.getAttribute('data-descricao');
+        const cor = selected.getAttribute('data-cor');
+        
+        if (descricao) {
+            descElement.innerHTML = `<i class="bi bi-info-circle"></i> ${descricao}`;
+            descElement.style.color = cor;
+        } else {
+            descElement.innerHTML = '';
+        }
+    }
+    
+    tipoSelect.addEventListener('change', atualizarDescricao);
+    atualizarDescricao(); // Executar ao carregar a página
+    
+    // Validar formulário antes de enviar
+    document.getElementById('formReuniao').addEventListener('submit', function(e) {
+        const titulo = document.querySelector('input[name="titulo"]').value.trim();
+        const data = document.getElementById('dataReuniao').value;
+        const horaInicio = document.getElementById('horaInicio').value;
+        
+        if (!titulo) {
+            e.preventDefault();
+            alert('Por favor, informe o título da reunião!');
+            document.querySelector('input[name="titulo"]').focus();
+            return false;
+        }
+        
+        if (!data) {
+            e.preventDefault();
+            alert('Por favor, informe a data da reunião!');
+            return false;
+        }
+        
+        if (!horaInicio) {
+            e.preventDefault();
+            alert('Por favor, informe o horário de início!');
+            return false;
+        }
+        
+        // Confirmar atualização
+        const dataFormatada = new Date(data).toLocaleDateString('pt-BR');
+        const confirmacao = confirm(`Confirmar alterações da reunião:\n\nTítulo: ${titulo}\nData: ${dataFormatada}\nHorário: ${horaInicio}\n\nDeseja prosseguir?`);
+        
+        if (!confirmacao) {
+            e.preventDefault();
+            return false;
+        }
+        
+        // Mostrar loading
+        const btnSubmit = this.querySelector('button[type="submit"]');
+        const originalText = btnSubmit.innerHTML;
+        btnSubmit.innerHTML = '<i class="bi bi-hourglass-split"></i> Salvando...';
+        btnSubmit.disabled = true;
+        
+        setTimeout(() => {
+            btnSubmit.innerHTML = originalText;
+            btnSubmit.disabled = false;
+        }, 3000);
+    });
+    
+    // Atalho Ctrl+S para salvar
+    document.addEventListener('keydown', function(e) {
+        if (e.ctrlKey && e.key === 's') {
+            e.preventDefault();
+            document.getElementById('formReuniao').submit();
+        }
+    });
+</script>
+
+<style>
+    .card {
+        border-radius: 10px;
+        overflow: hidden;
+    }
+    .card-header {
+        font-weight: 600;
+    }
+    textarea {
+        font-family: monospace;
+        font-size: 14px;
+    }
+    .form-control:focus, .form-select:focus {
+        border-color: #0d6efd;
+        box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.25);
+    }
+    .btn {
+        transition: all 0.3s ease;
+    }
+    .btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    }
+    @media (max-width: 768px) {
+        .btn-group {
+            flex-direction: column;
+        }
+        .btn-group .btn {
+            margin-bottom: 5px;
+        }
+    }
+</style>
+
 {% endblock %}

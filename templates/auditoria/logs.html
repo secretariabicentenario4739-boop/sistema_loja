@@ -1,47 +1,15 @@
 {% extends "base.html" %}
 
-{% block title %}Log de Atividades{% endblock %}
-
-{% block extra_css %}
-<link rel="stylesheet" href="https://cdn.datatables.net/1.13.7/css/dataTables.bootstrap5.min.css">
-<style>
-    .acao-badge {
-        padding: 4px 8px;
-        border-radius: 20px;
-        font-size: 0.7rem;
-        font-weight: 500;
-        display: inline-block;
-    }
-    .acao-criar { background-color: #28a745; color: white; }
-    .acao-editar { background-color: #ffc107; color: #212529; }
-    .acao-excluir { background-color: #dc3545; color: white; }
-    .acao-login { background-color: #17a2b8; color: white; }
-    .acao-logout { background-color: #6c757d; color: white; }
-    .acao-aprovar { background-color: #20c997; color: white; }
-    .acao-exportar { background-color: #fd7e14; color: white; }
-    .json-preview {
-        max-width: 250px;
-        max-height: 80px;
-        overflow: auto;
-        font-size: 0.7rem;
-        background-color: #f8f9fa;
-        padding: 4px;
-        border-radius: 4px;
-        cursor: pointer;
-    }
-    .json-preview:hover {
-        background-color: #e9ecef;
-    }
-</style>
-{% endblock %}
+{% block title %}Logs de Auditoria{% endblock %}
 
 {% block content %}
 <div class="container-fluid py-4">
     <div class="container">
         <div class="d-flex justify-content-between align-items-center mb-4">
             <h2>
-                <i class="bi bi-journal-text"></i> 
-                Log de Atividades
+                <i class="bi bi-journal"></i> 
+                Logs de Auditoria
+                <span class="badge bg-primary">{{ logs|length }}</span>
             </h2>
             <div>
                 <a href="/auditoria/exportar" class="btn btn-success me-2">
@@ -66,8 +34,8 @@
 
         <!-- Filtros -->
         <div class="card shadow mb-4">
-            <div class="card-header bg-primary text-white">
-                <h5 class="mb-0"><i class="bi bi-funnel"></i> Filtros</h5>
+            <div class="card-header bg-light">
+                <h6 class="mb-0"><i class="bi bi-funnel"></i> Filtros</h6>
             </div>
             <div class="card-body">
                 <form method="GET" class="row g-3">
@@ -84,7 +52,9 @@
                         <select class="form-select" name="acao">
                             <option value="">Todas</option>
                             {% for a in acoes %}
-                            <option value="{{ a.acao }}" {% if filtros.acao == a.acao %}selected{% endif %}>{{ a.acao|capitalize }}</option>
+                            <option value="{{ a.acao }}" {% if filtros.acao == a.acao %}selected{% endif %}>
+                                {{ a.acao|title }}
+                            </option>
                             {% endfor %}
                         </select>
                     </div>
@@ -93,16 +63,21 @@
                         <select class="form-select" name="entidade">
                             <option value="">Todas</option>
                             {% for e in entidades %}
-                            <option value="{{ e.entidade }}" {% if filtros.entidade == e.entidade %}selected{% endif %}>{{ e.entidade|capitalize }}</option>
+                            <option value="{{ e.entidade }}" {% if filtros.entidade == e.entidade %}selected{% endif %}>
+                                {{ e.entidade|title or 'N/A' }}
+                            </option>
                             {% endfor %}
                         </select>
                     </div>
                     <div class="col-md-3">
                         <label class="form-label">Usuário</label>
-                        <input type="text" class="form-control" name="usuario" value="{{ filtros.usuario }}" placeholder="Nome do usuário">
+                        <input type="text" class="form-control" name="usuario" value="{{ filtros.usuario }}" 
+                               placeholder="Buscar usuário...">
                     </div>
                     <div class="col-md-1 d-flex align-items-end">
-                        <button type="submit" class="btn btn-primary w-100">Filtrar</button>
+                        <button type="submit" class="btn btn-primary w-100">
+                            <i class="bi bi-search"></i>
+                        </button>
                     </div>
                 </form>
             </div>
@@ -111,58 +86,70 @@
         <!-- Tabela de Logs -->
         <div class="card shadow">
             <div class="card-header bg-dark text-white">
-                <h5 class="mb-0">Registros de Atividades (últimos 1000)</h5>
+                <h5 class="mb-0"><i class="bi bi-list-ul"></i> Registros de Auditoria</h5>
             </div>
             <div class="card-body">
                 <div class="table-responsive">
-                    <table class="table table-hover" id="tabelaLogs">
-                        <thead>
-                            <tr>
+                    <table class="table table-hover table-sm">
+                        <thead class="table-light">
+                             <tr>
                                 <th>Data/Hora</th>
                                 <th>Usuário</th>
                                 <th>Ação</th>
                                 <th>Entidade</th>
-                                <th>ID</th>
-                                <th>Detalhes</th>
+                                <th>ID Entidade</th>
                                 <th>IP</th>
-                            </thead>
+                                <th>Detalhes</th>
+                             </tr>
+                        </thead>
                         <tbody>
                             {% for log in logs %}
                             <tr>
-                                <td><small>{{ log.data_hora[:16] }}</small>{% if log.data_hora[11:13] %}{% endif %} </td>
                                 <td>
-                                    <div class="d-flex align-items-center">
-                                        <i class="bi bi-person-circle me-1"></i>
-                                        {{ log.usuario_nome }}
-                                    </div>
-                                 </td>
+                                    <small>
+                                        {{ log.data_hora.strftime('%d/%m/%Y %H:%M:%S') if log.data_hora else '-' }}
+                                    </small>
+                                </td>
                                 <td>
-                                    <span class="acao-badge acao-{{ log.acao }}">
-                                        {{ log.acao|upper }}
+                                    <strong>{{ log.usuario_nome }}</strong>
+                                    <br>
+                                    <small class="text-muted">({{ log.usuario }})</small>
+                                </td>
+                                <td>
+                                    <span class="badge {% if log.acao == 'login' %}bg-success{% elif log.acao == 'logout' %}bg-secondary{% elif log.acao == 'criar' %}bg-primary{% elif log.acao == 'editar' %}bg-warning{% elif log.acao == 'excluir' %}bg-danger{% else %}bg-info{% endif %}">
+                                        {{ log.acao|title }}
                                     </span>
-                                 </td>
-                                <td>{{ log.entidade|default('-')|capitalize }}</td>
-                                <td>{{ log.entidade_id|default('-') }}</td>
+                                </td>
+                                <td>{{ log.entidade or '-' }}</td>
+                                <td>{{ log.entidade_id or '-' }}</td>
                                 <td>
-                                    {% if log.dados_anteriores or log.dados_novos %}
-                                    <div class="json-preview" onclick="verDetalhes({{ log.id }})" title="Clique para ver detalhes">
-                                        {% if log.dados_anteriores %}📄 Antigos: {{ log.dados_anteriores[:50] }}...{% endif %}
-                                        {% if log.dados_novos %}🆕 Novos: {{ log.dados_novos[:50] }}...{% endif %}
-                                    </div>
-                                    {% else %}
-                                    <span class="text-muted">-</span>
-                                    {% endif %}
-                                 </td>
-                                <td><small>{{ log.ip|default('-') }}</small></td>
-                             </tr>
+                                    <small class="text-muted">{{ log.ip or '-' }}</small>
+                                </td>
+                                <td>
+                                    <button type="button" class="btn btn-sm btn-outline-info" 
+                                            data-bs-toggle="modal" 
+                                            data-bs-target="#modalLog{{ log.id }}"
+                                            title="Ver detalhes">
+                                        <i class="bi bi-eye"></i> Detalhes
+                                    </button>
+                                </td>
+                            </tr>
+                            {% else %}
+                            <tr>
+                                <td colspan="7" class="text-center text-muted py-4">
+                                    <i class="bi bi-inbox fs-1"></i><br>
+                                    Nenhum registro encontrado
+                                </td>
+                            </tr>
                             {% endfor %}
                         </tbody>
                     </table>
                 </div>
-                {% if not logs %}
-                <div class="text-center py-4">
-                    <i class="bi bi-inbox text-muted fs-1"></i>
-                    <p class="text-muted mt-2">Nenhum registro encontrado.</p>
+
+                {% if logs|length >= 1000 %}
+                <div class="alert alert-warning mt-3">
+                    <i class="bi bi-exclamation-triangle"></i>
+                    Mostrando apenas os últimos 1000 registros. Utilize os filtros para refinar a busca.
                 </div>
                 {% endif %}
             </div>
@@ -170,22 +157,125 @@
     </div>
 </div>
 
-<script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
-<script src="https://cdn.datatables.net/1.13.7/js/jquery.dataTables.min.js"></script>
-<script src="https://cdn.datatables.net/1.13.7/js/dataTables.bootstrap5.min.js"></script>
-<script>
-    $(document).ready(function() {
-        $('#tabelaLogs').DataTable({
-            language: {
-                url: '//cdn.datatables.net/plug-ins/1.13.7/i18n/pt-BR.json'
-            },
-            order: [[0, 'desc']],
-            pageLength: 50
-        });
-    });
-    
-    function verDetalhes(id) {
-        window.location.href = '/auditoria/' + id;
+<!-- Modais para detalhes dos logs -->
+{% for log in logs %}
+<div class="modal fade" id="modalLog{{ log.id }}" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title">
+                    <i class="bi bi-journal"></i> Detalhes do Log #{{ log.id }}
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <p><strong>Data/Hora:</strong><br>
+                        {{ log.data_hora.strftime('%d/%m/%Y %H:%M:%S') if log.data_hora else '-' }}</p>
+                        <p><strong>Usuário:</strong><br>
+                        {{ log.usuario_nome }} ({{ log.usuario }})</p>
+                        <p><strong>Ação:</strong><br>
+                        <span class="badge bg-primary">{{ log.acao|title }}</span></p>
+                    </div>
+                    <div class="col-md-6">
+                        <p><strong>Entidade:</strong><br>
+                        {{ log.entidade or '-' }}</p>
+                        <p><strong>ID da Entidade:</strong><br>
+                        {{ log.entidade_id or '-' }}</p>
+                        <p><strong>IP do Cliente:</strong><br>
+                        {{ log.ip or '-' }}</p>
+                    </div>
+                </div>
+                
+                {% if log.dados_anteriores or log.dados_novos %}
+                <hr>
+                <h6>Alterações</h6>
+                <div class="row">
+                    {% if log.dados_anteriores %}
+                    <div class="col-md-6">
+                        <div class="card bg-light">
+                            <div class="card-header bg-warning">
+                                <strong>Dados Anteriores</strong>
+                            </div>
+                            <div class="card-body">
+                                <pre class="small" style="max-height: 200px; overflow-y: auto;">{{ log.dados_anteriores|tojson(indent=2) }}</pre>
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+                    {% if log.dados_novos %}
+                    <div class="col-md-6">
+                        <div class="card bg-light">
+                            <div class="card-header bg-success text-white">
+                                <strong>Dados Novos</strong>
+                            </div>
+                            <div class="card-body">
+                                <pre class="small" style="max-height: 200px; overflow-y: auto;">{{ log.dados_novos|tojson(indent=2) }}</pre>
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+                {% endif %}
+                
+                {% if log.user_agent %}
+                <hr>
+                <h6>User Agent</h6>
+                <p><small class="text-muted">{{ log.user_agent }}</small></p>
+                {% endif %}
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fechar</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endfor %}
+
+<style>
+    .card {
+        border-radius: 10px;
+        overflow: hidden;
     }
-</script>
+    .card-header {
+        font-weight: 600;
+    }
+    .table-responsive {
+        overflow-x: auto;
+    }
+    .table th {
+        background-color: #f8f9fa;
+        font-weight: 600;
+    }
+    .badge {
+        font-size: 0.75rem;
+        padding: 0.3rem 0.6rem;
+    }
+    pre {
+        background-color: #f8f9fa;
+        padding: 10px;
+        border-radius: 5px;
+        font-size: 11px;
+        margin: 0;
+        white-space: pre-wrap;
+        word-wrap: break-word;
+    }
+    .modal-lg {
+        max-width: 800px;
+    }
+    @media (max-width: 768px) {
+        .table {
+            font-size: 0.75rem;
+        }
+        .btn-sm {
+            padding: 0.2rem 0.3rem;
+            font-size: 0.7rem;
+        }
+        .badge {
+            font-size: 0.65rem;
+        }
+    }
+</style>
+
 {% endblock %}

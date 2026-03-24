@@ -1,19 +1,19 @@
 {% extends "base.html" %}
 
-{% block title %}Gerenciar Cargos{% endblock %}
+{% block title %}Tipos de Condecorações{% endblock %}
 
 {% block content %}
 <div class="container-fluid py-4">
     <div class="container">
         <div class="d-flex justify-content-between align-items-center mb-4">
             <h2>
-                <i class="bi bi-briefcase"></i> 
-                Gerenciar Cargos
-                <span class="badge bg-primary">{{ cargos|length }}</span>
+                <i class="bi bi-award"></i> 
+                Tipos de Condecorações
+                <span class="badge bg-primary">{{ tipos|length }}</span>
             </h2>
             <div>
-                <a href="/cargos/novo" class="btn btn-success me-2">
-                    <i class="bi bi-plus-circle"></i> Novo Cargo
+                <a href="/tipos_condecoracoes/novo" class="btn btn-success me-2">
+                    <i class="bi bi-plus-circle"></i> Novo Tipo
                 </a>
                 <a href="/dashboard" class="btn btn-outline-secondary">
                     <i class="bi bi-arrow-left"></i> Voltar
@@ -34,44 +34,39 @@
 
         <div class="card shadow">
             <div class="card-header bg-primary text-white">
-                <h5 class="mb-0"><i class="bi bi-list-ul"></i> Lista de Cargos</h5>
+                <h5 class="mb-0"><i class="bi bi-list-ul"></i> Lista de Tipos de Condecorações</h5>
             </div>
             <div class="card-body">
                 <div class="table-responsive">
                     <table class="table table-hover">
                         <thead class="table-light">
                             <tr>
-                                <th>Ordem</th>
-                                <th>Cargo</th>
-                                <th>Sigla</th>
-                                <th>Grau Mínimo</th>
+                                <th>Ícone</th>
+                                <th>Nome</th>
                                 <th>Descrição</th>
+                                <th>Nível</th>
+                                <th>Ordem</th>
                                 <th>Status</th>
                                 <th>Ações</th>
-                            </tr>
-                        </thead>
+                            </thead>
                         <tbody>
-                            {% for cargo in cargos %}
+                            {% for tipo in tipos %}
                             <tr>
-                                <td>{{ cargo.ordem or '-' }}</td>
-                                <td>
-                                    <strong>{{ cargo.nome }}</strong>
+                                <td class="text-center">
+                                    <i class="bi {{ tipo.icone }} fs-4" style="color: {{ tipo.cor }}"></i>
                                 </td>
                                 <td>
-                                    <span class="badge bg-secondary">{{ cargo.sigla }}</span>
+                                    <strong>{{ tipo.nome }}</strong>
                                 </td>
+                                <td>{{ tipo.descricao or '-' }}</td>
                                 <td>
-                                    {% if cargo.grau_minimo == 3 %}
-                                        <span class="badge bg-success">Mestre</span>
-                                    {% elif cargo.grau_minimo == 2 %}
-                                        <span class="badge bg-primary">Companheiro</span>
-                                    {% else %}
-                                        <span class="badge bg-secondary">Aprendiz</span>
-                                    {% endif %}
+                                    <span class="badge" style="background-color: {{ tipo.cor }}">
+                                        Nível {{ tipo.nivel }}
+                                    </span>
                                 </td>
-                                <td>{{ cargo.descricao or '-' }}</td>
+                                <td>{{ tipo.ordem or '-' }}</td>
                                 <td>
-                                    {% if cargo.ativo == 1 %}
+                                    {% if tipo.ativo == 1 %}
                                         <span class="badge bg-success">Ativo</span>
                                     {% else %}
                                         <span class="badge bg-danger">Inativo</span>
@@ -79,25 +74,14 @@
                                 </td>
                                 <td>
                                     <div class="btn-group btn-group-sm">
-                                        <a href="/cargos/editar/{{ cargo.id }}" class="btn btn-warning" title="Editar">
+                                        <a href="/tipos_condecoracoes/editar/{{ tipo.id }}" class="btn btn-warning">
                                             <i class="bi bi-pencil"></i>
                                         </a>
-                                        <a href="/cargos/excluir/{{ cargo.id }}" class="btn btn-danger" 
-                                           onclick="return confirm('Excluir este cargo?')" title="Excluir">
+                                        <a href="/tipos_condecoracoes/excluir/{{ tipo.id }}" class="btn btn-danger"
+                                           onclick="return confirm('Excluir este tipo de condecoração?')">
                                             <i class="bi bi-trash"></i>
                                         </a>
                                     </div>
-                                </td>
-                            </tr>
-                            {% else %}
-                            <tr>
-                                <td colspan="7" class="text-center text-muted py-4">
-                                    <i class="bi bi-briefcase-x fs-1"></i><br>
-                                    Nenhum cargo cadastrado
-                                    <br>
-                                    <a href="/cargos/novo" class="btn btn-sm btn-primary mt-3">
-                                        <i class="bi bi-plus-circle"></i> Cadastrar Primeiro Cargo
-                                    </a>
                                 </td>
                             </tr>
                             {% endfor %}
@@ -124,16 +108,8 @@
         font-size: 0.85rem;
         padding: 0.4rem 0.7rem;
     }
-    @media (max-width: 768px) {
-        .table {
-            font-size: 0.85rem;
-        }
-        .btn-group {
-            flex-direction: column;
-        }
-        .btn-group .btn {
-            margin-bottom: 5px;
-        }
+    .btn-group-sm .btn {
+        padding: 0.25rem 0.5rem;
     }
 </style>
 

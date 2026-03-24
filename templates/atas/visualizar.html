@@ -1,220 +1,327 @@
 {% extends "base.html" %}
 
-{% block title %}Ata {{ ata.numero_ata }}/{{ ata.ano_ata }} - {{ ata.reuniao_titulo }}{% endblock %}
+{% block title %}Visualizar Ata - {{ ata.numero_ata }}/{{ ata.ano_ata }}{% endblock %}
 
 {% block content %}
 <div class="container-fluid py-4">
     <div class="container">
-        <!-- Cabeçalho com botões -->
-        <div class="d-flex justify-content-between align-items-center mb-4">
+        <!-- Cabeçalho SEM botões de ação -->
+        <div class="mb-4">
             <h2>
-                <i class="bi bi-file-text"></i> 
-                Ata {{ ata.numero_ata }}/{{ ata.ano_ata }}
+                <i class="bi bi-file-text-fill"></i> 
+                Ata nº {{ ata.numero_ata }}/{{ ata.ano_ata }}
             </h2>
-            <div class="btn-group">
-                <!-- Botão Editar (só admin e se não aprovada) -->
-                {% if session.tipo == 'admin' and ata.aprovada == 0 %}
-                <a href="/atas/{{ ata.id }}/editar" class="btn btn-warning">
-                    <i class="bi bi-pencil"></i> Editar
-                </a>
-                {% endif %}
-                
-                <!-- Botão PDF (sempre visível) -->
-                <a href="/atas/{{ ata.id }}/pdf" class="btn btn-success" target="_blank">
-                    <i class="bi bi-file-pdf"></i> PDF
-                </a>
-                
-                <!-- Botão Voltar -->
-                <a href="/atas" class="btn btn-outline-secondary">
-                    <i class="bi bi-arrow-left"></i> Voltar
-                </a>
-            </div>
         </div>
 
-        <!-- Status da Ata com botão de aprovação -->
-        <div class="alert {% if ata.aprovada == 1 %}alert-success{% else %}alert-warning{% endif %} d-flex justify-content-between align-items-center">
-            <div>
-                <i class="bi {% if ata.aprovada == 1 %}bi-check-circle-fill{% else %}bi-clock-history{% endif %}"></i>
-                {% if ata.aprovada == 1 %}
-                    <strong>Ata aprovada</strong> em {{ ata.aprovada_em }} por {{ ata.aprovado_por_nome or 'Administrador' }}
-                {% else %}
-                    <strong>Ata pendente de aprovação</strong>
-                {% endif %}
-            </div>
-            
-            <!-- Botão Aprovar (só admin e se pendente) -->
-            {% if session.tipo == 'admin' and ata.aprovada == 0 %}
-            <form method="POST" action="/atas/{{ ata.id }}/aprovar" class="d-inline">
-                <button type="submit" class="btn btn-success" onclick="return confirm('Confirmar aprovação da ata?')">
-                    <i class="bi bi-check-lg"></i> Aprovar Ata
-                </button>
-            </form>
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+                        {{ message }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>
+                {% endfor %}
             {% endif %}
-        </div>
+        {% endwith %}
 
         <div class="row">
-            <!-- Coluna da esquerda - Informações -->
-            <div class="col-md-4">
-                <!-- Card de Informações da Reunião -->
+            <div class="col-md-8">
+                <!-- Informações da Ata -->
                 <div class="card shadow mb-4">
                     <div class="card-header bg-primary text-white">
-                        <h5 class="mb-0">Informações da Reunião</h5>
+                        <h5 class="mb-0"><i class="bi bi-info-circle"></i> Informações da Ata</h5>
                     </div>
                     <div class="card-body">
-                        <table class="table table-sm">
-                            <tr>
-                                <th>Reunião:</th>
-                                <td>{{ ata.reuniao_titulo }}</td>
-                            </tr>
-                            <tr>
-                                <th>Data:</th>
-                                <td>{{ ata.reuniao_data[:10] }}</td>
-                            </tr>
-                            <tr>
-                                <th>Horário:</th>
-                                <td>{{ ata.hora_inicio[:5] }} às {{ ata.hora_termino[:5] }}</td>
-                            </tr>
-                            <tr>
-                                <th>Local:</th>
-                                <td>{{ ata.local or 'Não informado' }}</td>
-                            </tr>
-                            <tr>
-                                <th>Tipo:</th>
-                                <td><span class="badge bg-info">{{ ata.tipo_ata }}</span></td>
-                            </tr>
-                            <tr>
-                                <th>Redator:</th>
-                                <td>{{ ata.redator_nome or 'Sistema' }}</td>
-                            </tr>
-                            <tr>
-                                <th>Criação:</th>
-                                <td><small>{{ ata.data_criacao[:16] }}</small></td>
-                            </tr>
-                            <tr>
-                                <th>Versão:</th>
-                                <td><span class="badge bg-secondary">{{ ata.versao }}</span></td>
-                            </tr>
-                        </table>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <p><strong>Reunião:</strong> {{ ata.reuniao_titulo }}</p>
+                                <p><strong>Data da Reunião:</strong> 
+                                    {{ ata.reuniao_data.strftime('%d/%m/%Y') if ata.reuniao_data else '-' }}
+                                </p>
+                                <p><strong>Horário:</strong> 
+                                    {% if ata.hora_inicio %}
+                                        {{ ata.hora_inicio.strftime('%H:%M') if ata.hora_inicio else '-' }}
+                                        {% if ata.hora_termino %}
+                                        às {{ ata.hora_termino.strftime('%H:%M') if ata.hora_termino else '-' }}
+                                        {% endif %}
+                                    {% else %}
+                                        -
+                                    {% endif %}
+                                </p>
+                                <p><strong>Local:</strong> {{ ata.local or '-' }}</p>
+                            </div>
+                            <div class="col-md-6">
+                                <p><strong>Tipo:</strong> 
+                                    <span class="badge bg-info">{{ ata.tipo_ata }}</span>
+                                </p>
+                                <p><strong>Redator:</strong> {{ ata.redator_nome or 'Sistema' }}</p>
+                                <p><strong>Data de Criação:</strong> 
+                                    {{ ata.data_criacao.strftime('%d/%m/%Y %H:%M') if ata.data_criacao else '-' }}
+                                </p>
+                                <p><strong>Status:</strong> 
+                                    {% if ata.aprovada == 1 %}
+                                        <span class="badge bg-success">
+                                            <i class="bi bi-check-circle"></i> Aprovada
+                                        </span>
+                                        {% if ata.aprovada_em %}
+                                        <br><small>Aprovada em: {{ ata.aprovada_em.strftime('%d/%m/%Y') if ata.aprovada_em else '-' }}</small>
+                                        {% endif %}
+                                        {% if ata.aprovada_por_nome %}
+                                        <br><small>Por: {{ ata.aprovada_por_nome }}</small>
+                                        {% endif %}
+                                    {% else %}
+                                        <span class="badge bg-warning">
+                                            <i class="bi bi-clock"></i> Pendente
+                                        </span>
+                                    {% endif %}
+                                </p>
+                            </div>
+                        </div>
+                        {% if ata.pauta %}
+                        <hr>
+                        <h6><i class="bi bi-list-ul"></i> Pauta da Reunião</h6>
+                        <div class="card bg-light p-3">
+                            {{ ata.pauta|safe }}
+                        </div>
+                        {% endif %}
                     </div>
                 </div>
 
-                <!-- Card de Lista de Presença -->
+                <!-- Conteúdo da Ata -->
                 <div class="card shadow mb-4">
                     <div class="card-header bg-success text-white">
-                        <h5 class="mb-0">Lista de Presença</h5>
+                        <h5 class="mb-0"><i class="bi bi-file-text"></i> Conteúdo da Ata</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="ata-conteudo p-4">
+                            {{ ata.conteudo|markdown|safe }}
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Lista de Presença -->
+                <div class="card shadow mb-4">
+                    <div class="card-header bg-info text-white">
+                        <h5 class="mb-0"><i class="bi bi-people"></i> Lista de Presença</h5>
                     </div>
                     <div class="card-body">
                         <div class="table-responsive">
-                            <table class="table table-sm">
-                                <thead>
+                            <table class="table table-sm table-hover">
+                                <thead class="table-light">
                                     <tr>
                                         <th>Obreiro</th>
-                                        <th>Status</th>
-                                    </tr>
-                                </thead>
+                                        <th>Grau</th>
+                                        <th>Presença</th>
+                                        <th>Cargo</th>
+                                    </thead>
                                 <tbody>
-                                    {% for p in presenca[:5] %}
-                                    <tr>
-                                        <td>{{ p.nome_completo }}</td>
+                                    {% for p in presenca %}
+                                    <tr class="{% if p.presente == 1 %}table-success{% else %}table-danger{% endif %}">
+                                        <td><strong>{{ p.nome_completo }}</strong></td>
+                                        <td>
+                                            {% if p.grau_atual == 3 %}
+                                                <span class="badge bg-success">Mestre</span>
+                                            {% elif p.grau_atual == 2 %}
+                                                <span class="badge bg-primary">Companheiro</span>
+                                            {% else %}
+                                                <span class="badge bg-secondary">Aprendiz</span>
+                                            {% endif %}
+                                        </td>
                                         <td>
                                             {% if p.presente == 1 %}
                                                 <span class="badge bg-success">Presente</span>
                                             {% else %}
-                                                <span class="badge bg-danger">Ausente</span>
+                                                <span class="badge bg-danger">
+                                                    Ausente
+                                                    {% if p.tipo_ausencia %}
+                                                    <br><small>({{ p.tipo_ausencia }})</small>
+                                                    {% endif %}
+                                                </span>
                                             {% endif %}
                                         </td>
+                                        <td>{{ p.cargo_nome or '-' }}</td>
                                     </tr>
                                     {% endfor %}
                                 </tbody>
                             </table>
                         </div>
-                        {% if presenca|length > 5 %}
-                        <p class="text-center">
-                            <small class="text-muted">... e mais {{ presenca|length - 5 }} obreiros</small>
-                        </p>
-                        {% endif %}
+                        <div class="mt-3 p-3 bg-light rounded">
+                            <div class="row text-center">
+                                <div class="col-md-4">
+                                    <h4 class="text-primary">{{ presenca|length }}</h4>
+                                    <small>Total de Obreiros</small>
+                                </div>
+                                <div class="col-md-4">
+                                    <h4 class="text-success">{{ presenca|selectattr('presente', 'equalto', 1)|list|length }}</h4>
+                                    <small>Presentes</small>
+                                </div>
+                                <div class="col-md-4">
+                                    <h4 class="text-danger">{{ presenca|selectattr('presente', 'equalto', 0)|list|length }}</h4>
+                                    <small>Ausentes</small>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
 
-                <!-- Card de Assinaturas com botão Assinar -->
-                <div class="card shadow mb-4">
-                    <div class="card-header bg-warning text-dark">
-                        <h5 class="mb-0">
-                            <i class="bi bi-pen"></i> 
-                            Assinaturas ({{ assinaturas|length }})
-                        </h5>
+                <!-- Assinaturas -->
+                <div class="card shadow">
+                    <div class="card-header bg-secondary text-white">
+                        <h5 class="mb-0"><i class="bi bi-pen"></i> Assinaturas</h5>
                     </div>
                     <div class="card-body">
                         {% if assinaturas %}
-                            <div class="list-group mb-3">
-                                {% for ass in assinaturas %}
-                                <div class="list-group-item">
-                                    <div class="d-flex justify-content-between align-items-center">
-                                        <div>
-                                            <strong>{{ ass.nome_completo }}</strong>
-                                            <br>
-                                            <small class="text-muted">{{ ass.cargo_nome or 'Obreiro' }}</small>
-                                        </div>
-                                        <i class="bi bi-check-circle-fill text-success"></i>
+                        <div class="row">
+                            {% for assinatura in assinaturas %}
+                            <div class="col-md-4 mb-3">
+                                <div class="card h-100 border-success">
+                                    <div class="card-body text-center">
+                                        <i class="bi bi-person-check fs-1 text-success"></i>
+                                        <h6 class="mt-2 mb-1">{{ assinatura.nome_completo }}</h6>
+                                        <small class="text-muted">{{ assinatura.cargo_nome or 'Obreiro' }}</small>
+                                        <hr>
+                                        <small class="text-success">
+                                            <i class="bi bi-check-circle-fill"></i> 
+                                            Assinado em: {{ assinatura.data_assinatura.strftime('%d/%m/%Y %H:%M') if assinatura.data_assinatura else '-' }}
+                                        </small>
                                     </div>
-                                    <small class="text-success">
-                                        Assinado em {{ ass.data_assinatura[:16] }}
-                                    </small>
                                 </div>
-                                {% endfor %}
                             </div>
+                            {% endfor %}
+                        </div>
                         {% else %}
-                            <p class="text-muted text-center">Nenhuma assinatura registrada</p>
-                        {% endif %}
-                        
-                        <!-- Botão Assinar (visível para todos logados, exceto se já assinou) -->
-                        {% set ja_assinou = false %}
-                        {% for ass in assinaturas %}
-                            {% if ass.obreiro_id == session.user_id %}
-                                {% set ja_assinou = true %}
-                            {% endif %}
-                        {% endfor %}
-                        
-                        {% if not ja_assinou and ata.aprovada == 0 %}
-                        <form method="POST" action="/atas/{{ ata.id }}/assinar">
-                            <button type="submit" class="btn btn-warning w-100">
-                                <i class="bi bi-pen"></i> Assinar Ata
-                            </button>
-                        </form>
-                        {% elif ja_assinou %}
-                        <div class="alert alert-success text-center mb-0">
-                            <i class="bi bi-check-circle"></i> Você já assinou esta ata
+                        <div class="text-center text-muted py-5">
+                            <i class="bi bi-pen fs-1"></i>
+                            <p class="mt-3">Nenhuma assinatura registrada ainda.</p>
                         </div>
                         {% endif %}
                     </div>
                 </div>
             </div>
 
-            <!-- Coluna da direita - Conteúdo da Ata -->
-            <div class="col-md-8">
-                <div class="card shadow">
-                    <div class="card-header bg-dark text-white d-flex justify-content-between align-items-center">
-                        <h5 class="mb-0">Conteúdo da Ata</h5>
-                        {% if ata.versao > 1 %}
-                        <span class="badge bg-info">Versão {{ ata.versao }}</span>
-                        {% endif %}
+            <div class="col-md-4">
+                <!-- Card de Ações -->
+                <div class="card shadow mb-4">
+                    <div class="card-header bg-dark text-white">
+                        <h5 class="mb-0"><i class="bi bi-gear"></i> Ações</h5>
                     </div>
                     <div class="card-body">
-                        <div class="p-4 bg-light rounded" style="white-space: pre-line; font-family: 'Times New Roman', serif; min-height: 400px;">
-                            {{ ata.conteudo }}
+                        <div class="d-grid gap-2 mb-3">
+                            <a href="/atas/{{ ata.id }}/pdf" class="btn btn-danger">
+                                <i class="bi bi-file-pdf"></i> Baixar PDF
+                            </a>
+                            <button class="btn btn-outline-primary" onclick="copiarConteudo()">
+                                <i class="bi bi-clipboard"></i> Copiar Conteúdo
+                            </button>
+                            <button class="btn btn-outline-secondary" onclick="window.print()">
+                                <i class="bi bi-printer"></i> Imprimir Ata
+                            </button>
                         </div>
-                        
-                        <hr class="my-4">
-                        
-                        <!-- Linhas de assinatura no rodapé -->
-                        <div class="row mt-4">
-                            <div class="col-6 text-center">
-                                <p>____________________________________</p>
-                                <p><strong>Venerável Mestre</strong></p>
+
+                        <hr>
+
+                        <h6 class="mb-2"><i class="bi bi-pencil-square"></i> Edição</h6>
+                        <div class="d-grid gap-2 mb-3">
+                            {% if session.tipo == 'admin' and not ata.aprovada %}
+                            <a href="/atas/{{ ata.id }}/editar" class="btn btn-warning">
+                                <i class="bi bi-pencil"></i> Editar Ata
+                            </a>
+                            {% endif %}
+                        </div>
+
+                        <hr>
+
+                        <h6 class="mb-2"><i class="bi bi-check-circle"></i> Aprovação</h6>
+                        <div class="d-grid gap-2 mb-3">
+                            {% if session.tipo == 'admin' and not ata.aprovada %}
+                            <form method="POST" action="/atas/{{ ata.id }}/aprovar">
+                                <button type="submit" class="btn btn-success w-100" 
+                                        onclick="return confirm('Aprovar esta ata?')">
+                                    <i class="bi bi-check-lg"></i> Aprovar Ata
+                                </button>
+                            </form>
+                            {% elif ata.aprovada %}
+                            <div class="alert alert-success text-center mb-0">
+                                <i class="bi bi-check-circle-fill"></i>
+                                <p class="mb-0">Ata aprovada</p>
+                                {% if ata.aprovada_em %}
+                                <small>em {{ ata.aprovada_em.strftime('%d/%m/%Y') }}</small>
+                                {% endif %}
                             </div>
-                            <div class="col-6 text-center">
-                                <p>____________________________________</p>
-                                <p><strong>Secretário</strong></p>
+                            {% endif %}
+                        </div>
+
+                        <hr>
+
+                        <h6 class="mb-2"><i class="bi bi-person-add"></i> Assinatura</h6>
+                        <div class="d-grid gap-2 mb-3">
+                            {% if session.user_id %}
+                                {% set ja_assinou = false %}
+                                {% for ass in assinaturas %}
+                                    {% if ass.obreiro_id == session.user_id %}
+                                        {% set ja_assinou = true %}
+                                    {% endif %}
+                                {% endfor %}
+                                
+                                {% if not ja_assinou %}
+                                <form method="POST" action="/atas/{{ ata.id }}/assinar">
+                                    <button type="submit" class="btn btn-primary w-100">
+                                        <i class="bi bi-pencil-square"></i> Assinar Ata
+                                    </button>
+                                </form>
+                                {% else %}
+                                <div class="alert alert-success text-center mb-0">
+                                    <i class="bi bi-check-circle-fill"></i>
+                                    <p class="mb-0">Você já assinou esta ata</p>
+                                </div>
+                                {% endif %}
+                            {% endif %}
+                        </div>
+
+                        <hr>
+
+                        <h6 class="mb-2"><i class="bi bi-arrow-left"></i> Navegação</h6>
+                        <div class="d-grid gap-2">
+                            <a href="/reunioes/{{ ata.reuniao_id }}" class="btn btn-outline-info">
+                                <i class="bi bi-calendar-event"></i> Ver Reunião
+                            </a>
+                            <a href="/atas" class="btn btn-outline-secondary">
+                                <i class="bi bi-arrow-left"></i> Voltar para Lista
+                            </a>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Estatísticas Rápidas -->
+                <div class="card shadow">
+                    <div class="card-header bg-light">
+                        <h6 class="mb-0"><i class="bi bi-bar-chart"></i> Estatísticas</h6>
+                    </div>
+                    <div class="card-body">
+                        <div class="row text-center">
+                            <div class="col-6 mb-2">
+                                <div class="border rounded p-2">
+                                    <h4 class="text-primary mb-0">{{ presenca|length }}</h4>
+                                    <small>Total Obreiros</small>
+                                </div>
+                            </div>
+                            <div class="col-6 mb-2">
+                                <div class="border rounded p-2">
+                                    <h4 class="text-success mb-0">{{ presenca|selectattr('presente', 'equalto', 1)|list|length }}</h4>
+                                    <small>Presentes</small>
+                                </div>
+                            </div>
+                            <div class="col-6 mb-2">
+                                <div class="border rounded p-2">
+                                    <h4 class="text-danger mb-0">{{ presenca|selectattr('presente', 'equalto', 0)|list|length }}</h4>
+                                    <small>Ausentes</small>
+                                </div>
+                            </div>
+                            <div class="col-6 mb-2">
+                                <div class="border rounded p-2">
+                                    <h4 class="text-info mb-0">{{ assinaturas|length }}</h4>
+                                    <small>Assinaturas</small>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -224,21 +331,37 @@
     </div>
 </div>
 
+<script>
+    function copiarConteudo() {
+        const conteudo = document.querySelector('.ata-conteudo').innerText;
+        navigator.clipboard.writeText(conteudo).then(() => {
+            alert('Conteúdo copiado para a área de transferência!');
+        }).catch(() => {
+            alert('Erro ao copiar conteúdo!');
+        });
+    }
+</script>
+
 <style>
-    /* Estilo para o conteúdo da ata */
-    .bg-light {
-        background-color: #f8f9fa !important;
-        border: 1px solid #dee2e6;
+    .ata-conteudo {
+        font-family: 'Times New Roman', Georgia, serif;
+        font-size: 14px;
+        line-height: 1.6;
+        text-align: justify;
+        background-color: #fff;
     }
-    
-    /* Hover nos cards */
     .card {
-        transition: transform 0.2s;
+        border-radius: 10px;
+        overflow: hidden;
     }
-    
-    .card:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 5px 15px rgba(0,0,0,0.1) !important;
+    .card-header {
+        font-weight: 600;
+    }
+    @media print {
+        .btn, .card-header .btn, form, .modal {
+            display: none !important;
+        }
     }
 </style>
+
 {% endblock %}

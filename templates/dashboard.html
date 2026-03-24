@@ -5,32 +5,26 @@
 {% block content %}
 <div class="container-fluid py-4">
     <div class="container">
-        <!-- Cabeçalho com Dropdown do Usuário -->
-        <div class="header-gradient d-flex justify-content-between align-items-center flex-wrap gap-2">
+        <!-- Cabeçalho -->
+        <div class="d-flex justify-content-between align-items-center mb-4">
             <div>
-                <h2 class="mb-1">
-                    {% if tipo == "admin" %}
-                        <i class="bi bi-shield-lock"></i> Painel do Administrador
-                    {% elif tipo == "sindicante" %}
-                        <i class="bi bi-person-badge"></i> Painel do Sindicante
-                    {% else %}
-                        <i class="bi bi-person-circle"></i> Painel do Obreiro
-                    {% endif %}
+                <h2>
+                    <i class="bi bi-speedometer2"></i> 
+                    Dashboard
                 </h2>
-                <p class="mb-0 opacity-75">
-                    <i class="bi bi-calendar"></i> 
-                    {{ now.strftime('%d/%m/%Y %H:%M') }}
-                </p>
+                <p class="text-muted mb-0">Bem-vindo, {{ session.nome_completo or session.usuario }}</p>
             </div>
-            
-            <!-- Dropdown do Usuário (já está no base.html) -->
+            <div class="text-end">
+                <span class="badge bg-primary fs-6">
+                    <i class="bi bi-calendar"></i> {{ now.strftime('%d/%m/%Y') }}
+                </span>
+            </div>
         </div>
 
-        <!-- Mensagens Flash -->
         {% with messages = get_flashed_messages(with_categories=true) %}
             {% if messages %}
                 {% for category, message in messages %}
-                    <div class="alert alert-{{ category }} alert-dismissible fade show mt-3" role="alert">
+                    <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
                         {{ message }}
                         <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
                     </div>
@@ -38,433 +32,461 @@
             {% endif %}
         {% endwith %}
 
-        <!-- ========== SEÇÃO SUPERIOR: AÇÕES RÁPIDAS ========== -->
-        <div class="row g-4 mt-2">
-            {% if tipo == "admin" %}
-                <div class="col-md-2 col-sm-6 col-12">
-                    <div class="card shadow-sm h-100 border-primary">
-                        <div class="card-body text-center">
-                            <i class="bi bi-people-fill fs-1 text-primary"></i>
-                            <h5 class="mt-2">Obreiros</h5>
-                            <p class="text-muted small">Gerencie o quadro de obreiros</p>
-                            <div class="d-grid gap-2">
-                                <a href="/obreiros" class="btn btn-primary btn-sm">Ver Obreiros</a>
-                                <a href="/obreiros/novo" class="btn btn-outline-primary btn-sm">Novo Obreiro</a>
+        <!-- Seção 1: Cards de Estatísticas Gerais -->
+        <div class="row mb-4">
+            <div class="col-md-3">
+                <div class="card bg-primary text-white shadow">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <h6 class="mb-0">Candidatos</h6>
+                                <h2 class="mb-0">{{ total_candidatos }}</h2>
                             </div>
+                            <i class="bi bi-people fs-1"></i>
                         </div>
                     </div>
                 </div>
-
-                <div class="col-md-2 col-sm-6 col-12">
-                    <div class="card shadow-sm h-100 border-success">
-                        <div class="card-body text-center">
-                            <i class="bi bi-calendar-event fs-1 text-success"></i>
-                            <h5 class="mt-2">Reuniões</h5>
-                            <p class="text-muted small">Gerencie reuniões, presenças e atas</p>
-                            <div class="d-grid gap-2">
-                                <a href="/reunioes" class="btn btn-success btn-sm">Ver Reuniões</a>
-                                <a href="/reunioes/calendario" class="btn btn-outline-success btn-sm">Calendário</a>
+            </div>
+            <div class="col-md-3">
+                <div class="card bg-success text-white shadow">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <h6 class="mb-0">Sindicantes</h6>
+                                <h2 class="mb-0">{{ total_sindicantes }}</h2>
                             </div>
+                            <i class="bi bi-person-badge fs-1"></i>
                         </div>
                     </div>
                 </div>
-
-                <div class="col-md-2 col-sm-6 col-12">
-                    <div class="card shadow-sm h-100 border-info">
-                        <div class="card-body text-center">
-                            <i class="bi bi-building fs-1 text-info"></i>
-                            <h5 class="mt-2">Lojas</h5>
-                            <p class="text-muted small">Cadastre e gerencie as lojas</p>
-                            <a href="/lojas" class="btn btn-info text-white btn-sm w-100">Gerenciar</a>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="col-md-2 col-sm-6 col-12">
-                    <div class="card shadow-sm h-100 border-danger">
-                        <div class="card-body text-center">
-                            <i class="bi bi-file-pdf fs-1 text-danger"></i>
-                            <h5 class="mt-2">Relatórios</h5>
-                            <p class="text-muted small">Gere relatórios completos em PDF</p>
-                            <a href="/candidatos" class="btn btn-danger btn-sm w-100">Gerar Relatórios</a>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="col-md-2 col-sm-6 col-12">
-                    <div class="card shadow-sm h-100 border-info">
-                        <div class="card-body text-center">
-                            <i class="bi bi-file-pdf fs-1 text-info"></i>
-                            <h5 class="mt-2">Relatórios Consolidados</h5>
-                            <p class="text-muted small">Gere relatórios anuais, mensais ou por período</p>
-                            <a href="/relatorios/consolidados" class="btn btn-info text-white btn-sm w-100">Gerar PDF</a>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="col-md-2 col-sm-6 col-12">
-                    <div class="card shadow-sm h-100 border-success">
-                        <div class="card-body text-center">
-                            <i class="bi bi-file-excel fs-1 text-success"></i>
-                            <h5 class="mt-2">Exportar Presença</h5>
-                            <p class="text-muted small">Exporte os dados de presença para Excel</p>
-                            <a href="/exportar/presenca" class="btn btn-success btn-sm w-100">Exportar</a>
-                        </div>
-                    </div>
-                </div>
-								<!-- Card WhatsApp -->
-				<div class="col-md-3">
-					<div class="card shadow-sm h-100 border-success">
-						<div class="card-body text-center">
-							<i class="bi bi-whatsapp fs-1 text-success"></i>
-							<h5 class="mt-2">WhatsApp</h5>
-							<p class="text-muted small">
-								Configure notificações e envie mensagens de teste
-							</p>
-							<a href="/config/whatsapp" class="btn btn-success w-100">
-								<i class="bi bi-gear"></i> Configurar
-							</a>
-						</div>
-					</div>
-				</div>
-
-            {% elif tipo == "sindicante" %}
-                <div class="col-md-4 col-sm-6 col-12">
-                    <div class="card shadow-sm h-100 border-primary">
-                        <div class="card-body text-center">
-                            <i class="bi bi-people-fill fs-1 text-primary"></i>
-                            <h5 class="mt-2">Obreiros</h5>
-                            <p class="text-muted small">Consulte o quadro de obreiros da loja</p>
-                            <a href="/obreiros" class="btn btn-primary w-100">Ver Obreiros</a>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="col-md-4 col-sm-6 col-12">
-                    <div class="card shadow-sm h-100 border-success">
-                        <div class="card-body text-center">
-                            <i class="bi bi-calendar-event fs-1 text-success"></i>
-                            <h5 class="mt-2">Reuniões</h5>
-                            <p class="text-muted small">Acompanhe as reuniões agendadas</p>
-                            <div class="d-grid gap-2">
-                                <a href="/reunioes" class="btn btn-success">Ver Reuniões</a>
-                                <a href="/reunioes/calendario" class="btn btn-outline-success btn-sm">Calendário</a>
+            </div>
+            <div class="col-md-3">
+                <div class="card bg-info text-white shadow">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <h6 class="mb-0">Obreiros</h6>
+                                <h2 class="mb-0">{{ total_obreiros }}</h2>
                             </div>
+                            <i class="bi bi-person-workspace fs-1"></i>
                         </div>
                     </div>
                 </div>
-
-                <div class="col-md-4 col-sm-12 col-12">
-                    <div class="card shadow-sm h-100 border-warning">
-                        <div class="card-body text-center">
-                            <i class="bi bi-person-badge fs-1 text-warning"></i>
-                            <h5 class="mt-2">Sindicâncias</h5>
-                            <p class="text-muted small">Gerencie seus pareceres de candidatos</p>
-                            <a href="/minhas_sindicancias" class="btn btn-warning w-100">Meus Pareceres</a>
-                        </div>
-                    </div>
-                </div>
-
-            {% else %}
-                <div class="col-md-6 col-sm-12 col-12">
-                    <div class="card shadow-sm h-100 border-primary">
-                        <div class="card-body text-center">
-                            <i class="bi bi-people-fill fs-1 text-primary"></i>
-                            <h5 class="mt-2">Obreiros</h5>
-                            <p class="text-muted small">Consulte o quadro de obreiros da loja</p>
-                            <a href="/obreiros" class="btn btn-primary w-100">Ver Obreiros</a>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="col-md-6 col-sm-12 col-12">
-                    <div class="card shadow-sm h-100 border-success">
-                        <div class="card-body text-center">
-                            <i class="bi bi-calendar-event fs-1 text-success"></i>
-                            <h5 class="mt-2">Reuniões</h5>
-                            <p class="text-muted small">Acompanhe as reuniões agendadas</p>
-                            <div class="d-grid gap-2">
-                                <a href="/reunioes" class="btn btn-success">Ver Reuniões</a>
-                                <a href="/reunioes/calendario" class="btn btn-outline-success btn-sm">Calendário</a>
+            </div>
+            <div class="col-md-3">
+                <div class="card bg-warning text-dark shadow">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <h6 class="mb-0">Reuniões</h6>
+                                <h2 class="mb-0">{{ total_reunioes }}</h2>
                             </div>
+                            <i class="bi bi-calendar-event fs-1"></i>
                         </div>
                     </div>
                 </div>
-            {% endif %}
+            </div>
         </div>
 
-        <!-- ========== ESTATÍSTICAS DE REUNIÕES (full‑width) ========== -->
-        {% if tipo == "admin" %}
-        <div class="row mt-4">
-            <div class="col-12">
-                <div class="card shadow-sm">
-                    <div class="card-header bg-dark text-white">
-                        <h5 class="mb-0"><i class="bi bi-calendar-check"></i> Estatísticas de Reuniões</h5>
+        <!-- Seção 2: Estatísticas de Graus e Reuniões -->
+        <div class="row mb-4">
+            <div class="col-md-4">
+                <div class="card shadow">
+                    <div class="card-header bg-secondary text-white">
+                        <h5 class="mb-0"><i class="bi bi-star-fill"></i> Distribuição por Grau</h5>
                     </div>
                     <div class="card-body">
                         <div class="row text-center">
-                            <div class="col-4">
-                                <div class="p-2">
-                                    <h4 class="text-warning mb-0">{{ total_reunioes or 0 }}</h4>
-                                    <small class="text-muted">Total</small>
+                            <div class="col-md-4">
+                                <div class="border rounded p-2">
+                                    <h3 class="text-secondary">{{ aprendizes }}</h3>
+                                    <small>Aprendizes</small>
                                 </div>
                             </div>
-                            <div class="col-4">
-                                <div class="p-2">
-                                    <h4 class="text-success mb-0">{{ reunioes_realizadas or 0 }}</h4>
-                                    <small class="text-muted">Realizadas</small>
+                            <div class="col-md-4">
+                                <div class="border rounded p-2">
+                                    <h3 class="text-primary">{{ companheiros }}</h3>
+                                    <small>Companheiros</small>
                                 </div>
                             </div>
-                            <div class="col-4">
-                                <div class="p-2">
-                                    <h4 class="text-primary mb-0">{{ reunioes_agendadas or 0 }}</h4>
-                                    <small class="text-muted">Agendadas</small>
+                            <div class="col-md-4">
+                                <div class="border rounded p-2">
+                                    <h3 class="text-success">{{ mestres }}</h3>
+                                    <small>Mestres</small>
                                 </div>
                             </div>
                         </div>
-                        {% if proximas_reunioes %}
-                        <hr>
-                        <h6 class="mt-2">Próximas Reuniões:</h6>
-                        <div class="list-group list-group-flush">
-                            {% for r in proximas_reunioes[:3] %}
-                            <div class="list-group-item px-0">
-                                <div class="d-flex justify-content-between align-items-center flex-wrap">
-                                    <div>
-                                        <strong>{{ r.titulo }}</strong>
-                                        <br>
-                                        <small class="text-muted">{{ r.data[:10] }} às {{ r.hora_inicio[:5] }}</small>
-                                    </div>
-                                    <a href="/reunioes/{{ r.id }}" class="btn btn-sm btn-outline-primary"><i class="bi bi-eye"></i></a>
+                        <div class="mt-3">
+                            <div class="progress">
+                                {% set total_graus = aprendizes + companheiros + mestres %}
+                                {% if total_graus > 0 %}
+                                <div class="progress-bar bg-secondary" style="width: {{ (aprendizes / total_graus * 100) }}%">
+                                    {{ "%.0f"|format(aprendizes / total_graus * 100) }}%
                                 </div>
+                                <div class="progress-bar bg-primary" style="width: {{ (companheiros / total_graus * 100) }}%">
+                                    {{ "%.0f"|format(companheiros / total_graus * 100) }}%
+                                </div>
+                                <div class="progress-bar bg-success" style="width: {{ (mestres / total_graus * 100) }}%">
+                                    {{ "%.0f"|format(mestres / total_graus * 100) }}%
+                                </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card shadow">
+                    <div class="card-header bg-secondary text-white">
+                        <h5 class="mb-0"><i class="bi bi-calendar-check"></i> Reuniões</h5>
+                    </div>
+                    <div class="card-body text-center">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <h3 class="text-success">{{ reunioes_realizadas }}</h3>
+                                <small>Realizadas</small>
+                            </div>
+                            <div class="col-md-6">
+                                <h3 class="text-warning">{{ reunioes_agendadas }}</h3>
+                                <small>Agendadas</small>
+                            </div>
+                        </div>
+                        <div class="mt-3">
+                            <div class="progress">
+                                {% set total_reunioes_count = reunioes_realizadas + reunioes_agendadas %}
+                                {% if total_reunioes_count > 0 %}
+                                <div class="progress-bar bg-success" style="width: {{ (reunioes_realizadas / total_reunioes_count * 100) }}%">
+                                    {{ "%.0f"|format(reunioes_realizadas / total_reunioes_count * 100) }}%
+                                </div>
+                                <div class="progress-bar bg-warning" style="width: {{ (reunioes_agendadas / total_reunioes_count * 100) }}%">
+                                    {{ "%.0f"|format(reunioes_agendadas / total_reunioes_count * 100) }}%
+                                </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card shadow">
+                    <div class="card-header bg-secondary text-white">
+                        <h5 class="mb-0"><i class="bi bi-graph-up"></i> Taxa de Presença</h5>
+                    </div>
+                    <div class="card-body text-center">
+                        <div class="display-4 text-primary">{{ "%.1f"|format((reunioes_realizadas / total_reunioes * 100) if total_reunioes > 0 else 0) }}%</div>
+                        <small>das reuniões realizadas</small>
+                        <div class="mt-3">
+                            <div class="progress">
+                                <div class="progress-bar bg-success" style="width: {{ (reunioes_realizadas / total_reunioes * 100) if total_reunioes > 0 else 0 }}%"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Seção 3: Área de Sindicância (Separada) -->
+        <div class="card shadow mb-4">
+            <div class="card-header bg-danger text-white">
+                <h4 class="mb-0">
+                    <i class="bi bi-gavel"></i> 
+                    Área de Sindicância
+                    <span class="badge bg-light text-dark ms-2">Gestão de Candidatos</span>
+                </h4>
+            </div>
+            <div class="card-body">
+                <!-- Estatísticas de Sindicância -->
+                <div class="row mb-4">
+                    <div class="col-md-3">
+                        <div class="card bg-warning text-dark">
+                            <div class="card-body text-center">
+                                <h3 class="mb-0">{{ em_analise }}</h3>
+                                <small>Em Análise</small>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="card bg-success text-white">
+                            <div class="card-body text-center">
+                                <h3 class="mb-0">{{ aprovados }}</h3>
+                                <small>Aprovados</small>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="card bg-danger text-white">
+                            <div class="card-body text-center">
+                                <h3 class="mb-0">{{ reprovados }}</h3>
+                                <small>Reprovados</small>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="card bg-info text-white">
+                            <div class="card-body text-center">
+                                <h3 class="mb-0">{{ total_candidatos }}</h3>
+                                <small>Total Candidatos</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Barra de Progresso da Sindicância -->
+                <div class="mb-4">
+                    <h6 class="mb-2">Progresso das Sindicâncias</h6>
+                    <div class="progress" style="height: 30px;">
+                        {% set total_sindicados = em_analise + aprovados + reprovados %}
+                        {% if total_sindicados > 0 %}
+                        <div class="progress-bar bg-warning" style="width: {{ (em_analise / total_sindicados * 100) }}%">
+                            {{ "%.0f"|format(em_analise / total_sindicados * 100) }}% Em Análise
+                        </div>
+                        <div class="progress-bar bg-success" style="width: {{ (aprovados / total_sindicados * 100) }}%">
+                            {{ "%.0f"|format(aprovados / total_sindicados * 100) }}% Aprovados
+                        </div>
+                        <div class="progress-bar bg-danger" style="width: {{ (reprovados / total_sindicados * 100) }}%">
+                            {{ "%.0f"|format(reprovados / total_sindicados * 100) }}% Reprovados
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <!-- Pendências e Prazo Vencido -->
+                <div class="row">
+                    {% if pendentes %}
+                    <div class="col-md-6">
+                        <div class="card border-warning mb-3">
+                            <div class="card-header bg-warning text-dark">
+                                <h6 class="mb-0"><i class="bi bi-exclamation-triangle"></i> Pendências de Sindicância</h6>
+                            </div>
+                            <div class="card-body">
+                                <div class="list-group">
+                                    {% for p in pendentes %}
+                                    <div class="list-group-item">
+                                        <div class="d-flex w-100 justify-content-between">
+                                            <h6 class="mb-1">{{ p.candidato.nome }}</h6>
+                                            <small class="text-danger">{{ p.faltam|length }} sindicante(s) pendente(s)</small>
+                                        </div>
+                                        <small class="text-muted">Faltam: {{ p.faltam|join(', ') }}</small>
+                                        <br>
+                                        <a href="/sindicancia/{{ p.candidato.id }}" class="btn btn-sm btn-warning mt-2">
+                                            <i class="bi bi-eye"></i> Visualizar
+                                        </a>
+                                    </div>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    {% if prazo_vencido %}
+                    <div class="col-md-6">
+                        <div class="card border-danger mb-3">
+                            <div class="card-header bg-danger text-white">
+                                <h6 class="mb-0"><i class="bi bi-clock-history"></i> Sindicâncias com Prazo Vencido</h6>
+                            </div>
+                            <div class="card-body">
+                                <div class="list-group">
+                                    {% for c in prazo_vencido %}
+                                    <div class="list-group-item">
+                                        <div class="d-flex w-100 justify-content-between">
+                                            <h6 class="mb-1">{{ c.nome }}</h6>
+                                            <small class="text-danger">
+                                                {% set data_criacao = c.data_criacao %}
+                                                {% if data_criacao %}
+                                                    {{ ((now - data_criacao).days) }} dias
+                                                {% endif %}
+                                            </small>
+                                        </div>
+                                        <small class="text-muted">Status: {{ c.status }}</small>
+                                        <br>
+                                        <a href="/sindicancia/{{ c.id }}" class="btn btn-sm btn-danger mt-2">
+                                            <i class="bi bi-eye"></i> Ver Sindicância
+                                        </a>
+                                    </div>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+
+                <!-- Pareceres Conclusivos Recentes -->
+                {% if pareceres_conclusivos %}
+                <div class="card border-info mt-3">
+                    <div class="card-header bg-info text-white">
+                        <h6 class="mb-0"><i class="bi bi-file-text"></i> Pareceres Conclusivos Recentes</h6>
+                    </div>
+                    <div class="card-body">
+                        <div class="list-group">
+                            {% for pc in pareceres_conclusivos %}
+                            <div class="list-group-item">
+                                <div class="d-flex w-100 justify-content-between">
+                                    <h6 class="mb-1">{{ pc.candidato_nome }}</h6>
+                                    <small class="text-muted">
+                                        {{ pc.data_envio.strftime('%d/%m/%Y') if pc.data_envio else '-' }}
+                                    </small>
+                                </div>
+                                <small class="text-muted">Sindicante: {{ pc.sindicante_nome }}</small>
+                                <br>
+                                <span class="badge {% if pc.conclusao == 'APROVADO' %}bg-success{% else %}bg-danger{% endif %} mt-1">
+                                    {% if pc.conclusao == 'APROVADO' %}
+                                        <i class="bi bi-check-circle"></i> Aprovado
+                                    {% else %}
+                                        <i class="bi bi-x-circle"></i> Reprovado
+                                    {% endif %}
+                                </span>
                             </div>
                             {% endfor %}
                         </div>
-                        {% endif %}
                     </div>
                 </div>
-            </div>
-        </div>
-        {% endif %}
-
-        <!-- ========== ESTATÍSTICAS DO QUADRO DE OBREIROS (full‑width) ========== -->
-        {% if tipo == "admin" %}
-        <div class="row mt-4">
-            <div class="col-12">
-                <div class="card shadow-sm">
-                    <div class="card-header bg-dark text-white">
-                        <h5 class="mb-0"><i class="bi bi-bar-chart"></i> Estatísticas do Quadro de Obreiros</h5>
-                    </div>
-                    <div class="card-body">
-                        <div class="row text-center">
-                            <div class="col-3 col-sm-3">
-                                <div class="p-2">
-                                    <h4 class="text-primary mb-0">{{ total_obreiros or 0 }}</h4>
-                                    <small class="text-muted">Total</small>
-                                </div>
-                            </div>
-                            <div class="col-3 col-sm-3">
-                                <div class="p-2">
-                                    <h4 class="text-success mb-0">{{ mestres or 0 }}</h4>
-                                    <small class="text-muted">Mestres</small>
-                                </div>
-                            </div>
-                            <div class="col-3 col-sm-3">
-                                <div class="p-2">
-                                    <h4 class="text-info mb-0">{{ companheiros or 0 }}</h4>
-                                    <small class="text-muted">Companheiros</small>
-                                </div>
-                            </div>
-                            <div class="col-3 col-sm-3">
-                                <div class="p-2">
-                                    <h4 class="text-secondary mb-0">{{ aprendizes or 0 }}</h4>
-                                    <small class="text-muted">Aprendizes</small>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-        {% endif %}
-
-        <!-- ========== SEÇÃO DE SINDICÂNCIA (apenas admin) ========== -->
-        {% if tipo == "admin" %}
-        <div class="mt-5">
-            <hr class="my-4">
-            <h3 class="mb-4"><i class="bi bi-gavel"></i> Gestão de Sindicâncias</h3>
-        </div>
-
-        <!-- Cards de Estatísticas da Sindicância -->
-        <div class="row g-4 mb-4">
-            <div class="col-md-3 col-sm-6 col-12">
-                <div class="card stat-card shadow h-100">
-                    <div class="card-body">
-                        <div class="d-flex justify-content-between align-items-center">
-                            <div><h6 class="text-muted mb-2">Total de Candidatos</h6><h2 class="mb-0">{{ total_candidatos }}</h2></div>
-                            <div class="bg-primary bg-opacity-10 p-3 rounded-circle"><i class="bi bi-people-fill text-primary fs-3"></i></div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            <div class="col-md-3 col-sm-6 col-12">
-                <div class="card stat-card shadow h-100 border-warning">
-                    <div class="card-body">
-                        <div class="d-flex justify-content-between align-items-center">
-                            <div><h6 class="text-muted mb-2">Em Análise</h6><h2 class="mb-0 text-warning">{{ em_analise }}</h2></div>
-                            <div class="bg-warning bg-opacity-10 p-3 rounded-circle"><i class="bi bi-hourglass-split text-warning fs-3"></i></div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            <div class="col-md-3 col-sm-6 col-12">
-                <div class="card stat-card shadow h-100 border-success">
-                    <div class="card-body">
-                        <div class="d-flex justify-content-between align-items-center">
-                            <div><h6 class="text-muted mb-2">Aprovados</h6><h2 class="mb-0 text-success">{{ aprovados }}</h2></div>
-                            <div class="bg-success bg-opacity-10 p-3 rounded-circle"><i class="bi bi-check-circle-fill text-success fs-3"></i></div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            <div class="col-md-3 col-sm-6 col-12">
-                <div class="card stat-card shadow h-100 border-danger">
-                    <div class="card-body">
-                        <div class="d-flex justify-content-between align-items-center">
-                            <div><h6 class="text-muted mb-2">Reprovados</h6><h2 class="mb-0 text-danger">{{ reprovados }}</h2></div>
-                            <div class="bg-danger bg-opacity-10 p-3 rounded-circle"><i class="bi bi-x-circle-fill text-danger fs-3"></i></div>
-                        </div>
-                    </div>
-                </div>
+                {% endif %}
             </div>
         </div>
 
-        <!-- Alertas e Pendências -->
-        <div class="row g-4 mb-4">
-            <div class="col-md-6 col-12">
-                <div class="card alert-card shadow border-warning">
-                    <div class="card-header bg-warning bg-opacity-10 border-warning">
-                        <h5 class="mb-0"><i class="bi bi-clock-history"></i> Pareceres Pendentes <span class="badge bg-dark ms-2">{{ pendentes|length }}</span></h5>
+        <!-- Seção 4: Próximas Reuniões e Atividades -->
+        <div class="row">
+            <div class="col-md-6 mb-4">
+                <div class="card shadow h-100">
+                    <div class="card-header bg-primary text-white">
+                        <h5 class="mb-0"><i class="bi bi-calendar-week"></i> Próximas Reuniões</h5>
                     </div>
                     <div class="card-body">
-                        {% if pendentes %}
-                            <div class="list-group list-group-flush">
-                                {% for p in pendentes %}
-                                <div class="list-group-item px-0">
-                                    <div class="d-flex justify-content-between align-items-center flex-wrap">
-                                        <div><strong>{{ p.candidato.nome }}</strong><br><small class="text-muted">Aguardando: {{ p.faltam | join(", ") }}</small></div>
-                                        <span class="badge bg-warning text-dark">{{ p.faltam|length }} pendente(s)</span>
+                        {% if proximas_reunioes %}
+                            <div class="list-group">
+                                {% for r in proximas_reunioes %}
+                                <a href="/reunioes/{{ r.id }}" class="list-group-item list-group-item-action">
+                                    <div class="d-flex w-100 justify-content-between">
+                                        <h6 class="mb-1">{{ r.titulo }}</h6>
+                                        <small class="text-muted">
+                                            {{ r.data.strftime('%d/%m/%Y') if r.data else '-' }}
+                                        </small>
                                     </div>
-                                </div>
+                                    <small class="text-muted">
+                                        <i class="bi bi-clock"></i> 
+                                        {{ r.hora_inicio.strftime('%H:%M') if r.hora_inicio else '-' }}
+                                        {% if r.hora_termino %}
+                                        às {{ r.hora_termino.strftime('%H:%M') if r.hora_termino else '-' }}
+                                        {% endif %}
+                                    </small>
+                                    {% if r.local %}
+                                    <br><small class="text-muted">
+                                        <i class="bi bi-geo-alt"></i> {{ r.local }}
+                                    </small>
+                                    {% endif %}
+                                </a>
                                 {% endfor %}
                             </div>
+                            {% if proxima_reuniao %}
+                            <div class="mt-3 text-center">
+                                <div class="alert alert-info">
+                                    <i class="bi bi-bell"></i> 
+                                    Próxima reunião: {{ proxima_reuniao.data.strftime('%d/%m/%Y') if proxima_reuniao.data else '-' }}
+                                </div>
+                            </div>
+                            {% endif %}
                         {% else %}
-                            <div class="text-center py-4"><i class="bi bi-check-circle-fill text-success fs-1"></i><p class="text-success mt-2 mb-0">Todos os pareceres estão em dia!</p></div>
+                            <p class="text-center text-muted py-4">
+                                <i class="bi bi-calendar-x fs-1"></i><br>
+                                Nenhuma reunião agendada
+                            </p>
+                            {% if session.tipo == 'admin' %}
+                            <div class="text-center">
+                                <a href="/reunioes/nova" class="btn btn-sm btn-success">
+                                    <i class="bi bi-plus-circle"></i> Agendar Reunião
+                                </a>
+                            </div>
+                            {% endif %}
                         {% endif %}
                     </div>
                 </div>
             </div>
-            <div class="col-md-6 col-12">
-                <div class="card alert-card shadow border-danger">
-                    <div class="card-header bg-danger bg-opacity-10 border-danger">
-                        <h5 class="mb-0"><i class="bi bi-exclamation-triangle"></i> Prazo Vencido (>7 dias) <span class="badge bg-dark ms-2">{{ prazo_vencido|length }}</span></h5>
+
+            <div class="col-md-6 mb-4">
+                <div class="card shadow h-100">
+                    <div class="card-header bg-success text-white">
+                        <h5 class="mb-0"><i class="bi bi-people"></i> Sindicantes Ativos</h5>
                     </div>
                     <div class="card-body">
-                        {% if prazo_vencido %}
-                            <div class="list-group list-group-flush">
-                                {% for c in prazo_vencido %}
-                                <div class="list-group-item px-0">
-                                    <div class="d-flex justify-content-between align-items-center flex-wrap">
-                                        <div><strong>{{ c.nome }}</strong><br><small class="text-muted">Aberto em: {{ c.data_criacao[:10] if c.data_criacao else 'N/A' }}</small></div>
-                                        <a href="/candidatos" class="btn btn-sm btn-outline-danger">Verificar</a>
-                                    </div>
-                                </div>
-                                {% endfor %}
-                            </div>
-                        {% else %}
-                            <div class="text-center py-4"><i class="bi bi-emoji-smile text-success fs-1"></i><p class="text-success mt-2 mb-0">Nenhum processo atrasado!</p></div>
-                        {% endif %}
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Lista de Sindicantes Ativos -->
-        <div class="card shadow mb-4">
-            <div class="card-header bg-primary bg-opacity-10 d-flex justify-content-between align-items-center flex-wrap gap-2">
-                <h5 class="mb-0"><i class="bi bi-people"></i> Sindicantes Ativos <span class="badge bg-success ms-2">{{ total_sindicantes }}</span></h5>
-                <div>
-                    <a href="/lojas" class="btn btn-sm btn-outline-info me-2"><i class="bi bi-building"></i> Lojas</a>
-                    <a href="/sindicantes" class="btn btn-sm btn-outline-primary"><i class="bi bi-gear"></i> Gerenciar</a>
-                </div>
-            </div>
-            <div class="card-body">
-                {% if sindicantes %}
-                    <div class="table-responsive">
-                        <table class="table table-hover table-sindicantes">
-                            <thead class="table-light">
-                                <tr><th>Nome</th><th>Usuário</th><th>Loja</th><th>CIM</th> </thead>
-                            <tbody>
+                        {% if sindicantes %}
+                            <div class="list-group">
                                 {% for s in sindicantes %}
-                                <tr>
-                                    <td><i class="bi bi-person-circle"></i> {{ s.nome_completo or s.usuario }}</td>
-                                    <td><small>@{{ s.usuario }}</small></td>
-                                    <td>{% if s.loja_nome %}<small>{{ s.loja_nome }} - {{ s.loja_numero or '' }}</small>{% else %}<small class="text-muted">Não informado</small>{% endif %}</td>
-                                    <td><small>{{ s.cim_numero or '-' }}</small></td>
-                                </tr>
+                                <div class="list-group-item">
+                                    <div class="d-flex w-100 justify-content-between">
+                                        <h6 class="mb-1">{{ s.nome_completo or s.usuario }}</h6>
+                                        <small class="text-muted">{{ s.usuario }}</small>
+                                    </div>
+                                    <small class="text-muted">
+                                        <i class="bi bi-building"></i> {{ s.loja_nome or 'Loja não informada' }}
+                                    </small>
+                                    <br>
+                                    <small class="text-muted">
+                                        <i class="bi bi-hash"></i> CIM: {{ s.cim_numero or 'Não informado' }}
+                                    </small>
+                                </div>
                                 {% endfor %}
-                            </tbody>
-                        </table>
+                            </div>
+                        {% else %}
+                            <p class="text-center text-muted py-4">
+                                <i class="bi bi-person-x fs-1"></i><br>
+                                Nenhum sindicante ativo
+                            </p>
+                            {% if session.tipo == 'admin' %}
+                            <div class="text-center">
+                                <a href="/sindicantes" class="btn btn-sm btn-success">
+                                    <i class="bi bi-plus-circle"></i> Cadastrar Sindicante
+                                </a>
+                            </div>
+                            {% endif %}
+                        {% endif %}
                     </div>
-                {% else %}
-                    <div class="text-center py-4"><i class="bi bi-people text-muted fs-1"></i><p class="text-muted mt-2">Nenhum sindicante ativo</p><a href="/sindicantes" class="btn btn-primary btn-sm"><i class="bi bi-plus-circle"></i> Adicionar Sindicante</a></div>
-                {% endif %}
+                </div>
             </div>
         </div>
-
-        <!-- Card de Pareceres Conclusivos Recentes -->
-        <div class="card shadow mb-4">
-            <div class="card-header bg-dark text-white d-flex justify-content-between align-items-center flex-wrap gap-2">
-                <h5 class="mb-0"><i class="bi bi-file-text"></i> Pareceres Conclusivos Recentes <span class="badge bg-light text-dark ms-2">{{ pareceres_conclusivos|length }}</span></h5>
-                <a href="/candidatos" class="btn btn-sm btn-outline-light"><i class="bi bi-eye"></i> Ver todos</a>
-            </div>
-            <div class="card-body">
-                {% if pareceres_conclusivos and pareceres_conclusivos|length > 0 %}
-                    <div class="table-responsive">
-                        <table class="table table-hover table-sm">
-                            <thead class="table-light">
-                                <tr><th>Candidato</th><th>Sindicante</th><th>Conclusão</th><th>Data</th><th style="width:100px">Ações</th></tr>
-                            </thead>
-                            <tbody>
-                                {% for pc in pareceres_conclusivos %}
-                                <tr>
-                                    <td><strong>{{ pc.candidato_nome }}</strong></td>
-                                    <td><i class="bi bi-person-circle"></i> {{ pc.sindicante_nome or pc.sindicante }}</td>
-                                    <td>{% if pc.conclusao == "APROVADO" %}<span class="badge bg-success">APROVADO</span>{% else %}<span class="badge bg-danger">REPROVADO</span>{% endif %}</td>
-                                    <td><small class="text-muted">{{ pc.data_parecer }}</small></td>
-                                    <td>
-                                        <div class="btn-group btn-group-sm">
-                                            <a href="/visualizar_parecer_conclusivo/{{ pc.candidato_id }}?sindicante={{ pc.sindicante }}" class="btn btn-outline-primary" title="Visualizar" target="_blank"><i class="bi bi-eye"></i></a>
-                                            <a href="/baixar_parecer_conclusivo/{{ pc.candidato_id }}?sindicante={{ pc.sindicante }}" class="btn btn-outline-success" title="Baixar PDF"><i class="bi bi-download"></i></a>
-                                        </div>
-                                    </td>
-                                </tr>
-                                {% endfor %}
-                            </tbody>
-                        </table>
-                    </div>
-                    {% set aprovados_count = pareceres_conclusivos|selectattr('conclusao', 'equalto', 'APROVADO')|list|length %}
-                    {% set reprovados_count = pareceres_conclusivos|selectattr('conclusao', 'equalto', 'REPROVADO')|list|length %}
-                    <div class="row mt-3 g-2">
-                        <div class="col-md-4 col-12"><div class="card bg-success bg-opacity-10"><div class="card-body text-center py-2"><h6 class="mb-0 text-success"><i class="bi bi-check-circle"></i> Aprovados: {{ aprovados_count }}</h6></div></div></div>
-                        <div class="col-md-4 col-12"><div class="card bg-danger bg-opacity-10"><div class="card-body text-center py-2"><h6 class="mb-0 text-danger"><i class="bi bi-x-circle"></i> Reprovados: {{ reprovados_count }}</h6></div></div></div>
-                        <div class="col-md-4 col-12"><div class="card bg-info bg-opacity-10"><div class="card-body text-center py-2"><h6 class="mb-0 text-info"><i class="bi bi-file-text"></i> Total: {{ pareceres_conclusivos|length }}</h6></div></div></div>
-                    </div>
-                {% else %}
-                    <div class="text-center py-4"><i class="bi bi-file-text text-muted fs-1"></i><p class="text-muted mt-2">Nenhum parecer conclusivo emitido ainda.</p><p class="small text-muted">Os pareceres conclusivos aparecerão aqui quando os sindicantes preencherem.</p></div>
-                {% endif %}
-            </div>
-        </div>
-        {% endif %}
     </div>
 </div>
+
+<style>
+    .card {
+        border-radius: 10px;
+        overflow: hidden;
+        transition: transform 0.2s;
+    }
+    .card:hover {
+        transform: translateY(-3px);
+    }
+    .progress {
+        border-radius: 10px;
+        height: 25px;
+    }
+    .progress-bar {
+        line-height: 25px;
+        font-size: 12px;
+    }
+    .list-group-item {
+        transition: background-color 0.2s;
+    }
+    .list-group-item:hover {
+        background-color: #f8f9fa;
+    }
+    .badge {
+        font-size: 0.85rem;
+        padding: 0.4rem 0.7rem;
+    }
+    .display-4 {
+        font-size: 2.5rem;
+        font-weight: 600;
+    }
+    @media (max-width: 768px) {
+        .card {
+            margin-bottom: 1rem;
+        }
+        .display-4 {
+            font-size: 2rem;
+        }
+    }
+</style>
+
 {% endblock %}

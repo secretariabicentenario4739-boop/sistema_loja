@@ -6,22 +6,40 @@
 <div class="container-fluid py-4">
     <div class="container">
         <div class="d-flex justify-content-between align-items-center mb-4">
-            <h2><i class="bi bi-person-plus"></i> Novo Obreiro</h2>
-            <a href="/obreiros" class="btn btn-outline-secondary">
-                <i class="bi bi-arrow-left"></i> Voltar
-            </a>
+            <h2>
+                <i class="bi bi-person-plus"></i> 
+                Novo Obreiro
+            </h2>
+            <div>
+                <a href="/obreiros" class="btn btn-outline-secondary">
+                    <i class="bi bi-arrow-left"></i> Voltar
+                </a>
+            </div>
         </div>
 
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+                        {{ message }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
         <div class="card shadow">
-            <div class="card-header bg-success text-white">
-                <h5 class="mb-0">Dados do Obreiro</h5>
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0"><i class="bi bi-person-badge"></i> Dados do Obreiro</h5>
             </div>
             <div class="card-body">
                 <form method="POST">
+                    <!-- Dados de Login -->
                     <div class="row">
                         <div class="col-md-6 mb-3">
                             <label class="form-label">Usuário *</label>
                             <input type="text" class="form-control" name="usuario" required>
+                            <small class="text-muted">Nome de usuário para login</small>
                         </div>
                         <div class="col-md-6 mb-3">
                             <label class="form-label">Senha *</label>
@@ -30,7 +48,7 @@
                     </div>
 
                     <hr>
-                    <h6 class="mb-3">Dados Pessoais</h6>
+                    <h6 class="mb-3">📋 Dados Pessoais</h6>
                     
                     <div class="row">
                         <div class="col-md-6 mb-3">
@@ -49,7 +67,7 @@
                             <input type="text" class="form-control" name="cim_numero">
                         </div>
                         <div class="col-md-4 mb-3">
-                            <label class="form-label">Tipo</label>
+                            <label class="form-label">Tipo de Usuário</label>
                             <select class="form-select" name="tipo">
                                 <option value="obreiro">Obreiro</option>
                                 <option value="sindicante">Sindicante</option>
@@ -57,11 +75,18 @@
                             </select>
                         </div>
                         <div class="col-md-4 mb-3">
-                            <label class="form-label">Grau Atual</label>
-                            <select class="form-select" name="grau_atual">
-                                <option value="1">Aprendiz</option>
-                                <option value="2">Companheiro</option>
-                                <option value="3">Mestre</option>
+                            <label class="form-label">Grau Atual *</label>
+                            <select class="form-select" name="grau_atual" required>
+                                <option value="">Selecione um grau...</option>
+                                {% for grau in graus %}
+                                <option value="{{ grau.nivel }}">
+                                    {{ grau.nome }}
+                                    {% if grau.nivel == 1 %}(Aprendiz)
+                                    {% elif grau.nivel == 2 %}(Companheiro)
+                                    {% elif grau.nivel == 3 %}(Mestre)
+                                    {% else %}(Superior){% endif %}
+                                </option>
+                                {% endfor %}
                             </select>
                         </div>
                     </div>
@@ -82,12 +107,12 @@
                     </div>
 
                     <hr>
-                    <h6 class="mb-3">Contato</h6>
+                    <h6 class="mb-3">📞 Contato</h6>
 
                     <div class="row">
                         <div class="col-md-6 mb-3">
                             <label class="form-label">Telefone</label>
-                            <input type="text" class="form-control" name="telefone" id="telefone">
+                            <input type="text" class="form-control" name="telefone" id="telefone" placeholder="(11) 99999-9999">
                         </div>
                         <div class="col-md-6 mb-3">
                             <label class="form-label">E-mail</label>
@@ -97,25 +122,27 @@
 
                     <div class="mb-3">
                         <label class="form-label">Endereço</label>
-                        <textarea class="form-control" name="endereco" rows="2"></textarea>
+                        <textarea class="form-control" name="endereco" rows="2" placeholder="Rua, número, bairro, cidade - UF"></textarea>
                     </div>
 
                     <hr>
-                    <h6 class="mb-3">Loja</h6>
+                    <h6 class="mb-3">🏛️ Loja</h6>
 
                     <div class="row">
-                        <div class="col-md-4 mb-3">
+                        <div class="col-md-5 mb-3">
                             <label class="form-label">Nome da Loja</label>
                             <select class="form-select" name="loja_nome" id="lojaSelect">
-                                <option value="">Selecione...</option>
+                                <option value="">Selecione uma loja...</option>
                                 {% for loja in lojas %}
-                                <option value="{{ loja.nome }}" data-numero="{{ loja.numero }}" data-oriente="{{ loja.oriente }}">
+                                <option value="{{ loja.nome }}" 
+                                        data-numero="{{ loja.numero }}"
+                                        data-oriente="{{ loja.oriente }}">
                                     {{ loja.nome }} - Nº {{ loja.numero }}
                                 </option>
                                 {% endfor %}
                             </select>
                         </div>
-                        <div class="col-md-4 mb-3">
+                        <div class="col-md-3 mb-3">
                             <label class="form-label">Nº da Loja</label>
                             <input type="text" class="form-control" name="loja_numero" id="lojaNumero" readonly>
                         </div>
@@ -125,7 +152,20 @@
                         </div>
                     </div>
 
+                    <div class="alert alert-info mt-3">
+                        <i class="bi bi-info-circle"></i>
+                        <strong>Informações:</strong>
+                        <ul class="mb-0 mt-2">
+                            <li>Os campos marcados com * são obrigatórios</li>
+                            <li>O grau atual determina as permissões iniciais do obreiro</li>
+                            <li>Graus superiores (Mestre Instalado, etc.) podem ser adicionados posteriormente no histórico de graus</li>
+                        </ul>
+                    </div>
+
                     <div class="text-center mt-4">
+                        <a href="/obreiros" class="btn btn-secondary me-2">
+                            <i class="bi bi-x-circle"></i> Cancelar
+                        </a>
                         <button type="submit" class="btn btn-success btn-lg px-5">
                             <i class="bi bi-save"></i> Salvar Obreiro
                         </button>
@@ -137,6 +177,7 @@
 </div>
 
 <script>
+    // Autopreenchimento dos dados da loja
     document.getElementById('lojaSelect').addEventListener('change', function() {
         var selected = this.options[this.selectedIndex];
         document.getElementById('lojaNumero').value = selected.dataset.numero || '';
@@ -154,4 +195,19 @@
         e.target.value = value;
     });
 </script>
+
+<style>
+    .card {
+        border-radius: 10px;
+        overflow: hidden;
+    }
+    .card-header {
+        font-weight: 600;
+    }
+    .form-control:focus, .form-select:focus {
+        border-color: #0d6efd;
+        box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.25);
+    }
+</style>
+
 {% endblock %}

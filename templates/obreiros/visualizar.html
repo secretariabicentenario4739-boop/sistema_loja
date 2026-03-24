@@ -1,35 +1,51 @@
 {% extends "base.html" %}
 
-{% block title %}Detalhes do Obreiro - {{ obreiro.nome_completo }}{% endblock %}
+{% block title %}Visualizar Obreiro - {{ obreiro.nome_completo }}{% endblock %}
 
 {% block content %}
 <div class="container-fluid py-4">
     <div class="container">
-        <!-- Cabeçalho com botões -->
-        <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
-            <h2>
-                <i class="bi bi-person-circle"></i> 
-                Detalhes do Obreiro
-            </h2>
+        <!-- Cabeçalho igual ao das reuniões -->
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <div>
+                <h2>
+                    <i class="bi bi-person-badge"></i> 
+                    {{ obreiro.nome_completo }}
+                </h2>
+                <div class="mt-2">
+                    <span class="badge {% if obreiro.ativo == 1 %}bg-success{% else %}bg-danger{% endif %} me-2">
+                        {% if obreiro.ativo == 1 %}Ativo{% else %}Inativo{% endif %}
+                    </span>
+                    {% if obreiro.tipo == 'admin' %}
+                        <span class="badge bg-danger">Administrador</span>
+                    {% elif obreiro.tipo == 'sindicante' %}
+                        <span class="badge bg-warning">Sindicante</span>
+                    {% else %}
+                        <span class="badge bg-info">Obreiro</span>
+                    {% endif %}
+                    <span class="badge {% if obreiro.grau_atual == 3 %}bg-success{% elif obreiro.grau_atual == 2 %}bg-primary{% else %}bg-secondary{% endif %}">
+                        {% if nome_grau_atual %}
+                            {{ nome_grau_atual }}
+                        {% else %}
+                            {% if obreiro.grau_atual == 3 %}Mestre
+                            {% elif obreiro.grau_atual == 2 %}Companheiro
+                            {% else %}Aprendiz{% endif %}
+                        {% endif %}
+                    </span>
+                </div>
+            </div>
             <div>
                 {% if pode_editar %}
                 <a href="/obreiros/{{ obreiro.id }}/editar" class="btn btn-warning">
                     <i class="bi bi-pencil"></i> Editar
                 </a>
                 {% endif %}
-                
-                <!-- Botão de Documentos -->
-                <a href="/obreiros/{{ obreiro.id }}/documentos" class="btn btn-info">
-                    <i class="bi bi-folder2-open"></i> Documentos
-                </a>
-                
-                <a href="/obreiros" class="btn btn-outline-secondary">
+                <a href="/obreiros" class="btn btn-outline-secondary ms-2">
                     <i class="bi bi-arrow-left"></i> Voltar
                 </a>
             </div>
         </div>
 
-        <!-- Mensagens Flash -->
         {% with messages = get_flashed_messages(with_categories=true) %}
             {% if messages %}
                 {% for category, message in messages %}
@@ -41,271 +57,375 @@
             {% endif %}
         {% endwith %}
 
-        <div class="row">
-            <!-- Coluna da esquerda - Informações Pessoais -->
-            <div class="col-md-4 col-12 mb-4">
+        <!-- Cards de Estatísticas -->
+        <div class="row mb-4">
+            <div class="col-md-3">
+                <div class="card bg-primary text-white shadow-sm">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <h6 class="mb-0">Cargos</h6>
+                                <h2 class="mb-0">{{ cargos|length if cargos else 0 }}</h2>
+                            </div>
+                            <i class="bi bi-briefcase fs-1"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card bg-success text-white shadow-sm">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <h6 class="mb-0">Graus</h6>
+                                <h2 class="mb-0">{{ historico_graus|length if historico_graus else 0 }}</h2>
+                            </div>
+                            <i class="bi bi-star-fill fs-1"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card bg-info text-white shadow-sm">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <h6 class="mb-0">Familiares</h6>
+                                <h2 class="mb-0">{{ familiares_count }}</h2>
+                            </div>
+                            <i class="bi bi-people fs-1"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card bg-warning text-dark shadow-sm">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <h6 class="mb-0">Condecorações</h6>
+                                <h2 class="mb-0">{{ condecoracoes_count }}</h2>
+                            </div>
+                            <i class="bi bi-award fs-1"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Informações Principais -->
+        <div class="card shadow">
+            <div class="card-header bg-light">
+                <h5 class="mb-0"><i class="bi bi-info-circle"></i> Informações do Obreiro</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <table class="table table-sm table-borderless">
+                            <tr>
+                                <td class="text-muted" style="width: 120px;">Nome Completo:</td>
+                                <td><strong>{{ obreiro.nome_completo }}</strong></td>
+                            </tr>
+                            <tr>
+                                <td class="text-muted">Nome Maçônico:</td>
+                                <td>{{ obreiro.nome_maconico or '-' }}</td>
+                            </tr>
+                            <tr>
+                                <td class="text-muted">Usuário:</td>
+                                <td>{{ obreiro.usuario }}</td>
+                            </tr>
+                            <tr>
+                                <td class="text-muted">CIM Nº:</td>
+                                <td>{{ obreiro.cim_numero or '-' }}</td>
+                            </tr>
+                            <tr>
+                                <td class="text-muted">Data Cadastro:</td>
+                                <td>{{ obreiro.data_cadastro.strftime('%d/%m/%Y') if obreiro.data_cadastro else '-' }}</td>
+                            </tr>
+                        </table>
+                    </div>
+                    <div class="col-md-6">
+                        <table class="table table-sm table-borderless">
+                            <tr>
+                                <td class="text-muted" style="width: 120px;">Telefone:</td>
+                                <td>{{ obreiro.telefone or '-' }}</td>
+                            </tr>
+                            <tr>
+                                <td class="text-muted">E-mail:</td>
+                                <td>{{ obreiro.email or '-' }}</td>
+                            </tr>
+                            <tr>
+                                <td class="text-muted">Endereço:</td>
+                                <td>{{ obreiro.endereco or '-' }}</td>
+                            </tr>
+                            <tr>
+                                <td class="text-muted">Loja:</td>
+                                <td>{{ obreiro.loja_nome or '-' }} (Nº {{ obreiro.loja_numero or '-' }})</td>
+                            </tr>
+                            <tr>
+                                <td class="text-muted">Oriente:</td>
+                                <td>{{ obreiro.loja_orient or '-' }}</td>
+                            </tr>
+                        </table>
+                    </div>
+                </div>
+
+                <hr>
+                <h6><i class="bi bi-calendar-event"></i> Datas Importantes</h6>
+                <div class="row mt-2">
+                    <div class="col-md-4">
+                        <div class="border rounded p-2 text-center">
+                            <small class="text-muted">Iniciação</small>
+                            <div class="fw-bold">{{ obreiro.data_iniciacao.strftime('%d/%m/%Y') if obreiro.data_iniciacao else '-' }}</div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="border rounded p-2 text-center">
+                            <small class="text-muted">Elevação</small>
+                            <div class="fw-bold">{{ obreiro.data_elevacao.strftime('%d/%m/%Y') if obreiro.data_elevacao else '-' }}</div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="border rounded p-2 text-center">
+                            <small class="text-muted">Exaltação</small>
+                            <div class="fw-bold">{{ obreiro.data_exaltacao.strftime('%d/%m/%Y') if obreiro.data_exaltacao else '-' }}</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Cargos e Graus -->
+        <div class="row mt-4">
+            <div class="col-md-6">
                 <div class="card shadow">
-                    <div class="card-header bg-primary text-white">
-                        <h5 class="mb-0">
-                            <i class="bi bi-person-badge"></i> 
-                            Informações Pessoais
-                        </h5>
-                    </div>
-                    <div class="card-body">
-                        <p><strong>Usuário:</strong> {{ obreiro.usuario }}</p>
-                        <p><strong>Nome Completo:</strong> {{ obreiro.nome_completo }}</p>
-                        <p><strong>Nome Maçônico:</strong> {{ obreiro.nome_maconico or '-' }}</p>
-                        <p><strong>CIM Nº:</strong> {{ obreiro.cim_numero or '-' }}</p>
-                        {% if session.tipo == 'admin' %}
-                        <p><strong>Tipo:</strong> 
-                            {% if obreiro.tipo == 'admin' %}
-                                <span class="badge bg-danger">Administrador</span>
-                            {% elif obreiro.tipo == 'sindicante' %}
-                                <span class="badge bg-success">Sindicante</span>
-                            {% else %}
-                                <span class="badge bg-info">Obreiro</span>
-                            {% endif %}
-                        </p>
-                        <p><strong>Status:</strong> 
-                            {% if obreiro.ativo == 1 %}
-                                <span class="badge bg-success">Ativo</span>
-                            {% else %}
-                                <span class="badge bg-secondary">Inativo</span>
-                            {% endif %}
-                        </p>
-                        <p><strong>Data Cadastro:</strong> {{ obreiro.data_cadastro[:10] if obreiro.data_cadastro else '-' }}</p>
-                        {% endif %}
-                    </div>
-                </div>
-
-                <!-- Card de Contato -->
-                <div class="card shadow mt-4">
-                    <div class="card-header bg-info text-white">
-                        <h5 class="mb-0">
-                            <i class="bi bi-telephone"></i> 
-                            Contato
-                        </h5>
-                    </div>
-                    <div class="card-body">
-                        <p><strong>Telefone:</strong> {{ obreiro.telefone or '-' }}</p>
-                        <p><strong>E-mail:</strong> {{ obreiro.email or '-' }}</p>
-                        <p><strong>Endereço:</strong> {{ obreiro.endereco or '-' }}</p>
-                    </div>
-                </div>
-
-                <!-- Card da Loja -->
-                <div class="card shadow mt-4">
                     <div class="card-header bg-secondary text-white">
-                        <h5 class="mb-0">
-                            <i class="bi bi-building"></i> 
-                            Loja
-                        </h5>
+                        <h5 class="mb-0"><i class="bi bi-journal"></i> Cargos Ocupados</h5>
                     </div>
                     <div class="card-body">
-                        <p><strong>Nome:</strong> {{ obreiro.loja_nome or '-' }}</p>
-                        <p><strong>Nº:</strong> {{ obreiro.loja_numero or '-' }}</p>
-                        <p><strong>Oriente:</strong> {{ obreiro.loja_orient or '-' }}</p>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Coluna da direita - Graus e Cargos -->
-            <div class="col-md-8 col-12">
-                <!-- Card de Graus -->
-                <div class="card shadow">
-                    <div class="card-header bg-success text-white d-flex justify-content-between align-items-center flex-wrap gap-2">
-                        <h5 class="mb-0">
-                            <i class="bi bi-bar-chart-steps"></i> 
-                            Graus Maçônicos
-                        </h5>
-                        {% if session.tipo == 'admin' %}
-                        <button type="button" class="btn btn-sm btn-light" data-bs-toggle="modal" data-bs-target="#modalGrau">
-                            <i class="bi bi-plus-circle"></i> Registrar Grau
-                        </button>
-                        {% endif %}
-                    </div>
-                    <div class="card-body">
-                        <div class="alert alert-info">
-                            <strong>Grau Atual:</strong> 
-                            {% if obreiro.grau_atual == 3 %}
-                                <span class="badge bg-primary fs-6">Mestre Maçom (3º Grau)</span>
-                            {% elif obreiro.grau_atual == 2 %}
-                                <span class="badge bg-info fs-6">Companheiro Maçom (2º Grau)</span>
-                            {% elif obreiro.grau_atual == 1 %}
-                                <span class="badge bg-secondary fs-6">Aprendiz Maçom (1º Grau)</span>
-                            {% else %}
-                                <span class="badge bg-light text-dark">Não informado</span>
-                            {% endif %}
-                        </div>
-
-                        <div class="row mt-3">
-                            <div class="col-md-4 col-12 mb-2">
-                                <div class="card bg-light">
-                                    <div class="card-body text-center">
-                                        <small class="text-muted">Iniciação</small>
-                                        <h6>{{ obreiro.data_iniciacao or 'Não registrada' }}</h6>
-                                    </div>
-                                </div>
+                        {% if cargos and cargos|length > 0 %}
+                            <div class="table-responsive">
+                                <table class="table table-sm">
+                                    <thead class="table-light">
+                                        <tr>
+                                            <th>Cargo</th>
+                                            <th>Início</th>
+                                            <th>Fim</th>
+                                            {% if session.tipo == 'admin' %}<th></th>{% endif %}
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for cargo in cargos %}
+                                        <tr>
+                                            <td>
+                                                <strong>{{ cargo.cargo_nome }}</strong>
+                                                <br><small class="text-muted">{{ cargo.sigla }}</small>
+                                            </td>
+                                            <td class="text-nowrap">{{ cargo.data_inicio.strftime('%d/%m/%Y') if cargo.data_inicio else '-' }}</td>
+                                            <td class="text-nowrap">
+                                                {% if cargo.data_fim %}
+                                                    {{ cargo.data_fim.strftime('%d/%m/%Y') }}
+                                                {% else %}
+                                                    <span class="badge bg-success">Atual</span>
+                                                {% endif %}
+                                            </td>
+                                            {% if session.tipo == 'admin' %}
+                                            <td class="text-end">
+                                                <a href="/obreiros/cargo/{{ cargo.id }}/remover" 
+                                                   class="btn btn-sm btn-outline-danger"
+                                                   onclick="return confirm('Remover este cargo?')"
+                                                   title="Remover">
+                                                    <i class="bi bi-trash"></i>
+                                                </a>
+                                            </td>
+                                            {% endif %}
+                                        </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
                             </div>
-                            <div class="col-md-4 col-12 mb-2">
-                                <div class="card bg-light">
-                                    <div class="card-body text-center">
-                                        <small class="text-muted">Elevação</small>
-                                        <h6>{{ obreiro.data_elevacao or 'Não registrada' }}</h6>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="col-md-4 col-12 mb-2">
-                                <div class="card bg-light">
-                                    <div class="card-body text-center">
-                                        <small class="text-muted">Exaltação</small>
-                                        <h6>{{ obreiro.data_exaltacao or 'Não registrada' }}</h6>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        {% if historico_graus %}
-                        <hr>
-                        <h6 class="mt-3">Histórico de Graus</h6>
-                        <div class="table-responsive">
-                            <table class="table table-sm">
-                                <thead>
-                                    <tr><th>Data</th><th>Grau</th><th>Observação</th></tr>
-                                </thead>
-                                <tbody>
-                                    {% for h in historico_graus %}
-                                    <tr>
-                                        <td>{{ h.data }}</td>
-                                        <td>{% if h.grau == 3 %}Mestre{% elif h.grau == 2 %}Companheiro{% else %}Aprendiz{% endif %}</td>
-                                        <td>{{ h.observacao or '-' }}</td>
-                                    </tr>
-                                    {% endfor %}
-                                </tbody>
-                            </table>
-                        </div>
-                        {% endif %}
-                    </div>
-                </div>
-
-                <!-- Card de Cargos -->
-                <div class="card shadow mt-4">
-                    <div class="card-header bg-warning text-dark d-flex justify-content-between align-items-center flex-wrap gap-2">
-                        <h5 class="mb-0">
-                            <i class="bi bi-diagram-3"></i> 
-                            Cargos na Loja
-                        </h5>
-                        {% if session.tipo == 'admin' and cargos_disponiveis %}
-                        <button type="button" class="btn btn-sm btn-dark" data-bs-toggle="modal" data-bs-target="#modalCargo">
-                            <i class="bi bi-plus-circle"></i> Atribuir Cargo
-                        </button>
-                        {% endif %}
-                    </div>
-                    <div class="card-body">
-                        {% if cargos %}
-                        <div class="table-responsive">
-                            <table class="table table-sm">
-                                <thead>
-                                    <tr><th>Cargo</th><th>Gestão</th><th>Data Início</th><th>Data Fim</th><th>Status</th>{% if session.tipo == 'admin' %}<th>Ações</th>{% endif %}</tr>
-                                </thead>
-                                <tbody>
-                                    {% for c in cargos %}
-                                    <tr>
-                                        <td><strong>{{ c.cargo_nome }}</strong> ({{ c.sigla }})</td>
-                                        <td>{{ c.gestao or '-' }}</td>
-                                        <td>{{ c.data_inicio }}</td>
-                                        <td>{{ c.data_fim or 'Atual' }}</td>
-                                        <td>{% if c.ativo == 1 %}<span class="badge bg-success">Ativo</span>{% else %}<span class="badge bg-secondary">Inativo</span>{% endif %}</td>
-                                        {% if session.tipo == 'admin' %}
-                                        <td>{% if c.ativo == 1 %}<a href="/obreiros/cargo/{{ c.id }}/remover" class="btn btn-sm btn-outline-danger" onclick="return confirm('Remover este cargo?')"><i class="bi bi-trash"></i></a>{% endif %}</td>
-                                        {% endif %}
-                                    </tr>
-                                    {% endfor %}
-                                </tbody>
-                            </table>
-                        </div>
                         {% else %}
-                        <p class="text-muted text-center py-3">Nenhum cargo atribuído a este obreiro.</p>
+                            <div class="text-center text-muted py-3">
+                                <i class="bi bi-journal-x fs-1"></i>
+                                <p class="mb-0">Nenhum cargo ocupado</p>
+                            </div>
+                        {% endif %}
+
+                        {% if session.tipo == 'admin' and cargos_disponiveis %}
+                        <hr>
+                        <form method="POST" action="/obreiros/{{ obreiro.id }}/cargo" class="row g-2">
+                            <div class="col-6">
+                                <select name="cargo_id" class="form-select form-select-sm" required>
+                                    <option value="">Adicionar cargo...</option>
+                                    {% for cargo in cargos_disponiveis %}
+                                    <option value="{{ cargo.id }}">{{ cargo.nome }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div class="col-3">
+                                <input type="date" name="data_inicio" class="form-control form-control-sm" required>
+                            </div>
+                            <div class="col-3">
+                                <button type="submit" class="btn btn-success btn-sm w-100">
+                                    <i class="bi bi-plus"></i> Adicionar
+                                </button>
+                            </div>
+                        </form>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-6">
+                <div class="card shadow">
+                    <div class="card-header bg-warning text-dark">
+                        <h5 class="mb-0"><i class="bi bi-graph-up"></i> Histórico de Graus</h5>
+                    </div>
+                    <div class="card-body">
+                        {% if historico_graus and historico_graus|length > 0 %}
+                            <div style="max-height: 300px; overflow-y: auto;">
+                                <table class="table table-sm">
+                                    <tbody>
+                                        {% for grau in historico_graus %}
+                                        <tr>
+                                            <td class="ps-0">
+                                                <i class="bi bi-star-fill text-warning"></i>
+                                                <strong>
+                                                    {% if grau.grau_id and grau.grau_nome %}
+                                                        {{ grau.grau_nome }}
+                                                    {% else %}
+                                                        {% if grau.grau == 3 %}Mestre
+                                                        {% elif grau.grau == 2 %}Companheiro
+                                                        {% else %}Aprendiz{% endif %}
+                                                    {% endif %}
+                                                </strong>
+                                                {% if grau.observacao %}
+                                                <br><small class="text-muted">{{ grau.observacao }}</small>
+                                                {% endif %}
+                                            </td>
+                                            <td class="text-end text-nowrap">
+                                                {{ grau.data.strftime('%d/%m/%Y') if grau.data else '-' }}
+                                            </td>
+                                        </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        {% else %}
+                            <div class="text-center text-muted py-3">
+                                <i class="bi bi-clock-history fs-1"></i>
+                                <p class="mb-0">Nenhum histórico registrado</p>
+                            </div>
+                        {% endif %}
+
+                        {% if session.tipo == 'admin' %}
+                        <hr>
+                        <form method="POST" action="/obreiros/{{ obreiro.id }}/grau" class="row g-2">
+                            <div class="col-5">
+                                <select name="grau_id" class="form-select form-select-sm" required>
+                                    <option value="">Registrar grau...</option>
+                                    {% for grau in graus_disponiveis %}
+                                    <option value="{{ grau.id }}">{{ grau.nome }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div class="col-4">
+                                <input type="date" name="data" class="form-control form-control-sm" required>
+                            </div>
+                            <div class="col-3">
+                                <button type="submit" class="btn btn-primary btn-sm w-100">
+                                    <i class="bi bi-save"></i>
+                                </button>
+                            </div>
+                            <div class="col-12 mt-1">
+                                <input type="text" name="observacao" class="form-control form-control-sm" placeholder="Observação">
+                            </div>
+                        </form>
                         {% endif %}
                     </div>
                 </div>
             </div>
         </div>
-    </div>
-</div>
 
-<!-- Modais (Grau e Cargo) -->
-{% if session.tipo == 'admin' %}
-<div class="modal fade" id="modalGrau" tabindex="-1">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header bg-success text-white">
-                <h5 class="modal-title"><i class="bi bi-bar-chart-steps"></i> Registrar Novo Grau</h5>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
-            </div>
-            <form action="/obreiros/{{ obreiro.id }}/grau" method="POST">
-                <div class="modal-body">
-                    <div class="mb-3">
-                        <label class="form-label">Grau *</label>
-                        <select class="form-select" name="grau" required>
-                            <option value="">Selecione...</option>
-                            <option value="1">Aprendiz (1º Grau)</option>
-                            <option value="2">Companheiro (2º Grau)</option>
-                            <option value="3">Mestre (3º Grau)</option>
-                        </select>
+        <!-- Familiares e Condecorações -->
+        <div class="row mt-4">
+            <div class="col-md-6">
+                <div class="card shadow">
+                    <div class="card-header bg-info text-white">
+                        <h5 class="mb-0"><i class="bi bi-people"></i> Familiares</h5>
                     </div>
-                    <div class="mb-3">
-                        <label class="form-label">Data *</label>
-                        <input type="date" class="form-control" name="data" required>
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label">Observação</label>
-                        <textarea class="form-control" name="observacao" rows="2"></textarea>
+                    <div class="card-body text-center py-4">
+                        <i class="bi bi-people fs-1 text-info"></i>
+                        <h3 class="mt-2">{{ familiares_count }}</h3>
+                        <p class="text-muted">familiares cadastrados</p>
+                        <a href="/obreiros/{{ obreiro.id }}/familiares" class="btn btn-outline-info">
+                            <i class="bi bi-eye"></i> Gerenciar Familiares
+                        </a>
                     </div>
                 </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-                    <button type="submit" class="btn btn-success">Registrar</button>
-                </div>
-            </form>
-        </div>
-    </div>
-</div>
-
-<div class="modal fade" id="modalCargo" tabindex="-1">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header bg-warning">
-                <h5 class="modal-title"><i class="bi bi-diagram-3"></i> Atribuir Cargo</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
-            <form action="/obreiros/{{ obreiro.id }}/cargo" method="POST">
-                <div class="modal-body">
-                    <div class="mb-3">
-                        <label class="form-label">Cargo *</label>
-                        <select class="form-select" name="cargo_id" required>
-                            <option value="">Selecione...</option>
-                            {% for cargo in cargos_disponiveis %}
-                            <option value="{{ cargo.id }}">{{ cargo.nome }} ({{ cargo.sigla }})</option>
+
+            <div class="col-md-6">
+                <div class="card shadow">
+                    <div class="card-header bg-warning text-dark">
+                        <h5 class="mb-0"><i class="bi bi-award"></i> Condecorações</h5>
+                    </div>
+                    <div class="card-body text-center py-4">
+                        <i class="bi bi-award fs-1 text-warning"></i>
+                        <h3 class="mt-2">{{ condecoracoes_count }}</h3>
+                        <p class="text-muted">condecorações recebidas</p>
+                        <a href="/obreiros/{{ obreiro.id }}/condecoracoes" class="btn btn-outline-warning">
+                            <i class="bi bi-eye"></i> Gerenciar Condecorações
+                        </a>
+                    </div>
+                    {% if ultimas_condecoracoes %}
+                    <div class="card-footer bg-white">
+                        <small class="text-muted">Últimas:</small>
+                        <div class="mt-1">
+                            {% for c in ultimas_condecoracoes[:2] %}
+                            <div class="d-inline-block me-2">
+                                <i class="bi {{ c.icone }}" style="color: {{ c.cor }}"></i>
+                                <small>{{ c.tipo_nome }}</small>
+                            </div>
                             {% endfor %}
-                        </select>
+                        </div>
                     </div>
-                    <div class="mb-3">
-                        <label class="form-label">Gestão</label>
-                        <input type="text" class="form-control" name="gestao" placeholder="Ex: 2024-2025">
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label">Data Início *</label>
-                        <input type="date" class="form-control" name="data_inicio" required>
-                    </div>
+                    {% endif %}
                 </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-                    <button type="submit" class="btn btn-warning">Atribuir</button>
-                </div>
-            </form>
+            </div>
+        </div>
+
+        <!-- Botão Voltar -->
+        <div class="mt-4 text-center">
+            <a href="/obreiros" class="btn btn-outline-secondary">
+                <i class="bi bi-arrow-left"></i> Voltar para Lista de Obreiros
+            </a>
         </div>
     </div>
 </div>
-{% endif %}
+
+<style>
+    .card {
+        border-radius: 10px;
+        overflow: hidden;
+    }
+    .card-header {
+        font-weight: 600;
+    }
+    .table-borderless td {
+        padding: 0.3rem 0;
+    }
+    .table-sm td, .table-sm th {
+        padding: 0.5rem;
+    }
+    @media (max-width: 768px) {
+        .table-responsive {
+            font-size: 0.85rem;
+        }
+        .btn-group {
+            flex-direction: column;
+        }
+    }
+</style>
+
 {% endblock %}

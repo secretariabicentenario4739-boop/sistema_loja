@@ -10,56 +10,87 @@
                 <i class="bi bi-megaphone"></i> 
                 {{ comunicado.titulo }}
             </h2>
-            <a href="/comunicados" class="btn btn-outline-secondary">
-                <i class="bi bi-arrow-left"></i> Voltar
-            </a>
-        </div>
-
-        <div class="card shadow">
-            <div class="card-header 
-                {% if comunicado.prioridade == 'urgente' %}bg-danger text-white
-                {% elif comunicado.prioridade == 'importante' %}bg-warning text-dark
-                {% else %}bg-secondary text-white{% endif %}">
-                <div class="d-flex justify-content-between align-items-center">
-                    <span>
-                        <i class="bi bi-megaphone"></i> {{ comunicado.titulo }}
-                    </span>
-                    <div>
-                        <span class="badge bg-light text-dark">{{ comunicado.tipo }}</span>
-                        <span class="badge
-                            {% if comunicado.prioridade == 'urgente' %}bg-danger
-                            {% elif comunicado.prioridade == 'importante' %}bg-warning text-dark
-                            {% else %}bg-secondary{% endif %}">
-                            {{ comunicado.prioridade|upper }}
-                        </span>
-                    </div>
-                </div>
-            </div>
-            <div class="card-body">
-                <div class="mb-3 text-muted">
-                    <small>
-                        <i class="bi bi-calendar"></i> Publicado em: {{ comunicado.data_criacao[:16] }}<br>
-                        <i class="bi bi-person"></i> Por: {{ comunicado.autor_nome }}<br>
-                        <i class="bi bi-calendar-range"></i> Período: {{ comunicado.data_inicio }}
-                        {% if comunicado.data_fim %} até {{ comunicado.data_fim }}{% endif %}
-                    </small>
-                </div>
-                <hr>
-                <div class="p-3 bg-light rounded" style="white-space: pre-line;">
-                    {{ comunicado.conteudo }}
-                </div>
-            </div>
-            <div class="card-footer bg-transparent">
-                {% if session.tipo == 'admin' %}
-                <a href="/comunicados/{{ comunicado.id }}/editar" class="btn btn-warning">
-                    <i class="bi bi-pencil"></i> Editar
+            <div>
+                <a href="/comunicados" class="btn btn-outline-secondary">
+                    <i class="bi bi-arrow-left"></i> Voltar
                 </a>
-                <a href="/comunicados/{{ comunicado.id }}/excluir" class="btn btn-danger" onclick="return confirm('Excluir comunicado?')">
-                    <i class="bi bi-trash"></i> Excluir
+                {% if session.tipo == 'admin' %}
+                <a href="/comunicados/{{ comunicado.id }}/editar" class="btn btn-warning ms-2">
+                    <i class="bi bi-pencil"></i> Editar
                 </a>
                 {% endif %}
             </div>
         </div>
+
+        <div class="card shadow">
+            <div class="card-header {% if comunicado.prioridade == 'urgente' %}bg-danger text-white{% elif comunicado.prioridade == 'alta' %}bg-warning{% else %}bg-primary text-white{% endif %}">
+                <div class="d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">{{ comunicado.titulo }}</h5>
+                    {% if comunicado.prioridade == 'urgente' %}
+                        <span class="badge bg-light text-dark">Urgente</span>
+                    {% elif comunicado.prioridade == 'alta' %}
+                        <span class="badge bg-dark">Alta Prioridade</span>
+                    {% else %}
+                        <span class="badge bg-light text-dark">Normal</span>
+                    {% endif %}
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="row mb-4">
+                    <div class="col-md-6">
+                        <p><strong>Autor:</strong> {{ comunicado.autor_nome }}</p>
+                        <p><strong>Data de Publicação:</strong> 
+                            {{ comunicado.data_criacao.strftime('%d/%m/%Y %H:%M') if comunicado.data_criacao else '-' }}
+                        </p>
+                        <p><strong>Tipo:</strong> 
+                            <span class="badge bg-secondary">{{ comunicado.tipo|title }}</span>
+                        </p>
+                    </div>
+                    <div class="col-md-6">
+                        <p><strong>Período de Vigência:</strong> 
+                            {{ comunicado.data_inicio.strftime('%d/%m/%Y') if comunicado.data_inicio else '-' }}
+                            {% if comunicado.data_fim %}
+                            até {{ comunicado.data_fim.strftime('%d/%m/%Y') }}
+                            {% else %}
+                            (indeterminado)
+                            {% endif %}
+                        </p>
+                        <p><strong>Status:</strong> 
+                            {% if comunicado.ativo == 1 %}
+                                <span class="badge bg-success">Ativo</span>
+                            {% else %}
+                                <span class="badge bg-danger">Inativo</span>
+                            {% endif %}
+                        </p>
+                        <p><strong>Visualizações:</strong> 
+                            <i class="bi bi-eye"></i> {{ comunicado.ja_visto or 0 }}
+                        </p>
+                    </div>
+                </div>
+                
+                <hr>
+                
+                <div class="card bg-light p-4">
+                    {{ comunicado.conteudo|safe }}
+                </div>
+            </div>
+        </div>
     </div>
 </div>
+
+<style>
+    .card {
+        border-radius: 10px;
+        overflow: hidden;
+    }
+    .card-header {
+        font-weight: 600;
+    }
+    .bg-light {
+        background-color: #f8f9fa !important;
+        border-radius: 8px;
+        line-height: 1.6;
+    }
+</style>
+
 {% endblock %}

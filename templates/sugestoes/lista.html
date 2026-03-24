@@ -2,54 +2,25 @@
 
 {% block title %}Sugestões e Melhorias{% endblock %}
 
-{% block extra_css %}
-<link rel="stylesheet" href="https://cdn.datatables.net/1.13.7/css/dataTables.bootstrap5.min.css">
-<style>
-    .sugestao-card {
-        transition: transform 0.2s, box-shadow 0.2s;
-        border-left: 4px solid;
-    }
-    .sugestao-card:hover {
-        transform: translateY(-3px);
-        box-shadow: 0 5px 15px rgba(0,0,0,0.1);
-    }
-    .status-badge {
-        padding: 4px 8px;
-        border-radius: 20px;
-        font-size: 0.7rem;
-    }
-    .status-pendente { background-color: #ffc107; color: #212529; }
-    .status-em_andamento { background-color: #17a2b8; color: white; }
-    .status-implementada { background-color: #28a745; color: white; }
-    .status-rejeitada { background-color: #dc3545; color: white; }
-    .voto-btn {
-        cursor: pointer;
-        transition: transform 0.2s;
-    }
-    .voto-btn:hover {
-        transform: scale(1.1);
-    }
-</style>
-{% endblock %}
-
 {% block content %}
 <div class="container-fluid py-4">
     <div class="container">
-        <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+        <div class="d-flex justify-content-between align-items-center mb-4">
             <h2>
                 <i class="bi bi-lightbulb"></i> 
                 Sugestões e Melhorias
+                <span class="badge bg-primary">{{ sugestoes|length }}</span>
             </h2>
             <div>
-                <a href="/sugestoes/nova" class="btn btn-success">
+                {% if session.tipo == 'admin' %}
+                <a href="/sugestoes/nova" class="btn btn-success me-2">
                     <i class="bi bi-plus-circle"></i> Nova Sugestão
                 </a>
-                {% if session.tipo == 'admin' %}
-                <a href="/sugestoes/estatisticas" class="btn btn-info ms-2">
+                <a href="/sugestoes/estatisticas" class="btn btn-info me-2">
                     <i class="bi bi-bar-chart"></i> Estatísticas
                 </a>
                 {% endif %}
-                <a href="/dashboard" class="btn btn-outline-secondary ms-2">
+                <a href="/dashboard" class="btn btn-outline-secondary">
                     <i class="bi bi-arrow-left"></i> Voltar
                 </a>
             </div>
@@ -68,21 +39,23 @@
 
         <!-- Filtros -->
         <div class="card shadow mb-4">
-            <div class="card-header bg-primary text-white">
-                <h5 class="mb-0"><i class="bi bi-funnel"></i> Filtros</h5>
+            <div class="card-header bg-light">
+                <h6 class="mb-0"><i class="bi bi-funnel"></i> Filtros</h6>
             </div>
             <div class="card-body">
                 <form method="GET" class="row g-3">
-                    <div class="col-md-4">
+                    <div class="col-md-3">
                         <label class="form-label">Categoria</label>
                         <select class="form-select" name="categoria">
                             <option value="">Todas</option>
                             {% for cat in categorias %}
-                            <option value="{{ cat.nome }}" {% if filtros.categoria == cat.nome %}selected{% endif %}>{{ cat.nome }}</option>
+                            <option value="{{ cat.nome }}" {% if filtros.categoria == cat.nome %}selected{% endif %}>
+                                {{ cat.nome|replace('_', ' ')|title }}
+                            </option>
                             {% endfor %}
                         </select>
                     </div>
-                    <div class="col-md-4">
+                    <div class="col-md-3">
                         <label class="form-label">Status</label>
                         <select class="form-select" name="status">
                             <option value="">Todos</option>
@@ -92,85 +65,170 @@
                             <option value="rejeitada" {% if filtros.status == 'rejeitada' %}selected{% endif %}>Rejeitada</option>
                         </select>
                     </div>
-                    <div class="col-md-4 d-flex align-items-end">
-                        <button type="submit" class="btn btn-primary w-100">Filtrar</button>
+                    <div class="col-md-3">
+                        <label class="form-label">Prioridade</label>
+                        <select class="form-select" name="prioridade">
+                            <option value="">Todas</option>
+                            <option value="alta" {% if filtros.prioridade == 'alta' %}selected{% endif %}>Alta</option>
+                            <option value="media" {% if filtros.prioridade == 'media' %}selected{% endif %}>Média</option>
+                            <option value="baixa" {% if filtros.prioridade == 'baixa' %}selected{% endif %}>Baixa</option>
+                        </select>
+                    </div>
+                    <div class="col-md-3 d-flex align-items-end">
+                        <button type="submit" class="btn btn-primary w-100">
+                            <i class="bi bi-search"></i> Filtrar
+                        </button>
                     </div>
                 </form>
             </div>
         </div>
 
         <!-- Lista de Sugestões -->
-        {% if sugestoes %}
-            <div class="row">
-                {% for s in sugestoes %}
-                <div class="col-md-6 col-12 mb-4">
-                    <div class="card sugestao-card shadow h-100"
-                         style="border-left-color: 
-                            {% if s.prioridade == 'alta' %}#dc3545
-                            {% elif s.prioridade == 'media' %}#ffc107
-                            {% else %}#6c757d{% endif %}">
-                        <div class="card-body">
-                            <div class="d-flex justify-content-between align-items-start">
-                                <h5 class="card-title">
-                                    <i class="{{ s.icone or 'bi-lightbulb' }}"></i>
-                                    {{ s.titulo }}
-                                </h5>
-                                <span class="status-badge status-{{ s.status }}">
-                                    {{ s.status|replace('_', ' ')|title }}
-                                </span>
-                            </div>
-                            <p class="card-text mt-2">{{ s.descricao[:150] }}{% if s.descricao|length > 150 %}...{% endif %}</p>
-                            
-                            <div class="mt-2">
-                                <span class="badge bg-secondary">
-                                    <i class="bi bi-tag"></i> {{ s.categoria }}
-                                </span>
-                                <span class="badge 
-                                    {% if s.prioridade == 'alta' %}bg-danger
-                                    {% elif s.prioridade == 'media' %}bg-warning text-dark
-                                    {% else %}bg-secondary{% endif %}">
-                                    <i class="bi bi-flag"></i> {{ s.prioridade|upper }}
-                                </span>
-                            </div>
-                            
-                            <div class="mt-3 d-flex justify-content-between align-items-center">
-                                <div class="small text-muted">
-                                    <i class="bi bi-person-circle"></i> {{ s.autor_nome }}<br>
-                                    <i class="bi bi-calendar"></i> {{ s.data_criacao[:16] }}
-                                </div>
-                                <div class="text-center">
-                                    <a href="/sugestoes/{{ s.id }}/votar" class="text-decoration-none voto-btn" title="Votar">
-                                        <i class="bi bi-hand-thumbs-up fs-4"></i>
-                                        <span class="badge bg-primary rounded-pill">{{ s.votos }}</span>
-                                    </a>
-                                    <br>
-                                    <small class="text-muted">votos</small>
-                                </div>
-                            </div>
-                            
-                            <div class="mt-2">
-                                <i class="bi bi-chat"></i> {{ s.total_comentarios }} comentários
+        <div class="row">
+            {% for s in sugestoes %}
+            <div class="col-md-6 col-lg-4 mb-4">
+                <div class="card shadow h-100 {% if s.prioridade == 'alta' %}border-danger{% elif s.prioridade == 'media' %}border-warning{% endif %}">
+                    <div class="card-header {% if s.status == 'implementada' %}bg-success text-white{% elif s.status == 'rejeitada' %}bg-danger text-white{% elif s.prioridade == 'alta' %}bg-danger text-white{% elif s.prioridade == 'media' %}bg-warning{% else %}bg-secondary text-white{% endif %}">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <h6 class="mb-0">{{ s.titulo }}</h6>
+                            <div>
+                                {% if s.prioridade == 'alta' %}
+                                    <span class="badge bg-danger">Alta</span>
+                                {% elif s.prioridade == 'media' %}
+                                    <span class="badge bg-warning">Média</span>
+                                {% else %}
+                                    <span class="badge bg-info">Baixa</span>
+                                {% endif %}
                             </div>
                         </div>
-                        <div class="card-footer bg-transparent">
-                            <a href="/sugestoes/{{ s.id }}" class="btn btn-sm btn-primary w-100">
-                                <i class="bi bi-eye"></i> Ver detalhes
+                    </div>
+                    <div class="card-body">
+                        <p class="card-text small">{{ s.descricao[:120] }}{% if s.descricao|length > 120 %}...{% endif %}</p>
+                        
+                        <div class="mb-2">
+                            <span class="badge bg-secondary">
+                                <i class="bi bi-tag"></i> {{ s.categoria|replace('_', ' ')|title }}
+                            </span>
+                            {% if s.status == 'implementada' %}
+                                <span class="badge bg-success">
+                                    <i class="bi bi-check-circle"></i> Implementada
+                                </span>
+                            {% elif s.status == 'em_andamento' %}
+                                <span class="badge bg-info">
+                                    <i class="bi bi-play-circle"></i> Em Andamento
+                                </span>
+                            {% elif s.status == 'rejeitada' %}
+                                <span class="badge bg-danger">
+                                    <i class="bi bi-x-circle"></i> Rejeitada
+                                </span>
+                            {% else %}
+                                <span class="badge bg-warning">
+                                    <i class="bi bi-hourglass"></i> Pendente
+                                </span>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="text-muted small">
+                            <i class="bi bi-person"></i> {{ s.autor_nome }}
+                            <br>
+                            <i class="bi bi-calendar"></i> {{ s.data_criacao.strftime('%d/%m/%Y %H:%M') if s.data_criacao else '-' }}
+                            <br>
+                            <i class="bi bi-hand-thumbs-up"></i> {{ s.votos }} votos
+                            <br>
+                            <i class="bi bi-chat"></i> {{ s.total_comentarios or 0 }} comentários
+                        </div>
+                    </div>
+                    <div class="card-footer bg-white">
+                        <div class="btn-group w-100">
+                            <a href="/sugestoes/{{ s.id }}" class="btn btn-sm btn-info">
+                                <i class="bi bi-eye"></i> Ver
                             </a>
+                            <a href="/sugestoes/{{ s.id }}/votar" class="btn btn-sm btn-success" 
+                               onclick="return confirm('Votar nesta sugestão?')">
+                                <i class="bi bi-hand-thumbs-up"></i> Votar
+                            </a>
+                            {% if session.tipo == 'admin' %}
+                            <a href="/sugestoes/{{ s.id }}/editar" class="btn btn-sm btn-warning">
+                                <i class="bi bi-pencil"></i>
+                            </a>
+                            {% endif %}
                         </div>
                     </div>
                 </div>
-                {% endfor %}
             </div>
-        {% else %}
-            <div class="text-center py-5">
-                <i class="bi bi-inbox text-muted fs-1"></i>
-                <h5 class="text-muted mt-3">Nenhuma sugestão encontrada</h5>
-                <p>Seja o primeiro a sugerir uma melhoria!</p>
-                <a href="/sugestoes/nova" class="btn btn-primary">
-                    <i class="bi bi-plus-circle"></i> Nova Sugestão
-                </a>
+            {% else %}
+            <div class="col-12">
+                <div class="alert alert-info text-center">
+                    <i class="bi bi-info-circle fs-1"></i>
+                    <p class="mt-2">Nenhuma sugestão encontrada.</p>
+                    {% if session.tipo == 'admin' %}
+                    <a href="/sugestoes/nova" class="btn btn-primary mt-2">
+                        <i class="bi bi-plus-circle"></i> Criar primeira sugestão
+                    </a>
+                    {% endif %}
+                </div>
             </div>
+            {% endfor %}
+        </div>
+
+        <!-- Estatísticas Rápidas -->
+        {% if sugestoes %}
+        <div class="card shadow mt-4">
+            <div class="card-header bg-light">
+                <h6 class="mb-0"><i class="bi bi-graph-up"></i> Resumo</h6>
+            </div>
+            <div class="card-body">
+                <div class="row text-center">
+                    <div class="col-md-3">
+                        <h4 class="text-warning">{{ sugestoes|selectattr('status', 'equalto', 'pendente')|list|length }}</h4>
+                        <small>Pendentes</small>
+                    </div>
+                    <div class="col-md-3">
+                        <h4 class="text-info">{{ sugestoes|selectattr('status', 'equalto', 'em_andamento')|list|length }}</h4>
+                        <small>Em Andamento</small>
+                    </div>
+                    <div class="col-md-3">
+                        <h4 class="text-success">{{ sugestoes|selectattr('status', 'equalto', 'implementada')|list|length }}</h4>
+                        <small>Implementadas</small>
+                    </div>
+                    <div class="col-md-3">
+                        <h4 class="text-danger">{{ sugestoes|selectattr('status', 'equalto', 'rejeitada')|list|length }}</h4>
+                        <small>Rejeitadas</small>
+                    </div>
+                </div>
+            </div>
+        </div>
         {% endif %}
     </div>
 </div>
+
+<style>
+    .card {
+        border-radius: 10px;
+        overflow: hidden;
+        transition: transform 0.2s;
+    }
+    .card:hover {
+        transform: translateY(-5px);
+    }
+    .card-header {
+        font-weight: 600;
+    }
+    .btn-group {
+        gap: 5px;
+    }
+    .badge {
+        font-size: 0.75rem;
+        padding: 0.3rem 0.5rem;
+    }
+    @media (max-width: 768px) {
+        .btn-group {
+            flex-direction: column;
+        }
+        .btn-group .btn {
+            margin-bottom: 5px;
+        }
+    }
+</style>
+
 {% endblock %}

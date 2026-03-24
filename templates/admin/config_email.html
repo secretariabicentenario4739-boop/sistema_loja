@@ -1,0 +1,155 @@
+{% extends "base.html" %}
+
+{% block title %}Configuração de E-mail{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="container">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h2><i class="bi bi-envelope"></i> Configuração de E-mail</h2>
+            <a href="/dashboard" class="btn btn-outline-secondary">
+                <i class="bi bi-arrow-left"></i> Voltar
+            </a>
+        </div>
+
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+                        {{ message }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
+        <div class="row">
+            <div class="col-md-8">
+                <div class="card shadow">
+                    <div class="card-header bg-primary text-white">
+                        <h5 class="mb-0"><i class="bi bi-gear"></i> Configurações SMTP</h5>
+                    </div>
+                    <div class="card-body">
+                        <form method="POST">
+                            <div class="row">
+                                <div class="col-md-8 mb-3">
+                                    <label class="form-label">Servidor SMTP *</label>
+                                    <input type="text" class="form-control" name="server" 
+                                           value="{{ config.server if config else 'smtp.gmail.com' }}" required>
+                                    <small class="text-muted">Ex: smtp.gmail.com, smtp.office365.com</small>
+                                </div>
+                                <div class="col-md-4 mb-3">
+                                    <label class="form-label">Porta *</label>
+                                    <input type="number" class="form-control" name="port" 
+                                           value="{{ config.port if config else 587 }}" required>
+                                </div>
+                            </div>
+
+                            <div class="form-check mb-3">
+                                <input class="form-check-input" type="checkbox" name="use_tls" value="1" 
+                                       {% if not config or config.use_tls == 1 %}checked{% endif %}>
+                                <label class="form-check-label">Usar TLS/SSL</label>
+                                <small class="text-muted d-block">TLS usa porta 587, SSL usa porta 465</small>
+                            </div>
+
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label">Usuário *</label>
+                                    <input type="email" class="form-control" name="username" 
+                                           value="{{ config.username if config else '' }}" required>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label">Senha *</label>
+                                    <input type="password" class="form-control" name="password" 
+                                           value="{{ config.password if config else '' }}" required>
+                                </div>
+                            </div>
+
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label">E-mail Remetente *</label>
+                                    <input type="email" class="form-control" name="sender" 
+                                           value="{{ config.sender if config else '' }}" required>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label">Nome do Remetente</label>
+                                    <input type="text" class="form-control" name="sender_name" 
+                                           value="{{ config.sender_name if config else 'Sistema Maçônico' }}">
+                                </div>
+                            </div>
+
+                            <div class="form-check mb-3">
+                                <input class="form-check-input" type="checkbox" name="active" value="1" 
+                                       {% if not config or config.active == 1 %}checked{% endif %}>
+                                <label class="form-check-label">Ativar esta configuração</label>
+                            </div>
+
+                            <div class="alert alert-info">
+                                <i class="bi bi-info-circle"></i>
+                                <strong>Para Gmail:</strong>
+                                <ul class="mb-0 mt-2">
+                                    <li>Servidor: smtp.gmail.com</li>
+                                    <li>Porta: 587</li>
+                                    <li>TLS: Ativado</li>
+                                    <li>Use "senha de aplicativo" do Google (não a senha normal)</li>
+                                </ul>
+                            </div>
+
+                            <div class="text-center mt-4">
+                                <button type="submit" class="btn btn-success btn-lg px-5">
+                                    <i class="bi bi-save"></i> Salvar Configuração
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-4">
+                <div class="card shadow">
+                    <div class="card-header bg-info text-white">
+                        <h5 class="mb-0"><i class="bi bi-send"></i> Testar Configuração</h5>
+                    </div>
+                    <div class="card-body">
+                        <form method="POST" action="/config/email/testar">
+                            <div class="mb-3">
+                                <label class="form-label">E-mail de Teste</label>
+                                <input type="email" class="form-control" name="email_teste" required>
+                                <small class="text-muted">Enviará um e-mail de teste para este endereço</small>
+                            </div>
+                            <button type="submit" class="btn btn-primary w-100">
+                                <i class="bi bi-send"></i> Enviar Teste
+                            </button>
+                        </form>
+                    </div>
+                </div>
+
+                <div class="card shadow mt-4">
+                    <div class="card-header bg-secondary text-white">
+                        <h5 class="mb-0"><i class="bi bi-question-circle"></i> Dicas</h5>
+                    </div>
+                    <div class="card-body">
+                        <ul class="list-unstyled mb-0">
+                            <li><i class="bi bi-check-circle-fill text-success"></i> Use senhas de aplicativo</li>
+                            <li><i class="bi bi-check-circle-fill text-success"></i> Verifique permissões da conta</li>
+                            <li><i class="bi bi-check-circle-fill text-success"></i> Teste antes de ativar</li>
+                            <li><i class="bi bi-check-circle-fill text-success"></i> Monitore a pasta de spam</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .card {
+        border-radius: 10px;
+        overflow: hidden;
+    }
+    .card-header {
+        font-weight: 600;
+    }
+</style>
+
+{% endblock %}

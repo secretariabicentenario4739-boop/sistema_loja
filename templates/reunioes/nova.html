@@ -7,36 +7,86 @@
     <div class="container">
         <div class="d-flex justify-content-between align-items-center mb-4">
             <h2>
-                <i class="bi bi-plus-circle"></i> 
+                <i class="bi bi-calendar-plus"></i> 
                 Nova Reunião
             </h2>
-            <a href="/reunioes" class="btn btn-outline-secondary">
-                <i class="bi bi-arrow-left"></i> Voltar
-            </a>
+            <div>
+                <a href="/reunioes" class="btn btn-outline-secondary">
+                    <i class="bi bi-arrow-left"></i> Voltar
+                </a>
+            </div>
         </div>
 
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+                        {{ message }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
         <div class="card shadow">
-            <div class="card-header bg-success text-white">
-                <h5 class="mb-0">
-                    <i class="bi bi-calendar-event"></i> 
-                    Dados da Reunião
-                </h5>
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0"><i class="bi bi-calendar-event"></i> Dados da Reunião</h5>
             </div>
             <div class="card-body">
-                <form method="POST">
+                <form method="POST" id="formReuniao">
+                    <!-- Informações Básicas -->
                     <div class="row">
                         <div class="col-md-8 mb-3">
                             <label class="form-label">Título da Reunião *</label>
-                            <input type="text" class="form-control" name="titulo" required 
-                                   placeholder="Ex: Sessão Ordinária, Reunião Magna, etc.">
+                            <input type="text" class="form-control" name="titulo" 
+                                   placeholder="Ex: Reunião Ordinária de Março" required>
                         </div>
                         <div class="col-md-4 mb-3">
-                            <label class="form-label">Tipo *</label>
-                            <select class="form-select" name="tipo" required>
+                            <label class="form-label">Tipo de Reunião *</label>
+                            <select class="form-select" name="tipo" id="tipoReuniao" required>
                                 <option value="">Selecione...</option>
                                 {% for tipo in tipos %}
-                                <option value="{{ tipo.nome }}" style="color: {{ tipo.cor }};">
+                                <option value="{{ tipo.nome }}" data-cor="{{ tipo.cor }}" data-descricao="{{ tipo.descricao }}">
                                     {{ tipo.nome }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                            <small class="text-muted" id="descricaoTipo"></small>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label">Data *</label>
+                            <input type="date" class="form-control" name="data" id="dataReuniao" 
+                                   value="{{ hoje }}" required>
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label">Hora Início *</label>
+                            <input type="time" class="form-control" name="hora_inicio" id="horaInicio" 
+                                   value="19:30" required>
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label">Hora Término</label>
+                            <input type="time" class="form-control" name="hora_termino" id="horaTermino" 
+                                   value="22:00">
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Local</label>
+                            <input type="text" class="form-control" name="local" 
+                                   placeholder="Ex: Templo Maçônico, Rua das Acácias, 123">
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Loja</label>
+                            <select class="form-select" name="loja_id">
+                                <option value="">Selecione uma loja...</option>
+                                {% for loja in lojas %}
+                                <option value="{{ loja.id }}">
+                                    {{ loja.nome }} - Nº {{ loja.numero }}
+                                    {% if loja.oriente %} - {{ loja.oriente }}{% endif %}
                                 </option>
                                 {% endfor %}
                             </select>
@@ -44,89 +94,360 @@
                     </div>
 
                     <div class="row">
-                        <div class="col-md-4 mb-3">
-                            <label class="form-label">Data *</label>
-                            <input type="date" class="form-control" name="data" 
-                                   value="{{ hoje }}" required>
-                        </div>
-                        <div class="col-md-4 mb-3">
-                            <label class="form-label">Hora de Início</label>
-                            <input type="time" class="form-control" name="hora_inicio" 
-                                   value="19:30">
-                        </div>
-                        <div class="col-md-4 mb-3">
-                            <label class="form-label">Hora de Término</label>
-                            <input type="time" class="form-control" name="hora_termino" 
-                                   value="21:30">
-                        </div>
-                    </div>
-
-                    <div class="row">
-                        <div class="col-md-4 mb-3">
+                        <div class="col-md-6 mb-3">
                             <label class="form-label">Grau</label>
                             <select class="form-select" name="grau">
-                                <option value="">Todos os Graus</option>
+                                <option value="">Todos os graus</option>
                                 <option value="1">Aprendiz (1º Grau)</option>
                                 <option value="2">Companheiro (2º Grau)</option>
                                 <option value="3">Mestre (3º Grau)</option>
                             </select>
-                            <small class="text-muted">Restringir a obreiros de determinado grau</small>
+                            <small class="text-muted">Restringir participação a um grau específico</small>
                         </div>
-                        <div class="col-md-4 mb-3">
-                            <label class="form-label">Local</label>
-                            <input type="text" class="form-control" name="local" 
-                                   placeholder="Ex: Templo, Salão Nobre, etc.">
-                        </div>
-                        <div class="col-md-4 mb-3">
-                            <label class="form-label">Loja</label>
-                            <select class="form-select" name="loja_id">
-                                <option value="">Selecione...</option>
-                                {% for loja in lojas %}
-                                <option value="{{ loja.id }}">{{ loja.nome }} - Nº {{ loja.numero }}</option>
-                                {% endfor %}
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Status</label>
+                            <select class="form-select" name="status">
+                                <option value="agendada">Agendada</option>
+                                <option value="realizada">Realizada</option>
+                                <option value="cancelada">Cancelada</option>
                             </select>
                         </div>
                     </div>
 
+                    <hr>
+                    
+                    <!-- Pauta e Observações -->
+                    <h6 class="mb-3"><i class="bi bi-list-ul"></i> Pauta da Reunião</h6>
                     <div class="mb-3">
-                        <label class="form-label">Pauta</label>
-                        <textarea class="form-control" name="pauta" rows="4" 
+                        <textarea class="form-control" name="pauta" rows="6" 
                                   placeholder="Descreva os assuntos a serem tratados na reunião..."></textarea>
+                        <small class="text-muted">Você pode usar markdown para formatação</small>
                     </div>
 
+                    <h6 class="mb-3"><i class="bi bi-chat-text"></i> Observações</h6>
                     <div class="mb-3">
-                        <label class="form-label">Observações</label>
-                        <textarea class="form-control" name="observacoes" rows="3" 
-                                  placeholder="Informações adicionais..."></textarea>
+                        <textarea class="form-control" name="observacoes" rows="4" 
+                                  placeholder="Observações adicionais sobre a reunião..."></textarea>
                     </div>
 
                     <hr>
-                    <div class="alert alert-info">
-                        <i class="bi bi-info-circle"></i>
-                        Após criar a reunião, você poderá registrar a presença dos obreiros e redigir a ata.
+
+                    <!-- Opções Adicionais -->
+                    <h6 class="mb-3"><i class="bi bi-gear"></i> Opções Adicionais</h6>
+                    <div class="row">
+                        <div class="col-md-12 mb-3">
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" id="notificarWhatsapp" name="notificar_whatsapp" checked>
+                                <label class="form-check-label" for="notificarWhatsapp">
+                                    <i class="bi bi-whatsapp"></i> Notificar obreiros via WhatsApp
+                                </label>
+                                <small class="text-muted d-block">Enviará uma notificação para todos os obreiros cadastrados</small>
+                            </div>
+                        </div>
+                        <div class="col-md-12 mb-3">
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" id="notificarEmail" name="notificar_email">
+                                <label class="form-check-label" for="notificarEmail">
+                                    <i class="bi bi-envelope"></i> Notificar obreiros via E-mail
+                                </label>
+                                <small class="text-muted d-block">Enviará um e-mail para todos os obreiros com e-mail cadastrado</small>
+                            </div>
+                        </div>
                     </div>
 
+                    <hr>
+
+                    <!-- Botões de Ação -->
                     <div class="text-center mt-4">
+                        <button type="button" class="btn btn-secondary me-2" onclick="window.location.href='/reunioes'">
+                            <i class="bi bi-x-circle"></i> Cancelar
+                        </button>
+                        <button type="button" class="btn btn-info me-2" onclick="visualizarPauta()">
+                            <i class="bi bi-eye"></i> Visualizar Pauta
+                        </button>
                         <button type="submit" class="btn btn-success btn-lg px-5">
-                            <i class="bi bi-save"></i> Criar Reunião
+                            <i class="bi bi-save"></i> Agendar Reunião
                         </button>
                     </div>
                 </form>
+            </div>
+        </div>
+
+        <!-- Cards de Sugestões -->
+        <div class="row mt-4">
+            <div class="col-md-4">
+                <div class="card border-info">
+                    <div class="card-body text-center">
+                        <i class="bi bi-info-circle fs-1 text-info"></i>
+                        <h6 class="mt-2">Dica</h6>
+                        <p class="small">Preencha todos os campos obrigatórios marcados com * para agendar a reunião.</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card border-success">
+                    <div class="card-body text-center">
+                        <i class="bi bi-whatsapp fs-1 text-success"></i>
+                        <h6 class="mt-2">Notificações</h6>
+                        <p class="small">Ative as notificações para avisar os obreiros sobre a nova reunião.</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card border-warning">
+                    <div class="card-body text-center">
+                        <i class="bi bi-calendar-check fs-1 text-warning"></i>
+                        <h6 class="mt-2">Lembretes</h6>
+                        <p class="small">Os obreiros receberão lembretes automáticos 24h antes da reunião.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal de Visualização da Pauta -->
+<div class="modal fade" id="modalPauta" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title"><i class="bi bi-eye"></i> Visualização da Pauta</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="pautaPreview">
+                <p class="text-muted">Clique em "Visualizar Pauta" para ver o conteúdo formatado.</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fechar</button>
+                <button type="button" class="btn btn-primary" onclick="copiarPauta()">
+                    <i class="bi bi-clipboard"></i> Copiar
+                </button>
             </div>
         </div>
     </div>
 </div>
 
 <script>
-    // Validar se hora término é maior que hora início
-    document.querySelector('form').addEventListener('submit', function(e) {
-        const inicio = document.querySelector('input[name="hora_inicio"]').value;
-        const termino = document.querySelector('input[name="hora_termino"]').value;
+    // Formatação automática do texto
+    function formatarTexto() {
+        // Adicionar marcação automática de data e hora
+        const data = document.getElementById('dataReuniao').value;
+        const horaInicio = document.getElementById('horaInicio').value;
         
-        if (inicio && termino && inicio >= termino) {
-            e.preventDefault();
-            alert('A hora de término deve ser maior que a hora de início.');
+        if (data && horaInicio) {
+            const dataFormatada = new Date(data).toLocaleDateString('pt-BR');
+            const pauta = document.querySelector('textarea[name="pauta"]');
+            const textoAtual = pauta.value;
+            
+            if (!textoAtual.includes('Data:')) {
+                const cabecalho = `## PAUTA DA REUNIÃO\n\n**Data:** ${dataFormatada}\n**Horário:** ${horaInicio}\n\n---\n\n`;
+                pauta.value = cabecalho + textoAtual;
+            }
+        }
+    }
+    
+    // Visualizar pauta formatada
+    function visualizarPauta() {
+        const pauta = document.querySelector('textarea[name="pauta"]').value;
+        const modalBody = document.getElementById('pautaPreview');
+        
+        if (pauta.trim()) {
+            // Converter markdown básico para HTML
+            let html = pauta
+                .replace(/\n/g, '<br>')
+                .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+                .replace(/\*(.*?)\*/g, '<em>$1</em>')
+                .replace(/^## (.*)$/gm, '<h5>$1</h5>')
+                .replace(/^### (.*)$/gm, '<h6>$1</h6>')
+                .replace(/^- (.*)$/gm, '<li>$1</li>')
+                .replace(/<li>(.*?)<\/li>/g, '<ul><li>$1</li></ul>')
+                .replace(/<\/ul><ul>/g, '');
+            
+            modalBody.innerHTML = `<div class="p-3 bg-light rounded">${html}</div>`;
+        } else {
+            modalBody.innerHTML = '<p class="text-muted">Nenhuma pauta definida.</p>';
+        }
+        
+        new bootstrap.Modal(document.getElementById('modalPauta')).show();
+    }
+    
+    // Copiar pauta
+    function copiarPauta() {
+        const pauta = document.querySelector('textarea[name="pauta"]').value;
+        navigator.clipboard.writeText(pauta).then(() => {
+            alert('Pauta copiada para a área de transferência!');
+        });
+    }
+    
+    // Validação de horário
+    document.getElementById('horaInicio').addEventListener('change', function() {
+        const horaInicio = this.value;
+        const horaTermino = document.getElementById('horaTermino').value;
+        
+        if (horaTermino && horaInicio >= horaTermino) {
+            alert('O horário de término deve ser maior que o horário de início!');
+            document.getElementById('horaTermino').value = '';
         }
     });
+    
+    document.getElementById('horaTermino').addEventListener('change', function() {
+        const horaTermino = this.value;
+        const horaInicio = document.getElementById('horaInicio').value;
+        
+        if (horaInicio && horaTermino <= horaInicio) {
+            alert('O horário de término deve ser maior que o horário de início!');
+            this.value = '';
+        }
+    });
+    
+    // Validação de data
+    document.getElementById('dataReuniao').addEventListener('change', function() {
+        const dataSelecionada = new Date(this.value);
+        const hoje = new Date();
+        hoje.setHours(0, 0, 0, 0);
+        
+        if (dataSelecionada < hoje) {
+            alert('A data da reunião não pode ser anterior à data atual!');
+            this.value = "{{ hoje }}";
+        }
+    });
+    
+    // Mostrar descrição do tipo de reunião
+    document.getElementById('tipoReuniao').addEventListener('change', function() {
+        const selected = this.options[this.selectedIndex];
+        const descricao = selected.getAttribute('data-descricao');
+        const cor = selected.getAttribute('data-cor');
+        
+        const descElement = document.getElementById('descricaoTipo');
+        if (descricao) {
+            descElement.innerHTML = `<i class="bi bi-info-circle"></i> ${descricao}`;
+            descElement.style.color = cor;
+        } else {
+            descElement.innerHTML = '';
+        }
+    });
+    
+    // Gerar título automático
+    document.getElementById('dataReuniao').addEventListener('change', function() {
+        const tituloInput = document.querySelector('input[name="titulo"]');
+        if (!tituloInput.value) {
+            const data = new Date(this.value);
+            const mes = data.toLocaleString('pt-BR', { month: 'long' });
+            const ano = data.getFullYear();
+            tituloInput.value = `Reunião Ordinária - ${mes.charAt(0).toUpperCase() + mes.slice(1)}/${ano}`;
+        }
+    });
+    
+    // Formatar texto automaticamente
+    document.querySelector('textarea[name="pauta"]').addEventListener('focus', function() {
+        if (!this.value) {
+            formatarTexto();
+        }
+    });
+    
+    // Validar formulário antes de enviar
+    document.getElementById('formReuniao').addEventListener('submit', function(e) {
+        const titulo = document.querySelector('input[name="titulo"]').value.trim();
+        const data = document.getElementById('dataReuniao').value;
+        const horaInicio = document.getElementById('horaInicio').value;
+        
+        if (!titulo) {
+            e.preventDefault();
+            alert('Por favor, informe o título da reunião!');
+            document.querySelector('input[name="titulo"]').focus();
+            return false;
+        }
+        
+        if (!data) {
+            e.preventDefault();
+            alert('Por favor, informe a data da reunião!');
+            return false;
+        }
+        
+        if (!horaInicio) {
+            e.preventDefault();
+            alert('Por favor, informe o horário de início!');
+            return false;
+        }
+        
+        // Confirmar agendamento
+        const dataFormatada = new Date(data).toLocaleDateString('pt-BR');
+        const confirmacao = confirm(`Confirmar agendamento da reunião:\n\nTítulo: ${titulo}\nData: ${dataFormatada}\nHorário: ${horaInicio}\n\nDeseja prosseguir?`);
+        
+        if (!confirmacao) {
+            e.preventDefault();
+            return false;
+        }
+        
+        // Mostrar loading
+        const btnSubmit = this.querySelector('button[type="submit"]');
+        const originalText = btnSubmit.innerHTML;
+        btnSubmit.innerHTML = '<i class="bi bi-hourglass-split"></i> Salvando...';
+        btnSubmit.disabled = true;
+        
+        setTimeout(() => {
+            btnSubmit.innerHTML = originalText;
+            btnSubmit.disabled = false;
+        }, 3000);
+    });
+    
+    // Atalhos de teclado
+    document.addEventListener('keydown', function(e) {
+        if (e.ctrlKey && e.key === 's') {
+            e.preventDefault();
+            document.getElementById('formReuniao').submit();
+        }
+    });
+    
+    // Dica de atalho
+    console.log('Dica: Use Ctrl+S para salvar rapidamente!');
 </script>
+
+<style>
+    .card {
+        border-radius: 10px;
+        overflow: hidden;
+    }
+    .card-header {
+        font-weight: 600;
+    }
+    textarea {
+        font-family: monospace;
+        font-size: 14px;
+    }
+    .form-control:focus, .form-select:focus {
+        border-color: #0d6efd;
+        box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.25);
+    }
+    .form-check-input:checked {
+        background-color: #0d6efd;
+        border-color: #0d6efd;
+    }
+    .btn {
+        transition: all 0.3s ease;
+    }
+    .btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    }
+    #pautaPreview {
+        max-height: 60vh;
+        overflow-y: auto;
+    }
+    .modal-body ul {
+        padding-left: 1.5rem;
+    }
+    .modal-body li {
+        margin-bottom: 0.5rem;
+    }
+    @media (max-width: 768px) {
+        .btn-group {
+            flex-direction: column;
+        }
+        .btn-group .btn {
+            margin-bottom: 5px;
+        }
+    }
+</style>
+
 {% endblock %}

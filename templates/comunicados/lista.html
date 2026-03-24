@@ -6,18 +6,38 @@
 <div class="container-fluid py-4">
     <div class="container">
         <div class="d-flex justify-content-between align-items-center mb-4">
-            <h2><i class="bi bi-megaphone"></i> Comunicados</h2>
-            {% if session.tipo == 'admin' %}
-            <a href="/comunicados/novo" class="btn btn-success">
-                <i class="bi bi-plus-circle"></i> Novo Comunicado
-            </a>
-            {% endif %}
+            <h2>
+                <i class="bi bi-megaphone"></i> 
+                Comunicados
+                <span class="badge bg-primary">{{ comunicados|length }}</span>
+            </h2>
+            <div>
+                {% if session.tipo == 'admin' %}
+                <a href="/comunicados/novo" class="btn btn-success me-2">
+                    <i class="bi bi-plus-circle"></i> Novo Comunicado
+                </a>
+                {% endif %}
+                <a href="/dashboard" class="btn btn-outline-secondary">
+                    <i class="bi bi-arrow-left"></i> Voltar
+                </a>
+            </div>
         </div>
+
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+                        {{ message }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
 
         <!-- Filtros -->
         <div class="card shadow mb-4">
-            <div class="card-header bg-primary text-white">
-                <h5 class="mb-0"><i class="bi bi-funnel"></i> Filtros</h5>
+            <div class="card-header bg-light">
+                <h6 class="mb-0"><i class="bi bi-funnel"></i> Filtros</h6>
             </div>
             <div class="card-body">
                 <form method="GET" class="row g-3">
@@ -26,7 +46,9 @@
                         <select class="form-select" name="tipo">
                             <option value="">Todos</option>
                             {% for t in tipos %}
-                            <option value="{{ t.tipo }}" {% if filtros.tipo == t.tipo %}selected{% endif %}>{{ t.tipo|capitalize }}</option>
+                            <option value="{{ t.tipo }}" {% if filtros.tipo == t.tipo %}selected{% endif %}>
+                                {{ t.tipo|title }}
+                            </option>
                             {% endfor %}
                         </select>
                     </div>
@@ -35,81 +57,182 @@
                         <select class="form-select" name="prioridade">
                             <option value="">Todas</option>
                             {% for p in prioridades %}
-                            <option value="{{ p.prioridade }}" {% if filtros.prioridade == p.prioridade %}selected{% endif %}>{{ p.prioridade|capitalize }}</option>
+                            <option value="{{ p.prioridade }}" {% if filtros.prioridade == p.prioridade %}selected{% endif %}>
+                                {% if p.prioridade == 'urgente' %}
+                                    Urgente
+                                {% elif p.prioridade == 'alta' %}
+                                    Alta
+                                {% elif p.prioridade == 'normal' %}
+                                    Normal
+                                {% else %}
+                                    {{ p.prioridade|title }}
+                                {% endif %}
+                            </option>
                             {% endfor %}
                         </select>
                     </div>
                     <div class="col-md-2">
-                        <label class="form-label">Data Início (início)</label>
+                        <label class="form-label">Data Início</label>
                         <input type="date" class="form-control" name="data_ini" value="{{ filtros.data_ini }}">
                     </div>
                     <div class="col-md-2">
-                        <label class="form-label">Data Fim (término)</label>
+                        <label class="form-label">Data Fim</label>
                         <input type="date" class="form-control" name="data_fim" value="{{ filtros.data_fim }}">
                     </div>
                     <div class="col-md-2">
                         <label class="form-label">Status</label>
                         <select class="form-select" name="ativo">
-                            <option value="">Todos (ativos e inativos)</option>
+                            <option value="">Ativos</option>
                             <option value="1" {% if filtros.ativo == '1' %}selected{% endif %}>Ativos</option>
                             <option value="0" {% if filtros.ativo == '0' %}selected{% endif %}>Inativos</option>
                         </select>
                     </div>
                     <div class="col-md-2 d-flex align-items-end">
-                        <button type="submit" class="btn btn-primary w-100">Filtrar</button>
-                        <a href="/comunicados" class="btn btn-secondary w-100 ms-2">Limpar</a>
+                        <button type="submit" class="btn btn-primary w-100">
+                            <i class="bi bi-search"></i> Filtrar
+                        </button>
                     </div>
                 </form>
             </div>
         </div>
 
-        {% if comunicados %}
-            <div class="row">
-                {% for c in comunicados %}
-                <div class="col-md-6 mb-4">
-                    <div class="card h-100 shadow-sm {% if c.prioridade == 'urgente' %}border-danger{% elif c.prioridade == 'importante' %}border-warning{% endif %}">
-                        <div class="card-header d-flex justify-content-between align-items-center
-                            {% if c.prioridade == 'urgente' %}bg-danger text-white
-                            {% elif c.prioridade == 'importante' %}bg-warning text-dark
-                            {% else %}bg-secondary text-white{% endif %}">
-                            <span>
-                                <i class="bi bi-megaphone"></i> {{ c.titulo }}
-                                {% if not c.ja_visto %}
-                                    <span class="badge bg-light text-dark ms-2">Novo</span>
-                                {% endif %}
+        <!-- Lista de Comunicados -->
+        <div class="row">
+            {% for c in comunicados %}
+            <div class="col-md-6 col-lg-4 mb-4">
+                <div class="card shadow h-100 {% if c.prioridade == 'urgente' %}border-danger border-2{% elif c.prioridade == 'alta' %}border-warning{% endif %}">
+                    <div class="card-header {% if c.prioridade == 'urgente' %}bg-danger text-white{% elif c.prioridade == 'alta' %}bg-warning{% else %}bg-primary text-white{% endif %}">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <h6 class="mb-0">{{ c.titulo }}</h6>
+                            {% if not c.ja_visto %}
+                            <span class="badge bg-danger">Novo</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <div class="mb-2">
+                            <span class="badge bg-secondary">
+                                <i class="bi bi-tag"></i> {{ c.tipo|title }}
                             </span>
-                            <small>{{ c.data_criacao[:16] }}</small>
+                            {% if c.prioridade == 'urgente' %}
+                                <span class="badge bg-danger">Urgente</span>
+                            {% elif c.prioridade == 'alta' %}
+                                <span class="badge bg-warning">Alta Prioridade</span>
+                            {% else %}
+                                <span class="badge bg-info">Normal</span>
+                            {% endif %}
                         </div>
-                        <div class="card-body">
-                            <p>{{ c.conteudo[:150] }}{% if c.conteudo|length > 150 %}...{% endif %}</p>
-                            <div class="mt-2">
-                                <span class="badge bg-info">{{ c.tipo }}</span>
-                                <span class="badge
-                                    {% if c.prioridade == 'urgente' %}bg-danger
-                                    {% elif c.prioridade == 'importante' %}bg-warning text-dark
-                                    {% else %}bg-secondary{% endif %}">
-                                    {{ c.prioridade|upper }}
-                                </span>
-                                {% if c.ativo == 0 %}
-                                    <span class="badge bg-secondary">Inativo</span>
-                                {% endif %}
-                            </div>
-                            <small class="text-muted">Publicado por: {{ c.autor_nome }}</small>
+                        
+                        <p class="card-text small">{{ c.conteudo[:150] }}{% if c.conteudo|length > 150 %}...{% endif %}</p>
+                        
+                        <div class="text-muted small">
+                            <i class="bi bi-person"></i> {{ c.autor_nome }}
+                            <br>
+                            <i class="bi bi-calendar"></i> 
+                            {{ c.data_criacao.strftime('%d/%m/%Y %H:%M') if c.data_criacao else '-' }}
+                            <br>
+                            <i class="bi bi-calendar-check"></i> 
+                            Vigência: {{ c.data_inicio.strftime('%d/%m/%Y') if c.data_inicio else '-' }}
+                            {% if c.data_fim %}
+                            até {{ c.data_fim.strftime('%d/%m/%Y') }}
+                            {% else %}
+                            (indeterminado)
+                            {% endif %}
+                            <br>
+                            <i class="bi bi-eye"></i> {{ c.ja_visto or 0 }} visualizações
                         </div>
-                        <div class="card-footer bg-transparent">
-                            <a href="/comunicados/{{ c.id }}/visualizar" class="btn btn-sm btn-primary">Ver mais</a>
+                    </div>
+                    <div class="card-footer bg-white">
+                        <div class="btn-group w-100">
+                            <a href="/comunicados/{{ c.id }}/visualizar" class="btn btn-sm btn-info">
+                                <i class="bi bi-eye"></i> Visualizar
+                            </a>
                             {% if session.tipo == 'admin' %}
-                            <a href="/comunicados/{{ c.id }}/editar" class="btn btn-sm btn-warning">Editar</a>
-                            <a href="/comunicados/{{ c.id }}/excluir" class="btn btn-sm btn-danger" onclick="return confirm('Excluir comunicado?')">Excluir</a>
+                            <a href="/comunicados/{{ c.id }}/editar" class="btn btn-sm btn-warning">
+                                <i class="bi bi-pencil"></i>
+                            </a>
+                            <a href="/comunicados/{{ c.id }}/excluir" class="btn btn-sm btn-danger"
+                               onclick="return confirm('Excluir este comunicado?')">
+                                <i class="bi bi-trash"></i>
+                            </a>
                             {% endif %}
                         </div>
                     </div>
                 </div>
-                {% endfor %}
             </div>
-        {% else %}
-            <div class="alert alert-info text-center">Nenhum comunicado encontrado com os filtros selecionados.</div>
-        {% endif %}
+            {% else %}
+            <div class="col-12">
+                <div class="alert alert-info text-center">
+                    <i class="bi bi-envelope-paper fs-1"></i>
+                    <p class="mt-2">Nenhum comunicado encontrado.</p>
+                    {% if session.tipo == 'admin' %}
+                    <a href="/comunicados/novo" class="btn btn-primary mt-2">
+                        <i class="bi bi-plus-circle"></i> Criar primeiro comunicado
+                    </a>
+                    {% endif %}
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+
+        <!-- Legenda -->
+        <div class="card shadow mt-4">
+            <div class="card-header bg-light">
+                <h6 class="mb-0"><i class="bi bi-info-circle"></i> Legenda</h6>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-3">
+                        <span class="badge bg-danger">Borda Vermelha</span> = Urgente
+                    </div>
+                    <div class="col-md-3">
+                        <span class="badge bg-warning">Borda Amarela</span> = Alta Prioridade
+                    </div>
+                    <div class="col-md-3">
+                        <span class="badge bg-danger">Novo</span> = Não visualizado
+                    </div>
+                    <div class="col-md-3">
+                        <i class="bi bi-eye"></i> = Número de visualizações
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
 </div>
+
+<style>
+    .card {
+        border-radius: 10px;
+        overflow: hidden;
+        transition: transform 0.2s;
+    }
+    .card:hover {
+        transform: translateY(-5px);
+    }
+    .card-header {
+        font-weight: 600;
+    }
+    .btn-group {
+        gap: 5px;
+    }
+    .badge {
+        font-size: 0.75rem;
+        padding: 0.3rem 0.5rem;
+    }
+    .border-danger {
+        border-color: #dc3545 !important;
+    }
+    .border-warning {
+        border-color: #ffc107 !important;
+    }
+    @media (max-width: 768px) {
+        .btn-group {
+            flex-direction: column;
+        }
+        .btn-group .btn {
+            margin-bottom: 5px;
+        }
+    }
+</style>
+
 {% endblock %}

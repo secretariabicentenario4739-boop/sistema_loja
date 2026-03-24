@@ -1,51 +1,60 @@
 {% extends "base.html" %}
 
-{% block title %}Obreiros{% endblock %}
-
-{% block extra_css %}
-<link rel="stylesheet" href="https://cdn.datatables.net/1.13.7/css/dataTables.bootstrap5.min.css">
-{% endblock %}
+{% block title %}Lista de Obreiros{% endblock %}
 
 {% block content %}
 <div class="container-fluid py-4">
     <div class="container">
+        <!-- Cabeçalho com botão Novo Obreiro e Voltar -->
         <div class="d-flex justify-content-between align-items-center mb-4">
-            <h2><i class="bi bi-people-fill"></i> Quadro de Obreiros</h2>
+            <h2>
+                <i class="bi bi-people"></i> 
+                Obreiros
+                <span class="badge bg-primary">{{ obreiros|length }}</span>
+            </h2>
             <div>
                 {% if session.tipo == 'admin' %}
-                <a href="/cargos" class="btn btn-outline-info me-2">
-                    <i class="bi bi-diagram-3"></i> Cargos
-                </a>
-                <a href="/obreiros/novo" class="btn btn-success">
+                <a href="/obreiros/novo" class="btn btn-success me-2">
                     <i class="bi bi-person-plus"></i> Novo Obreiro
                 </a>
                 {% endif %}
-                <a href="/dashboard" class="btn btn-outline-secondary ms-2">
-                    <i class="bi bi-arrow-left"></i> Voltar
+                <a href="/dashboard" class="btn btn-outline-secondary">
+                    <i class="bi bi-arrow-left"></i> Voltar ao Dashboard
                 </a>
             </div>
         </div>
 
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+                        {{ message }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
         <!-- Filtros -->
         <div class="card shadow mb-4">
-            <div class="card-header bg-primary text-white">
-                <h5 class="mb-0"><i class="bi bi-funnel"></i> Filtros</h5>
+            <div class="card-header bg-light">
+                <h6 class="mb-0"><i class="bi bi-funnel"></i> Filtros</h6>
             </div>
             <div class="card-body">
                 <form method="GET" class="row g-3">
                     <div class="col-md-3">
-                        <label class="form-label">Nome / Usuário</label>
-                        <input type="text" class="form-control" name="nome" value="{{ filtros.nome }}">
+                        <label class="form-label">Nome/Usuário</label>
+                        <input type="text" class="form-control" name="nome" value="{{ filtros.nome }}" placeholder="Buscar...">
                     </div>
                     <div class="col-md-2">
                         <label class="form-label">Grau</label>
                         <select class="form-select" name="grau">
                             <option value="">Todos</option>
                             {% for g in graus %}
-                            <option value="{{ g.grau_atual }}" {% if filtros.grau|string == g.grau_atual|string %}selected{% endif %}>
+                            <option value="{{ g.grau_atual }}" {% if filtros.grau == g.grau_atual|string %}selected{% endif %}>
                                 {% if g.grau_atual == 1 %}Aprendiz
                                 {% elif g.grau_atual == 2 %}Companheiro
-                                {% elif g.grau_atual == 3 %}Mestre{% endif %}
+                                {% else %}Mestre{% endif %}
                             </option>
                             {% endfor %}
                         </select>
@@ -55,7 +64,7 @@
                         <select class="form-select" name="cargo">
                             <option value="">Todos</option>
                             {% for c in cargos %}
-                            <option value="{{ c.id }}" {% if filtros.cargo|string == c.id|string %}selected{% endif %}>{{ c.nome }}</option>
+                            <option value="{{ c.id }}" {% if filtros.cargo == c.id|string %}selected{% endif %}>{{ c.nome }}</option>
                             {% endfor %}
                         </select>
                     </div>
@@ -71,113 +80,127 @@
                     <div class="col-md-2">
                         <label class="form-label">Status</label>
                         <select class="form-select" name="status">
-                            <option value="">Ativos (padrão)</option>
-                            <option value="1" {% if filtros.status == '1' %}selected{% endif %}>Ativos</option>
+                            <option value="">Ativos</option>
                             <option value="0" {% if filtros.status == '0' %}selected{% endif %}>Inativos</option>
+                            <option value="1" {% if filtros.status == '1' %}selected{% endif %}>Ativos</option>
                         </select>
                     </div>
                     <div class="col-md-1 d-flex align-items-end">
-                        <button type="submit" class="btn btn-primary w-100">Filtrar</button>
-                    </div>
-                    <div class="col-md-1 d-flex align-items-end">
-                        <a href="/obreiros" class="btn btn-secondary w-100">Limpar</a>
+                        <button type="submit" class="btn btn-primary w-100">
+                            <i class="bi bi-search"></i> Filtrar
+                        </button>
                     </div>
                 </form>
             </div>
         </div>
 
+        <!-- Lista de Obreiros -->
         <div class="card shadow">
-            <div class="card-header bg-dark text-white">
-                <h5 class="mb-0">Lista de Obreiros</h5>
-            </div>
             <div class="card-body">
                 <div class="table-responsive">
-                    <table class="table table-hover" id="tabelaObreiros">
-                        <thead>
-                            <tr>
-                                <th>#</th>
+                    <table class="table table-hover">
+                        <thead class="table-light">
+                             <tr>
                                 <th>Nome</th>
-                                <th>Nome Maçônico</th>
-                                <th>CIM</th>
+                                <th>Usuário</th>
                                 <th>Grau</th>
                                 <th>Loja</th>
-                                {% if session.tipo == 'admin' %}
-                                <th>Tipo</th>
+                                <th>Telefone</th>
                                 <th>Status</th>
-                                {% endif %}
                                 <th>Ações</th>
-                            </thead>
+                             </tr>
+                        </thead>
                         <tbody>
-                            {% for o in obreiros %}
-                            <tr>
-                                <td>{{ o.id }}</td>
-                                <td>{{ o.nome_completo or o.usuario }}</td>
-                                <td>{{ o.nome_maconico or '-' }}</td>
-                                <td>{{ o.cim_numero or '-' }}</td>
-                                <td>
-                                    {% if o.grau_atual == 3 %}
-                                        <span class="badge bg-primary">Mestre</span>
-                                    {% elif o.grau_atual == 2 %}
-                                        <span class="badge bg-info">Companheiro</span>
-                                    {% elif o.grau_atual == 1 %}
+                            {% for obreiro in obreiros %}
+                             <tr>
+                                 <td>
+                                    <strong>{{ obreiro.nome_completo }}</strong>
+                                    {% if obreiro.nome_maconico %}
+                                    <br><small class="text-muted">{{ obreiro.nome_maconico }}</small>
+                                    {% endif %}
+                                 </td>
+                                 <td>{{ obreiro.usuario }}</td>
+                                 <td>
+                                    {% if obreiro.grau_atual == 3 %}
+                                        <span class="badge bg-success">Mestre</span>
+                                    {% elif obreiro.grau_atual == 2 %}
+                                        <span class="badge bg-primary">Companheiro</span>
+                                    {% else %}
                                         <span class="badge bg-secondary">Aprendiz</span>
-                                    {% else %}
-                                        <span class="badge bg-light text-dark">-</span>
                                     {% endif %}
-                                </td>
-                                <td>{{ o.loja_nome or '-' }}</td>
-                                {% if session.tipo == 'admin' %}
-                                <td>
-                                    {% if o.tipo == 'admin' %}
-                                        <span class="badge bg-danger">Admin</span>
-                                    {% elif o.tipo == 'sindicante' %}
-                                        <span class="badge bg-success">Sindicante</span>
-                                    {% else %}
-                                        <span class="badge bg-info">Obreiro</span>
-                                    {% endif %}
-                                </td>
-                                <td>
-                                    {% if o.ativo == 1 %}
+                                 </td>
+                                 <td>{{ obreiro.loja_nome or '-' }}</td>
+                                 <td>{{ obreiro.telefone or '-' }}</td>
+                                 <td>
+                                    {% if obreiro.ativo == 1 %}
                                         <span class="badge bg-success">Ativo</span>
                                     {% else %}
-                                        <span class="badge bg-secondary">Inativo</span>
+                                        <span class="badge bg-danger">Inativo</span>
                                     {% endif %}
-                                </td>
-                                {% endif %}
-                                <td>
-                                    <a href="/obreiros/{{ o.id }}" class="btn btn-sm btn-outline-primary">
-                                        <i class="bi bi-eye"></i>
-                                    </a>
-                                    {% if session.tipo == 'admin' or session.user_id == o.id %}
-                                    <a href="/obreiros/{{ o.id }}/editar" class="btn btn-sm btn-outline-warning">
-                                        <i class="bi bi-pencil"></i>
-                                    </a>
-                                    {% endif %}
-                                </td>
-                            </tr>
+                                 </td>
+                                 <td>
+                                    <div class="btn-group btn-group-sm">
+                                        <a href="/obreiros/{{ obreiro.id }}" class="btn btn-info" title="Visualizar">
+                                            <i class="bi bi-eye"></i>
+                                        </a>
+                                        {% if session.tipo == 'admin' or session.user_id == obreiro.id %}
+                                        <a href="/obreiros/{{ obreiro.id }}/editar" class="btn btn-warning" title="Editar">
+                                            <i class="bi bi-pencil"></i>
+                                        </a>
+                                        {% endif %}
+                                        {% if session.tipo == 'admin' %}
+                                        <a href="/obreiros/{{ obreiro.id }}/documentos" class="btn btn-secondary" title="Documentos">
+                                            <i class="bi bi-files"></i>
+                                        </a>
+                                        {% endif %}
+                                    </div>
+                                 </td>
+                             </tr>
+                            {% else %}
+                             <tr>
+                                <td colspan="7" class="text-center text-muted py-4">
+                                    <i class="bi bi-inbox fs-1"></i><br>
+                                    Nenhum obreiro encontrado
+                                 </td>
+                             </tr>
                             {% endfor %}
                         </tbody>
                     </table>
                 </div>
-                {% if not obreiros %}
-                <div class="text-center py-4">
-                    <i class="bi bi-inbox text-muted fs-1"></i>
-                    <p class="text-muted mt-2">Nenhum obreiro encontrado com os filtros selecionados.</p>
-                </div>
-                {% endif %}
             </div>
         </div>
     </div>
 </div>
 
-<script>
-    $(document).ready(function() {
-        $('#tabelaObreiros').DataTable({
-            language: {
-                url: '//cdn.datatables.net/plug-ins/1.13.7/i18n/pt-BR.json'
-            },
-            order: [[1, 'asc']]
-        });
-    });
-</script>
+<style>
+    .card {
+        border-radius: 10px;
+        overflow: hidden;
+    }
+    .card-header {
+        font-weight: 600;
+    }
+    .table-responsive {
+        overflow-x: auto;
+    }
+    .badge {
+        font-size: 0.8rem;
+        padding: 0.4rem 0.6rem;
+    }
+    .btn-group-sm .btn {
+        padding: 0.25rem 0.5rem;
+    }
+    @media (max-width: 768px) {
+        .table {
+            font-size: 0.85rem;
+        }
+        .btn-group {
+            flex-direction: column;
+        }
+        .btn-group .btn {
+            margin-bottom: 5px;
+        }
+    }
+</style>
+
 {% endblock %}

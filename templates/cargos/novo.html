@@ -10,65 +10,72 @@
                 <i class="bi bi-plus-circle"></i> 
                 Novo Cargo
             </h2>
-            <a href="/cargos" class="btn btn-outline-secondary">
-                <i class="bi bi-arrow-left"></i> Voltar
-            </a>
+            <div>
+                <a href="/cargos" class="btn btn-outline-secondary">
+                    <i class="bi bi-arrow-left"></i> Voltar
+                </a>
+            </div>
         </div>
 
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+                        {{ message }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
         <div class="card shadow">
-            <div class="card-header bg-success text-white">
-                <h5 class="mb-0">
-                    <i class="bi bi-diagram-3"></i> 
-                    Dados do Cargo
-                </h5>
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0"><i class="bi bi-briefcase"></i> Dados do Cargo</h5>
             </div>
             <div class="card-body">
-                <form method="POST" action="/cargos/novo">
+                <form method="POST">
                     <div class="row">
-                        <div class="col-md-8 mb-3">
+                        <div class="col-md-6 mb-3">
                             <label class="form-label">Nome do Cargo *</label>
-                            <input type="text" class="form-control" name="nome" required 
-                                   placeholder="Ex: Venerável Mestre, 1º Vigilante, etc.">
+                            <input type="text" class="form-control" name="nome" required>
+                            <small class="text-muted">Ex: Venerável Mestre, Secretário, etc.</small>
                         </div>
-                        <div class="col-md-4 mb-3">
+                        <div class="col-md-3 mb-3">
                             <label class="form-label">Sigla *</label>
-                            <input type="text" class="form-control" name="sigla" required 
-                                   placeholder="Ex: VM, 1V, SEC" maxlength="5">
-                            <small class="text-muted">Máximo 5 caracteres</small>
+                            <input type="text" class="form-control" name="sigla" maxlength="10" required>
+                            <small class="text-muted">Ex: VM, SEC, TES</small>
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <label class="form-label">Ordem *</label>
+                            <input type="number" class="form-control" name="ordem" required>
+                            <small class="text-muted">Ordem de precedência (1, 2, 3...)</small>
                         </div>
                     </div>
 
                     <div class="row">
-                        <div class="col-md-4 mb-3">
-                            <label class="form-label">Ordem *</label>
-                            <input type="number" class="form-control" name="ordem" required 
-                                   placeholder="1, 2, 3..." min="1">
-                            <small class="text-muted">Ordem hierárquica (1 = mais elevado)</small>
-                        </div>
-                        <div class="col-md-4 mb-3">
-                            <label class="form-label">Grau Mínimo *</label>
-                            <select class="form-select" name="grau_minimo" required>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Grau Mínimo</label>
+                            <select class="form-select" name="grau_minimo">
                                 <option value="1">Aprendiz (1º Grau)</option>
                                 <option value="2">Companheiro (2º Grau)</option>
                                 <option value="3">Mestre (3º Grau)</option>
                             </select>
-                        </div>
-                        <div class="col-md-4 mb-3">
-                            <label class="form-label">Status</label>
-                            <select class="form-select" name="ativo">
-                                <option value="1">Ativo</option>
-                                <option value="0">Inativo</option>
-                            </select>
+                            <small class="text-muted">Grau mínimo necessário para ocupar este cargo</small>
                         </div>
                     </div>
 
                     <div class="mb-3">
                         <label class="form-label">Descrição</label>
                         <textarea class="form-control" name="descricao" rows="3" 
-                                  placeholder="Descreva as atribuições e responsabilidades deste cargo..."></textarea>
+                                  placeholder="Descreva as responsabilidades e funções deste cargo..."></textarea>
                     </div>
 
+                    <hr>
+
                     <div class="text-center mt-4">
+                        <a href="/cargos" class="btn btn-secondary me-2">
+                            <i class="bi bi-x-circle"></i> Cancelar
+                        </a>
                         <button type="submit" class="btn btn-success btn-lg px-5">
                             <i class="bi bi-save"></i> Salvar Cargo
                         </button>
@@ -78,4 +85,19 @@
         </div>
     </div>
 </div>
+
+<style>
+    .card {
+        border-radius: 10px;
+        overflow: hidden;
+    }
+    .card-header {
+        font-weight: 600;
+    }
+    .form-control:focus, .form-select:focus {
+        border-color: #0d6efd;
+        box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.25);
+    }
+</style>
+
 {% endblock %}

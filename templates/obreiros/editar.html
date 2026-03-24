@@ -93,10 +93,19 @@
                         <div class="col-md-4 mb-3">
                             <label class="form-label">Grau Atual</label>
                             <select class="form-select" name="grau_atual">
-                                <option value="1" {% if obreiro.grau_atual == 1 %}selected{% endif %}>Aprendiz (1º Grau)</option>
-                                <option value="2" {% if obreiro.grau_atual == 2 %}selected{% endif %}>Companheiro (2º Grau)</option>
-                                <option value="3" {% if obreiro.grau_atual == 3 %}selected{% endif %}>Mestre (3º Grau)</option>
+                                <option value="1" {% if obreiro.grau_atual == 1 %}selected{% endif %}>
+                                    Aprendiz (1º Grau)
+                                </option>
+                                <option value="2" {% if obreiro.grau_atual == 2 %}selected{% endif %}>
+                                    Companheiro (2º Grau)
+                                </option>
+                                <option value="3" {% if obreiro.grau_atual == 3 %}selected{% endif %}>
+                                    Mestre (3º Grau)
+                                </option>
                             </select>
+                            <small class="text-muted">
+                                Para graus superiores (Mestre Instalado, etc.), registre no histórico de graus.
+                            </small>
                         </div>
                         <div class="col-md-4 mb-3">
                             <label class="form-label">Status</label>
@@ -113,17 +122,17 @@
                         <div class="col-md-4 mb-3">
                             <label class="form-label">Data de Iniciação</label>
                             <input type="date" class="form-control" name="data_iniciacao" 
-                                   value="{{ obreiro.data_iniciacao or '' }}">
+                                   value="{{ obreiro.data_iniciacao.strftime('%Y-%m-%d') if obreiro.data_iniciacao else '' }}">
                         </div>
                         <div class="col-md-4 mb-3">
                             <label class="form-label">Data de Elevação</label>
                             <input type="date" class="form-control" name="data_elevacao" 
-                                   value="{{ obreiro.data_elevacao or '' }}">
+                                   value="{{ obreiro.data_elevacao.strftime('%Y-%m-%d') if obreiro.data_elevacao else '' }}">
                         </div>
                         <div class="col-md-4 mb-3">
                             <label class="form-label">Data de Exaltação</label>
                             <input type="date" class="form-control" name="data_exaltacao" 
-                                   value="{{ obreiro.data_exaltacao or '' }}">
+                                   value="{{ obreiro.data_exaltacao.strftime('%Y-%m-%d') if obreiro.data_exaltacao else '' }}">
                         </div>
                     </div>
                     {% endif %}
@@ -183,7 +192,41 @@
                         </div>
                     </div>
 
+                    <!-- Graus Superiores Registrados -->
+                    {% if historico_graus_superiores and historico_graus_superiores|length > 0 %}
+                    <div class="alert alert-info mt-3">
+                        <i class="bi bi-star-fill text-warning"></i>
+                        <strong>Graus Superiores Registrados:</strong>
+                        <div class="mt-2">
+                            {% for gs in historico_graus_superiores %}
+                            <span class="badge bg-info me-1 mb-1">{{ gs.grau_nome }}</span>
+                            {% endfor %}
+                        </div>
+                        <small class="d-block mt-1">
+                            <i class="bi bi-info-circle"></i>
+                            Para registrar um novo grau superior, acesse o perfil do obreiro e use a opção "Registrar Grau".
+                        </small>
+                    </div>
+                    {% endif %}
+
+                    <!-- Informações Adicionais -->
+                    <div class="alert alert-info mt-3">
+                        <i class="bi bi-info-circle"></i>
+                        <strong>Informações:</strong>
+                        <ul class="mb-0 mt-2">
+                            <li>Os campos marcados com * são obrigatórios</li>
+                            <li>O grau atual (Aprendiz, Companheiro, Mestre) determina as permissões base do obreiro</li>
+                            <li>Graus superiores (Mestre Instalado, etc.) são registrados no histórico</li>
+                            {% if not is_admin %}
+                            <li>Alterações de tipo de usuário, grau e status só podem ser feitas pelo administrador</li>
+                            {% endif %}
+                        </ul>
+                    </div>
+
                     <div class="text-center mt-4">
+                        <a href="/obreiros/{{ obreiro.id }}" class="btn btn-secondary me-2">
+                            <i class="bi bi-x-circle"></i> Cancelar
+                        </a>
                         <button type="submit" class="btn btn-success btn-lg px-5">
                             <i class="bi bi-save"></i> Salvar Alterações
                         </button>
@@ -195,6 +238,7 @@
 </div>
 
 <script>
+    // Autopreenchimento dos dados da loja
     document.getElementById('lojaSelect').addEventListener('change', function() {
         var selected = this.options[this.selectedIndex];
         document.getElementById('lojaNumero').value = selected.dataset.numero || '';
@@ -221,4 +265,30 @@
         }
     });
 </script>
+
+<style>
+    .card {
+        border-radius: 10px;
+        overflow: hidden;
+    }
+    .card-header {
+        font-weight: 600;
+    }
+    .form-control:focus, .form-select:focus {
+        border-color: #0d6efd;
+        box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.25);
+    }
+    .alert {
+        border-radius: 8px;
+    }
+    @media (max-width: 768px) {
+        .btn-group {
+            flex-direction: column;
+        }
+        .btn-group .btn {
+            margin-bottom: 5px;
+        }
+    }
+</style>
+
 {% endblock %}
