@@ -488,28 +488,155 @@ def logout():
 # =============================
 @app.route("/dashboard")
 @login_required
+@app.route("/dashboard")
+@login_required
 def dashboard():
-    if "usuario" not in session:
-        flash("Faça login para acessar", "warning")
+    try:
+        cursor, conn = get_db()
+
+        # Candidatos
+        cursor.execute("SELECT * FROM candidatos ORDER BY data_criacao DESC")
+        candidatos = cursor.fetchall()
+
+        # Sindicantes ativos
+        cursor.execute("""
+            SELECT id, usuario, nome_completo, cim_numero, loja_nome, loja_numero, loja_orient, ativo 
+            FROM usuarios 
+            WHERE tipo = 'sindicante' AND ativo = 1
+            ORDER BY nome_completo
+        """)
+        sindicantes = cursor.fetchall()
+
+        # Pareceres conclusivos recentes
+        pareceres_conclusivos = []
+        try:
+            cursor.execute("""
+                SELECT pc.*, c.nome as candidato_nome, u.nome_completo as sindicante_nome
+                FROM pareceres_conclusivos pc
+                JOIN candidatos c ON pc.candidato_id = c.id
+                JOIN usuarios u ON pc.sindicante = u.usuario
+                ORDER BY pc.data_envio DESC
+                LIMIT 10
+            """)
+            pareceres_conclusivos = cursor.fetchall()
+        except:
+            pass
+
+        total_sindicantes_ativos = len(sindicantes)
+        total_candidatos = len(candidatos)
+
+        if session["tipo"] == "admin":
+            em_analise = sum(1 for c in candidatos if c["status"] == "Em análise" and not c["fechado"])
+            aprovados = sum(1 for c in candidatos if c["status"] == "Aprovado")
+            reprovados = sum(1 for c in candidatos if c["status"] == "Reprovado")
+
+            # Pendências
+            pendentes = []
+            for c in candidatos:
+                if not c["fechado"]:
+                    cursor.execute("SELECT sindicante FROM sindicancias WHERE candidato_id = %s", (c["id"],))
+                    enviados = [r["sindicante"] for r in cursor.fetchall()]
+                    faltam = [s["usuario"] for s in sindicantes if s["usuario"] not in enviados]
+                    if faltam:
+                        pendentes.append({"candidato": dict(c), "faltam": faltam})
+
+            # Prazo vencido
+            prazo_vencido = []
+            for c in candidatos:
+                if not c["fechado"] and c["status"] == "Em análise" and c["data_criacao"]:
+                    try:
+                        data_criacao = c["data_criacao"]
+                        dias = (datetime.now() - data_criacao).days
+                        if dias > 7:
+                            prazo_vencido.append(dict(c))
+                    except:
+                        pass
+
+            # Estatísticas de obreiros
+            cursor.execute("SELECT COUNT(*) as total FROM usuarios WHERE tipo IN ('admin', 'sindicante', 'obreiro') AND ativo = 1")
+            total_obreiros = cursor.fetchone()["total"]
+            cursor.execute("SELECT COUNT(*) as total FROM usuarios WHERE grau_atual = 3 AND ativo = 1")
+            mestres = cursor.fetchone()["total"]
+            cursor.execute("SELECT COUNT(*) as total FROM usuarios WHERE grau_atual = 2 AND ativo = 1")
+            companheiros = cursor.fetchone()["total"]
+            cursor.execute("SELECT COUNT(*) as total FROM usuarios WHERE grau_atual = 1 AND ativo = 1")
+            aprendizes = cursor.fetchone()["total"]
+
+            # Estatísticas de reuniões
+            cursor.execute("SELECT COUNT(*) as total FROM reunioes")
+            total_reunioes = cursor.fetchone()["total"]
+            cursor.execute("SELECT COUNT(*) as total FROM reunioes WHERE status = 'realizada'")
+            reunioes_realizadas = cursor.fetchone()["total"]
+            cursor.execute("SELECT COUNT(*) as total FROM reunioes WHERE status = 'agendada'")
+            reunioes_agendadas = cursor.fetchone()["total"]
+            cursor.execute("""
+                SELECT id, titulo, data, hora_inicio 
+                FROM reunioes 
+                WHERE status = 'agendada' AND data >= CURRENT_DATE
+                ORDER BY data ASC, hora_inicio ASC
+                LIMIT 5
+            """)
+            proximas_reunioes = cursor.fetchall()
+            proxima_reuniao = proximas_reunioes[0] if proximas_reunioes else None
+
+        else:
+            em_analise = 0
+            aprovados = 0
+            reprovados = 0
+            pendentes = []
+            prazo_vencido = []
+            total_obreiros = mestres = companheiros = aprendizes = 0
+            total_reunioes = reunioes_realizadas = reunioes_agendadas = 0
+            proximas_reunioes = []
+            proxima_reuniao = None
+
+            for c in candidatos:
+                cursor.execute(
+                    "SELECT parecer FROM sindicancias WHERE candidato_id = %s AND sindicante = %s",
+                    (c["id"], session["usuario"])
+                )
+                parecer = cursor.fetchone()
+                if parecer:
+                    if parecer["parecer"] == "positivo":
+                        aprovados += 1
+                    else:
+                        reprovados += 1
+                elif not c["fechado"]:
+                    em_analise += 1
+
+        return_connection(conn)
+        now = datetime.now()
+
+        return render_template(
+            "dashboard.html",
+            tipo=session["tipo"],
+            total_candidatos=total_candidatos,
+            total_sindicantes=total_sindicantes_ativos,
+            total_obreiros=total_obreiros,
+            mestres=mestres,
+            companheiros=companheiros,
+            aprendizes=aprendizes,
+            total_reunioes=total_reunioes,
+            reunioes_realizadas=reunioes_realizadas,
+            reunioes_agendadas=reunioes_agendadas,
+            proximas_reunioes=proximas_reunioes,
+            proxima_reuniao=proxima_reuniao,
+            em_analise=em_analise,
+            aprovados=aprovados,
+            reprovados=reprovados,
+            pendentes=pendentes,
+            prazo_vencido=prazo_vencido,
+            sindicantes=sindicantes,
+            pareceres_conclusivos=pareceres_conclusivos,
+            now=now
+        )
+        
+    except Exception as e:
+        print(f"Erro no dashboard: {e}")
+        import traceback
+        traceback.print_exc()
+        flash(f"Erro ao carregar dashboard: {e}", "danger")
         return redirect("/")
-    
-    return f"""
-    <!DOCTYPE html>
-    <html>
-    <head><title>Dashboard</title></head>
-    <body>
-        <h1>✅ Dashboard Funcionando!</h1>
-        <p><strong>Usuário:</strong> {session.get('usuario')}</p>
-        <p><strong>Tipo:</strong> {session.get('tipo')}</p>
-        <p><strong>ID:</strong> {session.get('user_id')}</p>
-        <p><strong>Nome:</strong> {session.get('nome_completo')}</p>
-        <hr>
-        <a href="/logout">Sair</a>
-        <br>
-        <a href="/debug">Voltar ao Debug</a>
-    </body>
-    </html>
-    """
 # =============================
 # ROTAS DE PERMISSÕES
 # =============================
