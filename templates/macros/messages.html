@@ -1,0 +1,60 @@
+{% macro alert_message(message, category='info', dismissible=true, icon=None) %}
+<div class="alert alert-{{ category }} alert-custom fade-in-up" role="alert">
+    <div class="d-flex align-items-start">
+        <div class="alert-icon me-3">
+            {% if icon %}
+                <i class="bi {{ icon }} fs-4"></i>
+            {% else %}
+                {% if category == 'success' %}
+                    <i class="bi bi-check-circle-fill fs-4"></i>
+                {% elif category == 'danger' %}
+                    <i class="bi bi-exclamation-triangle-fill fs-4"></i>
+                {% elif category == 'warning' %}
+                    <i class="bi bi-exclamation-circle-fill fs-4"></i>
+                {% elif category == 'info' %}
+                    <i class="bi bi-info-circle-fill fs-4"></i>
+                {% else %}
+                    <i class="bi bi-bell-fill fs-4"></i>
+                {% endif %}
+            {% endif %}
+        </div>
+        <div class="alert-content flex-grow-1">
+            {{ message|safe }}
+        </div>
+        {% if dismissible %}
+        <button type="button" class="btn-close btn-close-custom" data-bs-dismiss="alert" aria-label="Fechar"></button>
+        {% endif %}
+    </div>
+</div>
+{% endmacro %}
+
+{% macro info_card(title, message, icon='bi-info-circle-fill', color='info') %}
+<div class="card info-card border-{{ color }} mb-4">
+    <div class="card-body">
+        <div class="d-flex align-items-start">
+            <div class="info-icon me-3">
+                <i class="bi {{ icon }} fs-2 text-{{ color }}"></i>
+            </div>
+            <div class="info-content flex-grow-1">
+                <h6 class="card-title mb-2">{{ title }}</h6>
+                <p class="card-text text-muted small mb-0">{{ message }}</p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endmacro %}
+
+{% macro tip_card(message, title='💡 Dica') %}
+<div class="card tip-card border-warning mb-4 bg-warning bg-opacity-10">
+    <div class="card-body py-3">
+        <div class="d-flex align-items-start">
+            <div class="tip-icon me-3">
+                <i class="bi bi-lightbulb fs-4 text-warning"></i>
+            </div>
+            <div class="tip-content flex-grow-1">
+                <strong>{{ title }}:</strong> {{ message }}
+            </div>
+        </div>
+    </div>
+</div>
+{% endmacro %}

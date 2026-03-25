@@ -6,15 +6,9 @@ __pycache__/
 .Python
 env/
 venv/
-ENV/
-env.bak/
-venv.bak/
-
-# Flask
-instance/
-.webassets-cache
+.venv/
 .env
-.flaskenv
+.env.local
 
 # Banco de dados
 *.db
@@ -40,17 +34,10 @@ uploads/
 .idea/
 *.swp
 *.swo
-*~
+
+# Logs
+*.log
 
 # OS
 .DS_Store
 Thumbs.db
-
-# Logs
-*.log
-logs/
-
-# Testes
-.pytest_cache/
-.coverage
-htmlcov/
