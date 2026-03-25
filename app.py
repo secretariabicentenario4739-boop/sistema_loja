@@ -4018,62 +4018,434 @@ def editar_sindicante(id):
     lojas = cursor.fetchall()
     return_connection(conn)
     return render_template("editar_sindicante.html", sindicante=sindicante, lojas=lojas)
-@app.route("/debug-sindicancias")
-def debug_sindicancias():
-    """Rota para debug das sindicâncias"""
+
+# =============================
+# SISTEMA DE NOTIFICAÇÕES
+# =============================
+
+import json
+import time
+from queue import Queue
+import threading
+
+# Fila para eventos SSE
+sse_queues = {}
+
+def get_queue(user_id):
+    """Obtém a fila de eventos para um usuário"""
+    if user_id not in sse_queues:
+        sse_queues[user_id] = Queue()
+    return sse_queues[user_id]
+
+def enviar_notificacao(usuario_id, tipo, titulo, mensagem, link=None):
+    """Envia uma notificação para um usuário específico"""
     try:
         cursor, conn = get_db()
         
-        # Buscar candidatos com informações de sindicância
+        # Salvar no banco
         cursor.execute("""
-            SELECT c.*,
-                   (SELECT COUNT(*) FROM sindicancias WHERE candidato_id = c.id AND sindicante = %s) as parecer_enviado,
-                   (SELECT parecer FROM sindicancias WHERE candidato_id = c.id AND sindicante = %s) as parecer,
-                   (SELECT data_envio FROM sindicancias WHERE candidato_id = c.id AND sindicante = %s) as data_envio
-            FROM candidatos c
-            ORDER BY c.fechado ASC, c.data_criacao DESC
-        """, (session['usuario'], session['usuario'], session['usuario']))
+            INSERT INTO notificacoes (usuario_id, tipo, titulo, mensagem, link)
+            VALUES (%s, %s, %s, %s, %s)
+            RETURNING id
+        """, (usuario_id, tipo, titulo, mensagem, link))
+        notificacao_id = cursor.fetchone()['id']
+        conn.commit()
+        return_connection(conn)
         
-        candidatos = cursor.fetchall()
+        # Enviar em tempo real via SSE
+        notificacao = {
+            'id': notificacao_id,
+            'tipo': tipo,
+            'titulo': titulo,
+            'mensagem': mensagem,
+            'link': link,
+            'data': datetime.now().isoformat()
+        }
         
-        html = """
+        queue = get_queue(usuario_id)
+        queue.put(json.dumps(notificacao))
+        
+        return True
+    except Exception as e:
+        print(f"Erro ao enviar notificação: {e}")
+        return False
+
+def enviar_notificacao_todos(tipo, titulo, mensagem, link=None):
+    """Envia uma notificação para todos os usuários ativos"""
+    try:
+        cursor, conn = get_db()
+        cursor.execute("SELECT id FROM usuarios WHERE ativo = 1")
+        usuarios = cursor.fetchall()
+        return_connection(conn)
+        
+        for usuario in usuarios:
+            enviar_notificacao(usuario['id'], tipo, titulo, mensagem, link)
+    except Exception as e:
+        print(f"Erro ao enviar notificação para todos: {e}")
+
+@app.route("/api/notificacoes/stream")
+@login_required
+def notificacoes_stream():
+    """Endpoint SSE para notificações em tempo real"""
+    def event_stream():
+        queue = get_queue(session['user_id'])
+        while True:
+            # Timeout para manter conexão viva
+            try:
+                data = queue.get(timeout=30)
+                yield f"data: {data}\n\n"
+            except:
+                # Enviar heartbeat para manter conexão
+                yield f"data: {{'type': 'heartbeat'}}\n\n"
+    
+    return Response(event_stream(), mimetype="text/event-stream")
+
+@app.route("/api/notificacoes")
+@login_required
+def listar_notificacoes():
+    """Lista as notificações do usuário"""
+    cursor, conn = get_db()
+    
+    # Buscar não lidas
+    cursor.execute("""
+        SELECT * FROM notificacoes 
+        WHERE usuario_id = %s 
+        ORDER BY data_criacao DESC 
+        LIMIT 50
+    """, (session['user_id'],))
+    notificacoes = cursor.fetchall()
+    
+    # Contar não lidas
+    cursor.execute("""
+        SELECT COUNT(*) as total FROM notificacoes 
+        WHERE usuario_id = %s AND lida = 0
+    """, (session['user_id'],))
+    nao_lidas = cursor.fetchone()['total']
+    
+    return_connection(conn)
+    return jsonify({
+        'notificacoes': notificacoes,
+        'nao_lidas': nao_lidas
+    })
+
+@app.route("/api/notificacoes/marcar-lida/<int:id>", methods=["POST"])
+@login_required
+def marcar_notificacao_lida(id):
+    """Marca uma notificação como lida"""
+    cursor, conn = get_db()
+    cursor.execute("""
+        UPDATE notificacoes 
+        SET lida = 1, data_leitura = CURRENT_TIMESTAMP
+        WHERE id = %s AND usuario_id = %s
+    """, (id, session['user_id']))
+    conn.commit()
+    return_connection(conn)
+    return jsonify({'success': True})
+
+@app.route("/api/notificacoes/marcar-todas-lidas", methods=["POST"])
+@login_required
+def marcar_todas_notificacoes_lidas():
+    """Marca todas as notificações como lidas"""
+    cursor, conn = get_db()
+    cursor.execute("""
+        UPDATE notificacoes 
+        SET lida = 1, data_leitura = CURRENT_TIMESTAMP
+        WHERE usuario_id = %s AND lida = 0
+    """, (session['user_id'],))
+    conn.commit()
+    return_connection(conn)
+    return jsonify({'success': True})
+
+@app.route("/api/notificacoes/teste")
+@login_required
+def testar_notificacao():
+    """Rota para testar notificações"""
+    enviar_notificacao(
+        session['user_id'],
+        'teste',
+        '🔔 Notificação de Teste',
+        'Esta é uma notificação de teste do sistema.',
+        '/dashboard'
+    )
+    return jsonify({'success': True, 'message': 'Notificação enviada!'})        
+
+@app.route("/migrar-notificacoes")
+def migrar_notificacoes():
+    """Rota para criar a tabela de notificações"""
+    try:
+        cursor, conn = get_db()
+        
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS notificacoes (
+                id SERIAL PRIMARY KEY,
+                usuario_id INTEGER NOT NULL REFERENCES usuarios(id) ON DELETE CASCADE,
+                tipo TEXT NOT NULL,
+                titulo TEXT NOT NULL,
+                mensagem TEXT NOT NULL,
+                link TEXT,
+                lida INTEGER DEFAULT 0,
+                data_criacao TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                data_leitura TIMESTAMP
+            )
+        """)
+        
+        cursor.execute("CREATE INDEX IF NOT EXISTS idx_notificacoes_usuario ON notificacoes(usuario_id)")
+        cursor.execute("CREATE INDEX IF NOT EXISTS idx_notificacoes_lida ON notificacoes(lida)")
+        
+        conn.commit()
+        return_connection(conn)
+        
+        return """
+        <h1>✅ Tabela de notificações criada!</h1>
+        <p><a href="/dashboard">Voltar</a></p>
+        """
+    except Exception as e:
+        return f"<h1>Erro: {e}</h1>"
+
+
+@app.route("/criar-tabela-notificacoes")
+def criar_tabela_notificacoes_rota():
+    """Rota temporária para criar a tabela de notificações no Render"""
+    try:
+        cursor, conn = get_db()
+        
+        print("🔄 Criando tabela notificacoes...")
+        
+        # Criar tabela notificacoes
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS notificacoes (
+                id SERIAL PRIMARY KEY,
+                usuario_id INTEGER NOT NULL REFERENCES usuarios(id) ON DELETE CASCADE,
+                tipo TEXT NOT NULL,
+                titulo TEXT NOT NULL,
+                mensagem TEXT NOT NULL,
+                link TEXT,
+                lida INTEGER DEFAULT 0,
+                data_criacao TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                data_leitura TIMESTAMP
+            )
+        """)
+        print("✅ Tabela notificacoes criada/verificada")
+        
+        # Criar índices
+        cursor.execute("""
+            CREATE INDEX IF NOT EXISTS idx_notificacoes_usuario 
+            ON notificacoes(usuario_id)
+        """)
+        print("✅ Índice idx_notificacoes_usuario criado")
+        
+        cursor.execute("""
+            CREATE INDEX IF NOT EXISTS idx_notificacoes_lida 
+            ON notificacoes(lida)
+        """)
+        print("✅ Índice idx_notificacoes_lida criado")
+        
+        cursor.execute("""
+            CREATE INDEX IF NOT EXISTS idx_notificacoes_data 
+            ON notificacoes(data_criacao)
+        """)
+        print("✅ Índice idx_notificacoes_data criado")
+        
+        conn.commit()
+        
+        # Verificar se a tabela foi criada
+        cursor.execute("""
+            SELECT COUNT(*) as total 
+            FROM information_schema.tables 
+            WHERE table_name = 'notificacoes'
+        """)
+        tabela_existe = cursor.fetchone()['total'] > 0
+        
+        return_connection(conn)
+        
+        if tabela_existe:
+            return """
+            <!DOCTYPE html>
+            <html>
+            <head>
+                <title>Tabela de Notificações Criada</title>
+                <style>
+                    body {
+                        font-family: Arial, sans-serif;
+                        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                        min-height: 100vh;
+                        display: flex;
+                        justify-content: center;
+                        align-items: center;
+                        padding: 20px;
+                    }
+                    .container {
+                        max-width: 600px;
+                        margin: 0 auto;
+                        background: white;
+                        border-radius: 20px;
+                        padding: 40px;
+                        box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+                        text-align: center;
+                    }
+                    h1 {
+                        color: #28a745;
+                        margin-bottom: 20px;
+                    }
+                    .success-icon {
+                        font-size: 4rem;
+                        color: #28a745;
+                        margin-bottom: 20px;
+                    }
+                    .info {
+                        background: #e8f4fd;
+                        padding: 15px;
+                        border-radius: 10px;
+                        margin: 20px 0;
+                        text-align: left;
+                    }
+                    .btn {
+                        display: inline-block;
+                        padding: 10px 20px;
+                        background: #007bff;
+                        color: white;
+                        text-decoration: none;
+                        border-radius: 8px;
+                        margin: 5px;
+                        transition: all 0.3s;
+                    }
+                    .btn:hover {
+                        background: #0056b3;
+                        transform: translateY(-2px);
+                    }
+                    .btn-success {
+                        background: #28a745;
+                    }
+                    .btn-success:hover {
+                        background: #1e7e34;
+                    }
+                </style>
+            </head>
+            <body>
+                <div class="container">
+                    <div class="success-icon">✅</div>
+                    <h1>Tabela de Notificações Criada!</h1>
+                    
+                    <div class="info">
+                        <strong>📋 Estrutura criada:</strong>
+                        <ul style="margin-top: 10px;">
+                            <li>✅ Tabela <code>notificacoes</code></li>
+                            <li>✅ Índice <code>idx_notificacoes_usuario</code></li>
+                            <li>✅ Índice <code>idx_notificacoes_lida</code></li>
+                            <li>✅ Índice <code>idx_notificacoes_data</code></li>
+                        </ul>
+                    </div>
+                    
+                    <div class="info">
+                        <strong>📌 Campos da tabela:</strong>
+                        <ul style="margin-top: 10px;">
+                            <li><strong>id</strong> - Identificador único</li>
+                            <li><strong>usuario_id</strong> - ID do usuário (referência)</li>
+                            <li><strong>tipo</strong> - Tipo da notificação</li>
+                            <li><strong>titulo</strong> - Título da notificação</li>
+                            <li><strong>mensagem</strong> - Conteúdo da notificação</li>
+                            <li><strong>link</strong> - Link para redirecionamento</li>
+                            <li><strong>lida</strong> - Status de leitura (0=não lida, 1=lida)</li>
+                            <li><strong>data_criacao</strong> - Data de criação</li>
+                            <li><strong>data_leitura</strong> - Data de leitura</li>
+                        </ul>
+                    </div>
+                    
+                    <p>Sistema de notificações em tempo real pronto para uso!</p>
+                    
+                    <div>
+                        <a href="/dashboard" class="btn btn-success">Ir para Dashboard</a>
+                        <a href="/api/notificacoes/teste" class="btn">Testar Notificação</a>
+                    </div>
+                </div>
+            </body>
+            </html>
+            """
+        else:
+            return """
+            <!DOCTYPE html>
+            <html>
+            <head>
+                <title>Erro ao Criar Tabela</title>
+                <style>
+                    body {
+                        font-family: Arial, sans-serif;
+                        background: #f8d7da;
+                        min-height: 100vh;
+                        display: flex;
+                        justify-content: center;
+                        align-items: center;
+                        padding: 20px;
+                    }
+                    .container {
+                        max-width: 600px;
+                        margin: 0 auto;
+                        background: white;
+                        border-radius: 20px;
+                        padding: 40px;
+                        box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+                        text-align: center;
+                    }
+                    h1 {
+                        color: #dc3545;
+                    }
+                    .error-icon {
+                        font-size: 4rem;
+                        color: #dc3545;
+                        margin-bottom: 20px;
+                    }
+                </style>
+            </head>
+            <body>
+                <div class="container">
+                    <div class="error-icon">❌</div>
+                    <h1>Erro ao Criar Tabela</h1>
+                    <p>A tabela de notificações não pôde ser criada.</p>
+                    <a href="/dashboard" class="btn">Voltar ao Dashboard</a>
+                </div>
+            </body>
+            </html>
+            """
+        
+    except Exception as e:
+        import traceback
+        error_details = traceback.format_exc()
+        return f"""
         <!DOCTYPE html>
         <html>
         <head>
-            <title>Debug Sindicâncias</title>
+            <title>Erro</title>
             <style>
-                body { font-family: monospace; padding: 20px; }
-                pre { background: #f4f4f4; padding: 10px; overflow-x: auto; }
-                .candidato { margin-bottom: 30px; border: 1px solid #ddd; padding: 10px; }
+                body {{
+                    font-family: Arial, sans-serif;
+                    padding: 20px;
+                    background: #f8d7da;
+                }}
+                .container {{
+                    max-width: 800px;
+                    margin: 0 auto;
+                    background: white;
+                    border-radius: 10px;
+                    padding: 20px;
+                }}
+                h1 {{ color: #dc3545; }}
+                pre {{
+                    background: #f4f4f4;
+                    padding: 15px;
+                    overflow-x: auto;
+                    font-size: 12px;
+                }}
             </style>
         </head>
         <body>
-            <h1>Debug - Dados das Sindicâncias</h1>
-            <p>Usuário logado: <strong>""" + session['usuario'] + """</strong></p>
-        """
-        
-        for c in candidatos:
-            html += f"""
-            <div class="candidato">
-                <h3>{c['nome']}</h3>
-                <pre>
-id: {c['id']}
-fechado: {c['fechado']}
-parecer_enviado: {c['parecer_enviado']}
-parecer: {c['parecer']}
-data_envio: {c['data_envio']}
-data_criacao: {c['data_criacao']}
-status: {c['status']}
-                </pre>
+            <div class="container">
+                <h1>❌ Erro ao criar tabela</h1>
+                <pre>{error_details}</pre>
+                <a href="/dashboard">Voltar</a>
             </div>
-            """
-        
-        html += "</body></html>"
-        return_connection(conn)
-        return html
-        
-    except Exception as e:
-        return f"<h1>Erro: {e}</h1>"        
+        </body>
+        </html>
+        """
 
 # =============================
 # ROTAS DE LOJAS

@@ -361,6 +361,120 @@
             left: 100%;
         }
         
+        /* Notificações */
+        .notificacoes-dropdown {
+            position: relative;
+            display: inline-block;
+            margin-left: 15px;
+        }
+        
+        .btn-notificacoes {
+            background: rgba(67, 97, 238, 0.08);
+            border: 1px solid rgba(67, 97, 238, 0.15);
+            border-radius: 40px;
+            padding: 8px 16px;
+            transition: all 0.3s ease;
+            position: relative;
+        }
+        
+        .btn-notificacoes:hover {
+            background: var(--primary);
+            color: white;
+            transform: translateY(-2px);
+        }
+        
+        .notificacao-badge {
+            position: absolute;
+            top: -5px;
+            right: -5px;
+            background: #ef4444;
+            color: white;
+            border-radius: 50%;
+            padding: 2px 6px;
+            font-size: 10px;
+            font-weight: bold;
+            min-width: 18px;
+            text-align: center;
+        }
+        
+        .dropdown-menu-notificacoes {
+            width: 380px;
+            max-height: 500px;
+            overflow-y: auto;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+            border: none;
+            margin-top: 10px;
+        }
+        
+        .dropdown-header-notificacoes {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+            color: white;
+            border-radius: 12px 12px 0 0;
+            padding: 12px 16px;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+        
+        .notificacao-item {
+            padding: 12px 16px;
+            border-bottom: 1px solid #eee;
+            transition: background-color 0.2s;
+            cursor: pointer;
+        }
+        
+        .notificacao-item:hover {
+            background-color: #f8f9fa;
+        }
+        
+        .notificacao-item.nao-lida {
+            background-color: #e7f3ff;
+            border-left: 3px solid #0d6efd;
+        }
+        
+        .notificacao-titulo {
+            font-weight: 600;
+            margin-bottom: 4px;
+        }
+        
+        .notificacao-mensagem {
+            font-size: 0.85rem;
+            color: #6c757d;
+            margin-bottom: 4px;
+        }
+        
+        .notificacao-data {
+            font-size: 0.7rem;
+            color: #adb5bd;
+        }
+        
+        /* Toast container */
+        .toast-container-custom {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            z-index: 9999;
+        }
+        
+        .toast-custom {
+            min-width: 300px;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            animation: slideInRight 0.3s ease;
+        }
+        
+        @keyframes slideInRight {
+            from {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+        
         /* Cards e elementos */
         .card {
             border-radius: 20px;
@@ -396,75 +510,6 @@
         .alert-custom:hover {
             transform: translateY(-2px);
             box-shadow: 0 4px 12px rgba(0,0,0,0.08);
-        }
-        
-        .alert-custom .alert-icon {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-        
-        .alert-custom .btn-close-custom {
-            font-size: 0.75rem;
-            opacity: 0.6;
-            transition: opacity 0.2s;
-        }
-        
-        .alert-custom .btn-close-custom:hover {
-            opacity: 1;
-        }
-        
-        /* Cards informativos */
-        .info-card {
-            border-radius: 16px;
-            background: white;
-            transition: all 0.3s ease;
-            cursor: default;
-        }
-        
-        .info-card:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(0,0,0,0.08);
-        }
-        
-        .info-card.border-info {
-            border-left: 4px solid #0dcaf0 !important;
-        }
-        
-        .info-card.border-success {
-            border-left: 4px solid #198754 !important;
-        }
-        
-        .info-card.border-warning {
-            border-left: 4px solid #ffc107 !important;
-        }
-        
-        .info-card.border-danger {
-            border-left: 4px solid #dc3545 !important;
-        }
-        
-        .info-card .info-icon {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-        
-        /* Tip card */
-        .tip-card {
-            border-radius: 16px;
-            border: none;
-            transition: all 0.3s ease;
-        }
-        
-        .tip-card:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(0,0,0,0.08);
-        }
-        
-        .tip-card .tip-icon {
-            display: flex;
-            align-items: center;
-            justify-content: center;
         }
         
         /* Footer */
@@ -542,14 +587,27 @@
             font-weight: 500;
         }
         
-        /* Alertas */
-        .alert {
-            border-radius: 16px;
-            border: none;
-            padding: 1rem 1.2rem;
+        /* Scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
         }
         
-        /* Ajustes para mobile */
+        ::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 10px;
+        }
+        
+        ::-webkit-scrollbar-thumb {
+            background: var(--primary);
+            border-radius: 10px;
+        }
+        
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--primary-dark);
+        }
+        
+        /* Responsividade */
         @media (max-width: 768px) {
             .top-bar {
                 padding: 10px 16px;
@@ -592,6 +650,12 @@
             .card-header {
                 padding: 1rem;
             }
+            
+            .dropdown-menu-notificacoes {
+                width: 320px;
+                right: 0;
+                left: auto !important;
+            }
         }
         
         @media (max-width: 480px) {
@@ -603,26 +667,10 @@
                 padding: 5px 10px;
                 font-size: 0.65rem;
             }
-        }
-        
-        /* Scrollbar global */
-        ::-webkit-scrollbar {
-            width: 8px;
-            height: 8px;
-        }
-        
-        ::-webkit-scrollbar-track {
-            background: #f1f1f1;
-            border-radius: 10px;
-        }
-        
-        ::-webkit-scrollbar-thumb {
-            background: var(--primary);
-            border-radius: 10px;
-        }
-        
-        ::-webkit-scrollbar-thumb:hover {
-            background: var(--primary-dark);
+            
+            .dropdown-menu-notificacoes {
+                width: 280px;
+            }
         }
     </style>
     
@@ -783,23 +831,50 @@
                     <span>Menu</span>
                 </button>
             </div>
-            <div class="user-info">
-                <span class="badge">
-                    <i class="bi bi-person-circle"></i> {{ session.usuario }}
-                </span>
-                <span class="badge">
-                    <i class="bi bi-shield-check"></i> 
-                    {% if session.tipo == 'admin' %}
-                        Administrador
-                    {% elif session.tipo == 'sindicante' %}
-                        Sindicante
-                    {% else %}
-                        Obreiro
-                    {% endif %}
-                </span>
-                <span class="badge">
-                    <i class="bi bi-calendar-heart"></i> {{ now.strftime('%d/%m/%Y') }}
-                </span>
+            <div class="d-flex align-items-center">
+                <div class="user-info">
+                    <span class="badge">
+                        <i class="bi bi-person-circle"></i> {{ session.usuario }}
+                    </span>
+                    <span class="badge">
+                        <i class="bi bi-shield-check"></i> 
+                        {% if session.tipo == 'admin' %}
+                            Administrador
+                        {% elif session.tipo == 'sindicante' %}
+                            Sindicante
+                        {% else %}
+                            Obreiro
+                        {% endif %}
+                    </span>
+                    <span class="badge">
+                        <i class="bi bi-calendar-heart"></i> {{ now.strftime('%d/%m/%Y') }}
+                    </span>
+                </div>
+                
+                <!-- Notificações -->
+                <div class="notificacoes-dropdown">
+                    <button class="btn-notificacoes" id="btnNotificacoes" type="button">
+                        <i class="bi bi-bell fs-5"></i>
+                        <span class="notificacao-badge" id="notificacoesBadge" style="display: none;">0</span>
+                    </button>
+                    
+                    <div class="dropdown-menu dropdown-menu-notificacoes" id="dropdownNotificacoes" style="display: none;">
+                        <div class="dropdown-header-notificacoes d-flex justify-content-between align-items-center">
+                            <span><i class="bi bi-bell"></i> Notificações</span>
+                            <button class="btn btn-sm btn-light" id="marcarTodasLidas">
+                                <i class="bi bi-check2-all"></i> Marcar todas
+                            </button>
+                        </div>
+                        <div id="listaNotificacoes">
+                            <div class="text-center py-4">
+                                <div class="spinner-border spinner-border-sm text-primary" role="status">
+                                    <span class="visually-hidden">Carregando...</span>
+                                </div>
+                                <p class="mt-2 text-muted small">Carregando notificações...</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
         
@@ -816,6 +891,9 @@
         </div>
     </div>
     
+    <!-- Toast Container -->
+    <div class="toast-container-custom" id="toastContainer"></div>
+    
     <!-- Scripts -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
@@ -823,38 +901,33 @@
     <script src="https://cdn.jsdelivr.net/npm/fullcalendar@5.11.3/locales-all.min.js"></script>
     
     <script>
-        // Elementos
+        // ========== SIDEBAR FUNCTIONS ==========
         const sidebar = document.getElementById('sidebar');
         const mainContent = document.getElementById('mainContent');
         const toggleBtn = document.getElementById('toggleSidebar');
         const mobileMenuBtn = document.getElementById('mobileMenuBtn');
         const sidebarOverlay = document.getElementById('sidebarOverlay');
         
-        // Verificar se está no mobile
         function isMobile() {
             return window.innerWidth <= 768;
         }
         
-        // ========== COMPORTAMENTO PARA DESKTOP (RETRAÇÃO) ==========
+        // Desktop: comportamento de retração
         if (!isMobile()) {
-            // Carregar estado salvo da sidebar
             const sidebarCollapsed = localStorage.getItem('sidebarCollapsed') === 'true';
             if (sidebarCollapsed) {
                 sidebar.classList.add('collapsed');
                 mainContent.classList.add('expanded');
             }
             
-            // Toggle sidebar no desktop
             toggleBtn.addEventListener('click', function() {
                 sidebar.classList.toggle('collapsed');
                 mainContent.classList.toggle('expanded');
-                
-                const isCollapsed = sidebar.classList.contains('collapsed');
-                localStorage.setItem('sidebarCollapsed', isCollapsed);
+                localStorage.setItem('sidebarCollapsed', sidebar.classList.contains('collapsed'));
             });
         }
         
-        // ========== COMPORTAMENTO PARA MOBILE (MENU DESLIZANTE) ==========
+        // Mobile: menu deslizante
         function closeMobileMenu() {
             if (isMobile()) {
                 sidebar.classList.remove('mobile-open');
@@ -869,30 +942,23 @@
             }
         }
         
-        function toggleMobileMenu() {
-            if (isMobile()) {
+        if (mobileMenuBtn) {
+            mobileMenuBtn.addEventListener('click', () => {
                 if (sidebar.classList.contains('mobile-open')) {
                     closeMobileMenu();
                 } else {
                     openMobileMenu();
                 }
-            }
-        }
-        
-        if (mobileMenuBtn) {
-            mobileMenuBtn.addEventListener('click', toggleMobileMenu);
+            });
         }
         
         if (sidebarOverlay) {
             sidebarOverlay.addEventListener('click', closeMobileMenu);
         }
         
-        // Fechar menu mobile ao clicar em um link
         document.querySelectorAll('.sidebar .nav-link').forEach(link => {
-            link.addEventListener('click', function() {
-                if (isMobile()) {
-                    closeMobileMenu();
-                }
+            link.addEventListener('click', () => {
+                if (isMobile()) closeMobileMenu();
             });
         });
         
@@ -905,13 +971,10 @@
             }
         });
         
-        // Reajustar ao redimensionar a tela
-        window.addEventListener('resize', function() {
+        // Reajustar ao redimensionar
+        window.addEventListener('resize', () => {
             if (!isMobile()) {
-                // Desktop: restaurar estado salvo
-                sidebar.classList.remove('mobile-open');
-                sidebarOverlay.classList.remove('active');
-                
+                closeMobileMenu();
                 const sidebarCollapsed = localStorage.getItem('sidebarCollapsed') === 'true';
                 if (sidebarCollapsed) {
                     sidebar.classList.add('collapsed');
@@ -921,23 +984,240 @@
                     mainContent.classList.remove('expanded');
                 }
             } else {
-                // Mobile: fechar menu ao redimensionar
                 closeMobileMenu();
             }
         });
         
-        // Auto-fade out de alerts (apenas para alerts comuns, não para cards fixos)
-        setTimeout(function() {
-            document.querySelectorAll('.alert:not(.alert-custom)').forEach(alert => {
-                const bsAlert = new bootstrap.Alert(alert);
-                setTimeout(() => bsAlert.close(), 5000);
-            });
-        }, 3000);
+        // ========== NOTIFICAÇÕES ==========
+        class NotificacaoManager {
+            constructor() {
+                this.eventSource = null;
+                this.notificacoes = [];
+                this.naoLidas = 0;
+                this.init();
+            }
+            
+            init() {
+                this.conectarSSE();
+                this.carregarNotificacoes();
+                this.setupEventListeners();
+            }
+            
+            conectarSSE() {
+                if (this.eventSource) {
+                    this.eventSource.close();
+                }
+                
+                this.eventSource = new EventSource('/api/notificacoes/stream');
+                
+                this.eventSource.onmessage = (event) => {
+                    const data = JSON.parse(event.data);
+                    if (data.type !== 'heartbeat') {
+                        this.receberNotificacao(data);
+                    }
+                };
+                
+                this.eventSource.onerror = () => {
+                    console.log('Reconectando notificações...');
+                    setTimeout(() => this.conectarSSE(), 5000);
+                };
+            }
+            
+            receberNotificacao(notificacao) {
+                this.notificacoes.unshift(notificacao);
+                this.naoLidas++;
+                this.atualizarBadge();
+                this.adicionarNotificacaoNaLista(notificacao);
+                this.mostrarToast(notificacao);
+            }
+            
+            async carregarNotificacoes() {
+                try {
+                    const response = await fetch('/api/notificacoes');
+                    const data = await response.json();
+                    this.notificacoes = data.notificacoes;
+                    this.naoLidas = data.nao_lidas;
+                    this.atualizarBadge();
+                    this.renderizarLista();
+                } catch (error) {
+                    console.error('Erro ao carregar notificações:', error);
+                }
+            }
+            
+            atualizarBadge() {
+                const badge = document.getElementById('notificacoesBadge');
+                if (this.naoLidas > 0) {
+                    badge.textContent = this.naoLidas > 99 ? '99+' : this.naoLidas;
+                    badge.style.display = 'inline-block';
+                } else {
+                    badge.style.display = 'none';
+                }
+            }
+            
+            renderizarLista() {
+                const container = document.getElementById('listaNotificacoes');
+                if (this.notificacoes.length === 0) {
+                    container.innerHTML = `
+                        <div class="text-center py-4">
+                            <i class="bi bi-bell-slash fs-1 text-muted"></i>
+                            <p class="mt-2 text-muted">Nenhuma notificação</p>
+                        </div>
+                    `;
+                    return;
+                }
+                
+                let html = '';
+                for (const notif of this.notificacoes) {
+                    html += this.criarItemNotificacao(notif);
+                }
+                container.innerHTML = html;
+            }
+            
+            adicionarNotificacaoNaLista(notificacao) {
+                const container = document.getElementById('listaNotificacoes');
+                const noResults = container.innerHTML.includes('Nenhuma notificação');
+                if (noResults) {
+                    container.innerHTML = '';
+                }
+                container.insertAdjacentHTML('afterbegin', this.criarItemNotificacao(notificacao));
+            }
+            
+            criarItemNotificacao(notif) {
+                const data = new Date(notif.data);
+                const dataFormatada = data.toLocaleDateString('pt-BR') + ' ' + data.toLocaleTimeString('pt-BR', {hour: '2-digit', minute:'2-digit'});
+                
+                const icones = {
+                    'reuniao': '📅', 'sindicancia': '⚖️', 'comunicado': '📢',
+                    'aniversario': '🎂', 'convocacao': '🔔'
+                };
+                const icone = icones[notif.tipo] || '📌';
+                
+                return `
+                    <div class="notificacao-item ${notif.lida === 0 ? 'nao-lida' : ''}" data-id="${notif.id}" data-link="${notif.link || ''}">
+                        <div class="d-flex">
+                            <div class="me-2">${icone}</div>
+                            <div class="flex-grow-1">
+                                <div class="notificacao-titulo">
+                                    ${notif.titulo}
+                                    ${notif.lida === 0 ? '<span class="badge bg-primary ms-1">Nova</span>' : ''}
+                                </div>
+                                <div class="notificacao-mensagem">${notif.mensagem}</div>
+                                <div class="notificacao-data">
+                                    <i class="bi bi-clock"></i> ${dataFormatada}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }
+            
+            mostrarToast(notificacao) {
+                const toastId = 'toast-' + Date.now();
+                const toastHTML = `
+                    <div id="${toastId}" class="toast-custom toast show" role="alert">
+                        <div class="toast-header bg-primary text-white">
+                            <i class="bi bi-bell-fill me-2"></i>
+                            <strong class="me-auto">${notificacao.titulo}</strong>
+                            <small>agora</small>
+                            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="toast"></button>
+                        </div>
+                        <div class="toast-body">
+                            ${notificacao.mensagem}
+                            ${notificacao.link ? `<hr class="my-2"><a href="${notificacao.link}" class="btn btn-sm btn-primary">Ver detalhes</a>` : ''}
+                        </div>
+                    </div>
+                `;
+                
+                document.getElementById('toastContainer').insertAdjacentHTML('beforeend', toastHTML);
+                setTimeout(() => {
+                    const toast = document.getElementById(toastId);
+                    if (toast) toast.remove();
+                }, 5000);
+            }
+            
+            setupEventListeners() {
+                const btn = document.getElementById('btnNotificacoes');
+                const dropdown = document.getElementById('dropdownNotificacoes');
+                
+                if (btn) {
+                    btn.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        const isVisible = dropdown.style.display === 'block';
+                        dropdown.style.display = isVisible ? 'none' : 'block';
+                        if (!isVisible) this.carregarNotificacoes();
+                    });
+                }
+                
+                document.addEventListener('click', (e) => {
+                    if (!btn?.contains(e.target) && !dropdown?.contains(e.target)) {
+                        dropdown.style.display = 'none';
+                    }
+                });
+                
+                document.getElementById('marcarTodasLidas')?.addEventListener('click', async () => {
+                    await this.marcarTodasLidas();
+                });
+                
+                document.getElementById('listaNotificacoes')?.addEventListener('click', async (e) => {
+                    const item = e.target.closest('.notificacao-item');
+                    if (item) {
+                        const id = item.dataset.id;
+                        const link = item.dataset.link;
+                        await this.marcarComoLida(id);
+                        if (link) window.location.href = link;
+                    }
+                });
+            }
+            
+            async marcarComoLida(id) {
+                try {
+                    await fetch(`/api/notificacoes/marcar-lida/${id}`, {method: 'POST'});
+                    const item = document.querySelector(`.notificacao-item[data-id="${id}"]`);
+                    if (item) {
+                        item.classList.remove('nao-lida');
+                        const badge = item.querySelector('.badge');
+                        if (badge) badge.remove();
+                        this.naoLidas--;
+                        this.atualizarBadge();
+                    }
+                } catch (error) {
+                    console.error('Erro:', error);
+                }
+            }
+            
+            async marcarTodasLidas() {
+                try {
+                    await fetch('/api/notificacoes/marcar-todas-lidas', {method: 'POST'});
+                    document.querySelectorAll('.notificacao-item').forEach(item => {
+                        item.classList.remove('nao-lida');
+                        const badge = item.querySelector('.badge');
+                        if (badge) badge.remove();
+                    });
+                    this.naoLidas = 0;
+                    this.atualizarBadge();
+                } catch (error) {
+                    console.error('Erro:', error);
+                }
+            }
+        }
         
-        // Tooltips
-        var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
-        var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
-            return new bootstrap.Tooltip(tooltipTriggerEl);
+        // Inicializar notificações
+        document.addEventListener('DOMContentLoaded', () => {
+            if (document.getElementById('btnNotificacoes')) {
+                window.notificacaoManager = new NotificacaoManager();
+            }
+            
+            // Auto-fade out de alerts
+            setTimeout(() => {
+                document.querySelectorAll('.alert:not(.alert-custom)').forEach(alert => {
+                    const bsAlert = new bootstrap.Alert(alert);
+                    setTimeout(() => bsAlert.close(), 5000);
+                });
+            }, 3000);
+            
+            // Tooltips
+            var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+            tooltipTriggerList.map(tooltipTriggerEl => new bootstrap.Tooltip(tooltipTriggerEl));
         });
     </script>
     
