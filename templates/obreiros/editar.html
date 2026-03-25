@@ -35,203 +35,250 @@
             {% endif %}
         {% endwith %}
 
-        <div class="card shadow">
-            <div class="card-header bg-primary text-white">
-                <h5 class="mb-0">
-                    <i class="bi bi-person-badge"></i> 
-                    {% if is_own_profile %}
-                        Editar Meu Perfil
-                    {% else %}
-                        Editar Dados do Obreiro
-                    {% endif %}
-                </h5>
-            </div>
-            <div class="card-body">
-                <form method="POST">
-                    <!-- Dados de Login (readonly) -->
-                    <div class="row">
-                        <div class="col-md-6 mb-3">
-                            <label class="form-label">Usuário</label>
-                            <input type="text" class="form-control" value="{{ obreiro.usuario }}" readonly>
-                            <small class="text-muted">O nome de usuário não pode ser alterado</small>
-                        </div>
-                        {% if is_admin %}
-                        <div class="col-md-6 mb-3">
-                            <label class="form-label">Tipo de Usuário</label>
-                            <select class="form-select" name="tipo">
-                                <option value="obreiro" {% if obreiro.tipo == 'obreiro' %}selected{% endif %}>Obreiro</option>
-                                <option value="sindicante" {% if obreiro.tipo == 'sindicante' %}selected{% endif %}>Sindicante</option>
-                                <option value="admin" {% if obreiro.tipo == 'admin' %}selected{% endif %}>Administrador</option>
-                            </select>
-                        </div>
-                        {% endif %}
-                    </div>
-
-                    <hr>
-                    <h6 class="mb-3">📋 Dados Pessoais</h6>
-                    
-                    <div class="row">
-                        <div class="col-md-6 mb-3">
-                            <label class="form-label">Nome Completo *</label>
-                            <input type="text" class="form-control" name="nome_completo" 
-                                   value="{{ obreiro.nome_completo }}" required>
-                        </div>
-                        <div class="col-md-6 mb-3">
-                            <label class="form-label">Nome Maçônico</label>
-                            <input type="text" class="form-control" name="nome_maconico" 
-                                   value="{{ obreiro.nome_maconico or '' }}">
-                        </div>
-                    </div>
-
-                    <div class="row">
-                        <div class="col-md-4 mb-3">
-                            <label class="form-label">CIM Nº</label>
-                            <input type="text" class="form-control" name="cim_numero" 
-                                   value="{{ obreiro.cim_numero or '' }}">
-                        </div>
-                        {% if is_admin %}
-                        <div class="col-md-4 mb-3">
-                            <label class="form-label">Grau Atual</label>
-                            <select class="form-select" name="grau_atual">
-                                <option value="1" {% if obreiro.grau_atual == 1 %}selected{% endif %}>
-                                    Aprendiz (1º Grau)
-                                </option>
-                                <option value="2" {% if obreiro.grau_atual == 2 %}selected{% endif %}>
-                                    Companheiro (2º Grau)
-                                </option>
-                                <option value="3" {% if obreiro.grau_atual == 3 %}selected{% endif %}>
-                                    Mestre (3º Grau)
-                                </option>
-                            </select>
-                            <small class="text-muted">
-                                Para graus superiores (Mestre Instalado, etc.), registre no histórico de graus.
-                            </small>
-                        </div>
-                        <div class="col-md-4 mb-3">
-                            <label class="form-label">Status</label>
-                            <select class="form-select" name="ativo">
-                                <option value="1" {% if obreiro.ativo == 1 %}selected{% endif %}>Ativo</option>
-                                <option value="0" {% if obreiro.ativo == 0 %}selected{% endif %}>Inativo</option>
-                            </select>
-                        </div>
-                        {% endif %}
-                    </div>
-
-                    {% if is_admin %}
-                    <div class="row">
-                        <div class="col-md-4 mb-3">
-                            <label class="form-label">Data de Iniciação</label>
-                            <input type="date" class="form-control" name="data_iniciacao" 
-                                   value="{{ obreiro.data_iniciacao.strftime('%Y-%m-%d') if obreiro.data_iniciacao else '' }}">
-                        </div>
-                        <div class="col-md-4 mb-3">
-                            <label class="form-label">Data de Elevação</label>
-                            <input type="date" class="form-control" name="data_elevacao" 
-                                   value="{{ obreiro.data_elevacao.strftime('%Y-%m-%d') if obreiro.data_elevacao else '' }}">
-                        </div>
-                        <div class="col-md-4 mb-3">
-                            <label class="form-label">Data de Exaltação</label>
-                            <input type="date" class="form-control" name="data_exaltacao" 
-                                   value="{{ obreiro.data_exaltacao.strftime('%Y-%m-%d') if obreiro.data_exaltacao else '' }}">
-                        </div>
-                    </div>
-                    {% endif %}
-
-                    <hr>
-                    <h6 class="mb-3">📞 Contato</h6>
-
-                    <div class="row">
-                        <div class="col-md-6 mb-3">
-                            <label class="form-label">Telefone</label>
-                            <input type="text" class="form-control" name="telefone" id="telefone"
-                                   value="{{ obreiro.telefone or '' }}" 
-                                   placeholder="(11) 99999-9999">
-                            <small class="text-muted">Formato: (11) 99999-9999</small>
-                        </div>
-                        <div class="col-md-6 mb-3">
-                            <label class="form-label">E-mail</label>
-                            <input type="email" class="form-control" name="email" 
-                                   value="{{ obreiro.email or '' }}"
-                                   placeholder="obreiro@email.com">
-                        </div>
-                    </div>
-
-                    <div class="mb-3">
-                        <label class="form-label">Endereço</label>
-                        <textarea class="form-control" name="endereco" rows="2" 
-                                  placeholder="Rua, número, bairro, cidade - UF">{{ obreiro.endereco or '' }}</textarea>
-                    </div>
-
-                    <hr>
-                    <h6 class="mb-3">🏛️ Loja</h6>
-
-                    <div class="row">
-                        <div class="col-md-5 mb-3">
-                            <label class="form-label">Nome da Loja</label>
-                            <select class="form-select" name="loja_nome" id="lojaSelect">
-                                <option value="">Selecione uma loja...</option>
-                                {% for loja in lojas %}
-                                <option value="{{ loja.nome }}" 
-                                        data-numero="{{ loja.numero }}"
-                                        data-oriente="{{ loja.oriente }}"
-                                        {% if loja.nome == obreiro.loja_nome %}selected{% endif %}>
-                                    {{ loja.nome }} - Nº {{ loja.numero }}
-                                </option>
-                                {% endfor %}
-                            </select>
-                        </div>
-                        <div class="col-md-3 mb-3">
-                            <label class="form-label">Nº da Loja</label>
-                            <input type="text" class="form-control" name="loja_numero" id="lojaNumero"
-                                   value="{{ obreiro.loja_numero or '' }}" readonly>
-                        </div>
-                        <div class="col-md-4 mb-3">
-                            <label class="form-label">Oriente</label>
-                            <input type="text" class="form-control" name="loja_orient" id="lojaOriente"
-                                   value="{{ obreiro.loja_orient or '' }}" readonly>
-                        </div>
-                    </div>
-
-                    <!-- Graus Superiores Registrados -->
-                    {% if historico_graus_superiores and historico_graus_superiores|length > 0 %}
-                    <div class="alert alert-info mt-3">
-                        <i class="bi bi-star-fill text-warning"></i>
-                        <strong>Graus Superiores Registrados:</strong>
-                        <div class="mt-2">
-                            {% for gs in historico_graus_superiores %}
-                            <span class="badge bg-info me-1 mb-1">{{ gs.grau_nome }}</span>
-                            {% endfor %}
-                        </div>
-                        <small class="d-block mt-1">
-                            <i class="bi bi-info-circle"></i>
-                            Para registrar um novo grau superior, acesse o perfil do obreiro e use a opção "Registrar Grau".
-                        </small>
-                    </div>
-                    {% endif %}
-
-                    <!-- Informações Adicionais -->
-                    <div class="alert alert-info mt-3">
-                        <i class="bi bi-info-circle"></i>
-                        <strong>Informações:</strong>
-                        <ul class="mb-0 mt-2">
-                            <li>Os campos marcados com * são obrigatórios</li>
-                            <li>O grau atual (Aprendiz, Companheiro, Mestre) determina as permissões base do obreiro</li>
-                            <li>Graus superiores (Mestre Instalado, etc.) são registrados no histórico</li>
-                            {% if not is_admin %}
-                            <li>Alterações de tipo de usuário, grau e status só podem ser feitas pelo administrador</li>
+        <div class="row">
+            <div class="col-md-8">
+                <div class="card shadow">
+                    <div class="card-header bg-primary text-white">
+                        <h5 class="mb-0">
+                            <i class="bi bi-person-badge"></i> 
+                            {% if is_own_profile %}
+                                Editar Meu Perfil
+                            {% else %}
+                                Editar Dados do Obreiro
                             {% endif %}
-                        </ul>
+                        </h5>
                     </div>
+                    <div class="card-body">
+                        <form method="POST">
+                            <!-- Dados de Login (readonly) -->
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label">Usuário</label>
+                                    <input type="text" class="form-control" value="{{ obreiro.usuario }}" readonly>
+                                    <small class="text-muted">O nome de usuário não pode ser alterado</small>
+                                </div>
+                                {% if is_admin %}
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label">Tipo de Usuário</label>
+                                    <select class="form-select" name="tipo">
+                                        <option value="obreiro" {% if obreiro.tipo == 'obreiro' %}selected{% endif %}>Obreiro</option>
+                                        <option value="sindicante" {% if obreiro.tipo == 'sindicante' %}selected{% endif %}>Sindicante</option>
+                                        <option value="admin" {% if obreiro.tipo == 'admin' %}selected{% endif %}>Administrador</option>
+                                    </select>
+                                </div>
+                                {% endif %}
+                            </div>
 
-                    <div class="text-center mt-4">
-                        <a href="/obreiros/{{ obreiro.id }}" class="btn btn-secondary me-2">
-                            <i class="bi bi-x-circle"></i> Cancelar
-                        </a>
-                        <button type="submit" class="btn btn-success btn-lg px-5">
-                            <i class="bi bi-save"></i> Salvar Alterações
-                        </button>
+                            <hr>
+                            <h6 class="mb-3">📋 Dados Pessoais</h6>
+                            
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label">Nome Completo *</label>
+                                    <input type="text" class="form-control" name="nome_completo" 
+                                           value="{{ obreiro.nome_completo }}" required>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label">Nome Maçônico</label>
+                                    <input type="text" class="form-control" name="nome_maconico" 
+                                           value="{{ obreiro.nome_maconico or '' }}">
+                                </div>
+                            </div>
+
+                            <div class="row">
+                                <div class="col-md-4 mb-3">
+                                    <label class="form-label">CIM Nº</label>
+                                    <input type="text" class="form-control" name="cim_numero" 
+                                           value="{{ obreiro.cim_numero or '' }}">
+                                </div>
+                                {% if is_admin %}
+                                <div class="col-md-4 mb-3">
+                                    <label class="form-label">Grau Atual</label>
+                                    <select class="form-select" name="grau_atual">
+                                        <option value="1" {% if obreiro.grau_atual == 1 %}selected{% endif %}>Aprendiz (1º Grau)</option>
+                                        <option value="2" {% if obreiro.grau_atual == 2 %}selected{% endif %}>Companheiro (2º Grau)</option>
+                                        <option value="3" {% if obreiro.grau_atual == 3 %}selected{% endif %}>Mestre (3º Grau)</option>
+                                    </select>
+                                    <small class="text-muted">Para graus superiores, registre no histórico</small>
+                                </div>
+                                <div class="col-md-4 mb-3">
+                                    <label class="form-label">Status</label>
+                                    <select class="form-select" name="ativo">
+                                        <option value="1" {% if obreiro.ativo == 1 %}selected{% endif %}>Ativo</option>
+                                        <option value="0" {% if obreiro.ativo == 0 %}selected{% endif %}>Inativo</option>
+                                    </select>
+                                </div>
+                                {% endif %}
+                            </div>
+
+                            {% if is_admin %}
+                            <div class="row">
+                                <div class="col-md-4 mb-3">
+                                    <label class="form-label">Data de Iniciação</label>
+                                    <input type="date" class="form-control" name="data_iniciacao" 
+                                           value="{{ obreiro.data_iniciacao.strftime('%Y-%m-%d') if obreiro.data_iniciacao else '' }}">
+                                </div>
+                                <div class="col-md-4 mb-3">
+                                    <label class="form-label">Data de Elevação</label>
+                                    <input type="date" class="form-control" name="data_elevacao" 
+                                           value="{{ obreiro.data_elevacao.strftime('%Y-%m-%d') if obreiro.data_elevacao else '' }}">
+                                </div>
+                                <div class="col-md-4 mb-3">
+                                    <label class="form-label">Data de Exaltação</label>
+                                    <input type="date" class="form-control" name="data_exaltacao" 
+                                           value="{{ obreiro.data_exaltacao.strftime('%Y-%m-%d') if obreiro.data_exaltacao else '' }}">
+                                </div>
+                            </div>
+                            {% endif %}
+
+                            <hr>
+                            <h6 class="mb-3">📞 Contato</h6>
+
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label">Telefone</label>
+                                    <input type="text" class="form-control" name="telefone" id="telefone"
+                                           value="{{ obreiro.telefone or '' }}" 
+                                           placeholder="(11) 99999-9999">
+                                    <small class="text-muted">Formato: (11) 99999-9999</small>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label">E-mail</label>
+                                    <input type="email" class="form-control" name="email" 
+                                           value="{{ obreiro.email or '' }}"
+                                           placeholder="obreiro@email.com">
+                                </div>
+                            </div>
+
+                            <div class="mb-3">
+                                <label class="form-label">Endereço</label>
+                                <textarea class="form-control" name="endereco" rows="2" 
+                                          placeholder="Rua, número, bairro, cidade - UF">{{ obreiro.endereco or '' }}</textarea>
+                            </div>
+
+                            <hr>
+                            <h6 class="mb-3">🏛️ Loja</h6>
+
+                            <div class="row">
+                                <div class="col-md-5 mb-3">
+                                    <label class="form-label">Nome da Loja</label>
+                                    <select class="form-select" name="loja_nome" id="lojaSelect">
+                                        <option value="">Selecione uma loja...</option>
+                                        {% for loja in lojas %}
+                                        <option value="{{ loja.nome }}" 
+                                                data-numero="{{ loja.numero }}"
+                                                data-oriente="{{ loja.oriente }}"
+                                                {% if loja.nome == obreiro.loja_nome %}selected{% endif %}>
+                                            {{ loja.nome }} - Nº {{ loja.numero }}
+                                        </option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                                <div class="col-md-3 mb-3">
+                                    <label class="form-label">Nº da Loja</label>
+                                    <input type="text" class="form-control" name="loja_numero" id="lojaNumero"
+                                           value="{{ obreiro.loja_numero or '' }}" readonly>
+                                </div>
+                                <div class="col-md-4 mb-3">
+                                    <label class="form-label">Oriente</label>
+                                    <input type="text" class="form-control" name="loja_orient" id="lojaOriente"
+                                           value="{{ obreiro.loja_orient or '' }}" readonly>
+                                </div>
+                            </div>
+
+                            <!-- Informações Adicionais -->
+                            <div class="alert alert-info mt-3">
+                                <i class="bi bi-info-circle"></i>
+                                <strong>Informações:</strong>
+                                <ul class="mb-0 mt-2">
+                                    <li>Os campos marcados com * são obrigatórios</li>
+                                    <li>O grau atual determina as permissões do obreiro no sistema</li>
+                                    <li>Para registrar novos graus no histórico, use a opção no perfil do obreiro</li>
+                                    {% if not is_admin %}
+                                    <li>Alterações de tipo de usuário, grau e status só podem ser feitas pelo administrador</li>
+                                    {% endif %}
+                                </ul>
+                            </div>
+
+                            <div class="text-center mt-4">
+                                <a href="/obreiros/{{ obreiro.id }}" class="btn btn-secondary me-2">
+                                    <i class="bi bi-x-circle"></i> Cancelar
+                                </a>
+                                <button type="submit" class="btn btn-success btn-lg px-5">
+                                    <i class="bi bi-save"></i> Salvar Alterações
+                                </button>
+                            </div>
+                        </form>
                     </div>
-                </form>
+                </div>
+            </div>
+
+            <div class="col-md-4">
+                <!-- Card de Foto -->
+                <div class="card shadow mb-4">
+                    <div class="card-header bg-primary text-white">
+                        <h5 class="mb-0"><i class="bi bi-camera"></i> Foto do Obreiro</h5>
+                    </div>
+                    <div class="card-body text-center">
+                        {% if obreiro.foto %}
+                        <div class="position-relative d-inline-block mb-3">
+                            <img src="/uploads/fotos/{{ obreiro.foto }}" 
+                                 alt="Foto de {{ obreiro.nome_completo }}"
+                                 class="img-fluid rounded-circle shadow-sm"
+                                 style="width: 150px; height: 150px; object-fit: cover;">
+                            <a href="/obreiros/{{ obreiro.id }}/foto/remover" 
+                               class="btn btn-sm btn-danger position-absolute top-0 end-0 rounded-circle"
+                               onclick="return confirm('Remover esta foto?')"
+                               style="transform: translate(25%, -25%);">
+                                <i class="bi bi-x-lg"></i>
+                            </a>
+                        </div>
+                        {% else %}
+                        <div class="bg-light rounded-circle d-flex align-items-center justify-content-center mx-auto mb-3"
+                             style="width: 150px; height: 150px;">
+                            <i class="bi bi-person-circle fs-1 text-secondary"></i>
+                        </div>
+                        {% endif %}
+                        
+                        <form method="POST" action="/obreiros/{{ obreiro.id }}/foto" enctype="multipart/form-data">
+                            <div class="mb-3">
+                                <label class="form-label">Selecionar Foto</label>
+                                <input type="file" class="form-control" name="foto" accept="image/*" required>
+                                <small class="text-muted d-block mt-1">
+                                    Formatos: PNG, JPG, JPEG, GIF, WEBP<br>
+                                    Máximo: 5MB<br>
+                                    A imagem será redimensionada para 300x300
+                                </small>
+                            </div>
+                            <button type="submit" class="btn btn-primary w-100">
+                                <i class="bi bi-upload"></i> Upload Foto
+                            </button>
+                        </form>
+                    </div>
+                </div>
+
+                <!-- Card de Informações -->
+                <div class="card shadow">
+                    <div class="card-header bg-info text-white">
+                        <h5 class="mb-0"><i class="bi bi-info-circle"></i> Informações</h5>
+                    </div>
+                    <div class="card-body">
+                        <p><strong>Usuário:</strong> {{ obreiro.usuario }}</p>
+                        <p><strong>Data de Cadastro:</strong> 
+                            {{ obreiro.data_cadastro.strftime('%d/%m/%Y') if obreiro.data_cadastro else '-' }}
+                        </p>
+                        <p><strong>Grau Atual:</strong> 
+                            {% if obreiro.grau_atual == 3 %}Mestre
+                            {% elif obreiro.grau_atual == 2 %}Companheiro
+                            {% else %}Aprendiz{% endif %}
+                        </p>
+                        <hr>
+                        <div class="alert alert-light small mb-0">
+                            <i class="bi bi-shield-lock"></i>
+                            Para alterar a senha, utilize o menu "Meu Perfil".
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
@@ -278,16 +325,14 @@
         border-color: #0d6efd;
         box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.25);
     }
-    .alert {
-        border-radius: 8px;
+    .rounded-circle {
+        border-radius: 50% !important;
     }
-    @media (max-width: 768px) {
-        .btn-group {
-            flex-direction: column;
-        }
-        .btn-group .btn {
-            margin-bottom: 5px;
-        }
+    .position-relative {
+        position: relative;
+    }
+    .position-absolute {
+        position: absolute;
     }
 </style>
 
