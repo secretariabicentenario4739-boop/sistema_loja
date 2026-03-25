@@ -1014,6 +1014,20 @@ def novo_obreiro():
         data_elevacao = data_elevacao if data_elevacao and data_elevacao.strip() else None
         data_exaltacao = data_exaltacao if data_exaltacao and data_exaltacao.strip() else None
 
+        # CONVERTER GRAU: se for grau superior (nivel > 3), mantém como 3
+        try:
+            grau_atual_int = int(grau_atual)
+            if grau_atual_int > 3:
+                # Grau superior (Mestre Instalado, etc.) - guarda no histórico
+                grau_superior = grau_atual_int
+                grau_atual = 3  # Mestre como grau base
+            else:
+                grau_superior = None
+                grau_atual = grau_atual_int
+        except:
+            grau_atual = 1
+            grau_superior = None
+
         if not usuario or not senha or not nome_completo:
             flash("Preencha os campos obrigatórios", "danger")
         else:
@@ -1021,6 +1035,7 @@ def novo_obreiro():
                 senha_hash = generate_password_hash(senha)
                 agora = datetime.now()
 
+                # Inserir usuário
                 cursor.execute("""
                     INSERT INTO usuarios 
                     (usuario, senha_hash, tipo, data_cadastro, ativo, 
@@ -1038,11 +1053,25 @@ def novo_obreiro():
                 conn.commit()
                 obreiro_id = cursor.lastrowid
 
+                # Registrar no histórico de graus
                 if data_iniciacao:
                     cursor.execute("""
                         INSERT INTO historico_graus (obreiro_id, grau, data, observacao)
                         VALUES (%s, %s, %s, %s)
                     """, (obreiro_id, 1, data_iniciacao, "Iniciação"))
+
+                # Se for grau superior, registrar no histórico
+                if grau_superior:
+                    # Buscar nome do grau superior
+                    cursor.execute("SELECT nome FROM graus WHERE nivel = %s", (grau_superior,))
+                    grau_info = cursor.fetchone()
+                    nome_grau = grau_info['nome'] if grau_info else f"Grau {grau_superior}"
+                    
+                    cursor.execute("""
+                        INSERT INTO historico_graus (obreiro_id, grau, data, observacao)
+                        VALUES (%s, %s, %s, %s)
+                    """, (obreiro_id, grau_superior, datetime.now().date(), 
+                          f"Registro de {nome_grau}"))
 
                 conn.commit()
                 
@@ -1052,8 +1081,8 @@ def novo_obreiro():
                 return_connection(conn)
                 return redirect("/obreiros")
 
-            except psycopg2.IntegrityError:
-                flash("Erro: Usuário ou CIM já existe", "danger")
+            except psycopg2.IntegrityError as e:
+                flash(f"Erro: Usuário ou CIM já existe - {e}", "danger")
                 conn.rollback()
 
     # Buscar lojas
@@ -1769,6 +1798,7 @@ def excluir_grau(id):
             return_connection(conn)
         flash(f"Erro ao excluir grau: {str(e)}", "danger")
         return redirect("/graus")
+        
 @app.route("/obreiros/<int:id>/grau", methods=["POST"])
 @admin_required
 def registrar_grau(id):
@@ -1784,7 +1814,7 @@ def registrar_grau(id):
     
     try:
         # Buscar informações do grau
-        cursor.execute("SELECT nome, nivel FROM graus WHERE id = %s", (grau_id,))
+        cursor.execute("SELECT id, nome, nivel FROM graus WHERE id = %s", (grau_id,))
         grau = cursor.fetchone()
         
         if not grau:
@@ -1792,19 +1822,31 @@ def registrar_grau(id):
             return_connection(conn)
             return redirect(f"/obreiros/{id}")
         
-        # Registrar no histórico
-        cursor.execute("""
-            INSERT INTO historico_graus (obreiro_id, grau, grau_id, data, observacao)
-            VALUES (%s, %s, %s, %s, %s)
-        """, (id, grau['nivel'], grau_id, data, observacao))
+        # Verificar se é grau superior (nivel > 3)
+        if grau['nivel'] > 3:
+            # Registrar no histórico com o grau_id
+            cursor.execute("""
+                INSERT INTO historico_graus (obreiro_id, grau, grau_id, data, observacao)
+                VALUES (%s, %s, %s, %s, %s)
+            """, (id, grau['nivel'], grau_id, data, observacao))
+            
+            # NÃO altera o grau_atual (mantém como Mestre)
+            flash(f"Grau superior '{grau['nome']}' registrado no histórico!", "info")
+        else:
+            # Grau básico (1,2,3) - atualiza o grau atual
+            cursor.execute("""
+                INSERT INTO historico_graus (obreiro_id, grau, data, observacao)
+                VALUES (%s, %s, %s, %s)
+            """, (id, grau['nivel'], data, observacao))
+            
+            # Atualizar grau atual do obreiro
+            cursor.execute("UPDATE usuarios SET grau_atual = %s WHERE id = %s", (grau['nivel'], id))
+            flash(f"Grau '{grau['nome']}' registrado e atualizado como grau principal!", "success")
         
-        # Atualizar grau atual do obreiro
-        cursor.execute("UPDATE usuarios SET grau_atual = %s WHERE id = %s", (grau['nivel'], id))
         conn.commit()
         
         registrar_log("registrar_grau", "obreiro", id, 
                      dados_novos={"grau": grau['nome'], "data": data})
-        flash(f"Grau '{grau['nome']}' registrado com sucesso!", "success")
         
     except Exception as e:
         print(f"Erro ao registrar grau: {e}")
@@ -1812,7 +1854,7 @@ def registrar_grau(id):
         flash(f"Erro ao registrar grau: {str(e)}", "danger")
     
     return_connection(conn)
-    return redirect(f"/obreiros/{id}")        
+    return redirect(f"/obreiros/{id}")       
         
 # =============================
 # ROTAS DE REUNIÕES
