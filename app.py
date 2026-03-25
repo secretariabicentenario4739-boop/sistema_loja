@@ -4018,59 +4018,7 @@ def editar_sindicante(id):
     lojas = cursor.fetchall()
     return_connection(conn)
     return render_template("editar_sindicante.html", sindicante=sindicante, lojas=lojas)
-@app.route("/forcar-ficha/<int:id>")
-def forcar_ficha(id):
-    """Força a exibição da ficha do candidato"""
-    try:
-        cursor, conn = get_db()
         
-        # Verificar se o candidato tem dados preenchidos
-        cursor.execute("""
-            SELECT nome, cpf, celular, endereco_residencial 
-            FROM candidatos 
-            WHERE id = %s
-        """, (id,))
-        candidato = cursor.fetchone()
-        
-        if not candidato:
-            return f"<h1>Candidato ID {id} não encontrado</h1>"
-        
-        tem_dados = candidato['cpf'] is not None or candidato['celular'] is not None
-        
-        html = f"""
-        <!DOCTYPE html>
-        <html>
-        <head>
-            <title>Candidato {candidato['nome']}</title>
-            <style>
-                body {{ font-family: Arial; padding: 20px; }}
-                .card {{ background: white; border-radius: 10px; padding: 20px; margin-bottom: 20px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }}
-                .success {{ color: green; }}
-                .warning {{ color: orange; }}
-            </style>
-        </head>
-        <body>
-            <div class="card">
-                <h1>Candidato: {candidato['nome']}</h1>
-                <p>CPF: {candidato['cpf'] or '❌ Não preenchido'}</p>
-                <p>Telefone: {candidato['celular'] or '❌ Não preenchido'}</p>
-                <p>Endereço: {candidato['endereco_residencial'] or '❌ Não preenchido'}</p>
-                <hr>
-                <p class="{'success' if tem_dados else 'warning'}">
-                    {'✅ Candidato com dados completos' if tem_dados else '⚠️ Candidato sem dados preenchidos'}
-                </p>
-                <a href="/sindicancia/{id}" class="btn">Ir para Sindicância</a>
-                <a href="/preencher-candidato/{id}" class="btn">Preencher Dados</a>
-            </div>
-        </body>
-        </html>
-        """
-        
-        return_connection(conn)
-        return html
-        
-    except Exception as e:
-        return f"<h1>Erro: {e}</h1>"        
 
 # =============================
 # ROTAS DE LOJAS
