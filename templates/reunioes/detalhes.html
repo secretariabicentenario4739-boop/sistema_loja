@@ -368,8 +368,7 @@
                         {% endif %}
 
                         <hr>
-
-                        <!-- Ata da Reunião -->
+                     
                        <!-- Ata da Reunião -->
 <h6 class="mb-2"><i class="bi bi-file-text"></i> Ata da Reunião</h6>
 {% if ata_id %}
@@ -408,13 +407,12 @@
     <div class="text-center">
         <i class="bi bi-file-earmark-text fs-2 text-muted"></i>
         <p class="text-muted mt-2 mb-2">Nenhuma ata registrada para esta reunião.</p>
-        {% if session.tipo == 'admin' and reuniao.status == 'realizada' %}
+        {% if session.tipo == 'admin' %}
             <a href="/atas/nova/{{ reuniao.id }}" class="btn btn-success btn-sm w-100">
                 <i class="bi bi-plus-circle"></i> Criar Ata
             </a>
-        {% elif session.tipo == 'admin' and reuniao.status != 'realizada' %}
             <div class="alert alert-info small mt-2">
-                <i class="bi bi-info-circle"></i> A ata só pode ser criada após a reunião ser realizada.
+                <i class="bi bi-info-circle"></i> A ata pode ser criada antes da reunião e será atualizada durante a sessão.
             </div>
         {% endif %}
     </div>

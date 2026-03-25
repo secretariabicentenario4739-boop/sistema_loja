@@ -2633,6 +2633,8 @@ def listar_atas():
 @admin_required
 def nova_ata(reuniao_id):
     cursor, conn = get_db()
+    
+    # Buscar reunião - sem verificar status
     cursor.execute("""
         SELECT r.*, 
                (SELECT COUNT(*) FROM presenca WHERE reuniao_id = r.id AND presente = 1) as presentes
@@ -2640,6 +2642,7 @@ def nova_ata(reuniao_id):
         WHERE r.id = %s
     """, (reuniao_id,))
     reuniao = cursor.fetchone()
+    
     if not reuniao:
         flash("Reunião não encontrada", "danger")
         return_connection(conn)
@@ -2649,7 +2652,7 @@ def nova_ata(reuniao_id):
         conteudo = request.form.get("conteudo")
         modelo_id = request.form.get("modelo_id")
         
-        # Tratar valores vazios
+        # Tratar modelo_id
         modelo_id = modelo_id if modelo_id and modelo_id.strip() else None
         if modelo_id:
             try:
@@ -2663,7 +2666,6 @@ def nova_ata(reuniao_id):
         numero_ata = total + 1
         
         try:
-            # Removendo modelo_id do INSERT (coluna não existe na tabela)
             cursor.execute("""
                 INSERT INTO atas 
                 (reuniao_id, conteudo, redator_id, numero_ata, ano_ata, tipo_ata, data_criacao)
@@ -2771,25 +2773,51 @@ def visualizar_ata(id):
 def editar_ata(id):
     cursor, conn = get_db()
     
-    if request.method == "POST":
-        conteudo = request.form.get("conteudo")
-        cursor.execute("""
-            UPDATE atas 
-            SET conteudo = %s, versao = versao + 1
-            WHERE id = %s
-        """, (conteudo, id))
-        conn.commit()
-        registrar_log("editar", "ata", id)
-        flash("Ata atualizada com sucesso!", "success")
+    # Buscar ata
+    cursor.execute("""
+        SELECT a.*, r.titulo as reuniao_titulo, r.status as reuniao_status
+        FROM atas a
+        JOIN reunioes r ON a.reuniao_id = r.id
+        WHERE a.id = %s
+    """, (id,))
+    ata = cursor.fetchone()
+    
+    if not ata:
+        flash("Ata não encontrada", "danger")
+        return_connection(conn)
+        return redirect("/atas")
+    
+    # Verificar se já está aprovada
+    if ata["aprovada"] == 1:
+        flash("Ata já aprovada, não pode ser editada!", "warning")
         return_connection(conn)
         return redirect(f"/atas/{id}")
 
-    cursor.execute("SELECT * FROM atas WHERE id = %s", (id,))
-    ata = cursor.fetchone()
-    cursor.execute("SELECT * FROM modelos_ata WHERE ativo = 1")
-    modelos = cursor.fetchall()
+    if request.method == "POST":
+        conteudo = request.form.get("conteudo")
+        
+        if not conteudo:
+            flash("Conteúdo da ata é obrigatório", "danger")
+        else:
+            try:
+                cursor.execute("""
+                    UPDATE atas 
+                    SET conteudo = %s, versao = versao + 1
+                    WHERE id = %s
+                """, (conteudo, id))
+                conn.commit()
+                
+                registrar_log("editar", "ata", id, dados_novos={"versao": ata["versao"] + 1})
+                flash("Ata atualizada com sucesso!", "success")
+                return_connection(conn)
+                return redirect(f"/atas/{id}")
+                
+            except Exception as e:
+                flash(f"Erro ao atualizar ata: {str(e)}", "danger")
+                conn.rollback()
+    
     return_connection(conn)
-    return render_template("atas/editar.html", ata=ata, modelos=modelos)
+    return render_template("atas/editar.html", ata=ata)
 
 @app.route("/atas/<int:id>/aprovar", methods=["POST"])
 @admin_required

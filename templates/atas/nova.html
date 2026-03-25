@@ -28,6 +28,20 @@
             {% endif %}
         {% endwith %}
 
+        <!-- Aviso de rascunho -->
+        {% if reuniao.status != 'realizada' %}
+        <div class="alert alert-info mb-4">
+            <div class="d-flex align-items-start">
+                <i class="bi bi-info-circle fs-4 me-3"></i>
+                <div>
+                    <strong>📝 Ata em rascunho</strong><br>
+                    Esta ata está sendo criada antes da reunião. Você pode editá-la posteriormente durante a sessão.<br>
+                    Após a reunião, não se esqueça de finalizar e aprovar.
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
         <div class="row">
             <div class="col-md-8">
                 <div class="card shadow">
@@ -36,13 +50,13 @@
                     </div>
                     <div class="card-body">
                         <!-- Informações da Reunião -->
-                        <div class="alert alert-info mb-4">
+                        <div class="alert alert-light border mb-4">
                             <div class="row">
                                 <div class="col-md-6">
-                                    <p><strong><i class="bi bi-calendar"></i> Data:</strong> 
+                                    <p class="mb-1"><strong><i class="bi bi-calendar"></i> Data:</strong> 
                                         {{ reuniao.data.strftime('%d/%m/%Y') if reuniao.data else '-' }}
                                     </p>
-                                    <p><strong><i class="bi bi-clock"></i> Horário:</strong> 
+                                    <p class="mb-1"><strong><i class="bi bi-clock"></i> Horário:</strong> 
                                         {% if reuniao.hora_inicio %}
                                             {{ reuniao.hora_inicio.strftime('%H:%M') if reuniao.hora_inicio else '-' }}
                                             {% if reuniao.hora_termino %}
@@ -54,8 +68,8 @@
                                     </p>
                                 </div>
                                 <div class="col-md-6">
-                                    <p><strong><i class="bi bi-geo-alt"></i> Local:</strong> {{ reuniao.local or 'Não informado' }}</p>
-                                    <p><strong><i class="bi bi-people"></i> Presentes:</strong> {{ reuniao.presentes or 0 }}</p>
+                                    <p class="mb-1"><strong><i class="bi bi-geo-alt"></i> Local:</strong> {{ reuniao.local or 'Não informado' }}</p>
+                                    <p class="mb-1"><strong><i class="bi bi-people"></i> Presentes:</strong> {{ reuniao.presentes or 0 }}</p>
                                 </div>
                             </div>
                         </div>
@@ -125,15 +139,12 @@
                                 <i class="bi bi-check-circle-fill text-success"></i> 
                                 Inclua data e hora do encerramento
                             </li>
-                            <li class="mb-2">
-                                <i class="bi bi-check-circle-fill text-success"></i> 
-                            </li>
                         </ul>
                     </div>
                 </div>
 
                 <!-- Estrutura Sugerida -->
-                <div class="card shadow">
+                <div class="card shadow mb-4">
                     <div class="card-header bg-warning text-dark">
                         <h5 class="mb-0"><i class="bi bi-list-ul"></i> Estrutura Sugerida</h5>
                     </div>
@@ -147,11 +158,39 @@
                             <li><strong>Encerramento</strong> - Hora e assinaturas</li>
                         </ol>
                         <hr>
-                        <button class="btn btn-sm btn-outline-primary w-100" onclick="inserirEstrutura()">
-                            <i class="bi bi-file-text"></i> Inserir Estrutura Básica
-                        </button>
+                        <div class="d-grid gap-2">
+                            <button class="btn btn-sm btn-outline-primary" onclick="inserirEstrutura()">
+                                <i class="bi bi-file-text"></i> Inserir Estrutura Básica
+                            </button>
+                            <button class="btn btn-sm btn-outline-secondary" onclick="inserirModeloOficial()">
+                                <i class="bi bi-journal"></i> Inserir Modelo Oficial
+                            </button>
+                        </div>
                     </div>
                 </div>
+
+                <!-- Informações sobre rascunho -->
+                {% if reuniao.status != 'realizada' %}
+                <div class="card shadow border-warning">
+                    <div class="card-header bg-warning text-dark">
+                        <h5 class="mb-0"><i class="bi bi-pencil"></i> Modo Rascunho</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="text-center">
+                            <i class="bi bi-file-earmark-text fs-1 text-warning"></i>
+                            <p class="mt-2 small">
+                                Esta ata está em modo <strong>rascunho</strong>.<br>
+                                Você pode salvar e editar quantas vezes quiser antes da reunião.
+                            </p>
+                            <hr>
+                            <div class="alert alert-light small mb-0">
+                                <i class="bi bi-info-circle"></i>
+                                Após a reunião, não se esqueça de revisar e aprovar a ata final.
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
             </div>
         </div>
 
@@ -270,9 +309,70 @@ Nada mais havendo a tratar, a reunião foi encerrada às ${horaTermino}.
 **Venerável Mestre**
 
 **__________________________________**
-**Secretário(a)`
+**Secretário(a)`;
 
         document.getElementById('conteudoAta').value = estruturaBasica;
+    }
+    
+    // Inserir modelo oficial completo
+    function inserirModeloOficial() {
+        const data = "{{ reuniao.data.strftime('%d/%m/%Y') if reuniao.data else '' }}";
+        const horaInicio = "{{ reuniao.hora_inicio.strftime('%H:%M') if reuniao.hora_inicio else '' }}";
+        const horaTermino = "{{ reuniao.hora_termino.strftime('%H:%M') if reuniao.hora_termino else '' }}";
+        const local = "{{ reuniao.local or 'Templo Maçônico' }}";
+        
+        const modeloOficial = `## ATA DA REUNIÃO {{ reuniao.tipo|upper }} - {{ reuniao.titulo }}
+
+### DADOS DA REUNIÃO
+- **Data:** ${data}
+- **Horário:** ${horaInicio} às ${horaTermino}
+- **Local:** ${local}
+- **Tipo:** {{ reuniao.tipo }}
+
+---
+
+### 1. ABERTURA
+Aos ${data} às ${horaInicio}, no ${local}, sob os auspícios do Grande Oriente do Brasil, foi aberta a sessão ${reuniao.tipo.lower()} com a presença do Venerável Mestre, demais dignidades e obreiros presentes.
+
+### 2. VERIFICAÇÃO DE QUÓRUM
+O Irmão Secretário procedeu à leitura da lista de presença, verificando-se a presença de ___ obreiros, número suficiente para deliberação.
+
+### 3. LEITURA DA ATA ANTERIOR
+O Irmão Secretário procedeu à leitura da ata da reunião anterior. Após discussão, a ata foi aprovada por unanimidade.
+
+### 4. ORDEM DO DIA
+#### 4.1. Comunicações
+- 
+
+#### 4.2. Propostas
+- 
+
+#### 4.3. Votações
+- 
+
+### 5. PALAVRA LIVRE
+O Venerável Mestre concedeu a palavra aos Irmãos que desejaram se manifestar.
+
+### 6. ENCERRAMENTO
+Nada mais havendo a tratar, o Venerável Mestre declarou encerrada a sessão às ${horaTermino}, dando por findos os trabalhos.
+
+---
+
+**A presente ata foi lavrada pelo Irmão Secretário, que a subscreve juntamente com o Venerável Mestre e demais Irmãos que desejarem assinar.**
+
+**__________________________________**
+**Venerável Mestre**
+
+**__________________________________**
+**1º Vigilante**
+
+**__________________________________**
+**2º Vigilante**
+
+**__________________________________**
+**Secretário(a)`;
+
+        document.getElementById('conteudoAta').value = modeloOficial;
     }
     
     // Visualizar ata formatada
@@ -347,6 +447,30 @@ Nada mais havendo a tratar, a reunião foi encerrada às ${horaTermino}.
             document.getElementById('formAta').submit();
         }
     });
+    
+    // Auto-salvar rascunho (opcional)
+    let autoSaveTimeout;
+    document.getElementById('conteudoAta').addEventListener('input', function() {
+        clearTimeout(autoSaveTimeout);
+        autoSaveTimeout = setTimeout(() => {
+            const conteudo = this.value;
+            if (conteudo.length > 100) {
+                localStorage.setItem('rascunho_ata_{{ reuniao.id }}', conteudo);
+                console.log('Rascunho salvo automaticamente');
+            }
+        }, 3000);
+    });
+    
+    // Carregar rascunho salvo
+    window.addEventListener('load', function() {
+        const rascunhoSalvo = localStorage.getItem('rascunho_ata_{{ reuniao.id }}');
+        const textarea = document.getElementById('conteudoAta');
+        if (rascunhoSalvo && !textarea.value) {
+            if (confirm('Há um rascunho salvo anteriormente. Deseja carregá-lo?')) {
+                textarea.value = rascunhoSalvo;
+            }
+        }
+    });
 </script>
 
 <style>
@@ -379,8 +503,8 @@ Nada mais havendo a tratar, a reunião foi encerrada às ${horaTermino}.
     .modal-body li {
         margin-bottom: 0.5rem;
     }
-    .alert-info p {
-        margin-bottom: 0.25rem;
+    .alert-light {
+        background-color: #f8f9fa;
     }
     @media (max-width: 768px) {
         .btn-group {
