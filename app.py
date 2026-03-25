@@ -2053,12 +2053,13 @@ def detalhes_reuniao(id):
         WHERE r.id = %s
     """, (id,))
     reuniao = cursor.fetchone()
+    
     if not reuniao:
         flash("Reunião não encontrada", "danger")
         return_connection(conn)
         return redirect("/reunioes")
 
-    # Buscar presenças com os obreiros
+    # Buscar presenças
     cursor.execute("""
         SELECT u.id, u.nome_completo, u.grau_atual, 
                p.id as presenca_id, p.presente, p.tipo_ausencia, 
@@ -2075,19 +2076,31 @@ def detalhes_reuniao(id):
     presentes = sum(1 for p in presenca if p["presente"] == 1)
     ausentes = total_obreiros - presentes
 
-    # Buscar a ata se existir
-    cursor.execute("SELECT id, aprovada, numero_ata, ano_ata FROM atas WHERE reuniao_id = %s", (id,))
-    ata_row = cursor.fetchone()
-    ata_id = ata_row["id"] if ata_row else None
-    ata_aprovada = ata_row["aprovada"] if ata_row else None
-    ata_numero = ata_row["numero_ata"] if ata_row else None
-    ata_ano = ata_row["ano_ata"] if ata_row else None
+    # ========== BUSCAR ATA ==========
+    cursor.execute("""
+        SELECT id, aprovada, numero_ata, ano_ata, conteudo, data_criacao, 
+               redator_id, versao, data_aprovacao, redator_nome
+        FROM atas 
+        WHERE reuniao_id = %s
+        ORDER BY versao DESC
+        LIMIT 1
+    """, (id,))
+    ata = cursor.fetchone()
+    
+    ata_id = ata["id"] if ata else None
+    ata_aprovada = ata["aprovada"] if ata else None
+    ata_numero = ata["numero_ata"] if ata else None
+    ata_ano = ata["ano_ata"] if ata else None
+    ata_conteudo = ata["conteudo"] if ata else None
+    ata_data_criacao = ata["data_criacao"] if ata else None
+    ata_versao = ata["versao"] if ata else None
 
-    # Buscar tipos de ausência para o select
+    # Buscar tipos de ausência
     cursor.execute("SELECT * FROM tipos_ausencia WHERE ativo = 1 ORDER BY nome")
     tipos_ausencia = cursor.fetchall()
 
     return_connection(conn)
+    
     return render_template("reunioes/detalhes.html",
                           reuniao=reuniao,
                           presenca=presenca,
@@ -2098,6 +2111,9 @@ def detalhes_reuniao(id):
                           ata_aprovada=ata_aprovada,
                           ata_numero=ata_numero,
                           ata_ano=ata_ano,
+                          ata_conteudo=ata_conteudo,
+                          ata_data_criacao=ata_data_criacao,
+                          ata_versao=ata_versao,
                           tipos_ausencia=tipos_ausencia)
 
 @app.route("/reunioes/<int:id>/presenca", methods=["POST"])

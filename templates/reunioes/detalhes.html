@@ -370,44 +370,55 @@
                         <hr>
 
                         <!-- Ata da Reunião -->
-                        <h6 class="mb-2"><i class="bi bi-file-text"></i> Ata da Reunião</h6>
-                        {% if ata_id %}
-                            <div class="text-center">
-                                <i class="bi bi-file-text-fill fs-2 text-success"></i>
-                                <p class="mt-1"><strong>Ata nº {{ ata_numero }}/{{ ata_ano }}</strong></p>
-                                <div class="d-grid gap-2">
-                                    <a href="/atas/{{ ata_id }}" class="btn btn-info btn-sm">
-                                        <i class="bi bi-eye"></i> Visualizar Ata
-                                    </a>
-                                    <a href="/atas/{{ ata_id }}/pdf" class="btn btn-secondary btn-sm">
-                                        <i class="bi bi-file-pdf"></i> Baixar PDF
-                                    </a>
-                                    {% if session.tipo == 'admin' and not ata_aprovada %}
-                                    <a href="/atas/{{ ata_id }}/editar" class="btn btn-warning btn-sm">
-                                        <i class="bi bi-pencil"></i> Editar Ata
-                                    </a>
-                                    <form method="POST" action="/atas/{{ ata_id }}/aprovar" class="mt-1">
-                                        <button type="submit" class="btn btn-success btn-sm w-100" 
-                                                onclick="return confirm('Aprovar esta ata?')">
-                                            <i class="bi bi-check-lg"></i> Aprovar Ata
-                                        </button>
-                                    </form>
-                                    {% endif %}
-                                </div>
-                            </div>
-                        {% else %}
-                            <div class="text-center">
-                                <i class="bi bi-file-earmark-text fs-2 text-muted"></i>
-                                <p class="text-muted mt-2 mb-2">Nenhuma ata registrada.</p>
-                                {% if session.tipo == 'admin' and reuniao.status == 'realizada' %}
-                                    <a href="/atas/nova/{{ reuniao.id }}" class="btn btn-success btn-sm w-100">
-                                        <i class="bi bi-plus-circle"></i> Criar Ata
-                                    </a>
-                                {% endif %}
-                            </div>
-                        {% endif %}
-                    </div>
-                </div>
+                       <!-- Ata da Reunião -->
+<h6 class="mb-2"><i class="bi bi-file-text"></i> Ata da Reunião</h6>
+{% if ata_id %}
+    <div class="text-center">
+        <i class="bi bi-file-text-fill fs-2 text-success"></i>
+        <p class="mt-1"><strong>Ata nº {{ ata_numero }}/{{ ata_ano }}</strong></p>
+        {% if ata_versao and ata_versao > 1 %}
+        <small class="text-muted">Versão {{ ata_versao }}</small>
+        {% endif %}
+        <div class="d-grid gap-2 mt-2">
+            <a href="/atas/{{ ata_id }}" class="btn btn-info btn-sm">
+                <i class="bi bi-eye"></i> Visualizar Ata
+            </a>
+            <a href="/atas/{{ ata_id }}/pdf" class="btn btn-secondary btn-sm">
+                <i class="bi bi-file-pdf"></i> Baixar PDF
+            </a>
+            {% if session.tipo == 'admin' and not ata_aprovada %}
+            <a href="/atas/{{ ata_id }}/editar" class="btn btn-warning btn-sm">
+                <i class="bi bi-pencil"></i> Editar Ata
+            </a>
+            <form method="POST" action="/atas/{{ ata_id }}/aprovar" class="mt-1">
+                <button type="submit" class="btn btn-success btn-sm w-100" 
+                        onclick="return confirm('Aprovar esta ata?')">
+                    <i class="bi bi-check-lg"></i> Aprovar Ata
+                </button>
+            </form>
+            {% endif %}
+        </div>
+        {% if ata_data_criacao %}
+        <small class="text-muted d-block mt-2">
+            Criada em: {{ ata_data_criacao.strftime('%d/%m/%Y %H:%M') }}
+        </small>
+        {% endif %}
+    </div>
+{% else %}
+    <div class="text-center">
+        <i class="bi bi-file-earmark-text fs-2 text-muted"></i>
+        <p class="text-muted mt-2 mb-2">Nenhuma ata registrada para esta reunião.</p>
+        {% if session.tipo == 'admin' and reuniao.status == 'realizada' %}
+            <a href="/atas/nova/{{ reuniao.id }}" class="btn btn-success btn-sm w-100">
+                <i class="bi bi-plus-circle"></i> Criar Ata
+            </a>
+        {% elif session.tipo == 'admin' and reuniao.status != 'realizada' %}
+            <div class="alert alert-info small mt-2">
+                <i class="bi bi-info-circle"></i> A ata só pode ser criada após a reunião ser realizada.
+            </div>
+        {% endif %}
+    </div>
+{% endif %}
 
                 <!-- Informações Adicionais -->
                 <div class="card shadow">
