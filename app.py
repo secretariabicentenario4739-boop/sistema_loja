@@ -3429,10 +3429,15 @@ def visualizar_sindicancia(id):
     cursor, conn = get_db()
     cursor.execute("SELECT * FROM candidatos WHERE id = %s", (id,))
     candidato = cursor.fetchone()
+    
     if not candidato:
         flash("Candidato não encontrado", "danger")
         return_connection(conn)
         return redirect("/minhas_sindicancias")
+
+    # Buscar filhos do candidato
+    cursor.execute("SELECT * FROM filhos_candidato WHERE candidato_id = %s ORDER BY data_nascimento", (id,))
+    filhos = cursor.fetchall()
 
     bloqueado = candidato["fechado"] == 1
     usuario = session["usuario"]
@@ -3501,6 +3506,7 @@ def visualizar_sindicancia(id):
 
     return render_template("sindicancia.html",
                           candidato=candidato,
+                          filhos=filhos,
                           registros=registros,
                           meu_parecer=meu_parecer,
                           parecer_conclusivo_existente=parecer_conclusivo_existente,

@@ -30,51 +30,123 @@
 
         <div class="row">
             <div class="col-md-8">
-                <!-- Informações do Candidato -->
+                <!-- FICHA COMPLETA DO CANDIDATO -->
                 <div class="card shadow mb-4">
                     <div class="card-header bg-primary text-white">
-                        <h5 class="mb-0"><i class="bi bi-person-circle"></i> Dados do Candidato</h5>
+                        <h5 class="mb-0"><i class="bi bi-person-vcard"></i> Ficha do Candidato</h5>
                     </div>
                     <div class="card-body">
-                        <div class="row">
+                        <!-- Dados da Loja -->
+                        {% if candidato.loja_nome or candidato.loja_numero %}
+                        <div class="mb-3">
+                            <h6><i class="bi bi-building"></i> Dados da Loja</h6>
+                            <div class="row">
+                                <div class="col-md-8">
+                                    <strong>Loja:</strong> {{ candidato.loja_nome or '-' }}
+                                </div>
+                                <div class="col-md-4">
+                                    <strong>Nº:</strong> {{ candidato.loja_numero or '-' }}
+                                </div>
+                            </div>
+                        </div>
+                        <hr>
+                        {% endif %}
+
+                        <!-- Dados Pessoais -->
+                        <h6><i class="bi bi-person-circle"></i> Dados Pessoais</h6>
+                        <div class="row mb-3">
                             <div class="col-md-6">
-                                <p><strong>Nome:</strong> {{ candidato.nome }}</p>
-                                <p><strong>Data Cadastro:</strong> 
-                                    {{ candidato.data_criacao.strftime('%d/%m/%Y') if candidato.data_criacao else '-' }}
-                                </p>
-                                {% if candidato.data_fechamento %}
-                                <p><strong>Data Encerramento:</strong> 
-                                    {{ candidato.data_fechamento.strftime('%d/%m/%Y') if candidato.data_fechamento else '-' }}
-                                </p>
-                                {% endif %}
-                                <p><strong>Status:</strong> 
-                                    {% if candidato.fechado == 1 %}
-                                        {% if candidato.status == 'Aprovado' %}
-                                            <span class="badge bg-success">Aprovado</span>
-                                        {% else %}
-                                            <span class="badge bg-danger">Reprovado</span>
-                                        {% endif %}
-                                    {% else %}
-                                        <span class="badge bg-warning">Em análise</span>
-                                    {% endif %}
-                                </p>
+                                <p><strong>Nome Completo:</strong> {{ candidato.nome }}</p>
+                                <p><strong>Data Nascimento:</strong> {{ candidato.data_nascimento.strftime('%d/%m/%Y') if candidato.data_nascimento else '-' }}</p>
+                                <p><strong>Naturalidade:</strong> {{ candidato.naturalidade or '-' }}{% if candidato.uf_naturalidade %}/{{ candidato.uf_naturalidade }}{% endif %}</p>
+                                <p><strong>Nacionalidade:</strong> {{ candidato.nacionalidade or '-' }}</p>
                             </div>
                             <div class="col-md-6">
-                                <p><strong>Resultado Final:</strong> {{ candidato.resultado_final or '-' }}</p>
-                                <p><strong>Votos:</strong> 
-                                    {{ votos_positivos }} positivos / {{ votos_negativos }} negativos
-                                    (Total: {{ total_votos }})
-                                </p>
-                                {% if not bloqueado %}
-                                <div class="progress mt-2" style="height: 20px;">
-                                    {% set percentual = (votos_positivos / total_votos * 100) if total_votos > 0 else 0 %}
-                                    <div class="progress-bar bg-success" style="width: {{ percentual }}%">
-                                        {{ "%.0f"|format(percentual) }}%
-                                    </div>
-                                </div>
+                                <p><strong>CPF:</strong> {{ candidato.cpf or '-' }}</p>
+                                <p><strong>RG:</strong> {{ candidato.rg or '-' }} {% if candidato.orgao_expedidor %}({{ candidato.orgao_expedidor }}){% endif %}</p>
+                                <p><strong>Telefone:</strong> {{ candidato.celular or candidato.telefone_fixo or '-' }}</p>
+                                <p><strong>E-mail:</strong> {{ candidato.email or '-' }}</p>
+                                <p><strong>Grau Instrução:</strong> {{ candidato.grau_instrucao or '-' }}</p>
+                                <p><strong>Tipo Sanguíneo:</strong> {{ candidato.tipo_sanguineo or '-' }}</p>
+                            </div>
+                        </div>
+
+                        <!-- Endereço -->
+                        {% if candidato.endereco_residencial or candidato.cidade %}
+                        <h6><i class="bi bi-house-door"></i> Endereço Residencial</h6>
+                        <div class="row mb-3">
+                            <div class="col-md-12">
+                                <p>{{ candidato.endereco_residencial or '' }}{% if candidato.numero_residencial %}, {{ candidato.numero_residencial }}{% endif %}<br>
+                                {% if candidato.bairro %}{{ candidato.bairro }}<br>{% endif %}
+                                {{ candidato.cidade or '' }}{% if candidato.uf_residencial %}/{{ candidato.uf_residencial }}{% endif %}
+                                {% if candidato.cep %} - CEP: {{ candidato.cep }}{% endif %}</p>
+                            </div>
+                        </div>
+                        {% endif %}
+
+                        <!-- Família -->
+                        <h6><i class="bi bi-people"></i> Família</h6>
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <p><strong>Nome do Pai:</strong> {{ candidato.nome_pai or '-' }}</p>
+                                <p><strong>Nome da Mãe:</strong> {{ candidato.nome_mae or '-' }}</p>
+                            </div>
+                            <div class="col-md-6">
+                                <p><strong>Estado Civil:</strong> {{ candidato.estado_civil or '-' }}</p>
+                                {% if candidato.estado_civil in ['Casado', 'União Estável'] %}
+                                <p><strong>Cônjuge:</strong> {{ candidato.nome_conjuge or '-' }}</p>
+                                <p><strong>Data Nascimento Cônjuge:</strong> {{ candidato.data_nascimento_conjuge.strftime('%d/%m/%Y') if candidato.data_nascimento_conjuge else '-' }}</p>
+                                <p><strong>Data Casamento:</strong> {{ candidato.data_casamento.strftime('%d/%m/%Y') if candidato.data_casamento else '-' }}</p>
                                 {% endif %}
                             </div>
                         </div>
+
+                        <!-- Filhos -->
+                        {% if filhos %}
+                        <h6><i class="bi bi-baby"></i> Filhos</h6>
+                        <div class="table-responsive mb-3">
+                            <table class="table table-sm">
+                                <thead>
+                                    <tr><th>Nome</th><th>Data Nascimento</th><th>Idade</th></thead>
+                                <tbody>
+                                    {% set hoje = now.date() %}
+                                    {% for filho in filhos %}
+                                    <tr>
+                                        <td>{{ filho.nome }}</td>
+                                        <td>{{ filho.data_nascimento.strftime('%d/%m/%Y') if filho.data_nascimento else '-' }}</td>
+                                        <td>{% if filho.data_nascimento %}{{ (hoje - filho.data_nascimento).days // 365 }} anos{% else %}-{% endif %}</td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                        {% endif %}
+
+                        <!-- Atividade Profissional -->
+                        {% if candidato.profissao or candidato.empregador %}
+                        <h6><i class="bi bi-briefcase"></i> Atividade Profissional</h6>
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <p><strong>Profissão:</strong> {{ candidato.profissao or '-' }}</p>
+                                <p><strong>Empregador:</strong> {{ candidato.empregador or '-' }}</p>
+                            </div>
+                            <div class="col-md-6">
+                                <p><strong>Telefone Comercial:</strong> {{ candidato.telefone_comercial or '-' }}</p>
+                                <p><strong>Endereço Profissional:</strong><br>
+                                {{ candidato.endereco_profissional or '' }}{% if candidato.bairro_profissional %}, {{ candidato.bairro_profissional }}{% endif %}<br>
+                                {{ candidato.cidade_profissional or '' }}{% if candidato.uf_profissional %}/{{ candidato.uf_profissional }}{% endif %}
+                                {% if candidato.cep_profissional %} - CEP: {{ candidato.cep_profissional }}{% endif %}</p>
+                            </div>
+                        </div>
+                        {% endif %}
+
+                        <!-- Observações -->
+                        {% if candidato.observacoes %}
+                        <h6><i class="bi bi-chat-text"></i> Observações</h6>
+                        <div class="alert alert-light mb-3">
+                            {{ candidato.observacoes }}
+                        </div>
+                        {% endif %}
                     </div>
                 </div>
 
@@ -169,6 +241,41 @@
             </div>
 
             <div class="col-md-4">
+                <!-- Card de Status da Sindicância -->
+                <div class="card shadow mb-4">
+                    <div class="card-header bg-dark text-white">
+                        <h5 class="mb-0"><i class="bi bi-bar-chart"></i> Status da Sindicância</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="text-center mb-3">
+                            <div class="display-6">{{ votos_positivos }} / {{ total_votos }}</div>
+                            <small class="text-muted">votos positivos</small>
+                            <div class="progress mt-2" style="height: 10px;">
+                                <div class="progress-bar bg-success" style="width: {{ (votos_positivos / total_votos * 100) if total_votos > 0 else 0 }}%"></div>
+                            </div>
+                        </div>
+                        <div class="row text-center">
+                            <div class="col-6">
+                                <div class="border rounded p-2">
+                                    <h4 class="text-success mb-0">{{ votos_positivos }}</h4>
+                                    <small>Positivos</small>
+                                </div>
+                            </div>
+                            <div class="col-6">
+                                <div class="border rounded p-2">
+                                    <h4 class="text-danger mb-0">{{ votos_negativos }}</h4>
+                                    <small>Negativos</small>
+                                </div>
+                            </div>
+                        </div>
+                        <hr>
+                        <div class="alert alert-info small mb-0">
+                            <i class="bi bi-info-circle"></i>
+                            Quando todos os sindicantes votarem, o resultado será automático.
+                        </div>
+                    </div>
+                </div>
+
                 <!-- Card de Ações -->
                 <div class="card shadow mb-4">
                     <div class="card-header bg-dark text-white">
@@ -254,6 +361,10 @@
     .progress {
         border-radius: 10px;
         overflow: hidden;
+    }
+    .display-6 {
+        font-size: 2rem;
+        font-weight: 600;
     }
     @media (max-width: 768px) {
         .btn-group {
