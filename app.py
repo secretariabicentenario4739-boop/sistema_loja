@@ -234,6 +234,8 @@ def init_db():
 # Testar conexão
 init_db()
 
+
+
 # =============================
 # CONTEXTO GLOBAL PARA TEMPLATES
 # =============================
@@ -933,13 +935,15 @@ def listar_obreiros():
     loja = request.args.get('loja', '')
     status = request.args.get('status', '')
 
+    # Consulta corrigida - sem JOIN duplicado
     query = """
-        SELECT u.*, l.nome as loja_nome, 
+        SELECT u.*, l.nome as loja_nome,
+               (SELECT g.nome FROM graus g WHERE g.nivel = u.grau_atual LIMIT 1) as grau_nome,
                CASE 
                    WHEN u.grau_atual = 1 THEN 'Aprendiz'
                    WHEN u.grau_atual = 2 THEN 'Companheiro'
                    WHEN u.grau_atual = 3 THEN 'Mestre'
-                   ELSE 'Não informado'
+                   ELSE (SELECT g.nome FROM graus g WHERE g.nivel = u.grau_atual LIMIT 1)
                END as grau_descricao,
                (SELECT COUNT(*) FROM ocupacao_cargos oc WHERE oc.obreiro_id = u.id AND oc.ativo = 1) as total_cargos
         FROM usuarios u
@@ -985,117 +989,6 @@ def listar_obreiros():
                           cargos=cargos_list,
                           lojas=lojas,
                           filtros={'nome': nome, 'grau': grau, 'cargo': cargo, 'loja': loja, 'status': status})
-
-@app.route("/obreiros/novo", methods=["GET", "POST"])
-@admin_required
-def novo_obreiro():
-    cursor, conn = get_db()
-
-    if request.method == "POST":
-        usuario = request.form.get("usuario")
-        senha = request.form.get("senha")
-        nome_completo = request.form.get("nome_completo")
-        nome_maconico = request.form.get("nome_maconico")
-        cim_numero = request.form.get("cim_numero")
-        tipo = request.form.get("tipo", "obreiro")
-        grau_atual = request.form.get("grau_atual", 1)
-        data_iniciacao = request.form.get("data_iniciacao")
-        data_elevacao = request.form.get("data_elevacao")
-        data_exaltacao = request.form.get("data_exaltacao")
-        telefone = request.form.get("telefone")
-        email = request.form.get("email")
-        endereco = request.form.get("endereco")
-        loja_nome = request.form.get("loja_nome")
-        loja_numero = request.form.get("loja_numero")
-        loja_orient = request.form.get("loja_orient")
-
-        # Converter strings vazias para None
-        data_iniciacao = data_iniciacao if data_iniciacao and data_iniciacao.strip() else None
-        data_elevacao = data_elevacao if data_elevacao and data_elevacao.strip() else None
-        data_exaltacao = data_exaltacao if data_exaltacao and data_exaltacao.strip() else None
-
-        # CONVERTER GRAU: se for grau superior (nivel > 3), mantém como 3
-        try:
-            grau_atual_int = int(grau_atual)
-            if grau_atual_int > 3:
-                # Grau superior (Mestre Instalado, etc.) - guarda no histórico
-                grau_superior = grau_atual_int
-                grau_atual = 3  # Mestre como grau base
-            else:
-                grau_superior = None
-                grau_atual = grau_atual_int
-        except:
-            grau_atual = 1
-            grau_superior = None
-
-        if not usuario or not senha or not nome_completo:
-            flash("Preencha os campos obrigatórios", "danger")
-        else:
-            try:
-                senha_hash = generate_password_hash(senha)
-                agora = datetime.now()
-
-                # Inserir usuário
-                cursor.execute("""
-                    INSERT INTO usuarios 
-                    (usuario, senha_hash, tipo, data_cadastro, ativo, 
-                     nome_completo, nome_maconico, cim_numero, grau_atual,
-                     data_iniciacao, data_elevacao, data_exaltacao,
-                     telefone, email, endereco,
-                     loja_nome, loja_numero, loja_orient) 
-                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
-                """, (usuario, senha_hash, tipo, agora, 1,
-                      nome_completo, nome_maconico, cim_numero, grau_atual,
-                      data_iniciacao, data_elevacao, data_exaltacao,
-                      telefone, email, endereco,
-                      loja_nome, loja_numero, loja_orient))
-
-                conn.commit()
-                obreiro_id = cursor.lastrowid
-
-                # Registrar no histórico de graus
-                if data_iniciacao:
-                    cursor.execute("""
-                        INSERT INTO historico_graus (obreiro_id, grau, data, observacao)
-                        VALUES (%s, %s, %s, %s)
-                    """, (obreiro_id, 1, data_iniciacao, "Iniciação"))
-
-                # Se for grau superior, registrar no histórico
-                if grau_superior:
-                    # Buscar nome do grau superior
-                    cursor.execute("SELECT nome FROM graus WHERE nivel = %s", (grau_superior,))
-                    grau_info = cursor.fetchone()
-                    nome_grau = grau_info['nome'] if grau_info else f"Grau {grau_superior}"
-                    
-                    cursor.execute("""
-                        INSERT INTO historico_graus (obreiro_id, grau, data, observacao)
-                        VALUES (%s, %s, %s, %s)
-                    """, (obreiro_id, grau_superior, datetime.now().date(), 
-                          f"Registro de {nome_grau}"))
-
-                conn.commit()
-                
-                registrar_log("criar", "obreiro", obreiro_id, 
-                             dados_novos={"nome": nome_completo, "usuario": usuario})
-                flash(f"Obreiro '{nome_completo}' adicionado com sucesso!", "success")
-                return_connection(conn)
-                return redirect("/obreiros")
-
-            except psycopg2.IntegrityError as e:
-                flash(f"Erro: Usuário ou CIM já existe - {e}", "danger")
-                conn.rollback()
-
-    # Buscar lojas
-    cursor.execute("SELECT * FROM lojas ORDER BY nome")
-    lojas = cursor.fetchall()
-    
-    # Buscar todos os graus ativos para o select
-    cursor.execute("SELECT * FROM graus WHERE ativo = 1 ORDER BY nivel, ordem")
-    graus = cursor.fetchall()
-    
-    return_connection(conn)
-    return render_template("obreiros/novo.html", lojas=lojas, graus=graus)
-
 @app.route("/obreiros/<int:id>")
 @login_required
 def visualizar_obreiro(id):
@@ -1133,7 +1026,7 @@ def visualizar_obreiro(id):
         """, (id,))
         cargos = cursor.fetchall()
 
-        # Buscar histórico de graus com nomes dos graus
+        # Buscar histórico de graus
         cursor.execute("""
             SELECT h.*, g.nome as grau_nome
             FROM historico_graus h
@@ -1143,7 +1036,7 @@ def visualizar_obreiro(id):
         """, (id,))
         historico_graus = cursor.fetchall()
 
-        # Buscar o nome do grau atual
+        # Buscar nome do grau atual
         cursor.execute("SELECT nome FROM graus WHERE nivel = %s", (obreiro['grau_atual'],))
         grau_atual_info = cursor.fetchone()
         nome_grau_atual = grau_atual_info['nome'] if grau_atual_info else None
@@ -1156,13 +1049,13 @@ def visualizar_obreiro(id):
         cursor.execute("SELECT COUNT(*) as total FROM condecoracoes_obreiro WHERE obreiro_id = %s", (id,))
         condecoracoes_count = cursor.fetchone()["total"]
 
-        # Buscar cargos disponíveis (para admin)
+        # Buscar cargos disponíveis
         cargos_disponiveis = []
         if session["tipo"] == "admin":
             cursor.execute("SELECT * FROM cargos WHERE ativo = 1 ORDER BY ordem")
             cargos_disponiveis = cursor.fetchall()
         
-        # Buscar graus disponíveis (para admin)
+        # Buscar graus disponíveis
         graus_disponiveis = []
         if session["tipo"] == "admin":
             cursor.execute("SELECT * FROM graus WHERE ativo = 1 ORDER BY nivel, ordem")
@@ -1200,76 +1093,95 @@ def visualizar_obreiro(id):
         flash(f"Erro ao carregar dados do obreiro: {str(e)}", "danger")
         return redirect("/obreiros")
         
-@app.route("/tipos_condecoracoes/editar/<int:id>", methods=["GET", "POST"])
+@app.route("/obreiros/<int:id>/excluir")
 @admin_required
-def editar_tipo_condecoracao(id):
-    """Edita um tipo de condecoração"""
-    cursor, conn = get_db()
-    
-    if request.method == "POST":
-        nome = request.form.get("nome")
-        descricao = request.form.get("descricao")
-        nivel = request.form.get("nivel", 1)
-        cor = request.form.get("cor", "#ffc107")
-        icone = request.form.get("icone", "bi-award")
-        ordem = request.form.get("ordem", 0)
-        ativo = 1 if request.form.get("ativo") else 0
-        
-        if not nome:
-            flash("Nome da condecoração é obrigatório", "danger")
-        else:
-            try:
-                cursor.execute("""
-                    UPDATE tipos_condecoracoes 
-                    SET nome = %s, descricao = %s, nivel = %s, 
-                        cor = %s, icone = %s, ordem = %s, ativo = %s
-                    WHERE id = %s
-                """, (nome, descricao, nivel, cor, icone, ordem, ativo, id))
-                conn.commit()
-                flash(f"Tipo de condecoração '{nome}' atualizado com sucesso!", "success")
-                return_connection(conn)
-                return redirect("/tipos_condecoracoes")
-            except Exception as e:
-                flash(f"Erro ao atualizar: {str(e)}", "danger")
-                conn.rollback()
-    
-    cursor.execute("SELECT * FROM tipos_condecoracoes WHERE id = %s", (id,))
-    tipo = cursor.fetchone()
-    return_connection(conn)
-    
-    if not tipo:
-        flash("Tipo de condecoração não encontrado", "danger")
-        return redirect("/tipos_condecoracoes")
-    
-    return render_template("admin/tipo_condecoracao_form.html", tipo=tipo)
-
-@app.route("/tipos_condecoracoes/excluir/<int:id>")
-@admin_required
-def excluir_tipo_condecoracao(id):
-    """Exclui um tipo de condecoração"""
+def excluir_obreiro(id):
+    """Exclui um obreiro (apenas admin)"""
     cursor, conn = get_db()
     
     try:
-        # Verificar se está sendo usado
-        cursor.execute("SELECT COUNT(*) as total FROM condecoracoes_obreiro WHERE tipo_id = %s", (id,))
-        resultado = cursor.fetchone()
+        # Buscar dados do obreiro para log
+        cursor.execute("SELECT nome_completo, usuario FROM usuarios WHERE id = %s", (id,))
+        obreiro = cursor.fetchone()
         
-        if resultado and resultado["total"] > 0:
-            # Se estiver sendo usado, apenas desativa
-            cursor.execute("UPDATE tipos_condecoracoes SET ativo = 0 WHERE id = %s", (id,))
+        if not obreiro:
+            flash("Obreiro não encontrado", "danger")
+            return_connection(conn)
+            return redirect("/obreiros")
+        
+        # Verificar se é o próprio usuário tentando se excluir
+        if session["user_id"] == id:
+            flash("Você não pode excluir seu próprio usuário!", "danger")
+            return_connection(conn)
+            return redirect(f"/obreiros/{id}")
+        
+        # Verificar se o obreiro tem vínculos (reuniões, cargos, etc.)
+        cursor.execute("SELECT COUNT(*) as total FROM presenca WHERE obreiro_id = %s", (id,))
+        presencas = cursor.fetchone()["total"]
+        
+        cursor.execute("SELECT COUNT(*) as total FROM ocupacao_cargos WHERE obreiro_id = %s", (id,))
+        cargos = cursor.fetchone()["total"]
+        
+        cursor.execute("SELECT COUNT(*) as total FROM familiares WHERE obreiro_id = %s", (id,))
+        familiares = cursor.fetchone()["total"]
+        
+        cursor.execute("SELECT COUNT(*) as total FROM condecoracoes_obreiro WHERE obreiro_id = %s", (id,))
+        condecoracoes = cursor.fetchone()["total"]
+        
+        # Se tiver vínculos, desativar em vez de excluir
+        if presencas > 0 or cargos > 0 or familiares > 0 or condecoracoes > 0:
+            cursor.execute("UPDATE usuarios SET ativo = 0 WHERE id = %s", (id,))
             conn.commit()
-            flash("Tipo de condecoração desativado pois já foi utilizado.", "warning")
+            registrar_log("desativar_obreiro", "obreiro", id, 
+                         dados_anteriores={"nome": obreiro["nome_completo"]},
+                         dados_novos={"status": "inativo", "motivo": "possui vínculos"})
+            flash(f"Obreiro '{obreiro['nome_completo']}' foi desativado (possui vínculos no sistema).", "warning")
         else:
-            cursor.execute("DELETE FROM tipos_condecoracoes WHERE id = %s", (id,))
+            # Excluir permanentemente
+            # Remover foto se existir
+            cursor.execute("SELECT foto FROM usuarios WHERE id = %s", (id,))
+            foto = cursor.fetchone()
+            if foto and foto['foto']:
+                caminho_foto = os.path.join(UPLOAD_FOLDER_FOTOS, foto['foto'])
+                if os.path.exists(caminho_foto):
+                    os.remove(caminho_foto)
+            
+            cursor.execute("DELETE FROM usuarios WHERE id = %s", (id,))
             conn.commit()
-            flash("Tipo de condecoração excluído com sucesso!", "success")
+            registrar_log("excluir", "obreiro", id, dados_anteriores={"nome": obreiro["nome_completo"]})
+            flash(f"Obreiro '{obreiro['nome_completo']}' excluído com sucesso!", "success")
+        
+        return_connection(conn)
+        return redirect("/obreiros")
         
     except Exception as e:
-        flash(f"Erro ao excluir: {str(e)}", "danger")
+        print(f"Erro ao excluir obreiro: {e}")
         conn.rollback()
+        flash(f"Erro ao excluir obreiro: {str(e)}", "danger")
+        return_connection(conn)
+        return redirect("/obreiros")
+
+@app.route("/obreiros/<int:id>/reativar")
+@admin_required
+def reativar_obreiro(id):
+    """Reativa um obreiro desativado"""
+    cursor, conn = get_db()
+    
+    try:
+        cursor.execute("UPDATE usuarios SET ativo = 1 WHERE id = %s", (id,))
+        conn.commit()
+        
+        cursor.execute("SELECT nome_completo FROM usuarios WHERE id = %s", (id,))
+        obreiro = cursor.fetchone()
+        
+        registrar_log("reativar_obreiro", "obreiro", id, dados_novos={"nome": obreiro["nome_completo"]})
+        flash(f"Obreiro '{obreiro['nome_completo']}' reativado com sucesso!", "success")
+        
+    except Exception as e:
+        flash(f"Erro ao reativar: {str(e)}", "danger")
     
     return_connection(conn)
-    return redirect("/tipos_condecoracoes")        
+    return redirect("/obreiros")        
 
 @app.route("/obreiros/<int:id>/editar", methods=["GET", "POST"])
 @login_required
@@ -1383,19 +1295,14 @@ def editar_obreiro(id):
     cursor.execute("SELECT * FROM lojas ORDER BY nome")
     lojas = cursor.fetchall()
     
-    # Buscar todos os graus ativos para o select
+    # Buscar todos os graus ativos para o select (incluindo superiores)
     cursor.execute("SELECT * FROM graus WHERE ativo = 1 ORDER BY nivel, ordem")
     graus = cursor.fetchall()
     
-    # Buscar graus superiores registrados no histórico (nivel > 3)
-    cursor.execute("""
-        SELECT h.*, g.nome as grau_nome
-        FROM historico_graus h
-        LEFT JOIN graus g ON h.grau_id = g.id
-        WHERE h.obreiro_id = %s AND h.grau > 3
-        ORDER BY h.data DESC
-    """, (id,))
-    historico_graus_superiores = cursor.fetchall()
+    # Buscar o nome do grau atual para exibição
+    cursor.execute("SELECT nome FROM graus WHERE nivel = %s", (obreiro['grau_atual'],))
+    grau_atual_info = cursor.fetchone()
+    nome_grau_atual = grau_atual_info['nome'] if grau_atual_info else None
     
     return_connection(conn)
 
@@ -1403,10 +1310,35 @@ def editar_obreiro(id):
                           obreiro=obreiro,
                           lojas=lojas,
                           graus=graus,
-                          historico_graus_superiores=historico_graus_superiores,
+                          nome_grau_atual=nome_grau_atual,
                           is_admin=(session["tipo"] == "admin"),
                           is_own_profile=(session["user_id"] == id))
 
+@app.route("/adicionar-graus-superiores")
+def adicionar_graus_superiores():
+    try:
+        cursor, conn = get_db()
+        
+        graus_superiores = [
+            ("Mestre Instalado", "Grau conferido ao Venerável Mestre após seu mandato", 4, 4),
+            ("Arquiteto Real", "Grau do Rito de York", 4, 5),
+            ("Soberano Grande Inspetor Geral", "33º grau do Rito Escocês", 4, 6),
+            ("Cavaleiro Rosa-Cruz", "Grau filosófico", 4, 7),
+            ("Cavaleiro Kadosch", "30º grau do Rito Escocês", 4, 8),
+        ]
+        
+        for g in graus_superiores:
+            cursor.execute("""
+                INSERT INTO graus (nome, descricao, nivel, ordem, ativo)
+                VALUES (%s, %s, %s, %s, 1)
+                ON CONFLICT (nome) DO NOTHING
+            """, g)
+        
+        conn.commit()
+        return_connection(conn)
+        return "✅ Graus superiores adicionados com sucesso! <a href='/'>Voltar</a>"
+    except Exception as e:
+        return f"❌ Erro: {e}"
 
 # =============================
 # ROTAS DE CARGOS
@@ -1822,31 +1754,20 @@ def registrar_grau(id):
             return_connection(conn)
             return redirect(f"/obreiros/{id}")
         
-        # Verificar se é grau superior (nivel > 3)
-        if grau['nivel'] > 3:
-            # Registrar no histórico com o grau_id
-            cursor.execute("""
-                INSERT INTO historico_graus (obreiro_id, grau, grau_id, data, observacao)
-                VALUES (%s, %s, %s, %s, %s)
-            """, (id, grau['nivel'], grau_id, data, observacao))
-            
-            # NÃO altera o grau_atual (mantém como Mestre)
-            flash(f"Grau superior '{grau['nome']}' registrado no histórico!", "info")
-        else:
-            # Grau básico (1,2,3) - atualiza o grau atual
-            cursor.execute("""
-                INSERT INTO historico_graus (obreiro_id, grau, data, observacao)
-                VALUES (%s, %s, %s, %s)
-            """, (id, grau['nivel'], data, observacao))
-            
-            # Atualizar grau atual do obreiro
-            cursor.execute("UPDATE usuarios SET grau_atual = %s WHERE id = %s", (grau['nivel'], id))
-            flash(f"Grau '{grau['nome']}' registrado e atualizado como grau principal!", "success")
+        # Registrar no histórico
+        cursor.execute("""
+            INSERT INTO historico_graus (obreiro_id, grau, grau_id, data, observacao)
+            VALUES (%s, %s, %s, %s, %s)
+        """, (id, grau['nivel'], grau_id, data, observacao))
+        
+        # ATUALIZAR O GRAU ATUAL DO OBREIRO (inclusive para graus superiores)
+        cursor.execute("UPDATE usuarios SET grau_atual = %s WHERE id = %s", (grau['nivel'], id))
         
         conn.commit()
         
         registrar_log("registrar_grau", "obreiro", id, 
                      dados_novos={"grau": grau['nome'], "data": data})
+        flash(f"Grau '{grau['nome']}' registrado com sucesso!", "success")
         
     except Exception as e:
         print(f"Erro ao registrar grau: {e}")
@@ -1854,7 +1775,7 @@ def registrar_grau(id):
         flash(f"Erro ao registrar grau: {str(e)}", "danger")
     
     return_connection(conn)
-    return redirect(f"/obreiros/{id}")       
+    return redirect(f"/obreiros/{id}")
         
 # =============================
 # ROTAS DE REUNIÕES

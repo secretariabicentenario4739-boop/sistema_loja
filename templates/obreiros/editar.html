@@ -98,8 +98,13 @@
                                         <option value="1" {% if obreiro.grau_atual == 1 %}selected{% endif %}>Aprendiz (1º Grau)</option>
                                         <option value="2" {% if obreiro.grau_atual == 2 %}selected{% endif %}>Companheiro (2º Grau)</option>
                                         <option value="3" {% if obreiro.grau_atual == 3 %}selected{% endif %}>Mestre (3º Grau)</option>
+                                        {% for grau in graus if grau.nivel > 3 %}
+                                        <option value="{{ grau.nivel }}" {% if obreiro.grau_atual == grau.nivel %}selected{% endif %}>
+                                            {{ grau.nome }} (Grau Superior)
+                                        </option>
+                                        {% endfor %}
                                     </select>
-                                    <small class="text-muted">Para graus superiores, registre no histórico</small>
+                                    <small class="text-muted">Graus superiores aparecem no histórico</small>
                                 </div>
                                 <div class="col-md-4 mb-3">
                                     <label class="form-label">Status</label>
@@ -268,9 +273,14 @@
                             {{ obreiro.data_cadastro.strftime('%d/%m/%Y') if obreiro.data_cadastro else '-' }}
                         </p>
                         <p><strong>Grau Atual:</strong> 
-                            {% if obreiro.grau_atual == 3 %}Mestre
-                            {% elif obreiro.grau_atual == 2 %}Companheiro
-                            {% else %}Aprendiz{% endif %}
+                            {% if nome_grau_atual %}
+                                {{ nome_grau_atual }}
+                            {% else %}
+                                {% if obreiro.grau_atual == 3 %}Mestre
+                                {% elif obreiro.grau_atual == 2 %}Companheiro
+                                {% elif obreiro.grau_atual == 1 %}Aprendiz
+                                {% else %}Grau {{ obreiro.grau_atual }}{% endif %}
+                            {% endif %}
                         </p>
                         <hr>
                         <div class="alert alert-light small mb-0">

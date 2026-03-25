@@ -54,7 +54,8 @@
                             <option value="{{ g.grau_atual }}" {% if filtros.grau == g.grau_atual|string %}selected{% endif %}>
                                 {% if g.grau_atual == 1 %}Aprendiz
                                 {% elif g.grau_atual == 2 %}Companheiro
-                                {% else %}Mestre{% endif %}
+                                {% elif g.grau_atual == 3 %}Mestre
+                                {% else %}Grau Superior{% endif %}
                             </option>
                             {% endfor %}
                         </select>
@@ -80,9 +81,9 @@
                     <div class="col-md-2">
                         <label class="form-label">Status</label>
                         <select class="form-select" name="status">
-                            <option value="">Ativos</option>
-                            <option value="0" {% if filtros.status == '0' %}selected{% endif %}>Inativos</option>
+                            <option value="">Todos</option>
                             <option value="1" {% if filtros.status == '1' %}selected{% endif %}>Ativos</option>
+                            <option value="0" {% if filtros.status == '0' %}selected{% endif %}>Inativos</option>
                         </select>
                     </div>
                     <div class="col-md-1 d-flex align-items-end">
@@ -100,7 +101,7 @@
                 <div class="table-responsive">
                     <table class="table table-hover">
                         <thead class="table-light">
-                             <tr>
+                              <tr>
                                 <th>Nome</th>
                                 <th>Usuário</th>
                                 <th>Grau</th>
@@ -108,37 +109,43 @@
                                 <th>Telefone</th>
                                 <th>Status</th>
                                 <th>Ações</th>
-                             </tr>
+                              </tr>
                         </thead>
                         <tbody>
                             {% for obreiro in obreiros %}
-                             <tr>
-                                 <td>
+                            <tr class="{% if obreiro.ativo == 0 %}table-secondary{% endif %}">
+                                <td>
                                     <strong>{{ obreiro.nome_completo }}</strong>
                                     {% if obreiro.nome_maconico %}
                                     <br><small class="text-muted">{{ obreiro.nome_maconico }}</small>
                                     {% endif %}
-                                 </td>
-                                 <td>{{ obreiro.usuario }}</td>
-                                 <td>
-                                    {% if obreiro.grau_atual == 3 %}
+                                </td>
+                                <td>{{ obreiro.usuario }}</td>
+                                <td>
+                                    {% if obreiro.grau_atual >= 4 %}
+                                        {% if obreiro.grau_nome %}
+                                            <span class="badge bg-success">{{ obreiro.grau_nome }}</span>
+                                        {% else %}
+                                            <span class="badge bg-success">Grau Superior</span>
+                                        {% endif %}
+                                    {% elif obreiro.grau_atual == 3 %}
                                         <span class="badge bg-success">Mestre</span>
                                     {% elif obreiro.grau_atual == 2 %}
                                         <span class="badge bg-primary">Companheiro</span>
                                     {% else %}
                                         <span class="badge bg-secondary">Aprendiz</span>
                                     {% endif %}
-                                 </td>
-                                 <td>{{ obreiro.loja_nome or '-' }}</td>
-                                 <td>{{ obreiro.telefone or '-' }}</td>
-                                 <td>
+                                </td>
+                                <td>{{ obreiro.loja_nome or '-' }}</td>
+                                <td>{{ obreiro.telefone or '-' }}</td>
+                                <td>
                                     {% if obreiro.ativo == 1 %}
                                         <span class="badge bg-success">Ativo</span>
                                     {% else %}
                                         <span class="badge bg-danger">Inativo</span>
                                     {% endif %}
-                                 </td>
-                                 <td>
+                                </td>
+                                <td>
                                     <div class="btn-group btn-group-sm">
                                         <a href="/obreiros/{{ obreiro.id }}" class="btn btn-info" title="Visualizar">
                                             <i class="bi bi-eye"></i>
@@ -153,16 +160,33 @@
                                             <i class="bi bi-files"></i>
                                         </a>
                                         {% endif %}
+                                        {% if session.tipo == 'admin' and session.user_id != obreiro.id %}
+                                            {% if obreiro.ativo == 1 %}
+                                            <a href="/obreiros/{{ obreiro.id }}/excluir" 
+                                               class="btn btn-danger"
+                                               onclick="return confirm('Excluir/Desativar {{ obreiro.nome_completo }}?')"
+                                               title="Excluir/Desativar">
+                                                <i class="bi bi-trash"></i>
+                                            </a>
+                                            {% else %}
+                                            <a href="/obreiros/{{ obreiro.id }}/reativar" 
+                                               class="btn btn-success"
+                                               onclick="return confirm('Reativar {{ obreiro.nome_completo }}?')"
+                                               title="Reativar">
+                                                <i class="bi bi-arrow-repeat"></i>
+                                            </a>
+                                            {% endif %}
+                                        {% endif %}
                                     </div>
-                                 </td>
-                             </tr>
+                                </td>
+                            </tr>
                             {% else %}
-                             <tr>
+                            <tr>
                                 <td colspan="7" class="text-center text-muted py-4">
                                     <i class="bi bi-inbox fs-1"></i><br>
                                     Nenhum obreiro encontrado
-                                 </td>
-                             </tr>
+                                </td>
+                            </tr>
                             {% endfor %}
                         </tbody>
                     </table>
