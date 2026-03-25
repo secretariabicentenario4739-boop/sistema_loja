@@ -1,314 +1,268 @@
-<!DOCTYPE html>
-<html lang="pt-br">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sindicância - {{ candidato.nome }}</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
-    <style>
-        .candidato-header {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            border-radius: 15px;
-            padding: 25px;
-            margin-bottom: 25px;
-        }
-        .btn-oficial {
-            background: linear-gradient(135deg, #2c3e50 0%, #3498db 100%);
-            color: white;
-            border: none;
-            padding: 15px 30px;
-            font-weight: bold;
-            transition: all 0.3s;
-        }
-        .btn-oficial:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(44,62,80,0.3);
-            color: white;
-        }
-        .badge-oficial {
-            background-color: #2c3e50;
-            color: #f1c40f;
-            padding: 5px 10px;
-            font-size: 0.8rem;
-        }
-        .meu-parecer {
-            background-color: #d4edda;
-            border: 2px solid #28a745;
-            border-radius: 8px;
-            padding: 20px;
-            margin-bottom: 20px;
-        }
-        .info-card {
-            background-color: #e8f4f8;
-            border-left: 4px solid #17a2b8;
-            padding: 15px;
-            margin: 20px 0;
-            border-radius: 5px;
-        }
-        .admin-view {
-            background-color: #f8f9fa;
-            border: 1px solid #dee2e6;
-            padding: 20px;
-            border-radius: 8px;
-            margin-top: 30px;
-        }
-    </style>
-</head>
-<body>
-    <div class="container-fluid py-4">
-        <div class="container">
-            <!-- Cabeçalho do Candidato -->
-            <div class="candidato-header">
-                <div class="d-flex justify-content-between align-items-center">
-                    <div>
-                        <h2 class="mb-2">
-                            <i class="bi bi-person-badge"></i> 
-                            Sindicância: {{ candidato.nome }}
-                        </h2>
-                        <div class="d-flex gap-3 flex-wrap">
-                            <span class="badge bg-light text-dark p-2">
-                                <i class="bi bi-calendar"></i> 
-                                Aberto em: {{ candidato.data_criacao[:10] }}
-                            </span>
-                            
-                            <span class="badge bg-light text-dark p-2">
-                                <i class="bi bi-tag"></i> 
-                                Status: 
-                                {% if candidato.status == "Aprovado" %}
-                                    <span class="text-success">Aprovado</span>
-                                {% elif candidato.status == "Reprovado" %}
-                                    <span class="text-danger">Reprovado</span>
-                                {% else %}
-                                    <span class="text-warning">Em análise</span>
+{% extends "base.html" %}
+
+{% block title %}Sindicância - {{ candidato.nome }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="container">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h2>
+                <i class="bi bi-file-text"></i> 
+                Sindicância: {{ candidato.nome }}
+            </h2>
+            <div>
+                <a href="{% if session.tipo == 'admin' %}/candidatos{% else %}/minhas_sindicancias{% endif %}" class="btn btn-outline-secondary">
+                    <i class="bi bi-arrow-left"></i> Voltar
+                </a>
+            </div>
+        </div>
+
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+                        {{ message }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
+        <div class="row">
+            <div class="col-md-8">
+                <!-- Informações do Candidato -->
+                <div class="card shadow mb-4">
+                    <div class="card-header bg-primary text-white">
+                        <h5 class="mb-0"><i class="bi bi-person-circle"></i> Dados do Candidato</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <p><strong>Nome:</strong> {{ candidato.nome }}</p>
+                                <p><strong>Data Cadastro:</strong> 
+                                    {{ candidato.data_criacao.strftime('%d/%m/%Y') if candidato.data_criacao else '-' }}
+                                </p>
+                                {% if candidato.data_fechamento %}
+                                <p><strong>Data Encerramento:</strong> 
+                                    {{ candidato.data_fechamento.strftime('%d/%m/%Y') if candidato.data_fechamento else '-' }}
+                                </p>
                                 {% endif %}
-                            </span>
-                            
-                            {% if candidato.fechado %}
-                                <span class="badge bg-secondary p-2">
-                                    <i class="bi bi-lock"></i> Sindicância Encerrada
-                                </span>
-                            {% endif %}
+                                <p><strong>Status:</strong> 
+                                    {% if candidato.fechado == 1 %}
+                                        {% if candidato.status == 'Aprovado' %}
+                                            <span class="badge bg-success">Aprovado</span>
+                                        {% else %}
+                                            <span class="badge bg-danger">Reprovado</span>
+                                        {% endif %}
+                                    {% else %}
+                                        <span class="badge bg-warning">Em análise</span>
+                                    {% endif %}
+                                </p>
+                            </div>
+                            <div class="col-md-6">
+                                <p><strong>Resultado Final:</strong> {{ candidato.resultado_final or '-' }}</p>
+                                <p><strong>Votos:</strong> 
+                                    {{ votos_positivos }} positivos / {{ votos_negativos }} negativos
+                                    (Total: {{ total_votos }})
+                                </p>
+                                {% if not bloqueado %}
+                                <div class="progress mt-2" style="height: 20px;">
+                                    {% set percentual = (votos_positivos / total_votos * 100) if total_votos > 0 else 0 %}
+                                    <div class="progress-bar bg-success" style="width: {{ percentual }}%">
+                                        {{ "%.0f"|format(percentual) }}%
+                                    </div>
+                                </div>
+                                {% endif %}
+                            </div>
                         </div>
                     </div>
-                    
-                    <!-- Botões de navegação -->
-                    <div>
-                        <a href="{% if tipo == 'admin' %}/candidatos{% else %}/minhas_sindicancias{% endif %}" class="btn btn-light">
-                            <i class="bi bi-arrow-left"></i> Voltar
-                        </a>
+                </div>
+
+                <!-- Formulário de Parecer -->
+                {% if not bloqueado and session.tipo != 'admin' %}
+                <div class="card shadow mb-4">
+                    <div class="card-header bg-warning text-dark">
+                        <h5 class="mb-0"><i class="bi bi-pencil-square"></i> Emitir Parecer</h5>
+                    </div>
+                    <div class="card-body">
+                        {% if meu_parecer %}
+                        <div class="alert alert-info">
+                            <i class="bi bi-info-circle"></i>
+                            Seu parecer atual: 
+                            <span class="badge {% if meu_parecer.parecer == 'positivo' %}bg-success{% else %}bg-danger{% endif %}">
+                                {% if meu_parecer.parecer == 'positivo' %}Positivo{% else %}Negativo{% endif %}
+                            </span>
+                            <br>
+                            <small>Enviado em: {{ meu_parecer.data_envio.strftime('%d/%m/%Y %H:%M') if meu_parecer.data_envio else '-' }}</small>
+                        </div>
+                        {% endif %}
+                        
+                        <form method="POST">
+                            <div class="mb-3">
+                                <label class="form-label">Seu Parecer *</label>
+                                <select class="form-select" name="parecer" required>
+                                    <option value="">Selecione...</option>
+                                    <option value="positivo" {% if meu_parecer and meu_parecer.parecer == 'positivo' %}selected{% endif %}>
+                                        <i class="bi bi-check-circle"></i> Positivo - Recomendo a aceitação
+                                    </option>
+                                    <option value="negativo" {% if meu_parecer and meu_parecer.parecer == 'negativo' %}selected{% endif %}>
+                                        <i class="bi bi-x-circle"></i> Negativo - Não recomendo a aceitação
+                                    </option>
+                                </select>
+                            </div>
+                            <button type="submit" class="btn btn-success w-100">
+                                <i class="bi bi-send"></i> Enviar Parecer
+                            </button>
+                        </form>
+                    </div>
+                </div>
+                {% endif %}
+
+                <!-- Histórico de Pareceres -->
+                <div class="card shadow">
+                    <div class="card-header bg-secondary text-white">
+                        <h5 class="mb-0"><i class="bi bi-list-ul"></i> Pareceres dos Sindicantes</h5>
+                    </div>
+                    <div class="card-body">
+                        {% if registros %}
+                        <div class="list-group">
+                            {% for r in registros %}
+                            <div class="list-group-item">
+                                <div class="d-flex w-100 justify-content-between">
+                                    <h6 class="mb-1">
+                                        <i class="bi bi-person-badge"></i> 
+                                        {{ r.nome_completo or r.sindicante }}
+                                    </h6>
+                                    <small class="text-muted">
+                                        {{ r.data_envio.strftime('%d/%m/%Y %H:%M') if r.data_envio else '-' }}
+                                    </small>
+                                </div>
+                                <p class="mb-1">
+                                    <span class="badge {% if r.parecer == 'positivo' %}bg-success{% else %}bg-danger{% endif %}">
+                                        {% if r.parecer == 'positivo' %}
+                                            <i class="bi bi-check-circle"></i> Positivo
+                                        {% else %}
+                                            <i class="bi bi-x-circle"></i> Negativo
+                                        {% endif %}
+                                    </span>
+                                </p>
+                                {% if session.tipo == 'admin' %}
+                                <div class="mt-2">
+                                    <a href="/visualizar_parecer_conclusivo/{{ candidato.id }}?sindicante={{ r.sindicante }}" 
+                                       class="btn btn-sm btn-info"
+                                       target="_blank">
+                                        <i class="bi bi-file-text"></i> Ver Parecer Conclusivo
+                                    </a>
+                                </div>
+                                {% endif %}
+                            </div>
+                            {% endfor %}
+                        </div>
+                        {% else %}
+                        <p class="text-center text-muted py-4">
+                            <i class="bi bi-inbox fs-1"></i><br>
+                            Nenhum parecer emitido ainda.
+                        </p>
+                        {% endif %}
                     </div>
                 </div>
             </div>
 
-            <!-- Mensagens Flash -->
-            {% with messages = get_flashed_messages(with_categories=true) %}
-                {% if messages %}
-                    {% for category, message in messages %}
-                        <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
-                            {{ message }}
-                            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-                        </div>
-                    {% endfor %}
-                {% endif %}
-            {% endwith %}
-
-            <!-- FORMULÁRIOS DE PARECER (apenas para sindicantes) -->
-            {% if not bloqueado and tipo == "sindicante" %}
-                <div class="row mb-4">
-                    <!-- Parecer Simples -->
-                    <div class="col-md-6">
-                        <div class="card shadow h-100">
-                            <div class="card-header bg-success text-white">
-                                <h5 class="mb-0">
-                                    <i class="bi bi-pencil-square"></i> 
-                                    Emitir Parecer Simples
-                                </h5>
-                            </div>
-                            <div class="card-body">
-                                <form method="POST" class="row g-3 align-items-center">
-                                    <div class="col-md-8">
-                                        <select name="parecer" class="form-select form-select-lg" required>
-                                            <option value="">Selecione seu parecer...</option>
-                                            <option value="positivo" 
-                                                    {% if meu_parecer and meu_parecer.parecer == "positivo" %}selected{% endif %}>
-                                                ✅ Positivo - Recomendo aprovação
-                                            </option>
-                                            <option value="negativo"
-                                                    {% if meu_parecer and meu_parecer.parecer == "negativo" %}selected{% endif %}>
-                                                ❌ Negativo - Não recomendo aprovação
-                                            </option>
-                                        </select>
-                                    </div>
-                                    <div class="col-md-4">
-                                        <button type="submit" class="btn btn-success btn-lg w-100">
-                                            <i class="bi bi-send"></i> 
-                                            {% if meu_parecer %}
-                                                Atualizar
-                                            {% else %}
-                                                Enviar
-                                            {% endif %}
-                                        </button>
-                                    </div>
-                                </form>
-                            </div>
-                        </div>
+            <div class="col-md-4">
+                <!-- Card de Ações -->
+                <div class="card shadow mb-4">
+                    <div class="card-header bg-dark text-white">
+                        <h5 class="mb-0"><i class="bi bi-gear"></i> Ações</h5>
                     </div>
-                    
-                    <!-- Parecer Oficial -->
-                    <div class="col-md-6">
-                        <div class="card shadow h-100 border-warning">
-                            <div class="card-header bg-warning text-dark">
-                                <h5 class="mb-0">
-                                    <i class="bi bi-file-text"></i> 
-                                    Parecer Oficial (Modelo Maçônico)
-                                </h5>
-                            </div>
-                            <div class="card-body d-flex align-items-center justify-content-center">
-                                <div class="text-center">
-                                    <span class="badge badge-oficial mb-3">CONFIDENCIAL</span>
-                                    <p class="text-muted mb-4">
-                                        Preencha o parecer conclusivo seguindo o modelo oficial<br>
-                                        do formulário de sindicância maçônica.
-                                    </p>
-                                    <a href="/parecer_conclusivo/{{ candidato.id }}" class="btn btn-oficial btn-lg">
-                                        <i class="bi bi-pencil-fill"></i> 
-                                        {% if parecer_conclusivo_existente %}
-                                            Editar Parecer Conclusivo
-                                        {% else %}
-                                            Preencher Parecer Conclusivo
-                                        {% endif %}
-                                    </a>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            {% elif bloqueado %}
-                <div class="alert alert-dark text-center mb-4">
-                    <i class="bi bi-lock fs-1"></i>
-                    <h4>Sindicância Encerrada</h4>
-                    <p class="mb-0">Não é mais possível enviar ou modificar pareceres.</p>
-                </div>
-            {% endif %}
-
-            <!-- MEU PARECER (se existir) -->
-            {% if meu_parecer %}
-            <div class="meu-parecer">
-                <div class="d-flex justify-content-between align-items-center">
-                    <div>
-                        <h5 class="mb-2">
-                            <i class="bi bi-check-circle-fill text-success"></i> 
-                            Seu Parecer
-                        </h5>
-                        <p class="mb-1">
-                            <strong>Voto:</strong> 
-                            {% if meu_parecer.parecer == "positivo" %}
-                                <span class="badge bg-success">Positivo</span>
-                            {% else %}
-                                <span class="badge bg-danger">Negativo</span>
-                            {% endif %}
-                        </p>
-                        <small class="text-muted">
-                            <i class="bi bi-clock"></i> 
-                            Enviado em: {{ meu_parecer.data_envio[:16] }}
-                        </small>
-                    </div>
-                    <div>
-                        {% if not bloqueado %}
+                    <div class="card-body">
+                        {% if session.tipo == 'admin' and not bloqueado %}
+                        <a href="/fechar_sindicancia/{{ candidato.id }}" 
+                           class="btn btn-warning w-100 mb-2"
+                           onclick="return confirm('Encerrar sindicância deste candidato?')">
+                            <i class="bi bi-check2-circle"></i> Encerrar Sindicância
+                        </a>
+                        {% endif %}
+                        
+                        {% if session.tipo == 'admin' %}
+                        <a href="/relatorio/{{ candidato.id }}" 
+                           class="btn btn-info w-100 mb-2"
+                           target="_blank">
+                            <i class="bi bi-file-pdf"></i> Gerar Relatório PDF
+                        </a>
+                        {% endif %}
+                        
+                        {% if session.tipo != 'admin' and meu_parecer %}
                         <a href="/excluir_parecer/{{ candidato.id }}" 
-                           class="btn btn-outline-danger"
-                           onclick="return confirm('Excluir seu parecer? Você poderá enviar novamente.')">
-                            <i class="bi bi-trash"></i> Excluir
+                           class="btn btn-danger w-100"
+                           onclick="return confirm('Excluir seu parecer?')">
+                            <i class="bi bi-trash"></i> Excluir Meu Parecer
                         </a>
                         {% endif %}
                     </div>
                 </div>
-                {% if parecer_conclusivo_existente %}
-                <div class="mt-3">
-                    <a href="/visualizar_parecer_conclusivo/{{ candidato.id }}" class="btn btn-outline-secondary">
-                        <i class="bi bi-file-text"></i> Visualizar meu parecer conclusivo
-                    </a>
-                </div>
-                {% endif %}
-            </div>
-            {% endif %}
 
-            <!-- MENSAGEM DE SIGILO -->
-            <div class="info-card text-center">
-                <i class="bi bi-incognito fs-4"></i>
-                <p class="mb-0">
-                    <strong>Processo sigiloso</strong><br>
-                    <small class="text-muted">Apenas o seu parecer é visível. Os votos dos demais sindicantes são confidenciais.</small>
-                </p>
-            </div>
-
-            <!-- AÇÕES DO ADMIN -->
-            {% if tipo == "admin" %}
-                <!-- Botão para fechar sindicância -->
-                {% if not candidato.fechado and registros|length > 0 %}
-                <div class="mt-4 text-center">
-                    <a href="/fechar_sindicancia/{{ candidato.id }}" 
-                       class="btn btn-warning btn-lg"
-                       onclick="return confirm('Fechar sindicância? Esta ação é irreversível.')">
-                        <i class="bi bi-lock-fill"></i> Fechar Sindicância Manualmente
-                    </a>
-                </div>
-                {% endif %}
-                
-                <!-- Botão para gerar relatório -->
-                <div class="mt-3 text-center">
-                    <a href="/relatorio/{{ candidato.id }}" class="btn btn-info btn-lg" target="_blank">
-                        <i class="bi bi-file-pdf"></i> Gerar Relatório PDF
-                    </a>
-                </div>
-
-                <!-- VISÃO ADMIN (completa) - apenas para administradores -->
-                <div class="admin-view">
-                    <h5 class="mb-3">
-                        <i class="bi bi-gear-fill"></i> 
-                        Painel Administrativo
-                        <span class="badge bg-secondary ms-2">Visão completa</span>
-                    </h5>
-                    <div class="table-responsive">
-                        <table class="table table-sm table-bordered">
-                            <thead class="table-dark">
-                                <tr>
-                                    <th>Sindicante</th>
-                                    <th>Parecer</th>
-                                    <th>Data</th>
-                                    <th>Conclusivo</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {% for r in registros %}
-                                <tr>
-                                    <td>{{ r.sindicante }}</td>
-                                    <td>
-                                        {% if r.parecer == 'positivo' %}
-                                            <span class="badge bg-success">Positivo</span>
-                                        {% else %}
-                                            <span class="badge bg-danger">Negativo</span>
-                                        {% endif %}
-                                    </td>
-                                    <td><small>{{ r.data_envio[:16] }}</small></td>
-                                    <td>
-                                        <a href="/visualizar_parecer_conclusivo/{{ candidato.id }}?sindicante={{ r.sindicante }}" 
-                                           class="btn btn-sm btn-outline-secondary">
-                                            <i class="bi bi-file-text"></i> Ver
-                                        </a>
-                                    </td>
-                                </tr>
-                                {% endfor %}
-                            </tbody>
-                        </table>
+                <!-- Card do Parecer Conclusivo -->
+                {% if session.tipo != 'admin' and not parecer_conclusivo_existente %}
+                <div class="card shadow">
+                    <div class="card-header bg-success text-white">
+                        <h5 class="mb-0"><i class="bi bi-file-text"></i> Parecer Conclusivo</h5>
+                    </div>
+                    <div class="card-body text-center">
+                        <i class="bi bi-file-earmark-text fs-1 text-muted"></i>
+                        <p class="mt-2">Após analisar o candidato, você pode emitir um parecer conclusivo detalhado.</p>
+                        <a href="/parecer_conclusivo/{{ candidato.id }}" class="btn btn-primary w-100">
+                            <i class="bi bi-pencil-square"></i> Emitir Parecer Conclusivo
+                        </a>
                     </div>
                 </div>
-            {% endif %}
+                {% elif parecer_conclusivo_existente %}
+                <div class="card shadow">
+                    <div class="card-header bg-info text-white">
+                        <h5 class="mb-0"><i class="bi bi-file-text"></i> Parecer Conclusivo</h5>
+                    </div>
+                    <div class="card-body text-center">
+                        <i class="bi bi-check-circle-fill fs-1 text-success"></i>
+                        <p class="mt-2">Você já emitiu um parecer conclusivo para este candidato.</p>
+                        <a href="/visualizar_parecer_conclusivo/{{ candidato.id }}" class="btn btn-info w-100 mb-2">
+                            <i class="bi bi-eye"></i> Visualizar
+                        </a>
+                        <a href="/parecer_conclusivo/{{ candidato.id }}" class="btn btn-warning w-100">
+                            <i class="bi bi-pencil"></i> Editar
+                        </a>
+                    </div>
+                </div>
+                {% endif %}
+            </div>
         </div>
     </div>
+</div>
 
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-</body>
-</html>
+<style>
+    .card {
+        border-radius: 10px;
+        overflow: hidden;
+    }
+    .card-header {
+        font-weight: 600;
+    }
+    .list-group-item {
+        transition: background-color 0.2s;
+    }
+    .list-group-item:hover {
+        background-color: #f8f9fa;
+    }
+    .progress {
+        border-radius: 10px;
+        overflow: hidden;
+    }
+    @media (max-width: 768px) {
+        .btn-group {
+            flex-direction: column;
+        }
+        .btn-group .btn {
+            margin-bottom: 5px;
+        }
+    }
+</style>
+
+{% endblock %}
