@@ -4097,7 +4097,114 @@ def corrigir_tabela_candidatos():
         return html
         
     except Exception as e:
-        return f"<h1>Erro: {e}</h1>"    
+        return f"<h1>Erro: {e}</h1>"
+
+@app.route("/diagnostico")
+def diagnostico_geral():
+    """Rota de diagnóstico geral"""
+    try:
+        cursor, conn = get_db()
+        
+        html = """
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <title>Diagnóstico do Sistema</title>
+            <style>
+                body { font-family: Arial; padding: 20px; background: #f5f5f5; }
+                .card { background: white; border-radius: 10px; padding: 20px; margin-bottom: 20px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+                h1 { color: #333; }
+                h2 { color: #555; font-size: 1.2rem; margin-top: 0; }
+                .success { color: green; }
+                .error { color: red; }
+                table { border-collapse: collapse; width: 100%; margin-top: 10px; }
+                th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+                th { background-color: #f2f2f2; }
+            </style>
+        </head>
+        <body>
+            <div style="max-width: 1200px; margin: 0 auto;">
+                <h1>🔍 Diagnóstico do Sistema</h1>
+        """
+        
+        # 1. Verificar conexão com banco
+        html += '<div class="card"><h2>📊 Conexão com Banco de Dados</h2>'
+        try:
+            cursor.execute("SELECT version()")
+            version = cursor.fetchone()
+            html += f'<p class="success">✅ Conectado: {version["version"][:50]}...</p>'
+        except Exception as e:
+            html += f'<p class="error">❌ Erro: {e}</p>'
+        html += '</div>'
+        
+        # 2. Verificar tabela candidatos
+        html += '<div class="card"><h2>📋 Tabela Candidatos</h2>'
+        try:
+            cursor.execute("SELECT COUNT(*) as total FROM candidatos")
+            total = cursor.fetchone()["total"]
+            html += f'<p>Total de candidatos: <strong>{total}</strong></p>'
+            
+            if total > 0:
+                cursor.execute("SELECT id, nome FROM candidatos LIMIT 5")
+                candidatos = cursor.fetchall()
+                html += '<table><tr><th>ID</th><th>Nome</th></tr>'
+                for c in candidatos:
+                    html += f'<tr><td>{c["id"]}</td><td>{c["nome"]}</td></tr>'
+                html += '</table>'
+        except Exception as e:
+            html += f'<p class="error">❌ Erro: {e}</p>'
+        html += '</div>'
+        
+        # 3. Verificar estrutura da tabela candidatos
+        html += '<div class="card"><h2>🔧 Estrutura da Tabela Candidatos</h2>'
+        try:
+            cursor.execute("""
+                SELECT column_name, data_type 
+                FROM information_schema.columns 
+                WHERE table_name = 'candidatos'
+                ORDER BY ordinal_position
+            """)
+            colunas = cursor.fetchall()
+            html += f'<p>Total de colunas: <strong>{len(colunas)}</strong></p>'
+            html += '<table><tr><th>Coluna</th><th>Tipo</th></tr>'
+            for col in colunas:
+                html += f'<tr><td>{col["column_name"]}</td><td>{col["data_type"]}</td></tr>'
+            html += '</table>'
+        except Exception as e:
+            html += f'<p class="error">❌ Erro: {e}</p>'
+        html += '</div>'
+        
+        # 4. Verificar tabela filhos_candidato
+        html += '<div class="card"><h2>👶 Tabela Filhos</h2>'
+        try:
+            cursor.execute("""
+                SELECT EXISTS (
+                    SELECT FROM information_schema.tables 
+                    WHERE table_name = 'filhos_candidato'
+                )
+            """)
+            existe = cursor.fetchone()["exists"]
+            if existe:
+                cursor.execute("SELECT COUNT(*) as total FROM filhos_candidato")
+                total_filhos = cursor.fetchone()["total"]
+                html += f'<p class="success">✅ Tabela existe. Total de registros: {total_filhos}</p>'
+            else:
+                html += '<p class="error">❌ Tabela filhos_candidato não existe!</p>'
+        except Exception as e:
+            html += f'<p class="error">❌ Erro: {e}</p>'
+        html += '</div>'
+        
+        html += """
+            </div>
+        </body>
+        </html>
+        """
+        
+        return_connection(conn)
+        return html
+        
+    except Exception as e:
+        return f"<h1>Erro no diagnóstico: {e}</h1>"        
 
 # =============================
 # ROTAS DE LOJAS
