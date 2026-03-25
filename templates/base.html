@@ -398,14 +398,32 @@
         }
         
         .dropdown-menu-notificacoes {
-            width: 380px;
-            max-height: 500px;
-            overflow-y: auto;
-            border-radius: 12px;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.15);
-            border: none;
-            margin-top: 10px;
-        }
+    position: absolute;
+    top: 100%;
+    right: 0;
+    left: auto;
+    z-index: 9999;
+    width: 380px;
+    max-height: 500px;
+    overflow-y: auto;
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+    border: none;
+    margin-top: 10px;
+}
+
+/* Para telas pequenas, centralizar */
+@media (max-width: 768px) {
+    .dropdown-menu-notificacoes {
+        position: fixed;
+        top: 70px;
+        right: 10px;
+        left: 10px;
+        width: auto;
+        max-width: none;
+    }
+}
         
         .dropdown-header-notificacoes {
             background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
