@@ -4018,193 +4018,123 @@ def editar_sindicante(id):
     lojas = cursor.fetchall()
     return_connection(conn)
     return render_template("editar_sindicante.html", sindicante=sindicante, lojas=lojas)
-    
-@app.route("/corrigir-tabela-candidatos")
-def corrigir_tabela_candidatos():
-    """Rota para corrigir a estrutura da tabela candidatos"""
+@app.route("/preencher-todos-candidatos")
+def preencher_todos_candidatos():
+    """Preenche dados para todos os candidatos existentes"""
     try:
         cursor, conn = get_db()
         
-        # Verificar colunas existentes
-        cursor.execute("""
-            SELECT column_name 
-            FROM information_schema.columns 
-            WHERE table_name = 'candidatos'
-        """)
-        colunas_existentes = [c[0] for c in cursor.fetchall()]
+        # Buscar todos os candidatos
+        cursor.execute("SELECT id, nome FROM candidatos")
+        candidatos = cursor.fetchall()
         
-        # Lista de colunas que devem existir
-        colunas_necessarias = [
-            'loja_nome', 'loja_numero', 'data_nascimento', 'naturalidade', 
-            'uf_naturalidade', 'nacionalidade', 'cpf', 'rg', 'orgao_expedidor',
-            'telefone_fixo', 'celular', 'email', 'grau_instrucao',
-            'endereco_residencial', 'numero_residencial', 'bairro', 'cidade',
-            'uf_residencial', 'cep', 'tipo_sanguineo', 'nome_pai', 'nome_mae',
-            'estado_civil', 'data_casamento', 'nome_conjuge', 'data_nascimento_conjuge',
-            'profissao', 'empregador', 'endereco_profissional', 'bairro_profissional',
-            'cidade_profissional', 'uf_profissional', 'cep_profissional', 'telefone_comercial',
-            'observacoes', 'data_atualizacao'
-        ]
+        resultados = []
         
-        colunas_adicionadas = []
-        for coluna in colunas_necessarias:
-            if coluna not in colunas_existentes:
-                try:
-                    cursor.execute(f"ALTER TABLE candidatos ADD COLUMN {coluna} TEXT")
-                    colunas_adicionadas.append(coluna)
-                except Exception as e:
-                    print(f"Erro ao adicionar {coluna}: {e}")
-        
-        # Verificar tabela filhos
-        cursor.execute("""
-            SELECT EXISTS (
-                SELECT FROM information_schema.tables 
-                WHERE table_name = 'filhos_candidato'
-            )
-        """)
-        tabela_filhos_existe = cursor.fetchone()[0]
-        
-        if not tabela_filhos_existe:
+        for candidato in candidatos:
+            # Preencher dados
             cursor.execute("""
-                CREATE TABLE IF NOT EXISTS filhos_candidato (
-                    id SERIAL PRIMARY KEY,
-                    candidato_id INTEGER NOT NULL REFERENCES candidatos(id) ON DELETE CASCADE,
-                    nome TEXT NOT NULL,
-                    data_nascimento DATE,
-                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-                )
-            """)
-            cursor.execute("CREATE INDEX IF NOT EXISTS idx_filhos_candidato ON filhos_candidato(candidato_id)")
+                UPDATE candidatos SET
+                    loja_nome = 'ARLS Estrela do Oriente',
+                    loja_numero = '123',
+                    data_nascimento = '1980-05-15',
+                    naturalidade = 'São Paulo',
+                    uf_naturalidade = 'SP',
+                    nacionalidade = 'Brasileiro',
+                    cpf = '123.456.789-00',
+                    rg = '12.345.678-9',
+                    orgao_expedidor = 'SSP/SP',
+                    telefone_fixo = '(11) 3456-7890',
+                    celular = '(11) 99999-1234',
+                    email = 'candidato@email.com',
+                    grau_instrucao = 'Ensino Superior',
+                    endereco_residencial = 'Rua das Acácias',
+                    numero_residencial = '123',
+                    bairro = 'Centro',
+                    cidade = 'São Paulo',
+                    uf_residencial = 'SP',
+                    cep = '01000-000',
+                    tipo_sanguineo = 'O+',
+                    nome_pai = 'João da Silva',
+                    nome_mae = 'Maria da Silva',
+                    estado_civil = 'Casado',
+                    data_casamento = '2010-05-20',
+                    nome_conjuge = 'Ana Silva',
+                    data_nascimento_conjuge = '1985-03-10',
+                    profissao = 'Engenheiro',
+                    empregador = 'Empresa XYZ',
+                    endereco_profissional = 'Av. Paulista, 1000',
+                    bairro_profissional = 'Bela Vista',
+                    cidade_profissional = 'São Paulo',
+                    uf_profissional = 'SP',
+                    cep_profissional = '01310-000',
+                    telefone_comercial = '(11) 3456-7890',
+                    observacoes = 'Candidato bem avaliado pelos contatos',
+                    data_atualizacao = CURRENT_TIMESTAMP
+                WHERE id = %s
+            """, (candidato['id'],))
+            
+            # Adicionar filhos
+            cursor.execute("DELETE FROM filhos_candidato WHERE candidato_id = %s", (candidato['id'],))
+            filhos = [
+                ('Pedro Silva', '2012-03-15'),
+                ('Ana Silva', '2015-07-22')
+            ]
+            for filho in filhos:
+                cursor.execute("""
+                    INSERT INTO filhos_candidato (candidato_id, nome, data_nascimento)
+                    VALUES (%s, %s, %s)
+                """, (candidato['id'], filho[0], filho[1]))
+            
+            resultados.append({
+                'id': candidato['id'],
+                'nome': candidato['nome'],
+                'status': '✅ Preenchido'
+            })
         
         conn.commit()
         return_connection(conn)
-        
-        html = f"""
-        <!DOCTYPE html>
-        <html>
-        <head><title>Correção da Tabela</title></head>
-        <body>
-            <h1>Correção concluída!</h1>
-            <p>Colunas adicionadas: {len(colunas_adicionadas)}</p>
-            <ul>
-            {"".join([f"<li>✅ {c}</li>" for c in colunas_adicionadas])}
-            </ul>
-            <p>Tabela filhos_candidato: {'✅ Criada' if not tabela_filhos_existe else '✅ Já existe'}</p>
-            <a href="/">Voltar</a>
-        </body>
-        </html>
-        """
-        return html
-        
-    except Exception as e:
-        return f"<h1>Erro: {e}</h1>"
-
-@app.route("/diagnostico")
-def diagnostico_geral():
-    """Rota de diagnóstico geral"""
-    try:
-        cursor, conn = get_db()
         
         html = """
         <!DOCTYPE html>
         <html>
         <head>
-            <title>Diagnóstico do Sistema</title>
+            <title>Candidatos Preenchidos</title>
             <style>
                 body { font-family: Arial; padding: 20px; background: #f5f5f5; }
-                .card { background: white; border-radius: 10px; padding: 20px; margin-bottom: 20px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
-                h1 { color: #333; }
-                h2 { color: #555; font-size: 1.2rem; margin-top: 0; }
+                .card { background: white; border-radius: 10px; padding: 20px; margin-bottom: 20px; }
                 .success { color: green; }
-                .error { color: red; }
                 table { border-collapse: collapse; width: 100%; margin-top: 10px; }
                 th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
                 th { background-color: #f2f2f2; }
+                .btn { display: inline-block; padding: 10px 20px; background: #007bff; color: white; text-decoration: none; border-radius: 5px; margin: 5px; }
             </style>
         </head>
         <body>
-            <div style="max-width: 1200px; margin: 0 auto;">
-                <h1>🔍 Diagnóstico do Sistema</h1>
+            <div style="max-width: 800px; margin: 0 auto;">
+                <div class="card">
+                    <h1>✅ Todos os Candidatos Preenchidos!</h1>
+                    <table>
+                        <tr><th>ID</th><th>Nome</th><th>Status</th> </tr>
         """
         
-        # 1. Verificar conexão com banco
-        html += '<div class="card"><h2>📊 Conexão com Banco de Dados</h2>'
-        try:
-            cursor.execute("SELECT version()")
-            version = cursor.fetchone()
-            html += f'<p class="success">✅ Conectado: {version["version"][:50]}...</p>'
-        except Exception as e:
-            html += f'<p class="error">❌ Erro: {e}</p>'
-        html += '</div>'
+        for r in resultados:
+            html += f"<tr><td>{r['id']}</td><td>{r['nome']}</td><td class='success'>{r['status']}</td></tr>"
         
-        # 2. Verificar tabela candidatos
-        html += '<div class="card"><h2>📋 Tabela Candidatos</h2>'
-        try:
-            cursor.execute("SELECT COUNT(*) as total FROM candidatos")
-            total = cursor.fetchone()["total"]
-            html += f'<p>Total de candidatos: <strong>{total}</strong></p>'
-            
-            if total > 0:
-                cursor.execute("SELECT id, nome FROM candidatos LIMIT 5")
-                candidatos = cursor.fetchall()
-                html += '<table><tr><th>ID</th><th>Nome</th></tr>'
-                for c in candidatos:
-                    html += f'<tr><td>{c["id"]}</td><td>{c["nome"]}</td></tr>'
-                html += '</table>'
-        except Exception as e:
-            html += f'<p class="error">❌ Erro: {e}</p>'
-        html += '</div>'
-        
-        # 3. Verificar estrutura da tabela candidatos
-        html += '<div class="card"><h2>🔧 Estrutura da Tabela Candidatos</h2>'
-        try:
-            cursor.execute("""
-                SELECT column_name, data_type 
-                FROM information_schema.columns 
-                WHERE table_name = 'candidatos'
-                ORDER BY ordinal_position
-            """)
-            colunas = cursor.fetchall()
-            html += f'<p>Total de colunas: <strong>{len(colunas)}</strong></p>'
-            html += '<table><tr><th>Coluna</th><th>Tipo</th></tr>'
-            for col in colunas:
-                html += f'<tr><td>{col["column_name"]}</td><td>{col["data_type"]}</td></tr>'
-            html += '</table>'
-        except Exception as e:
-            html += f'<p class="error">❌ Erro: {e}</p>'
-        html += '</div>'
-        
-        # 4. Verificar tabela filhos_candidato
-        html += '<div class="card"><h2>👶 Tabela Filhos</h2>'
-        try:
-            cursor.execute("""
-                SELECT EXISTS (
-                    SELECT FROM information_schema.tables 
-                    WHERE table_name = 'filhos_candidato'
-                )
-            """)
-            existe = cursor.fetchone()["exists"]
-            if existe:
-                cursor.execute("SELECT COUNT(*) as total FROM filhos_candidato")
-                total_filhos = cursor.fetchone()["total"]
-                html += f'<p class="success">✅ Tabela existe. Total de registros: {total_filhos}</p>'
-            else:
-                html += '<p class="error">❌ Tabela filhos_candidato não existe!</p>'
-        except Exception as e:
-            html += f'<p class="error">❌ Erro: {e}</p>'
-        html += '</div>'
-        
-        html += """
+        html += f"""
+                     </table>
+                    <p>Total de candidatos preenchidos: <strong>{len(resultados)}</strong></p>
+                    <a href="/minhas_sindicancias" class="btn">Ver Minhas Sindicâncias</a>
+                    <a href="/diagnostico" class="btn">Ver Diagnóstico</a>
+                </div>
             </div>
         </body>
         </html>
         """
         
-        return_connection(conn)
         return html
         
     except Exception as e:
-        return f"<h1>Erro no diagnóstico: {e}</h1>"        
+        return f"<h1>❌ Erro: {e}</h1>"        
 
 # =============================
 # ROTAS DE LOJAS
