@@ -3313,304 +3313,142 @@ def formulario_candidato(candidato_id):
     return render_template("candidatos/formulario.html", candidato=candidato, filhos=filhos)
     
 # =============================
-# ROTA TEMPORARIA PARA CRIAR AS TABELAS DO FORMULARIO DOS CANDIDATOS
-# ============================= 
+# UPLOAD DE FOTO DO OBREIRO
+# =============================
 
-@app.route("/migrar-candidatos")
-def migrar_candidatos():
-    """Rota temporária para migrar as tabelas de candidatos"""
+import os
+from werkzeug.utils import secure_filename
+from PIL import Image
+
+# Configuração de upload de fotos
+UPLOAD_FOLDER_FOTOS = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'uploads', 'fotos')
+ALLOWED_EXTENSIONS_FOTOS = {'png', 'jpg', 'jpeg', 'gif', 'webp'}
+
+# Criar pasta se não existir
+os.makedirs(UPLOAD_FOLDER_FOTOS, exist_ok=True)
+
+def allowed_foto(filename):
+    return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS_FOTOS
+
+def redimensionar_foto(caminho_origem, tamanho=(300, 300)):
+    """Redimensiona e otimiza a foto"""
+    try:
+        img = Image.open(caminho_origem)
+        img.thumbnail(tamanho, Image.Resampling.LANCZOS)
+        
+        # Converter para RGB se for PNG com transparência
+        if img.mode in ('RGBA', 'LA'):
+            background = Image.new('RGB', img.size, (255, 255, 255))
+            background.paste(img, mask=img.split()[-1] if img.mode == 'RGBA' else None)
+            img = background
+        
+        img.save(caminho_origem, 'JPEG', quality=85, optimize=True)
+        return True
+    except Exception as e:
+        print(f"Erro ao redimensionar foto: {e}")
+        return False
+
+@app.route("/obreiros/<int:id>/foto", methods=["POST"])
+@login_required
+def upload_foto_obreiro(id):
+    """Upload da foto do obreiro"""
+    # Verificar permissão
+    if session["tipo"] != "admin" and session["user_id"] != id:
+        flash("Você não tem permissão para alterar esta foto", "danger")
+        return redirect(f"/obreiros/{id}")
+    
+    if 'foto' not in request.files:
+        flash("Nenhum arquivo selecionado", "danger")
+        return redirect(f"/obreiros/{id}/editar")
+    
+    file = request.files['foto']
+    
+    if file.filename == '':
+        flash("Nenhum arquivo selecionado", "danger")
+        return redirect(f"/obreiros/{id}/editar")
+    
+    if not allowed_foto(file.filename):
+        flash("Tipo de arquivo não permitido. Use: PNG, JPG, JPEG, GIF, WEBP", "danger")
+        return redirect(f"/obreiros/{id}/editar")
+    
     try:
         cursor, conn = get_db()
         
-        print("🔄 Iniciando migração das tabelas de candidatos...")
+        # Buscar foto antiga para deletar
+        cursor.execute("SELECT foto FROM usuarios WHERE id = %s", (id,))
+        foto_antiga = cursor.fetchone()
         
-        # ==================== ATUALIZAR TABELA CANDIDATOS ====================
+        # Gerar nome único para o arquivo
+        timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+        filename = secure_filename(f"{id}_{timestamp}_{file.filename}")
+        caminho = os.path.join(UPLOAD_FOLDER_FOTOS, filename)
         
-        # Lista de colunas a adicionar
-        colunas = [
-            ('loja_nome', 'TEXT'),
-            ('loja_numero', 'TEXT'),
-            ('data_nascimento', 'DATE'),
-            ('naturalidade', 'TEXT'),
-            ('uf_naturalidade', 'TEXT'),
-            ('nacionalidade', 'TEXT'),
-            ('cpf', 'TEXT'),
-            ('rg', 'TEXT'),
-            ('orgao_expedidor', 'TEXT'),
-            ('telefone_fixo', 'TEXT'),
-            ('celular', 'TEXT'),
-            ('email', 'TEXT'),
-            ('grau_instrucao', 'TEXT'),
-            ('endereco_residencial', 'TEXT'),
-            ('numero_residencial', 'TEXT'),
-            ('bairro', 'TEXT'),
-            ('cidade', 'TEXT'),
-            ('uf_residencial', 'TEXT'),
-            ('cep', 'TEXT'),
-            ('tipo_sanguineo', 'TEXT'),
-            ('nome_pai', 'TEXT'),
-            ('nome_mae', 'TEXT'),
-            ('estado_civil', 'TEXT'),
-            ('data_casamento', 'DATE'),
-            ('nome_conjuge', 'TEXT'),
-            ('data_nascimento_conjuge', 'DATE'),
-            ('profissao', 'TEXT'),
-            ('empregador', 'TEXT'),
-            ('endereco_profissional', 'TEXT'),
-            ('bairro_profissional', 'TEXT'),
-            ('cidade_profissional', 'TEXT'),
-            ('uf_profissional', 'TEXT'),
-            ('cep_profissional', 'TEXT'),
-            ('telefone_comercial', 'TEXT'),
-            ('observacoes', 'TEXT'),
-            ('data_atualizacao', 'TIMESTAMP')
-        ]
+        # Salvar arquivo
+        file.save(caminho)
         
-        colunas_adicionadas = 0
+        # Redimensionar foto
+        redimensionar_foto(caminho)
         
-        for nome_coluna, tipo in colunas:
-            try:
-                cursor.execute(f"""
-                    ALTER TABLE candidatos ADD COLUMN IF NOT EXISTS {nome_coluna} {tipo}
-                """)
-                colunas_adicionadas += 1
-                print(f"  ✅ Coluna {nome_coluna} adicionada")
-            except Exception as e:
-                print(f"  ⚠️ Coluna {nome_coluna} já existe ou erro: {e}")
-        
-        # ==================== CRIAR TABELA FILHOS ====================
-        
-        cursor.execute("""
-            CREATE TABLE IF NOT EXISTS filhos_candidato (
-                id SERIAL PRIMARY KEY,
-                candidato_id INTEGER NOT NULL REFERENCES candidatos(id) ON DELETE CASCADE,
-                nome TEXT NOT NULL,
-                data_nascimento DATE,
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-            )
-        """)
-        print("✅ Tabela filhos_candidato criada/verificada")
-        
-        # Criar índice
-        cursor.execute("""
-            CREATE INDEX IF NOT EXISTS idx_filhos_candidato 
-            ON filhos_candidato(candidato_id)
-        """)
-        print("✅ Índice idx_filhos_candidato criado")
-        
-        # ==================== ATUALIZAR CAMPOS EXISTENTES ====================
-        
-        # Definir valores padrão para campos existentes
-        cursor.execute("""
-            UPDATE candidatos 
-            SET nacionalidade = COALESCE(nacionalidade, 'Brasileiro'),
-                data_atualizacao = CURRENT_TIMESTAMP
-            WHERE nacionalidade IS NULL
-        """)
-        
+        # Atualizar banco
+        cursor.execute("UPDATE usuarios SET foto = %s WHERE id = %s", (filename, id))
         conn.commit()
+        
+        # Deletar foto antiga
+        if foto_antiga and foto_antiga['foto']:
+            caminho_antigo = os.path.join(UPLOAD_FOLDER_FOTOS, foto_antiga['foto'])
+            if os.path.exists(caminho_antigo):
+                os.remove(caminho_antigo)
+        
+        registrar_log("upload_foto", "obreiro", id, dados_novos={"foto": filename})
+        flash("Foto atualizada com sucesso!", "success")
         return_connection(conn)
-        
-        # Contar registros
-        cursor2, conn2 = get_db()
-        cursor2.execute("SELECT COUNT(*) as total FROM candidatos")
-        total_candidatos = cursor2.fetchone()['total']
-        
-        cursor2.execute("SELECT COUNT(*) as total FROM filhos_candidato")
-        total_filhos = cursor2.fetchone()['total']
-        return_connection(conn2)
-        
-        return f"""
-        <!DOCTYPE html>
-        <html>
-        <head>
-            <title>Migração Concluída</title>
-            <style>
-                body {{
-                    font-family: Arial, sans-serif;
-                    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-                    min-height: 100vh;
-                    display: flex;
-                    justify-content: center;
-                    align-items: center;
-                    padding: 20px;
-                }}
-                .container {{
-                    max-width: 800px;
-                    margin: 0 auto;
-                    background: white;
-                    border-radius: 20px;
-                    padding: 40px;
-                    box-shadow: 0 20px 60px rgba(0,0,0,0.3);
-                }}
-                h1 {{
-                    color: #28a745;
-                    text-align: center;
-                    margin-bottom: 30px;
-                }}
-                .success {{
-                    color: #28a745;
-                }}
-                .info {{
-                    background: #e8f4fd;
-                    padding: 15px;
-                    border-radius: 10px;
-                    margin: 20px 0;
-                }}
-                .stats {{
-                    background: #f8f9fa;
-                    padding: 15px;
-                    border-radius: 10px;
-                    margin: 20px 0;
-                    text-align: center;
-                }}
-                .stats .number {{
-                    font-size: 2rem;
-                    font-weight: bold;
-                    color: #007bff;
-                }}
-                .btn {{
-                    display: inline-block;
-                    padding: 10px 20px;
-                    background: #007bff;
-                    color: white;
-                    text-decoration: none;
-                    border-radius: 8px;
-                    margin: 5px;
-                    transition: all 0.3s;
-                }}
-                .btn:hover {{
-                    background: #0056b3;
-                    transform: translateY(-2px);
-                }}
-                .btn-success {{
-                    background: #28a745;
-                }}
-                .btn-success:hover {{
-                    background: #1e7e34;
-                }}
-                .btn-warning {{
-                    background: #ffc107;
-                    color: #333;
-                }}
-                hr {{
-                    margin: 30px 0;
-                }}
-            </style>
-        </head>
-        <body>
-            <div class="container">
-                <h1>✅ Migração Concluída com Sucesso!</h1>
-                
-                <div class="info">
-                    <strong>📋 Resumo das operações:</strong>
-                    <ul>
-                        <li>✅ {colunas_adicionadas} novas colunas adicionadas à tabela candidatos</li>
-                        <li>✅ Tabela filhos_candidato criada</li>
-                        <li>✅ Índices criados para otimização</li>
-                        <li>✅ Valores padrão definidos</li>
-                    </ul>
-                </div>
-                
-                <div class="stats">
-                    <div class="number">{total_candidatos}</div>
-                    <div>Candidatos cadastrados</div>
-                    <div class="number mt-3">{total_filhos}</div>
-                    <div>Filhos cadastrados</div>
-                </div>
-                
-                <div class="info">
-                    <strong>📝 Campos adicionados:</strong>
-                    <ul style="columns: 2;">
-                        <li>Loja Maçônica</li><li>Nº da Loja</li>
-                        <li>Data de Nascimento</li><li>Naturalidade</li>
-                        <li>CPF</li><li>RG</li>
-                        <li>Telefone Fixo</li><li>Celular</li>
-                        <li>E-mail</li><li>Grau de Instrução</li>
-                        <li>Endereço Residencial</li><li>Bairro/Cidade/UF/CEP</li>
-                        <li>Nome do Pai</li><li>Nome da Mãe</li>
-                        <li>Estado Civil</li><li>Nome do Cônjuge</li>
-                        <li>Profissão</li><li>Empregador</li>
-                        <li>Endereço Profissional</li><li>Telefone Comercial</li>
-                        <li>Filhos (tabela separada)</li>
-                    </ul>
-                </div>
-                
-                <div style="text-align: center; margin-top: 30px;">
-                    <a href="/candidatos" class="btn btn-success">Ir para Candidatos</a>
-                    <a href="/dashboard" class="btn btn-primary">Voltar ao Dashboard</a>
-                </div>
-                
-                <hr>
-                
-                <div class="alert alert-warning" style="background: #fff3cd; padding: 15px; border-radius: 10px;">
-                    <strong>⚠️ Importante:</strong> Esta é uma rota temporária de migração.
-                    Após confirmar que tudo está funcionando, remova a rota <code>/migrar-candidatos</code> do código.
-                </div>
-            </div>
-        </body>
-        </html>
-        """
+        return redirect(f"/obreiros/{id}")
         
     except Exception as e:
-        import traceback
-        error_details = traceback.format_exc()
-        return f"""
-        <!DOCTYPE html>
-        <html>
-        <head>
-            <title>Erro na Migração</title>
-            <style>
-                body {{
-                    font-family: Arial, sans-serif;
-                    background: #f8d7da;
-                    min-height: 100vh;
-                    display: flex;
-                    justify-content: center;
-                    align-items: center;
-                    padding: 20px;
-                }}
-                .container {{
-                    max-width: 800px;
-                    margin: 0 auto;
-                    background: white;
-                    border-radius: 20px;
-                    padding: 40px;
-                    box-shadow: 0 20px 60px rgba(0,0,0,0.3);
-                }}
-                h1 {{
-                    color: #dc3545;
-                    text-align: center;
-                }}
-                pre {{
-                    background: #f4f4f4;
-                    padding: 15px;
-                    border-radius: 8px;
-                    overflow-x: auto;
-                    font-size: 12px;
-                }}
-                .btn {{
-                    display: inline-block;
-                    padding: 10px 20px;
-                    background: #007bff;
-                    color: white;
-                    text-decoration: none;
-                    border-radius: 8px;
-                    margin: 5px;
-                }}
-            </style>
-        </head>
-        <body>
-            <div class="container">
-                <h1>❌ Erro na Migração</h1>
-                <pre>{error_details}</pre>
-                <div style="text-align: center;">
-                    <a href="/dashboard" class="btn">Voltar ao Dashboard</a>
-                </div>
-            </div>
-        </body>
-        </html>
-        """
+        print(f"Erro ao fazer upload: {e}")
+        flash(f"Erro ao fazer upload: {str(e)}", "danger")
+        return_connection(conn)
+        return redirect(f"/obreiros/{id}/editar")
+
+@app.route("/obreiros/<int:id>/foto/remover")
+@login_required
+def remover_foto_obreiro(id):
+    """Remove a foto do obreiro"""
+    # Verificar permissão
+    if session["tipo"] != "admin" and session["user_id"] != id:
+        flash("Você não tem permissão para remover esta foto", "danger")
+        return redirect(f"/obreiros/{id}")
+    
+    try:
+        cursor, conn = get_db()
+        
+        cursor.execute("SELECT foto FROM usuarios WHERE id = %s", (id,))
+        foto = cursor.fetchone()
+        
+        if foto and foto['foto']:
+            caminho = os.path.join(UPLOAD_FOLDER_FOTOS, foto['foto'])
+            if os.path.exists(caminho):
+                os.remove(caminho)
+        
+        cursor.execute("UPDATE usuarios SET foto = NULL WHERE id = %s", (id,))
+        conn.commit()
+        
+        registrar_log("remover_foto", "obreiro", id)
+        flash("Foto removida com sucesso!", "success")
+        return_connection(conn)
+        return redirect(f"/obreiros/{id}")
+        
+    except Exception as e:
+        print(f"Erro ao remover foto: {e}")
+        flash(f"Erro ao remover foto: {str(e)}", "danger")
+        return_connection(conn)
+        return redirect(f"/obreiros/{id}/editar")
+        
+@app.route("/uploads/fotos/<filename>")
+def serve_foto(filename):
+    """Serve as fotos dos obreiros"""
+    from flask import send_from_directory
+    return send_from_directory(UPLOAD_FOLDER_FOTOS, filename)        
 
 # =============================
 # ROTAS DE CANDIDATOS E SINDICÂNCIA
