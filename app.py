@@ -4018,7 +4018,62 @@ def editar_sindicante(id):
     lojas = cursor.fetchall()
     return_connection(conn)
     return render_template("editar_sindicante.html", sindicante=sindicante, lojas=lojas)
+@app.route("/debug-sindicancias")
+def debug_sindicancias():
+    """Rota para debug das sindicâncias"""
+    try:
+        cursor, conn = get_db()
         
+        # Buscar candidatos com informações de sindicância
+        cursor.execute("""
+            SELECT c.*,
+                   (SELECT COUNT(*) FROM sindicancias WHERE candidato_id = c.id AND sindicante = %s) as parecer_enviado,
+                   (SELECT parecer FROM sindicancias WHERE candidato_id = c.id AND sindicante = %s) as parecer,
+                   (SELECT data_envio FROM sindicancias WHERE candidato_id = c.id AND sindicante = %s) as data_envio
+            FROM candidatos c
+            ORDER BY c.fechado ASC, c.data_criacao DESC
+        """, (session['usuario'], session['usuario'], session['usuario']))
+        
+        candidatos = cursor.fetchall()
+        
+        html = """
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <title>Debug Sindicâncias</title>
+            <style>
+                body { font-family: monospace; padding: 20px; }
+                pre { background: #f4f4f4; padding: 10px; overflow-x: auto; }
+                .candidato { margin-bottom: 30px; border: 1px solid #ddd; padding: 10px; }
+            </style>
+        </head>
+        <body>
+            <h1>Debug - Dados das Sindicâncias</h1>
+            <p>Usuário logado: <strong>""" + session['usuario'] + """</strong></p>
+        """
+        
+        for c in candidatos:
+            html += f"""
+            <div class="candidato">
+                <h3>{c['nome']}</h3>
+                <pre>
+id: {c['id']}
+fechado: {c['fechado']}
+parecer_enviado: {c['parecer_enviado']}
+parecer: {c['parecer']}
+data_envio: {c['data_envio']}
+data_criacao: {c['data_criacao']}
+status: {c['status']}
+                </pre>
+            </div>
+            """
+        
+        html += "</body></html>"
+        return_connection(conn)
+        return html
+        
+    except Exception as e:
+        return f"<h1>Erro: {e}</h1>"        
 
 # =============================
 # ROTAS DE LOJAS
