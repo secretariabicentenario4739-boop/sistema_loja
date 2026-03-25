@@ -769,1249 +769,6 @@ def salvar_permissoes_usuario(usuario_id):
     
     flash("Permissões do usuário atualizadas com sucesso!", "success")
     return redirect("/admin/permissoes")
-
-@app.route("/setup-full-database")
-def setup_full_database():
-    """Rota para criar todas as tabelas do sistema"""
-    try:
-        cursor, conn = get_db()
-        
-        print("🔄 Criando TODAS as tabelas do sistema...")
-        
-        # ==================== TABELAS PRINCIPAIS ====================
-        
-        # 1. Usuários
-        cursor.execute("""
-            CREATE TABLE IF NOT EXISTS usuarios (
-                id SERIAL PRIMARY KEY,
-                usuario TEXT UNIQUE NOT NULL,
-                senha_hash TEXT NOT NULL,
-                tipo TEXT NOT NULL,
-                data_cadastro TIMESTAMP NOT NULL,
-                nome_completo TEXT,
-                nome_maconico TEXT,
-                cim_numero TEXT,
-                grau_atual INTEGER DEFAULT 1,
-                data_iniciacao DATE,
-                data_elevacao DATE,
-                data_exaltacao DATE,
-                telefone TEXT,
-                email TEXT,
-                endereco TEXT,
-                loja_nome TEXT,
-                loja_numero TEXT,
-                loja_orient TEXT,
-                ativo INTEGER DEFAULT 1
-            )
-        """)
-        print("✅ 1. usuarios")
-        
-        # 2. Candidatos
-        cursor.execute("""
-            CREATE TABLE IF NOT EXISTS candidatos (
-                id SERIAL PRIMARY KEY,
-                nome TEXT NOT NULL,
-                status TEXT DEFAULT 'Em análise',
-                data_criacao TIMESTAMP NOT NULL,
-                data_fechamento TIMESTAMP,
-                fechado INTEGER DEFAULT 0,
-                resultado_final TEXT
-            )
-        """)
-        print("✅ 2. candidatos")
-        
-        # 3. Sindicâncias
-        cursor.execute("""
-            CREATE TABLE IF NOT EXISTS sindicancias (
-                id SERIAL PRIMARY KEY,
-                candidato_id INTEGER NOT NULL REFERENCES candidatos(id) ON DELETE CASCADE,
-                sindicante TEXT NOT NULL,
-                parecer TEXT NOT NULL,
-                data_envio TIMESTAMP NOT NULL,
-                UNIQUE(candidato_id, sindicante)
-            )
-        """)
-        print("✅ 3. sindicancias")
-        
-        # 4. Pareceres conclusivos
-        cursor.execute("""
-            CREATE TABLE IF NOT EXISTS pareceres_conclusivos (
-                id SERIAL PRIMARY KEY,
-                candidato_id INTEGER NOT NULL REFERENCES candidatos(id) ON DELETE CASCADE,
-                sindicante TEXT NOT NULL,
-                parecer_texto TEXT NOT NULL,
-                conclusao TEXT NOT NULL,
-                observacoes TEXT,
-                cim_numero TEXT,
-                data_parecer DATE NOT NULL,
-                data_envio TIMESTAMP NOT NULL,
-                fontes TEXT NOT NULL,
-                loja_nome TEXT,
-                loja_numero TEXT,
-                loja_orient TEXT,
-                UNIQUE(candidato_id, sindicante)
-            )
-        """)
-        print("✅ 4. pareceres_conclusivos")
-        
-        # 5. Lojas
-        cursor.execute("""
-            CREATE TABLE IF NOT EXISTS lojas (
-                id SERIAL PRIMARY KEY,
-                nome TEXT NOT NULL,
-                numero TEXT NOT NULL,
-                oriente TEXT,
-                cidade TEXT,
-                estado TEXT,
-                data_fundacao DATE,
-                endereco TEXT,
-                bairro TEXT,
-                cep TEXT,
-                telefone TEXT,
-                email TEXT,
-                site TEXT,
-                data_instalacao DATE,
-                data_autorizacao DATE,
-                veneravel_mestre TEXT,
-                secretario TEXT,
-                tesoureiro TEXT,
-                orador TEXT,
-                horario_reuniao TIME,
-                dia_reuniao TEXT,
-                rito TEXT,
-                observacoes TEXT,
-                ativo INTEGER DEFAULT 1
-            )
-        """)
-        print("✅ 5. lojas")
-        
-        # 6. Tipos de reunião
-        cursor.execute("""
-            CREATE TABLE IF NOT EXISTS tipos_reuniao (
-                id SERIAL PRIMARY KEY,
-                nome TEXT NOT NULL UNIQUE,
-                descricao TEXT,
-                cor TEXT DEFAULT '#3788d8'
-            )
-        """)
-        print("✅ 6. tipos_reuniao")
-        
-        # 7. Cargos
-        cursor.execute("""
-            CREATE TABLE IF NOT EXISTS cargos (
-                id SERIAL PRIMARY KEY,
-                nome TEXT NOT NULL,
-                sigla TEXT,
-                grau_minimo INTEGER DEFAULT 1,
-                ordem INTEGER,
-                descricao TEXT,
-                ativo INTEGER DEFAULT 1
-            )
-        """)
-        print("✅ 7. cargos")
-        
-        # 8. Ocupação de cargos
-        cursor.execute("""
-            CREATE TABLE IF NOT EXISTS ocupacao_cargos (
-                id SERIAL PRIMARY KEY,
-                obreiro_id INTEGER NOT NULL REFERENCES usuarios(id) ON DELETE CASCADE,
-                cargo_id INTEGER NOT NULL REFERENCES cargos(id) ON DELETE CASCADE,
-                loja_id INTEGER REFERENCES lojas(id) ON DELETE SET NULL,
-                data_inicio DATE NOT NULL,
-                data_fim DATE,
-                gestao TEXT,
-                ativo INTEGER DEFAULT 1
-            )
-        """)
-        print("✅ 8. ocupacao_cargos")
-        
-        # 9. Histórico de graus
-        cursor.execute("""
-            CREATE TABLE IF NOT EXISTS historico_graus (
-                id SERIAL PRIMARY KEY,
-                obreiro_id INTEGER NOT NULL REFERENCES usuarios(id) ON DELETE CASCADE,
-                grau INTEGER NOT NULL,
-                grau_id INTEGER,
-                data DATE NOT NULL,
-                observacao TEXT
-            )
-        """)
-        print("✅ 9. historico_graus")
-        
-        # 10. Reuniões
-        cursor.execute("""
-            CREATE TABLE IF NOT EXISTS reunioes (
-                id SERIAL PRIMARY KEY,
-                titulo TEXT NOT NULL,
-                tipo TEXT DEFAULT 'Ordinária',
-                grau INTEGER,
-                data DATE NOT NULL,
-                hora_inicio TIME,
-                hora_termino TIME,
-                local TEXT,
-                loja_id INTEGER REFERENCES lojas(id),
-                pauta TEXT,
-                observacoes TEXT,
-                status TEXT DEFAULT 'agendada',
-                data_criacao TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                criado_por INTEGER REFERENCES usuarios(id)
-            )
-        """)
-        print("✅ 10. reunioes")
-        
-        # 11. Presença
-        cursor.execute("""
-            CREATE TABLE IF NOT EXISTS presenca (
-                id SERIAL PRIMARY KEY,
-                reuniao_id INTEGER NOT NULL REFERENCES reunioes(id) ON DELETE CASCADE,
-                obreiro_id INTEGER NOT NULL REFERENCES usuarios(id) ON DELETE CASCADE,
-                presente INTEGER DEFAULT 0,
-                tipo_ausencia TEXT,
-                justificativa TEXT,
-                comprovante TEXT,
-                validado_por INTEGER REFERENCES usuarios(id),
-                data_validacao TIMESTAMP,
-                observacao_validacao TEXT,
-                data_registro TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                registrado_por INTEGER REFERENCES usuarios(id),
-                UNIQUE(reuniao_id, obreiro_id)
-            )
-        """)
-        print("✅ 11. presenca")
-        
-        # 12. Atas
-        cursor.execute("""
-            CREATE TABLE IF NOT EXISTS atas (
-                id SERIAL PRIMARY KEY,
-                reuniao_id INTEGER UNIQUE NOT NULL REFERENCES reunioes(id) ON DELETE CASCADE,
-                conteudo TEXT NOT NULL,
-                redator_id INTEGER REFERENCES usuarios(id),
-                aprovada INTEGER DEFAULT 0,
-                data_aprovacao DATE,
-                versao INTEGER DEFAULT 1,
-                arquivo_pdf TEXT,
-                data_criacao TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                numero_ata INTEGER,
-                ano_ata INTEGER,
-                tipo_ata TEXT DEFAULT 'Ordinária',
-                redator_nome TEXT,
-                secretario_id INTEGER REFERENCES usuarios(id),
-                aprovada_em DATE,
-                aprovada_por INTEGER REFERENCES usuarios(id),
-                observacoes_aprovacao TEXT,
-                modelo_ata TEXT,
-                assinaturas TEXT,
-                hash_documento TEXT,
-                data_impressao TIMESTAMP,
-                impresso_por INTEGER REFERENCES usuarios(id)
-            )
-        """)
-        print("✅ 12. atas")
-        
-        # 13. Modelos de ata
-        cursor.execute("""
-            CREATE TABLE IF NOT EXISTS modelos_ata (
-                id SERIAL PRIMARY KEY,
-                nome TEXT NOT NULL,
-                descricao TEXT,
-                tipo TEXT DEFAULT 'Ordinária',
-                estrutura TEXT NOT NULL,
-                campos_personalizados TEXT,
-                ativo INTEGER DEFAULT 1,
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                created_by INTEGER REFERENCES usuarios(id)
-            )
-        """)
-        print("✅ 13. modelos_ata")
-        
-        # 14. Assinaturas de atas
-        cursor.execute("""
-            CREATE TABLE IF NOT EXISTS assinaturas_ata (
-                id SERIAL PRIMARY KEY,
-                ata_id INTEGER NOT NULL REFERENCES atas(id) ON DELETE CASCADE,
-                obreiro_id INTEGER NOT NULL REFERENCES usuarios(id),
-                cargo_id INTEGER REFERENCES cargos(id),
-                assinatura TEXT,
-                data_assinatura TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                ip_assinatura TEXT,
-                hash_assinatura TEXT,
-                validada INTEGER DEFAULT 0,
-                UNIQUE(ata_id, obreiro_id)
-            )
-        """)
-        print("✅ 14. assinaturas_ata")
-        
-        # 15. Tipos de ausência
-        cursor.execute("""
-            CREATE TABLE IF NOT EXISTS tipos_ausencia (
-                id SERIAL PRIMARY KEY,
-                nome TEXT NOT NULL,
-                descricao TEXT,
-                requer_comprovante INTEGER DEFAULT 0,
-                cor TEXT DEFAULT '#6c757d',
-                ativo INTEGER DEFAULT 1
-            )
-        """)
-        print("✅ 15. tipos_ausencia")
-        
-        # 16. Graus
-        cursor.execute("""
-            CREATE TABLE IF NOT EXISTS graus (
-                id SERIAL PRIMARY KEY,
-                nome TEXT NOT NULL,
-                descricao TEXT,
-                nivel INTEGER NOT NULL,
-                ordem INTEGER DEFAULT 0,
-                ativo INTEGER DEFAULT 1,
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                created_by INTEGER REFERENCES usuarios(id)
-            )
-        """)
-        print("✅ 16. graus")
-        
-        # 17. Tipos de condecorações
-        cursor.execute("""
-            CREATE TABLE IF NOT EXISTS tipos_condecoracoes (
-                id SERIAL PRIMARY KEY,
-                nome TEXT NOT NULL,
-                descricao TEXT,
-                nivel INTEGER DEFAULT 1,
-                cor TEXT DEFAULT '#ffc107',
-                icone TEXT DEFAULT 'bi-award',
-                ordem INTEGER DEFAULT 0,
-                ativo INTEGER DEFAULT 1,
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-            )
-        """)
-        print("✅ 17. tipos_condecoracoes")
-        
-        # 18. Condecorações dos obreiros
-        cursor.execute("""
-            CREATE TABLE IF NOT EXISTS condecoracoes_obreiro (
-                id SERIAL PRIMARY KEY,
-                obreiro_id INTEGER NOT NULL REFERENCES usuarios(id) ON DELETE CASCADE,
-                tipo_id INTEGER NOT NULL REFERENCES tipos_condecoracoes(id),
-                data_concessao DATE NOT NULL,
-                data_validade DATE,
-                concedido_por INTEGER REFERENCES usuarios(id),
-                motivo TEXT,
-                numero_registro TEXT,
-                observacoes TEXT,
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                UNIQUE(obreiro_id, tipo_id, data_concessao)
-            )
-        """)
-        print("✅ 18. condecoracoes_obreiro")
-        
-        # 19. Familiares
-        cursor.execute("""
-            CREATE TABLE IF NOT EXISTS familiares (
-                id SERIAL PRIMARY KEY,
-                obreiro_id INTEGER NOT NULL REFERENCES usuarios(id) ON DELETE CASCADE,
-                nome TEXT NOT NULL,
-                parentesco TEXT NOT NULL,
-                data_nascimento DATE,
-                telefone TEXT,
-                email TEXT,
-                observacoes TEXT,
-                receber_notificacoes INTEGER DEFAULT 1,
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                created_by INTEGER REFERENCES usuarios(id)
-            )
-        """)
-        print("✅ 19. familiares")
-        
-        # 20. Comunicados
-        cursor.execute("""
-            CREATE TABLE IF NOT EXISTS comunicados (
-                id SERIAL PRIMARY KEY,
-                titulo TEXT NOT NULL,
-                conteudo TEXT NOT NULL,
-                tipo TEXT DEFAULT 'informativo',
-                prioridade TEXT DEFAULT 'normal',
-                data_inicio DATE NOT NULL,
-                data_fim DATE,
-                ativo INTEGER DEFAULT 1,
-                criado_por INTEGER NOT NULL REFERENCES usuarios(id),
-                data_criacao TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-            )
-        """)
-        print("✅ 20. comunicados")
-        
-        # 21. Visualizações de comunicado
-        cursor.execute("""
-            CREATE TABLE IF NOT EXISTS visualizacoes_comunicado (
-                id SERIAL PRIMARY KEY,
-                comunicado_id INTEGER NOT NULL REFERENCES comunicados(id) ON DELETE CASCADE,
-                obreiro_id INTEGER NOT NULL REFERENCES usuarios(id) ON DELETE CASCADE,
-                data_visualizacao TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                UNIQUE(comunicado_id, obreiro_id)
-            )
-        """)
-        print("✅ 21. visualizacoes_comunicado")
-        
-        # 22. Logs de auditoria
-        cursor.execute("""
-            CREATE TABLE IF NOT EXISTS logs_auditoria (
-                id SERIAL PRIMARY KEY,
-                usuario_id INTEGER NOT NULL REFERENCES usuarios(id),
-                usuario_nome TEXT NOT NULL,
-                acao TEXT NOT NULL,
-                entidade TEXT,
-                entidade_id INTEGER,
-                dados_anteriores TEXT,
-                dados_novos TEXT,
-                ip TEXT,
-                user_agent TEXT,
-                data_hora TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-            )
-        """)
-        print("✅ 22. logs_auditoria")
-        
-        # 23. Sugestões
-        cursor.execute("""
-            CREATE TABLE IF NOT EXISTS sugestoes (
-                id SERIAL PRIMARY KEY,
-                titulo TEXT NOT NULL,
-                descricao TEXT NOT NULL,
-                categoria TEXT NOT NULL,
-                prioridade TEXT DEFAULT 'media',
-                status TEXT DEFAULT 'pendente',
-                autor_id INTEGER NOT NULL REFERENCES usuarios(id),
-                votos INTEGER DEFAULT 0,
-                implementada INTEGER DEFAULT 0,
-                data_implementacao TIMESTAMP,
-                implementado_por INTEGER REFERENCES usuarios(id),
-                data_criacao TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                data_atualizacao TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-            )
-        """)
-        print("✅ 23. sugestoes")
-        
-        # 24. Categorias de sugestões
-        cursor.execute("""
-            CREATE TABLE IF NOT EXISTS categorias_sugestoes (
-                id SERIAL PRIMARY KEY,
-                nome TEXT NOT NULL UNIQUE,
-                descricao TEXT,
-                ativo INTEGER DEFAULT 1
-            )
-        """)
-        print("✅ 24. categorias_sugestoes")
-        
-        # 25. Comentários de sugestões
-        cursor.execute("""
-            CREATE TABLE IF NOT EXISTS comentarios_sugestao (
-                id SERIAL PRIMARY KEY,
-                sugestao_id INTEGER NOT NULL REFERENCES sugestoes(id) ON DELETE CASCADE,
-                autor_id INTEGER NOT NULL REFERENCES usuarios(id),
-                comentario TEXT NOT NULL,
-                data_comentario TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-            )
-        """)
-        print("✅ 25. comentarios_sugestao")
-        
-        # 26. Votos de sugestões
-        cursor.execute("""
-            CREATE TABLE IF NOT EXISTS votos_sugestao (
-                id SERIAL PRIMARY KEY,
-                sugestao_id INTEGER NOT NULL REFERENCES sugestoes(id) ON DELETE CASCADE,
-                usuario_id INTEGER NOT NULL REFERENCES usuarios(id) ON DELETE CASCADE,
-                data_voto TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                UNIQUE(sugestao_id, usuario_id)
-            )
-        """)
-        print("✅ 26. votos_sugestao")
-        
-        # 27. Email settings
-        cursor.execute("""
-            CREATE TABLE IF NOT EXISTS email_settings (
-                id SERIAL PRIMARY KEY,
-                server TEXT NOT NULL,
-                port INTEGER NOT NULL,
-                use_tls INTEGER DEFAULT 1,
-                use_ssl INTEGER DEFAULT 0,
-                username TEXT NOT NULL,
-                password TEXT NOT NULL,
-                sender TEXT NOT NULL,
-                sender_name TEXT,
-                active INTEGER DEFAULT 1,
-                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-            )
-        """)
-        print("✅ 27. email_settings")
-        
-        # 28. Notificações log
-        cursor.execute("""
-            CREATE TABLE IF NOT EXISTS notificacoes_log (
-                id SERIAL PRIMARY KEY,
-                destinatario TEXT NOT NULL,
-                assunto TEXT NOT NULL,
-                corpo TEXT NOT NULL,
-                tipo TEXT,
-                status TEXT,
-                data_envio TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                erro TEXT
-            )
-        """)
-        print("✅ 28. notificacoes_log")
-        
-        # 29. Preferências de notificação
-        cursor.execute("""
-            CREATE TABLE IF NOT EXISTS preferencias_notificacao (
-                id SERIAL PRIMARY KEY,
-                obreiro_id INTEGER NOT NULL REFERENCES usuarios(id),
-                lembrete_reuniao INTEGER DEFAULT 1,
-                alerta_ausencia INTEGER DEFAULT 1,
-                email TEXT,
-                UNIQUE(obreiro_id)
-            )
-        """)
-        print("✅ 29. preferencias_notificacao")
-        
-        # 30. WhatsApp config
-        cursor.execute("""
-            CREATE TABLE IF NOT EXISTS whatsapp_config (
-                id SERIAL PRIMARY KEY,
-                notificar_ausencia INTEGER DEFAULT 1,
-                notificar_nova_reuniao INTEGER DEFAULT 1,
-                notificar_comunicado INTEGER DEFAULT 1,
-                lembrete_reuniao INTEGER DEFAULT 1,
-                grupo_id TEXT,
-                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-            )
-        """)
-        print("✅ 30. whatsapp_config")
-        
-        # 31. Documentos dos obreiros
-        cursor.execute("""
-            CREATE TABLE IF NOT EXISTS documentos_obreiro (
-                id SERIAL PRIMARY KEY,
-                obreiro_id INTEGER NOT NULL REFERENCES usuarios(id) ON DELETE CASCADE,
-                titulo TEXT NOT NULL,
-                descricao TEXT,
-                categoria TEXT DEFAULT 'outros',
-                tipo_arquivo TEXT,
-                nome_arquivo TEXT NOT NULL,
-                caminho_arquivo TEXT NOT NULL,
-                tamanho INTEGER,
-                data_upload TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                uploaded_by INTEGER REFERENCES usuarios(id)
-            )
-        """)
-        print("✅ 31. documentos_obreiro")
-        
-        # 32. Categorias de documentos
-        cursor.execute("""
-            CREATE TABLE IF NOT EXISTS categorias_documentos (
-                id SERIAL PRIMARY KEY,
-                nome TEXT NOT NULL UNIQUE,
-                descricao TEXT,
-                icone TEXT,
-                ativo INTEGER DEFAULT 1
-            )
-        """)
-        print("✅ 32. categorias_documentos")
-        
-        # 33. Estatísticas de presença
-        cursor.execute("""
-            CREATE TABLE IF NOT EXISTS estatisticas_presenca (
-                id SERIAL PRIMARY KEY,
-                obreiro_id INTEGER NOT NULL REFERENCES usuarios(id) ON DELETE CASCADE,
-                ano INTEGER NOT NULL,
-                mes INTEGER NOT NULL,
-                total_reunioes INTEGER DEFAULT 0,
-                presencas INTEGER DEFAULT 0,
-                ausencias_justificadas INTEGER DEFAULT 0,
-                ausencias_injustificadas INTEGER DEFAULT 0,
-                percentual REAL DEFAULT 0,
-                UNIQUE(obreiro_id, ano, mes)
-            )
-        """)
-        print("✅ 33. estatisticas_presenca")
-        
-        # 34. Alertas de presença
-        cursor.execute("""
-            CREATE TABLE IF NOT EXISTS alertas_presenca (
-                id SERIAL PRIMARY KEY,
-                obreiro_id INTEGER NOT NULL REFERENCES usuarios(id) ON DELETE CASCADE,
-                tipo TEXT NOT NULL,
-                mensagem TEXT NOT NULL,
-                data_gerado TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                resolvido INTEGER DEFAULT 0,
-                data_resolucao TIMESTAMP,
-                resolvido_por INTEGER REFERENCES usuarios(id)
-            )
-        """)
-        print("✅ 34. alertas_presenca")
-        
-        # 35. Anexos de atas
-        cursor.execute("""
-            CREATE TABLE IF NOT EXISTS anexos_ata (
-                id SERIAL PRIMARY KEY,
-                ata_id INTEGER NOT NULL REFERENCES atas(id) ON DELETE CASCADE,
-                nome_arquivo TEXT NOT NULL,
-                caminho_arquivo TEXT NOT NULL,
-                tipo_arquivo TEXT,
-                tamanho INTEGER,
-                data_upload TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                uploaded_by INTEGER REFERENCES usuarios(id)
-            )
-        """)
-        print("✅ 35. anexos_ata")
-        
-        # 36. Módulos (para permissões)
-        cursor.execute("""
-            CREATE TABLE IF NOT EXISTS modulos (
-                id SERIAL PRIMARY KEY,
-                nome TEXT NOT NULL,
-                descricao TEXT,
-                icone TEXT,
-                ordem INTEGER DEFAULT 0,
-                ativo INTEGER DEFAULT 1
-            )
-        """)
-        print("✅ 36. modulos")
-        
-        # 37. Permissões
-        cursor.execute("""
-            CREATE TABLE IF NOT EXISTS permissoes (
-                id SERIAL PRIMARY KEY,
-                modulo_id INTEGER NOT NULL REFERENCES modulos(id) ON DELETE CASCADE,
-                nome TEXT NOT NULL,
-                codigo TEXT NOT NULL UNIQUE,
-                descricao TEXT
-            )
-        """)
-        print("✅ 37. permissoes")
-        
-        # 38. Permissões por grau
-        cursor.execute("""
-            CREATE TABLE IF NOT EXISTS permissoes_grau (
-                id SERIAL PRIMARY KEY,
-                grau_id INTEGER NOT NULL REFERENCES graus(id) ON DELETE CASCADE,
-                permissao_id INTEGER NOT NULL REFERENCES permissoes(id) ON DELETE CASCADE,
-                UNIQUE(grau_id, permissao_id)
-            )
-        """)
-        print("✅ 38. permissoes_grau")
-        
-        # 39. Permissões por usuário
-        cursor.execute("""
-            CREATE TABLE IF NOT EXISTS permissoes_usuario (
-                id SERIAL PRIMARY KEY,
-                usuario_id INTEGER NOT NULL REFERENCES usuarios(id) ON DELETE CASCADE,
-                permissao_id INTEGER NOT NULL REFERENCES permissoes(id) ON DELETE CASCADE,
-                permitido INTEGER DEFAULT 1,
-                UNIQUE(usuario_id, permissao_id)
-            )
-        """)
-        print("✅ 39. permissoes_usuario")
-        
-        # ==================== ÍNDICES ====================
-        
-        print("\n🔄 Criando índices...")
-        
-        cursor.execute("CREATE INDEX IF NOT EXISTS idx_usuarios_tipo ON usuarios(tipo);")
-        cursor.execute("CREATE INDEX IF NOT EXISTS idx_usuarios_ativo ON usuarios(ativo);")
-        cursor.execute("CREATE INDEX IF NOT EXISTS idx_usuarios_grau ON usuarios(grau_atual);")
-        cursor.execute("CREATE INDEX IF NOT EXISTS idx_candidatos_status ON candidatos(status);")
-        cursor.execute("CREATE INDEX IF NOT EXISTS idx_sindicancias_candidato ON sindicancias(candidato_id);")
-        cursor.execute("CREATE INDEX IF NOT EXISTS idx_reunioes_data ON reunioes(data);")
-        cursor.execute("CREATE INDEX IF NOT EXISTS idx_presenca_reuniao ON presenca(reuniao_id);")
-        cursor.execute("CREATE INDEX IF NOT EXISTS idx_presenca_obreiro ON presenca(obreiro_id);")
-        cursor.execute("CREATE INDEX IF NOT EXISTS idx_atas_reuniao ON atas(reuniao_id);")
-        cursor.execute("CREATE INDEX IF NOT EXISTS idx_comunicados_datas ON comunicados(data_inicio, data_fim);")
-        cursor.execute("CREATE INDEX IF NOT EXISTS idx_logs_auditoria_data ON logs_auditoria(data_hora);")
-        cursor.execute("CREATE INDEX IF NOT EXISTS idx_logs_auditoria_usuario ON logs_auditoria(usuario_id);")
-        
-        print("✅ Índices criados")
-        
-        # ==================== DADOS PADRÃO ====================
-        
-        print("\n🔄 Inserindo dados padrão...")
-        
-        # Loja padrão
-        cursor.execute("SELECT COUNT(*) as total FROM lojas")
-        if cursor.fetchone()['total'] == 0:
-            cursor.execute("""
-                INSERT INTO lojas (nome, numero, oriente, cidade, estado)
-                VALUES (%s, %s, %s, %s, %s)
-            """, ("ARLS Estrela do Oriente", "123", "Oriente de São Paulo", "São Paulo", "SP"))
-            print("✅ Loja padrão inserida")
-        
-        # Tipos de reunião
-        cursor.execute("SELECT COUNT(*) as total FROM tipos_reuniao")
-        if cursor.fetchone()['total'] == 0:
-            tipos = [
-                ("Ordinária", "Reunião ordinária semanal/mensal", "#28a745"),
-                ("Magna", "Reunião magna solene", "#dc3545"),
-                ("Extraordinária", "Reunião extraordinária convocada", "#ffc107"),
-                ("Administrativa", "Reunião da administração", "#17a2b8"),
-                ("Iniciação", "Sessão de iniciação de novos obreiros", "#6610f2"),
-                ("Elevação", "Sessão de elevação ao grau de Companheiro", "#fd7e14"),
-                ("Exaltação", "Sessão de exaltação ao grau de Mestre", "#20c997")
-            ]
-            for t in tipos:
-                cursor.execute("INSERT INTO tipos_reuniao (nome, descricao, cor) VALUES (%s, %s, %s)", t)
-            print("✅ Tipos de reunião inseridos")
-        
-        # Cargos padrão
-        cursor.execute("SELECT COUNT(*) as total FROM cargos")
-        if cursor.fetchone()['total'] == 0:
-            cargos = [
-                ("Venerável Mestre", "VM", 3, 1, "Presidente da loja"),
-                ("1º Vigilante", "1V", 3, 2, "Primeiro vigilante"),
-                ("2º Vigilante", "2V", 3, 3, "Segundo vigilante"),
-                ("Orador", "OR", 3, 4, "Orador da loja"),
-                ("Secretário", "SEC", 2, 5, "Secretário"),
-                ("Tesoureiro", "TES", 2, 6, "Tesoureiro"),
-                ("Chanceler", "CHAN", 2, 7, "Guardião do templo"),
-                ("Mestre de Cerimônias", "MC", 2, 8, "Cerimonialista"),
-                ("1º Diácono", "1D", 2, 9, "Primeiro diácono"),
-                ("2º Diácono", "2D", 2, 10, "Segundo diácono"),
-                ("Cobridor", "COB", 2, 11, "Cobridor interno"),
-                ("Porta-Estandarte", "PE", 1, 12, "Porta estandarte"),
-                ("Porta-Espada", "PESP", 1, 13, "Porta espada"),
-                ("Hospitaleiro", "HOSP", 1, 14, "Responsável pelo ágape"),
-            ]
-            for c in cargos:
-                cursor.execute("""
-                    INSERT INTO cargos (nome, sigla, grau_minimo, ordem, descricao, ativo)
-                    VALUES (%s, %s, %s, %s, %s, 1)
-                """, c)
-            print("✅ Cargos padrão inseridos")
-        
-        # Graus padrão
-        cursor.execute("SELECT COUNT(*) as total FROM graus")
-        if cursor.fetchone()['total'] == 0:
-            graus = [
-                ("Aprendiz", "Primeiro grau da Maçonaria Simbólica", 1, 1),
-                ("Companheiro", "Segundo grau da Maçonaria Simbólica", 2, 2),
-                ("Mestre", "Terceiro grau da Maçonaria Simbólica", 3, 3),
-                ("Mestre Instalado", "Grau conferido ao Venerável Mestre após seu mandato", 4, 4),
-            ]
-            for g in graus:
-                cursor.execute("INSERT INTO graus (nome, descricao, nivel, ordem, ativo) VALUES (%s, %s, %s, %s, 1)", g)
-            print("✅ Graus padrão inseridos")
-        
-        # Tipos de ausência
-        cursor.execute("SELECT COUNT(*) as total FROM tipos_ausencia")
-        if cursor.fetchone()['total'] == 0:
-            tipos_ausencia = [
-                ("Justificada", "Ausência justificada por motivo pessoal", 0, "#28a745"),
-                ("Injustificada", "Ausência sem justificativa", 0, "#dc3545"),
-                ("Licença Saúde", "Licença médica ou problema de saúde", 1, "#ffc107"),
-                ("Licença Profissional", "Compromisso profissional inadiável", 1, "#17a2b8"),
-                ("Licença Particular", "Assuntos particulares", 1, "#6c757d"),
-                ("Viagem", "Viagem a trabalho ou pessoal", 1, "#6610f2"),
-                ("Luto", "Falecimento de familiar", 1, "#6c757d"),
-                ("Doença na Família", "Acompanhamento familiar", 1, "#fd7e14")
-            ]
-            for t in tipos_ausencia:
-                cursor.execute("""
-                    INSERT INTO tipos_ausencia (nome, descricao, requer_comprovante, cor, ativo)
-                    VALUES (%s, %s, %s, %s, 1)
-                """, t)
-            print("✅ Tipos de ausência inseridos")
-        
-        # Modelos de ata
-        cursor.execute("SELECT COUNT(*) as total FROM modelos_ata")
-        if cursor.fetchone()['total'] == 0:
-            modelos = [
-                ("Ata Ordinária", "Modelo padrão para reuniões ordinárias", "Ordinária", 
-                 json.dumps({
-                     "cabecalho": ["Abertura", "Verificacao de quorum", "Leitura da ata anterior"],
-                     "expediente": ["Comunicacoes", "Propostas", "Informacoes"],
-                     "ordem_do_dia": ["Assuntos em pauta", "Votacoes", "Deliberacoes"],
-                     "encerramento": ["Palavra final", "Marcacao proxima reuniao", "Encerramento"]
-                 })),
-                ("Ata Magna", "Modelo para reunioes magnas", "Magna",
-                 json.dumps({
-                     "cabecalho": ["Abertura solene", "Composicao da mesa", "Hino"],
-                     "expediente": ["Comunicacoes oficiais", "Propostas especiais"],
-                     "ordem_do_dia": ["Rituais", "Iniciacoes", "Elevacoes", "Exaltacoes"],
-                     "encerramento": ["Palavra do Veneravel", "Encerramento solene"]
-                 })),
-                ("Ata Administrativa", "Modelo para reunioes administrativas", "Administrativa",
-                 json.dumps({
-                     "cabecalho": ["Abertura", "Presentes", "Pauta"],
-                     "expediente": ["Prestacao de contas", "Assuntos financeiros"],
-                     "ordem_do_dia": ["Deliberacoes", "Votacoes", "Planejamento"],
-                     "encerramento": ["Encaminhamentos", "Proxima reuniao", "Encerramento"]
-                 }))
-            ]
-            for m in modelos:
-                cursor.execute("""
-                    INSERT INTO modelos_ata (nome, descricao, tipo, estrutura)
-                    VALUES (%s, %s, %s, %s)
-                """, m)
-            print("✅ Modelos de ata inseridos")
-        
-        # Tipos de condecorações
-        cursor.execute("SELECT COUNT(*) as total FROM tipos_condecoracoes")
-        if cursor.fetchone()['total'] == 0:
-            condecoracoes = [
-                ("Medalha do Mérito Maçônico", "Reconhecimento por serviços prestados à Maçonaria", 1, "#ffc107", "bi-award", 1),
-                ("Medalha do Mérito Cultural", "Contribuição para a cultura e educação", 2, "#17a2b8", "bi-book", 2),
-                ("Medalha do Mérito Social", "Trabalhos sociais e filantrópicos", 2, "#28a745", "bi-heart", 3),
-                ("Medalha do Mérito Científico", "Contribuições científicas e acadêmicas", 3, "#6f42c1", "bi-flask", 4),
-                ("Colar do Mérito", "Máxima honraria da Loja", 4, "#dc3545", "bi-star-fill", 5),
-                ("Diploma de Honra ao Mérito", "Reconhecimento especial", 3, "#fd7e14", "bi-file-text", 6),
-                ("Carta de Reconhecimento", "Agradecimento por serviços relevantes", 2, "#20c997", "bi-envelope", 7),
-                ("Título de Benemérito", "Contribuições excepcionais", 4, "#e83e8c", "bi-trophy", 8),
-                ("Medalha da Fraternidade", "Espírito de fraternidade e união", 2, "#007bff", "bi-people", 9),
-                ("Insígnia do Trabalho", "Dedicação ao trabalho maçônico", 1, "#6c757d", "bi-briefcase", 10),
-            ]
-            for c in condecoracoes:
-                cursor.execute("""
-                    INSERT INTO tipos_condecoracoes (nome, descricao, nivel, cor, icone, ordem, ativo)
-                    VALUES (%s, %s, %s, %s, %s, %s, 1)
-                """, c)
-            print("✅ Tipos de condecorações inseridos")
-        
-        # Categorias de documentos
-        cursor.execute("SELECT COUNT(*) as total FROM categorias_documentos")
-        if cursor.fetchone()['total'] == 0:
-            categorias_doc = [
-                ("documentos_pessoais", "Documentos pessoais do obreiro", "fa-id-card"),
-                ("certificados", "Certificados de graus e cursos", "fa-certificate"),
-                ("atas", "Atas de reuniões", "fa-file-alt"),
-                ("correspondencias", "Correspondências oficiais", "fa-envelope"),
-                ("outros", "Outros documentos", "fa-file"),
-            ]
-            for c in categorias_doc:
-                cursor.execute("""
-                    INSERT INTO categorias_documentos (nome, descricao, icone, ativo)
-                    VALUES (%s, %s, %s, 1)
-                """, c)
-            print("✅ Categorias de documentos inseridas")
-        
-        # Categorias de sugestões
-        cursor.execute("SELECT COUNT(*) as total FROM categorias_sugestoes")
-        if cursor.fetchone()['total'] == 0:
-            categorias_sug = [
-                ("melhoria_sistema", "Melhorias no sistema", 1),
-                ("nova_funcionalidade", "Nova funcionalidade", 1),
-                ("correcao_bug", "Correção de bug", 1),
-                ("documentacao", "Documentação", 1),
-                ("seguranca", "Segurança", 1),
-                ("outros", "Outros", 1),
-            ]
-            for c in categorias_sug:
-                cursor.execute("""
-                    INSERT INTO categorias_sugestoes (nome, descricao, ativo)
-                    VALUES (%s, %s, %s)
-                """, c)
-            print("✅ Categorias de sugestões inseridas")
-        
-        # WhatsApp config
-        cursor.execute("SELECT COUNT(*) as total FROM whatsapp_config")
-        if cursor.fetchone()['total'] == 0:
-            cursor.execute("""
-                INSERT INTO whatsapp_config (notificar_ausencia, notificar_nova_reuniao, notificar_comunicado, lembrete_reuniao)
-                VALUES (1, 1, 1, 1)
-            """)
-            print("✅ Configuração WhatsApp inserida")
-        
-        conn.commit()
-        return_connection(conn)
-        
-        return """
-        <!DOCTYPE html>
-        <html>
-        <head>
-            <title>Setup Concluído</title>
-            <style>
-                body { font-family: Arial; text-align: center; padding: 50px; background: #f5f5f5; }
-                .container { max-width: 800px; margin: 0 auto; background: white; padding: 30px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
-                h1 { color: green; }
-                .success { color: green; }
-                .info { text-align: left; margin: 20px 0; padding: 15px; background: #e8f5e9; border-radius: 5px; }
-                .btn { display: inline-block; padding: 10px 20px; background: #007bff; color: white; text-decoration: none; border-radius: 5px; margin-top: 20px; }
-                .btn:hover { background: #0056b3; }
-            </style>
-        </head>
-        <body>
-            <div class="container">
-                <h1>✅ Setup Concluído!</h1>
-                <p>Todas as <strong>39 tabelas</strong> foram criadas com sucesso!</p>
-                <div class="info">
-                    <p><strong>Tabelas criadas:</strong></p>
-                    <ul style="columns: 2;">
-                        <li>usuarios</li><li>candidatos</li><li>sindicancias</li>
-                        <li>pareceres_conclusivos</li><li>lojas</li><li>tipos_reuniao</li>
-                        <li>cargos</li><li>ocupacao_cargos</li><li>historico_graus</li>
-                        <li>reunioes</li><li>presenca</li><li>atas</li>
-                        <li>modelos_ata</li><li>assinaturas_ata</li><li>tipos_ausencia</li>
-                        <li>graus</li><li>tipos_condecoracoes</li><li>condecoracoes_obreiro</li>
-                        <li>familiares</li><li>comunicados</li><li>visualizacoes_comunicado</li>
-                        <li>logs_auditoria</li><li>sugestoes</li><li>categorias_sugestoes</li>
-                        <li>comentarios_sugestao</li><li>votos_sugestao</li><li>email_settings</li>
-                        <li>notificacoes_log</li><li>preferencias_notificacao</li><li>whatsapp_config</li>
-                        <li>documentos_obreiro</li><li>categorias_documentos</li><li>estatisticas_presenca</li>
-                        <li>alertas_presenca</li><li>anexos_ata</li><li>modulos</li>
-                        <li>permissoes</li><li>permissoes_grau</li><li>permissoes_usuario</li>
-                    </ul>
-                </div>
-                <p>O banco de dados está totalmente configurado!</p>
-                <a href="/setup-admin" class="btn">Criar usuário Admin</a>
-                <br><br>
-                <a href="/" style="color: #666;">Voltar ao login</a>
-            </div>
-        </body>
-        </html>
-        """
-        
-    except Exception as e:
-        import traceback
-        return f"""
-        <html>
-        <head><title>Erro</title></head>
-        <body style="font-family: Arial; padding: 50px;">
-            <h1 style="color: red;">❌ Erro ao criar tabelas</h1>
-            <pre style="background: #f4f4f4; padding: 15px; overflow-x: auto;">{traceback.format_exc()}</pre>
-            <a href="/">Voltar</a>
-        </body>
-        </html>
-        """@app.route("/setup-admin")
-def setup_admin():
-    """Rota para criar usuário admin"""
-    try:
-        from werkzeug.security import generate_password_hash
-        cursor, conn = get_db()
-        
-        senha_hash = generate_password_hash("admin123")
-        cursor.execute("""
-            INSERT INTO usuarios (usuario, senha_hash, tipo, data_cadastro, ativo, nome_completo)
-            VALUES ('admin', %s, 'admin', NOW(), 1, 'Administrador')
-            ON CONFLICT (usuario) DO NOTHING
-        """, (senha_hash,))
-        conn.commit()
-        return_connection(conn)
-        
-        return """
-        <html>
-        <body style="font-family: Arial; text-align: center; padding: 50px;">
-            <h1 style="color: green;">✅ Admin criado com sucesso!</h1>
-            <p><strong>Usuário:</strong> admin</p>
-            <p><strong>Senha:</strong> admin123</p>
-            <a href="/" style="background: #007bff; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px;">Fazer login</a>
-        </body>
-        </html>
-        """
-    except Exception as e:
-        return f"<h1>❌ Erro: {e}</h1>"
-# =============================
-# ROTAS TEMPORARIA DE CRIAÇÃO DE TABELAS
-# =============================
-@app.route("/install-tables")
-def install_tables():
-    """Rota temporária para criar as tabelas"""
-    try:
-        cursor, conn = get_db()
-        
-        print("🔄 Criando tabelas...")
-        
-        # Criar tabela usuarios
-        cursor.execute("""
-            CREATE TABLE IF NOT EXISTS usuarios (
-                id SERIAL PRIMARY KEY,
-                usuario TEXT UNIQUE NOT NULL,
-                senha_hash TEXT NOT NULL,
-                tipo TEXT NOT NULL,
-                data_cadastro TIMESTAMP NOT NULL,
-                nome_completo TEXT,
-                nome_maconico TEXT,
-                cim_numero TEXT,
-                grau_atual INTEGER DEFAULT 1,
-                data_iniciacao DATE,
-                data_elevacao DATE,
-                data_exaltacao DATE,
-                telefone TEXT,
-                email TEXT,
-                endereco TEXT,
-                loja_nome TEXT,
-                loja_numero TEXT,
-                loja_orient TEXT,
-                ativo INTEGER DEFAULT 1
-            )
-        """)
-        
-        # Criar tabela lojas
-        cursor.execute("""
-            CREATE TABLE IF NOT EXISTS lojas (
-                id SERIAL PRIMARY KEY,
-                nome TEXT NOT NULL,
-                numero TEXT NOT NULL,
-                oriente TEXT,
-                cidade TEXT,
-                estado TEXT,
-                data_fundacao DATE,
-                endereco TEXT,
-                bairro TEXT,
-                cep TEXT,
-                telefone TEXT,
-                email TEXT,
-                site TEXT,
-                data_instalacao DATE,
-                data_autorizacao DATE,
-                veneravel_mestre TEXT,
-                secretario TEXT,
-                tesoureiro TEXT,
-                orador TEXT,
-                horario_reuniao TIME,
-                dia_reuniao TEXT,
-                rito TEXT,
-                observacoes TEXT,
-                ativo INTEGER DEFAULT 1
-            )
-        """)
-        
-        # Criar tabela tipos_reuniao
-        cursor.execute("""
-            CREATE TABLE IF NOT EXISTS tipos_reuniao (
-                id SERIAL PRIMARY KEY,
-                nome TEXT NOT NULL UNIQUE,
-                descricao TEXT,
-                cor TEXT DEFAULT '#3788d8'
-            )
-        """)
-        
-        # Criar tabela reunioes
-        cursor.execute("""
-            CREATE TABLE IF NOT EXISTS reunioes (
-                id SERIAL PRIMARY KEY,
-                titulo TEXT NOT NULL,
-                tipo TEXT DEFAULT 'Ordinária',
-                grau INTEGER,
-                data DATE NOT NULL,
-                hora_inicio TIME,
-                hora_termino TIME,
-                local TEXT,
-                loja_id INTEGER REFERENCES lojas(id),
-                pauta TEXT,
-                observacoes TEXT,
-                status TEXT DEFAULT 'agendada',
-                data_criacao TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                criado_por INTEGER REFERENCES usuarios(id)
-            )
-        """)
-        
-        # Criar tabela presenca
-        cursor.execute("""
-            CREATE TABLE IF NOT EXISTS presenca (
-                id SERIAL PRIMARY KEY,
-                reuniao_id INTEGER NOT NULL REFERENCES reunioes(id) ON DELETE CASCADE,
-                obreiro_id INTEGER NOT NULL REFERENCES usuarios(id) ON DELETE CASCADE,
-                presente INTEGER DEFAULT 0,
-                tipo_ausencia TEXT,
-                justificativa TEXT,
-                comprovante TEXT,
-                validado_por INTEGER REFERENCES usuarios(id),
-                data_validacao TIMESTAMP,
-                observacao_validacao TEXT,
-                data_registro TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                registrado_por INTEGER REFERENCES usuarios(id),
-                UNIQUE(reuniao_id, obreiro_id)
-            )
-        """)
-        
-        # Criar tabela atas
-        cursor.execute("""
-            CREATE TABLE IF NOT EXISTS atas (
-                id SERIAL PRIMARY KEY,
-                reuniao_id INTEGER UNIQUE NOT NULL REFERENCES reunioes(id) ON DELETE CASCADE,
-                conteudo TEXT NOT NULL,
-                redator_id INTEGER REFERENCES usuarios(id),
-                aprovada INTEGER DEFAULT 0,
-                data_aprovacao DATE,
-                versao INTEGER DEFAULT 1,
-                arquivo_pdf TEXT,
-                data_criacao TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                numero_ata INTEGER,
-                ano_ata INTEGER,
-                tipo_ata TEXT DEFAULT 'Ordinária',
-                redator_nome TEXT
-            )
-        """)
-        
-        # Criar tabela graus
-        cursor.execute("""
-            CREATE TABLE IF NOT EXISTS graus (
-                id SERIAL PRIMARY KEY,
-                nome TEXT NOT NULL,
-                descricao TEXT,
-                nivel INTEGER NOT NULL,
-                ordem INTEGER DEFAULT 0,
-                ativo INTEGER DEFAULT 1,
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-            )
-        """)
-        
-        # Inserir graus padrão
-        cursor.execute("SELECT COUNT(*) as total FROM graus")
-        total = cursor.fetchone()['total']
-        
-        if total == 0:
-            graus_padrao = [
-                ("Aprendiz", "Primeiro grau", 1, 1),
-                ("Companheiro", "Segundo grau", 2, 2),
-                ("Mestre", "Terceiro grau", 3, 3),
-                ("Mestre Instalado", "Grau do Venerável Mestre", 4, 4),
-            ]
-            for g in graus_padrao:
-                cursor.execute("""
-                    INSERT INTO graus (nome, descricao, nivel, ordem, ativo)
-                    VALUES (%s, %s, %s, %s, 1)
-                """, g)
-        
-        # Criar tabela tipos_ausencia
-        cursor.execute("""
-            CREATE TABLE IF NOT EXISTS tipos_ausencia (
-                id SERIAL PRIMARY KEY,
-                nome TEXT NOT NULL,
-                descricao TEXT,
-                requer_comprovante INTEGER DEFAULT 0,
-                cor TEXT DEFAULT '#6c757d',
-                ativo INTEGER DEFAULT 1
-            )
-        """)
-        
-        # Inserir tipos de ausência padrão
-        cursor.execute("SELECT COUNT(*) as total FROM tipos_ausencia")
-        total = cursor.fetchone()['total']
-        
-        if total == 0:
-            tipos_ausencia = [
-                ("Justificada", "Ausência justificada", 0, "#28a745"),
-                ("Injustificada", "Ausência sem justificativa", 0, "#dc3545"),
-                ("Licença Saúde", "Licença médica", 1, "#ffc107"),
-                ("Licença Profissional", "Compromisso profissional", 1, "#17a2b8"),
-                ("Luto", "Falecimento de familiar", 1, "#6c757d"),
-            ]
-            for t in tipos_ausencia:
-                cursor.execute("""
-                    INSERT INTO tipos_ausencia (nome, descricao, requer_comprovante, cor, ativo)
-                    VALUES (%s, %s, %s, %s, 1)
-                """, t)
-        
-        # Inserir tipos de reunião padrão
-        cursor.execute("SELECT COUNT(*) as total FROM tipos_reuniao")
-        total = cursor.fetchone()['total']
-        
-        if total == 0:
-            tipos_reuniao = [
-                ("Ordinária", "Reunião ordinária", "#28a745"),
-                ("Magna", "Reunião magna solene", "#dc3545"),
-                ("Extraordinária", "Reunião extraordinária", "#ffc107"),
-                ("Administrativa", "Reunião administrativa", "#17a2b8"),
-            ]
-            for t in tipos_reuniao:
-                cursor.execute("""
-                    INSERT INTO tipos_reuniao (nome, descricao, cor)
-                    VALUES (%s, %s, %s)
-                """, t)
-        
-        conn.commit()
-        return_connection(conn)
-        
-        return """
-        <html>
-        <head><title>Setup Concluído</title></head>
-        <body style="font-family: Arial; text-align: center; padding: 50px;">
-            <h1 style="color: green;">✅ Tabelas criadas com sucesso!</h1>
-            <p>O banco de dados foi configurado corretamente.</p>
-            <a href="/create-admin-user" style="background: #007bff; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px;">Próximo: Criar Admin</a>
-        </body>
-        </html>
-        """
-        
-    except Exception as e:
-        return f"❌ Erro: {e}"
-
-@app.route("/create-admin-user")
-def create_admin_user():
-    """Rota temporária para criar usuário admin"""
-    try:
-        from werkzeug.security import generate_password_hash
-        cursor, conn = get_db()
-        
-        senha_hash = generate_password_hash("admin123")
-        cursor.execute("""
-            INSERT INTO usuarios (usuario, senha_hash, tipo, data_cadastro, ativo, nome_completo)
-            VALUES ('admin', %s, 'admin', NOW(), 1, 'Administrador')
-            ON CONFLICT (usuario) DO NOTHING
-        """, (senha_hash,))
-        conn.commit()
-        return_connection(conn)
-        
-        return """
-        <html>
-        <head><title>Admin Criado</title></head>
-        <body style="font-family: Arial; text-align: center; padding: 50px;">
-            <h1 style="color: green;">✅ Usuário Admin criado com sucesso!</h1>
-            <p><strong>Usuário:</strong> admin</p>
-            <p><strong>Senha:</strong> admin123</p>
-            <a href="/" style="background: #007bff; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px;">Fazer Login</a>
-        </body>
-        </html>
-        """
-        
-    except Exception as e:
-        return f"❌ Erro: {e}"
-
-@app.route("/test-admin")
-def test_admin():
-    """Rota para verificar se o admin existe"""
-    try:
-        cursor, conn = get_db()
-        cursor.execute("SELECT id, usuario, senha_hash FROM usuarios WHERE usuario = 'admin'")
-        admin = cursor.fetchone()
-        return_connection(conn)
-        
-        if admin:
-            return f"""
-            <html>
-            <body>
-                <h1>✅ Admin encontrado!</h1>
-                <p>ID: {admin['id']}</p>
-                <p>Usuário: {admin['usuario']}</p>
-                <p>Hash da senha: {admin['senha_hash'][:50]}...</p>
-                <a href="/">Voltar ao login</a>
-            </body>
-            </html>
-            """
-        else:
-            return "<h1>❌ Admin NÃO encontrado!</h1>"
-    except Exception as e:
-        return f"<h1>❌ Erro: {e}</h1>"
-
-@app.route("/test-password")
-def test_password():
-    """Rota para testar a senha do admin"""
-    try:
-        from werkzeug.security import check_password_hash
-        cursor, conn = get_db()
-        cursor.execute("SELECT senha_hash FROM usuarios WHERE usuario = 'admin'")
-        admin = cursor.fetchone()
-        return_connection(conn)
-        
-        if admin:
-            senha_correta = check_password_hash(admin['senha_hash'], 'admin123')
-            return f"""
-            <html>
-            <body>
-                <h1>Teste de Senha</h1>
-                <p>Senha 'admin123' está correta? {senha_correta}</p>
-                <a href="/">Voltar ao login</a>
-            </body>
-            </html>
-            """
-        else:
-            return "<h1>❌ Admin não encontrado</h1>"
-    except Exception as e:
-        return f"<h1>❌ Erro: {e}</h1>"  
         
 # =============================
 # ROTAS DE PERFIL
@@ -2161,6 +918,266 @@ def atualizar_niveis_acesso():
 
 if __name__ == "__main__":
     atualizar_niveis_acesso()
+
+@app.route("/setup-permissoes")
+def setup_permissoes():
+    """Rota para inserir módulos e permissões"""
+    try:
+        cursor, conn = get_db()
+        
+        print("🔄 Inserindo módulos e permissões...")
+        
+        # ==================== MÓDULOS ====================
+        
+        # Verificar se já existem módulos
+        cursor.execute("SELECT COUNT(*) as total FROM modulos")
+        if cursor.fetchone()['total'] == 0:
+            modulos = [
+                ('Dashboard', 'Painel principal do sistema', 'bi-speedometer2', 1),
+                ('Candidatos', 'Gestão de candidatos', 'bi-people', 2),
+                ('Sindicantes', 'Gestão de sindicantes', 'bi-person-badge', 3),
+                ('Obreiros', 'Gestão de obreiros', 'bi-person-workspace', 4),
+                ('Reuniões', 'Gestão de reuniões', 'bi-calendar-event', 5),
+                ('Atas', 'Gestão de atas', 'bi-file-text', 6),
+                ('Comunicados', 'Gestão de comunicados', 'bi-megaphone', 7),
+                ('Cargos', 'Gestão de cargos', 'bi-briefcase', 8),
+                ('Graus', 'Gestão de graus', 'bi-star-fill', 9),
+                ('Lojas', 'Gestão de lojas', 'bi-building', 10),
+                ('Familiares', 'Gestão de familiares', 'bi-people', 11),
+                ('Condecorações', 'Gestão de condecorações', 'bi-award', 12),
+                ('Auditoria', 'Logs do sistema', 'bi-journal', 13),
+                ('Configurações', 'Configurações do sistema', 'bi-gear', 14),
+            ]
+            for m in modulos:
+                cursor.execute("""
+                    INSERT INTO modulos (nome, descricao, icone, ordem, ativo)
+                    VALUES (%s, %s, %s, %s, 1)
+                """, m)
+            print("✅ Módulos inseridos")
+        
+        # ==================== PERMISSÕES ====================
+        
+        cursor.execute("SELECT COUNT(*) as total FROM permissoes")
+        if cursor.fetchone()['total'] == 0:
+            permissoes = [
+                # Dashboard
+                (1, 'Ver Dashboard', 'dashboard.view', 'Visualizar o painel principal'),
+                
+                # Candidatos
+                (2, 'Ver Candidatos', 'candidatos.view', 'Visualizar lista de candidatos'),
+                (2, 'Criar Candidato', 'candidatos.create', 'Adicionar novo candidato'),
+                (2, 'Editar Candidato', 'candidatos.edit', 'Editar dados do candidato'),
+                (2, 'Excluir Candidato', 'candidatos.delete', 'Excluir candidato'),
+                
+                # Sindicantes
+                (3, 'Ver Sindicantes', 'sindicantes.view', 'Visualizar lista de sindicantes'),
+                (3, 'Criar Sindicante', 'sindicantes.create', 'Adicionar novo sindicante'),
+                (3, 'Editar Sindicante', 'sindicantes.edit', 'Editar dados do sindicante'),
+                (3, 'Excluir Sindicante', 'sindicantes.delete', 'Excluir sindicante'),
+                
+                # Obreiros
+                (4, 'Ver Obreiros', 'obreiros.view', 'Visualizar lista de obreiros'),
+                (4, 'Criar Obreiro', 'obreiros.create', 'Adicionar novo obreiro'),
+                (4, 'Editar Obreiro', 'obreiros.edit', 'Editar dados do obreiro'),
+                (4, 'Excluir Obreiro', 'obreiros.delete', 'Excluir obreiro'),
+                (4, 'Ver Familiares', 'familiares.view', 'Visualizar familiares do obreiro'),
+                (4, 'Gerenciar Familiares', 'familiares.manage', 'Adicionar/editar/excluir familiares'),
+                (4, 'Ver Condecorações', 'condecoracoes.view', 'Visualizar condecorações do obreiro'),
+                (4, 'Gerenciar Condecorações', 'condecoracoes.manage', 'Adicionar/editar/excluir condecorações'),
+                
+                # Reuniões
+                (5, 'Ver Reuniões', 'reunioes.view', 'Visualizar lista de reuniões'),
+                (5, 'Criar Reunião', 'reunioes.create', 'Agendar nova reunião'),
+                (5, 'Editar Reunião', 'reunioes.edit', 'Editar dados da reunião'),
+                (5, 'Excluir Reunião', 'reunioes.delete', 'Excluir reunião'),
+                (5, 'Registrar Presença', 'presenca.registrar', 'Registrar presença em reuniões'),
+                
+                # Atas
+                (6, 'Ver Atas', 'atas.view', 'Visualizar lista de atas'),
+                (6, 'Criar Ata', 'atas.create', 'Criar nova ata'),
+                (6, 'Editar Ata', 'atas.edit', 'Editar ata'),
+                (6, 'Aprovar Ata', 'atas.approve', 'Aprovar ata'),
+                (6, 'Assinar Ata', 'atas.sign', 'Assinar ata'),
+                
+                # Comunicados
+                (7, 'Ver Comunicados', 'comunicados.view', 'Visualizar comunicados'),
+                (7, 'Criar Comunicado', 'comunicados.create', 'Publicar novo comunicado'),
+                (7, 'Editar Comunicado', 'comunicados.edit', 'Editar comunicado'),
+                (7, 'Excluir Comunicado', 'comunicados.delete', 'Excluir comunicado'),
+                
+                # Cargos
+                (8, 'Ver Cargos', 'cargos.view', 'Visualizar lista de cargos'),
+                (8, 'Gerenciar Cargos', 'cargos.manage', 'Criar/editar/excluir cargos'),
+                
+                # Graus
+                (9, 'Ver Graus', 'graus.view', 'Visualizar lista de graus'),
+                (9, 'Gerenciar Graus', 'graus.manage', 'Criar/editar/excluir graus'),
+                
+                # Lojas
+                (10, 'Ver Lojas', 'lojas.view', 'Visualizar lista de lojas'),
+                (10, 'Gerenciar Lojas', 'lojas.manage', 'Criar/editar/excluir lojas'),
+                
+                # Auditoria
+                (13, 'Ver Logs', 'auditoria.view', 'Visualizar logs de auditoria'),
+                (13, 'Exportar Logs', 'auditoria.export', 'Exportar logs'),
+                
+                # Configurações
+                (14, 'Ver Configurações', 'config.view', 'Visualizar configurações'),
+                (14, 'Gerenciar Permissões', 'config.permissions', 'Gerenciar permissões do sistema'),
+                (14, 'Configurar Email', 'config.email', 'Configurar envio de e-mails'),
+                (14, 'Configurar WhatsApp', 'config.whatsapp', 'Configurar notificações WhatsApp'),
+            ]
+            for p in permissoes:
+                cursor.execute("""
+                    INSERT INTO permissoes (modulo_id, nome, codigo, descricao)
+                    VALUES (%s, %s, %s, %s)
+                """, p)
+            print("✅ Permissões inseridas")
+        
+        # ==================== PERMISSÕES POR GRAU ====================
+        
+        cursor.execute("SELECT COUNT(*) as total FROM permissoes_grau")
+        if cursor.fetchone()['total'] == 0:
+            # Buscar IDs dos graus
+            cursor.execute("SELECT id, nome, nivel FROM graus WHERE ativo = 1")
+            graus = cursor.fetchall()
+            
+            permissoes_por_grau = {
+                'Aprendiz': [
+                    'dashboard.view',
+                    'obreiros.view',
+                    'reunioes.view',
+                    'atas.view',
+                    'comunicados.view',
+                    'presenca.registrar',
+                    'atas.sign',
+                    'familiares.view',
+                ],
+                'Companheiro': [
+                    'dashboard.view',
+                    'obreiros.view',
+                    'obreiros.edit',
+                    'reunioes.view',
+                    'atas.view',
+                    'comunicados.view',
+                    'presenca.registrar',
+                    'atas.sign',
+                    'familiares.view',
+                    'familiares.manage',
+                    'cargos.view',
+                    'condecoracoes.view',
+                ],
+                'Mestre': [
+                    'dashboard.view',
+                    'candidatos.view',
+                    'obreiros.view',
+                    'obreiros.create',
+                    'obreiros.edit',
+                    'reunioes.view',
+                    'reunioes.create',
+                    'reunioes.edit',
+                    'presenca.registrar',
+                    'atas.view',
+                    'atas.create',
+                    'atas.edit',
+                    'atas.sign',
+                    'comunicados.view',
+                    'comunicados.create',
+                    'cargos.view',
+                    'graus.view',
+                    'lojas.view',
+                    'familiares.view',
+                    'familiares.manage',
+                    'condecoracoes.view',
+                    'condecoracoes.manage',
+                ],
+                'Mestre Instalado': [
+                    'dashboard.view',
+                    'candidatos.view',
+                    'candidatos.create',
+                    'sindicantes.view',
+                    'obreiros.view',
+                    'obreiros.create',
+                    'obreiros.edit',
+                    'reunioes.view',
+                    'reunioes.create',
+                    'reunioes.edit',
+                    'presenca.registrar',
+                    'atas.view',
+                    'atas.create',
+                    'atas.edit',
+                    'atas.approve',
+                    'atas.sign',
+                    'comunicados.view',
+                    'comunicados.create',
+                    'comunicados.edit',
+                    'cargos.view',
+                    'cargos.manage',
+                    'graus.view',
+                    'graus.manage',
+                    'lojas.view',
+                    'lojas.manage',
+                    'familiares.view',
+                    'familiares.manage',
+                    'condecoracoes.view',
+                    'condecoracoes.manage',
+                    'auditoria.view',
+                    'config.view',
+                    'config.permissions',
+                    'config.email',
+                    'config.whatsapp',
+                ],
+            }
+            
+            for grau in graus:
+                nome_grau = grau['nome']
+                if nome_grau in permissoes_por_grau:
+                    for codigo in permissoes_por_grau[nome_grau]:
+                        cursor.execute("""
+                            INSERT INTO permissoes_grau (grau_id, permissao_id)
+                            SELECT %s, id FROM permissoes WHERE codigo = %s
+                            ON CONFLICT DO NOTHING
+                        """, (grau['id'], codigo))
+            print("✅ Permissões por grau inseridas")
+        
+        conn.commit()
+        return_connection(conn)
+        
+        return """
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <title>Permissões Configuradas</title>
+            <style>
+                body { font-family: Arial; text-align: center; padding: 50px; background: #f5f5f5; }
+                .container { max-width: 600px; margin: 0 auto; background: white; padding: 30px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+                h1 { color: green; }
+                .btn { display: inline-block; padding: 10px 20px; background: #007bff; color: white; text-decoration: none; border-radius: 5px; margin-top: 20px; }
+            </style>
+        </head>
+        <body>
+            <div class="container">
+                <h1>✅ Permissões Configuradas!</h1>
+                <p>Módulos, permissões e níveis de acesso foram inseridos com sucesso!</p>
+                <p>Agora você pode gerenciar as permissões dos usuários.</p>
+                <a href="/admin/permissoes" class="btn">Gerenciar Permissões</a>
+                <br><br>
+                <a href="/">Voltar ao início</a>
+            </div>
+        </body>
+        </html>
+        """
+        
+    except Exception as e:
+        import traceback
+        return f"""
+        <html>
+        <body>
+            <h1 style="color: red;">❌ Erro: {e}</h1>
+            <pre>{traceback.format_exc()}</pre>
+        </body>
+        </html>
+        """
 
 # =============================
 # ROTAS DE OBREIROS
