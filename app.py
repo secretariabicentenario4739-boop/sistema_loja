@@ -4018,123 +4018,59 @@ def editar_sindicante(id):
     lojas = cursor.fetchall()
     return_connection(conn)
     return render_template("editar_sindicante.html", sindicante=sindicante, lojas=lojas)
-@app.route("/preencher-todos-candidatos")
-def preencher_todos_candidatos():
-    """Preenche dados para todos os candidatos existentes"""
+@app.route("/forcar-ficha/<int:id>")
+def forcar_ficha(id):
+    """Força a exibição da ficha do candidato"""
     try:
         cursor, conn = get_db()
         
-        # Buscar todos os candidatos
-        cursor.execute("SELECT id, nome FROM candidatos")
-        candidatos = cursor.fetchall()
+        # Verificar se o candidato tem dados preenchidos
+        cursor.execute("""
+            SELECT nome, cpf, celular, endereco_residencial 
+            FROM candidatos 
+            WHERE id = %s
+        """, (id,))
+        candidato = cursor.fetchone()
         
-        resultados = []
+        if not candidato:
+            return f"<h1>Candidato ID {id} não encontrado</h1>"
         
-        for candidato in candidatos:
-            # Preencher dados
-            cursor.execute("""
-                UPDATE candidatos SET
-                    loja_nome = 'ARLS Estrela do Oriente',
-                    loja_numero = '123',
-                    data_nascimento = '1980-05-15',
-                    naturalidade = 'São Paulo',
-                    uf_naturalidade = 'SP',
-                    nacionalidade = 'Brasileiro',
-                    cpf = '123.456.789-00',
-                    rg = '12.345.678-9',
-                    orgao_expedidor = 'SSP/SP',
-                    telefone_fixo = '(11) 3456-7890',
-                    celular = '(11) 99999-1234',
-                    email = 'candidato@email.com',
-                    grau_instrucao = 'Ensino Superior',
-                    endereco_residencial = 'Rua das Acácias',
-                    numero_residencial = '123',
-                    bairro = 'Centro',
-                    cidade = 'São Paulo',
-                    uf_residencial = 'SP',
-                    cep = '01000-000',
-                    tipo_sanguineo = 'O+',
-                    nome_pai = 'João da Silva',
-                    nome_mae = 'Maria da Silva',
-                    estado_civil = 'Casado',
-                    data_casamento = '2010-05-20',
-                    nome_conjuge = 'Ana Silva',
-                    data_nascimento_conjuge = '1985-03-10',
-                    profissao = 'Engenheiro',
-                    empregador = 'Empresa XYZ',
-                    endereco_profissional = 'Av. Paulista, 1000',
-                    bairro_profissional = 'Bela Vista',
-                    cidade_profissional = 'São Paulo',
-                    uf_profissional = 'SP',
-                    cep_profissional = '01310-000',
-                    telefone_comercial = '(11) 3456-7890',
-                    observacoes = 'Candidato bem avaliado pelos contatos',
-                    data_atualizacao = CURRENT_TIMESTAMP
-                WHERE id = %s
-            """, (candidato['id'],))
-            
-            # Adicionar filhos
-            cursor.execute("DELETE FROM filhos_candidato WHERE candidato_id = %s", (candidato['id'],))
-            filhos = [
-                ('Pedro Silva', '2012-03-15'),
-                ('Ana Silva', '2015-07-22')
-            ]
-            for filho in filhos:
-                cursor.execute("""
-                    INSERT INTO filhos_candidato (candidato_id, nome, data_nascimento)
-                    VALUES (%s, %s, %s)
-                """, (candidato['id'], filho[0], filho[1]))
-            
-            resultados.append({
-                'id': candidato['id'],
-                'nome': candidato['nome'],
-                'status': '✅ Preenchido'
-            })
+        tem_dados = candidato['cpf'] is not None or candidato['celular'] is not None
         
-        conn.commit()
-        return_connection(conn)
-        
-        html = """
+        html = f"""
         <!DOCTYPE html>
         <html>
         <head>
-            <title>Candidatos Preenchidos</title>
+            <title>Candidato {candidato['nome']}</title>
             <style>
-                body { font-family: Arial; padding: 20px; background: #f5f5f5; }
-                .card { background: white; border-radius: 10px; padding: 20px; margin-bottom: 20px; }
-                .success { color: green; }
-                table { border-collapse: collapse; width: 100%; margin-top: 10px; }
-                th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
-                th { background-color: #f2f2f2; }
-                .btn { display: inline-block; padding: 10px 20px; background: #007bff; color: white; text-decoration: none; border-radius: 5px; margin: 5px; }
+                body {{ font-family: Arial; padding: 20px; }}
+                .card {{ background: white; border-radius: 10px; padding: 20px; margin-bottom: 20px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }}
+                .success {{ color: green; }}
+                .warning {{ color: orange; }}
             </style>
         </head>
         <body>
-            <div style="max-width: 800px; margin: 0 auto;">
-                <div class="card">
-                    <h1>✅ Todos os Candidatos Preenchidos!</h1>
-                    <table>
-                        <tr><th>ID</th><th>Nome</th><th>Status</th> </tr>
-        """
-        
-        for r in resultados:
-            html += f"<tr><td>{r['id']}</td><td>{r['nome']}</td><td class='success'>{r['status']}</td></tr>"
-        
-        html += f"""
-                     </table>
-                    <p>Total de candidatos preenchidos: <strong>{len(resultados)}</strong></p>
-                    <a href="/minhas_sindicancias" class="btn">Ver Minhas Sindicâncias</a>
-                    <a href="/diagnostico" class="btn">Ver Diagnóstico</a>
-                </div>
+            <div class="card">
+                <h1>Candidato: {candidato['nome']}</h1>
+                <p>CPF: {candidato['cpf'] or '❌ Não preenchido'}</p>
+                <p>Telefone: {candidato['celular'] or '❌ Não preenchido'}</p>
+                <p>Endereço: {candidato['endereco_residencial'] or '❌ Não preenchido'}</p>
+                <hr>
+                <p class="{'success' if tem_dados else 'warning'}">
+                    {'✅ Candidato com dados completos' if tem_dados else '⚠️ Candidato sem dados preenchidos'}
+                </p>
+                <a href="/sindicancia/{id}" class="btn">Ir para Sindicância</a>
+                <a href="/preencher-candidato/{id}" class="btn">Preencher Dados</a>
             </div>
         </body>
         </html>
         """
         
+        return_connection(conn)
         return html
         
     except Exception as e:
-        return f"<h1>❌ Erro: {e}</h1>"        
+        return f"<h1>Erro: {e}</h1>"        
 
 # =============================
 # ROTAS DE LOJAS
