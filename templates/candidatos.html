@@ -11,9 +11,11 @@
                 Gerenciar Candidatos
                 <span class="badge bg-primary">{{ candidatos|length }}</span>
             </h2>
-            <a href="/dashboard" class="btn btn-outline-secondary">
-                <i class="bi bi-arrow-left"></i> Voltar
-            </a>
+            <div>
+                <a href="/dashboard" class="btn btn-outline-secondary">
+                    <i class="bi bi-arrow-left"></i> Voltar
+                </a>
+            </div>
         </div>
 
         {% with messages = get_flashed_messages(with_categories=true) %}
@@ -27,6 +29,24 @@
             {% endif %}
         {% endwith %}
 
+        <!-- Card informativo sobre o formulário -->
+        <div class="info-card border-info mb-4">
+            <div class="card-body">
+                <div class="d-flex align-items-start">
+                    <div class="info-icon me-3">
+                        <i class="bi bi-file-text fs-2 text-info"></i>
+                    </div>
+                    <div class="info-content flex-grow-1">
+                        <h6 class="card-title mb-2">📋 Formulário Completo do Candidato</h6>
+                        <p class="card-text text-muted small mb-0">
+                            Clique no ícone <i class="bi bi-file-text"></i> para preencher o formulário completo do candidato, 
+                            incluindo dados pessoais, endereço, família, filhos e atividade profissional.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <div class="row">
             <!-- Formulário para adicionar candidato -->
             <div class="col-md-4 mb-4">
@@ -39,6 +59,7 @@
                             <div class="mb-3">
                                 <label class="form-label">Nome do Candidato *</label>
                                 <input type="text" class="form-control" name="nome" required>
+                                <small class="text-muted">Digite o nome completo do candidato</small>
                             </div>
                             <button type="submit" class="btn btn-success w-100">
                                 <i class="bi bi-save"></i> Adicionar
@@ -64,9 +85,9 @@
                                         <th>Data Cadastro</th>
                                         <th>Status</th>
                                         <th>Votos</th>
+                                        <th>Formulário</th>
                                         <th>Ações</th>
-                                    </tr>
-                                </thead>
+                                    </thead>
                                 <tbody>
                                     {% for c in candidatos %}
                                     <tr class="{% if c.fechado == 1 %}table-secondary{% endif %}">
@@ -74,6 +95,12 @@
                                             <strong>{{ c.nome }}</strong>
                                             {% if c.fechado == 1 %}
                                             <br><small class="text-muted">Encerrada em: {{ c.data_fechamento.strftime('%d/%m/%Y') if c.data_fechamento else '-' }}</small>
+                                            {% endif %}
+                                            {% if c.cpf %}
+                                            <br><small class="text-muted">CPF: {{ c.cpf }}</small>
+                                            {% endif %}
+                                            {% if c.celular %}
+                                            <br><small class="text-muted"><i class="bi bi-whatsapp"></i> {{ c.celular }}</small>
                                             {% endif %}
                                         </td>
                                         <td>{{ c.data_criacao.strftime('%d/%m/%Y') if c.data_criacao else '-' }}</td>
@@ -102,6 +129,21 @@
                                             {% else %}
                                                 -
                                             {% endif %}
+                                        </td>
+                                        <td class="text-center">
+                                            {% if c.cpf or c.rg or c.endereco_residencial %}
+                                                <span class="badge bg-success">
+                                                    <i class="bi bi-check-circle"></i> Preenchido
+                                                </span>
+                                            {% else %}
+                                                <span class="badge bg-secondary">
+                                                    <i class="bi bi-clock"></i> Pendente
+                                                </span>
+                                            {% endif %}
+                                            <br>
+                                            <a href="/candidato/formulario/{{ c.id }}" class="btn btn-sm btn-outline-info mt-1" title="Preencher Formulário">
+                                                <i class="bi bi-file-text"></i> Formulário
+                                            </a>
                                         </td>
                                         <td>
                                             <div class="btn-group btn-group-sm">
@@ -136,7 +178,7 @@
             </div>
         </div>
 
-        <!-- Menu Suspenso de Sindicantes -->
+        <!-- Sindicantes Ativos -->
         <div class="row mt-4">
             <div class="col-md-12">
                 <div class="card shadow">
@@ -153,6 +195,7 @@
                                         <th>Nome</th>
                                         <th>Loja</th>
                                         <th>CIM</th>
+                                        <th>Telefone</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -168,6 +211,7 @@
                                             {% endif %}
                                         </td>
                                         <td>{{ s.cim_numero or '-' }}</td>
+                                        <td>{{ s.telefone or '-' }}</td>
                                     </tr>
                                     {% endfor %}
                                 </tbody>
@@ -194,34 +238,72 @@
                     </div>
                     <div class="card-body">
                         <div class="row">
-                            <div class="col-md-4">
+                            <div class="col-md-3">
                                 <div class="text-center">
                                     <i class="bi bi-person-plus fs-1 text-primary"></i>
                                     <p class="mt-2"><strong>1. Cadastre</strong><br>Adicione o candidato à lista</p>
                                 </div>
                             </div>
-                            <div class="col-md-4">
+                            <div class="col-md-3">
                                 <div class="text-center">
-                                    <i class="bi bi-envelope-paper fs-1 text-warning"></i>
-                                    <p class="mt-2"><strong>2. Sindicantes emitem parecer</strong><br>Cada sindicante avalia o candidato</p>
+                                    <i class="bi bi-file-text fs-1 text-info"></i>
+                                    <p class="mt-2"><strong>2. Formulário</strong><br>Preencha os dados completos do candidato</p>
                                 </div>
                             </div>
-                            <div class="col-md-4">
+                            <div class="col-md-3">
+                                <div class="text-center">
+                                    <i class="bi bi-envelope-paper fs-1 text-warning"></i>
+                                    <p class="mt-2"><strong>3. Sindicantes emitem parecer</strong><br>Cada sindicante avalia o candidato</p>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
                                 <div class="text-center">
                                     <i class="bi bi-check2-circle fs-1 text-success"></i>
-                                    <p class="mt-2"><strong>3. Resultado</strong><br>Quando todos votarem, o resultado é automático</p>
+                                    <p class="mt-2"><strong>4. Resultado</strong><br>Quando todos votarem, o resultado é automático</p>
                                 </div>
                             </div>
                         </div>
                         <hr>
                         <div class="alert alert-info mb-0">
                             <i class="bi bi-lightbulb"></i>
-                            <strong>Dica:</strong> Clique no nome do candidato para ver os pareceres individuais de cada sindicante.
+                            <strong>Dica:</strong> Clique no ícone <i class="bi bi-file-text"></i> para preencher o formulário completo do candidato. 
+                            Quanto mais informações, melhor para a análise dos sindicantes.
                         </div>
                     </div>
                 </div>
             </div>
         </div>
+
+        <!-- Candidatos com formulário pendente (opcional) -->
+        {% set pendentes = candidatos|selectattr('cpf', 'equalto', None)|list %}
+        {% if pendentes %}
+        <div class="row mt-4">
+            <div class="col-md-12">
+                <div class="card shadow border-warning">
+                    <div class="card-header bg-warning text-dark">
+                        <h5 class="mb-0"><i class="bi bi-exclamation-triangle"></i> Formulários Pendentes</h5>
+                    </div>
+                    <div class="card-body">
+                        <p class="mb-2">Os seguintes candidatos ainda não tiveram o formulário completo preenchido:</p>
+                        <div class="list-group">
+                            {% for c in pendentes %}
+                            <div class="list-group-item d-flex justify-content-between align-items-center">
+                                <div>
+                                    <strong>{{ c.nome }}</strong>
+                                    <br>
+                                    <small class="text-muted">Cadastrado em: {{ c.data_criacao.strftime('%d/%m/%Y') }}</small>
+                                </div>
+                                <a href="/candidato/formulario/{{ c.id }}" class="btn btn-sm btn-warning">
+                                    <i class="bi bi-file-text"></i> Preencher Formulário
+                                </a>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
     </div>
 </div>
 
@@ -242,6 +324,23 @@
     }
     .btn-group-sm .btn {
         padding: 0.25rem 0.5rem;
+    }
+    .info-card {
+        border-radius: 12px;
+        background: white;
+        transition: all 0.3s ease;
+        cursor: default;
+    }
+    .info-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+    }
+    .info-card.border-info {
+        border-left: 4px solid #0dcaf0 !important;
+    }
+    .badge {
+        font-size: 0.75rem;
+        padding: 0.3rem 0.5rem;
     }
     @media (max-width: 768px) {
         .table {
