@@ -4018,6 +4018,86 @@ def editar_sindicante(id):
     lojas = cursor.fetchall()
     return_connection(conn)
     return render_template("editar_sindicante.html", sindicante=sindicante, lojas=lojas)
+    
+@app.route("/corrigir-tabela-candidatos")
+def corrigir_tabela_candidatos():
+    """Rota para corrigir a estrutura da tabela candidatos"""
+    try:
+        cursor, conn = get_db()
+        
+        # Verificar colunas existentes
+        cursor.execute("""
+            SELECT column_name 
+            FROM information_schema.columns 
+            WHERE table_name = 'candidatos'
+        """)
+        colunas_existentes = [c[0] for c in cursor.fetchall()]
+        
+        # Lista de colunas que devem existir
+        colunas_necessarias = [
+            'loja_nome', 'loja_numero', 'data_nascimento', 'naturalidade', 
+            'uf_naturalidade', 'nacionalidade', 'cpf', 'rg', 'orgao_expedidor',
+            'telefone_fixo', 'celular', 'email', 'grau_instrucao',
+            'endereco_residencial', 'numero_residencial', 'bairro', 'cidade',
+            'uf_residencial', 'cep', 'tipo_sanguineo', 'nome_pai', 'nome_mae',
+            'estado_civil', 'data_casamento', 'nome_conjuge', 'data_nascimento_conjuge',
+            'profissao', 'empregador', 'endereco_profissional', 'bairro_profissional',
+            'cidade_profissional', 'uf_profissional', 'cep_profissional', 'telefone_comercial',
+            'observacoes', 'data_atualizacao'
+        ]
+        
+        colunas_adicionadas = []
+        for coluna in colunas_necessarias:
+            if coluna not in colunas_existentes:
+                try:
+                    cursor.execute(f"ALTER TABLE candidatos ADD COLUMN {coluna} TEXT")
+                    colunas_adicionadas.append(coluna)
+                except Exception as e:
+                    print(f"Erro ao adicionar {coluna}: {e}")
+        
+        # Verificar tabela filhos
+        cursor.execute("""
+            SELECT EXISTS (
+                SELECT FROM information_schema.tables 
+                WHERE table_name = 'filhos_candidato'
+            )
+        """)
+        tabela_filhos_existe = cursor.fetchone()[0]
+        
+        if not tabela_filhos_existe:
+            cursor.execute("""
+                CREATE TABLE IF NOT EXISTS filhos_candidato (
+                    id SERIAL PRIMARY KEY,
+                    candidato_id INTEGER NOT NULL REFERENCES candidatos(id) ON DELETE CASCADE,
+                    nome TEXT NOT NULL,
+                    data_nascimento DATE,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                )
+            """)
+            cursor.execute("CREATE INDEX IF NOT EXISTS idx_filhos_candidato ON filhos_candidato(candidato_id)")
+        
+        conn.commit()
+        return_connection(conn)
+        
+        html = f"""
+        <!DOCTYPE html>
+        <html>
+        <head><title>Correção da Tabela</title></head>
+        <body>
+            <h1>Correção concluída!</h1>
+            <p>Colunas adicionadas: {len(colunas_adicionadas)}</p>
+            <ul>
+            {"".join([f"<li>✅ {c}</li>" for c in colunas_adicionadas])}
+            </ul>
+            <p>Tabela filhos_candidato: {'✅ Criada' if not tabela_filhos_existe else '✅ Já existe'}</p>
+            <a href="/">Voltar</a>
+        </body>
+        </html>
+        """
+        return html
+        
+    except Exception as e:
+        return f"<h1>Erro: {e}</h1>"    
 
 # =============================
 # ROTAS DE LOJAS
