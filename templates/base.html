@@ -110,31 +110,44 @@
             border-radius: 10px;
         }
         
-        .sidebar .logo-area {
+        /* Logo Area */
+        .logo-area {
             padding: 28px 20px;
             text-align: center;
             border-bottom: 1px solid var(--border);
             background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+            transition: all 0.3s ease;
         }
         
-        .sidebar .logo-area h3 {
+        .logo-area h3 {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
             font-size: 1.6rem;
             margin: 0;
             color: white;
             font-weight: 700;
             letter-spacing: -0.5px;
+            transition: all 0.3s ease;
         }
         
-        .sidebar .logo-area h3 i {
+        .logo-area h3 i {
             font-size: 1.8rem;
-            margin-right: 8px;
+            transition: all 0.3s ease;
         }
         
-        .sidebar .logo-area p {
+        .logo-area .logo-text {
+            transition: opacity 0.2s ease, width 0.2s ease;
+            white-space: nowrap;
+        }
+        
+        .logo-area .logo-sub {
             font-size: 0.75rem;
             margin: 5px 0 0;
             color: rgba(255,255,255,0.8);
             font-weight: 400;
+            transition: all 0.3s ease;
         }
         
         .sidebar .nav-link {
@@ -186,16 +199,27 @@
                 margin-right: 0;
             }
             
+            .sidebar.collapsed .logo-area {
+                padding: 20px 10px;
+            }
+            
+            .sidebar.collapsed .logo-area h3 .logo-text {
+                display: none;
+            }
+            
+            .sidebar.collapsed .logo-area .logo-sub {
+                display: none;
+            }
+            
             .sidebar.collapsed .logo-area h3 {
-                font-size: 1.3rem;
+                font-size: 1.8rem;
+                justify-content: center;
+                gap: 0;
             }
             
             .sidebar.collapsed .logo-area h3 i {
-                margin-right: 0;
-            }
-            
-            .sidebar.collapsed .logo-area p {
-                display: none;
+                font-size: 1.8rem;
+                margin: 0;
             }
             
             .main-content {
@@ -242,6 +266,18 @@
             
             .toggle-sidebar {
                 display: none;
+            }
+            
+            .logo-area {
+                padding: 20px;
+            }
+            
+            .logo-area h3 {
+                font-size: 1.4rem;
+            }
+            
+            .logo-area h3 i {
+                font-size: 1.5rem;
             }
         }
         
@@ -375,6 +411,7 @@
             padding: 8px 16px;
             transition: all 0.3s ease;
             position: relative;
+            cursor: pointer;
         }
         
         .btn-notificacoes:hover {
@@ -398,32 +435,31 @@
         }
         
         .dropdown-menu-notificacoes {
-    position: absolute;
-    top: 100%;
-    right: 0;
-    left: auto;
-    z-index: 9999;
-    width: 380px;
-    max-height: 500px;
-    overflow-y: auto;
-    background: white;
-    border-radius: 12px;
-    box-shadow: 0 4px 20px rgba(0,0,0,0.15);
-    border: none;
-    margin-top: 10px;
-}
-
-/* Para telas pequenas, centralizar */
-@media (max-width: 768px) {
-    .dropdown-menu-notificacoes {
-        position: fixed;
-        top: 70px;
-        right: 10px;
-        left: 10px;
-        width: auto;
-        max-width: none;
-    }
-}
+            position: absolute;
+            top: 100%;
+            right: 0;
+            left: auto;
+            z-index: 9999;
+            width: 380px;
+            max-height: 500px;
+            overflow-y: auto;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+            border: none;
+            margin-top: 10px;
+        }
+        
+        @media (max-width: 768px) {
+            .dropdown-menu-notificacoes {
+                position: fixed;
+                top: 70px;
+                right: 10px;
+                left: 10px;
+                width: auto;
+                max-width: none;
+            }
+        }
         
         .dropdown-header-notificacoes {
             background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
@@ -454,6 +490,7 @@
         .notificacao-titulo {
             font-weight: 600;
             margin-bottom: 4px;
+            font-size: 0.9rem;
         }
         
         .notificacao-mensagem {
@@ -513,21 +550,6 @@
             font-weight: 600;
             padding: 1.2rem 1.5rem;
             border-radius: 20px 20px 0 0 !important;
-        }
-        
-        /* Alertas customizados */
-        .alert-custom {
-            border: none;
-            border-radius: 16px;
-            padding: 1rem 1.25rem;
-            margin-bottom: 1.5rem;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.04);
-            transition: all 0.3s ease;
-        }
-        
-        .alert-custom:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(0,0,0,0.08);
         }
         
         /* Footer */
@@ -668,12 +690,6 @@
             .card-header {
                 padding: 1rem;
             }
-            
-            .dropdown-menu-notificacoes {
-                width: 320px;
-                right: 0;
-                left: auto !important;
-            }
         }
         
         @media (max-width: 480px) {
@@ -684,10 +700,6 @@
             .user-info .badge {
                 padding: 5px 10px;
                 font-size: 0.65rem;
-            }
-            
-            .dropdown-menu-notificacoes {
-                width: 280px;
             }
         }
     </style>
@@ -706,8 +718,11 @@
     <!-- Sidebar -->
     <div class="sidebar" id="sidebar">
         <div class="logo-area">
-            <h3><i class="bi bi-compass-fill"></i> Sistema</h3>
-            <p>Maçônico</p>
+            <h3>
+                <i class="bi bi-compass-fill"></i>
+                <span class="logo-text">Sistema</span>
+            </h3>
+            <p class="logo-sub">Maçônico</p>
         </div>
         
         <nav class="nav flex-column mt-3">
@@ -876,7 +891,7 @@
                         <span class="notificacao-badge" id="notificacoesBadge" style="display: none;">0</span>
                     </button>
                     
-                    <div class="dropdown-menu dropdown-menu-notificacoes" id="dropdownNotificacoes" style="display: none;">
+                    <div class="dropdown-menu-notificacoes" id="dropdownNotificacoes" style="display: none;">
                         <div class="dropdown-header-notificacoes d-flex justify-content-between align-items-center">
                             <span><i class="bi bi-bell"></i> Notificações</span>
                             <button class="btn btn-sm btn-light" id="marcarTodasLidas">
@@ -1159,10 +1174,16 @@
                 
                 if (btn) {
                     btn.addEventListener('click', (e) => {
+                        e.preventDefault();
                         e.stopPropagation();
                         const isVisible = dropdown.style.display === 'block';
-                        dropdown.style.display = isVisible ? 'none' : 'block';
-                        if (!isVisible) this.carregarNotificacoes();
+                        
+                        if (isVisible) {
+                            dropdown.style.display = 'none';
+                        } else {
+                            dropdown.style.display = 'block';
+                            this.carregarNotificacoes();
+                        }
                     });
                 }
                 
@@ -1170,6 +1191,10 @@
                     if (!btn?.contains(e.target) && !dropdown?.contains(e.target)) {
                         dropdown.style.display = 'none';
                     }
+                });
+                
+                window.addEventListener('scroll', () => {
+                    dropdown.style.display = 'none';
                 });
                 
                 document.getElementById('marcarTodasLidas')?.addEventListener('click', async () => {
