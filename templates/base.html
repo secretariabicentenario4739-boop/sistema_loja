@@ -11,39 +11,61 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
     <!-- FullCalendar CSS -->
     <link href="https://cdn.jsdelivr.net/npm/fullcalendar@5.11.3/main.min.css" rel="stylesheet">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     
     <style>
         :root {
             --sidebar-width: 280px;
-            --sidebar-collapsed-width: 70px;
+            --sidebar-collapsed-width: 80px;
+            --primary: #4361ee;
+            --primary-dark: #3a56d4;
+            --secondary: #6c757d;
+            --success: #2dcb73;
+            --info: #17a2b8;
+            --warning: #ffc107;
+            --danger: #ef4444;
+            --dark: #1e293b;
+            --light: #f8fafc;
+            --gray: #64748b;
+            --border: #e2e8f0;
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
         }
         
         body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background-color: #f4f6f9;
+            font-family: 'Inter', sans-serif;
+            background: linear-gradient(135deg, #f5f7fa 0%, #f0f2f5 100%);
             overflow-x: hidden;
+            color: var(--dark);
         }
         
-        /* Botão do menu mobile - só aparece no celular */
+        /* Botão do menu mobile */
         .mobile-menu-btn {
             display: none;
             position: fixed;
-            top: 15px;
-            left: 15px;
+            top: 20px;
+            left: 20px;
             z-index: 1001;
-            background: #1e2a3a;
+            background: var(--primary);
             border: none;
             color: white;
             font-size: 1.5rem;
-            padding: 10px 15px;
-            border-radius: 8px;
+            padding: 12px 16px;
+            border-radius: 12px;
             cursor: pointer;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+            box-shadow: 0 4px 12px rgba(67, 97, 238, 0.3);
+            transition: all 0.3s ease;
         }
         
         .mobile-menu-btn:hover {
-            background: #ffc107;
-            color: #1e2a3a;
+            background: var(--primary-dark);
+            transform: scale(1.05);
+            box-shadow: 0 6px 16px rgba(67, 97, 238, 0.4);
         }
         
         /* Overlay para mobile */
@@ -55,7 +77,9 @@
             right: 0;
             bottom: 0;
             background: rgba(0,0,0,0.5);
+            backdrop-filter: blur(4px);
             z-index: 999;
+            transition: all 0.3s ease;
         }
         
         /* Sidebar */
@@ -65,12 +89,87 @@
             left: 0;
             height: 100%;
             width: var(--sidebar-width);
-            background: linear-gradient(135deg, #1e2a3a 0%, #0f1724 100%);
-            color: white;
+            background: white;
             transition: all 0.3s ease;
             z-index: 1000;
             overflow-y: auto;
-            box-shadow: 2px 0 10px rgba(0,0,0,0.1);
+            box-shadow: 2px 0 20px rgba(0,0,0,0.05);
+            border-right: 1px solid var(--border);
+        }
+        
+        .sidebar::-webkit-scrollbar {
+            width: 5px;
+        }
+        
+        .sidebar::-webkit-scrollbar-track {
+            background: #f1f1f1;
+        }
+        
+        .sidebar::-webkit-scrollbar-thumb {
+            background: var(--primary);
+            border-radius: 10px;
+        }
+        
+        .sidebar .logo-area {
+            padding: 28px 20px;
+            text-align: center;
+            border-bottom: 1px solid var(--border);
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+        }
+        
+        .sidebar .logo-area h3 {
+            font-size: 1.6rem;
+            margin: 0;
+            color: white;
+            font-weight: 700;
+            letter-spacing: -0.5px;
+        }
+        
+        .sidebar .logo-area h3 i {
+            font-size: 1.8rem;
+            margin-right: 8px;
+        }
+        
+        .sidebar .logo-area p {
+            font-size: 0.75rem;
+            margin: 5px 0 0;
+            color: rgba(255,255,255,0.8);
+            font-weight: 400;
+        }
+        
+        .sidebar .nav-link {
+            color: var(--gray);
+            padding: 12px 20px;
+            transition: all 0.3s;
+            border-radius: 12px;
+            margin: 4px 12px;
+            font-weight: 500;
+            font-size: 0.9rem;
+            position: relative;
+        }
+        
+        .sidebar .nav-link:hover {
+            background: linear-gradient(135deg, rgba(67, 97, 238, 0.08) 0%, rgba(67, 97, 238, 0.04) 100%);
+            color: var(--primary);
+            transform: translateX(5px);
+        }
+        
+        .sidebar .nav-link.active {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+            color: white;
+            box-shadow: 0 4px 12px rgba(67, 97, 238, 0.3);
+        }
+        
+        .sidebar .nav-link i {
+            margin-right: 12px;
+            font-size: 1.2rem;
+            width: 24px;
+            text-align: center;
+        }
+        
+        .sidebar hr {
+            margin: 12px 16px;
+            border-color: var(--border);
         }
         
         /* Desktop: comportamento de retração */
@@ -88,7 +187,11 @@
             }
             
             .sidebar.collapsed .logo-area h3 {
-                font-size: 1.2rem;
+                font-size: 1.3rem;
+            }
+            
+            .sidebar.collapsed .logo-area h3 i {
+                margin-right: 0;
             }
             
             .sidebar.collapsed .logo-area p {
@@ -116,10 +219,12 @@
                 transform: translateX(-100%);
                 width: 280px;
                 z-index: 1000;
+                box-shadow: none;
             }
             
             .sidebar.mobile-open {
                 transform: translateX(0);
+                box-shadow: 2px 0 20px rgba(0,0,0,0.1);
             }
             
             .sidebar-overlay.active {
@@ -128,7 +233,7 @@
             
             .main-content {
                 margin-left: 0 !important;
-                padding-top: 60px;
+                padding-top: 70px;
             }
             
             .top-bar {
@@ -140,115 +245,162 @@
             }
         }
         
-        /* Top Bar */
+/* ========== TOP BAR REDESENHADA ========== */
         .top-bar {
-            background: white;
-            padding: 10px 20px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            background: linear-gradient(135deg, #ffffff 0%, #fafcff 100%);
+            padding: 10px 28px;
             position: sticky;
             top: 0;
             z-index: 998;
+            border-bottom: 1px solid rgba(67, 97, 238, 0.15);
+            backdrop-filter: blur(0);
         }
         
         .toggle-sidebar {
-            background: none;
-            border: none;
-            font-size: 1.5rem;
+            background: rgba(67, 97, 238, 0.08);
+            border: 1px solid rgba(67, 97, 238, 0.15);
+            font-size: 1.2rem;
             cursor: pointer;
-            color: #1e2a3a;
+            color: var(--primary);
+            transition: all 0.3s ease;
+            padding: 10px 14px;
+            border-radius: 14px;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            font-weight: 500;
+        }
+        
+        .toggle-sidebar i {
+            font-size: 1.2rem;
+        }
+        
+        .toggle-sidebar span {
+            font-size: 0.85rem;
+            display: none;
+        }
+        
+        @media (min-width: 992px) {
+            .toggle-sidebar span {
+                display: inline;
+            }
+        }
+        
+        .toggle-sidebar:hover {
+            background: var(--primary);
+            color: white;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(67, 97, 238, 0.25);
+            border-color: transparent;
         }
         
         .user-info {
             display: flex;
             align-items: center;
-            gap: 15px;
+            gap: 12px;
             flex-wrap: wrap;
         }
         
         .user-info .badge {
+            font-size: 0.85rem;
+            padding: 8px 18px;
+            border-radius: 40px;
+            font-weight: 500;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.2s ease;
+            background: white;
+            border: 1px solid rgba(0,0,0,0.05);
+            box-shadow: 0 2px 6px rgba(0,0,0,0.02);
+        }
+        
+        .user-info .badge:first-child {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+            color: white;
+            border: none;
+        }
+        
+        .user-info .badge:nth-child(2) {
+            background: linear-gradient(135deg, #f97316 0%, #ea580c 100%);
+            color: white;
+            border: none;
+        }
+        
+        .user-info .badge:nth-child(3) {
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            color: white;
+            border: none;
+        }
+        
+        .user-info .badge i {
             font-size: 0.9rem;
         }
         
-        /* Cards e elementos */
-        .card {
-            border-radius: 10px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
-            transition: transform 0.2s, box-shadow 0.2s;
-        }
-        
-        .card:hover {
+        .user-info .badge:hover {
             transform: translateY(-2px);
-            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
         }
         
-        /* Footer */
-        .footer {
-            background: white;
-            padding: 15px;
-            text-align: center;
-            border-top: 1px solid #dee2e6;
-            margin-top: auto;
+        /* Efeito de brilho nos badges */
+        .user-info .badge {
+            position: relative;
+            overflow: hidden;
         }
         
-        /* Scrollbar personalizada */
-        ::-webkit-scrollbar {
-            width: 8px;
-            height: 8px;
+        .user-info .badge::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+            transition: left 0.5s ease;
         }
         
-        ::-webkit-scrollbar-track {
-            background: #f1f1f1;
+        .user-info .badge:hover::after {
+            left: 100%;
         }
         
-        ::-webkit-scrollbar-thumb {
-            background: #888;
-            border-radius: 4px;
-        }
-        
-        ::-webkit-scrollbar-thumb:hover {
-            background: #555;
-        }
-        
-        /* Animações */
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(10px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-        
-        .fade-in {
-            animation: fadeIn 0.3s ease;
-        }
-        
-        /* Ajustes para mobile */
+        /* Responsividade */
         @media (max-width: 768px) {
+            .top-bar {
+                padding: 10px 16px;
+            }
+            
+            .toggle-sidebar {
+                padding: 8px 12px;
+            }
+            
+            .toggle-sidebar span {
+                display: none;
+            }
+            
             .user-info .badge {
                 font-size: 0.7rem;
-                padding: 0.25rem 0.5rem;
+                padding: 6px 12px;
             }
             
-            .content-area {
-                padding: 1rem !important;
+            .user-info .badge i {
+                font-size: 0.75rem;
+            }
+        }
+        
+        @media (max-width: 480px) {
+            .user-info {
+                gap: 8px;
             }
             
-            h2 {
-                font-size: 1.3rem;
-            }
-            
-            .table-responsive {
-                font-size: 0.8rem;
-            }
-            
-            .btn {
-                font-size: 0.8rem;
-                padding: 0.3rem 0.6rem;
+            .user-info .badge {
+                padding: 5px 10px;
+                font-size: 0.65rem;
             }
         }
     </style>
-    
-    {% block styles %}{% endblock %}
 </head>
 <body>
-    <!-- Botão do menu mobile - só aparece no celular -->
+    <!-- Botão do menu mobile -->
     <button class="mobile-menu-btn" id="mobileMenuBtn">
         <i class="bi bi-list"></i>
     </button>
@@ -259,154 +411,133 @@
     <!-- Sidebar -->
     <div class="sidebar" id="sidebar">
         <div class="logo-area">
-            <h3><i class="bi bi-compass"></i> Sistema</h3>
+            <h3><i class="bi bi-compass-fill"></i> Sistema</h3>
             <p>Maçônico</p>
         </div>
         
         <nav class="nav flex-column mt-3">
-            <!-- Dashboard - visível para todos -->
             <a class="nav-link" href="/dashboard">
                 <i class="bi bi-speedometer2"></i> <span>Dashboard</span>
             </a>
             
-            <!-- Candidatos - apenas com permissão -->
             {% if tem_permissao('candidatos.view') %}
             <a class="nav-link" href="/candidatos">
                 <i class="bi bi-people"></i> <span>Candidatos</span>
             </a>
             {% endif %}
             
-            <!-- Sindicantes - apenas com permissão -->
             {% if tem_permissao('sindicantes.view') %}
             <a class="nav-link" href="/sindicantes">
                 <i class="bi bi-person-badge"></i> <span>Sindicantes</span>
             </a>
             {% endif %}
             
-            <!-- Minhas Sindicâncias - para sindicantes -->
             {% if session.tipo == 'sindicante' %}
             <a class="nav-link" href="/minhas_sindicancias">
                 <i class="bi bi-file-text"></i> <span>Minhas Sindicâncias</span>
             </a>
             {% endif %}
             
-            <!-- Obreiros - apenas com permissão -->
             {% if tem_permissao('obreiros.view') %}
             <a class="nav-link" href="/obreiros">
                 <i class="bi bi-person-workspace"></i> <span>Obreiros</span>
             </a>
             {% endif %}
             
-            <!-- Reuniões - apenas com permissão -->
             {% if tem_permissao('reunioes.view') %}
             <a class="nav-link" href="/reunioes">
                 <i class="bi bi-calendar-event"></i> <span>Reuniões</span>
             </a>
             {% endif %}
             
-            <!-- Atas - apenas com permissão -->
             {% if tem_permissao('atas.view') %}
             <a class="nav-link" href="/atas">
                 <i class="bi bi-file-text"></i> <span>Atas</span>
             </a>
             {% endif %}
             
-            <!-- Comunicados - apenas com permissão -->
             {% if tem_permissao('comunicados.view') %}
             <a class="nav-link" href="/comunicados">
                 <i class="bi bi-megaphone"></i> <span>Comunicados</span>
             </a>
             {% endif %}
             
-            <hr class="bg-secondary">
+            <hr>
             
-            <!-- Cargos - apenas com permissão -->
             {% if tem_permissao('cargos.view') %}
             <a class="nav-link" href="/cargos">
                 <i class="bi bi-briefcase"></i> <span>Cargos</span>
             </a>
             {% endif %}
             
-            <!-- Graus - apenas com permissão -->
             {% if tem_permissao('graus.view') %}
             <a class="nav-link" href="/graus">
                 <i class="bi bi-star-fill"></i> <span>Graus</span>
             </a>
             {% endif %}
             
-            <!-- Condecorações - apenas com permissão -->
             {% if tem_permissao('condecoracoes.view') %}
             <a class="nav-link" href="/tipos_condecoracoes">
                 <i class="bi bi-award"></i> <span>Condecorações</span>
             </a>
             {% endif %}
             
-            <!-- Lojas - apenas com permissão -->
             {% if tem_permissao('lojas.view') %}
             <a class="nav-link" href="/lojas">
                 <i class="bi bi-building"></i> <span>Lojas</span>
             </a>
             {% endif %}
             
-            <!-- Tipos de Ausência - apenas admin ou permissão específica -->
             {% if session.tipo == 'admin' or tem_permissao('config.view') %}
             <a class="nav-link" href="/tipos_ausencia">
                 <i class="bi bi-calendar-x"></i> <span>Tipos de Ausência</span>
             </a>
             {% endif %}
             
-            <!-- Sugestões - apenas com permissão -->
             {% if tem_permissao('sugestoes.view') or session.tipo == 'admin' %}
             <a class="nav-link" href="/sugestoes">
                 <i class="bi bi-lightbulb"></i> <span>Sugestões</span>
             </a>
             {% endif %}
             
-            <hr class="bg-secondary">
+            <hr>
             
-            <!-- Configurações de E-mail - apenas com permissão -->
             {% if tem_permissao('config.email') %}
             <a class="nav-link" href="/config/email">
                 <i class="bi bi-envelope"></i> <span>Config. E-mail</span>
             </a>
             {% endif %}
             
-            <!-- WhatsApp - apenas com permissão -->
             {% if tem_permissao('config.whatsapp') %}
             <a class="nav-link" href="/config/whatsapp">
                 <i class="bi bi-whatsapp"></i> <span>WhatsApp</span>
             </a>
             {% endif %}
             
-            <!-- Permissões - apenas com permissão -->
             {% if tem_permissao('config.permissions') %}
             <a class="nav-link" href="/admin/permissoes">
                 <i class="bi bi-shield-lock"></i> <span>Permissões</span>
             </a>
             {% endif %}
             
-            <!-- Backup - apenas com permissão -->
             {% if tem_permissao('config.view') or session.tipo == 'admin' %}
             <a class="nav-link" href="/admin/backup">
                 <i class="bi bi-database"></i> <span>Backup</span>
             </a>
             {% endif %}
             
-            <!-- Auditoria - apenas com permissão -->
             {% if tem_permissao('auditoria.view') %}
             <a class="nav-link" href="/auditoria">
                 <i class="bi bi-journal"></i> <span>Auditoria</span>
             </a>
             {% endif %}
             
-            <hr class="bg-secondary">
+            <hr>
             
-            <!-- Meu Perfil - visível para todos -->
             <a class="nav-link" href="/perfil">
                 <i class="bi bi-person-circle"></i> <span>Meu Perfil</span>
             </a>
             
-            <!-- Sair - visível para todos -->
             <a class="nav-link" href="/logout">
                 <i class="bi bi-box-arrow-right"></i> <span>Sair</span>
             </a>
@@ -443,13 +574,13 @@
         </div>
         
         <!-- Content Area -->
-        <div class="content-area p-4">
+        <div class="content-area p-4 fade-in-up">
             {% block content %}{% endblock %}
         </div>
         
         <!-- Footer -->
         <div class="footer">
-            <small class="text-muted">
+            <small>
                 &copy; {{ now.year }} Sistema Maçônico - Todos os direitos reservados
             </small>
         </div>
@@ -469,31 +600,26 @@
         const mobileMenuBtn = document.getElementById('mobileMenuBtn');
         const sidebarOverlay = document.getElementById('sidebarOverlay');
         
-        // Verificar se está no mobile
         function isMobile() {
             return window.innerWidth <= 768;
         }
         
-        // ========== COMPORTAMENTO PARA DESKTOP (RETRAÇÃO) ==========
+        // Desktop: comportamento de retração
         if (!isMobile()) {
-            // Carregar estado salvo da sidebar
             const sidebarCollapsed = localStorage.getItem('sidebarCollapsed') === 'true';
             if (sidebarCollapsed) {
                 sidebar.classList.add('collapsed');
                 mainContent.classList.add('expanded');
             }
             
-            // Toggle sidebar no desktop
             toggleBtn.addEventListener('click', function() {
                 sidebar.classList.toggle('collapsed');
                 mainContent.classList.toggle('expanded');
-                
-                const isCollapsed = sidebar.classList.contains('collapsed');
-                localStorage.setItem('sidebarCollapsed', isCollapsed);
+                localStorage.setItem('sidebarCollapsed', sidebar.classList.contains('collapsed'));
             });
         }
         
-        // ========== COMPORTAMENTO PARA MOBILE (MENU DESLIZANTE) ==========
+        // Mobile: menu deslizante
         function closeMobileMenu() {
             if (isMobile()) {
                 sidebar.classList.remove('mobile-open');
@@ -508,30 +634,23 @@
             }
         }
         
-        function toggleMobileMenu() {
-            if (isMobile()) {
+        if (mobileMenuBtn) {
+            mobileMenuBtn.addEventListener('click', () => {
                 if (sidebar.classList.contains('mobile-open')) {
                     closeMobileMenu();
                 } else {
                     openMobileMenu();
                 }
-            }
-        }
-        
-        if (mobileMenuBtn) {
-            mobileMenuBtn.addEventListener('click', toggleMobileMenu);
+            });
         }
         
         if (sidebarOverlay) {
             sidebarOverlay.addEventListener('click', closeMobileMenu);
         }
         
-        // Fechar menu mobile ao clicar em um link
         document.querySelectorAll('.sidebar .nav-link').forEach(link => {
-            link.addEventListener('click', function() {
-                if (isMobile()) {
-                    closeMobileMenu();
-                }
+            link.addEventListener('click', () => {
+                if (isMobile()) closeMobileMenu();
             });
         });
         
@@ -544,13 +663,10 @@
             }
         });
         
-        // Reajustar ao redimensionar a tela
-        window.addEventListener('resize', function() {
+        // Fechar menu ao redimensionar
+        window.addEventListener('resize', () => {
             if (!isMobile()) {
-                // Desktop: restaurar estado salvo
-                sidebar.classList.remove('mobile-open');
-                sidebarOverlay.classList.remove('active');
-                
+                closeMobileMenu();
                 const sidebarCollapsed = localStorage.getItem('sidebarCollapsed') === 'true';
                 if (sidebarCollapsed) {
                     sidebar.classList.add('collapsed');
@@ -560,13 +676,12 @@
                     mainContent.classList.remove('expanded');
                 }
             } else {
-                // Mobile: fechar menu ao redimensionar
                 closeMobileMenu();
             }
         });
         
         // Auto-fade out de alerts
-        setTimeout(function() {
+        setTimeout(() => {
             document.querySelectorAll('.alert').forEach(alert => {
                 const bsAlert = new bootstrap.Alert(alert);
                 setTimeout(() => bsAlert.close(), 5000);
@@ -575,9 +690,7 @@
         
         // Tooltips
         var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
-        var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
-            return new bootstrap.Tooltip(tooltipTriggerEl);
-        });
+        tooltipTriggerList.map(tooltipTriggerEl => new bootstrap.Tooltip(tooltipTriggerEl));
     </script>
     
     {% block scripts %}{% endblock %}
