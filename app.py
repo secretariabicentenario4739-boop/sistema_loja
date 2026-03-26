@@ -1026,6 +1026,87 @@ if __name__ == "__main__":
 # =============================
 # ROTAS DE OBREIROS
 # =============================
+
+@app.route("/obreiros/novo", methods=["GET", "POST"])
+@admin_required
+def novo_obreiro():
+    cursor, conn = get_db()
+
+    if request.method == "POST":
+        usuario = request.form.get("usuario")
+        senha = request.form.get("senha")
+        nome_completo = request.form.get("nome_completo")
+        nome_maconico = request.form.get("nome_maconico")
+        cim_numero = request.form.get("cim_numero")
+        tipo = request.form.get("tipo", "obreiro")
+        grau_atual = request.form.get("grau_atual", 1)
+        data_iniciacao = request.form.get("data_iniciacao")
+        data_elevacao = request.form.get("data_elevacao")
+        data_exaltacao = request.form.get("data_exaltacao")
+        telefone = request.form.get("telefone")
+        email = request.form.get("email")
+        endereco = request.form.get("endereco")
+        loja_nome = request.form.get("loja_nome")
+        loja_numero = request.form.get("loja_numero")
+        loja_orient = request.form.get("loja_orient")
+
+        # Converter strings vazias para None
+        data_iniciacao = data_iniciacao if data_iniciacao and data_iniciacao.strip() else None
+        data_elevacao = data_elevacao if data_elevacao and data_elevacao.strip() else None
+        data_exaltacao = data_exaltacao if data_exaltacao and data_exaltacao.strip() else None
+
+        if not usuario or not senha or not nome_completo:
+            flash("Preencha os campos obrigatórios", "danger")
+        else:
+            try:
+                senha_hash = generate_password_hash(senha)
+                agora = datetime.now()
+
+                cursor.execute("""
+                    INSERT INTO usuarios 
+                    (usuario, senha_hash, tipo, data_cadastro, ativo, 
+                     nome_completo, nome_maconico, cim_numero, grau_atual,
+                     data_iniciacao, data_elevacao, data_exaltacao,
+                     telefone, email, endereco,
+                     loja_nome, loja_numero, loja_orient) 
+                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                """, (usuario, senha_hash, tipo, agora, 1,
+                      nome_completo, nome_maconico, cim_numero, grau_atual,
+                      data_iniciacao, data_elevacao, data_exaltacao,
+                      telefone, email, endereco,
+                      loja_nome, loja_numero, loja_orient))
+
+                conn.commit()
+                obreiro_id = cursor.lastrowid
+
+                if data_iniciacao:
+                    cursor.execute("""
+                        INSERT INTO historico_graus (obreiro_id, grau, data, observacao)
+                        VALUES (%s, %s, %s, %s)
+                    """, (obreiro_id, 1, data_iniciacao, "Iniciação"))
+
+                conn.commit()
+                
+                registrar_log("criar", "obreiro", obreiro_id, 
+                             dados_novos={"nome": nome_completo, "usuario": usuario})
+                flash(f"Obreiro '{nome_completo}' adicionado com sucesso!", "success")
+                return_connection(conn)
+                return redirect("/obreiros")
+
+            except psycopg2.IntegrityError:
+                flash("Erro: Usuário ou CIM já existe", "danger")
+                conn.rollback()
+
+    # Buscar lojas para o select
+    cursor.execute("SELECT * FROM lojas ORDER BY nome")
+    lojas = cursor.fetchall()
+    
+    # Buscar graus disponíveis
+    cursor.execute("SELECT * FROM graus WHERE ativo = 1 ORDER BY nivel, ordem")
+    graus = cursor.fetchall()
+    
+    return_connection(conn)
+    return render_template("obreiros/novo.html", lojas=lojas, graus=graus)
 @app.route("/obreiros")
 @login_required
 def listar_obreiros():

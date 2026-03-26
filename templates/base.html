@@ -18,17 +18,17 @@
         :root {
             --sidebar-width: 280px;
             --sidebar-collapsed-width: 80px;
-            --primary: #4361ee;
-            --primary-dark: #3a56d4;
-            --secondary: #6c757d;
+            --azul-bicentenario: #1a2c3e;
+            --dourado: #c9a03d;
+            --dourado-escuro: #b58c2a;
+            --azul-claro: #3498db;
+            --cinza-texto: #2c3e50;
+            --light: #f8f9fa;
+            --border: #e2e8f0;
             --success: #2dcb73;
             --info: #17a2b8;
             --warning: #ffc107;
             --danger: #ef4444;
-            --dark: #1e293b;
-            --light: #f8fafc;
-            --gray: #64748b;
-            --border: #e2e8f0;
         }
         
         * {
@@ -41,7 +41,7 @@
             font-family: 'Inter', sans-serif;
             background: linear-gradient(135deg, #f5f7fa 0%, #f0f2f5 100%);
             overflow-x: hidden;
-            color: var(--dark);
+            color: var(--cinza-texto);
         }
         
         /* Botão do menu mobile */
@@ -51,21 +51,21 @@
             top: 20px;
             left: 20px;
             z-index: 1001;
-            background: var(--primary);
+            background: var(--azul-bicentenario);
             border: none;
             color: white;
             font-size: 1.5rem;
             padding: 12px 16px;
             border-radius: 12px;
             cursor: pointer;
-            box-shadow: 0 4px 12px rgba(67, 97, 238, 0.3);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
             transition: all 0.3s ease;
         }
         
         .mobile-menu-btn:hover {
-            background: var(--primary-dark);
+            background: var(--dourado);
+            color: var(--azul-bicentenario);
             transform: scale(1.05);
-            box-shadow: 0 6px 16px rgba(67, 97, 238, 0.4);
         }
         
         /* Overlay para mobile */
@@ -89,12 +89,11 @@
             left: 0;
             height: 100%;
             width: var(--sidebar-width);
-            background: white;
+            background: var(--azul-bicentenario);
             transition: all 0.3s ease;
             z-index: 1000;
             overflow-y: auto;
-            box-shadow: 2px 0 20px rgba(0,0,0,0.05);
-            border-right: 1px solid var(--border);
+            box-shadow: 2px 0 20px rgba(0,0,0,0.1);
         }
         
         .sidebar::-webkit-scrollbar {
@@ -102,11 +101,11 @@
         }
         
         .sidebar::-webkit-scrollbar-track {
-            background: #f1f1f1;
+            background: rgba(255,255,255,0.1);
         }
         
         .sidebar::-webkit-scrollbar-thumb {
-            background: var(--primary);
+            background: var(--dourado);
             border-radius: 10px;
         }
         
@@ -114,9 +113,8 @@
         .logo-area {
             padding: 28px 20px;
             text-align: center;
-            border-bottom: 1px solid var(--border);
-            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
-            transition: all 0.3s ease;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+            background: linear-gradient(135deg, var(--azul-bicentenario) 0%, #0f1a24 100%);
         }
         
         .logo-area h3 {
@@ -134,6 +132,7 @@
         
         .logo-area h3 i {
             font-size: 1.8rem;
+            color: var(--dourado);
             transition: all 0.3s ease;
         }
         
@@ -145,13 +144,13 @@
         .logo-area .logo-sub {
             font-size: 0.75rem;
             margin: 5px 0 0;
-            color: rgba(255,255,255,0.8);
+            color: rgba(255,255,255,0.7);
             font-weight: 400;
             transition: all 0.3s ease;
         }
         
         .sidebar .nav-link {
-            color: var(--gray);
+            color: rgba(255,255,255,0.8);
             padding: 12px 20px;
             transition: all 0.3s;
             border-radius: 12px;
@@ -162,15 +161,15 @@
         }
         
         .sidebar .nav-link:hover {
-            background: linear-gradient(135deg, rgba(67, 97, 238, 0.08) 0%, rgba(67, 97, 238, 0.04) 100%);
-            color: var(--primary);
+            background: rgba(201,160,61,0.2);
+            color: var(--dourado);
             transform: translateX(5px);
         }
         
         .sidebar .nav-link.active {
-            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
-            color: white;
-            box-shadow: 0 4px 12px rgba(67, 97, 238, 0.3);
+            background: var(--dourado);
+            color: var(--azul-bicentenario);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
         }
         
         .sidebar .nav-link i {
@@ -182,7 +181,7 @@
         
         .sidebar hr {
             margin: 12px 16px;
-            border-color: var(--border);
+            border-color: rgba(255,255,255,0.1);
         }
         
         /* Desktop: comportamento de retração */
@@ -248,7 +247,7 @@
             
             .sidebar.mobile-open {
                 transform: translateX(0);
-                box-shadow: 2px 0 20px rgba(0,0,0,0.1);
+                box-shadow: 2px 0 20px rgba(0,0,0,0.2);
             }
             
             .sidebar-overlay.active {
@@ -283,20 +282,21 @@
         
         /* Top Bar */
         .top-bar {
-            background: linear-gradient(135deg, #ffffff 0%, #fafcff 100%);
+            background: white;
             padding: 10px 28px;
             position: sticky;
             top: 0;
             z-index: 998;
-            border-bottom: 1px solid rgba(67, 97, 238, 0.15);
+            border-bottom: 1px solid var(--border);
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
         }
         
         .toggle-sidebar {
-            background: rgba(67, 97, 238, 0.08);
-            border: 1px solid rgba(67, 97, 238, 0.15);
+            background: rgba(26,44,62,0.08);
+            border: 1px solid var(--border);
             font-size: 1.2rem;
             cursor: pointer;
-            color: var(--primary);
+            color: var(--azul-bicentenario);
             transition: all 0.3s ease;
             padding: 10px 14px;
             border-radius: 14px;
@@ -322,10 +322,9 @@
         }
         
         .toggle-sidebar:hover {
-            background: var(--primary);
+            background: var(--azul-bicentenario);
             color: white;
             transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(67, 97, 238, 0.25);
             border-color: transparent;
         }
         
@@ -345,27 +344,21 @@
             align-items: center;
             gap: 8px;
             transition: all 0.2s ease;
-            background: white;
-            border: 1px solid rgba(0,0,0,0.05);
-            box-shadow: 0 2px 6px rgba(0,0,0,0.02);
         }
         
         .user-info .badge:first-child {
-            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+            background: var(--azul-bicentenario);
             color: white;
-            border: none;
         }
         
         .user-info .badge:nth-child(2) {
-            background: linear-gradient(135deg, #f97316 0%, #ea580c 100%);
-            color: white;
-            border: none;
+            background: var(--dourado);
+            color: var(--azul-bicentenario);
         }
         
         .user-info .badge:nth-child(3) {
             background: linear-gradient(135deg, #10b981 0%, #059669 100%);
             color: white;
-            border: none;
         }
         
         .user-info .badge i {
@@ -377,26 +370,6 @@
             box-shadow: 0 4px 12px rgba(0,0,0,0.1);
         }
         
-        .user-info .badge {
-            position: relative;
-            overflow: hidden;
-        }
-        
-        .user-info .badge::after {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: -100%;
-            width: 100%;
-            height: 100%;
-            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
-            transition: left 0.5s ease;
-        }
-        
-        .user-info .badge:hover::after {
-            left: 100%;
-        }
-        
         /* Notificações */
         .notificacoes-dropdown {
             position: relative;
@@ -405,8 +378,8 @@
         }
         
         .btn-notificacoes {
-            background: rgba(67, 97, 238, 0.08);
-            border: 1px solid rgba(67, 97, 238, 0.15);
+            background: rgba(26,44,62,0.08);
+            border: 1px solid var(--border);
             border-radius: 40px;
             padding: 8px 16px;
             transition: all 0.3s ease;
@@ -415,16 +388,15 @@
         }
         
         .btn-notificacoes:hover {
-            background: var(--primary);
+            background: var(--azul-bicentenario);
             color: white;
-            transform: translateY(-2px);
         }
         
         .notificacao-badge {
             position: absolute;
             top: -5px;
             right: -5px;
-            background: #ef4444;
+            background: var(--danger);
             color: white;
             border-radius: 50%;
             padding: 2px 6px;
@@ -457,12 +429,11 @@
                 right: 10px;
                 left: 10px;
                 width: auto;
-                max-width: none;
             }
         }
         
         .dropdown-header-notificacoes {
-            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+            background: var(--azul-bicentenario);
             color: white;
             border-radius: 12px 12px 0 0;
             padding: 12px 16px;
@@ -483,8 +454,8 @@
         }
         
         .notificacao-item.nao-lida {
-            background-color: #e7f3ff;
-            border-left: 3px solid #0d6efd;
+            background-color: rgba(201,160,61,0.1);
+            border-left: 3px solid var(--dourado);
         }
         
         .notificacao-titulo {
@@ -552,6 +523,32 @@
             border-radius: 20px 20px 0 0 !important;
         }
         
+        .btn-primary {
+            background: var(--dourado);
+            border: none;
+            color: var(--azul-bicentenario);
+            font-weight: 600;
+            border-radius: 50px;
+            padding: 10px 25px;
+        }
+        
+        .btn-primary:hover {
+            background: var(--dourado-escuro);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        }
+        
+        .btn-outline-primary {
+            border-color: var(--dourado);
+            color: var(--dourado);
+            border-radius: 50px;
+        }
+        
+        .btn-outline-primary:hover {
+            background: var(--dourado);
+            color: var(--azul-bicentenario);
+        }
+        
         /* Footer */
         .footer {
             background: white;
@@ -579,25 +576,6 @@
             animation: fadeInUp 0.4s ease-out;
         }
         
-        /* Botões */
-        .btn {
-            border-radius: 12px;
-            font-weight: 500;
-            transition: all 0.2s;
-            padding: 0.5rem 1.2rem;
-        }
-        
-        .btn-primary {
-            background: var(--primary);
-            border: none;
-        }
-        
-        .btn-primary:hover {
-            background: var(--primary-dark);
-            transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(67, 97, 238, 0.3);
-        }
-        
         /* Tabelas */
         .table {
             border-collapse: separate;
@@ -612,12 +590,8 @@
             padding: 1rem;
         }
         
-        .table tbody tr {
-            transition: all 0.2s;
-        }
-        
         .table tbody tr:hover {
-            background: rgba(67, 97, 238, 0.03);
+            background: rgba(201,160,61,0.05);
         }
         
         /* Badges */
@@ -639,12 +613,12 @@
         }
         
         ::-webkit-scrollbar-thumb {
-            background: var(--primary);
+            background: var(--dourado);
             border-radius: 10px;
         }
         
         ::-webkit-scrollbar-thumb:hover {
-            background: var(--primary-dark);
+            background: var(--dourado-escuro);
         }
         
         /* Responsividade */
@@ -653,21 +627,9 @@
                 padding: 10px 16px;
             }
             
-            .toggle-sidebar {
-                padding: 8px 12px;
-            }
-            
-            .toggle-sidebar span {
-                display: none;
-            }
-            
             .user-info .badge {
                 font-size: 0.7rem;
                 padding: 6px 12px;
-            }
-            
-            .user-info .badge i {
-                font-size: 0.75rem;
             }
             
             .content-area {
@@ -720,9 +682,9 @@
         <div class="logo-area">
             <h3>
                 <i class="bi bi-compass-fill"></i>
-                <span class="logo-text">Sistema</span>
+                <span class="logo-text">ARLS</span>
             </h3>
-            <p class="logo-sub">Maçônico</p>
+            <p class="logo-sub">Bicentenário</p>
         </div>
         
         <nav class="nav flex-column mt-3">
@@ -919,7 +881,7 @@
         <!-- Footer -->
         <div class="footer">
             <small>
-                &copy; {{ now.year }} Sistema Maçônico - Todos os direitos reservados
+                &copy; {{ now.year }} ARLS Bicentenário - Sistema Maçônico
             </small>
         </div>
     </div>
