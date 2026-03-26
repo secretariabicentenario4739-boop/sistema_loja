@@ -440,10 +440,55 @@ def registrar_log(acao, entidade=None, entidade_id=None, dados_anteriores=None, 
         print(f"Erro ao registrar log: {e}")
 
 # =============================
-# ROTA DE LOGIN
+# PROTEÇÃO DE ROTAS
 # =============================
-@app.route("/", methods=["GET", "POST"])
+
+# Modifique a rota de login original para usar /login
+@app.route("/login", methods=["GET", "POST"])
+def pagina_login():
+    """Página de login (acessível publicamente)"""
+    if request.method == "POST":
+        # Mesmo código do login original
+        usuario = request.form["usuario"]
+        senha = request.form["senha"]
+        
+        cursor, conn = get_db()
+        cursor.execute(
+            "SELECT * FROM usuarios WHERE usuario = %s AND ativo = 1",
+            (usuario,)
+        )
+        user = cursor.fetchone()
+        return_connection(conn)
+        
+        if user and check_password_hash(user["senha_hash"], senha):
+            session["usuario"] = user["usuario"]
+            session["tipo"] = user["tipo"]
+            session["user_id"] = user["id"]
+            session["nome_completo"] = user["nome_completo"] or ""
+            session["cim_numero"] = user["cim_numero"] or ""
+            session["loja_nome"] = user["loja_nome"] or ""
+            session["loja_numero"] = user["loja_numero"] or ""
+            session["loja_orient"] = user["loja_orient"] or ""
+            session["grau_atual"] = user["grau_atual"] or 1
+
+            registrar_log("login", "usuarios", user["id"], dados_novos={"usuario": usuario})
+            flash(f"Bem-vindo, {user['nome_completo'] or user['usuario']}!", "success")
+            return redirect("/dashboard")
+        else:
+            flash("Usuário ou senha inválidos", "danger")
+    
+    return render_template("login.html")
+
+# Modifique a rota original "/" para não ser mais o login
+# Mantenha a rota "/" como página pública
+
+# =============================
+# ROTA DE LOGIN (PÚBLICA E SISTEMA)
+# =============================
+
+@app.route("/login", methods=["GET", "POST"])
 def login():
+    """Página de login - acessível publicamente"""
     if request.method == "POST":
         usuario = request.form["usuario"]
         senha = request.form["senha"]
@@ -465,7 +510,7 @@ def login():
             session["loja_nome"] = user["loja_nome"] or ""
             session["loja_numero"] = user["loja_numero"] or ""
             session["loja_orient"] = user["loja_orient"] or ""
-            session["grau_atual"] = user["grau_atual"] or 1  # <-- ADICIONE ESTA LINHA
+            session["grau_atual"] = user["grau_atual"] or 1
 
             registrar_log("login", "usuarios", user["id"], dados_novos={"usuario": usuario})
             flash(f"Bem-vindo, {user['nome_completo'] or user['usuario']}!", "success")
@@ -476,6 +521,60 @@ def login():
     return render_template("login.html")
 
 # =============================
+# PÁGINAS PÚBLICAS
+# =============================
+
+@app.route("/")
+def home():
+    """Página inicial pública"""
+    return render_template("public/index.html")
+
+@app.route("/sobre")
+def sobre():
+    """Página sobre a loja"""
+    return render_template("public/sobre.html")
+
+@app.route("/calendario")
+def calendario_publico():
+    """Calendário público de eventos"""
+    cursor, conn = get_db()
+    cursor.execute("""
+        SELECT titulo, data, hora_inicio, local 
+        FROM reunioes 
+        WHERE status = 'agendada' AND data >= CURRENT_DATE
+        ORDER BY data ASC
+        LIMIT 10
+    """)
+    eventos = cursor.fetchall()
+    return_connection(conn)
+    return render_template("public/calendario.html", eventos=eventos)
+
+@app.route("/contato")
+def contato():
+    """Página de contato"""
+    return render_template("public/contato.html")
+
+@app.route("/noticias")
+def noticias():
+    """Página de notícias públicas"""
+    cursor, conn = get_db()
+    cursor.execute("""
+        SELECT titulo, conteudo, data_criacao 
+        FROM comunicados 
+        WHERE ativo = 1 AND (tipo = 'publico' OR tipo = 'informativo')
+        ORDER BY data_criacao DESC
+        LIMIT 10
+    """)
+    noticias = cursor.fetchall()
+    return_connection(conn)
+    return render_template("public/noticias.html", noticias=noticias)
+
+@app.route("/galeria")
+def galeria():
+    """Galeria de fotos pública"""
+    return render_template("public/galeria.html")
+
+# =============================
 # ROTA DE LOGOUT
 # =============================
 @app.route("/logout")
@@ -483,7 +582,7 @@ def logout():
     registrar_log("logout", "usuarios", session.get("user_id"))
     session.clear()
     flash("Logout realizado com sucesso", "info")
-    return redirect("/")
+    return redirect("/")  # Volta para a página pública
 
 # =============================
 # ROTA DO DASHBOARD
@@ -637,6 +736,9 @@ def dashboard():
         traceback.print_exc()
         flash(f"Erro ao carregar dashboard: {e}", "danger")
         return redirect("/")
+        
+
+        
 # =============================
 # ROTAS DE PERMISSÕES
 # =============================
