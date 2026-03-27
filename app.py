@@ -6402,7 +6402,6 @@ from flask import request, jsonify
 def admin_required(f):
     @wraps(f)
     def decorated_function(*args, **kwargs):
-        # Verificar se é uma requisição local ou tem token secreto
         admin_token = os.getenv('ADMIN_TOKEN', 'admin123')
         token = request.args.get('token') or request.headers.get('X-Admin-Token')
         
@@ -6412,165 +6411,175 @@ def admin_required(f):
     return decorated_function
 
 # ============================================
-# ENDPOINT 1: CRIAR TABELAS
+# ENDPOINT 1: DIAGNÓSTICO DA ESTRUTURA
 # ============================================
-@app.route('/admin/criar-tabelas-db')
+@app.route('/admin/diagnostico-estrutura')
 @admin_required
-def admin_criar_tabelas():
-    """Endpoint para criar todas as tabelas necessárias"""
+def admin_diagnostico_estrutura():
+    """Diagnostica a estrutura atual das tabelas"""
     try:
-        # Garantir que está usando a DATABASE_URL correta
         db_url = os.getenv('DATABASE_URL')
         if not db_url:
-            return jsonify({"erro": "DATABASE_URL não configurada no ambiente"}), 500
+            return jsonify({"erro": "DATABASE_URL não configurada"}), 500
         
-        print(f"🔧 Conectando ao banco: {db_url[:50]}...")
+        conn = psycopg2.connect(db_url)
+        cursor = conn.cursor()
+        
+        resultado = {
+            "tabelas": {}
+        }
+        
+        # Verificar estrutura da tabela logs_auditoria
+        cursor.execute("""
+            SELECT column_name, data_type, is_nullable
+            FROM information_schema.columns
+            WHERE table_name = 'logs_auditoria'
+            ORDER BY ordinal_position
+        """)
+        
+        colunas = cursor.fetchall()
+        if colunas:
+            resultado["tabelas"]["logs_auditoria"] = {
+                "existe": True,
+                "colunas": [{"nome": c[0], "tipo": c[1], "nullable": c[2]} for c in colunas]
+            }
+        else:
+            resultado["tabelas"]["logs_auditoria"] = {"existe": False}
+        
+        # Verificar estrutura da tabela assinaturas_ata
+        cursor.execute("""
+            SELECT column_name, data_type, is_nullable
+            FROM information_schema.columns
+            WHERE table_name = 'assinaturas_ata'
+            ORDER BY ordinal_position
+        """)
+        
+        colunas = cursor.fetchall()
+        if colunas:
+            resultado["tabelas"]["assinaturas_ata"] = {
+                "existe": True,
+                "colunas": [{"nome": c[0], "tipo": c[1], "nullable": c[2]} for c in colunas]
+            }
+        else:
+            resultado["tabelas"]["assinaturas_ata"] = {"existe": False}
+        
+        cursor.close()
+        conn.close()
+        
+        return jsonify(resultado)
+        
+    except Exception as e:
+        return jsonify({"erro": str(e)}), 500
+
+# ============================================
+# ENDPOINT 2: CRIAR/ATUALIZAR TABELA logs_auditoria
+# ============================================
+@app.route('/admin/criar-tabela-logs')
+@admin_required
+def admin_criar_tabela_logs():
+    """Cria a tabela logs_auditoria com a estrutura correta (sem created_at se não existir)"""
+    try:
+        db_url = os.getenv('DATABASE_URL')
+        if not db_url:
+            return jsonify({"erro": "DATABASE_URL não configurada"}), 500
         
         conn = psycopg2.connect(db_url)
         cursor = conn.cursor()
         
         resultado = []
         
-        # 1. Criar tabela assinaturas_ata (ajuste conforme suas colunas)
+        # Verificar se a tabela existe
         cursor.execute("""
-            CREATE TABLE IF NOT EXISTS public.assinaturas_ata (
-                id SERIAL PRIMARY KEY,
-                usuario_id INTEGER,
-                tipo VARCHAR(100),
-                data_assinatura DATE,
-                status VARCHAR(50),
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            SELECT EXISTS (
+                SELECT FROM information_schema.tables 
+                WHERE table_name = 'logs_auditoria'
             )
         """)
-        resultado.append("✅ Tabela assinaturas_ata criada/verificada")
+        existe = cursor.fetchone()[0]
         
-        # 2. Criar tabela logs_auditoria
-        cursor.execute("""
-            CREATE TABLE IF NOT EXISTS public.logs_auditoria (
-                id SERIAL PRIMARY KEY,
-                usuario_id INTEGER,
-                usuario_nome VARCHAR(255),
-                acao VARCHAR(100),
-                entidade VARCHAR(100),
-                entidade_id INTEGER,
-                dados_anteriores TEXT,
-                dados_novos TEXT,
-                ip VARCHAR(45),
-                user_agent TEXT,
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-            )
-        """)
-        resultado.append("✅ Tabela logs_auditoria criada/verificada")
-        
-        # 3. Criar índices
-        cursor.execute("""
-            CREATE INDEX IF NOT EXISTS idx_logs_usuario_id_admin 
-            ON logs_auditoria(usuario_id)
-        """)
-        cursor.execute("""
-            CREATE INDEX IF NOT EXISTS idx_logs_created_at_admin 
-            ON logs_auditoria(created_at)
-        """)
-        resultado.append("✅ Índices criados/verificados")
+        if not existe:
+            # Criar tabela sem a coluna created_at (já que está dando erro)
+            cursor.execute("""
+                CREATE TABLE public.logs_auditoria (
+                    id SERIAL PRIMARY KEY,
+                    usuario_id INTEGER,
+                    usuario_nome VARCHAR(255),
+                    acao VARCHAR(100),
+                    entidade VARCHAR(100),
+                    entidade_id INTEGER,
+                    dados_anteriores TEXT,
+                    dados_novos TEXT,
+                    ip VARCHAR(45),
+                    user_agent TEXT
+                )
+            """)
+            resultado.append("✅ Tabela logs_auditoria criada (sem created_at)")
+            
+            # Criar índices
+            cursor.execute("""
+                CREATE INDEX IF NOT EXISTS idx_logs_usuario_id_admin 
+                ON logs_auditoria(usuario_id)
+            """)
+            resultado.append("✅ Índice criado")
+        else:
+            resultado.append("ℹ️ Tabela logs_auditoria já existe")
+            
+            # Verificar se a coluna created_at existe
+            cursor.execute("""
+                SELECT EXISTS (
+                    SELECT FROM information_schema.columns 
+                    WHERE table_name = 'logs_auditoria' 
+                    AND column_name = 'created_at'
+                )
+            """)
+            tem_created_at = cursor.fetchone()[0]
+            
+            if not tem_created_at:
+                # Adicionar coluna created_at se não existir
+                try:
+                    cursor.execute("""
+                        ALTER TABLE logs_auditoria 
+                        ADD COLUMN created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                    """)
+                    resultado.append("✅ Coluna created_at adicionada")
+                except Exception as e:
+                    resultado.append(f"⚠️ Não foi possível adicionar created_at: {e}")
+            else:
+                resultado.append("ℹ️ Coluna created_at já existe")
         
         conn.commit()
-        
-        # Listar todas as tabelas
-        cursor.execute("""
-            SELECT table_name 
-            FROM information_schema.tables 
-            WHERE table_schema = 'public'
-            ORDER BY table_name
-        """)
-        tables = cursor.fetchall()
-        
         cursor.close()
         conn.close()
         
         return jsonify({
             "status": "sucesso",
-            "mensagens": resultado,
-            "tabelas_existentes": [t[0] for t in tables]
+            "mensagens": resultado
         })
         
     except Exception as e:
         return jsonify({"erro": str(e)}), 500
 
 # ============================================
-# ENDPOINT 2: VERIFICAR TABELAS
+# ENDPOINT 3: INSERIR TESTE (SEM created_at)
 # ============================================
-@app.route('/admin/verificar-tabelas-db')
+@app.route('/admin/inserir-teste-log')
 @admin_required
-def admin_verificar_tabelas():
-    """Endpoint para verificar quais tabelas existem"""
+def admin_inserir_teste_log():
+    """Insere um log de teste sem usar created_at"""
     try:
         db_url = os.getenv('DATABASE_URL')
         if not db_url:
-            return jsonify({"erro": "DATABASE_URL não configurada no ambiente"}), 500
-        
-        conn = psycopg2.connect(db_url)
-        cursor = conn.cursor()
-        
-        # Listar todas as tabelas
-        cursor.execute("""
-            SELECT table_name 
-            FROM information_schema.tables 
-            WHERE table_schema = 'public'
-            ORDER BY table_name
-        """)
-        tables = cursor.fetchall()
-        
-        # Verificar logs_auditoria especificamente
-        cursor.execute("""
-            SELECT EXISTS (
-                SELECT FROM information_schema.tables 
-                WHERE table_schema = 'public' 
-                AND table_name = 'logs_auditoria'
-            )
-        """)
-        logs_exists = cursor.fetchone()[0]
-        
-        if logs_exists:
-            cursor.execute("SELECT COUNT(*) FROM logs_auditoria")
-            logs_count = cursor.fetchone()[0]
-        else:
-            logs_count = 0
-        
-        cursor.close()
-        conn.close()
-        
-        return jsonify({
-            "tabelas_existentes": [t[0] for t in tables],
-            "logs_auditoria_existe": logs_exists,
-            "logs_auditoria_total": logs_count,
-            "database_url_configurada": bool(db_url),
-            "database_prefix": db_url[:30] + "..."
-        })
-        
-    except Exception as e:
-        return jsonify({"erro": str(e)}), 500
-
-# ============================================
-# ENDPOINT 3: INSERIR TESTE
-# ============================================
-@app.route('/admin/inserir-teste-db')
-@admin_required
-def admin_inserir_teste():
-    """Endpoint para inserir um log de teste"""
-    try:
-        db_url = os.getenv('DATABASE_URL')
-        if not db_url:
-            return jsonify({"erro": "DATABASE_URL não configurada no ambiente"}), 500
+            return jsonify({"erro": "DATABASE_URL não configurada"}), 500
         
         conn = psycopg2.connect(db_url)
         cursor = conn.cursor(cursor_factory=RealDictCursor)
         
+        # Inserir SEM a coluna created_at
         cursor.execute("""
             INSERT INTO logs_auditoria 
             (usuario_id, usuario_nome, acao, entidade, entidade_id, ip, user_agent)
             VALUES (%s, %s, %s, %s, %s, %s, %s)
-            RETURNING id, created_at
+            RETURNING id
         """, (
             1,
             "Teste Render Admin",
@@ -6590,7 +6599,7 @@ def admin_inserir_teste():
         return jsonify({
             "status": "sucesso",
             "id_inserido": result['id'],
-            "created_at": str(result['created_at'])
+            "mensagem": "Log inserido com sucesso"
         })
         
     except Exception as e:
@@ -6599,24 +6608,42 @@ def admin_inserir_teste():
 # ============================================
 # ENDPOINT 4: VERIFICAR LOGS
 # ============================================
-@app.route('/admin/verificar-logs-db')
+@app.route('/admin/verificar-logs-simples')
 @admin_required
-def admin_verificar_logs():
-    """Endpoint para verificar os últimos logs"""
+def admin_verificar_logs_simples():
+    """Verifica os logs sem usar created_at se não existir"""
     try:
         db_url = os.getenv('DATABASE_URL')
         if not db_url:
-            return jsonify({"erro": "DATABASE_URL não configurada no ambiente"}), 500
+            return jsonify({"erro": "DATABASE_URL não configurada"}), 500
         
         conn = psycopg2.connect(db_url)
         cursor = conn.cursor(cursor_factory=RealDictCursor)
         
+        # Verificar se coluna created_at existe
         cursor.execute("""
-            SELECT id, usuario_nome, acao, entidade, entidade_id, created_at
-            FROM logs_auditoria
-            ORDER BY id DESC
-            LIMIT 20
+            SELECT EXISTS (
+                SELECT FROM information_schema.columns 
+                WHERE table_name = 'logs_auditoria' 
+                AND column_name = 'created_at'
+            )
         """)
+        tem_created_at = cursor.fetchone()['exists']
+        
+        if tem_created_at:
+            cursor.execute("""
+                SELECT id, usuario_nome, acao, entidade, entidade_id, created_at
+                FROM logs_auditoria
+                ORDER BY id DESC
+                LIMIT 20
+            """)
+        else:
+            cursor.execute("""
+                SELECT id, usuario_nome, acao, entidade, entidade_id
+                FROM logs_auditoria
+                ORDER BY id DESC
+                LIMIT 20
+            """)
         
         logs = cursor.fetchall()
         
@@ -6625,128 +6652,9 @@ def admin_verificar_logs():
         
         return jsonify({
             "total": len(logs),
+            "tem_coluna_created_at": tem_created_at,
             "logs": logs
         })
-        
-    except Exception as e:
-        return jsonify({"erro": str(e)}), 500
-
-# ============================================
-# ENDPOINT 5: RESETAR DADOS (CUIDADO!)
-# ============================================
-@app.route('/admin/resetar-dados-db')
-@admin_required
-def admin_resetar_dados():
-    """⚠️ PERIGO: Apaga todos os dados das tabelas (mantém estrutura)"""
-    try:
-        db_url = os.getenv('DATABASE_URL')
-        if not db_url:
-            return jsonify({"erro": "DATABASE_URL não configurada no ambiente"}), 500
-        
-        conn = psycopg2.connect(db_url)
-        cursor = conn.cursor()
-        
-        # Desabilitar triggers temporariamente
-        cursor.execute("SET session_replication_role = 'replica';")
-        
-        # Limpar tabelas
-        cursor.execute("TRUNCATE TABLE logs_auditoria CASCADE;")
-        cursor.execute("TRUNCATE TABLE assinaturas_ata CASCADE;")
-        
-        # Reabilitar triggers
-        cursor.execute("SET session_replication_role = 'origin';")
-        
-        conn.commit()
-        cursor.close()
-        conn.close()
-        
-        return jsonify({
-            "status": "sucesso",
-            "mensagem": "Todos os dados foram removidos (estrutura mantida)"
-        })
-        
-    except Exception as e:
-        return jsonify({"erro": str(e)}), 500
-
-# ============================================
-# ENDPOINT 6: DIAGNÓSTICO DA CONEXÃO
-# ============================================
-@app.route('/admin/diagnostico-db')
-@admin_required
-def admin_diagnostico_db():
-    """Endpoint para diagnosticar problemas de conexão"""
-    try:
-        db_url = os.getenv('DATABASE_URL')
-        
-        diagnostico = {
-            "variavel_ambiente": {
-                "DATABASE_URL_existe": bool(db_url),
-                "DATABASE_URL_prefix": db_url[:30] + "..." if db_url else "Não definida"
-            },
-            "testes": []
-        }
-        
-        if not db_url:
-            diagnostico["testes"].append({
-                "teste": "DATABASE_URL",
-                "status": "erro",
-                "mensagem": "DATABASE_URL não está definida nas variáveis de ambiente"
-            })
-            return jsonify(diagnostico)
-        
-        # Testar conexão
-        try:
-            conn = psycopg2.connect(db_url)
-            cursor = conn.cursor()
-            
-            diagnostico["testes"].append({
-                "teste": "Conexão TCP",
-                "status": "sucesso",
-                "mensagem": "Conseguiu conectar ao servidor PostgreSQL"
-            })
-            
-            # Verificar banco atual
-            cursor.execute("SELECT current_database();")
-            db_name = cursor.fetchone()[0]
-            diagnostico["testes"].append({
-                "teste": "Banco atual",
-                "status": "info",
-                "mensagem": f"Conectado ao banco: {db_name}"
-            })
-            
-            # Verificar versão
-            cursor.execute("SELECT version();")
-            version = cursor.fetchone()[0]
-            diagnostico["testes"].append({
-                "teste": "Versão PostgreSQL",
-                "status": "info",
-                "mensagem": version[:50] + "..."
-            })
-            
-            # Verificar tabelas
-            cursor.execute("""
-                SELECT table_name 
-                FROM information_schema.tables 
-                WHERE table_schema = 'public'
-            """)
-            tables = [t[0] for t in cursor.fetchall()]
-            diagnostico["testes"].append({
-                "teste": "Tabelas existentes",
-                "status": "info",
-                "mensagem": f"Encontradas {len(tables)} tabelas: {', '.join(tables[:10])}"
-            })
-            
-            cursor.close()
-            conn.close()
-            
-        except Exception as e:
-            diagnostico["testes"].append({
-                "teste": "Conexão",
-                "status": "erro",
-                "mensagem": str(e)
-            })
-        
-        return jsonify(diagnostico)
         
     except Exception as e:
         return jsonify({"erro": str(e)}), 500    
