@@ -1475,7 +1475,377 @@ def excluir_documento(id):
     return_connection(conn)
     return redirect(f"/obreiros/{doc['obreiro_id']}/documentos")
 
+@app.route("/admin/migrar-tabelas", methods=["GET"])
+@admin_required
+def migrar_tabelas():
+    """Rota temporária para criar tabelas faltantes no banco de dados"""
+    if session.get("tipo") != "admin":
+        flash("Acesso restrito a administradores", "danger")
+        return redirect("/dashboard")
+    
+    resultados = []
+    erros = []
+    
+    cursor, conn = get_db()
+    
+    try:
+        # 1. Criar tabela notificacoes
+        try:
+            cursor.execute("""
+                CREATE TABLE IF NOT EXISTS notificacoes (
+                    id SERIAL PRIMARY KEY,
+                    usuario_id INTEGER NOT NULL REFERENCES usuarios(id) ON DELETE CASCADE,
+                    titulo VARCHAR(200) NOT NULL,
+                    mensagem TEXT NOT NULL,
+                    tipo VARCHAR(50) DEFAULT 'info',
+                    link VARCHAR(500),
+                    lida BOOLEAN DEFAULT FALSE,
+                    data_criacao TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    data_leitura TIMESTAMP
+                )
+            """)
+            conn.commit()
+            resultados.append("✅ Tabela 'notificacoes' criada/verificada com sucesso")
+        except Exception as e:
+            erros.append(f"❌ Erro ao criar tabela 'notificacoes': {str(e)}")
+        
+        # 2. Criar tabela sugestoes (precisa existir antes das referências)
+        try:
+            cursor.execute("""
+                CREATE TABLE IF NOT EXISTS sugestoes (
+                    id SERIAL PRIMARY KEY,
+                    titulo VARCHAR(200) NOT NULL,
+                    descricao TEXT NOT NULL,
+                    categoria VARCHAR(100),
+                    prioridade VARCHAR(20) DEFAULT 'media',
+                    status VARCHAR(20) DEFAULT 'pendente',
+                    autor_id INTEGER NOT NULL REFERENCES usuarios(id) ON DELETE CASCADE,
+                    votos INTEGER DEFAULT 0,
+                    implementada BOOLEAN DEFAULT FALSE,
+                    data_implementacao TIMESTAMP,
+                    implementado_por INTEGER REFERENCES usuarios(id),
+                    data_criacao TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    data_atualizacao TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                )
+            """)
+            conn.commit()
+            resultados.append("✅ Tabela 'sugestoes' criada/verificada com sucesso")
+        except Exception as e:
+            erros.append(f"❌ Erro ao criar tabela 'sugestoes': {str(e)}")
+        
+        # 3. Criar tabela votos_sugestao
+        try:
+            cursor.execute("""
+                CREATE TABLE IF NOT EXISTS votos_sugestao (
+                    id SERIAL PRIMARY KEY,
+                    sugestao_id INTEGER NOT NULL REFERENCES sugestoes(id) ON DELETE CASCADE,
+                    usuario_id INTEGER NOT NULL REFERENCES usuarios(id) ON DELETE CASCADE,
+                    data_voto TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    UNIQUE(sugestao_id, usuario_id)
+                )
+            """)
+            conn.commit()
+            resultados.append("✅ Tabela 'votos_sugestao' criada/verificada com sucesso")
+        except Exception as e:
+            erros.append(f"❌ Erro ao criar tabela 'votos_sugestao': {str(e)}")
+        
+        # 4. Criar tabela comentarios_sugestao
+        try:
+            cursor.execute("""
+                CREATE TABLE IF NOT EXISTS comentarios_sugestao (
+                    id SERIAL PRIMARY KEY,
+                    sugestao_id INTEGER NOT NULL REFERENCES sugestoes(id) ON DELETE CASCADE,
+                    autor_id INTEGER NOT NULL REFERENCES usuarios(id) ON DELETE CASCADE,
+                    comentario TEXT NOT NULL,
+                    data_comentario TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                )
+            """)
+            conn.commit()
+            resultados.append("✅ Tabela 'comentarios_sugestao' criada/verificada com sucesso")
+        except Exception as e:
+            erros.append(f"❌ Erro ao criar tabela 'comentarios_sugestao': {str(e)}")
+        
+        # 5. Criar tabela categorias_sugestoes
+        try:
+            cursor.execute("""
+                CREATE TABLE IF NOT EXISTS categorias_sugestoes (
+                    id SERIAL PRIMARY KEY,
+                    nome VARCHAR(100) NOT NULL UNIQUE,
+                    descricao TEXT,
+                    ativo BOOLEAN DEFAULT TRUE,
+                    ordem INTEGER DEFAULT 0
+                )
+            """)
+            conn.commit()
+            resultados.append("✅ Tabela 'categorias_sugestoes' criada/verificada com sucesso")
+        except Exception as e:
+            erros.append(f"❌ Erro ao criar tabela 'categorias_sugestoes': {str(e)}")
+        
+        # 6. Inserir categorias padrão
+        try:
+            cursor.execute("""
+                INSERT INTO categorias_sugestoes (nome, descricao, ordem) 
+                VALUES 
+                    ('Melhoria', 'Sugestões para melhoria do sistema', 1),
+                    ('Bug', 'Reportar problemas ou erros', 2),
+                    ('Nova Funcionalidade', 'Sugestões de novas funcionalidades', 3),
+                    ('Interface', 'Sugestões para melhorar a interface', 4)
+                ON CONFLICT (nome) DO NOTHING
+            """)
+            conn.commit()
+            resultados.append("✅ Categorias padrão inseridas com sucesso")
+        except Exception as e:
+            erros.append(f"⚠️ Erro ao inserir categorias padrão: {str(e)}")
+        
+        return_connection(conn)
+        
+        # Renderizar resultado
+        return f"""
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <title>Migração de Banco de Dados</title>
+            <style>
+                body {{
+                    font-family: Arial, sans-serif;
+                    margin: 20px;
+                    background: #f5f5f5;
+                }}
+                .container {{
+                    max-width: 800px;
+                    margin: 0 auto;
+                    background: white;
+                    padding: 20px;
+                    border-radius: 8px;
+                    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+                }}
+                h1 {{
+                    color: #333;
+                    border-bottom: 2px solid #4CAF50;
+                    padding-bottom: 10px;
+                }}
+                .success {{
+                    color: #155724;
+                    background-color: #d4edda;
+                    border: 1px solid #c3e6cb;
+                    padding: 10px;
+                    margin: 10px 0;
+                    border-radius: 4px;
+                }}
+                .error {{
+                    color: #721c24;
+                    background-color: #f8d7da;
+                    border: 1px solid #f5c6cb;
+                    padding: 10px;
+                    margin: 10px 0;
+                    border-radius: 4px;
+                }}
+                .warning {{
+                    color: #856404;
+                    background-color: #fff3cd;
+                    border: 1px solid #ffeeba;
+                    padding: 10px;
+                    margin: 10px 0;
+                    border-radius: 4px;
+                }}
+                .btn {{
+                    display: inline-block;
+                    padding: 10px 15px;
+                    background: #4CAF50;
+                    color: white;
+                    text-decoration: none;
+                    border-radius: 4px;
+                    margin-top: 20px;
+                }}
+                .btn:hover {{
+                    background: #45a049;
+                }}
+                hr {{
+                    margin: 20px 0;
+                }}
+            </style>
+        </head>
+        <body>
+            <div class="container">
+                <h1>🔧 Migração de Banco de Dados</h1>
+                <p>Executado em: {datetime.now().strftime('%d/%m/%Y %H:%M:%S')}</p>
+                <hr>
+                
+                <h3>📊 Resultados:</h3>
+                {''.join(f'<div class="success">✅ {r}</div>' for r in resultados)}
+                
+                {''.join(f'<div class="error">❌ {e}</div>' for e in erros) if erros else ''}
+                
+                <hr>
+                
+                <div class="success">
+                    <strong>✅ Migração concluída!</strong><br>
+                    Total de tabelas criadas/verificadas: {len(resultados)}<br>
+                    Total de erros: {len(erros)}
+                </div>
+                
+                <a href="/dashboard" class="btn">← Voltar ao Dashboard</a>
+                <a href="/admin/verificar-tabelas" class="btn" style="background: #2196F3;">🔍 Verificar Tabelas</a>
+            </div>
+        </body>
+        </html>
+        """
+        
+    except Exception as e:
+        if conn:
+            conn.rollback()
+            return_connection(conn)
+        return f"""
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <title>Erro na Migração</title>
+            <style>
+                body {{ font-family: Arial, sans-serif; margin: 20px; background: #f5f5f5; }}
+                .container {{ max-width: 800px; margin: 0 auto; background: white; padding: 20px; border-radius: 8px; }}
+                .error {{ color: #721c24; background-color: #f8d7da; border: 1px solid #f5c6cb; padding: 10px; margin: 10px 0; border-radius: 4px; }}
+                .btn {{ display: inline-block; padding: 10px 15px; background: #4CAF50; color: white; text-decoration: none; border-radius: 4px; margin-top: 20px; }}
+            </style>
+        </head>
+        <body>
+            <div class="container">
+                <h1>❌ Erro na Migração</h1>
+                <div class="error">
+                    <strong>Erro:</strong> {str(e)}
+                </div>
+                <a href="/dashboard" class="btn">← Voltar ao Dashboard</a>
+            </div>
+        </body>
+        </html>
+        """
 
+
+@app.route("/admin/verificar-tabelas", methods=["GET"])
+@admin_required
+def verificar_tabelas():
+    """Rota para verificar quais tabelas existem no banco de dados"""
+    if session.get("tipo") != "admin":
+        flash("Acesso restrito a administradores", "danger")
+        return redirect("/dashboard")
+    
+    cursor, conn = get_db()
+    
+    # Lista de tabelas esperadas
+    tabelas_esperadas = [
+        'notificacoes', 'sugestoes', 'votos_sugestao', 
+        'comentarios_sugestao', 'categorias_sugestoes'
+    ]
+    
+    resultados = []
+    
+    for tabela in tabelas_esperadas:
+        try:
+            cursor.execute("""
+                SELECT EXISTS (
+                    SELECT FROM information_schema.tables 
+                    WHERE table_name = %s
+                )
+            """, (tabela,))
+            existe = cursor.fetchone()[0]
+            
+            if existe:
+                # Obter contagem de registros
+                cursor.execute(f"SELECT COUNT(*) as total FROM {tabela}")
+                total = cursor.fetchone()[0]
+                resultados.append({
+                    'nome': tabela,
+                    'existe': True,
+                    'total': total,
+                    'status': 'success'
+                })
+            else:
+                resultados.append({
+                    'nome': tabela,
+                    'existe': False,
+                    'total': 0,
+                    'status': 'error'
+                })
+        except Exception as e:
+            resultados.append({
+                'nome': tabela,
+                'existe': False,
+                'total': 0,
+                'status': 'warning',
+                'erro': str(e)
+            })
+    
+    return_connection(conn)
+    
+    # Gerar HTML com resultados
+    html = """
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <title>Verificação de Tabelas</title>
+        <style>
+            body { font-family: Arial, sans-serif; margin: 20px; background: #f5f5f5; }
+            .container { max-width: 800px; margin: 0 auto; background: white; padding: 20px; border-radius: 8px; }
+            table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+            th, td { padding: 12px; text-align: left; border-bottom: 1px solid #ddd; }
+            th { background-color: #4CAF50; color: white; }
+            .success { color: #155724; background-color: #d4edda; }
+            .error { color: #721c24; background-color: #f8d7da; }
+            .warning { color: #856404; background-color: #fff3cd; }
+            .btn { display: inline-block; padding: 10px 15px; background: #4CAF50; color: white; text-decoration: none; border-radius: 4px; margin-top: 20px; margin-right: 10px; }
+            .btn-blue { background: #2196F3; }
+        </style>
+    </head>
+    <body>
+        <div class="container">
+            <h1>🔍 Verificação de Tabelas</h1>
+            <p>Executado em: """ + datetime.now().strftime('%d/%m/%Y %H:%M:%S') + """</p>
+            
+            <table>
+                <thead>
+                    <tr>
+                        <th>Tabela</th>
+                        <th>Status</th>
+                        <th>Registros</th>
+                        <th>Detalhes</th>
+                    </tr>
+                </thead>
+                <tbody>
+    """
+    
+    for r in resultados:
+        if r['status'] == 'success':
+            status_html = '<span style="color: green;">✅ Existe</span>'
+            detalhes = f"{r['total']} registro(s)"
+        elif r['status'] == 'error':
+            status_html = '<span style="color: red;">❌ Não existe</span>'
+            detalhes = 'Tabela não encontrada - executar migração'
+        else:
+            status_html = '<span style="color: orange;">⚠️ Erro</span>'
+            detalhes = r.get('erro', 'Erro desconhecido')[:100]
+        
+        html += f"""
+            <tr class="{r['status']}">
+                <td><strong>{r['nome']}</strong></td>
+                <td>{status_html}</td>
+                <td>{r['total']}</td>
+                <td>{detalhes}</td>
+            </tr>
+        """
+    
+    html += """
+                </tbody>
+            </table>
+            
+            <div style="margin-top: 20px;">
+                <a href="/admin/migrar-tabelas" class="btn">🔧 Executar Migração</a>
+                <a href="/dashboard" class="btn btn-blue">← Voltar ao Dashboard</a>
+            </div>
+        </div>
+    </body>
+    </html>
+    """
+    
+    return html
     
 
 # =============================
