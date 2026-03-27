@@ -643,56 +643,222 @@ def perfil():
 @app.route("/obreiros")
 @login_required
 def listar_obreiros():
+    """Lista obreiros com filtros por nome, grau, cargo, loja e status"""
     cursor, conn = get_db()
+    
+    # Obter parâmetros de filtro
     nome = request.args.get('nome', '').strip()
     grau = request.args.get('grau', '')
     cargo = request.args.get('cargo', '')
     loja = request.args.get('loja', '')
-    status = request.args.get('status', '')
+    status = request.args.get('status', 'ativos')  # ativos, inativos, todos
+    
+    # Construir query base
     query = """
-        SELECT u.*, l.nome as loja_nome,
+        SELECT DISTINCT u.*, 
+               l.nome as loja_nome_completo,
+               l.cidade as loja_cidade,
+               l.estado as loja_estado,
                CASE 
                    WHEN u.grau_atual = 1 THEN 'Aprendiz'
                    WHEN u.grau_atual = 2 THEN 'Companheiro'
                    WHEN u.grau_atual = 3 THEN 'Mestre'
-                   ELSE (SELECT g.nome FROM graus g WHERE g.nivel = u.grau_atual LIMIT 1)
+                   ELSE (SELECT nome FROM graus WHERE nivel = u.grau_atual LIMIT 1)
                END as grau_descricao,
-               (SELECT COUNT(*) FROM ocupacao_cargos oc WHERE oc.obreiro_id = u.id AND oc.ativo = 1) as total_cargos
+               (SELECT COUNT(*) FROM ocupacao_cargos oc 
+                WHERE oc.obreiro_id = u.id AND oc.ativo = 1) as total_cargos_ativos,
+               (SELECT string_agg(c.nome, ', ') 
+                FROM ocupacao_cargos oc 
+                JOIN cargos c ON oc.cargo_id = c.id 
+                WHERE oc.obreiro_id = u.id AND oc.ativo = 1 
+                LIMIT 3) as cargos_atuais,
+               (SELECT data_inicio FROM ocupacao_cargos 
+                WHERE obreiro_id = u.id AND ativo = 1 
+                ORDER BY data_inicio DESC LIMIT 1) as data_ultimo_cargo,
+               (SELECT COUNT(*) FROM presenca p 
+                JOIN reunioes r ON p.reuniao_id = r.id 
+                WHERE p.obreiro_id = u.id 
+                AND r.status = 'realizada' 
+                AND EXTRACT(YEAR FROM r.data) = EXTRACT(YEAR FROM CURRENT_DATE)) as presencas_ano,
+               (SELECT COUNT(*) FROM presenca p 
+                JOIN reunioes r ON p.reuniao_id = r.id 
+                WHERE p.obreiro_id = u.id 
+                AND r.status = 'realizada' 
+                AND EXTRACT(YEAR FROM r.data) = EXTRACT(YEAR FROM CURRENT_DATE)
+                AND p.presente = 1) as presencas_confirmadas_ano
         FROM usuarios u
         LEFT JOIN lojas l ON u.loja_nome = l.nome
         WHERE 1=1
     """
     params = []
+    
+    # Filtro por nome (nome completo ou usuário)
     if nome:
-        query += " AND (u.nome_completo LIKE %s OR u.usuario LIKE %s)"
+        query += " AND (u.nome_completo ILIKE %s OR u.usuario ILIKE %s)"
         params.extend([f"%{nome}%", f"%{nome}%"])
+    
+    # Filtro por grau
     if grau:
-        query += " AND u.grau_atual = %s"
-        params.append(grau)
+        try:
+            grau_int = int(grau)
+            query += " AND u.grau_atual = %s"
+            params.append(grau_int)
+        except ValueError:
+            pass
+    
+    # Filtro por cargo (apenas obreiros que possuem um cargo específico)
     if cargo:
-        query += " AND EXISTS (SELECT 1 FROM ocupacao_cargos oc WHERE oc.obreiro_id = u.id AND oc.cargo_id = %s AND oc.ativo = 1)"
+        query += """ AND EXISTS (
+            SELECT 1 FROM ocupacao_cargos oc 
+            WHERE oc.obreiro_id = u.id 
+            AND oc.cargo_id = %s 
+            AND oc.ativo = 1
+        )"""
         params.append(cargo)
+    
+    # Filtro por loja
     if loja:
         query += " AND u.loja_nome = %s"
         params.append(loja)
-    if status:
-        query += " AND u.ativo = %s"
-        params.append(status)
-    else:
+    
+    # Filtro por status (ativo/inativo)
+    if status == 'inativos':
+        query += " AND u.ativo = 0"
+    elif status == 'todos':
+        # Não filtrar por status
+        pass
+    else:  # ativos (padrão)
         query += " AND u.ativo = 1"
-    query += " ORDER BY u.nome_completo"
+    
+    # Ordenação
+    query += """
+        ORDER BY 
+            u.ativo DESC,  -- ativos primeiro
+            u.grau_atual DESC,  -- grau mais alto primeiro
+            u.nome_completo ASC
+    """
+    
+    # Executar query
     cursor.execute(query, params)
     obreiros = cursor.fetchall()
-    cursor.execute("SELECT DISTINCT grau_atual FROM usuarios WHERE grau_atual IS NOT NULL ORDER BY grau_atual")
-    graus = cursor.fetchall()
-    cursor.execute("SELECT id, nome FROM cargos WHERE ativo = 1 ORDER BY ordem")
-    cargos_list = cursor.fetchall()
-    cursor.execute("SELECT DISTINCT loja_nome FROM usuarios WHERE loja_nome IS NOT NULL ORDER BY loja_nome")
-    lojas = cursor.fetchall()
+    
+    # Converter para lista de dicionários
+    obreiros_list = []
+    for row in obreiros:
+        obreiro = dict(row)
+        
+        # Calcular percentual de presença
+        if obreiro.get('presencas_ano', 0) > 0:
+            percentual = (obreiro.get('presencas_confirmadas_ano', 0) / obreiro.get('presencas_ano', 1)) * 100
+            obreiro['percentual_presenca'] = round(percentual, 1)
+        else:
+            obreiro['percentual_presenca'] = 0
+        
+        # Adicionar classe CSS para status
+        obreiro['status_class'] = 'table-success' if obreiro['ativo'] == 1 else 'table-secondary'
+        obreiro['status_badge'] = 'success' if obreiro['ativo'] == 1 else 'secondary'
+        obreiro['status_text'] = 'Ativo' if obreiro['ativo'] == 1 else 'Inativo'
+        
+        obreiros_list.append(obreiro)
+    
+    # Buscar dados para os filtros (dropdowns)
+    
+    # Lista de graus disponíveis
+    cursor.execute("""
+        SELECT DISTINCT grau_atual as grau, 
+               CASE 
+                   WHEN grau_atual = 1 THEN 'Aprendiz'
+                   WHEN grau_atual = 2 THEN 'Companheiro'
+                   WHEN grau_atual = 3 THEN 'Mestre'
+                   ELSE (SELECT nome FROM graus WHERE nivel = grau_atual LIMIT 1)
+               END as nome_grau
+        FROM usuarios 
+        WHERE grau_atual IS NOT NULL
+        ORDER BY grau_atual
+    """)
+    graus_disponiveis = cursor.fetchall()
+    
+    # Lista de cargos ativos
+    cursor.execute("""
+        SELECT id, nome, sigla 
+        FROM cargos 
+        WHERE ativo = 1 
+        ORDER BY ordem, nome
+    """)
+    cargos_disponiveis = cursor.fetchall()
+    
+    # Lista de lojas com obreiros
+    cursor.execute("""
+        SELECT DISTINCT loja_nome as nome 
+        FROM usuarios 
+        WHERE loja_nome IS NOT NULL AND loja_nome != ''
+        ORDER BY loja_nome
+    """)
+    lojas_disponiveis = cursor.fetchall()
+    
+    # Estatísticas gerais
+    cursor.execute("SELECT COUNT(*) as total FROM usuarios WHERE ativo = 1")
+    total_ativos = cursor.fetchone()['total']
+    
+    cursor.execute("SELECT COUNT(*) as total FROM usuarios WHERE ativo = 0")
+    total_inativos = cursor.fetchone()['total']
+    
+    cursor.execute("SELECT COUNT(*) as total FROM usuarios WHERE tipo = 'admin'")
+    total_admins = cursor.fetchone()['total']
+    
+    cursor.execute("SELECT COUNT(*) as total FROM usuarios WHERE tipo = 'sindicante' AND ativo = 1")
+    total_sindicantes = cursor.fetchone()['total']
+    
+    # Estatísticas por grau
+    cursor.execute("""
+        SELECT 
+            grau_atual,
+            CASE 
+                WHEN grau_atual = 1 THEN 'Aprendiz'
+                WHEN grau_atual = 2 THEN 'Companheiro'
+                WHEN grau_atual = 3 THEN 'Mestre'
+                ELSE 'Outros'
+            END as grau_nome,
+            COUNT(*) as total
+        FROM usuarios 
+        WHERE ativo = 1
+        GROUP BY grau_atual
+        ORDER BY grau_atual
+    """)
+    estatisticas_graus = cursor.fetchall()
+    
     return_connection(conn)
-    return render_template("obreiros/lista.html", obreiros=obreiros, graus=graus, cargos=cargos_list, lojas=lojas,
-                          filtros={'nome': nome, 'grau': grau, 'cargo': cargo, 'loja': loja, 'status': status})
-
+    
+    # Montar dicionário de filtros para o template
+    filtros = {
+        'nome': nome,
+        'grau': grau,
+        'cargo': cargo,
+        'loja': loja,
+        'status': status
+    }
+    
+    # Estatísticas para o template
+    estatisticas = {
+        'total_ativos': total_ativos,
+        'total_inativos': total_inativos,
+        'total_obreiros': total_ativos + total_inativos,
+        'total_admins': total_admins,
+        'total_sindicantes': total_sindicantes,
+        'por_grau': estatisticas_graus,
+        'exibidos': len(obreiros_list)
+    }
+    
+    return render_template(
+        "obreiros/lista.html",
+        obreiros=obreiros_list,
+        graus=graus_disponiveis,
+        cargos=cargos_disponiveis,
+        lojas=lojas_disponiveis,
+        filtros=filtros,
+        estatisticas=estatisticas,
+        now=datetime.now()
+    )
 @app.route("/obreiros/novo", methods=["GET", "POST"])
 @admin_required
 def novo_obreiro():
@@ -2472,6 +2638,115 @@ def assinar_ata(id):
     return_connection(conn)
     return redirect(f"/atas/{id}")
 
+@app.route("/atas/<int:id>/excluir", methods=["POST"])
+@admin_required
+def excluir_ata(id):
+    """Exclui uma ata permanentemente"""
+    cursor, conn = get_db()
+    
+    try:
+        # Buscar dados da ata antes de excluir
+        cursor.execute("""
+            SELECT a.id, a.numero_ata, a.ano_ata, a.aprovada, a.reuniao_id,
+                   r.titulo as reuniao_titulo
+            FROM atas a
+            JOIN reunioes r ON a.reuniao_id = r.id
+            WHERE a.id = %s
+        """, (id,))
+        ata = cursor.fetchone()
+        
+        if not ata:
+            flash("Ata não encontrada", "danger")
+            return_connection(conn)
+            return redirect("/atas")
+        
+        # Verificar se é admin
+        if session.get("tipo") != "admin":
+            flash("Apenas administradores podem excluir atas", "danger")
+            return_connection(conn)
+            return redirect("/atas")
+        
+        # Registrar log antes de excluir
+        registrar_log("excluir_ata", "ata", id, dados_anteriores={
+            "numero": ata['numero_ata'],
+            "ano": ata['ano_ata'],
+            "reuniao": ata['reuniao_titulo'],
+            "aprovada": "Sim" if ata['aprovada'] == 1 else "Não"
+        })
+        
+        # Excluir assinaturas primeiro (por causa da chave estrangeira)
+        cursor.execute("DELETE FROM assinaturas_ata WHERE ata_id = %s", (id,))
+        
+        # Excluir a ata
+        cursor.execute("DELETE FROM atas WHERE id = %s", (id,))
+        
+        conn.commit()
+        
+        flash(f"Ata {ata['numero_ata']}/{ata['ano_ata']} excluída com sucesso!", "success")
+        
+    except Exception as e:
+        print(f"Erro ao excluir ata: {e}")
+        traceback.print_exc()
+        conn.rollback()
+        flash(f"Erro ao excluir ata: {str(e)}", "danger")
+    
+    return_connection(conn)
+    return redirect("/atas")
+
+@app.route("/api/atas/excluir/<int:id>", methods=["DELETE"])
+@admin_required
+def api_excluir_ata(id):
+    """API para excluir uma ata (retorna JSON)"""
+    try:
+        cursor, conn = get_db()
+        
+        # Buscar dados da ata antes de excluir
+        cursor.execute("""
+            SELECT a.id, a.numero_ata, a.ano_ata, a.aprovada, a.reuniao_id,
+                   r.titulo as reuniao_titulo
+            FROM atas a
+            JOIN reunioes r ON a.reuniao_id = r.id
+            WHERE a.id = %s
+        """, (id,))
+        ata = cursor.fetchone()
+        
+        if not ata:
+            return jsonify({'success': False, 'error': 'Ata não encontrada'}), 404
+        
+        # Registrar log antes de excluir
+        registrar_log("excluir_ata", "ata", id, dados_anteriores={
+            "numero": ata['numero_ata'],
+            "ano": ata['ano_ata'],
+            "reuniao": ata['reuniao_titulo'],
+            "aprovada": "Sim" if ata['aprovada'] == 1 else "Não"
+        })
+        
+        # Excluir assinaturas primeiro (por causa da chave estrangeira)
+        cursor.execute("DELETE FROM assinaturas_ata WHERE ata_id = %s", (id,))
+        
+        # Excluir a ata
+        cursor.execute("DELETE FROM atas WHERE id = %s", (id,))
+        
+        conn.commit()
+        
+        return jsonify({
+            'success': True,
+            'message': f"Ata {ata['numero_ata']}/{ata['ano_ata']} excluída com sucesso",
+            'ata_id': id,
+            'ata_numero': ata['numero_ata'],
+            'ata_ano': ata['ano_ata']
+        })
+        
+    except Exception as e:
+        print(f"Erro ao excluir ata via API: {e}")
+        traceback.print_exc()
+        if conn:
+            conn.rollback()
+        return jsonify({'success': False, 'error': str(e)}), 500
+    finally:
+        if conn:
+            return_connection(conn)
+
 @app.route("/atas/<int:id>/pdf")
 @login_required
 def gerar_pdf_ata(id):
@@ -2637,6 +2912,8 @@ def novo_modelo():
             return_connection(conn)
             return redirect("/atas/modelos")
     return render_template("atas/modelo_form.html")
+    
+    
 # =============================
 # ROTAS DE COMUNICADOS
 # =============================
@@ -4963,37 +5240,113 @@ def notificacoes_stream():
     return Response(generate(), mimetype="text/event-stream")
 
 # =============================
-# ROTAS DE BACKUP
+# ROTAS DE BACKUP E RESTAURAÇÃO (VERSÃO COMPLETA)
 # =============================
+
+import zipfile
+import json
+import shutil
+from datetime import datetime, timedelta
+from flask import send_file, make_response
+import psycopg2
+from psycopg2.extras import RealDictCursor
+
 BACKUP_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'backups')
+TEMP_RESTORE_DIR = os.path.join(BACKUP_DIR, 'temp_restore')
+BACKUP_LOG_FILE = os.path.join(BACKUP_DIR, 'backup_log.json')
+
+# Criar diretórios
 os.makedirs(BACKUP_DIR, exist_ok=True)
+os.makedirs(TEMP_RESTORE_DIR, exist_ok=True)
+
+def log_backup_operation(operation, filename, success, details=None, error=None):
+    """Registra operações de backup/restauração em log"""
+    try:
+        logs = []
+        if os.path.exists(BACKUP_LOG_FILE):
+            with open(BACKUP_LOG_FILE, 'r', encoding='utf-8') as f:
+                logs = json.load(f)
+        
+        logs.append({
+            'timestamp': datetime.now().isoformat(),
+            'operation': operation,
+            'filename': filename,
+            'success': success,
+            'details': details,
+            'error': error,
+            'user': session.get('usuario', 'unknown'),
+            'user_id': session.get('user_id'),
+            'ip': request.remote_addr
+        })
+        
+        # Manter apenas últimos 100 registros
+        logs = logs[-100:]
+        
+        with open(BACKUP_LOG_FILE, 'w', encoding='utf-8') as f:
+            json.dump(logs, f, ensure_ascii=False, indent=2)
+            
+    except Exception as e:
+        print(f"Erro ao registrar log: {e}")
 
 def listar_backups_sistema():
+    """Lista todos os backups disponíveis com informações detalhadas"""
     backups = []
     if not os.path.exists(BACKUP_DIR):
         return backups
+    
     for file in os.listdir(BACKUP_DIR):
         if file.endswith('.zip'):
             filepath = os.path.join(BACKUP_DIR, file)
             mtime = os.path.getmtime(filepath)
+            ctime = os.path.getctime(filepath)
             size = os.path.getsize(filepath) / (1024 * 1024)
+            
+            # Extrair informações do nome do arquivo
+            info = {}
+            try:
+                # Formato esperado: backup_nome_banco_YYYYMMDD_HHMMSS.zip
+                parts = file.replace('.zip', '').split('_')
+                if len(parts) >= 4:
+                    info['db_name'] = parts[1]
+                    info['timestamp'] = f"{parts[2]}_{parts[3]}"
+                    try:
+                        info['date'] = datetime.strptime(parts[2], '%Y%m%d').strftime('%d/%m/%Y')
+                        info['time'] = datetime.strptime(parts[3], '%H%M%S').strftime('%H:%M:%S')
+                    except:
+                        pass
+            except Exception as e:
+                print(f"Erro ao processar info do backup {file}: {e}")
+                info = {}
+            
             backups.append({
                 'name': file,
                 'date_str': datetime.fromtimestamp(mtime).strftime('%d/%m/%Y %H:%M:%S'),
+                'date': datetime.fromtimestamp(mtime),
                 'size_mb': round(size, 2),
-                'path': filepath
+                'size_bytes': os.path.getsize(filepath),
+                'path': filepath,
+                'created': datetime.fromtimestamp(ctime),
+                'info': info  # Garantir que info sempre existe
             })
-    backups.sort(key=lambda x: x['date_str'], reverse=True)
+    
+    backups.sort(key=lambda x: x['date'], reverse=True)
     return backups
 
 def criar_backup_sistema():
+    """Cria backup completo do banco de dados"""
+    temp_sql_file = None
     try:
         timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
         db_name = os.getenv('DB_NAME', 'sistema_maconico')
-        backup_file = os.path.join(BACKUP_DIR, f'backup_{db_name}_{timestamp}.sql')
+        backup_name = f'backup_{db_name}_{timestamp}'
+        temp_sql_file = os.path.join(BACKUP_DIR, f'{backup_name}.sql')
+        
+        # Conectar ao banco
         conn = psycopg2.connect(DATABASE_URL)
         conn.autocommit = False
         cursor = conn.cursor(cursor_factory=RealDictCursor)
+        
+        # Obter lista de tabelas
         cursor.execute("""
             SELECT tablename FROM pg_tables 
             WHERE schemaname = 'public' 
@@ -5001,126 +5354,1025 @@ def criar_backup_sistema():
             ORDER BY tablename
         """)
         tables = [row['tablename'] for row in cursor.fetchall()]
-        with open(backup_file, 'w', encoding='utf-8') as f:
-            f.write(f"-- Backup do Sistema Maçônico\n")
+        
+        # Criar arquivo SQL
+        with open(temp_sql_file, 'w', encoding='utf-8') as f:
+            f.write(f"-- ============================================\n")
+            f.write(f"-- BACKUP DO SISTEMA MAÇÔNICO\n")
+            f.write(f"-- ============================================\n")
             f.write(f"-- Data: {datetime.now().strftime('%d/%m/%Y %H:%M:%S')}\n")
-            f.write(f"-- Tabelas: {len(tables)}\n\n")
+            f.write(f"-- Banco: {db_name}\n")
+            f.write(f"-- Tabelas: {len(tables)}\n")
+            f.write(f"-- Usuário: {session.get('usuario', 'sistema')}\n")
+            f.write(f"-- ============================================\n\n")
+            
             f.write("BEGIN;\n\n")
+            f.write("-- Desabilitar triggers para melhor performance\n")
+            f.write("SET session_replication_role = 'replica';\n\n")
+            
+            # Backup de cada tabela
+            tables_backuped = []
             for table in tables:
-                cursor.execute(f"""
-                    SELECT column_name, data_type, is_nullable
-                    FROM information_schema.columns 
-                    WHERE table_name = '{table}'
-                    ORDER BY ordinal_position
-                """)
-                columns = cursor.fetchall()
-                if not columns:
-                    continue
-                f.write(f"DROP TABLE IF EXISTS {table} CASCADE;\n")
-                f.write(f"CREATE TABLE {table} (\n")
-                col_defs = []
-                for col in columns:
-                    col_def = f"    {col['column_name']} {col['data_type']}"
-                    if col['is_nullable'] == 'NO':
-                        col_def += " NOT NULL"
-                    col_defs.append(col_def)
-                f.write(",\n".join(col_defs))
-                f.write("\n);\n\n")
-                cursor.execute(f"SELECT * FROM {table}")
-                rows = cursor.fetchall()
-                if rows:
-                    col_names = [col['column_name'] for col in columns]
-                    col_names_str = ', '.join(col_names)
-                    f.write(f"DELETE FROM {table};\n\n")
-                    for row in rows:
-                        values = []
-                        for col_name in col_names:
-                            val = row.get(col_name)
-                            if val is None:
-                                values.append('NULL')
-                            elif isinstance(val, str):
-                                values.append(f"'{val.replace(chr(39), chr(39)+chr(39))}'")
-                            elif isinstance(val, datetime):
-                                values.append(f"'{val.strftime('%Y-%m-%d %H:%M:%S')}'")
-                            else:
-                                values.append(str(val))
-                        f.write(f"INSERT INTO {table} ({col_names_str}) VALUES ({', '.join(values)});\n")
-                    f.write("\n")
+                try:
+                    # Obter estrutura da tabela
+                    cursor.execute(f"""
+                        SELECT column_name, data_type, is_nullable, column_default
+                        FROM information_schema.columns 
+                        WHERE table_name = '{table}'
+                        ORDER BY ordinal_position
+                    """)
+                    columns = cursor.fetchall()
+                    
+                    if not columns:
+                        continue
+                    
+                    f.write(f"-- ============================================\n")
+                    f.write(f"-- Tabela: {table}\n")
+                    f.write(f"-- ============================================\n\n")
+                    
+                    # DROP e CREATE TABLE
+                    f.write(f"DROP TABLE IF EXISTS {table} CASCADE;\n")
+                    f.write(f"CREATE TABLE {table} (\n")
+                    
+                    col_defs = []
+                    for col in columns:
+                        col_def = f"    {col['column_name']} {col['data_type']}"
+                        if col['is_nullable'] == 'NO':
+                            col_def += " NOT NULL"
+                        if col['column_default']:
+                            col_def += f" DEFAULT {col['column_default']}"
+                        col_defs.append(col_def)
+                    
+                    f.write(",\n".join(col_defs))
+                    f.write("\n);\n\n")
+                    
+                    # Backup dos dados
+                    cursor.execute(f"SELECT * FROM {table}")
+                    rows = cursor.fetchall()
+                    
+                    if rows:
+                        col_names = [col['column_name'] for col in columns]
+                        col_names_str = ', '.join(col_names)
+                        
+                        f.write(f"INSERT INTO {table} ({col_names_str}) VALUES\n")
+                        
+                        values_list = []
+                        for row in rows:
+                            values = []
+                            for col_name in col_names:
+                                val = row.get(col_name)
+                                if val is None:
+                                    values.append('NULL')
+                                elif isinstance(val, str):
+                                    escaped_val = val.replace("'", "''")
+                                    values.append(f"'{escaped_val}'")
+                                elif isinstance(val, datetime):
+                                    values.append(f"'{val.strftime('%Y-%m-%d %H:%M:%S')}'")
+                                elif isinstance(val, (int, float)):
+                                    values.append(str(val))
+                                elif isinstance(val, bool):
+                                    values.append('TRUE' if val else 'FALSE')
+                                else:
+                                    escaped_val = str(val).replace("'", "''")
+                                    values.append(f"'{escaped_val}'")
+                            
+                            values_list.append(f"    ({', '.join(values)})")
+                        
+                        f.write(",\n".join(values_list))
+                        f.write(";\n\n")
+                    
+                    tables_backuped.append(table)
+                    
+                except Exception as e:
+                    print(f"Erro ao fazer backup da tabela {table}: {e}")
+                    f.write(f"-- ERRO AO FAZER BACKUP DA TABELA {table}: {str(e)}\n\n")
+            
+            f.write("-- Reabilitar triggers\n")
+            f.write("SET session_replication_role = 'origin';\n\n")
             f.write("COMMIT;\n")
+            
+            # Estatísticas
+            f.write(f"\n-- ============================================\n")
+            f.write(f"-- ESTATÍSTICAS DO BACKUP\n")
+            f.write(f"-- ============================================\n")
+            f.write(f"-- Tabelas processadas: {len(tables)}\n")
+            f.write(f"-- Tabelas com dados: {len(tables_backuped)}\n")
+            f.write(f"-- Data de criação: {datetime.now().strftime('%d/%m/%Y %H:%M:%S')}\n")
+            f.write(f"-- ============================================\n")
+        
         cursor.close()
         conn.close()
-        zip_file = backup_file + '.zip'
+        
+        # Compactar em ZIP
+        zip_file = temp_sql_file + '.zip'
         with zipfile.ZipFile(zip_file, 'w', zipfile.ZIP_DEFLATED) as zf:
-            zf.write(backup_file, os.path.basename(backup_file))
-        os.remove(backup_file)
+            zf.write(temp_sql_file, os.path.basename(temp_sql_file))
+        
+        # Remover arquivo SQL temporário
+        os.remove(temp_sql_file)
+        
         tamanho_mb = os.path.getsize(zip_file) / (1024 * 1024)
+        
+        # Manter apenas últimos 20 backups
         backups = listar_backups_sistema()
+        deleted = []
         for i, b in enumerate(backups):
             if i >= 20:
                 try:
-                    os.remove(os.path.join(BACKUP_DIR, b['name']))
+                    os.remove(b['path'])
+                    deleted.append(b['name'])
                 except:
                     pass
-        return {'success': True, 'filename': os.path.basename(zip_file), 'size_mb': round(tamanho_mb, 2), 'tables': len(tables)}
+        
+        result = {
+            'success': True,
+            'filename': os.path.basename(zip_file),
+            'size_mb': round(tamanho_mb, 2),
+            'size_bytes': os.path.getsize(zip_file),
+            'tables': len(tables_backuped),
+            'total_tables': len(tables),
+            'deleted_old': len(deleted)
+        }
+        
+        log_backup_operation('backup', result['filename'], True, result)
+        return result
+        
     except Exception as e:
         print(f"Erro ao criar backup: {e}")
-        return {'success': False, 'error': str(e)}
+        traceback.print_exc()
+        
+        # Limpar arquivo temporário se existir
+        if temp_sql_file and os.path.exists(temp_sql_file):
+            try:
+                os.remove(temp_sql_file)
+            except:
+                pass
+        
+        error_msg = str(e)
+        log_backup_operation('backup', None, False, error=error_msg)
+        return {'success': False, 'error': error_msg}
+
+def restaurar_backup_sistema(filename, confirm=False):
+    """Restaura um backup do sistema"""
+    if not confirm:
+        return {'success': False, 'error': 'Confirmação necessária', 'requires_confirmation': True}
+    
+    temp_dir = None
+    try:
+        # Validar arquivo
+        backup_path = os.path.join(BACKUP_DIR, filename)
+        if not os.path.exists(backup_path):
+            return {'success': False, 'error': 'Arquivo de backup não encontrado'}
+        
+        if not filename.endswith('.zip'):
+            return {'success': False, 'error': 'Formato de arquivo inválido'}
+        
+        # Criar backup de emergência antes da restauração
+        print("Criando backup de emergência...")
+        emergency_backup = criar_backup_sistema()
+        
+        if not emergency_backup['success']:
+            return {
+                'success': False,
+                'error': 'Não foi possível criar backup de emergência. Operação cancelada.',
+                'emergency_backup': None
+            }
+        
+        # Criar diretório temporário
+        temp_dir = os.path.join(TEMP_RESTORE_DIR, f'restore_{datetime.now().strftime("%Y%m%d_%H%M%S")}')
+        os.makedirs(temp_dir, exist_ok=True)
+        
+        # Extrair arquivo
+        with zipfile.ZipFile(backup_path, 'r') as zf:
+            zf.extractall(temp_dir)
+            sql_files = [f for f in os.listdir(temp_dir) if f.endswith('.sql')]
+            
+            if not sql_files:
+                raise Exception("Backup inválido: nenhum arquivo SQL encontrado")
+            
+            sql_file_path = os.path.join(temp_dir, sql_files[0])
+        
+        # Conectar ao banco
+        conn = psycopg2.connect(DATABASE_URL)
+        conn.autocommit = False
+        cursor = conn.cursor()
+        
+        # Ler e executar SQL
+        with open(sql_file_path, 'r', encoding='utf-8') as f:
+            sql_content = f.read()
+        
+        # Separar comandos SQL
+        statements = []
+        current = []
+        in_string = False
+        string_char = None
+        
+        for line in sql_content.split('\n'):
+            # Ignorar comentários
+            if line.strip().startswith('--') and not in_string:
+                continue
+            
+            current.append(line)
+            
+            # Verificar se é fim de statement
+            if not in_string and line.strip().endswith(';'):
+                statements.append('\n'.join(current))
+                current = []
+        
+        if current:
+            statements.append('\n'.join(current))
+        
+        # Executar statements
+        executed = 0
+        errors = []
+        
+        for i, stmt in enumerate(statements):
+            if stmt.strip() and not stmt.strip().startswith('--'):
+                try:
+                    cursor.execute(stmt)
+                    executed += 1
+                except Exception as e:
+                    errors.append(f"Statement {i+1}: {str(e)[:100]}")
+                    print(f"Erro na statement {i+1}: {e}")
+                    print(f"SQL: {stmt[:200]}")
+        
+        if errors:
+            conn.rollback()
+            raise Exception(f"{len(errors)} erros encontrados. Primeiro erro: {errors[0]}")
+        
+        conn.commit()
+        
+        # Estatísticas
+        cursor.execute("""
+            SELECT COUNT(*) as total_tables 
+            FROM information_schema.tables 
+            WHERE table_schema = 'public'
+        """)
+        total_tables = cursor.fetchone()[0]
+        
+        cursor.close()
+        conn.close()
+        
+        # Limpar diretório temporário
+        shutil.rmtree(temp_dir)
+        
+        result = {
+            'success': True,
+            'message': f'Backup restaurado com sucesso!',
+            'emergency_backup': emergency_backup.get('filename'),
+            'emergency_backup_size': emergency_backup.get('size_mb'),
+            'statements_executed': executed,
+            'total_tables': total_tables,
+            'restored_from': filename
+        }
+        
+        log_backup_operation('restore', filename, True, result)
+        return result
+        
+    except Exception as e:
+        print(f"Erro ao restaurar backup: {e}")
+        traceback.print_exc()
+        
+        if temp_dir and os.path.exists(temp_dir):
+            try:
+                shutil.rmtree(temp_dir)
+            except:
+                pass
+        
+        error_msg = str(e)
+        log_backup_operation('restore', filename, False, error=error_msg)
+        
+        return {
+            'success': False,
+            'error': error_msg,
+            'emergency_backup': emergency_backup.get('filename') if 'emergency_backup' in locals() else None
+        }
+
+# =============================
+# ROTAS DE BACKUP E RESTAURAÇÃO (VERSÃO CORRIGIDA)
+# =============================
+
+import zipfile
+import json
+import shutil
+import re
+from datetime import datetime, timedelta
+from flask import send_file, make_response
+import psycopg2
+from psycopg2.extras import RealDictCursor
+import subprocess
+import tempfile
+
+BACKUP_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'backups')
+TEMP_RESTORE_DIR = os.path.join(BACKUP_DIR, 'temp_restore')
+BACKUP_LOG_FILE = os.path.join(BACKUP_DIR, 'backup_log.json')
+
+# Criar diretórios
+os.makedirs(BACKUP_DIR, exist_ok=True)
+os.makedirs(TEMP_RESTORE_DIR, exist_ok=True)
+
+def log_backup_operation(operation, filename, success, details=None, error=None):
+    """Registra operações de backup/restauração em log"""
+    try:
+        logs = []
+        if os.path.exists(BACKUP_LOG_FILE):
+            with open(BACKUP_LOG_FILE, 'r', encoding='utf-8') as f:
+                logs = json.load(f)
+        
+        logs.append({
+            'timestamp': datetime.now().isoformat(),
+            'operation': operation,
+            'filename': filename,
+            'success': success,
+            'details': details,
+            'error': error,
+            'user': session.get('usuario', 'unknown'),
+            'user_id': session.get('user_id'),
+            'ip': request.remote_addr
+        })
+        
+        # Manter apenas últimos 100 registros
+        logs = logs[-100:]
+        
+        with open(BACKUP_LOG_FILE, 'w', encoding='utf-8') as f:
+            json.dump(logs, f, ensure_ascii=False, indent=2)
+            
+    except Exception as e:
+        print(f"Erro ao registrar log: {e}")
+
+def escape_sql_string(value):
+    """Escapa strings para SQL de forma segura"""
+    if value is None:
+        return 'NULL'
+    if isinstance(value, str):
+        # Escapar aspas simples e caracteres especiais
+        escaped = value.replace("'", "''")
+        # Escapar barras invertidas
+        escaped = escaped.replace("\\", "\\\\")
+        return f"'{escaped}'"
+    elif isinstance(value, datetime):
+        return f"'{value.strftime('%Y-%m-%d %H:%M:%S')}'"
+    elif isinstance(value, bool):
+        return 'TRUE' if value else 'FALSE'
+    elif isinstance(value, (int, float)):
+        return str(value)
+    else:
+        escaped = str(value).replace("'", "''")
+        return f"'{escaped}'"
+
+def listar_backups_sistema():
+    """Lista todos os backups disponíveis com informações detalhadas"""
+    backups = []
+    if not os.path.exists(BACKUP_DIR):
+        return backups
+    
+    for file in os.listdir(BACKUP_DIR):
+        if file.endswith('.zip'):
+            filepath = os.path.join(BACKUP_DIR, file)
+            mtime = os.path.getmtime(filepath)
+            ctime = os.path.getctime(filepath)
+            size = os.path.getsize(filepath) / (1024 * 1024)
+            
+            backups.append({
+                'name': file,
+                'date_str': datetime.fromtimestamp(mtime).strftime('%d/%m/%Y %H:%M:%S'),
+                'date': datetime.fromtimestamp(mtime),
+                'size_mb': round(size, 2),
+                'size_bytes': os.path.getsize(filepath),
+                'path': filepath,
+                'created': datetime.fromtimestamp(ctime)
+            })
+    
+    backups.sort(key=lambda x: x['date'], reverse=True)
+    return backups
+
+def criar_backup_sistema():
+    """Cria backup completo usando pg_dump (mais confiável)"""
+    try:
+        timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+        db_name = os.getenv('DB_NAME', 'sistema_maconico')
+        backup_name = f'backup_{db_name}_{timestamp}'
+        
+        # Usar pg_dump para criar backup (mais confiável que SQL manual)
+        dump_file = os.path.join(BACKUP_DIR, f'{backup_name}.dump')
+        
+        # Extrair dados de conexão
+        import urllib.parse
+        db_url = DATABASE_URL
+        
+        # Se for URL do PostgreSQL, parsear
+        if db_url.startswith('postgresql://'):
+            parsed = urllib.parse.urlparse(db_url)
+            db_host = parsed.hostname
+            db_port = parsed.port or 5432
+            db_name_parsed = parsed.path[1:] if parsed.path else db_name
+            db_user = parsed.username
+            db_password = parsed.password
+            
+            # Comando pg_dump
+            cmd = [
+                'pg_dump',
+                '-h', db_host,
+                '-p', str(db_port),
+                '-U', db_user,
+                '-d', db_name_parsed,
+                '-F', 'c',  # Formato customizado
+                '-f', dump_file,
+                '-v'
+            ]
+            
+            # Definir variável de ambiente para senha
+            env = os.environ.copy()
+            env['PGPASSWORD'] = db_password
+            
+            # Executar pg_dump
+            result = subprocess.run(cmd, capture_output=True, text=True, env=env)
+            
+            if result.returncode != 0:
+                raise Exception(f"pg_dump falhou: {result.stderr}")
+        
+        # Se pg_dump não estiver disponível, usar método SQL alternativo
+        if not os.path.exists(dump_file):
+            raise Exception("pg_dump não disponível, usando método SQL alternativo")
+        
+        # Compactar em ZIP
+        zip_file = dump_file + '.zip'
+        with zipfile.ZipFile(zip_file, 'w', zipfile.ZIP_DEFLATED) as zf:
+            zf.write(dump_file, os.path.basename(dump_file))
+        
+        # Remover arquivo dump temporário
+        os.remove(dump_file)
+        
+        tamanho_mb = os.path.getsize(zip_file) / (1024 * 1024)
+        
+        # Manter apenas últimos 20 backups
+        backups = listar_backups_sistema()
+        deleted = []
+        for i, b in enumerate(backups):
+            if i >= 20:
+                try:
+                    os.remove(b['path'])
+                    deleted.append(b['name'])
+                except:
+                    pass
+        
+        result = {
+            'success': True,
+            'filename': os.path.basename(zip_file),
+            'size_mb': round(tamanho_mb, 2),
+            'size_bytes': os.path.getsize(zip_file),
+            'deleted_old': len(deleted)
+        }
+        
+        log_backup_operation('backup', result['filename'], True, result)
+        return result
+        
+    except Exception as e:
+        print(f"Erro ao criar backup com pg_dump: {e}")
+        traceback.print_exc()
+        
+        # Fallback: método SQL manual melhorado
+        return criar_backup_sql_fallback()
+
+def criar_backup_sql_fallback():
+    """Método alternativo de backup usando SQL (com escape melhorado)"""
+    temp_sql_file = None
+    try:
+        timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+        db_name = os.getenv('DB_NAME', 'sistema_maconico')
+        backup_name = f'backup_{db_name}_{timestamp}'
+        temp_sql_file = os.path.join(BACKUP_DIR, f'{backup_name}.sql')
+        
+        # Conectar ao banco
+        conn = psycopg2.connect(DATABASE_URL)
+        conn.autocommit = False
+        cursor = conn.cursor(cursor_factory=RealDictCursor)
+        
+        # Obter lista de tabelas
+        cursor.execute("""
+            SELECT tablename FROM pg_tables 
+            WHERE schemaname = 'public' 
+            AND tablename NOT LIKE 'pg_%'
+            ORDER BY tablename
+        """)
+        tables = [row['tablename'] for row in cursor.fetchall()]
+        
+        # Criar arquivo SQL
+        with open(temp_sql_file, 'w', encoding='utf-8') as f:
+            f.write(f"-- ============================================\n")
+            f.write(f"-- BACKUP DO SISTEMA MAÇÔNICO\n")
+            f.write(f"-- ============================================\n")
+            f.write(f"-- Data: {datetime.now().strftime('%d/%m/%Y %H:%M:%S')}\n")
+            f.write(f"-- Banco: {db_name}\n")
+            f.write(f"-- Tabelas: {len(tables)}\n")
+            f.write(f"-- ============================================\n\n")
+            
+            f.write("BEGIN;\n\n")
+            f.write("SET client_encoding = 'UTF8';\n\n")
+            
+            # Backup de cada tabela
+            tables_backuped = []
+            for table in tables:
+                try:
+                    # Obter estrutura da tabela
+                    cursor.execute(f"""
+                        SELECT column_name, data_type, is_nullable, column_default
+                        FROM information_schema.columns 
+                        WHERE table_name = '{table}'
+                        ORDER BY ordinal_position
+                    """)
+                    columns = cursor.fetchall()
+                    
+                    if not columns:
+                        continue
+                    
+                    f.write(f"-- ============================================\n")
+                    f.write(f"-- Tabela: {table}\n")
+                    f.write(f"-- ============================================\n\n")
+                    
+                    # DROP e CREATE TABLE
+                    f.write(f"DROP TABLE IF EXISTS {table} CASCADE;\n")
+                    f.write(f"CREATE TABLE {table} (\n")
+                    
+                    col_defs = []
+                    for col in columns:
+                        col_def = f"    {col['column_name']} {col['data_type']}"
+                        if col['is_nullable'] == 'NO':
+                            col_def += " NOT NULL"
+                        col_defs.append(col_def)
+                    
+                    f.write(",\n".join(col_defs))
+                    f.write("\n);\n\n")
+                    
+                    # Backup dos dados
+                    cursor.execute(f"SELECT * FROM {table}")
+                    rows = cursor.fetchall()
+                    
+                    if rows:
+                        col_names = [col['column_name'] for col in columns]
+                        col_names_str = ', '.join(col_names)
+                        
+                        batch_size = 100
+                        for i in range(0, len(rows), batch_size):
+                            batch = rows[i:i+batch_size]
+                            f.write(f"INSERT INTO {table} ({col_names_str}) VALUES\n")
+                            
+                            values_list = []
+                            for row in batch:
+                                values = []
+                                for col_name in col_names:
+                                    val = row.get(col_name)
+                                    values.append(escape_sql_string(val))
+                                values_list.append(f"    ({', '.join(values)})")
+                            
+                            f.write(",\n".join(values_list))
+                            f.write(";\n\n")
+                    
+                    tables_backuped.append(table)
+                    
+                except Exception as e:
+                    print(f"Erro ao fazer backup da tabela {table}: {e}")
+                    f.write(f"-- ERRO AO FAZER BACKUP DA TABELA {table}: {str(e)}\n\n")
+            
+            f.write("COMMIT;\n")
+        
+        cursor.close()
+        conn.close()
+        
+        # Compactar em ZIP
+        zip_file = temp_sql_file + '.zip'
+        with zipfile.ZipFile(zip_file, 'w', zipfile.ZIP_DEFLATED) as zf:
+            zf.write(temp_sql_file, os.path.basename(temp_sql_file))
+        
+        # Remover arquivo SQL temporário
+        os.remove(temp_sql_file)
+        
+        tamanho_mb = os.path.getsize(zip_file) / (1024 * 1024)
+        
+        # Manter apenas últimos 20 backups
+        backups = listar_backups_sistema()
+        deleted = []
+        for i, b in enumerate(backups):
+            if i >= 20:
+                try:
+                    os.remove(b['path'])
+                    deleted.append(b['name'])
+                except:
+                    pass
+        
+        result = {
+            'success': True,
+            'filename': os.path.basename(zip_file),
+            'size_mb': round(tamanho_mb, 2),
+            'size_bytes': os.path.getsize(zip_file),
+            'tables': len(tables_backuped),
+            'total_tables': len(tables),
+            'deleted_old': len(deleted)
+        }
+        
+        log_backup_operation('backup', result['filename'], True, result)
+        return result
+        
+    except Exception as e:
+        print(f"Erro ao criar backup SQL: {e}")
+        traceback.print_exc()
+        
+        if temp_sql_file and os.path.exists(temp_sql_file):
+            try:
+                os.remove(temp_sql_file)
+            except:
+                pass
+        
+        error_msg = str(e)
+        log_backup_operation('backup', None, False, error=error_msg)
+        return {'success': False, 'error': error_msg}
+
+def restaurar_backup_sistema(filename, confirm=False):
+    """Restaura um backup do sistema usando pg_restore ou SQL"""
+    if not confirm:
+        return {'success': False, 'error': 'Confirmação necessária', 'requires_confirmation': True}
+    
+    temp_dir = None
+    try:
+        # Validar arquivo
+        backup_path = os.path.join(BACKUP_DIR, filename)
+        if not os.path.exists(backup_path):
+            return {'success': False, 'error': 'Arquivo de backup não encontrado'}
+        
+        # Criar backup de emergência
+        print("Criando backup de emergência...")
+        emergency_backup = criar_backup_sistema()
+        
+        if not emergency_backup['success']:
+            return {
+                'success': False,
+                'error': 'Não foi possível criar backup de emergência. Operação cancelada.',
+                'emergency_backup': None
+            }
+        
+        # Criar diretório temporário
+        temp_dir = os.path.join(TEMP_RESTORE_DIR, f'restore_{datetime.now().strftime("%Y%m%d_%H%M%S")}')
+        os.makedirs(temp_dir, exist_ok=True)
+        
+        # Extrair arquivo
+        with zipfile.ZipFile(backup_path, 'r') as zf:
+            zf.extractall(temp_dir)
+            extracted_files = os.listdir(temp_dir)
+            
+            # Verificar tipo de backup
+            dump_files = [f for f in extracted_files if f.endswith('.dump')]
+            sql_files = [f for f in extracted_files if f.endswith('.sql')]
+            
+            if dump_files:
+                # Restaurar com pg_restore
+                dump_file = os.path.join(temp_dir, dump_files[0])
+                
+                import urllib.parse
+                db_url = DATABASE_URL
+                
+                if db_url.startswith('postgresql://'):
+                    parsed = urllib.parse.urlparse(db_url)
+                    db_host = parsed.hostname
+                    db_port = parsed.port or 5432
+                    db_name_parsed = parsed.path[1:] if parsed.path else 'sistema_maconico'
+                    db_user = parsed.username
+                    db_password = parsed.password
+                    
+                    cmd = [
+                        'pg_restore',
+                        '-h', db_host,
+                        '-p', str(db_port),
+                        '-U', db_user,
+                        '-d', db_name_parsed,
+                        '--clean',
+                        '--if-exists',
+                        '--no-owner',
+                        '--no-privileges',
+                        dump_file
+                    ]
+                    
+                    env = os.environ.copy()
+                    env['PGPASSWORD'] = db_password
+                    
+                    result = subprocess.run(cmd, capture_output=True, text=True, env=env)
+                    
+                    if result.returncode != 0:
+                        raise Exception(f"pg_restore falhou: {result.stderr}")
+                    
+                    statements_executed = "pg_restore completed"
+                    
+            elif sql_files:
+                # Restaurar com SQL
+                sql_file_path = os.path.join(temp_dir, sql_files[0])
+                
+                # Conectar ao banco
+                conn = psycopg2.connect(DATABASE_URL)
+                conn.autocommit = False
+                cursor = conn.cursor()
+                
+                # Ler e executar SQL
+                with open(sql_file_path, 'r', encoding='utf-8') as f:
+                    sql_content = f.read()
+                
+                # Separar comandos SQL de forma mais inteligente
+                statements = []
+                current = []
+                in_string = False
+                string_char = None
+                
+                for line in sql_content.split('\n'):
+                    stripped = line.strip()
+                    
+                    # Ignorar comentários de linha
+                    if stripped.startswith('--') and not in_string:
+                        continue
+                    
+                    current.append(line)
+                    
+                    # Verificar se estamos dentro de uma string
+                    for char in line:
+                        if char in ("'", '"') and not in_string:
+                            in_string = True
+                            string_char = char
+                        elif char == string_char and in_string:
+                            # Verificar se não é escape
+                            idx = line.find(char)
+                            if idx > 0 and line[idx-1] == '\\':
+                                continue
+                            in_string = False
+                            string_char = None
+                    
+                    # Se não estamos dentro de string e linha termina com ;
+                    if not in_string and stripped.endswith(';'):
+                        statements.append('\n'.join(current))
+                        current = []
+                
+                if current:
+                    statements.append('\n'.join(current))
+                
+                # Executar statements
+                executed = 0
+                errors = []
+                
+                for i, stmt in enumerate(statements):
+                    if stmt.strip() and not stmt.strip().startswith('--'):
+                        try:
+                            cursor.execute(stmt)
+                            executed += 1
+                        except Exception as e:
+                            errors.append(f"Statement {i+1}: {str(e)[:200]}")
+                            print(f"Erro na statement {i+1}: {e}")
+                            print(f"SQL: {stmt[:300]}")
+                            
+                            # Se erro crítico, abortar
+                            if 'syntax error' in str(e).lower():
+                                raise Exception(f"Erro de sintaxe: {str(e)}")
+                
+                if errors and not executed:
+                    conn.rollback()
+                    raise Exception(f"{len(errors)} erros encontrados. Primeiro erro: {errors[0]}")
+                
+                conn.commit()
+                cursor.close()
+                conn.close()
+                
+                statements_executed = executed
+            else:
+                raise Exception("Formato de backup não reconhecido")
+        
+        # Limpar diretório temporário
+        shutil.rmtree(temp_dir)
+        
+        result = {
+            'success': True,
+            'message': f'Backup restaurado com sucesso!',
+            'emergency_backup': emergency_backup.get('filename'),
+            'emergency_backup_size': emergency_backup.get('size_mb'),
+            'statements_executed': statements_executed,
+            'restored_from': filename
+        }
+        
+        log_backup_operation('restore', filename, True, result)
+        return result
+        
+    except Exception as e:
+        print(f"Erro ao restaurar backup: {e}")
+        traceback.print_exc()
+        
+        if temp_dir and os.path.exists(temp_dir):
+            try:
+                shutil.rmtree(temp_dir)
+            except:
+                pass
+        
+        error_msg = str(e)
+        log_backup_operation('restore', filename, False, error=error_msg)
+        
+        return {
+            'success': False,
+            'error': error_msg,
+            'emergency_backup': emergency_backup.get('filename') if 'emergency_backup' in locals() else None
+        }
+
+# =============================
+# ROTAS DE BACKUP (mantidas as mesmas)
+# =============================
 
 @app.route("/admin/backup")
 @admin_required
 def pagina_backup_sistema():
+    """Página principal de gerenciamento de backups"""
     backups = listar_backups_sistema()
+    
     total_size = sum(b['size_mb'] for b in backups)
-    stats = {'total': len(backups), 'total_size_mb': round(total_size, 2), 'newest': backups[0]['date_str'] if backups else 'Nenhum'}
-    return render_template("admin/backup.html", backups=backups, stats=stats)
+    total_backups = len(backups)
+    oldest = backups[-1]['date_str'] if backups else None
+    newest = backups[0]['date_str'] if backups else None
+    
+    disk_usage = shutil.disk_usage(BACKUP_DIR)
+    disk_free_gb = disk_usage.free / (1024**3)
+    disk_total_gb = disk_usage.total / (1024**3)
+    
+    stats = {
+        'total': total_backups,
+        'total_size_mb': round(total_size, 2),
+        'total_size_gb': round(total_size / 1024, 2),
+        'newest': newest,
+        'oldest': oldest,
+        'disk_free_gb': round(disk_free_gb, 2),
+        'disk_total_gb': round(disk_total_gb, 2),
+        'disk_used_percent': round((1 - disk_free_gb / disk_total_gb) * 100, 1) if disk_total_gb > 0 else 0
+    }
+    
+    logs = []
+    if os.path.exists(BACKUP_LOG_FILE):
+        try:
+            with open(BACKUP_LOG_FILE, 'r', encoding='utf-8') as f:
+                logs = json.load(f)
+                logs = logs[-20:]
+        except:
+            pass
+    
+    return render_template("admin/backup.html", 
+                          backups=backups, 
+                          stats=stats,
+                          logs=logs,
+                          now=datetime.now())
 
 @app.route("/api/backup/criar", methods=["POST"])
 @admin_required
 def api_criar_backup_sistema():
+    """Cria um novo backup"""
     result = criar_backup_sistema()
+    
+    if result['success']:
+        flash(f"Backup criado com sucesso! Arquivo: {result['filename']} ({result['size_mb']} MB)", "success")
+    else:
+        flash(f"Erro ao criar backup: {result['error']}", "danger")
+    
+    return jsonify(result)
+
+@app.route("/api/backup/restaurar/<filename>", methods=["POST"])
+@admin_required
+def api_restaurar_backup(filename):
+    """Restaura um backup existente"""
+    data = request.get_json() or {}
+    confirm = data.get('confirm', False)
+    
+    result = restaurar_backup_sistema(filename, confirm)
+    
+    if result.get('requires_confirmation'):
+        return jsonify(result), 400
+    elif result['success']:
+        flash(f"Backup restaurado com sucesso! Backup de emergência: {result.get('emergency_backup', 'N/A')}", "success")
+    else:
+        flash(f"Erro ao restaurar backup: {result['error']}", "danger")
+        if result.get('emergency_backup'):
+            flash(f"Backup de emergência criado: {result['emergency_backup']}", "info")
+    
     return jsonify(result)
 
 @app.route("/api/backup/listar")
 @admin_required
 def api_listar_backups_sistema():
+    """Lista todos os backups disponíveis"""
     backups = listar_backups_sistema()
     return jsonify({'success': True, 'backups': backups})
 
 @app.route("/api/backup/baixar/<filename>")
 @admin_required
 def api_baixar_backup_sistema(filename):
+    """Download de um backup"""
     backup_path = os.path.join(BACKUP_DIR, filename)
+    
     if not os.path.exists(backup_path):
         flash("Arquivo não encontrado", "danger")
         return redirect("/admin/backup")
-    return send_file(backup_path, as_attachment=True, download_name=filename, mimetype='application/zip')
+    
+    log_backup_operation('download', filename, True)
+    
+    return send_file(backup_path, 
+                    as_attachment=True, 
+                    download_name=filename, 
+                    mimetype='application/zip')
 
 @app.route("/api/backup/excluir/<filename>", methods=["DELETE"])
 @admin_required
 def api_excluir_backup_sistema(filename):
+    """Exclui um backup específico"""
     backup_path = os.path.join(BACKUP_DIR, filename)
+    
     if not os.path.exists(backup_path):
         return jsonify({'success': False, 'error': 'Arquivo não encontrado'}), 404
-    os.remove(backup_path)
-    return jsonify({'success': True, 'message': 'Backup excluído'})
+    
+    try:
+        os.remove(backup_path)
+        log_backup_operation('delete', filename, True)
+        return jsonify({'success': True, 'message': 'Backup excluído com sucesso'})
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
 
 @app.route("/api/backup/limpar", methods=["POST"])
 @admin_required
 def api_limpar_backups_sistema():
+    """Remove backups antigos mantendo apenas os últimos 20"""
     try:
         backups = listar_backups_sistema()
-        deleted = 0
+        deleted = []
+        
         for i, backup in enumerate(backups):
             if i >= 20:
                 try:
                     os.remove(backup['path'])
-                    deleted += 1
-                except:
-                    pass
-        return jsonify({'success': True, 'deleted': deleted})
+                    deleted.append(backup['name'])
+                except Exception as e:
+                    print(f"Erro ao remover {backup['name']}: {e}")
+        
+        log_backup_operation('cleanup', None, True, {'deleted': len(deleted), 'files': deleted})
+        
+        return jsonify({
+            'success': True, 
+            'deleted': len(deleted),
+            'deleted_files': deleted,
+            'remaining': min(len(backups), 20)
+        })
     except Exception as e:
         return jsonify({'success': False, 'error': str(e)}), 500
 
+@app.route("/api/backup/info/<filename>")
+@admin_required
+def api_backup_info(filename):
+    """Obtém informações detalhadas de um backup"""
+    backup_path = os.path.join(BACKUP_DIR, filename)
+    
+    if not os.path.exists(backup_path):
+        return jsonify({'success': False, 'error': 'Arquivo não encontrado'}), 404
+    
+    try:
+        info = {
+            'filename': filename,
+            'size_bytes': os.path.getsize(backup_path),
+            'size_mb': round(os.path.getsize(backup_path) / (1024 * 1024), 2),
+            'modified': datetime.fromtimestamp(os.path.getmtime(backup_path)).isoformat(),
+            'created': datetime.fromtimestamp(os.path.getctime(backup_path)).isoformat()
+        }
+        
+        # Tentar ler cabeçalho
+        with zipfile.ZipFile(backup_path, 'r') as zf:
+            sql_files = [f for f in zf.namelist() if f.endswith(('.sql', '.dump'))]
+            if sql_files:
+                with zf.open(sql_files[0]) as f:
+                    header = f.read(2000).decode('utf-8', errors='ignore')
+                    for line in header.split('\n'):
+                        if 'Data:' in line:
+                            info['backup_date'] = line.strip()
+                        elif 'Tabelas:' in line:
+                            try:
+                                info['tables'] = int(line.split(':')[1].strip())
+                            except:
+                                pass
+        
+        return jsonify({'success': True, 'info': info})
+        
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@app.route("/api/backup/logs")
+@admin_required
+def api_backup_logs():
+    """Retorna logs de operações de backup"""
+    limit = request.args.get('limit', 50, type=int)
+    
+    logs = []
+    if os.path.exists(BACKUP_LOG_FILE):
+        try:
+            with open(BACKUP_LOG_FILE, 'r', encoding='utf-8') as f:
+                logs = json.load(f)
+                logs = logs[-limit:]
+        except:
+            pass
+    
+    return jsonify({'success': True, 'logs': logs, 'total': len(logs)})
 # =============================
 # INICIALIZAÇÃO DA APLICAÇÃO
 # =============================

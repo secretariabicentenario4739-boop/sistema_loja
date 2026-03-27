@@ -8,14 +8,17 @@
         <!-- Cabeçalho com botão Novo Obreiro e Voltar -->
         <div class="d-flex justify-content-between align-items-center mb-4">
             <h2>
-                <i class="bi bi-people"></i> 
+                <i class="bi bi-people-fill"></i> 
                 Obreiros
-                <span class="badge bg-primary">{{ obreiros|length }}</span>
+                <span class="badge bg-primary">{{ estatisticas.total_ativos }}</span>
+                {% if estatisticas.total_inativos > 0 %}
+                <small class="text-muted fs-6">(+{{ estatisticas.total_inativos }} inativos)</small>
+                {% endif %}
             </h2>
             <div>
                 {% if session.tipo == 'admin' %}
                 <a href="/obreiros/novo" class="btn btn-success me-2">
-                    <i class="bi bi-person-plus"></i> Novo Obreiro
+                    <i class="bi bi-plus-circle"></i> Novo Obreiro
                 </a>
                 {% endif %}
                 <a href="/dashboard" class="btn btn-outline-secondary">
@@ -35,6 +38,62 @@
             {% endif %}
         {% endwith %}
 
+        <!-- Cards de Estatísticas -->
+        <div class="row mb-4">
+            <div class="col-md-3">
+                <div class="card bg-primary text-white shadow">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <h6 class="card-title mb-0">Total de Obreiros</h6>
+                                <h2 class="mb-0">{{ estatisticas.total_obreiros }}</h2>
+                            </div>
+                            <i class="bi bi-people-fill fs-1"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card bg-success text-white shadow">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <h6 class="card-title mb-0">Ativos</h6>
+                                <h2 class="mb-0">{{ estatisticas.total_ativos }}</h2>
+                            </div>
+                            <i class="bi bi-check-circle-fill fs-1"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card bg-secondary text-white shadow">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <h6 class="card-title mb-0">Inativos</h6>
+                                <h2 class="mb-0">{{ estatisticas.total_inativos }}</h2>
+                            </div>
+                            <i class="bi bi-ban-fill fs-1"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card bg-info text-white shadow">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <h6 class="card-title mb-0">Exibidos</h6>
+                                <h2 class="mb-0">{{ estatisticas.exibidos }}</h2>
+                            </div>
+                            <i class="bi bi-funnel-fill fs-1"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <!-- Filtros -->
         <div class="card shadow mb-4">
             <div class="card-header bg-light">
@@ -44,18 +103,24 @@
                 <form method="GET" class="row g-3">
                     <div class="col-md-3">
                         <label class="form-label">Nome/Usuário</label>
-                        <input type="text" class="form-control" name="nome" value="{{ filtros.nome }}" placeholder="Buscar...">
+                        <input type="text" class="form-control" name="nome" 
+                               value="{{ filtros.nome }}" placeholder="Buscar por nome...">
                     </div>
                     <div class="col-md-2">
                         <label class="form-label">Grau</label>
                         <select class="form-select" name="grau">
                             <option value="">Todos</option>
                             {% for g in graus %}
-                            <option value="{{ g.grau_atual }}" {% if filtros.grau == g.grau_atual|string %}selected{% endif %}>
-                                {% if g.grau_atual == 1 %}Aprendiz
-                                {% elif g.grau_atual == 2 %}Companheiro
-                                {% elif g.grau_atual == 3 %}Mestre
-                                {% else %}Grau Superior{% endif %}
+                            <option value="{{ g.grau }}" {% if filtros.grau == g.grau|string %}selected{% endif %}>
+                                {% if g.grau == 3 %}
+                                    <i class="bi bi-star-fill"></i> Mestre
+                                {% elif g.grau == 2 %}
+                                    <i class="bi bi-star"></i> Companheiro
+                                {% elif g.grau == 1 %}
+                                    <i class="bi bi-star"></i> Aprendiz
+                                {% else %}
+                                    {{ g.nome_grau }}
+                                {% endif %}
                             </option>
                             {% endfor %}
                         </select>
@@ -65,7 +130,9 @@
                         <select class="form-select" name="cargo">
                             <option value="">Todos</option>
                             {% for c in cargos %}
-                            <option value="{{ c.id }}" {% if filtros.cargo == c.id|string %}selected{% endif %}>{{ c.nome }}</option>
+                            <option value="{{ c.id }}" {% if filtros.cargo == c.id|string %}selected{% endif %}>
+                                <i class="bi bi-briefcase"></i> {{ c.nome }}
+                            </option>
                             {% endfor %}
                         </select>
                     </div>
@@ -74,22 +141,35 @@
                         <select class="form-select" name="loja">
                             <option value="">Todas</option>
                             {% for l in lojas %}
-                            <option value="{{ l.loja_nome }}" {% if filtros.loja == l.loja_nome %}selected{% endif %}>{{ l.loja_nome }}</option>
+                            <option value="{{ l.nome }}" {% if filtros.loja == l.nome %}selected{% endif %}>
+                                <i class="bi bi-building"></i> {{ l.nome }}
+                            </option>
                             {% endfor %}
                         </select>
                     </div>
                     <div class="col-md-2">
                         <label class="form-label">Status</label>
                         <select class="form-select" name="status">
-                            <option value="">Todos</option>
-                            <option value="1" {% if filtros.status == '1' %}selected{% endif %}>Ativos</option>
-                            <option value="0" {% if filtros.status == '0' %}selected{% endif %}>Inativos</option>
+                            <option value="ativos" {% if filtros.status == 'ativos' %}selected{% endif %}>
+                                <i class="bi bi-check-circle"></i> Ativos
+                            </option>
+                            <option value="inativos" {% if filtros.status == 'inativos' %}selected{% endif %}>
+                                <i class="bi bi-ban"></i> Inativos
+                            </option>
+                            <option value="todos" {% if filtros.status == 'todos' %}selected{% endif %}>
+                                <i class="bi bi-people"></i> Todos
+                            </option>
                         </select>
                     </div>
                     <div class="col-md-1 d-flex align-items-end">
                         <button type="submit" class="btn btn-primary w-100">
-                            <i class="bi bi-search"></i> Filtrar
+                            <i class="bi bi-search"></i>
                         </button>
+                    </div>
+                    <div class="col-md-1 d-flex align-items-end">
+                        <a href="/obreiros" class="btn btn-secondary w-100">
+                            <i class="bi bi-eraser"></i>
+                        </a>
                     </div>
                 </form>
             </div>
@@ -99,81 +179,166 @@
         <div class="card shadow">
             <div class="card-body">
                 <div class="table-responsive">
-                    <table class="table table-hover">
+                    <table class="table table-hover" id="tabelaObreiros">
                         <thead class="table-light">
-                              <tr>
+                            <tr>
+                                <th>Foto</th>
                                 <th>Nome</th>
-                                <th>Usuário</th>
                                 <th>Grau</th>
+                                <th>Cargos</th>
                                 <th>Loja</th>
-                                <th>Telefone</th>
+                                <th>Presença</th>
                                 <th>Status</th>
                                 <th>Ações</th>
-                              </tr>
+                            </tr>
                         </thead>
                         <tbody>
                             {% for obreiro in obreiros %}
-                            <tr class="{% if obreiro.ativo == 0 %}table-secondary{% endif %}">
-                                <td>
-                                    <strong>{{ obreiro.nome_completo }}</strong>
-                                    {% if obreiro.nome_maconico %}
-                                    <br><small class="text-muted">{{ obreiro.nome_maconico }}</small>
-                                    {% endif %}
-                                </td>
-                                <td>{{ obreiro.usuario }}</td>
-                                <td>
-                                    {% if obreiro.grau_atual >= 4 %}
-                                        {% if obreiro.grau_nome %}
-                                            <span class="badge bg-success">{{ obreiro.grau_nome }}</span>
-                                        {% else %}
-                                            <span class="badge bg-success">Grau Superior</span>
-                                        {% endif %}
-                                    {% elif obreiro.grau_atual == 3 %}
-                                        <span class="badge bg-success">Mestre</span>
-                                    {% elif obreiro.grau_atual == 2 %}
-                                        <span class="badge bg-primary">Companheiro</span>
+                            <tr class="{% if obreiro.ativo == 1 %}table-active{% else %}table-secondary{% endif %}">
+                                <td class="text-center">
+                                    {% if obreiro.foto %}
+                                    <img src="/uploads/fotos/{{ obreiro.foto }}" 
+                                         class="rounded-circle" 
+                                         style="width: 40px; height: 40px; object-fit: cover;"
+                                         alt="Foto de {{ obreiro.nome_completo }}">
                                     {% else %}
-                                        <span class="badge bg-secondary">Aprendiz</span>
+                                    <div class="rounded-circle bg-secondary text-white d-flex align-items-center justify-content-center mx-auto"
+                                         style="width: 40px; height: 40px;">
+                                        <i class="bi bi-person"></i>
+                                    </div>
                                     {% endif %}
                                 </td>
-                                <td>{{ obreiro.loja_nome or '-' }}</td>
-                                <td>{{ obreiro.telefone or '-' }}</td>
+                                <td>
+                                    <strong>{{ obreiro.nome_completo or obreiro.usuario }}</strong>
+                                    {% if obreiro.nome_maconico %}
+                                    <br>
+                                    <small class="text-muted">
+                                        <i class="bi bi-handshake"></i> {{ obreiro.nome_maconico }}
+                                    </small>
+                                    {% endif %}
+                                    {% if obreiro.cim_numero %}
+                                    <br>
+                                    <small class="text-muted">
+                                        <i class="bi bi-card-text"></i> CIM: {{ obreiro.cim_numero }}
+                                    </small>
+                                    {% endif %}
+                                    <br>
+                                    <small class="text-muted">
+                                        <i class="bi bi-person-circle"></i> {{ obreiro.usuario }}
+                                    </small>
+                                </td>
+                                <td>
+                                    {% if obreiro.grau_atual == 3 %}
+                                        <span class="badge bg-warning text-dark">
+                                            <i class="bi bi-star-fill"></i> Mestre
+                                        </span>
+                                    {% elif obreiro.grau_atual == 2 %}
+                                        <span class="badge bg-primary">
+                                            <i class="bi bi-star"></i> Companheiro
+                                        </span>
+                                    {% elif obreiro.grau_atual == 1 %}
+                                        <span class="badge bg-secondary">
+                                            <i class="bi bi-star"></i> Aprendiz
+                                        </span>
+                                    {% else %}
+                                        <span class="badge bg-info">
+                                            {{ obreiro.grau_descricao }}
+                                        </span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if obreiro.cargos_atuais %}
+                                        {% set cargos_lista = obreiro.cargos_atuais.split(', ') %}
+                                        {% for cargo in cargos_lista[:2] %}
+                                        <span class="badge bg-info mb-1 d-block">
+                                            <i class="bi bi-briefcase"></i> {{ cargo }}
+                                        </span>
+                                        {% endfor %}
+                                        {% if cargos_lista|length > 2 %}
+                                        <small class="text-muted">
+                                            <i class="bi bi-plus-circle"></i> +{{ cargos_lista|length - 2 }}
+                                        </small>
+                                        {% endif %}
+                                    {% else %}
+                                    <span class="text-muted">
+                                        <i class="bi bi-x-circle"></i> Nenhum cargo
+                                    </span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if obreiro.loja_nome %}
+                                    <i class="bi bi-building"></i> {{ obreiro.loja_nome }}
+                                    {% if obreiro.loja_cidade %}
+                                    <br>
+                                    <small class="text-muted">
+                                        <i class="bi bi-geo-alt"></i> {{ obreiro.loja_cidade }}/{{ obreiro.loja_estado }}
+                                    </small>
+                                    {% endif %}
+                                    {% else %}
+                                    <span class="text-muted">
+                                        <i class="bi bi-question-circle"></i> Não vinculado
+                                    </span>
+                                    {% endif %}
+                                </td>
+                                <td style="min-width: 100px;">
+                                    {% if obreiro.presencas_ano > 0 %}
+                                    <div class="progress" style="height: 20px;"
+                                         title="{{ obreiro.presencas_confirmadas_ano }}/{{ obreiro.presencas_ano }} presenças">
+                                        <div class="progress-bar bg-success" 
+                                             role="progressbar" 
+                                             style="width: {{ obreiro.percentual_presenca }}%;">
+                                            {{ "%.0f"|format(obreiro.percentual_presenca) }}%
+                                        </div>
+                                    </div>
+                                    <small class="text-muted">
+                                        <i class="bi bi-calendar-check"></i> 
+                                        {{ obreiro.presencas_confirmadas_ano }}/{{ obreiro.presencas_ano }}
+                                    </small>
+                                    {% else %}
+                                    <div class="text-center text-muted">
+                                        <i class="bi bi-chart-line"></i> Sem registros
+                                    </div>
+                                    {% endif %}
+                                </td>
                                 <td>
                                     {% if obreiro.ativo == 1 %}
-                                        <span class="badge bg-success">Ativo</span>
+                                    <span class="badge bg-success">
+                                        <i class="bi bi-check-circle"></i> Ativo
+                                    </span>
                                     {% else %}
-                                        <span class="badge bg-danger">Inativo</span>
+                                    <span class="badge bg-secondary">
+                                        <i class="bi bi-ban"></i> Inativo
+                                    </span>
                                     {% endif %}
                                 </td>
                                 <td>
-                                    <div class="btn-group btn-group-sm">
-                                        <a href="/obreiros/{{ obreiro.id }}" class="btn btn-info" title="Visualizar">
+                                    <div class="btn-group btn-group-sm" role="group">
+                                        <a href="/obreiros/{{ obreiro.id }}" 
+                                           class="btn btn-info" 
+                                           title="Visualizar detalhes">
                                             <i class="bi bi-eye"></i>
                                         </a>
                                         {% if session.tipo == 'admin' or session.user_id == obreiro.id %}
-                                        <a href="/obreiros/{{ obreiro.id }}/editar" class="btn btn-warning" title="Editar">
+                                        <a href="/obreiros/{{ obreiro.id }}/editar" 
+                                           class="btn btn-warning" 
+                                           title="Editar obreiro">
                                             <i class="bi bi-pencil"></i>
                                         </a>
                                         {% endif %}
                                         {% if session.tipo == 'admin' %}
-                                        <a href="/obreiros/{{ obreiro.id }}/documentos" class="btn btn-secondary" title="Documentos">
-                                            <i class="bi bi-files"></i>
-                                        </a>
-                                        {% endif %}
-                                        {% if session.tipo == 'admin' and session.user_id != obreiro.id %}
                                             {% if obreiro.ativo == 1 %}
                                             <a href="/obreiros/{{ obreiro.id }}/excluir" 
-                                               class="btn btn-danger"
-                                               onclick="return confirm('Excluir/Desativar {{ obreiro.nome_completo }}?')"
-                                               title="Excluir/Desativar">
-                                                <i class="bi bi-trash"></i>
+                                               class="btn btn-danger" 
+                                               title="Desativar obreiro"
+                                               onclick="return confirm('⚠️ ATENÇÃO!\n\nDeseja DESATIVAR este obreiro?\n\nNome: {{ obreiro.nome_completo }}\nUsuário: {{ obreiro.usuario }}\n\nO obreiro será desativado, mas seus dados serão mantidos no sistema.\n\nPara excluir permanentemente, procure um administrador.')">
+                                                <i class="bi bi-person-x"></i>
                                             </a>
                                             {% else %}
                                             <a href="/obreiros/{{ obreiro.id }}/reativar" 
-                                               class="btn btn-success"
-                                               onclick="return confirm('Reativar {{ obreiro.nome_completo }}?')"
-                                               title="Reativar">
-                                                <i class="bi bi-arrow-repeat"></i>
+                                               class="btn btn-success" 
+                                               title="Reativar obreiro"
+                                               onclick="return confirm('Deseja REATIVAR este obreiro?\n\nNome: {{ obreiro.nome_completo }}\nUsuário: {{ obreiro.usuario }}')">
+                                                <i class="bi bi-play-fill"></i>
                                             </a>
                                             {% endif %}
                                         {% endif %}
@@ -182,14 +347,46 @@
                             </tr>
                             {% else %}
                             <tr>
-                                <td colspan="7" class="text-center text-muted py-4">
+                                <td colspan="8" class="text-center text-muted py-5">
                                     <i class="bi bi-inbox fs-1"></i><br>
                                     Nenhum obreiro encontrado
+                                    {% if session.tipo == 'admin' %}
+                                    <br>
+                                    <a href="/obreiros/novo" class="btn btn-primary mt-3">
+                                        <i class="bi bi-plus-circle"></i> Criar primeiro obreiro
+                                    </a>
+                                    {% endif %}
                                 </td>
                             </tr>
                             {% endfor %}
                         </tbody>
                     </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Legenda -->
+        <div class="card shadow mt-4">
+            <div class="card-header bg-light">
+                <h6 class="mb-0"><i class="bi bi-info-circle"></i> Legenda</h6>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-3">
+                        <span class="badge bg-success">Verde</span> = Ativo
+                    </div>
+                    <div class="col-md-3">
+                        <span class="badge bg-secondary">Cinza</span> = Inativo
+                    </div>
+                    <div class="col-md-3">
+                        <i class="bi bi-star-fill text-warning"></i> = Mestre
+                        <i class="bi bi-star text-primary"></i> = Companheiro
+                        <i class="bi bi-star text-secondary"></i> = Aprendiz
+                    </div>
+                    <div class="col-md-3">
+                        <i class="bi bi-briefcase text-info"></i> = Cargo
+                        <i class="bi bi-building"></i> = Loja
+                    </div>
                 </div>
             </div>
         </div>
@@ -204,8 +401,20 @@
     .card-header {
         font-weight: 600;
     }
-    .table-responsive {
-        overflow-x: auto;
+    .progress {
+        border-radius: 10px;
+        overflow: hidden;
+        margin-bottom: 5px;
+        height: 20px;
+    }
+    .progress-bar {
+        transition: width 0.3s ease;
+        font-size: 10px;
+        line-height: 20px;
+    }
+    .table-hover tbody tr:hover {
+        cursor: pointer;
+        background-color: rgba(0, 123, 255, 0.05);
     }
     .badge {
         font-size: 0.8rem;
@@ -214,15 +423,26 @@
     .btn-group-sm .btn {
         padding: 0.25rem 0.5rem;
     }
+    .rounded-circle {
+        border: 2px solid #fff;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
     @media (max-width: 768px) {
-        .table {
-            font-size: 0.85rem;
-        }
         .btn-group {
             flex-direction: column;
         }
         .btn-group .btn {
             margin-bottom: 5px;
+        }
+        .table-responsive {
+            font-size: 0.85rem;
+        }
+        .progress {
+            height: 15px;
+        }
+        .progress-bar {
+            font-size: 8px;
+            line-height: 15px;
         }
     }
 </style>
