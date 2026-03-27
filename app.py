@@ -1089,52 +1089,93 @@ def editar_obreiro(id):
 @app.route("/obreiros/<int:id>/excluir")
 @admin_required
 def excluir_obreiro(id):
+    """Desativa ou exclui um obreiro dependendo dos vínculos existentes"""
     cursor, conn = get_db()
     try:
-        cursor.execute("SELECT nome_completo, usuario FROM usuarios WHERE id = %s", (id,))
+        # Buscar dados do obreiro
+        cursor.execute("SELECT nome_completo, usuario, tipo FROM usuarios WHERE id = %s", (id,))
         obreiro = cursor.fetchone()
+        
         if not obreiro:
             flash("Obreiro não encontrado", "danger")
             return_connection(conn)
             return redirect("/obreiros")
+        
+        # Impedir que o usuário exclua a si mesmo
         if session["user_id"] == id:
             flash("Você não pode excluir seu próprio usuário!", "danger")
             return_connection(conn)
             return redirect(f"/obreiros/{id}")
+        
+        # Verificar vínculos em outras tabelas
         cursor.execute("SELECT COUNT(*) as total FROM presenca WHERE obreiro_id = %s", (id,))
         presencas = cursor.fetchone()["total"]
+        
         cursor.execute("SELECT COUNT(*) as total FROM ocupacao_cargos WHERE obreiro_id = %s", (id,))
         cargos = cursor.fetchone()["total"]
+        
         cursor.execute("SELECT COUNT(*) as total FROM familiares WHERE obreiro_id = %s", (id,))
         familiares = cursor.fetchone()["total"]
+        
         cursor.execute("SELECT COUNT(*) as total FROM condecoracoes_obreiro WHERE obreiro_id = %s", (id,))
         condecoracoes = cursor.fetchone()["total"]
-        if presencas > 0 or cargos > 0 or familiares > 0 or condecoracoes > 0:
+        
+        cursor.execute("SELECT COUNT(*) as total FROM documentos_obreiro WHERE obreiro_id = %s", (id,))
+        documentos = cursor.fetchone()["total"]
+        
+        cursor.execute("SELECT COUNT(*) as total FROM logs_auditoria WHERE usuario_id = %s", (id,))
+        logs = cursor.fetchone()["total"]
+        
+        cursor.execute("SELECT COUNT(*) as total FROM notificacoes WHERE usuario_id = %s", (id,))
+        notificacoes = cursor.fetchone()["total"]
+        
+        cursor.execute("SELECT COUNT(*) as total FROM votos_sugestao WHERE usuario_id = %s", (id,))
+        votos = cursor.fetchone()["total"]
+        
+        cursor.execute("SELECT COUNT(*) as total FROM comentarios_sugestao WHERE autor_id = %s", (id,))
+        comentarios = cursor.fetchone()["total"]
+        
+        # Total de vínculos
+        total_vinculos = presencas + cargos + familiares + condecoracoes + documentos + logs + notificacoes + votos + comentarios
+        
+        if total_vinculos > 0:
+            # Se há vínculos, apenas desativar
             cursor.execute("UPDATE usuarios SET ativo = 0 WHERE id = %s", (id,))
             conn.commit()
-            registrar_log("desativar_obreiro", "obreiro", id, dados_anteriores={"nome": obreiro["nome_completo"]},
-                         dados_novos={"status": "inativo", "motivo": "possui vínculos"})
+            
+            registrar_log("desativar_obreiro", "obreiro", id, 
+                         dados_anteriores={"nome": obreiro["nome_completo"], "ativo": 1},
+                         dados_novos={"status": "inativo", "motivo": "possui vínculos no sistema"})
+            
             flash(f"Obreiro '{obreiro['nome_completo']}' foi desativado (possui vínculos no sistema).", "warning")
         else:
+            # Sem vínculos, pode excluir permanentemente
+            # Remover foto se existir
             cursor.execute("SELECT foto FROM usuarios WHERE id = %s", (id,))
             foto = cursor.fetchone()
             if foto and foto['foto']:
                 caminho_foto = os.path.join(UPLOAD_FOLDER_FOTOS, foto['foto'])
                 if os.path.exists(caminho_foto):
                     os.remove(caminho_foto)
+            
+            # Excluir obreiro
             cursor.execute("DELETE FROM usuarios WHERE id = %s", (id,))
             conn.commit()
+            
             registrar_log("excluir", "obreiro", id, dados_anteriores={"nome": obreiro["nome_completo"]})
             flash(f"Obreiro '{obreiro['nome_completo']}' excluído com sucesso!", "success")
+        
         return_connection(conn)
         return redirect("/obreiros")
+        
     except Exception as e:
-        print(f"Erro ao excluir obreiro: {e}")
-        conn.rollback()
-        flash(f"Erro ao excluir obreiro: {str(e)}", "danger")
+        print(f"Erro ao excluir/desativar obreiro: {e}")
+        traceback.print_exc()
+        if conn:
+            conn.rollback()
+        flash(f"Erro ao processar solicitação: {str(e)}", "danger")
         return_connection(conn)
         return redirect("/obreiros")
-
 @app.route("/obreiros/<int:id>/reativar")
 @admin_required
 def reativar_obreiro(id):
