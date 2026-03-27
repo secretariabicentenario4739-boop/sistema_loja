@@ -1496,249 +1496,6 @@ def excluir_documento(id):
     return_connection(conn)
     return redirect(f"/obreiros/{doc['obreiro_id']}/documentos")
 
-@app.route("/admin/migrar-tabelas", methods=["GET"])
-@admin_required
-def migrar_tabelas():
-    """Rota temporária para criar tabelas faltantes no banco de dados"""
-    if session.get("tipo") != "admin":
-        flash("Acesso restrito a administradores", "danger")
-        return redirect("/dashboard")
-    
-    resultados = []
-    erros = []
-    
-    cursor, conn = get_db()
-    
-    try:
-        # 1. Criar tabela notificacoes
-        try:
-            cursor.execute("""
-                CREATE TABLE IF NOT EXISTS notificacoes (
-                    id SERIAL PRIMARY KEY,
-                    usuario_id INTEGER NOT NULL REFERENCES usuarios(id) ON DELETE CASCADE,
-                    titulo VARCHAR(200) NOT NULL,
-                    mensagem TEXT NOT NULL,
-                    tipo VARCHAR(50) DEFAULT 'info',
-                    link VARCHAR(500),
-                    lida BOOLEAN DEFAULT FALSE,
-                    data_criacao TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                    data_leitura TIMESTAMP
-                )
-            """)
-            conn.commit()
-            resultados.append("✅ Tabela 'notificacoes' criada/verificada com sucesso")
-        except Exception as e:
-            erros.append(f"❌ Erro ao criar tabela 'notificacoes': {str(e)}")
-        
-        # 2. Criar tabela sugestoes (precisa existir antes das referências)
-        try:
-            cursor.execute("""
-                CREATE TABLE IF NOT EXISTS sugestoes (
-                    id SERIAL PRIMARY KEY,
-                    titulo VARCHAR(200) NOT NULL,
-                    descricao TEXT NOT NULL,
-                    categoria VARCHAR(100),
-                    prioridade VARCHAR(20) DEFAULT 'media',
-                    status VARCHAR(20) DEFAULT 'pendente',
-                    autor_id INTEGER NOT NULL REFERENCES usuarios(id) ON DELETE CASCADE,
-                    votos INTEGER DEFAULT 0,
-                    implementada BOOLEAN DEFAULT FALSE,
-                    data_implementacao TIMESTAMP,
-                    implementado_por INTEGER REFERENCES usuarios(id),
-                    data_criacao TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                    data_atualizacao TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-                )
-            """)
-            conn.commit()
-            resultados.append("✅ Tabela 'sugestoes' criada/verificada com sucesso")
-        except Exception as e:
-            erros.append(f"❌ Erro ao criar tabela 'sugestoes': {str(e)}")
-        
-        # 3. Criar tabela votos_sugestao
-        try:
-            cursor.execute("""
-                CREATE TABLE IF NOT EXISTS votos_sugestao (
-                    id SERIAL PRIMARY KEY,
-                    sugestao_id INTEGER NOT NULL REFERENCES sugestoes(id) ON DELETE CASCADE,
-                    usuario_id INTEGER NOT NULL REFERENCES usuarios(id) ON DELETE CASCADE,
-                    data_voto TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                    UNIQUE(sugestao_id, usuario_id)
-                )
-            """)
-            conn.commit()
-            resultados.append("✅ Tabela 'votos_sugestao' criada/verificada com sucesso")
-        except Exception as e:
-            erros.append(f"❌ Erro ao criar tabela 'votos_sugestao': {str(e)}")
-        
-        # 4. Criar tabela comentarios_sugestao
-        try:
-            cursor.execute("""
-                CREATE TABLE IF NOT EXISTS comentarios_sugestao (
-                    id SERIAL PRIMARY KEY,
-                    sugestao_id INTEGER NOT NULL REFERENCES sugestoes(id) ON DELETE CASCADE,
-                    autor_id INTEGER NOT NULL REFERENCES usuarios(id) ON DELETE CASCADE,
-                    comentario TEXT NOT NULL,
-                    data_comentario TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-                )
-            """)
-            conn.commit()
-            resultados.append("✅ Tabela 'comentarios_sugestao' criada/verificada com sucesso")
-        except Exception as e:
-            erros.append(f"❌ Erro ao criar tabela 'comentarios_sugestao': {str(e)}")
-        
-        # 5. Criar tabela categorias_sugestoes
-        try:
-            cursor.execute("""
-                CREATE TABLE IF NOT EXISTS categorias_sugestoes (
-                    id SERIAL PRIMARY KEY,
-                    nome VARCHAR(100) NOT NULL UNIQUE,
-                    descricao TEXT,
-                    ativo BOOLEAN DEFAULT TRUE,
-                    ordem INTEGER DEFAULT 0
-                )
-            """)
-            conn.commit()
-            resultados.append("✅ Tabela 'categorias_sugestoes' criada/verificada com sucesso")
-        except Exception as e:
-            erros.append(f"❌ Erro ao criar tabela 'categorias_sugestoes': {str(e)}")
-        
-        # 6. Inserir categorias padrão
-        try:
-            cursor.execute("""
-                INSERT INTO categorias_sugestoes (nome, descricao, ordem) 
-                VALUES 
-                    ('Melhoria', 'Sugestões para melhoria do sistema', 1),
-                    ('Bug', 'Reportar problemas ou erros', 2),
-                    ('Nova Funcionalidade', 'Sugestões de novas funcionalidades', 3),
-                    ('Interface', 'Sugestões para melhorar a interface', 4)
-                ON CONFLICT (nome) DO NOTHING
-            """)
-            conn.commit()
-            resultados.append("✅ Categorias padrão inseridas com sucesso")
-        except Exception as e:
-            erros.append(f"⚠️ Erro ao inserir categorias padrão: {str(e)}")
-        
-        return_connection(conn)
-        
-        # Renderizar resultado
-        return f"""
-        <!DOCTYPE html>
-        <html>
-        <head>
-            <title>Migração de Banco de Dados</title>
-            <style>
-                body {{
-                    font-family: Arial, sans-serif;
-                    margin: 20px;
-                    background: #f5f5f5;
-                }}
-                .container {{
-                    max-width: 800px;
-                    margin: 0 auto;
-                    background: white;
-                    padding: 20px;
-                    border-radius: 8px;
-                    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-                }}
-                h1 {{
-                    color: #333;
-                    border-bottom: 2px solid #4CAF50;
-                    padding-bottom: 10px;
-                }}
-                .success {{
-                    color: #155724;
-                    background-color: #d4edda;
-                    border: 1px solid #c3e6cb;
-                    padding: 10px;
-                    margin: 10px 0;
-                    border-radius: 4px;
-                }}
-                .error {{
-                    color: #721c24;
-                    background-color: #f8d7da;
-                    border: 1px solid #f5c6cb;
-                    padding: 10px;
-                    margin: 10px 0;
-                    border-radius: 4px;
-                }}
-                .warning {{
-                    color: #856404;
-                    background-color: #fff3cd;
-                    border: 1px solid #ffeeba;
-                    padding: 10px;
-                    margin: 10px 0;
-                    border-radius: 4px;
-                }}
-                .btn {{
-                    display: inline-block;
-                    padding: 10px 15px;
-                    background: #4CAF50;
-                    color: white;
-                    text-decoration: none;
-                    border-radius: 4px;
-                    margin-top: 20px;
-                }}
-                .btn:hover {{
-                    background: #45a049;
-                }}
-                hr {{
-                    margin: 20px 0;
-                }}
-            </style>
-        </head>
-        <body>
-            <div class="container">
-                <h1>🔧 Migração de Banco de Dados</h1>
-                <p>Executado em: {datetime.now().strftime('%d/%m/%Y %H:%M:%S')}</p>
-                <hr>
-                
-                <h3>📊 Resultados:</h3>
-                {''.join(f'<div class="success">✅ {r}</div>' for r in resultados)}
-                
-                {''.join(f'<div class="error">❌ {e}</div>' for e in erros) if erros else ''}
-                
-                <hr>
-                
-                <div class="success">
-                    <strong>✅ Migração concluída!</strong><br>
-                    Total de tabelas criadas/verificadas: {len(resultados)}<br>
-                    Total de erros: {len(erros)}
-                </div>
-                
-                <a href="/dashboard" class="btn">← Voltar ao Dashboard</a>
-                <a href="/admin/verificar-tabelas" class="btn" style="background: #2196F3;">🔍 Verificar Tabelas</a>
-            </div>
-        </body>
-        </html>
-        """
-        
-    except Exception as e:
-        if conn:
-            conn.rollback()
-            return_connection(conn)
-        return f"""
-        <!DOCTYPE html>
-        <html>
-        <head>
-            <title>Erro na Migração</title>
-            <style>
-                body {{ font-family: Arial, sans-serif; margin: 20px; background: #f5f5f5; }}
-                .container {{ max-width: 800px; margin: 0 auto; background: white; padding: 20px; border-radius: 8px; }}
-                .error {{ color: #721c24; background-color: #f8d7da; border: 1px solid #f5c6cb; padding: 10px; margin: 10px 0; border-radius: 4px; }}
-                .btn {{ display: inline-block; padding: 10px 15px; background: #4CAF50; color: white; text-decoration: none; border-radius: 4px; margin-top: 20px; }}
-            </style>
-        </head>
-        <body>
-            <div class="container">
-                <h1>❌ Erro na Migração</h1>
-                <div class="error">
-                    <strong>Erro:</strong> {str(e)}
-                </div>
-                <a href="/dashboard" class="btn">← Voltar ao Dashboard</a>
-            </div>
-        </body>
-        </html>
-        """
 
 
 @app.route("/admin/verificar-tabelas", methods=["GET"])
@@ -5904,414 +5661,7 @@ def notificacoes_stream():
             pass
     return Response(generate(), mimetype="text/event-stream")
 
-# =============================
-# ROTAS DE BACKUP E RESTAURAÇÃO (VERSÃO COMPLETA)
-# =============================
 
-import zipfile
-import json
-import shutil
-from datetime import datetime, timedelta
-from flask import send_file, make_response
-import psycopg2
-from psycopg2.extras import RealDictCursor
-
-BACKUP_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'backups')
-TEMP_RESTORE_DIR = os.path.join(BACKUP_DIR, 'temp_restore')
-BACKUP_LOG_FILE = os.path.join(BACKUP_DIR, 'backup_log.json')
-
-# Criar diretórios
-os.makedirs(BACKUP_DIR, exist_ok=True)
-os.makedirs(TEMP_RESTORE_DIR, exist_ok=True)
-
-def log_backup_operation(operation, filename, success, details=None, error=None):
-    """Registra operações de backup/restauração em log"""
-    try:
-        logs = []
-        if os.path.exists(BACKUP_LOG_FILE):
-            with open(BACKUP_LOG_FILE, 'r', encoding='utf-8') as f:
-                logs = json.load(f)
-        
-        logs.append({
-            'timestamp': datetime.now().isoformat(),
-            'operation': operation,
-            'filename': filename,
-            'success': success,
-            'details': details,
-            'error': error,
-            'user': session.get('usuario', 'unknown'),
-            'user_id': session.get('user_id'),
-            'ip': request.remote_addr
-        })
-        
-        # Manter apenas últimos 100 registros
-        logs = logs[-100:]
-        
-        with open(BACKUP_LOG_FILE, 'w', encoding='utf-8') as f:
-            json.dump(logs, f, ensure_ascii=False, indent=2)
-            
-    except Exception as e:
-        print(f"Erro ao registrar log: {e}")
-
-def listar_backups_sistema():
-    """Lista todos os backups disponíveis com informações detalhadas"""
-    backups = []
-    if not os.path.exists(BACKUP_DIR):
-        return backups
-    
-    for file in os.listdir(BACKUP_DIR):
-        if file.endswith('.zip'):
-            filepath = os.path.join(BACKUP_DIR, file)
-            mtime = os.path.getmtime(filepath)
-            ctime = os.path.getctime(filepath)
-            size = os.path.getsize(filepath) / (1024 * 1024)
-            
-            # Extrair informações do nome do arquivo
-            info = {}
-            try:
-                # Formato esperado: backup_nome_banco_YYYYMMDD_HHMMSS.zip
-                parts = file.replace('.zip', '').split('_')
-                if len(parts) >= 4:
-                    info['db_name'] = parts[1]
-                    info['timestamp'] = f"{parts[2]}_{parts[3]}"
-                    try:
-                        info['date'] = datetime.strptime(parts[2], '%Y%m%d').strftime('%d/%m/%Y')
-                        info['time'] = datetime.strptime(parts[3], '%H%M%S').strftime('%H:%M:%S')
-                    except:
-                        pass
-            except Exception as e:
-                print(f"Erro ao processar info do backup {file}: {e}")
-                info = {}
-            
-            backups.append({
-                'name': file,
-                'date_str': datetime.fromtimestamp(mtime).strftime('%d/%m/%Y %H:%M:%S'),
-                'date': datetime.fromtimestamp(mtime),
-                'size_mb': round(size, 2),
-                'size_bytes': os.path.getsize(filepath),
-                'path': filepath,
-                'created': datetime.fromtimestamp(ctime),
-                'info': info  # Garantir que info sempre existe
-            })
-    
-    backups.sort(key=lambda x: x['date'], reverse=True)
-    return backups
-
-def criar_backup_sistema():
-    """Cria backup completo do banco de dados"""
-    temp_sql_file = None
-    try:
-        timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
-        db_name = os.getenv('DB_NAME', 'sistema_maconico')
-        backup_name = f'backup_{db_name}_{timestamp}'
-        temp_sql_file = os.path.join(BACKUP_DIR, f'{backup_name}.sql')
-        
-        # Conectar ao banco
-        conn = psycopg2.connect(DATABASE_URL)
-        conn.autocommit = False
-        cursor = conn.cursor(cursor_factory=RealDictCursor)
-        
-        # Obter lista de tabelas
-        cursor.execute("""
-            SELECT tablename FROM pg_tables 
-            WHERE schemaname = 'public' 
-            AND tablename NOT LIKE 'pg_%'
-            ORDER BY tablename
-        """)
-        tables = [row['tablename'] for row in cursor.fetchall()]
-        
-        # Criar arquivo SQL
-        with open(temp_sql_file, 'w', encoding='utf-8') as f:
-            f.write(f"-- ============================================\n")
-            f.write(f"-- BACKUP DO SISTEMA MAÇÔNICO\n")
-            f.write(f"-- ============================================\n")
-            f.write(f"-- Data: {datetime.now().strftime('%d/%m/%Y %H:%M:%S')}\n")
-            f.write(f"-- Banco: {db_name}\n")
-            f.write(f"-- Tabelas: {len(tables)}\n")
-            f.write(f"-- Usuário: {session.get('usuario', 'sistema')}\n")
-            f.write(f"-- ============================================\n\n")
-            
-            f.write("BEGIN;\n\n")
-            f.write("-- Desabilitar triggers para melhor performance\n")
-            f.write("SET session_replication_role = 'replica';\n\n")
-            
-            # Backup de cada tabela
-            tables_backuped = []
-            for table in tables:
-                try:
-                    # Obter estrutura da tabela
-                    cursor.execute(f"""
-                        SELECT column_name, data_type, is_nullable, column_default
-                        FROM information_schema.columns 
-                        WHERE table_name = '{table}'
-                        ORDER BY ordinal_position
-                    """)
-                    columns = cursor.fetchall()
-                    
-                    if not columns:
-                        continue
-                    
-                    f.write(f"-- ============================================\n")
-                    f.write(f"-- Tabela: {table}\n")
-                    f.write(f"-- ============================================\n\n")
-                    
-                    # DROP e CREATE TABLE
-                    f.write(f"DROP TABLE IF EXISTS {table} CASCADE;\n")
-                    f.write(f"CREATE TABLE {table} (\n")
-                    
-                    col_defs = []
-                    for col in columns:
-                        col_def = f"    {col['column_name']} {col['data_type']}"
-                        if col['is_nullable'] == 'NO':
-                            col_def += " NOT NULL"
-                        if col['column_default']:
-                            col_def += f" DEFAULT {col['column_default']}"
-                        col_defs.append(col_def)
-                    
-                    f.write(",\n".join(col_defs))
-                    f.write("\n);\n\n")
-                    
-                    # Backup dos dados
-                    cursor.execute(f"SELECT * FROM {table}")
-                    rows = cursor.fetchall()
-                    
-                    if rows:
-                        col_names = [col['column_name'] for col in columns]
-                        col_names_str = ', '.join(col_names)
-                        
-                        f.write(f"INSERT INTO {table} ({col_names_str}) VALUES\n")
-                        
-                        values_list = []
-                        for row in rows:
-                            values = []
-                            for col_name in col_names:
-                                val = row.get(col_name)
-                                if val is None:
-                                    values.append('NULL')
-                                elif isinstance(val, str):
-                                    escaped_val = val.replace("'", "''")
-                                    values.append(f"'{escaped_val}'")
-                                elif isinstance(val, datetime):
-                                    values.append(f"'{val.strftime('%Y-%m-%d %H:%M:%S')}'")
-                                elif isinstance(val, (int, float)):
-                                    values.append(str(val))
-                                elif isinstance(val, bool):
-                                    values.append('TRUE' if val else 'FALSE')
-                                else:
-                                    escaped_val = str(val).replace("'", "''")
-                                    values.append(f"'{escaped_val}'")
-                            
-                            values_list.append(f"    ({', '.join(values)})")
-                        
-                        f.write(",\n".join(values_list))
-                        f.write(";\n\n")
-                    
-                    tables_backuped.append(table)
-                    
-                except Exception as e:
-                    print(f"Erro ao fazer backup da tabela {table}: {e}")
-                    f.write(f"-- ERRO AO FAZER BACKUP DA TABELA {table}: {str(e)}\n\n")
-            
-            f.write("-- Reabilitar triggers\n")
-            f.write("SET session_replication_role = 'origin';\n\n")
-            f.write("COMMIT;\n")
-            
-            # Estatísticas
-            f.write(f"\n-- ============================================\n")
-            f.write(f"-- ESTATÍSTICAS DO BACKUP\n")
-            f.write(f"-- ============================================\n")
-            f.write(f"-- Tabelas processadas: {len(tables)}\n")
-            f.write(f"-- Tabelas com dados: {len(tables_backuped)}\n")
-            f.write(f"-- Data de criação: {datetime.now().strftime('%d/%m/%Y %H:%M:%S')}\n")
-            f.write(f"-- ============================================\n")
-        
-        cursor.close()
-        conn.close()
-        
-        # Compactar em ZIP
-        zip_file = temp_sql_file + '.zip'
-        with zipfile.ZipFile(zip_file, 'w', zipfile.ZIP_DEFLATED) as zf:
-            zf.write(temp_sql_file, os.path.basename(temp_sql_file))
-        
-        # Remover arquivo SQL temporário
-        os.remove(temp_sql_file)
-        
-        tamanho_mb = os.path.getsize(zip_file) / (1024 * 1024)
-        
-        # Manter apenas últimos 20 backups
-        backups = listar_backups_sistema()
-        deleted = []
-        for i, b in enumerate(backups):
-            if i >= 20:
-                try:
-                    os.remove(b['path'])
-                    deleted.append(b['name'])
-                except:
-                    pass
-        
-        result = {
-            'success': True,
-            'filename': os.path.basename(zip_file),
-            'size_mb': round(tamanho_mb, 2),
-            'size_bytes': os.path.getsize(zip_file),
-            'tables': len(tables_backuped),
-            'total_tables': len(tables),
-            'deleted_old': len(deleted)
-        }
-        
-        log_backup_operation('backup', result['filename'], True, result)
-        return result
-        
-    except Exception as e:
-        print(f"Erro ao criar backup: {e}")
-        traceback.print_exc()
-        
-        # Limpar arquivo temporário se existir
-        if temp_sql_file and os.path.exists(temp_sql_file):
-            try:
-                os.remove(temp_sql_file)
-            except:
-                pass
-        
-        error_msg = str(e)
-        log_backup_operation('backup', None, False, error=error_msg)
-        return {'success': False, 'error': error_msg}
-
-def restaurar_backup_sistema(filename, confirm=False):
-    """Restaura um backup do sistema"""
-    if not confirm:
-        return {'success': False, 'error': 'Confirmação necessária', 'requires_confirmation': True}
-    
-    temp_dir = None
-    try:
-        # Validar arquivo
-        backup_path = os.path.join(BACKUP_DIR, filename)
-        if not os.path.exists(backup_path):
-            return {'success': False, 'error': 'Arquivo de backup não encontrado'}
-        
-        if not filename.endswith('.zip'):
-            return {'success': False, 'error': 'Formato de arquivo inválido'}
-        
-        # Criar backup de emergência antes da restauração
-        print("Criando backup de emergência...")
-        emergency_backup = criar_backup_sistema()
-        
-        if not emergency_backup['success']:
-            return {
-                'success': False,
-                'error': 'Não foi possível criar backup de emergência. Operação cancelada.',
-                'emergency_backup': None
-            }
-        
-        # Criar diretório temporário
-        temp_dir = os.path.join(TEMP_RESTORE_DIR, f'restore_{datetime.now().strftime("%Y%m%d_%H%M%S")}')
-        os.makedirs(temp_dir, exist_ok=True)
-        
-        # Extrair arquivo
-        with zipfile.ZipFile(backup_path, 'r') as zf:
-            zf.extractall(temp_dir)
-            sql_files = [f for f in os.listdir(temp_dir) if f.endswith('.sql')]
-            
-            if not sql_files:
-                raise Exception("Backup inválido: nenhum arquivo SQL encontrado")
-            
-            sql_file_path = os.path.join(temp_dir, sql_files[0])
-        
-        # Conectar ao banco
-        conn = psycopg2.connect(DATABASE_URL)
-        conn.autocommit = False
-        cursor = conn.cursor()
-        
-        # Ler e executar SQL
-        with open(sql_file_path, 'r', encoding='utf-8') as f:
-            sql_content = f.read()
-        
-        # Separar comandos SQL
-        statements = []
-        current = []
-        in_string = False
-        string_char = None
-        
-        for line in sql_content.split('\n'):
-            # Ignorar comentários
-            if line.strip().startswith('--') and not in_string:
-                continue
-            
-            current.append(line)
-            
-            # Verificar se é fim de statement
-            if not in_string and line.strip().endswith(';'):
-                statements.append('\n'.join(current))
-                current = []
-        
-        if current:
-            statements.append('\n'.join(current))
-        
-        # Executar statements
-        executed = 0
-        errors = []
-        
-        for i, stmt in enumerate(statements):
-            if stmt.strip() and not stmt.strip().startswith('--'):
-                try:
-                    cursor.execute(stmt)
-                    executed += 1
-                except Exception as e:
-                    errors.append(f"Statement {i+1}: {str(e)[:100]}")
-                    print(f"Erro na statement {i+1}: {e}")
-                    print(f"SQL: {stmt[:200]}")
-        
-        if errors:
-            conn.rollback()
-            raise Exception(f"{len(errors)} erros encontrados. Primeiro erro: {errors[0]}")
-        
-        conn.commit()
-        
-        # Estatísticas
-        cursor.execute("""
-            SELECT COUNT(*) as total_tables 
-            FROM information_schema.tables 
-            WHERE table_schema = 'public'
-        """)
-        total_tables = cursor.fetchone()[0]
-        
-        cursor.close()
-        conn.close()
-        
-        # Limpar diretório temporário
-        shutil.rmtree(temp_dir)
-        
-        result = {
-            'success': True,
-            'message': f'Backup restaurado com sucesso!',
-            'emergency_backup': emergency_backup.get('filename'),
-            'emergency_backup_size': emergency_backup.get('size_mb'),
-            'statements_executed': executed,
-            'total_tables': total_tables,
-            'restored_from': filename
-        }
-        
-        log_backup_operation('restore', filename, True, result)
-        return result
-        
-    except Exception as e:
-        print(f"Erro ao restaurar backup: {e}")
-        traceback.print_exc()
-        
-        if temp_dir and os.path.exists(temp_dir):
-            try:
-                shutil.rmtree(temp_dir)
-            except:
-                pass
-        
-        error_msg = str(e)
-        log_backup_operation('restore', filename, False, error=error_msg)
-        
-        return {
-            'success': False,
-            'error': error_msg,
-            'emergency_backup': emergency_backup.get('filename') if 'emergency_backup' in locals() else None
-        }
 
 # =============================
 # ROTAS DE BACKUP E RESTAURAÇÃO (VERSÃO CORRIGIDA)
@@ -7038,6 +6388,368 @@ def api_backup_logs():
             pass
     
     return jsonify({'success': True, 'logs': logs, 'total': len(logs)})
+# =============================
+# ENDPOINTS PARA MANUTENÇÃO DO BANCO (APENAS ADMIN)
+# =============================
+
+from functools import wraps
+import os
+import psycopg2
+from psycopg2.extras import RealDictCursor
+from flask import request, jsonify
+
+# Decorador para proteger endpoints administrativos
+def admin_required(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        # Verificar se é uma requisição local ou tem token secreto
+        admin_token = os.getenv('ADMIN_TOKEN', 'admin123')
+        token = request.args.get('token') or request.headers.get('X-Admin-Token')
+        
+        if token != admin_token:
+            return jsonify({"erro": "Acesso negado. Token inválido."}), 403
+        return f(*args, **kwargs)
+    return decorated_function
+
+# ============================================
+# ENDPOINT 1: CRIAR TABELAS
+# ============================================
+@app.route('/admin/criar-tabelas-db')
+@admin_required
+def admin_criar_tabelas():
+    """Endpoint para criar todas as tabelas necessárias"""
+    try:
+        # Garantir que está usando a DATABASE_URL correta
+        db_url = os.getenv('DATABASE_URL')
+        if not db_url:
+            return jsonify({"erro": "DATABASE_URL não configurada no ambiente"}), 500
+        
+        print(f"🔧 Conectando ao banco: {db_url[:50]}...")
+        
+        conn = psycopg2.connect(db_url)
+        cursor = conn.cursor()
+        
+        resultado = []
+        
+        # 1. Criar tabela assinaturas_ata (ajuste conforme suas colunas)
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS public.assinaturas_ata (
+                id SERIAL PRIMARY KEY,
+                usuario_id INTEGER,
+                tipo VARCHAR(100),
+                data_assinatura DATE,
+                status VARCHAR(50),
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        """)
+        resultado.append("✅ Tabela assinaturas_ata criada/verificada")
+        
+        # 2. Criar tabela logs_auditoria
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS public.logs_auditoria (
+                id SERIAL PRIMARY KEY,
+                usuario_id INTEGER,
+                usuario_nome VARCHAR(255),
+                acao VARCHAR(100),
+                entidade VARCHAR(100),
+                entidade_id INTEGER,
+                dados_anteriores TEXT,
+                dados_novos TEXT,
+                ip VARCHAR(45),
+                user_agent TEXT,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        """)
+        resultado.append("✅ Tabela logs_auditoria criada/verificada")
+        
+        # 3. Criar índices
+        cursor.execute("""
+            CREATE INDEX IF NOT EXISTS idx_logs_usuario_id_admin 
+            ON logs_auditoria(usuario_id)
+        """)
+        cursor.execute("""
+            CREATE INDEX IF NOT EXISTS idx_logs_created_at_admin 
+            ON logs_auditoria(created_at)
+        """)
+        resultado.append("✅ Índices criados/verificados")
+        
+        conn.commit()
+        
+        # Listar todas as tabelas
+        cursor.execute("""
+            SELECT table_name 
+            FROM information_schema.tables 
+            WHERE table_schema = 'public'
+            ORDER BY table_name
+        """)
+        tables = cursor.fetchall()
+        
+        cursor.close()
+        conn.close()
+        
+        return jsonify({
+            "status": "sucesso",
+            "mensagens": resultado,
+            "tabelas_existentes": [t[0] for t in tables]
+        })
+        
+    except Exception as e:
+        return jsonify({"erro": str(e)}), 500
+
+# ============================================
+# ENDPOINT 2: VERIFICAR TABELAS
+# ============================================
+@app.route('/admin/verificar-tabelas-db')
+@admin_required
+def admin_verificar_tabelas():
+    """Endpoint para verificar quais tabelas existem"""
+    try:
+        db_url = os.getenv('DATABASE_URL')
+        if not db_url:
+            return jsonify({"erro": "DATABASE_URL não configurada no ambiente"}), 500
+        
+        conn = psycopg2.connect(db_url)
+        cursor = conn.cursor()
+        
+        # Listar todas as tabelas
+        cursor.execute("""
+            SELECT table_name 
+            FROM information_schema.tables 
+            WHERE table_schema = 'public'
+            ORDER BY table_name
+        """)
+        tables = cursor.fetchall()
+        
+        # Verificar logs_auditoria especificamente
+        cursor.execute("""
+            SELECT EXISTS (
+                SELECT FROM information_schema.tables 
+                WHERE table_schema = 'public' 
+                AND table_name = 'logs_auditoria'
+            )
+        """)
+        logs_exists = cursor.fetchone()[0]
+        
+        if logs_exists:
+            cursor.execute("SELECT COUNT(*) FROM logs_auditoria")
+            logs_count = cursor.fetchone()[0]
+        else:
+            logs_count = 0
+        
+        cursor.close()
+        conn.close()
+        
+        return jsonify({
+            "tabelas_existentes": [t[0] for t in tables],
+            "logs_auditoria_existe": logs_exists,
+            "logs_auditoria_total": logs_count,
+            "database_url_configurada": bool(db_url),
+            "database_prefix": db_url[:30] + "..."
+        })
+        
+    except Exception as e:
+        return jsonify({"erro": str(e)}), 500
+
+# ============================================
+# ENDPOINT 3: INSERIR TESTE
+# ============================================
+@app.route('/admin/inserir-teste-db')
+@admin_required
+def admin_inserir_teste():
+    """Endpoint para inserir um log de teste"""
+    try:
+        db_url = os.getenv('DATABASE_URL')
+        if not db_url:
+            return jsonify({"erro": "DATABASE_URL não configurada no ambiente"}), 500
+        
+        conn = psycopg2.connect(db_url)
+        cursor = conn.cursor(cursor_factory=RealDictCursor)
+        
+        cursor.execute("""
+            INSERT INTO logs_auditoria 
+            (usuario_id, usuario_nome, acao, entidade, entidade_id, ip, user_agent)
+            VALUES (%s, %s, %s, %s, %s, %s, %s)
+            RETURNING id, created_at
+        """, (
+            1,
+            "Teste Render Admin",
+            "teste_sistema",
+            "teste",
+            999,
+            request.remote_addr or "0.0.0.0",
+            "Teste via browser admin"
+        ))
+        
+        result = cursor.fetchone()
+        conn.commit()
+        
+        cursor.close()
+        conn.close()
+        
+        return jsonify({
+            "status": "sucesso",
+            "id_inserido": result['id'],
+            "created_at": str(result['created_at'])
+        })
+        
+    except Exception as e:
+        return jsonify({"erro": str(e)}), 500
+
+# ============================================
+# ENDPOINT 4: VERIFICAR LOGS
+# ============================================
+@app.route('/admin/verificar-logs-db')
+@admin_required
+def admin_verificar_logs():
+    """Endpoint para verificar os últimos logs"""
+    try:
+        db_url = os.getenv('DATABASE_URL')
+        if not db_url:
+            return jsonify({"erro": "DATABASE_URL não configurada no ambiente"}), 500
+        
+        conn = psycopg2.connect(db_url)
+        cursor = conn.cursor(cursor_factory=RealDictCursor)
+        
+        cursor.execute("""
+            SELECT id, usuario_nome, acao, entidade, entidade_id, created_at
+            FROM logs_auditoria
+            ORDER BY id DESC
+            LIMIT 20
+        """)
+        
+        logs = cursor.fetchall()
+        
+        cursor.close()
+        conn.close()
+        
+        return jsonify({
+            "total": len(logs),
+            "logs": logs
+        })
+        
+    except Exception as e:
+        return jsonify({"erro": str(e)}), 500
+
+# ============================================
+# ENDPOINT 5: RESETAR DADOS (CUIDADO!)
+# ============================================
+@app.route('/admin/resetar-dados-db')
+@admin_required
+def admin_resetar_dados():
+    """⚠️ PERIGO: Apaga todos os dados das tabelas (mantém estrutura)"""
+    try:
+        db_url = os.getenv('DATABASE_URL')
+        if not db_url:
+            return jsonify({"erro": "DATABASE_URL não configurada no ambiente"}), 500
+        
+        conn = psycopg2.connect(db_url)
+        cursor = conn.cursor()
+        
+        # Desabilitar triggers temporariamente
+        cursor.execute("SET session_replication_role = 'replica';")
+        
+        # Limpar tabelas
+        cursor.execute("TRUNCATE TABLE logs_auditoria CASCADE;")
+        cursor.execute("TRUNCATE TABLE assinaturas_ata CASCADE;")
+        
+        # Reabilitar triggers
+        cursor.execute("SET session_replication_role = 'origin';")
+        
+        conn.commit()
+        cursor.close()
+        conn.close()
+        
+        return jsonify({
+            "status": "sucesso",
+            "mensagem": "Todos os dados foram removidos (estrutura mantida)"
+        })
+        
+    except Exception as e:
+        return jsonify({"erro": str(e)}), 500
+
+# ============================================
+# ENDPOINT 6: DIAGNÓSTICO DA CONEXÃO
+# ============================================
+@app.route('/admin/diagnostico-db')
+@admin_required
+def admin_diagnostico_db():
+    """Endpoint para diagnosticar problemas de conexão"""
+    try:
+        db_url = os.getenv('DATABASE_URL')
+        
+        diagnostico = {
+            "variavel_ambiente": {
+                "DATABASE_URL_existe": bool(db_url),
+                "DATABASE_URL_prefix": db_url[:30] + "..." if db_url else "Não definida"
+            },
+            "testes": []
+        }
+        
+        if not db_url:
+            diagnostico["testes"].append({
+                "teste": "DATABASE_URL",
+                "status": "erro",
+                "mensagem": "DATABASE_URL não está definida nas variáveis de ambiente"
+            })
+            return jsonify(diagnostico)
+        
+        # Testar conexão
+        try:
+            conn = psycopg2.connect(db_url)
+            cursor = conn.cursor()
+            
+            diagnostico["testes"].append({
+                "teste": "Conexão TCP",
+                "status": "sucesso",
+                "mensagem": "Conseguiu conectar ao servidor PostgreSQL"
+            })
+            
+            # Verificar banco atual
+            cursor.execute("SELECT current_database();")
+            db_name = cursor.fetchone()[0]
+            diagnostico["testes"].append({
+                "teste": "Banco atual",
+                "status": "info",
+                "mensagem": f"Conectado ao banco: {db_name}"
+            })
+            
+            # Verificar versão
+            cursor.execute("SELECT version();")
+            version = cursor.fetchone()[0]
+            diagnostico["testes"].append({
+                "teste": "Versão PostgreSQL",
+                "status": "info",
+                "mensagem": version[:50] + "..."
+            })
+            
+            # Verificar tabelas
+            cursor.execute("""
+                SELECT table_name 
+                FROM information_schema.tables 
+                WHERE table_schema = 'public'
+            """)
+            tables = [t[0] for t in cursor.fetchall()]
+            diagnostico["testes"].append({
+                "teste": "Tabelas existentes",
+                "status": "info",
+                "mensagem": f"Encontradas {len(tables)} tabelas: {', '.join(tables[:10])}"
+            })
+            
+            cursor.close()
+            conn.close()
+            
+        except Exception as e:
+            diagnostico["testes"].append({
+                "teste": "Conexão",
+                "status": "erro",
+                "mensagem": str(e)
+            })
+        
+        return jsonify(diagnostico)
+        
+    except Exception as e:
+        return jsonify({"erro": str(e)}), 500    
 # =============================
 # INICIALIZAÇÃO DA APLICAÇÃO
 # =============================
