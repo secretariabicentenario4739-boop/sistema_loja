@@ -55,22 +55,34 @@ app = Flask(__name__)
 app.secret_key = os.getenv('SECRET_KEY', os.urandom(24))
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 app.config['MAX_CONTENT_LENGTH'] = 50 * 1024 * 1024  # 50MB
-
 # =============================
 # CONEXÃO COM BANCO DE DADOS
 # =============================
+import os
+import sys
+import psycopg2
+from psycopg2.extras import RealDictCursor
+
+# Configurar DATABASE_URL
 DATABASE_URL = os.getenv('DATABASE_URL')
 
 if not DATABASE_URL:
+    # Fallback para desenvolvimento local
     DB_HOST = os.getenv('DB_HOST', 'localhost')
     DB_PORT = os.getenv('DB_PORT', '5432')
     DB_NAME = os.getenv('DB_NAME', 'sistema_maconico')
     DB_USER = os.getenv('DB_USER', 'postgres')
     DB_PASSWORD = os.getenv('DB_PASSWORD', 'postgres')
     DATABASE_URL = f"postgresql://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:{DB_PORT}/{DB_NAME}"
-    print(f"⚠️ Usando conexão local: {DB_HOST}:{DB_PORT}/{DB_NAME}")
+    print(f"⚠️ Usando conexão LOCAL: {DB_HOST}:{DB_PORT}/{DB_NAME}")
+else:
+    # Corrigir URL para PostgreSQL (Render usa postgres://)
+    if DATABASE_URL.startswith('postgres://'):
+        DATABASE_URL = DATABASE_URL.replace('postgres://', 'postgresql://', 1)
+    print(f"✅ Usando conexão RENDER (PostgreSQL)")
 
 def get_db():
+    """Retorna cursor e conexão do banco"""
     try:
         conn = psycopg2.connect(DATABASE_URL)
         cursor = conn.cursor(cursor_factory=RealDictCursor)
@@ -80,22 +92,31 @@ def get_db():
         raise
 
 def return_connection(conn):
+    """Fecha conexão"""
     if conn:
         conn.close()
 
-def init_db():
+def test_connection():
+    """Testa conexão com banco (apenas diagnóstico)"""
     try:
         cursor, conn = get_db()
-        cursor.execute("SELECT 1")
-        print("✅ Conexão com PostgreSQL estabelecida!")
+        cursor.execute("SELECT version()")
+        version = cursor.fetchone()
+        print(f"✅ PostgreSQL conectado: {version['version'][:50]}...")
         return_connection(conn)
         return True
     except Exception as e:
-        print(f"❌ Erro na conexão: {e}")
+        print(f"❌ Falha na conexão: {e}")
         return False
 
-init_db()
-
+# ✅ Testar conexão APENAS se não estiver em ambiente de teste
+if __name__ != '__main__':
+    # Em produção, apenas loga que configurou
+    print(f"🔧 Banco configurado: {'RENDER' if os.getenv('DATABASE_URL') else 'LOCAL'}")
+    
+    # Opcional: testar conexão (mas não falhar se não conectar no primeiro momento)
+    if os.getenv('DATABASE_URL'):
+        test_connection()
 # =============================
 # FUNÇÕES AUXILIARES
 # =============================
@@ -1846,6 +1867,239 @@ def verificar_tabelas():
     """
     
     return html
+
+@app.route("/api/backup/restaurar-externo", methods=["POST"])
+@admin_required
+def api_restaurar_backup_externo():
+    """Restaura backup a partir de um arquivo enviado pelo usuário"""
+    try:
+        # Verificar se arquivo foi enviado
+        if 'arquivo_backup' not in request.files:
+            return jsonify({'success': False, 'error': 'Nenhum arquivo enviado'}), 400
+        
+        arquivo = request.files['arquivo_backup']
+        
+        if arquivo.filename == '':
+            return jsonify({'success': False, 'error': 'Nenhum arquivo selecionado'}), 400
+        
+        # Verificar extensão
+        if not arquivo.filename.endswith('.zip'):
+            return jsonify({'success': False, 'error': 'Formato inválido. Use arquivos .zip'}), 400
+        
+        # Criar backup de emergência antes da restauração
+        print("Criando backup de emergência...")
+        emergency_backup = criar_backup_sistema()
+        
+        if not emergency_backup['success']:
+            return jsonify({
+                'success': False,
+                'error': 'Não foi possível criar backup de emergência. Operação cancelada.',
+                'emergency_backup': None
+            }), 500
+        
+        # Salvar arquivo temporariamente
+        temp_dir = os.path.join(TEMP_RESTORE_DIR, f'upload_{datetime.now().strftime("%Y%m%d_%H%M%S")}')
+        os.makedirs(temp_dir, exist_ok=True)
+        
+        # Salvar arquivo enviado
+        backup_path = os.path.join(temp_dir, arquivo.filename)
+        arquivo.save(backup_path)
+        
+        # Verificar integridade do ZIP
+        try:
+            with zipfile.ZipFile(backup_path, 'r') as zf:
+                # Testar se o zip está íntegro
+                bad_file = zf.testzip()
+                if bad_file:
+                    raise Exception(f"Arquivo ZIP corrompido: {bad_file}")
+        except Exception as e:
+            shutil.rmtree(temp_dir)
+            return jsonify({'success': False, 'error': f'Arquivo ZIP inválido: {str(e)}'}), 400
+        
+        # Restaurar usando a função existente
+        result = restaurar_backup_sistema_arquivo(backup_path, emergency_backup)
+        
+        # Limpar diretório temporário
+        shutil.rmtree(temp_dir)
+        
+        return jsonify(result)
+        
+    except Exception as e:
+        print(f"Erro ao restaurar backup externo: {e}")
+        traceback.print_exc()
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+def restaurar_backup_sistema_arquivo(backup_path, emergency_backup):
+    """Restaura um backup a partir de um arquivo específico"""
+    temp_dir = None
+    try:
+        # Validar arquivo
+        if not os.path.exists(backup_path):
+            return {'success': False, 'error': 'Arquivo de backup não encontrado'}
+        
+        # Criar diretório temporário
+        temp_dir = os.path.join(TEMP_RESTORE_DIR, f'restore_{datetime.now().strftime("%Y%m%d_%H%M%S")}')
+        os.makedirs(temp_dir, exist_ok=True)
+        
+        # Extrair arquivo
+        with zipfile.ZipFile(backup_path, 'r') as zf:
+            zf.extractall(temp_dir)
+            extracted_files = os.listdir(temp_dir)
+            
+            # Verificar tipo de backup
+            dump_files = [f for f in extracted_files if f.endswith('.dump')]
+            sql_files = [f for f in extracted_files if f.endswith('.sql')]
+            
+            if dump_files:
+                # Restaurar com pg_restore
+                dump_file = os.path.join(temp_dir, dump_files[0])
+                
+                import urllib.parse
+                db_url = DATABASE_URL
+                
+                if db_url.startswith('postgresql://'):
+                    parsed = urllib.parse.urlparse(db_url)
+                    db_host = parsed.hostname
+                    db_port = parsed.port or 5432
+                    db_name_parsed = parsed.path[1:] if parsed.path else 'sistema_maconico'
+                    db_user = parsed.username
+                    db_password = parsed.password
+                    
+                    cmd = [
+                        'pg_restore',
+                        '-h', db_host,
+                        '-p', str(db_port),
+                        '-U', db_user,
+                        '-d', db_name_parsed,
+                        '--clean',
+                        '--if-exists',
+                        '--no-owner',
+                        '--no-privileges',
+                        dump_file
+                    ]
+                    
+                    env = os.environ.copy()
+                    env['PGPASSWORD'] = db_password
+                    
+                    result = subprocess.run(cmd, capture_output=True, text=True, env=env)
+                    
+                    if result.returncode != 0:
+                        raise Exception(f"pg_restore falhou: {result.stderr}")
+                    
+                    statements_executed = "pg_restore completed"
+                    
+            elif sql_files:
+                # Restaurar com SQL
+                sql_file_path = os.path.join(temp_dir, sql_files[0])
+                
+                # Conectar ao banco
+                conn = psycopg2.connect(DATABASE_URL)
+                conn.autocommit = False
+                cursor = conn.cursor()
+                
+                # Ler e executar SQL
+                with open(sql_file_path, 'r', encoding='utf-8') as f:
+                    sql_content = f.read()
+                
+                # Separar comandos SQL
+                statements = []
+                current = []
+                in_string = False
+                string_char = None
+                
+                for line in sql_content.split('\n'):
+                    stripped = line.strip()
+                    
+                    # Ignorar comentários de linha
+                    if stripped.startswith('--') and not in_string:
+                        continue
+                    
+                    current.append(line)
+                    
+                    # Verificar se estamos dentro de uma string
+                    for char in line:
+                        if char in ("'", '"') and not in_string:
+                            in_string = True
+                            string_char = char
+                        elif char == string_char and in_string:
+                            # Verificar se não é escape
+                            idx = line.find(char)
+                            if idx > 0 and line[idx-1] == '\\':
+                                continue
+                            in_string = False
+                            string_char = None
+                    
+                    # Se não estamos dentro de string e linha termina com ;
+                    if not in_string and stripped.endswith(';'):
+                        statements.append('\n'.join(current))
+                        current = []
+                
+                if current:
+                    statements.append('\n'.join(current))
+                
+                # Executar statements
+                executed = 0
+                errors = []
+                
+                for i, stmt in enumerate(statements):
+                    if stmt.strip() and not stmt.strip().startswith('--'):
+                        try:
+                            cursor.execute(stmt)
+                            executed += 1
+                        except Exception as e:
+                            errors.append(f"Statement {i+1}: {str(e)[:200]}")
+                            print(f"Erro na statement {i+1}: {e}")
+                            print(f"SQL: {stmt[:300]}")
+                            
+                            # Se erro crítico, abortar
+                            if 'syntax error' in str(e).lower():
+                                raise Exception(f"Erro de sintaxe: {str(e)}")
+                
+                if errors and not executed:
+                    conn.rollback()
+                    raise Exception(f"{len(errors)} erros encontrados. Primeiro erro: {errors[0]}")
+                
+                conn.commit()
+                cursor.close()
+                conn.close()
+                
+                statements_executed = executed
+            else:
+                raise Exception("Formato de backup não reconhecido. Use arquivo .dump ou .sql dentro do ZIP")
+        
+        # Limpar diretório temporário
+        shutil.rmtree(temp_dir)
+        
+        result = {
+            'success': True,
+            'message': f'Backup restaurado com sucesso!',
+            'emergency_backup': emergency_backup.get('filename'),
+            'emergency_backup_size': emergency_backup.get('size_mb'),
+            'statements_executed': statements_executed,
+            'restored_from': os.path.basename(backup_path)
+        }
+        
+        log_backup_operation('restore_externo', os.path.basename(backup_path), True, result)
+        return result
+        
+    except Exception as e:
+        print(f"Erro ao restaurar backup: {e}")
+        traceback.print_exc()
+        
+        if temp_dir and os.path.exists(temp_dir):
+            try:
+                shutil.rmtree(temp_dir)
+            except:
+                pass
+        
+        error_msg = str(e)
+        log_backup_operation('restore_externo', os.path.basename(backup_path) if backup_path else None, False, error=error_msg)
+        
+        return {
+            'success': False,
+            'error': error_msg,
+            'emergency_backup': emergency_backup.get('filename') if 'emergency_backup' in locals() else None
+        }    
     
 
 # =============================
