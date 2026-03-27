@@ -6624,47 +6624,110 @@ def testar_whatsapp():
     return redirect("/config/whatsapp")
 
 # =============================
-# NOTIFICAÇÕES (PARA EVITAR ERRO 404)
+# ROTAS DE NOTIFICAÇÕES
 # =============================
 
 @app.route('/api/notificacoes')
-def notificacoes_lista():
-    """Lista notificações"""
+def api_notificacoes():
+    """Retorna lista de notificações do usuário"""
     try:
-        # Retorna lista de notificações (pode ser expandido depois)
-        notificacoes = []
+        if 'user_id' not in session:
+            return jsonify({'success': True, 'notificacoes': [], 'nao_lidas': 0})
         
-        # Exemplo: verificar se há backups recentes
-        try:
-            from datetime import datetime, timedelta
-            backup_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'backups')
-            if os.path.exists(backup_dir):
-                backups = [f for f in os.listdir(backup_dir) if f.endswith('.zip')]
-                if backups:
-                    backups.sort(reverse=True)
-                    ultimo_backup = datetime.fromtimestamp(os.path.getmtime(os.path.join(backup_dir, backups[0])))
-                    dias = (datetime.now() - ultimo_backup).days
-                    
-                    if dias > 7:
-                        notificacoes.append({
-                            'id': 1,
-                            'titulo': 'Backup desatualizado',
-                            'mensagem': f'Último backup há {dias} dias. Recomenda-se fazer um novo backup.',
-                            'tipo': 'warning',
-                            'data': datetime.now().isoformat()
-                        })
-        except:
-            pass
+        cursor, conn = get_db()
+        
+        # Buscar notificações do usuário
+        cursor.execute("""
+            SELECT id, titulo, mensagem, tipo, link, lida, data_criacao as data
+            FROM notificacoes
+            WHERE usuario_id = %s
+            ORDER BY data_criacao DESC
+            LIMIT 50
+        """, (session['user_id'],))
+        
+        notificacoes = cursor.fetchall()
+        
+        # Contar não lidas
+        cursor.execute("""
+            SELECT COUNT(*) as total
+            FROM notificacoes
+            WHERE usuario_id = %s AND lida = 0
+        """, (session['user_id'],))
+        
+        nao_lidas = cursor.fetchone()['total']
+        
+        return_connection(conn)
+        
+        # Converter para lista de dicionários
+        notificacoes_list = []
+        for n in notificacoes:
+            notificacoes_list.append({
+                'id': n['id'],
+                'titulo': n['titulo'],
+                'mensagem': n['mensagem'],
+                'tipo': n['tipo'],
+                'link': n['link'],
+                'lida': n['lida'],
+                'data': n['data'].isoformat() if n['data'] else datetime.now().isoformat()
+            })
         
         return jsonify({
             'success': True,
-            'notificacoes': notificacoes
+            'notificacoes': notificacoes_list,
+            'nao_lidas': nao_lidas
         })
+        
     except Exception as e:
-        return jsonify({
-            'success': False,
-            'message': str(e)
-        }), 500
+        print(f"Erro ao buscar notificações: {e}")
+        return jsonify({'success': True, 'notificacoes': [], 'nao_lidas': 0})
+
+@app.route('/api/notificacoes/marcar-lida/<int:id>', methods=['POST'])
+def api_marcar_notificacao_lida(id):
+    """Marca uma notificação como lida"""
+    try:
+        if 'user_id' not in session:
+            return jsonify({'success': False, 'error': 'Não autenticado'}), 401
+        
+        cursor, conn = get_db()
+        
+        cursor.execute("""
+            UPDATE notificacoes 
+            SET lida = 1, data_leitura = CURRENT_TIMESTAMP
+            WHERE id = %s AND usuario_id = %s
+        """, (id, session['user_id']))
+        
+        conn.commit()
+        return_connection(conn)
+        
+        return jsonify({'success': True})
+        
+    except Exception as e:
+        print(f"Erro ao marcar notificação como lida: {e}")
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@app.route('/api/notificacoes/marcar-todas-lidas', methods=['POST'])
+def api_marcar_todas_notificacoes_lidas():
+    """Marca todas as notificações do usuário como lidas"""
+    try:
+        if 'user_id' not in session:
+            return jsonify({'success': False, 'error': 'Não autenticado'}), 401
+        
+        cursor, conn = get_db()
+        
+        cursor.execute("""
+            UPDATE notificacoes 
+            SET lida = 1, data_leitura = CURRENT_TIMESTAMP
+            WHERE usuario_id = %s AND lida = 0
+        """, (session['user_id'],))
+        
+        conn.commit()
+        return_connection(conn)
+        
+        return jsonify({'success': True})
+        
+    except Exception as e:
+        print(f"Erro ao marcar todas notificações como lidas: {e}")
+        return jsonify({'success': False, 'error': str(e)}), 500
 
 @app.route('/api/notificacoes/stream')
 def notificacoes_stream():

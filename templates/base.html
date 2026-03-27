@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
-    <title>Sistema Maçônico - {% block title %}{% endblock %}</title>
+    <title>Sistema Maçônico - {% block title %}Dashboard{% endblock %}</title>
     
     <!-- Bootstrap 5 CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
@@ -21,14 +21,14 @@
             --azul-bicentenario: #1a2c3e;
             --dourado: #c9a03d;
             --dourado-escuro: #b58c2a;
-            --azul-claro: #3498db;
             --cinza-texto: #2c3e50;
             --light: #f8f9fa;
             --border: #e2e8f0;
-            --success: #2dcb73;
-            --info: #17a2b8;
-            --warning: #ffc107;
+            --success: #10b981;
+            --info: #3b82f6;
+            --warning: #f59e0b;
             --danger: #ef4444;
+            --dark: #1f2937;
         }
         
         * {
@@ -39,7 +39,7 @@
         
         body {
             font-family: 'Inter', sans-serif;
-            background: linear-gradient(135deg, #f5f7fa 0%, #f0f2f5 100%);
+            background: #f3f4f6;
             overflow-x: hidden;
             color: var(--cinza-texto);
         }
@@ -48,24 +48,23 @@
         .mobile-menu-btn {
             display: none;
             position: fixed;
-            top: 20px;
-            left: 20px;
+            top: 16px;
+            left: 16px;
             z-index: 1001;
             background: var(--azul-bicentenario);
             border: none;
             color: white;
-            font-size: 1.5rem;
-            padding: 12px 16px;
+            font-size: 1.4rem;
+            padding: 10px 14px;
             border-radius: 12px;
             cursor: pointer;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
-            transition: all 0.3s ease;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+            transition: all 0.2s ease;
         }
         
         .mobile-menu-btn:hover {
             background: var(--dourado);
             color: var(--azul-bicentenario);
-            transform: scale(1.05);
         }
         
         /* Overlay para mobile */
@@ -77,9 +76,8 @@
             right: 0;
             bottom: 0;
             background: rgba(0,0,0,0.5);
-            backdrop-filter: blur(4px);
+            backdrop-filter: blur(2px);
             z-index: 999;
-            transition: all 0.3s ease;
         }
         
         /* Sidebar */
@@ -93,11 +91,11 @@
             transition: all 0.3s ease;
             z-index: 1000;
             overflow-y: auto;
-            box-shadow: 2px 0 20px rgba(0,0,0,0.1);
+            box-shadow: 2px 0 20px rgba(0,0,0,0.08);
         }
         
         .sidebar::-webkit-scrollbar {
-            width: 5px;
+            width: 4px;
         }
         
         .sidebar::-webkit-scrollbar-track {
@@ -106,85 +104,83 @@
         
         .sidebar::-webkit-scrollbar-thumb {
             background: var(--dourado);
-            border-radius: 10px;
+            border-radius: 4px;
         }
         
         /* Logo Area */
         .logo-area {
-            padding: 28px 20px;
+            padding: 24px 20px;
             text-align: center;
-            border-bottom: 1px solid rgba(255,255,255,0.1);
-            background: linear-gradient(135deg, var(--azul-bicentenario) 0%, #0f1a24 100%);
+            border-bottom: 1px solid rgba(255,255,255,0.08);
+            margin-bottom: 16px;
         }
         
         .logo-area h3 {
             display: flex;
             align-items: center;
             justify-content: center;
-            gap: 8px;
-            font-size: 1.6rem;
+            gap: 10px;
+            font-size: 1.5rem;
             margin: 0;
             color: white;
-            font-weight: 700;
-            letter-spacing: -0.5px;
-            transition: all 0.3s ease;
+            font-weight: 600;
+            letter-spacing: -0.3px;
         }
         
         .logo-area h3 i {
-            font-size: 1.8rem;
+            font-size: 1.6rem;
             color: var(--dourado);
-            transition: all 0.3s ease;
-        }
-        
-        .logo-area .logo-text {
-            transition: opacity 0.2s ease, width 0.2s ease;
-            white-space: nowrap;
         }
         
         .logo-area .logo-sub {
-            font-size: 0.75rem;
-            margin: 5px 0 0;
-            color: rgba(255,255,255,0.7);
+            font-size: 0.7rem;
+            margin: 6px 0 0;
+            color: rgba(255,255,255,0.6);
             font-weight: 400;
-            transition: all 0.3s ease;
+            letter-spacing: 0.5px;
+        }
+        
+        /* Navegação */
+        .sidebar .nav {
+            padding: 0 12px;
         }
         
         .sidebar .nav-link {
-            color: rgba(255,255,255,0.8);
-            padding: 12px 20px;
-            transition: all 0.3s;
-            border-radius: 12px;
-            margin: 4px 12px;
+            color: rgba(255,255,255,0.75);
+            padding: 10px 14px;
+            transition: all 0.2s;
+            border-radius: 10px;
+            margin: 2px 0;
             font-weight: 500;
-            font-size: 0.9rem;
-            position: relative;
+            font-size: 0.85rem;
+            display: flex;
+            align-items: center;
         }
         
         .sidebar .nav-link:hover {
-            background: rgba(201,160,61,0.2);
+            background: rgba(201,160,61,0.15);
             color: var(--dourado);
-            transform: translateX(5px);
+            transform: translateX(4px);
         }
         
         .sidebar .nav-link.active {
             background: var(--dourado);
             color: var(--azul-bicentenario);
-            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
         }
         
         .sidebar .nav-link i {
             margin-right: 12px;
-            font-size: 1.2rem;
+            font-size: 1.1rem;
             width: 24px;
             text-align: center;
         }
         
         .sidebar hr {
-            margin: 12px 16px;
-            border-color: rgba(255,255,255,0.1);
+            margin: 16px 12px;
+            border-color: rgba(255,255,255,0.08);
         }
         
-        /* Desktop: comportamento de retração */
+        /* Modo colapsado (desktop) */
         @media (min-width: 769px) {
             .sidebar.collapsed {
                 width: var(--sidebar-collapsed-width);
@@ -196,35 +192,29 @@
             
             .sidebar.collapsed .nav-link i {
                 margin-right: 0;
+                font-size: 1.2rem;
             }
             
             .sidebar.collapsed .logo-area {
-                padding: 20px 10px;
+                padding: 20px 8px;
             }
             
-            .sidebar.collapsed .logo-area h3 .logo-text {
-                display: none;
-            }
-            
+            .sidebar.collapsed .logo-area h3 .logo-text,
             .sidebar.collapsed .logo-area .logo-sub {
                 display: none;
             }
             
             .sidebar.collapsed .logo-area h3 {
-                font-size: 1.8rem;
+                font-size: 1.4rem;
                 justify-content: center;
-                gap: 0;
-            }
-            
-            .sidebar.collapsed .logo-area h3 i {
-                font-size: 1.8rem;
-                margin: 0;
             }
             
             .main-content {
                 margin-left: var(--sidebar-width);
-                transition: all 0.3s ease;
+                transition: margin-left 0.3s ease;
                 min-height: 100vh;
+                display: flex;
+                flex-direction: column;
             }
             
             .main-content.expanded {
@@ -232,7 +222,7 @@
             }
         }
         
-        /* Mobile: comportamento deslizante */
+        /* Mobile */
         @media (max-width: 768px) {
             .mobile-menu-btn {
                 display: block;
@@ -241,13 +231,12 @@
             .sidebar {
                 transform: translateX(-100%);
                 width: 280px;
-                z-index: 1000;
                 box-shadow: none;
             }
             
             .sidebar.mobile-open {
                 transform: translateX(0);
-                box-shadow: 2px 0 20px rgba(0,0,0,0.2);
+                box-shadow: 2px 0 20px rgba(0,0,0,0.15);
             }
             
             .sidebar-overlay.active {
@@ -261,70 +250,47 @@
             
             .top-bar {
                 margin-left: 0;
+                position: fixed;
+                top: 0;
+                left: 0;
+                right: 0;
+                z-index: 998;
             }
             
             .toggle-sidebar {
                 display: none;
-            }
-            
-            .logo-area {
-                padding: 20px;
-            }
-            
-            .logo-area h3 {
-                font-size: 1.4rem;
-            }
-            
-            .logo-area h3 i {
-                font-size: 1.5rem;
             }
         }
         
         /* Top Bar */
         .top-bar {
             background: white;
-            padding: 10px 28px;
+            padding: 12px 24px;
             position: sticky;
             top: 0;
-            z-index: 998;
+            z-index: 997;
             border-bottom: 1px solid var(--border);
-            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
         }
         
         .toggle-sidebar {
-            background: rgba(26,44,62,0.08);
+            background: transparent;
             border: 1px solid var(--border);
-            font-size: 1.2rem;
+            font-size: 1rem;
             cursor: pointer;
             color: var(--azul-bicentenario);
-            transition: all 0.3s ease;
-            padding: 10px 14px;
-            border-radius: 14px;
+            transition: all 0.2s;
+            padding: 8px 16px;
+            border-radius: 10px;
             display: inline-flex;
             align-items: center;
             gap: 8px;
             font-weight: 500;
         }
         
-        .toggle-sidebar i {
-            font-size: 1.2rem;
-        }
-        
-        .toggle-sidebar span {
-            font-size: 0.85rem;
-            display: none;
-        }
-        
-        @media (min-width: 992px) {
-            .toggle-sidebar span {
-                display: inline;
-            }
-        }
-        
         .toggle-sidebar:hover {
             background: var(--azul-bicentenario);
             color: white;
-            transform: translateY(-2px);
             border-color: transparent;
         }
         
@@ -335,70 +301,57 @@
             flex-wrap: wrap;
         }
         
-        .user-info .badge {
-            font-size: 0.85rem;
-            padding: 8px 18px;
-            border-radius: 40px;
+        .user-info .badge-user {
+            background: #f1f5f9;
+            color: var(--azul-bicentenario);
+            font-size: 0.8rem;
+            padding: 6px 14px;
+            border-radius: 30px;
             font-weight: 500;
             display: inline-flex;
             align-items: center;
-            gap: 8px;
-            transition: all 0.2s ease;
+            gap: 6px;
         }
         
-        .user-info .badge:first-child {
-            background: var(--azul-bicentenario);
-            color: white;
+        .user-info .badge-user i {
+            font-size: 0.9rem;
         }
         
-        .user-info .badge:nth-child(2) {
+        .user-info .badge-user:last-child {
             background: var(--dourado);
             color: var(--azul-bicentenario);
         }
         
-        .user-info .badge:nth-child(3) {
-            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
-            color: white;
-        }
-        
-        .user-info .badge i {
-            font-size: 0.9rem;
-        }
-        
-        .user-info .badge:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-        }
-        
-        /* Notificações */
+        /* Botão de notificações */
         .notificacoes-dropdown {
             position: relative;
-            display: inline-block;
-            margin-left: 15px;
+            margin-left: 12px;
         }
         
         .btn-notificacoes {
-            background: rgba(26,44,62,0.08);
+            background: transparent;
             border: 1px solid var(--border);
             border-radius: 40px;
-            padding: 8px 16px;
-            transition: all 0.3s ease;
+            padding: 6px 14px;
+            transition: all 0.2s;
             position: relative;
             cursor: pointer;
+            color: var(--cinza-texto);
         }
         
         .btn-notificacoes:hover {
             background: var(--azul-bicentenario);
             color: white;
+            border-color: transparent;
         }
         
         .notificacao-badge {
             position: absolute;
-            top: -5px;
-            right: -5px;
+            top: -6px;
+            right: -6px;
             background: var(--danger);
             color: white;
-            border-radius: 50%;
+            border-radius: 20px;
             padding: 2px 6px;
             font-size: 10px;
             font-weight: bold;
@@ -410,24 +363,23 @@
             position: absolute;
             top: 100%;
             right: 0;
-            left: auto;
-            z-index: 9999;
-            width: 380px;
-            max-height: 500px;
+            width: 360px;
+            max-height: 450px;
             overflow-y: auto;
             background: white;
             border-radius: 12px;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.15);
-            border: none;
-            margin-top: 10px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.12);
+            border: 1px solid var(--border);
+            margin-top: 8px;
+            z-index: 9999;
         }
         
         @media (max-width: 768px) {
             .dropdown-menu-notificacoes {
                 position: fixed;
                 top: 70px;
-                right: 10px;
-                left: 10px;
+                right: 12px;
+                left: 12px;
                 width: auto;
             }
         }
@@ -444,28 +396,28 @@
         
         .notificacao-item {
             padding: 12px 16px;
-            border-bottom: 1px solid #eee;
-            transition: background-color 0.2s;
+            border-bottom: 1px solid #f0f0f0;
+            transition: background 0.2s;
             cursor: pointer;
         }
         
         .notificacao-item:hover {
-            background-color: #f8f9fa;
+            background: #fafafa;
         }
         
         .notificacao-item.nao-lida {
-            background-color: rgba(201,160,61,0.1);
+            background: rgba(201,160,61,0.08);
             border-left: 3px solid var(--dourado);
         }
         
         .notificacao-titulo {
             font-weight: 600;
             margin-bottom: 4px;
-            font-size: 0.9rem;
+            font-size: 0.85rem;
         }
         
         .notificacao-mensagem {
-            font-size: 0.85rem;
+            font-size: 0.8rem;
             color: #6c757d;
             margin-bottom: 4px;
         }
@@ -475,7 +427,118 @@
             color: #adb5bd;
         }
         
-        /* Toast container */
+        /* Content Area */
+        .content-area {
+            flex: 1;
+            padding: 24px;
+        }
+        
+        /* Footer */
+        .footer {
+            background: white;
+            padding: 16px 24px;
+            text-align: center;
+            border-top: 1px solid var(--border);
+            font-size: 0.75rem;
+            color: #8b8f9c;
+        }
+        
+        /* Cards */
+        .card {
+            border-radius: 16px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+            transition: all 0.2s ease;
+            border: 1px solid var(--border);
+            background: white;
+        }
+        
+        .card:hover {
+            box-shadow: 0 8px 20px rgba(0,0,0,0.08);
+            transform: translateY(-2px);
+        }
+        
+        .card-header {
+            background: white;
+            border-bottom: 1px solid var(--border);
+            font-weight: 600;
+            padding: 1rem 1.25rem;
+            border-radius: 16px 16px 0 0 !important;
+        }
+        
+        /* Botões padronizados */
+        .btn-primary {
+            background: var(--azul-bicentenario);
+            border: none;
+            color: white;
+            font-weight: 500;
+            border-radius: 10px;
+            padding: 8px 20px;
+            transition: all 0.2s;
+        }
+        
+        .btn-primary:hover {
+            background: var(--dourado);
+            color: var(--azul-bicentenario);
+            transform: translateY(-1px);
+        }
+        
+        .btn-outline-primary {
+            border: 1px solid var(--azul-bicentenario);
+            color: var(--azul-bicentenario);
+            border-radius: 10px;
+            font-weight: 500;
+        }
+        
+        .btn-outline-primary:hover {
+            background: var(--azul-bicentenario);
+            color: white;
+        }
+        
+        .btn-success {
+            background: var(--success);
+            border: none;
+            border-radius: 10px;
+        }
+        
+        .btn-danger {
+            background: var(--danger);
+            border: none;
+            border-radius: 10px;
+        }
+        
+        .btn-warning {
+            background: var(--warning);
+            border: none;
+            border-radius: 10px;
+            color: white;
+        }
+        
+        /* Tabelas */
+        .table {
+            border-collapse: separate;
+            border-spacing: 0;
+        }
+        
+        .table thead th {
+            background: #f8fafc;
+            border-bottom: 1px solid var(--border);
+            font-weight: 600;
+            padding: 0.9rem 1rem;
+            color: var(--dark);
+        }
+        
+        .table tbody tr:hover {
+            background: rgba(201,160,61,0.04);
+        }
+        
+        /* Badges */
+        .badge {
+            padding: 0.35rem 0.8rem;
+            border-radius: 30px;
+            font-weight: 500;
+        }
+        
+        /* Toast */
         .toast-container-custom {
             position: fixed;
             bottom: 20px;
@@ -485,8 +548,10 @@
         
         .toast-custom {
             min-width: 300px;
+            background: white;
             border-radius: 12px;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.12);
+            margin-bottom: 10px;
             animation: slideInRight 0.3s ease;
         }
         
@@ -501,70 +566,15 @@
             }
         }
         
-        /* Cards e elementos */
-        .card {
-            border-radius: 20px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.04);
-            transition: all 0.3s ease;
-            border: 1px solid var(--border);
-            background: white;
-        }
-        
-        .card:hover {
-            transform: translateY(-4px);
-            box-shadow: 0 12px 24px rgba(0,0,0,0.08);
-        }
-        
-        .card-header {
-            background: white;
-            border-bottom: 1px solid var(--border);
-            font-weight: 600;
-            padding: 1.2rem 1.5rem;
-            border-radius: 20px 20px 0 0 !important;
-        }
-        
-        .btn-primary {
-            background: var(--dourado);
-            border: none;
-            color: var(--azul-bicentenario);
-            font-weight: 600;
-            border-radius: 50px;
-            padding: 10px 25px;
-        }
-        
-        .btn-primary:hover {
-            background: var(--dourado-escuro);
-            transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-        }
-        
-        .btn-outline-primary {
-            border-color: var(--dourado);
-            color: var(--dourado);
-            border-radius: 50px;
-        }
-        
-        .btn-outline-primary:hover {
-            background: var(--dourado);
-            color: var(--azul-bicentenario);
-        }
-        
-        /* Footer */
-        .footer {
-            background: white;
-            padding: 20px;
-            text-align: center;
-            border-top: 1px solid var(--border);
-            margin-top: auto;
-            color: var(--gray);
-            font-size: 0.85rem;
-        }
-        
         /* Animações */
+        .fade-in-up {
+            animation: fadeInUp 0.4s ease-out;
+        }
+        
         @keyframes fadeInUp {
             from {
                 opacity: 0;
-                transform: translateY(20px);
+                transform: translateY(15px);
             }
             to {
                 opacity: 1;
@@ -572,53 +582,19 @@
             }
         }
         
-        .fade-in-up {
-            animation: fadeInUp 0.4s ease-out;
-        }
-        
-        /* Tabelas */
-        .table {
-            border-collapse: separate;
-            border-spacing: 0;
-        }
-        
-        .table thead th {
-            background: #f8fafc;
-            border-bottom: 1px solid var(--border);
-            font-weight: 600;
-            color: var(--dark);
-            padding: 1rem;
-        }
-        
-        .table tbody tr:hover {
-            background: rgba(201,160,61,0.05);
-        }
-        
-        /* Badges */
-        .badge {
-            padding: 0.4rem 0.8rem;
-            border-radius: 30px;
-            font-weight: 500;
-        }
-        
         /* Scrollbar */
         ::-webkit-scrollbar {
-            width: 8px;
-            height: 8px;
+            width: 6px;
+            height: 6px;
         }
         
         ::-webkit-scrollbar-track {
             background: #f1f1f1;
-            border-radius: 10px;
         }
         
         ::-webkit-scrollbar-thumb {
             background: var(--dourado);
             border-radius: 10px;
-        }
-        
-        ::-webkit-scrollbar-thumb:hover {
-            background: var(--dourado-escuro);
         }
         
         /* Responsividade */
@@ -627,41 +603,37 @@
                 padding: 10px 16px;
             }
             
-            .user-info .badge {
+            .user-info .badge-user {
                 font-size: 0.7rem;
-                padding: 6px 12px;
+                padding: 4px 10px;
             }
             
             .content-area {
-                padding: 1rem !important;
+                padding: 16px !important;
             }
             
-            h2 {
+            h1, h2 {
                 font-size: 1.3rem;
-            }
-            
-            .table-responsive {
-                font-size: 0.8rem;
             }
             
             .btn {
                 font-size: 0.8rem;
-                padding: 0.4rem 0.8rem;
-            }
-            
-            .card-header {
-                padding: 1rem;
+                padding: 6px 14px;
             }
         }
         
         @media (max-width: 480px) {
             .user-info {
-                gap: 8px;
+                gap: 6px;
             }
             
-            .user-info .badge {
-                padding: 5px 10px;
+            .user-info .badge-user {
                 font-size: 0.65rem;
+                padding: 4px 8px;
+            }
+            
+            .btn-notificacoes {
+                padding: 6px 12px;
             }
         }
     </style>
@@ -687,7 +659,7 @@
             <p class="logo-sub">Bicentenário</p>
         </div>
         
-        <nav class="nav flex-column mt-3">
+        <nav class="nav flex-column">
             <a class="nav-link" href="/dashboard">
                 <i class="bi bi-speedometer2"></i> <span>Dashboard</span>
             </a>
@@ -748,19 +720,13 @@
             </a>
             {% endif %}
             
-            {% if tem_permissao('condecoracoes.view') %}
-            <a class="nav-link" href="/tipos_condecoracoes">
-                <i class="bi bi-award"></i> <span>Condecorações</span>
-            </a>
-            {% endif %}
-            
             {% if tem_permissao('lojas.view') %}
             <a class="nav-link" href="/lojas">
                 <i class="bi bi-building"></i> <span>Lojas</span>
             </a>
             {% endif %}
             
-            {% if session.tipo == 'admin' or tem_permissao('config.view') %}
+            {% if session.tipo == 'admin' %}
             <a class="nav-link" href="/tipos_ausencia">
                 <i class="bi bi-calendar-x"></i> <span>Tipos de Ausência</span>
             </a>
@@ -774,31 +740,23 @@
             
             <hr>
             
-            {% if tem_permissao('config.email') %}
+            {% if session.tipo == 'admin' %}
             <a class="nav-link" href="/config/email">
                 <i class="bi bi-envelope"></i> <span>Config. E-mail</span>
             </a>
-            {% endif %}
             
-            {% if tem_permissao('config.whatsapp') %}
             <a class="nav-link" href="/config/whatsapp">
                 <i class="bi bi-whatsapp"></i> <span>WhatsApp</span>
             </a>
-            {% endif %}
             
-            {% if tem_permissao('config.permissions') %}
             <a class="nav-link" href="/admin/permissoes">
                 <i class="bi bi-shield-lock"></i> <span>Permissões</span>
             </a>
-            {% endif %}
             
-            {% if tem_permissao('config.view') or session.tipo == 'admin' %}
             <a class="nav-link" href="/admin/backup">
                 <i class="bi bi-database"></i> <span>Backup</span>
             </a>
-            {% endif %}
             
-            {% if tem_permissao('auditoria.view') %}
             <a class="nav-link" href="/auditoria">
                 <i class="bi bi-journal"></i> <span>Auditoria</span>
             </a>
@@ -810,7 +768,7 @@
                 <i class="bi bi-person-circle"></i> <span>Meu Perfil</span>
             </a>
             
-            <a class="nav-link" href="/logout">
+            <a class="nav-link text-danger" href="/logout" onclick="return confirm('Deseja realmente sair?')">
                 <i class="bi bi-box-arrow-right"></i> <span>Sair</span>
             </a>
         </nav>
@@ -828,25 +786,21 @@
             </div>
             <div class="d-flex align-items-center">
                 <div class="user-info">
-                    <span class="badge">
+                    <span class="badge-user">
                         <i class="bi bi-person-circle"></i> {{ session.usuario }}
                     </span>
-                    <span class="badge">
+                    <span class="badge-user">
                         <i class="bi bi-shield-check"></i> 
-                        {% if session.tipo == 'admin' %}
-                            Administrador
-                        {% elif session.tipo == 'sindicante' %}
-                            Sindicante
-                        {% else %}
-                            Obreiro
-                        {% endif %}
+                        {% if session.tipo == 'admin' %}Administrador
+                        {% elif session.tipo == 'sindicante' %}Sindicante
+                        {% else %}Obreiro{% endif %}
                     </span>
-                    <span class="badge">
+                    <span class="badge-user">
                         <i class="bi bi-calendar-heart"></i> {{ now.strftime('%d/%m/%Y') }}
                     </span>
                 </div>
                 
-                <!-- Notificações -->
+                <!-- Notificações - Apenas visualização, sem popup automático -->
                 <div class="notificacoes-dropdown">
                     <button class="btn-notificacoes" id="btnNotificacoes" type="button">
                         <i class="bi bi-bell fs-5"></i>
@@ -874,7 +828,20 @@
         </div>
         
         <!-- Content Area -->
-        <div class="content-area p-4 fade-in-up">
+        <div class="content-area fade-in-up">
+            <!-- Flash Messages -->
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    {% for category, message in messages %}
+                        <div class="alert alert-{{ category if category != 'message' else 'info' }} alert-dismissible fade show mb-4" role="alert">
+                            <i class="bi bi-{% if category == 'success' %}check-circle{% elif category == 'danger' %}exclamation-triangle{% elif category == 'warning' %}exclamation-circle{% else %}info-circle{% endif %} me-2"></i>
+                            {{ message }}
+                            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                        </div>
+                    {% endfor %}
+                {% endif %}
+            {% endwith %}
+            
             {% block content %}{% endblock %}
         </div>
         
@@ -983,57 +950,29 @@
             }
         });
         
-        // ========== NOTIFICAÇÕES ==========
+        // ========== NOTIFICAÇÕES (SEM POPUP AUTOMÁTICO) ==========
         class NotificacaoManager {
             constructor() {
-                this.eventSource = null;
                 this.notificacoes = [];
                 this.naoLidas = 0;
                 this.init();
             }
             
             init() {
-                this.conectarSSE();
                 this.carregarNotificacoes();
                 this.setupEventListeners();
-            }
-            
-            conectarSSE() {
-                if (this.eventSource) {
-                    this.eventSource.close();
-                }
-                
-                this.eventSource = new EventSource('/api/notificacoes/stream');
-                
-                this.eventSource.onmessage = (event) => {
-                    const data = JSON.parse(event.data);
-                    if (data.type !== 'heartbeat') {
-                        this.receberNotificacao(data);
-                    }
-                };
-                
-                this.eventSource.onerror = () => {
-                    console.log('Reconectando notificações...');
-                    setTimeout(() => this.conectarSSE(), 5000);
-                };
-            }
-            
-            receberNotificacao(notificacao) {
-                this.notificacoes.unshift(notificacao);
-                this.naoLidas++;
-                this.atualizarBadge();
-                this.adicionarNotificacaoNaLista(notificacao);
-                this.mostrarToast(notificacao);
             }
             
             async carregarNotificacoes() {
                 try {
                     const response = await fetch('/api/notificacoes');
                     const data = await response.json();
-                    this.notificacoes = data.notificacoes;
-                    this.naoLidas = data.nao_lidas;
-                    this.atualizarBadge();
-                    this.renderizarLista();
+                    if (data.success) {
+                        this.notificacoes = data.notificacoes || [];
+                        this.naoLidas = data.nao_lidas || 0;
+                        this.atualizarBadge();
+                        this.renderizarLista();
+                    }
                 } catch (error) {
                     console.error('Erro ao carregar notificações:', error);
                 }
@@ -1051,6 +990,8 @@
             
             renderizarLista() {
                 const container = document.getElementById('listaNotificacoes');
+                if (!container) return;
+                
                 if (this.notificacoes.length === 0) {
                     container.innerHTML = `
                         <div class="text-center py-4">
@@ -1068,22 +1009,14 @@
                 container.innerHTML = html;
             }
             
-            adicionarNotificacaoNaLista(notificacao) {
-                const container = document.getElementById('listaNotificacoes');
-                const noResults = container.innerHTML.includes('Nenhuma notificação');
-                if (noResults) {
-                    container.innerHTML = '';
-                }
-                container.insertAdjacentHTML('afterbegin', this.criarItemNotificacao(notificacao));
-            }
-            
             criarItemNotificacao(notif) {
                 const data = new Date(notif.data);
                 const dataFormatada = data.toLocaleDateString('pt-BR') + ' ' + data.toLocaleTimeString('pt-BR', {hour: '2-digit', minute:'2-digit'});
                 
                 const icones = {
                     'reuniao': '📅', 'sindicancia': '⚖️', 'comunicado': '📢',
-                    'aniversario': '🎂', 'convocacao': '🔔'
+                    'aniversario': '🎂', 'convocacao': '🔔', 'info': 'ℹ️',
+                    'success': '✅', 'warning': '⚠️', 'danger': '❌'
                 };
                 const icone = icones[notif.tipo] || '📌';
                 
@@ -1093,7 +1026,7 @@
                             <div class="me-2">${icone}</div>
                             <div class="flex-grow-1">
                                 <div class="notificacao-titulo">
-                                    ${notif.titulo}
+                                    ${notif.titulo || 'Notificação'}
                                     ${notif.lida === 0 ? '<span class="badge bg-primary ms-1">Nova</span>' : ''}
                                 </div>
                                 <div class="notificacao-mensagem">${notif.mensagem}</div>
@@ -1106,35 +1039,11 @@
                 `;
             }
             
-            mostrarToast(notificacao) {
-                const toastId = 'toast-' + Date.now();
-                const toastHTML = `
-                    <div id="${toastId}" class="toast-custom toast show" role="alert">
-                        <div class="toast-header bg-primary text-white">
-                            <i class="bi bi-bell-fill me-2"></i>
-                            <strong class="me-auto">${notificacao.titulo}</strong>
-                            <small>agora</small>
-                            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="toast"></button>
-                        </div>
-                        <div class="toast-body">
-                            ${notificacao.mensagem}
-                            ${notificacao.link ? `<hr class="my-2"><a href="${notificacao.link}" class="btn btn-sm btn-primary">Ver detalhes</a>` : ''}
-                        </div>
-                    </div>
-                `;
-                
-                document.getElementById('toastContainer').insertAdjacentHTML('beforeend', toastHTML);
-                setTimeout(() => {
-                    const toast = document.getElementById(toastId);
-                    if (toast) toast.remove();
-                }, 5000);
-            }
-            
             setupEventListeners() {
                 const btn = document.getElementById('btnNotificacoes');
                 const dropdown = document.getElementById('dropdownNotificacoes');
                 
-                if (btn) {
+                if (btn && dropdown) {
                     btn.addEventListener('click', (e) => {
                         e.preventDefault();
                         e.stopPropagation();
@@ -1151,12 +1060,8 @@
                 
                 document.addEventListener('click', (e) => {
                     if (!btn?.contains(e.target) && !dropdown?.contains(e.target)) {
-                        dropdown.style.display = 'none';
+                        if (dropdown) dropdown.style.display = 'none';
                     }
-                });
-                
-                window.addEventListener('scroll', () => {
-                    dropdown.style.display = 'none';
                 });
                 
                 document.getElementById('marcarTodasLidas')?.addEventListener('click', async () => {
@@ -1182,7 +1087,7 @@
                         item.classList.remove('nao-lida');
                         const badge = item.querySelector('.badge');
                         if (badge) badge.remove();
-                        this.naoLidas--;
+                        this.naoLidas = Math.max(0, this.naoLidas - 1);
                         this.atualizarBadge();
                     }
                 } catch (error) {
@@ -1212,13 +1117,15 @@
                 window.notificacaoManager = new NotificacaoManager();
             }
             
-            // Auto-fade out de alerts
+            // Auto-fade out de alerts (apenas mensagens flash)
             setTimeout(() => {
                 document.querySelectorAll('.alert:not(.alert-custom)').forEach(alert => {
-                    const bsAlert = new bootstrap.Alert(alert);
-                    setTimeout(() => bsAlert.close(), 5000);
+                    setTimeout(() => {
+                        const bsAlert = bootstrap.Alert.getInstance(alert);
+                        if (bsAlert) bsAlert.close();
+                    }, 5000);
                 });
-            }, 3000);
+            }, 1000);
             
             // Tooltips
             var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
