@@ -2146,138 +2146,170 @@ def api_reunioes():
     return {"eventos": eventos}
 
 @app.route("/reunioes/nova", methods=["GET", "POST"])
-@login_required
+@admin_required
 def nova_reuniao():
-    if request.method == "GET":
-        # Buscar irmãos para lista de participantes
-        cursor, conn = get_db()
-        cursor.execute("""
-            SELECT id, nome_completo, email, cargo 
-            FROM usuarios 
-            WHERE ativo = 1 
-            ORDER BY nome_completo
-        """)
-        irmaos = cursor.fetchall()
-        return_connection(conn)
-        return render_template("reunioes/nova.html", irmaos=irmaos)
-    
-    # POST - Criar nova reunião
-    try:
+    cursor, conn = get_db()
+    if request.method == "POST":
         titulo = request.form.get("titulo")
-        descricao = request.form.get("descricao")
+        tipo = request.form.get("tipo")
+        grau = request.form.get("grau")
         data = request.form.get("data")
-        hora = request.form.get("hora")
+        hora_inicio = request.form.get("hora_inicio")
+        hora_termino = request.form.get("hora_termino")
         local = request.form.get("local")
-        participantes_ids = request.form.getlist("participantes[]")
+        loja_id = request.form.get("loja_id")
+        pauta = request.form.get("pauta")
+        observacoes = request.form.get("observacoes")
         
-        # Validar campos obrigatórios
-        if not titulo or not data or not hora:
-            flash("Título, data e hora são obrigatórios!", "danger")
+        if not titulo or not tipo or not data or not hora_inicio:
+            flash("Preencha todos os campos obrigatórios (Título, Tipo, Data e Horário)", "danger")
+            return_connection(conn)
             return redirect("/reunioes/nova")
         
-        cursor, conn = get_db()
-        
-        # Inserir reunião
-        cursor.execute("""
-            INSERT INTO reunioes (titulo, descricao, data, hora, local, criado_por, created_at)
-            VALUES (%s, %s, %s, %s, %s, %s, CURRENT_TIMESTAMP)
-            RETURNING id
-        """, (titulo, descricao, data, hora, local, session.get('user_id')))
-        
-        reuniao_id = cursor.fetchone()['id']
-        
-        # Inserir participantes
-        if participantes_ids:
-            for usuario_id in participantes_ids:
-                cursor.execute("""
-                    INSERT INTO reuniao_participantes (reuniao_id, usuario_id, status)
-                    VALUES (%s, %s, 'pendente')
-                """, (reuniao_id, usuario_id))
-        
-        conn.commit()
-        
-        # ============================================
-        # ENVIO DE E-MAILS VIA RESEND
-        # ============================================
-        
-        # Buscar dados dos participantes com e-mail
-        cursor.execute("""
-            SELECT u.id, u.nome_completo, u.email, u.cargo
-            FROM usuarios u
-            WHERE u.id IN %s AND u.email IS NOT NULL AND u.email != ''
-        """, (tuple(participantes_ids) if participantes_ids else ('0',)))
-        
-        participantes = cursor.fetchall()
-        
-        # Dados da reunião para o e-mail
-        dados_reuniao = {
-            'titulo': titulo,
-            'data': data,
-            'hora': hora,
-            'local': local or 'Templo Maçônico',
-            'descricao': descricao
-        }
-        
-        # Enviar e-mails
-        emails_enviados = 0
-        emails_falha = []
-        
-        for participante in participantes:
+        grau = grau if grau and grau.strip() else None
+        if grau:
             try:
-                resultado = enviar_email_reuniao(
-                    destinatario=participante['email'],
-                    nome_destinatario=participante['nome_completo'],
-                    dados_reuniao=dados_reuniao
-                )
+                grau = int(grau)
+            except ValueError:
+                grau = None
                 
-                if resultado['success']:
-                    emails_enviados += 1
+        hora_termino = hora_termino if hora_termino and hora_termino.strip() else None
+        local = local if local and local.strip() else None
+        loja_id = loja_id if loja_id and loja_id.strip() else None
+        if loja_id:
+            try:
+                loja_id = int(loja_id)
+            except ValueError:
+                loja_id = None
+                
+        pauta = pauta if pauta and pauta.strip() else None
+        observacoes = observacoes if observacoes and observacoes.strip() else None
+        
+        try:
+            data_obj = datetime.strptime(data, '%Y-%m-%d').date() if data else None
+            hora_inicio_obj = datetime.strptime(hora_inicio, '%H:%M').time() if hora_inicio else None
+            hora_termino_obj = datetime.strptime(hora_termino, '%H:%M').time() if hora_termino else None
+        except ValueError as e:
+            flash(f"Erro no formato da data/hora: {str(e)}", "danger")
+            return_connection(conn)
+            return redirect("/reunioes/nova")
+        
+        try:
+            # Inserir reunião
+            cursor.execute("""
+                INSERT INTO reunioes 
+                (titulo, tipo, grau, data, hora_inicio, hora_termino, local, loja_id, pauta, observacoes, criado_por)
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+            """, (titulo, tipo, grau, data_obj, hora_inicio_obj, hora_termino_obj, 
+                  local, loja_id, pauta, observacoes, session["user_id"]))
+            conn.commit()
+            reuniao_id = cursor.lastrowid
+            
+            registrar_log("criar", "reuniao", reuniao_id, dados_novos={"titulo": titulo, "data": data, "tipo": tipo})
+            
+            # ============================================
+            # ENVIO DE E-MAILS VIA RESEND
+            # ============================================
+            emails_enviados = 0
+            
+            try:
+                # Buscar participantes que receberão o e-mail (usuários ativos com e-mail)
+                cursor.execute("""
+                    SELECT id, nome_completo, email, cargo 
+                    FROM usuarios 
+                    WHERE ativo = 1 
+                    AND email IS NOT NULL 
+                    AND email != ''
+                    AND receber_notificacoes = 1
+                    ORDER BY nome_completo
+                """)
+                participantes = cursor.fetchall()
+                
+                if participantes:
+                    print(f"📧 Enviando e-mails para {len(participantes)} participantes...")
                     
-                    # Registrar log do envio
-                    cursor.execute("""
-                        INSERT INTO logs_auditoria 
-                        (usuario_id, usuario_nome, acao, entidade, entidade_id, dados_novos)
-                        VALUES (%s, %s, %s, %s, %s, %s)
-                    """, (
-                        session.get('user_id'),
-                        session.get('nome_completo'),
-                        'email_reuniao',
-                        'reuniao',
-                        reuniao_id,
-                        f"E-mail enviado para {participante['email']}"
-                    ))
-                    conn.commit()
+                    # Formatar data para exibição
+                    data_formatada = data_obj.strftime('%d/%m/%Y') if data_obj else data
+                    hora_formatada = hora_inicio_obj.strftime('%H:%M') if hora_inicio_obj else hora_inicio
+                    
+                    # Dados da reunião
+                    dados_reuniao = {
+                        'titulo': titulo,
+                        'tipo': tipo,
+                        'grau': grau,
+                        'data': data_formatada,
+                        'hora_inicio': hora_formatada,
+                        'hora_termino': hora_termino_obj.strftime('%H:%M') if hora_termino_obj else None,
+                        'local': local or 'Templo Maçônico',
+                        'pauta': pauta,
+                        'observacoes': observacoes
+                    }
+                    
+                    # Enviar e-mail para cada participante
+                    for participante in participantes:
+                        try:
+                            resultado = enviar_email_reuniao(
+                                destinatario=participante['email'],
+                                nome_destinatario=participante['nome_completo'],
+                                dados_reuniao=dados_reuniao
+                            )
+                            
+                            if resultado.get('success'):
+                                emails_enviados += 1
+                                print(f"✅ E-mail enviado para {participante['email']}")
+                                
+                                # Registrar log do envio
+                                cursor.execute("""
+                                    INSERT INTO logs_auditoria 
+                                    (usuario_id, usuario_nome, acao, entidade, entidade_id, dados_novos, ip)
+                                    VALUES (%s, %s, %s, %s, %s, %s, %s)
+                                """, (
+                                    session.get('user_id'),
+                                    session.get('nome_completo'),
+                                    'email_reuniao',
+                                    'reuniao',
+                                    reuniao_id,
+                                    f"E-mail enviado para {participante['email']} - Reunião: {titulo}",
+                                    request.remote_addr
+                                ))
+                                conn.commit()
+                            else:
+                                print(f"❌ Falha ao enviar para {participante['email']}: {resultado.get('message')}")
+                                
+                        except Exception as e:
+                            print(f"❌ Erro ao enviar para {participante['email']}: {e}")
+                    
+                    if emails_enviados > 0:
+                        flash(f"✅ Reunião agendada com sucesso! {emails_enviados} e-mail(s) enviado(s).", "success")
+                    else:
+                        flash("✅ Reunião agendada com sucesso! Nenhum e-mail enviado (verifique e-mails dos participantes).", "success")
                 else:
-                    emails_falha.append({
-                        'email': participante['email'],
-                        'erro': resultado['message']
-                    })
+                    flash("✅ Reunião agendada com sucesso! Nenhum participante com e-mail cadastrado.", "success")
                     
             except Exception as e:
-                emails_falha.append({
-                    'email': participante['email'],
-                    'erro': str(e)
-                })
-        
-        return_connection(conn)
-        
-        # Mensagem final
-        if emails_enviados > 0:
-            flash(f"✅ Reunião criada com sucesso! {emails_enviados} e-mail(s) enviado(s).", "success")
-            if emails_falha:
-                flash(f"⚠️ Não foi possível enviar para {len(emails_falha)} participante(s). Verifique os e-mails cadastrados.", "warning")
-        else:
-            flash("✅ Reunião criada com sucesso! Nenhum e-mail enviado (participantes sem e-mail cadastrado).", "success")
-        
-        return redirect("/reunioes")
-        
-    except Exception as e:
-        if 'conn' in locals():
-            conn.rollback()
+                print(f"❌ Erro no envio de e-mails: {e}")
+                flash(f"✅ Reunião agendada com sucesso! Mas houve erro no envio de e-mails: {str(e)}", "warning")
+            
             return_connection(conn)
-        print(f"❌ Erro ao criar reunião: {e}")
-        flash(f"Erro ao criar reunião: {str(e)}", "danger")
-        return redirect("/reunioes/nova")
+            return redirect(f"/reunioes/{reuniao_id}")
+            
+        except Exception as e:
+            print(f"ERRO: {e}")
+            conn.rollback()
+            flash(f"Erro ao salvar reunião: {str(e)}", "danger")
+            return_connection(conn)
+            return redirect("/reunioes/nova")
+    
+    # GET - Carregar formulário
+    cursor.execute("SELECT * FROM tipos_reuniao ORDER BY nome")
+    tipos = cursor.fetchall()
+    cursor.execute("SELECT * FROM lojas ORDER BY nome")
+    lojas = cursor.fetchall()
+    return_connection(conn)
+    hoje = datetime.now().strftime("%Y-%m-%d")
+    return render_template("reunioes/nova.html", tipos=tipos, lojas=lojas, hoje=hoje)
+
+
 
 @app.route("/reunioes/<int:id>")
 @login_required
@@ -5111,6 +5143,105 @@ def enviar_email_resend(destinatario, assunto, conteudo_html, conteudo_texto=Non
             'success': False,
             'message': str(e)
         }
+
+def enviar_email_reuniao(destinatario, nome_destinatario, dados_reuniao):
+    """Envia e-mail de convocação para reunião via Resend"""
+    assunto = f"📅 Convite: {dados_reuniao.get('titulo', 'Nova Reunião')} - Sistema Maçônico"
+    
+    # Formatar horário
+    hora_termino = dados_reuniao.get('hora_termino')
+    horario = dados_reuniao.get('hora_inicio')
+    if hora_termino:
+        horario = f"{dados_reuniao.get('hora_inicio')} às {hora_termino}"
+    
+    # Formatar pauta
+    pauta_html = ""
+    if dados_reuniao.get('pauta'):
+        pauta_html = f"""
+        <div class="info-row">
+            <div class="info-label">📋 Pauta:</div>
+            <div class="info-value">{dados_reuniao.get('pauta')}</div>
+        </div>
+        """
+    
+    # Formatar observações
+    observacoes_html = ""
+    if dados_reuniao.get('observacoes'):
+        observacoes_html = f"""
+        <div class="info-row">
+            <div class="info-label">📝 Observações:</div>
+            <div class="info-value">{dados_reuniao.get('observacoes')}</div>
+        </div>
+        """
+    
+    conteudo_html = f"""
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <meta charset="UTF-8">
+        <style>
+            body {{ font-family: 'Segoe UI', Arial, sans-serif; line-height: 1.6; color: #333; }}
+            .container {{ max-width: 600px; margin: 0 auto; padding: 20px; }}
+            .header {{ background: linear-gradient(135deg, #1a472a, #0a2a1a); color: #ffd700; padding: 30px 20px; text-align: center; border-radius: 10px 10px 0 0; }}
+            .content {{ padding: 30px 20px; background: #fff; }}
+            .info-card {{ background: #f8f9fa; border-left: 4px solid #1a472a; padding: 15px; margin: 20px 0; border-radius: 8px; }}
+            .info-row {{ margin-bottom: 10px; }}
+            .info-label {{ font-weight: bold; color: #1a472a; display: inline-block; width: 100px; }}
+            .info-value {{ display: inline-block; }}
+            .button {{ display: inline-block; padding: 12px 30px; background: linear-gradient(135deg, #1a472a, #0a2a1a); color: #ffd700; text-decoration: none; border-radius: 5px; margin: 20px 0; }}
+            .footer {{ background: #f5f5f5; padding: 20px; text-align: center; font-size: 12px; color: #666; border-radius: 0 0 10px 10px; }}
+        </style>
+    </head>
+    <body>
+        <div class="container">
+            <div class="header">
+                <h1>📅 Convite para Reunião</h1>
+                <p>Sistema Maçônico</p>
+            </div>
+            <div class="content">
+                <h2>Olá {nome_destinatario},</h2>
+                <p>Você foi convidado para uma reunião:</p>
+                
+                <div class="info-card">
+                    <h3 style="color: #1a472a; margin-bottom: 15px;">{dados_reuniao.get('titulo')}</h3>
+                    
+                    <div class="info-row">
+                        <div class="info-label">📌 Tipo:</div>
+                        <div class="info-value">{dados_reuniao.get('tipo', 'Não informado')}</div>
+                    </div>
+                    <div class="info-row">
+                        <div class="info-label">📅 Data:</div>
+                        <div class="info-value">{dados_reuniao.get('data')}</div>
+                    </div>
+                    <div class="info-row">
+                        <div class="info-label">⏰ Horário:</div>
+                        <div class="info-value">{horario}</div>
+                    </div>
+                    <div class="info-row">
+                        <div class="info-label">📍 Local:</div>
+                        <div class="info-value">{dados_reuniao.get('local')}</div>
+                    </div>
+                    {pauta_html}
+                    {observacoes_html}
+                </div>
+                
+                <p style="text-align: center;">
+                    <a href="https://www.juramelo.com.br/reunioes/{reuniao_id}" class="button">Ver Detalhes</a>
+                </p>
+                
+                <p>Por favor, confirme sua presença através do sistema.</p>
+                <p>Atenciosamente,<br><strong>Secretaria do Sistema Maçônico</strong></p>
+            </div>
+            <div class="footer">
+                <p>Sistema Maçônico - www.juramelo.com.br</p>
+                <p>Este é um e-mail automático, por favor não responda.</p>
+            </div>
+        </div>
+    </body>
+    </html>
+    """
+    
+    return enviar_email_resend(destinatario, assunto, conteudo_html)
 
 # =============================
 # ROTA: CONFIGURAÇÃO DE E-MAIL
