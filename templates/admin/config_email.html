@@ -1,155 +1,477 @@
-{% extends "base.html" %}
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Configuração de E-mail - Sistema Maçônico</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
 
-{% block title %}Configuração de E-mail{% endblock %}
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
 
-{% block content %}
-<div class="container-fluid py-4">
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #1a472a, #0a2a1a);
+            color: #ffd700;
+            padding: 30px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 28px;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            font-size: 14px;
+            opacity: 0.9;
+        }
+
+        .content {
+            padding: 30px;
+        }
+
+        .alert {
+            padding: 15px 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            animation: slideIn 0.3s ease;
+        }
+
+        @keyframes slideIn {
+            from {
+                transform: translateY(-20px);
+                opacity: 0;
+            }
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+
+        .alert-success {
+            background: #d4edda;
+            color: #155724;
+            border-left: 4px solid #28a745;
+        }
+
+        .alert-danger {
+            background: #f8d7da;
+            color: #721c24;
+            border-left: 4px solid #dc3545;
+        }
+
+        .alert-info {
+            background: #d1ecf1;
+            color: #0c5460;
+            border-left: 4px solid #17a2b8;
+        }
+
+        .alert-warning {
+            background: #fff3cd;
+            color: #856404;
+            border-left: 4px solid #ffc107;
+        }
+
+        .close-alert {
+            margin-left: auto;
+            cursor: pointer;
+            font-size: 20px;
+            font-weight: bold;
+            background: none;
+            border: none;
+            color: inherit;
+            opacity: 0.7;
+        }
+
+        .close-alert:hover {
+            opacity: 1;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #333;
+        }
+
+        label .required {
+            color: #dc3545;
+            margin-left: 4px;
+        }
+
+        label .info {
+            font-weight: normal;
+            font-size: 12px;
+            color: #666;
+            margin-left: 8px;
+        }
+
+        input, select {
+            width: 100%;
+            padding: 12px 15px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 14px;
+            transition: all 0.3s ease;
+        }
+
+        input:focus, select:focus {
+            outline: none;
+            border-color: #1a472a;
+            box-shadow: 0 0 0 3px rgba(26, 71, 42, 0.1);
+        }
+
+        input[type="checkbox"] {
+            width: auto;
+            margin-right: 10px;
+            transform: scale(1.2);
+            vertical-align: middle;
+        }
+
+        .checkbox-label {
+            display: flex;
+            align-items: center;
+            cursor: pointer;
+            font-weight: normal;
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+
+        .status-card {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 25px;
+            border: 1px solid #e0e0e0;
+        }
+
+        .status-card h3 {
+            color: #1a472a;
+            margin-bottom: 15px;
+            font-size: 18px;
+        }
+
+        .status-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 10px 0;
+            border-bottom: 1px solid #e0e0e0;
+        }
+
+        .status-item:last-child {
+            border-bottom: none;
+        }
+
+        .status-label {
+            font-weight: 600;
+            color: #555;
+        }
+
+        .status-value {
+            color: #333;
+        }
+
+        .status-badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .badge-success {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .badge-warning {
+            background: #fff3cd;
+            color: #856404;
+        }
+
+        .badge-info {
+            background: #d1ecf1;
+            color: #0c5460;
+        }
+
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-right: 10px;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #1a472a, #0a2a1a);
+            color: #ffd700;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(26, 71, 42, 0.3);
+        }
+
+        .btn-secondary {
+            background: #6c757d;
+            color: white;
+        }
+
+        .btn-secondary:hover {
+            background: #5a6268;
+        }
+
+        .btn-test {
+            background: #17a2b8;
+            color: white;
+        }
+
+        .btn-test:hover {
+            background: #138496;
+        }
+
+        .button-group {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+            flex-wrap: wrap;
+        }
+
+        .test-form {
+            margin-top: 30px;
+            padding-top: 30px;
+            border-top: 2px solid #e0e0e0;
+        }
+
+        .test-form h3 {
+            color: #333;
+            margin-bottom: 20px;
+        }
+
+        .info-box {
+            background: #e8f4fd;
+            border-left: 4px solid #17a2b8;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+
+        .info-box p {
+            margin: 5px 0;
+            font-size: 14px;
+        }
+
+        .info-box strong {
+            color: #0c5460;
+        }
+
+        @media (max-width: 600px) {
+            .container {
+                margin: 10px;
+            }
+            
+            .content {
+                padding: 20px;
+            }
+            
+            .form-row {
+                grid-template-columns: 1fr;
+                gap: 15px;
+            }
+            
+            .button-group {
+                flex-direction: column;
+            }
+            
+            .btn {
+                width: 100%;
+                margin-bottom: 10px;
+            }
+        }
+    </style>
+</head>
+<body>
     <div class="container">
-        <div class="d-flex justify-content-between align-items-center mb-4">
-            <h2><i class="bi bi-envelope"></i> Configuração de E-mail</h2>
-            <a href="/dashboard" class="btn btn-outline-secondary">
-                <i class="bi bi-arrow-left"></i> Voltar
-            </a>
+        <div class="header">
+            <h1>⚙️ Configuração de E-mail</h1>
+            <p>Configure o envio de e-mails do Sistema Maçônico</p>
         </div>
+        
+        <div class="content">
+            <!-- Flash Messages -->
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    {% for category, message in messages %}
+                        <div class="alert alert-{{ category }}">
+                            <span>{% if category == 'success' %}✅{% elif category == 'danger' %}❌{% else %}ℹ️{% endif %}</span>
+                            <span>{{ message }}</span>
+                            <button class="close-alert" onclick="this.parentElement.remove()">&times;</button>
+                        </div>
+                    {% endfor %}
+                {% endif %}
+            {% endwith %}
 
-        {% with messages = get_flashed_messages(with_categories=true) %}
-            {% if messages %}
-                {% for category, message in messages %}
-                    <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
-                        {{ message }}
-                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-                    </div>
-                {% endfor %}
-            {% endif %}
-        {% endwith %}
-
-        <div class="row">
-            <div class="col-md-8">
-                <div class="card shadow">
-                    <div class="card-header bg-primary text-white">
-                        <h5 class="mb-0"><i class="bi bi-gear"></i> Configurações SMTP</h5>
-                    </div>
-                    <div class="card-body">
-                        <form method="POST">
-                            <div class="row">
-                                <div class="col-md-8 mb-3">
-                                    <label class="form-label">Servidor SMTP *</label>
-                                    <input type="text" class="form-control" name="server" 
-                                           value="{{ config.server if config else 'smtp.gmail.com' }}" required>
-                                    <small class="text-muted">Ex: smtp.gmail.com, smtp.office365.com</small>
-                                </div>
-                                <div class="col-md-4 mb-3">
-                                    <label class="form-label">Porta *</label>
-                                    <input type="number" class="form-control" name="port" 
-                                           value="{{ config.port if config else 587 }}" required>
-                                </div>
-                            </div>
-
-                            <div class="form-check mb-3">
-                                <input class="form-check-input" type="checkbox" name="use_tls" value="1" 
-                                       {% if not config or config.use_tls == 1 %}checked{% endif %}>
-                                <label class="form-check-label">Usar TLS/SSL</label>
-                                <small class="text-muted d-block">TLS usa porta 587, SSL usa porta 465</small>
-                            </div>
-
-                            <div class="row">
-                                <div class="col-md-6 mb-3">
-                                    <label class="form-label">Usuário *</label>
-                                    <input type="email" class="form-control" name="username" 
-                                           value="{{ config.username if config else '' }}" required>
-                                </div>
-                                <div class="col-md-6 mb-3">
-                                    <label class="form-label">Senha *</label>
-                                    <input type="password" class="form-control" name="password" 
-                                           value="{{ config.password if config else '' }}" required>
-                                </div>
-                            </div>
-
-                            <div class="row">
-                                <div class="col-md-6 mb-3">
-                                    <label class="form-label">E-mail Remetente *</label>
-                                    <input type="email" class="form-control" name="sender" 
-                                           value="{{ config.sender if config else '' }}" required>
-                                </div>
-                                <div class="col-md-6 mb-3">
-                                    <label class="form-label">Nome do Remetente</label>
-                                    <input type="text" class="form-control" name="sender_name" 
-                                           value="{{ config.sender_name if config else 'Sistema Maçônico' }}">
-                                </div>
-                            </div>
-
-                            <div class="form-check mb-3">
-                                <input class="form-check-input" type="checkbox" name="active" value="1" 
-                                       {% if not config or config.active == 1 %}checked{% endif %}>
-                                <label class="form-check-label">Ativar esta configuração</label>
-                            </div>
-
-                            <div class="alert alert-info">
-                                <i class="bi bi-info-circle"></i>
-                                <strong>Para Gmail:</strong>
-                                <ul class="mb-0 mt-2">
-                                    <li>Servidor: smtp.gmail.com</li>
-                                    <li>Porta: 587</li>
-                                    <li>TLS: Ativado</li>
-                                    <li>Use "senha de aplicativo" do Google (não a senha normal)</li>
-                                </ul>
-                            </div>
-
-                            <div class="text-center mt-4">
-                                <button type="submit" class="btn btn-success btn-lg px-5">
-                                    <i class="bi bi-save"></i> Salvar Configuração
-                                </button>
-                            </div>
-                        </form>
-                    </div>
+            <!-- Status Card -->
+            <div class="status-card">
+                <h3>📊 Status da Configuração</h3>
+                <div class="status-item">
+                    <span class="status-label">Plataforma:</span>
+                    <span class="status-value">
+                        <span class="status-badge badge-success">Resend API</span>
+                    </span>
                 </div>
+                <div class="status-item">
+                    <span class="status-label">Domínio:</span>
+                    <span class="status-value">
+                        <span class="status-badge badge-info">juramelo.com.br ✅ Verificado</span>
+                    </span>
+                </div>
+                <div class="status-item">
+                    <span class="status-label">Região:</span>
+                    <span class="status-value">São Paulo (sa-east-1)</span>
+                </div>
+                <div class="status-item">
+                    <span class="status-label">Configuração Ativa:</span>
+                    <span class="status-value">
+                        {% if config %}
+                            <span class="status-badge badge-success">Ativa</span>
+                        {% else %}
+                            <span class="status-badge badge-warning">Nenhuma configuração ativa</span>
+                        {% endif %}
+                    </span>
+                </div>
+                {% if config %}
+                <div class="status-item">
+                    <span class="status-label">Remetente:</span>
+                    <span class="status-value">{{ config.sender_name }} &lt;{{ config.sender }}&gt;</span>
+                </div>
+                {% endif %}
             </div>
 
-            <div class="col-md-4">
-                <div class="card shadow">
-                    <div class="card-header bg-info text-white">
-                        <h5 class="mb-0"><i class="bi bi-send"></i> Testar Configuração</h5>
+            <!-- Info Box -->
+            <div class="info-box">
+                <p><strong>ℹ️ Sobre o envio de e-mails</strong></p>
+                <p>O sistema utiliza <strong>Resend</strong> para envio de e-mails, com servidor em São Paulo para melhor performance.</p>
+                <p>✅ Domínio <strong>juramelo.com.br</strong> já verificado e pronto para envio.</p>
+                <p>📧 Os e-mails serão enviados como: <strong>Sistema Maçônico &lt;contato@juramelo.com.br&gt;</strong></p>
+            </div>
+
+            <!-- Config Form -->
+            <form method="POST" action="/config/email">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>E-mail Remetente <span class="required">*</span></label>
+                        <input type="email" name="sender" value="{{ config.sender if config else 'contato@juramelo.com.br' }}" 
+                               placeholder="contato@juramelo.com.br" required>
+                        <small style="color: #666; font-size: 12px;">E-mail que aparecerá como remetente</small>
                     </div>
-                    <div class="card-body">
-                        <form method="POST" action="/config/email/testar">
-                            <div class="mb-3">
-                                <label class="form-label">E-mail de Teste</label>
-                                <input type="email" class="form-control" name="email_teste" required>
-                                <small class="text-muted">Enviará um e-mail de teste para este endereço</small>
-                            </div>
-                            <button type="submit" class="btn btn-primary w-100">
-                                <i class="bi bi-send"></i> Enviar Teste
-                            </button>
-                        </form>
+                    
+                    <div class="form-group">
+                        <label>Nome do Remetente</label>
+                        <input type="text" name="sender_name" value="{{ config.sender_name if config else 'Sistema Maçônico' }}" 
+                               placeholder="Sistema Maçônico">
+                        <small style="color: #666; font-size: 12px;">Nome que aparecerá no campo "De"</small>
                     </div>
                 </div>
 
-                <div class="card shadow mt-4">
-                    <div class="card-header bg-secondary text-white">
-                        <h5 class="mb-0"><i class="bi bi-question-circle"></i> Dicas</h5>
-                    </div>
-                    <div class="card-body">
-                        <ul class="list-unstyled mb-0">
-                            <li><i class="bi bi-check-circle-fill text-success"></i> Use senhas de aplicativo</li>
-                            <li><i class="bi bi-check-circle-fill text-success"></i> Verifique permissões da conta</li>
-                            <li><i class="bi bi-check-circle-fill text-success"></i> Teste antes de ativar</li>
-                            <li><i class="bi bi-check-circle-fill text-success"></i> Monitore a pasta de spam</li>
-                        </ul>
-                    </div>
+                <!-- Campos ocultos para compatibilidade com estrutura existente -->
+                <input type="hidden" name="server" value="resend-api">
+                <input type="hidden" name="port" value="443">
+                <input type="hidden" name="username" value="resend-api">
+                <input type="hidden" name="password" value="resend-api">
+                <input type="hidden" name="use_tls" value="1">
+                
+                <div class="form-group">
+                    <label class="checkbox-label">
+                        <input type="checkbox" name="active" value="1" {% if config and config.active %}checked{% endif %}>
+                        Ativar esta configuração
+                    </label>
+                    <small style="color: #666; font-size: 12px; display: block; margin-top: 5px;">
+                        Marque para tornar esta configuração ativa
+                    </small>
                 </div>
+
+                <div class="button-group">
+                    <button type="submit" class="btn btn-primary">💾 Salvar Configuração</button>
+                </div>
+            </form>
+
+            <!-- Test Form -->
+            <div class="test-form">
+                <h3>📧 Testar Envio de E-mail</h3>
+                <form method="POST" action="/config/email/testar">
+                    <div class="form-group">
+                        <label>E-mail para teste <span class="required">*</span></label>
+                        <input type="email" name="email_teste" placeholder="seu-email@exemplo.com" required>
+                        <small style="color: #666; font-size: 12px;">Digite o e-mail onde deseja receber o teste</small>
+                    </div>
+                    <button type="submit" class="btn btn-test">✉️ Enviar E-mail de Teste</button>
+                </form>
+            </div>
+
+            <!-- Help Section -->
+            <div style="margin-top: 30px; padding: 20px; background: #f8f9fa; border-radius: 8px;">
+                <h4 style="color: #1a472a; margin-bottom: 10px;">🔧 Dicas</h4>
+                <ul style="margin-left: 20px; color: #666; line-height: 1.6;">
+                    <li>O sistema utiliza <strong>Resend</strong> para envio de e-mails - não é necessário configurar servidor SMTP</li>
+                    <li>O domínio <strong>juramelo.com.br</strong> já está verificado e pronto para envio</li>
+                    <li>Os e-mails de teste podem levar alguns segundos para chegar</li>
+                    <li>Verifique a pasta de spam se não encontrar o e-mail de teste</li>
+                    <li>No plano gratuito, você pode enviar até <strong>100 e-mails por dia</strong></li>
+                </ul>
             </div>
         </div>
     </div>
-</div>
 
-<style>
-    .card {
-        border-radius: 10px;
-        overflow: hidden;
-    }
-    .card-header {
-        font-weight: 600;
-    }
-</style>
+    <script>
+        // Auto-fechar alerts após 5 segundos
+        setTimeout(function() {
+            document.querySelectorAll('.alert').forEach(function(alert) {
+                alert.style.opacity = '0';
+                setTimeout(function() {
+                    alert.remove();
+                }, 300);
+            });
+        }, 5000);
 
-{% endblock %}
+        // Função para fechar alert manualmente
+        document.querySelectorAll('.close-alert').forEach(function(btn) {
+            btn.onclick = function() {
+                this.parentElement.remove();
+            };
+        });
+    </script>
+</body>
+</html>

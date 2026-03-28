@@ -4996,86 +4996,306 @@ def exportar_logs():
 # =============================
 # ROTAS DE CONFIGURAÇÃO DE E-MAIL
 # =============================
+
+import os
+import resend
+from datetime import datetime
+from flask import render_template, request, flash, redirect, jsonify
+
+# Configurar Resend globalmente
+RESEND_API_KEY = os.getenv('RESEND_API_KEY')
+EMAIL_FROM_DEFAULT = os.getenv('EMAIL_FROM', 'contato@juramelo.com.br')
+
+if RESEND_API_KEY:
+    resend.api_key = RESEND_API_KEY
+    print("✅ Resend configurado com sucesso")
+else:
+    print("⚠️ RESEND_API_KEY não configurada")
+
+def enviar_email_resend(destinatario, assunto, conteudo_html, conteudo_texto=None):
+    """
+    Função auxiliar para enviar e-mails via Resend
+    """
+    try:
+        if not RESEND_API_KEY:
+            return {
+                'success': False,
+                'message': 'Resend não configurado. Adicione RESEND_API_KEY nas variáveis de ambiente.'
+            }
+        
+        params = {
+            "from": f"Sistema Maçônico <{EMAIL_FROM_DEFAULT}>",
+            "to": [destinatario] if isinstance(destinatario, str) else destinatario,
+            "subject": assunto,
+            "html": conteudo_html,
+        }
+        
+        if conteudo_texto:
+            params["text"] = conteudo_texto
+        
+        email = resend.Emails.send(params)
+        print(f"✅ E-mail enviado para {destinatario} - ID: {email}")
+        return {
+            'success': True,
+            'message': 'E-mail enviado com sucesso!',
+            'id': email
+        }
+        
+    except Exception as e:
+        print(f"❌ Erro ao enviar e-mail: {e}")
+        return {
+            'success': False,
+            'message': str(e)
+        }
+
+# =============================
+# ROTA: CONFIGURAÇÃO DE E-MAIL
+# =============================
 @app.route("/config/email", methods=["GET", "POST"])
 @admin_required
 def config_email():
     cursor, conn = get_db()
+    
     if request.method == "POST":
-        server = request.form.get("server")
-        port = request.form.get("port")
+        # Coletar dados do formulário
+        server = request.form.get("server", "")  # Mantido para compatibilidade
+        port = request.form.get("port", "")      # Mantido para compatibilidade
         use_tls = 1 if request.form.get("use_tls") else 0
-        username = request.form.get("username")
-        password = request.form.get("password")
-        sender = request.form.get("sender")
-        sender_name = request.form.get("sender_name")
+        username = request.form.get("username", "")  # Mantido para compatibilidade
+        password = request.form.get("password", "")  # Mantido para compatibilidade
+        sender = request.form.get("sender", EMAIL_FROM_DEFAULT)
+        sender_name = request.form.get("sender_name", "Sistema Maçônico")
         active = 1 if request.form.get("active") else 0
-        if not server or not port or not username or not password or not sender:
-            flash("Preencha todos os campos obrigatórios", "danger")
+        
+        # Validar campos obrigatórios (apenas sender é obrigatório agora)
+        if not sender:
+            flash("Preencha o e-mail remetente", "danger")
         else:
             try:
+                # Desativar outras configurações se esta for ativa
                 if active:
                     cursor.execute("UPDATE email_settings SET active = 0")
+                
+                # Inserir nova configuração (compatível com estrutura existente)
                 cursor.execute("""
                     INSERT INTO email_settings 
                     (server, port, use_tls, username, password, sender, sender_name, active)
                     VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
                 """, (server, port, use_tls, username, password, sender, sender_name, active))
+                
                 conn.commit()
-                flash("Configuração de e-mail salva com sucesso!", "success")
+                flash("Configuração de e-mail salva com sucesso! (Usando Resend)", "success")
+                
             except Exception as e:
                 flash(f"Erro ao salvar configuração: {str(e)}", "danger")
                 conn.rollback()
+    
+    # Buscar configuração ativa
     cursor.execute("SELECT * FROM email_settings WHERE active = 1 ORDER BY id DESC LIMIT 1")
     config = cursor.fetchone()
+    
     return_connection(conn)
     return render_template("admin/config_email.html", config=config)
 
+# =============================
+# ROTA: TESTAR E-MAIL (VIA RESEND)
+# =============================
 @app.route("/config/email/testar", methods=["POST"])
 @admin_required
 def testar_email():
     email_teste = request.form.get("email_teste")
+    
     if not email_teste:
         flash("Informe um e-mail para teste", "danger")
         return redirect("/config/email")
+    
+    # Buscar configuração ativa
     cursor, conn = get_db()
     cursor.execute("SELECT * FROM email_settings WHERE active = 1 ORDER BY id DESC LIMIT 1")
     config = cursor.fetchone()
     return_connection(conn)
-    if not config:
-        flash("Nenhuma configuração de e-mail ativa", "danger")
+    
+    # Usar configuração do banco ou valores padrão
+    remetente = config['sender'] if config else EMAIL_FROM_DEFAULT
+    nome_remetente = config['sender_name'] if config else "Sistema Maçônico"
+    
+    # Verificar se Resend está configurado
+    if not RESEND_API_KEY:
+        flash("Resend não configurado. Adicione RESEND_API_KEY nas variáveis de ambiente do Render.", "danger")
         return redirect("/config/email")
-    try:
-        import smtplib
-        from email.mime.text import MIMEText
-        from email.mime.multipart import MIMEMultipart
-        msg = MIMEMultipart()
-        msg['From'] = config['sender']
-        msg['To'] = email_teste
-        msg['Subject'] = "Teste de Configuração - Sistema Maçônico"
-        corpo_html = f"""
-        <!DOCTYPE html>
-        <html>
-        <head><meta charset="UTF-8"></head>
-        <body>
-            <h2>✅ Teste de E-mail</h2>
-            <p>Esta é uma mensagem de teste do Sistema Maçônico.</p>
-            <p>Se você está recebendo este e-mail, a configuração está funcionando corretamente!</p>
-            <p>Data e hora do teste: {datetime.now().strftime('%d/%m/%Y %H:%M:%S')}</p>
-        </body>
-        </html>
-        """
-        msg.attach(MIMEText(corpo_html, 'html'))
-        server = smtplib.SMTP(config['server'], config['port'])
-        if config['use_tls']:
-            server.starttls()
-        server.login(config['username'], config['password'])
-        server.send_message(msg)
-        server.quit()
-        flash(f"E-mail de teste enviado com sucesso para {email_teste}!", "success")
-    except Exception as e:
-        flash(f"Falha ao enviar e-mail: {str(e)}", "danger")
+    
+    # Preparar e-mail de teste
+    assunto = "Teste de Configuração - Sistema Maçônico"
+    
+    conteudo_html = f"""
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <meta charset="UTF-8">
+        <style>
+            body {{ font-family: 'Segoe UI', Arial, sans-serif; line-height: 1.6; color: #333; }}
+            .container {{ max-width: 600px; margin: 0 auto; padding: 20px; }}
+            .header {{ background: linear-gradient(135deg, #1a472a, #0a2a1a); color: #ffd700; padding: 30px 20px; text-align: center; border-radius: 10px 10px 0 0; }}
+            .content {{ padding: 30px 20px; background: #fff; }}
+            .footer {{ background: #f5f5f5; padding: 20px; text-align: center; font-size: 12px; color: #666; border-radius: 0 0 10px 10px; }}
+            .success {{ color: #4CAF50; font-size: 48px; }}
+        </style>
+    </head>
+    <body>
+        <div class="container">
+            <div class="header">
+                <h1>✅ Teste de E-mail</h1>
+            </div>
+            <div class="content">
+                <p style="text-align: center; font-size: 48px;">📧</p>
+                <p>Olá,</p>
+                <p>Esta é uma mensagem de teste do <strong>Sistema Maçônico</strong>.</p>
+                <p>Se você está recebendo este e-mail, a configuração está funcionando corretamente!</p>
+                <p><strong>Remetente:</strong> {nome_remetente} &lt;{remetente}&gt;</p>
+                <p><strong>Data e hora do teste:</strong> {datetime.now().strftime('%d/%m/%Y %H:%M:%S')}</p>
+                <p><strong>Plataforma:</strong> Resend (servidor em São Paulo)</p>
+            </div>
+            <div class="footer">
+                <p>Sistema Maçônico - www.juramelo.com.br</p>
+                <p>Este é um e-mail automático de teste, por favor não responda.</p>
+            </div>
+        </div>
+    </body>
+    </html>
+    """
+    
+    # Enviar via Resend
+    resultado = enviar_email_resend(
+        destinatario=email_teste,
+        assunto=assunto,
+        conteudo_html=conteudo_html
+    )
+    
+    if resultado['success']:
+        flash(f"✅ E-mail de teste enviado com sucesso para {email_teste}! ID: {resultado['id']}", "success")
+    else:
+        flash(f"❌ Falha ao enviar e-mail: {resultado['message']}", "danger")
+    
     return redirect("/config/email")
 
+# =============================
+# ROTA: STATUS DO RESEND (DIAGNÓSTICO)
+# =============================
+@app.route("/config/email/status")
+@admin_required
+def email_status():
+    """Endpoint para verificar status da configuração de e-mail"""
+    status = {
+        "resend_configurado": bool(RESEND_API_KEY),
+        "email_from": EMAIL_FROM_DEFAULT,
+        "dominio_verificado": "juramelo.com.br",
+        "metodo_envio": "Resend API (SMTP alternativo)"
+    }
+    
+    # Tentar obter configuração ativa do banco
+    try:
+        cursor, conn = get_db()
+        cursor.execute("SELECT * FROM email_settings WHERE active = 1 ORDER BY id DESC LIMIT 1")
+        config = cursor.fetchone()
+        return_connection(conn)
+        
+        if config:
+            status["configuracao_ativa"] = {
+                "remetente": config['sender'],
+                "nome_remetente": config['sender_name'],
+                "server": config['server'] or "Resend API (não usado)",
+                "port": config['port'] or "N/A"
+            }
+        else:
+            status["configuracao_ativa"] = "Nenhuma configuração ativa no banco"
+            
+    except Exception as e:
+        status["erro_busca_config"] = str(e)
+    
+    return jsonify(status)
+
+# =============================
+# FUNÇÕES DE ENVIO PARA O SISTEMA
+# =============================
+
+def enviar_email_bem_vindo(usuario_nome, usuario_email):
+    """Envia e-mail de boas-vindas"""
+    assunto = "Bem-vindo ao Sistema Maçônico"
+    
+    conteudo_html = f"""
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <meta charset="UTF-8">
+        <style>
+            body {{ font-family: 'Segoe UI', Arial, sans-serif; line-height: 1.6; color: #333; }}
+            .container {{ max-width: 600px; margin: 0 auto; padding: 20px; }}
+            .header {{ background: linear-gradient(135deg, #1a472a, #0a2a1a); color: #ffd700; padding: 30px 20px; text-align: center; border-radius: 10px 10px 0 0; }}
+            .content {{ padding: 30px 20px; background: #fff; }}
+            .button {{ display: inline-block; padding: 12px 30px; background: linear-gradient(135deg, #1a472a, #0a2a1a); color: #ffd700; text-decoration: none; border-radius: 5px; margin: 20px 0; }}
+        </style>
+    </head>
+    <body>
+        <div class="container">
+            <div class="header">
+                <h1>Sistema Maçônico</h1>
+                <p>Bem-vindo à Loja</p>
+            </div>
+            <div class="content">
+                <h2>Olá {usuario_nome},</h2>
+                <p>É com grande satisfação que damos as boas-vindas ao <strong>Sistema Maçônico</strong>.</p>
+                <p>Seu cadastro foi realizado com sucesso e agora você já pode acessar todas as funcionalidades do sistema.</p>
+                <p style="text-align: center;">
+                    <a href="https://www.juramelo.com.br" class="button">Acessar Sistema</a>
+                </p>
+                <p>Fraternalmente,<br><strong>Equipe do Sistema Maçônico</strong></p>
+            </div>
+        </div>
+    </body>
+    </html>
+    """
+    
+    return enviar_email_resend(usuario_email, assunto, conteudo_html)
+
+def enviar_email_recuperacao_senha(usuario_nome, usuario_email, token_recuperacao):
+    """Envia e-mail de recuperação de senha"""
+    assunto = "Recuperação de Senha - Sistema Maçônico"
+    
+    link_recuperacao = f"https://www.juramelo.com.br/resetar-senha?token={token_recuperacao}"
+    
+    conteudo_html = f"""
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <meta charset="UTF-8">
+        <style>
+            body {{ font-family: 'Segoe UI', Arial, sans-serif; line-height: 1.6; color: #333; }}
+            .container {{ max-width: 600px; margin: 0 auto; padding: 20px; }}
+            .header {{ background: linear-gradient(135deg, #ff9800, #e65100); color: white; padding: 30px 20px; text-align: center; border-radius: 10px 10px 0 0; }}
+            .button {{ display: inline-block; padding: 12px 30px; background: #ff9800; color: white; text-decoration: none; border-radius: 5px; margin: 20px 0; }}
+        </style>
+    </head>
+    <body>
+        <div class="container">
+            <div class="header">
+                <h1>Recuperação de Senha</h1>
+            </div>
+            <div class="content">
+                <p>Olá <strong>{usuario_nome}</strong>,</p>
+                <p>Recebemos uma solicitação para redefinir sua senha no Sistema Maçônico.</p>
+                <p style="text-align: center;">
+                    <a href="{link_recuperacao}" class="button">Redefinir Senha</a>
+                </p>
+                <p>Se você não solicitou essa alteração, ignore este e-mail.</p>
+                <p><strong>Este link expira em 24 horas.</strong></p>
+                <p>Atenciosamente,<br><strong>Equipe do Sistema Maçônico</strong></p>
+            </div>
+        </div>
+    </body>
+    </html>
+    """
+    
+    return enviar_email_resend(usuario_email, assunto, conteudo_html)
 # =============================
 # ROTAS DE WHATSAPP
 # =============================
