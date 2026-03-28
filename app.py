@@ -7139,45 +7139,68 @@ def api_backup_logs():
     
     return jsonify({'success': True, 'logs': logs, 'total': len(logs)})
 
-@app.route('/admin/adicionar-coluna-foto')
+@app.route('/admin/migrar-tabelas')
 @admin_required
-def adicionar_coluna_foto():
-    """Endpoint para adicionar coluna foto na tabela usuarios"""
+def migrar_tabelas():
+    """Endpoint para criar tabelas faltantes no banco"""
     try:
         cursor, conn = get_db()
+        resultados = []
         
-        # Verificar se coluna já existe
+        # Criar tabela atas se não existir
         cursor.execute("""
-            SELECT EXISTS (
-                SELECT FROM information_schema.columns 
-                WHERE table_name = 'usuarios' 
-                AND column_name = 'foto'
+            CREATE TABLE IF NOT EXISTS atas (
+                id SERIAL PRIMARY KEY,
+                reuniao_id INTEGER,
+                numero VARCHAR(50),
+                data DATE NOT NULL,
+                titulo VARCHAR(200),
+                conteudo TEXT,
+                status VARCHAR(20) DEFAULT 'rascunho',
+                aprovada_em TIMESTAMP,
+                criado_por INTEGER,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )
         """)
-        existe = cursor.fetchone()['exists']
+        resultados.append("✅ Tabela 'atas' verificada/criada")
         
-        if existe:
-            return jsonify({"status": "info", "mensagem": "Coluna 'foto' já existe na tabela usuarios"})
+        # Criar índices para atas
+        cursor.execute("CREATE INDEX IF NOT EXISTS idx_atas_reuniao_id ON atas(reuniao_id)")
+        cursor.execute("CREATE INDEX IF NOT EXISTS idx_atas_data ON atas(data)")
+        resultados.append("✅ Índices da tabela 'atas' criados")
         
-        # Adicionar coluna
+        # Criar tabela assinaturas_ata se não existir
         cursor.execute("""
-            ALTER TABLE usuarios ADD COLUMN foto VARCHAR(500)
+            CREATE TABLE IF NOT EXISTS assinaturas_ata (
+                id SERIAL PRIMARY KEY,
+                ata_id INTEGER,
+                obreiro_id INTEGER,
+                assinado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                ip VARCHAR(45),
+                UNIQUE(ata_id, obreiro_id)
+            )
         """)
-        conn.commit()
+        resultados.append("✅ Tabela 'assinaturas_ata' verificada/criada")
         
+        # Criar índices para assinaturas_ata
+        cursor.execute("CREATE INDEX IF NOT EXISTS idx_assinaturas_ata_id ON assinaturas_ata(ata_id)")
+        cursor.execute("CREATE INDEX IF NOT EXISTS idx_assinaturas_obreiro_id ON assinaturas_ata(obreiro_id)")
+        resultados.append("✅ Índices da tabela 'assinaturas_ata' criados")
+        
+        conn.commit()
         return_connection(conn)
         
         return jsonify({
-            "status": "sucesso", 
-            "mensagem": "✅ Coluna 'foto' adicionada com sucesso!"
+            "status": "sucesso",
+            "mensagens": resultados
         })
         
     except Exception as e:
         if 'conn' in locals():
             conn.rollback()
             return_connection(conn)
-        return jsonify({"status": "erro", "mensagem": str(e)}), 500
-
+        return jsonify({"erro": str(e)}), 500
 # =============================
 # INICIALIZAÇÃO DA APLICAÇÃO
 # =============================
