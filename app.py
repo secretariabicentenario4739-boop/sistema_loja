@@ -7065,6 +7065,45 @@ def api_backup_logs():
     
     return jsonify({'success': True, 'logs': logs, 'total': len(logs)})
 
+@app.route('/admin/adicionar-coluna-foto')
+@admin_required
+def adicionar_coluna_foto():
+    """Endpoint para adicionar coluna foto na tabela usuarios"""
+    try:
+        cursor, conn = get_db()
+        
+        # Verificar se coluna já existe
+        cursor.execute("""
+            SELECT EXISTS (
+                SELECT FROM information_schema.columns 
+                WHERE table_name = 'usuarios' 
+                AND column_name = 'foto'
+            )
+        """)
+        existe = cursor.fetchone()['exists']
+        
+        if existe:
+            return jsonify({"status": "info", "mensagem": "Coluna 'foto' já existe na tabela usuarios"})
+        
+        # Adicionar coluna
+        cursor.execute("""
+            ALTER TABLE usuarios ADD COLUMN foto VARCHAR(500)
+        """)
+        conn.commit()
+        
+        return_connection(conn)
+        
+        return jsonify({
+            "status": "sucesso", 
+            "mensagem": "✅ Coluna 'foto' adicionada com sucesso!"
+        })
+        
+    except Exception as e:
+        if 'conn' in locals():
+            conn.rollback()
+            return_connection(conn)
+        return jsonify({"status": "erro", "mensagem": str(e)}), 500
+
 # =============================
 # INICIALIZAÇÃO DA APLICAÇÃO
 # =============================
