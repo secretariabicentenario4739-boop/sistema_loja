@@ -2950,49 +2950,123 @@ def gerar_alertas():
 @app.route("/atas")
 @login_required
 def listar_atas():
-    cursor, conn = get_db()
-    data_ini = request.args.get('data_ini', '')
-    data_fim = request.args.get('data_fim', '')
-    aprovada = request.args.get('aprovada', '')
-    reuniao_titulo = request.args.get('reuniao_titulo', '')
-    nivel_usuario = session.get("nivel_acesso", 1)
-    tipo_usuario = session.get("tipo", "obreiro")
-    query = """
-        SELECT a.*, 
-               r.titulo as reuniao_titulo,
-               r.data as reuniao_data,
-               r.grau as reuniao_grau,
-               u.nome_completo as redator_nome,
-               (SELECT COUNT(*) FROM assinaturas_ata WHERE ata_id = a.id) as total_assinaturas
-        FROM atas a
-        JOIN reunioes r ON a.reuniao_id = r.id
-        LEFT JOIN usuarios u ON a.redator_id = u.id
-        WHERE 1=1
-    """
-    params = []
-    if tipo_usuario != "admin":
-        if nivel_usuario == 1:
-            query += " AND r.grau = 1"
-        elif nivel_usuario == 2:
-            query += " AND r.grau IN (1, 2)"
-    if data_ini:
-        query += " AND r.data >= %s"
-        params.append(data_ini)
-    if data_fim:
-        query += " AND r.data <= %s"
-        params.append(data_fim)
-    if aprovada != '':
-        query += " AND a.aprovada = %s"
-        params.append(aprovada)
-    if reuniao_titulo:
-        query += " AND r.titulo LIKE %s"
-        params.append(f"%{reuniao_titulo}%")
-    query += " ORDER BY a.data_criacao DESC"
-    cursor.execute(query, params)
-    atas = cursor.fetchall()
-    return_connection(conn)
-    return render_template("atas/lista.html", atas=atas, filtros={'data_ini': data_ini, 'data_fim': data_fim,
-                                  'aprovada': aprovada, 'reuniao_titulo': reuniao_titulo})
+    """Lista todas as atas"""
+    try:
+        cursor, conn = get_db()
+        
+        # Verificar se a tabela atas existe
+        cursor.execute("""
+            SELECT EXISTS (
+                SELECT FROM information_schema.tables 
+                WHERE table_name = 'atas'
+            )
+        """)
+        tabela_existe = cursor.fetchone()['exists']
+        
+        if not tabela_existe:
+            flash("Tabela de atas não encontrada!", "danger")
+            return_connection(conn)
+            return redirect("/dashboard")
+        
+        # Buscar atas com informações da reunião
+        cursor.execute("""
+            SELECT 
+                a.id,
+                a.reuniao_id,
+                a.numero,
+                a.data,
+                a.titulo,
+                a.conteudo,
+                a.status,
+                a.aprovada_em,
+                a.criado_por,
+                a.created_at,
+                r.titulo as reuniao_titulo,
+                r.data as reuniao_data,
+                u.nome_completo as criado_por_nome
+            FROM atas a
+            LEFT JOIN reunioes r ON a.reuniao_id = r.id
+            LEFT JOIN usuarios u ON a.criado_por = u.id
+            ORDER BY a.data DESC, a.numero DESC
+        """)
+        
+        atas = cursor.fetchall()
+        return_connection(conn)
+        
+        return render_template("atas/lista.html", atas=atas)
+        
+    except Exception as e:
+        print(f"❌ Erro ao listar atas: {e}")
+        import traceback
+        traceback.print_exc()
+        
+        if 'conn' in locals():
+            return_connection(conn)
+        
+        flash(f"Erro ao carregar atas: {str(e)}", "danger")
+        return redirect("/dashboard")
+
+
+@app.route("/ata/<int:id>")
+@login_required
+def ver_ata(id):
+    """Visualizar uma ata específica"""
+    try:
+        cursor, conn = get_db()
+        
+        cursor.execute("""
+            SELECT 
+                a.*,
+                r.titulo as reuniao_titulo,
+                r.data as reuniao_data,
+                r.hora_inicio,
+                r.local,
+                u.nome_completo as criado_por_nome
+            FROM atas a
+            LEFT JOIN reunioes r ON a.reuniao_id = r.id
+            LEFT JOIN usuarios u ON a.criado_por = u.id
+            WHERE a.id = %s
+        """, (id,))
+        
+        ata = cursor.fetchone()
+        
+        if not ata:
+            flash("Ata não encontrada!", "danger")
+            return_connection(conn)
+            return redirect("/atas")
+        
+        # Buscar assinaturas da ata
+        cursor.execute("""
+            SELECT 
+                s.id,
+                s.obreiro_id,
+                s.assinado_em,
+                s.ip,
+                u.nome_completo,
+                u.cargo,
+                u.grau_atual
+            FROM assinaturas_ata s
+            LEFT JOIN usuarios u ON s.obreiro_id = u.id
+            WHERE s.ata_id = %s
+            ORDER BY s.assinado_em DESC
+        """, (id,))
+        
+        assinaturas = cursor.fetchall()
+        
+        return_connection(conn)
+        
+        return render_template("atas/ver.html", ata=ata, assinaturas=assinaturas)
+        
+    except Exception as e:
+        print(f"❌ Erro ao ver ata {id}: {e}")
+        import traceback
+        traceback.print_exc()
+        
+        if 'conn' in locals():
+            return_connection(conn)
+        
+        flash(f"Erro ao carregar ata: {str(e)}", "danger")
+        return redirect("/atas")
 
 @app.route("/atas/nova/<int:reuniao_id>", methods=["GET", "POST"])
 @admin_required
