@@ -32,6 +32,32 @@
             color: #ffd700;
             padding: 30px;
             text-align: center;
+            position: relative;
+        }
+
+        .btn-back {
+            position: absolute;
+            left: 30px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: rgba(255,255,255,0.2);
+            color: #ffd700;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.3s ease;
+        }
+
+        .btn-back:hover {
+            background: rgba(255,255,255,0.3);
+            transform: translateY(-50%) translateX(-2px);
         }
 
         .header h1 {
@@ -232,6 +258,8 @@
             cursor: pointer;
             transition: all 0.3s ease;
             margin-right: 10px;
+            text-decoration: none;
+            display: inline-block;
         }
 
         .btn-primary {
@@ -260,6 +288,19 @@
 
         .btn-test:hover {
             background: #138496;
+        }
+
+        .btn-dashboard {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn-dashboard:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.3);
         }
 
         .button-group {
@@ -297,6 +338,15 @@
             color: #0c5460;
         }
 
+        .action-buttons {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+
         @media (max-width: 600px) {
             .container {
                 margin: 10px;
@@ -319,12 +369,37 @@
                 width: 100%;
                 margin-bottom: 10px;
             }
+            
+            .btn-back {
+                position: relative;
+                left: 0;
+                top: 0;
+                transform: none;
+                margin-bottom: 15px;
+                display: inline-block;
+            }
+            
+            .header {
+                padding: 20px;
+            }
+            
+            .header h1 {
+                margin-top: 10px;
+            }
+            
+            .action-buttons {
+                flex-direction: column;
+                align-items: stretch;
+            }
         }
     </style>
 </head>
 <body>
     <div class="container">
         <div class="header">
+            <a href="/dashboard" class="btn-back">
+                ← Voltar ao Dashboard
+            </a>
             <h1>⚙️ Configuração de E-mail</h1>
             <p>Configure o envio de e-mails do Sistema Maçônico</p>
         </div>
@@ -425,6 +500,7 @@
 
                 <div class="button-group">
                     <button type="submit" class="btn btn-primary">💾 Salvar Configuração</button>
+                    <a href="/dashboard" class="btn btn-dashboard">📊 Ir para o Dashboard</a>
                 </div>
             </form>
 
@@ -450,6 +526,7 @@
                     <li>Os e-mails de teste podem levar alguns segundos para chegar</li>
                     <li>Verifique a pasta de spam se não encontrar o e-mail de teste</li>
                     <li>No plano gratuito, você pode enviar até <strong>100 e-mails por dia</strong></li>
+                    <li>Para mais informações, acesse o <a href="https://resend.com" target="_blank">site do Resend</a></li>
                 </ul>
             </div>
         </div>
