@@ -2146,74 +2146,138 @@ def api_reunioes():
     return {"eventos": eventos}
 
 @app.route("/reunioes/nova", methods=["GET", "POST"])
-@admin_required
+@login_required
 def nova_reuniao():
-    cursor, conn = get_db()
-    if request.method == "POST":
+    if request.method == "GET":
+        # Buscar irmãos para lista de participantes
+        cursor, conn = get_db()
+        cursor.execute("""
+            SELECT id, nome_completo, email, cargo 
+            FROM usuarios 
+            WHERE ativo = 1 
+            ORDER BY nome_completo
+        """)
+        irmaos = cursor.fetchall()
+        return_connection(conn)
+        return render_template("reunioes/nova.html", irmaos=irmaos)
+    
+    # POST - Criar nova reunião
+    try:
         titulo = request.form.get("titulo")
-        tipo = request.form.get("tipo")
-        grau = request.form.get("grau")
+        descricao = request.form.get("descricao")
         data = request.form.get("data")
-        hora_inicio = request.form.get("hora_inicio")
-        hora_termino = request.form.get("hora_termino")
+        hora = request.form.get("hora")
         local = request.form.get("local")
-        loja_id = request.form.get("loja_id")
-        pauta = request.form.get("pauta")
-        observacoes = request.form.get("observacoes")
-        if not titulo or not tipo or not data or not hora_inicio:
-            flash("Preencha todos os campos obrigatórios (Título, Tipo, Data e Horário)", "danger")
-            return_connection(conn)
+        participantes_ids = request.form.getlist("participantes[]")
+        
+        # Validar campos obrigatórios
+        if not titulo or not data or not hora:
+            flash("Título, data e hora são obrigatórios!", "danger")
             return redirect("/reunioes/nova")
-        grau = grau if grau and grau.strip() else None
-        if grau:
+        
+        cursor, conn = get_db()
+        
+        # Inserir reunião
+        cursor.execute("""
+            INSERT INTO reunioes (titulo, descricao, data, hora, local, criado_por, created_at)
+            VALUES (%s, %s, %s, %s, %s, %s, CURRENT_TIMESTAMP)
+            RETURNING id
+        """, (titulo, descricao, data, hora, local, session.get('user_id')))
+        
+        reuniao_id = cursor.fetchone()['id']
+        
+        # Inserir participantes
+        if participantes_ids:
+            for usuario_id in participantes_ids:
+                cursor.execute("""
+                    INSERT INTO reuniao_participantes (reuniao_id, usuario_id, status)
+                    VALUES (%s, %s, 'pendente')
+                """, (reuniao_id, usuario_id))
+        
+        conn.commit()
+        
+        # ============================================
+        # ENVIO DE E-MAILS VIA RESEND
+        # ============================================
+        
+        # Buscar dados dos participantes com e-mail
+        cursor.execute("""
+            SELECT u.id, u.nome_completo, u.email, u.cargo
+            FROM usuarios u
+            WHERE u.id IN %s AND u.email IS NOT NULL AND u.email != ''
+        """, (tuple(participantes_ids) if participantes_ids else ('0',)))
+        
+        participantes = cursor.fetchall()
+        
+        # Dados da reunião para o e-mail
+        dados_reuniao = {
+            'titulo': titulo,
+            'data': data,
+            'hora': hora,
+            'local': local or 'Templo Maçônico',
+            'descricao': descricao
+        }
+        
+        # Enviar e-mails
+        emails_enviados = 0
+        emails_falha = []
+        
+        for participante in participantes:
             try:
-                grau = int(grau)
-            except ValueError:
-                grau = None
-        hora_termino = hora_termino if hora_termino and hora_termino.strip() else None
-        local = local if local and local.strip() else None
-        loja_id = loja_id if loja_id and loja_id.strip() else None
-        if loja_id:
-            try:
-                loja_id = int(loja_id)
-            except ValueError:
-                loja_id = None
-        pauta = pauta if pauta and pauta.strip() else None
-        observacoes = observacoes if observacoes and observacoes.strip() else None
-        try:
-            data_obj = datetime.strptime(data, '%Y-%m-%d').date() if data else None
-            hora_inicio_obj = datetime.strptime(hora_inicio, '%H:%M').time() if hora_inicio else None
-            hora_termino_obj = datetime.strptime(hora_termino, '%H:%M').time() if hora_termino else None
-        except ValueError as e:
-            flash(f"Erro no formato da data/hora: {str(e)}", "danger")
-            return_connection(conn)
-            return redirect("/reunioes/nova")
-        try:
-            cursor.execute("""
-                INSERT INTO reunioes 
-                (titulo, tipo, grau, data, hora_inicio, hora_termino, local, loja_id, pauta, observacoes, criado_por)
-                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
-            """, (titulo, tipo, grau, data_obj, hora_inicio_obj, hora_termino_obj, 
-                  local, loja_id, pauta, observacoes, session["user_id"]))
-            conn.commit()
-            reuniao_id = cursor.lastrowid
-            registrar_log("criar", "reuniao", reuniao_id, dados_novos={"titulo": titulo, "data": data, "tipo": tipo})
-            flash("Reunião agendada com sucesso!", "success")
-            return_connection(conn)
-            return redirect(f"/reunioes/{reuniao_id}")
-        except Exception as e:
-            print(f"ERRO: {e}")
+                resultado = enviar_email_reuniao(
+                    destinatario=participante['email'],
+                    nome_destinatario=participante['nome_completo'],
+                    dados_reuniao=dados_reuniao
+                )
+                
+                if resultado['success']:
+                    emails_enviados += 1
+                    
+                    # Registrar log do envio
+                    cursor.execute("""
+                        INSERT INTO logs_auditoria 
+                        (usuario_id, usuario_nome, acao, entidade, entidade_id, dados_novos)
+                        VALUES (%s, %s, %s, %s, %s, %s)
+                    """, (
+                        session.get('user_id'),
+                        session.get('nome_completo'),
+                        'email_reuniao',
+                        'reuniao',
+                        reuniao_id,
+                        f"E-mail enviado para {participante['email']}"
+                    ))
+                    conn.commit()
+                else:
+                    emails_falha.append({
+                        'email': participante['email'],
+                        'erro': resultado['message']
+                    })
+                    
+            except Exception as e:
+                emails_falha.append({
+                    'email': participante['email'],
+                    'erro': str(e)
+                })
+        
+        return_connection(conn)
+        
+        # Mensagem final
+        if emails_enviados > 0:
+            flash(f"✅ Reunião criada com sucesso! {emails_enviados} e-mail(s) enviado(s).", "success")
+            if emails_falha:
+                flash(f"⚠️ Não foi possível enviar para {len(emails_falha)} participante(s). Verifique os e-mails cadastrados.", "warning")
+        else:
+            flash("✅ Reunião criada com sucesso! Nenhum e-mail enviado (participantes sem e-mail cadastrado).", "success")
+        
+        return redirect("/reunioes")
+        
+    except Exception as e:
+        if 'conn' in locals():
             conn.rollback()
-            flash(f"Erro ao salvar reunião: {str(e)}", "danger")
             return_connection(conn)
-            return redirect("/reunioes/nova")
-    cursor.execute("SELECT * FROM tipos_reuniao ORDER BY nome")
-    tipos = cursor.fetchall()
-    cursor.execute("SELECT * FROM lojas ORDER BY nome")
-    lojas = cursor.fetchall()
-    return_connection(conn)
-    hoje = datetime.now().strftime("%Y-%m-%d")
-    return render_template("reunioes/nova.html", tipos=tipos, lojas=lojas, hoje=hoje)
+        print(f"❌ Erro ao criar reunião: {e}")
+        flash(f"Erro ao criar reunião: {str(e)}", "danger")
+        return redirect("/reunioes/nova")
 
 @app.route("/reunioes/<int:id>")
 @login_required
