@@ -2208,7 +2208,7 @@ def nova_reuniao():
             registrar_log("criar", "reuniao", reuniao_id, dados_novos={"titulo": titulo, "data": data, "tipo": tipo})
             
             # ============================================
-            # ENVIO DE E-MAILS VIA RESEND
+            # ENVIO DE E-MAILS VIA RESEND (CORRIGIDO)
             # ============================================
             emails_enviados = 0
             
@@ -2231,17 +2231,20 @@ def nova_reuniao():
                     data_formatada = data_obj.strftime('%d/%m/%Y') if data_obj else data
                     hora_formatada = hora_inicio_obj.strftime('%H:%M') if hora_inicio_obj else hora_inicio
                     
-                    # Buscar nome do tipo de reunião
-                    cursor.execute("SELECT nome FROM tipos_reuniao WHERE id = %s", (tipo,))
-                    tipo_result = cursor.fetchone()
-                    tipo_nome = tipo_result['nome'] if tipo_result else tipo
+                    # Buscar nome do tipo de reunião - CORRIGIDO: tipo já é o nome, não o ID
+                    # O campo 'tipo' na tabela reunioes armazena o nome, não o ID
+                    tipo_nome = tipo  # tipo já é o nome da reunião (ex: "Ordinária")
                     
-                    # Buscar nome da loja
+                    # Buscar nome da loja (se houver loja_id)
                     loja_nome = None
                     if loja_id:
-                        cursor.execute("SELECT nome FROM lojas WHERE id = %s", (loja_id,))
-                        loja_result = cursor.fetchone()
-                        loja_nome = loja_result['nome'] if loja_result else None
+                        try:
+                            cursor.execute("SELECT nome FROM lojas WHERE id = %s", (loja_id,))
+                            loja_result = cursor.fetchone()
+                            loja_nome = loja_result['nome'] if loja_result else None
+                        except Exception as e:
+                            print(f"Erro ao buscar loja: {e}")
+                            loja_nome = None
                     
                     # Dados da reunião
                     dados_reuniao = {
@@ -2259,6 +2262,11 @@ def nova_reuniao():
                     # Enviar e-mail para cada participante
                     for participante in participantes:
                         try:
+                            # Verificar se a função existe
+                            if 'enviar_email_reuniao' not in globals():
+                                print("❌ Função enviar_email_reuniao não encontrada!")
+                                continue
+                                
                             resultado = enviar_email_reuniao(
                                 destinatario=participante['email'],
                                 nome_destinatario=participante['nome_completo'],
@@ -2283,6 +2291,8 @@ def nova_reuniao():
                     
             except Exception as e:
                 print(f"❌ Erro no envio de e-mails: {e}")
+                import traceback
+                traceback.print_exc()
                 flash(f"✅ Reunião agendada com sucesso! Mas houve erro no envio de e-mails: {str(e)}", "warning")
             
             return_connection(conn)
