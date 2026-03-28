@@ -5296,6 +5296,180 @@ def enviar_email_recuperacao_senha(usuario_nome, usuario_email, token_recuperaca
     """
     
     return enviar_email_resend(usuario_email, assunto, conteudo_html)
+
+# =============================
+# ENVIO DE E-MAIL PARA REUNIÕES
+# =============================
+
+def enviar_email_reuniao(destinatario, nome_destinatario, dados_reuniao):
+    """
+    Envia e-mail de convocação para reunião
+    
+    Args:
+        destinatario: E-mail do destinatário
+        nome_destinatario: Nome do destinatário
+        dados_reuniao: Dict com dados da reunião (titulo, data, hora, local, descricao, etc)
+    """
+    assunto = f"📅 Convite: {dados_reuniao.get('titulo', 'Nova Reunião')} - Sistema Maçônico"
+    
+    # Formatar data e hora
+    data_reuniao = dados_reuniao.get('data', '')
+    hora_reuniao = dados_reuniao.get('hora', '')
+    local = dados_reuniao.get('local', 'A definir')
+    descricao = dados_reuniao.get('descricao', '')
+    
+    conteudo_html = f"""
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <meta charset="UTF-8">
+        <style>
+            body {{ font-family: 'Segoe UI', Arial, sans-serif; line-height: 1.6; color: #333; }}
+            .container {{ max-width: 600px; margin: 0 auto; padding: 20px; }}
+            .header {{ background: linear-gradient(135deg, #1a472a, #0a2a1a); color: #ffd700; padding: 30px 20px; text-align: center; border-radius: 10px 10px 0 0; }}
+            .content {{ padding: 30px 20px; background: #fff; }}
+            .info-card {{ background: #f8f9fa; border-left: 4px solid #1a472a; padding: 15px; margin: 20px 0; border-radius: 8px; }}
+            .info-row {{ display: flex; margin-bottom: 10px; }}
+            .info-label {{ font-weight: bold; width: 80px; color: #1a472a; }}
+            .info-value {{ flex: 1; }}
+            .button {{ display: inline-block; padding: 12px 30px; background: linear-gradient(135deg, #1a472a, #0a2a1a); color: #ffd700; text-decoration: none; border-radius: 5px; margin: 20px 0; }}
+            .footer {{ background: #f5f5f5; padding: 20px; text-align: center; font-size: 12px; color: #666; border-radius: 0 0 10px 10px; }}
+        </style>
+    </head>
+    <body>
+        <div class="container">
+            <div class="header">
+                <h1>📅 Convite para Reunião</h1>
+                <p>Sistema Maçônico</p>
+            </div>
+            <div class="content">
+                <h2>Olá {nome_destinatario},</h2>
+                <p>Você foi convidado para uma reunião:</p>
+                
+                <div class="info-card">
+                    <h3 style="color: #1a472a; margin-bottom: 15px;">{dados_reuniao.get('titulo', 'Nova Reunião')}</h3>
+                    
+                    <div class="info-row">
+                        <div class="info-label">📅 Data:</div>
+                        <div class="info-value">{data_reuniao}</div>
+                    </div>
+                    <div class="info-row">
+                        <div class="info-label">⏰ Hora:</div>
+                        <div class="info-value">{hora_reuniao}</div>
+                    </div>
+                    <div class="info-row">
+                        <div class="info-label">📍 Local:</div>
+                        <div class="info-value">{local}</div>
+                    </div>
+                    {f'<div class="info-row"><div class="info-label">📝 Descrição:</div><div class="info-value">{descricao}</div></div>' if descricao else ''}
+                </div>
+                
+                <p style="text-align: center;">
+                    <a href="https://www.juramelo.com.br/reunioes" class="button">Ver Detalhes</a>
+                </p>
+                
+                <p>Por favor, confirme sua presença através do sistema.</p>
+                <p>Atenciosamente,<br><strong>Secretaria do Sistema Maçônico</strong></p>
+            </div>
+            <div class="footer">
+                <p>Sistema Maçônico - www.juramelo.com.br</p>
+                <p>Este é um e-mail automático, por favor não responda.</p>
+            </div>
+        </div>
+    </body>
+    </html>
+    """
+    
+    return enviar_email_resend(destinatario, assunto, conteudo_html)
+
+
+def enviar_lembrete_reuniao(destinatario, nome_destinatario, dados_reuniao):
+    """
+    Envia e-mail de lembrete para reunião (24h antes)
+    """
+    assunto = f"⏰ Lembrete: {dados_reuniao.get('titulo', 'Reunião')} - Amanhã!"
+    
+    data_reuniao = dados_reuniao.get('data', '')
+    hora_reuniao = dados_reuniao.get('hora', '')
+    local = dados_reuniao.get('local', 'A definir')
+    
+    conteudo_html = f"""
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <meta charset="UTF-8">
+        <style>
+            body {{ font-family: 'Segoe UI', Arial, sans-serif; line-height: 1.6; color: #333; }}
+            .container {{ max-width: 600px; margin: 0 auto; padding: 20px; }}
+            .header {{ background: linear-gradient(135deg, #ff9800, #e65100); color: white; padding: 30px 20px; text-align: center; border-radius: 10px 10px 0 0; }}
+            .content {{ padding: 30px 20px; background: #fff; }}
+            .info-card {{ background: #f8f9fa; border-left: 4px solid #ff9800; padding: 15px; margin: 20px 0; border-radius: 8px; }}
+            .button {{ display: inline-block; padding: 12px 30px; background: #ff9800; color: white; text-decoration: none; border-radius: 5px; margin: 20px 0; }}
+            .footer {{ background: #f5f5f5; padding: 20px; text-align: center; font-size: 12px; color: #666; border-radius: 0 0 10px 10px; }}
+        </style>
+    </head>
+    <body>
+        <div class="container">
+            <div class="header">
+                <h1>⏰ Lembrete de Reunião</h1>
+                <p>Sistema Maçônico</p>
+            </div>
+            <div class="content">
+                <h2>Olá {nome_destinatario},</h2>
+                <p>Este é um lembrete da reunião que acontecerá amanhã:</p>
+                
+                <div class="info-card">
+                    <h3 style="color: #ff9800;">{dados_reuniao.get('titulo', 'Reunião')}</h3>
+                    <p><strong>📅 Data:</strong> {data_reuniao}</p>
+                    <p><strong>⏰ Hora:</strong> {hora_reuniao}</p>
+                    <p><strong>📍 Local:</strong> {local}</p>
+                </div>
+                
+                <p style="text-align: center;">
+                    <a href="https://www.juramelo.com.br/reunioes" class="button">Confirmar Presença</a>
+                </p>
+                
+                <p>Confirme sua presença no sistema.</p>
+                <p>Atenciosamente,<br><strong>Secretaria do Sistema Maçônico</strong></p>
+            </div>
+            <div class="footer">
+                <p>Sistema Maçônico - www.juramelo.com.br</p>
+            </div>
+        </div>
+    </body>
+    </html>
+    """
+    
+    return enviar_email_resend(destinatario, assunto, conteudo_html)
+
+@app.route('/admin/testar-email-reuniao-completo')
+@admin_required
+def testar_email_reuniao_completo():
+    """Teste completo do envio de e-mail de reunião"""
+    try:
+        email_teste = request.args.get('email')
+        if not email_teste:
+            return jsonify({"erro": "Informe um e-mail: ?email=seu@email.com"}), 400
+        
+        dados_teste = {
+            'titulo': 'Reunião de Teste - Loja Maçônica',
+            'data': '27/03/2026',
+            'hora': '19:30',
+            'local': 'Templo Maçônico - Rua Principal, 123',
+            'descricao': 'Pauta: Assuntos administrativos e planejamento de atividades.'
+        }
+        
+        resultado = enviar_email_reuniao(
+            destinatario=email_teste,
+            nome_destinatario="Irmão Teste",
+            dados_reuniao=dados_teste
+        )
+        
+        return jsonify(resultado)
+        
+    except Exception as e:
+        return jsonify({"erro": str(e)}), 500    
+    
 # =============================
 # ROTAS DE WHATSAPP
 # =============================
