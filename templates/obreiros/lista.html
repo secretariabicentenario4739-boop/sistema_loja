@@ -1,450 +1,537 @@
-{% extends "base.html" %}
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Editar Obreiro - Sistema Maçônico</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
 
-{% block title %}Lista de Obreiros{% endblock %}
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
 
-{% block content %}
-<div class="container-fluid py-4">
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #1a472a, #0a2a1a);
+            color: #ffd700;
+            padding: 30px;
+            text-align: center;
+            position: relative;
+        }
+
+        .btn-back {
+            position: absolute;
+            left: 30px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: rgba(255,255,255,0.2);
+            color: #ffd700;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.3s ease;
+        }
+
+        .btn-back:hover {
+            background: rgba(255,255,255,0.3);
+            transform: translateY(-50%) translateX(-2px);
+        }
+
+        .header h1 {
+            font-size: 28px;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            font-size: 14px;
+            opacity: 0.9;
+        }
+
+        .content {
+            padding: 30px;
+        }
+
+        .alert {
+            padding: 15px 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            animation: slideIn 0.3s ease;
+        }
+
+        @keyframes slideIn {
+            from {
+                transform: translateY(-20px);
+                opacity: 0;
+            }
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+
+        .alert-success {
+            background: #d4edda;
+            color: #155724;
+            border-left: 4px solid #28a745;
+        }
+
+        .alert-danger {
+            background: #f8d7da;
+            color: #721c24;
+            border-left: 4px solid #dc3545;
+        }
+
+        .alert-info {
+            background: #d1ecf1;
+            color: #0c5460;
+            border-left: 4px solid #17a2b8;
+        }
+
+        .close-alert {
+            margin-left: auto;
+            cursor: pointer;
+            font-size: 20px;
+            font-weight: bold;
+            background: none;
+            border: none;
+            color: inherit;
+            opacity: 0.7;
+        }
+
+        .close-alert:hover {
+            opacity: 1;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #333;
+        }
+
+        label .required {
+            color: #dc3545;
+            margin-left: 4px;
+        }
+
+        label .info {
+            font-weight: normal;
+            font-size: 12px;
+            color: #666;
+            margin-left: 8px;
+        }
+
+        input, select, textarea {
+            width: 100%;
+            padding: 12px 15px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 14px;
+            transition: all 0.3s ease;
+        }
+
+        input:focus, select:focus, textarea:focus {
+            outline: none;
+            border-color: #1a472a;
+            box-shadow: 0 0 0 3px rgba(26, 71, 42, 0.1);
+        }
+
+        input[type="checkbox"] {
+            width: auto;
+            margin-right: 10px;
+            transform: scale(1.2);
+            vertical-align: middle;
+        }
+
+        .checkbox-label {
+            display: flex;
+            align-items: center;
+            cursor: pointer;
+            font-weight: normal;
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+
+        .form-row-3 {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 20px;
+        }
+
+        .photo-preview {
+            text-align: center;
+            margin-bottom: 15px;
+        }
+
+        .current-photo {
+            display: inline-block;
+            text-align: center;
+            margin-bottom: 15px;
+        }
+
+        .current-photo img {
+            width: 150px;
+            height: 150px;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 3px solid #1a472a;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        }
+
+        .photo-label {
+            font-size: 12px;
+            color: #666;
+            margin-top: 5px;
+        }
+
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: inline-block;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #1a472a, #0a2a1a);
+            color: #ffd700;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(26, 71, 42, 0.3);
+        }
+
+        .btn-secondary {
+            background: #6c757d;
+            color: white;
+        }
+
+        .btn-secondary:hover {
+            background: #5a6268;
+        }
+
+        .button-group {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+            flex-wrap: wrap;
+        }
+
+        hr {
+            margin: 20px 0;
+            border: none;
+            border-top: 1px solid #e0e0e0;
+        }
+
+        .section-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: #1a472a;
+            margin: 20px 0 15px 0;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #1a472a;
+        }
+
+        @media (max-width: 600px) {
+            .container {
+                margin: 10px;
+            }
+            
+            .content {
+                padding: 20px;
+            }
+            
+            .form-row, .form-row-3 {
+                grid-template-columns: 1fr;
+                gap: 15px;
+            }
+            
+            .btn-back {
+                position: relative;
+                left: 0;
+                top: 0;
+                transform: none;
+                margin-bottom: 15px;
+                display: inline-block;
+            }
+            
+            .header {
+                padding: 20px;
+            }
+            
+            .header h1 {
+                margin-top: 10px;
+            }
+        }
+    </style>
+</head>
+<body>
     <div class="container">
-        <!-- Cabeçalho com botão Novo Obreiro e Voltar -->
-        <div class="d-flex justify-content-between align-items-center mb-4">
-            <h2>
-                <i class="bi bi-people-fill"></i> 
-                Obreiros
-                <span class="badge bg-primary">{{ estatisticas.total_ativos }}</span>
-                {% if estatisticas.total_inativos > 0 %}
-                <small class="text-muted fs-6">(+{{ estatisticas.total_inativos }} inativos)</small>
+        <div class="header">
+            <a href="/obreiros" class="btn-back">
+                ← Voltar
+            </a>
+            <h1>✏️ Editar Obreiro</h1>
+            <p>Atualize as informações do obreiro</p>
+        </div>
+        
+        <div class="content">
+            <!-- Flash Messages -->
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    {% for category, message in messages %}
+                        <div class="alert alert-{{ category }}">
+                            <span>{% if category == 'success' %}✅{% elif category == 'danger' %}❌{% else %}ℹ️{% endif %}</span>
+                            <span>{{ message }}</span>
+                            <button class="close-alert" onclick="this.parentElement.remove()">&times;</button>
+                        </div>
+                    {% endfor %}
                 {% endif %}
-            </h2>
-            <div>
-                {% if session.tipo == 'admin' %}
-                <a href="/obreiros/novo" class="btn btn-success me-2">
-                    <i class="bi bi-plus-circle"></i> Novo Obreiro
-                </a>
+            {% endwith %}
+
+            <form method="POST" action="/obreiros/{{ obreiro.id }}/editar" enctype="multipart/form-data">
+                <!-- Seção: Foto -->
+                <div class="form-group">
+                    <label>📸 Foto do Obreiro</label>
+                    <div class="photo-preview">
+                        {% if obreiro.foto %}
+                            <div class="current-photo">
+                                <img src="/{{ obreiro.foto }}" alt="Foto de {{ obreiro.nome_completo }}">
+                                <div class="photo-label">Foto atual</div>
+                            </div>
+                        {% else %}
+                            <div class="current-photo">
+                                <img src="/static/default-avatar.png" alt="Sem foto" style="width: 150px; height: 150px; border-radius: 50%; object-fit: cover; background: #f0f0f0;">
+                                <div class="photo-label">Nenhuma foto cadastrada</div>
+                            </div>
+                        {% endif %}
+                    </div>
+                    <input type="file" name="foto" accept="image/*" class="form-control">
+                    <small class="photo-label">
+                        Formatos permitidos: PNG, JPG, JPEG, GIF, WEBP. 
+                        Máximo 5MB. Deixe em branco para manter a foto atual.
+                    </small>
+                </div>
+
+                <hr>
+
+                <!-- Seção: Dados Pessoais -->
+                <div class="section-title">📋 Dados Pessoais</div>
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Nome Completo <span class="required">*</span></label>
+                        <input type="text" name="nome_completo" value="{{ obreiro.nome_completo }}" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>Nome Maçônico</label>
+                        <input type="text" name="nome_maconico" value="{{ obreiro.nome_maconico or '' }}">
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>CIM Número</label>
+                        <input type="text" name="cim_numero" value="{{ obreiro.cim_numero or '' }}">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>Telefone</label>
+                        <input type="tel" name="telefone" value="{{ obreiro.telefone or '' }}" placeholder="(00) 00000-0000">
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>E-mail</label>
+                        <input type="email" name="email" value="{{ obreiro.email or '' }}">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>Endereço</label>
+                        <input type="text" name="endereco" value="{{ obreiro.endereco or '' }}">
+                    </div>
+                </div>
+
+                <hr>
+
+                <!-- Seção: Loja (apenas para admin) -->
+                <div class="section-title">🏛️ Dados da Loja</div>
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Nome da Loja</label>
+                        <input type="text" name="loja_nome" value="{{ obreiro.loja_nome or '' }}" list="lojas-list">
+                        <datalist id="lojas-list">
+                            {% for loja in lojas %}
+                                <option value="{{ loja.nome }}">{{ loja.nome }}</option>
+                            {% endfor %}
+                        </datalist>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>Número da Loja</label>
+                        <input type="text" name="loja_numero" value="{{ obreiro.loja_numero or '' }}">
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>Orientação</label>
+                    <select name="loja_orient">
+                        <option value="">Selecione...</option>
+                        <option value="REAA" {% if obreiro.loja_orient == 'REAA' %}selected{% endif %}>REAA - Rito Escocês Antigo e Aceito</option>
+                        <option value="Rito York" {% if obreiro.loja_orient == 'Rito York' %}selected{% endif %}>Rito York</option>
+                        <option value="REB" {% if obreiro.loja_orient == 'REB' %}selected{% endif %}>REB - Rito Escocês Brasileiro</option>
+                        <option value="Adonhiramita" {% if obreiro.loja_orient == 'Adonhiramita' %}selected{% endif %}>Rito Adonhiramita</option>
+                    </select>
+                </div>
+
+                {% if is_admin %}
+                <hr>
+                
+                <!-- Seção: Dados Administrativos (apenas admin) -->
+                <div class="section-title">⚙️ Dados Administrativos</div>
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Tipo de Usuário</label>
+                        <select name="tipo">
+                            <option value="obreiro" {% if obreiro.tipo == 'obreiro' %}selected{% endif %}>Obreiro</option>
+                            <option value="admin" {% if obreiro.tipo == 'admin' %}selected{% endif %}>Administrador</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>Grau Atual</label>
+                        <select name="grau_atual">
+                            {% for grau in graus %}
+                                <option value="{{ grau.nivel }}" {% if obreiro.grau_atual == grau.nivel %}selected{% endif %}>
+                                    {{ grau.nivel }}º - {{ grau.nome }}
+                                </option>
+                            {% endfor %}
+                        </select>
+                        {% if nome_grau_atual %}
+                            <small class="photo-label">Atual: {{ nome_grau_atual }}</small>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <div class="form-row-3">
+                    <div class="form-group">
+                        <label>Data de Iniciação</label>
+                        <input type="date" name="data_iniciacao" value="{{ obreiro.data_iniciacao or '' }}">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>Data de Elevação</label>
+                        <input type="date" name="data_elevacao" value="{{ obreiro.data_elevacao or '' }}">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>Data de Exaltação</label>
+                        <input type="date" name="data_exaltacao" value="{{ obreiro.data_exaltacao or '' }}">
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label class="checkbox-label">
+                        <input type="checkbox" name="ativo" value="1" {% if obreiro.ativo %}checked{% endif %}>
+                        Usuário ativo
+                    </label>
+                </div>
                 {% endif %}
-                <a href="/dashboard" class="btn btn-outline-secondary">
-                    <i class="bi bi-arrow-left"></i> Voltar ao Dashboard
-                </a>
-            </div>
-        </div>
 
-        {% with messages = get_flashed_messages(with_categories=true) %}
-            {% if messages %}
-                {% for category, message in messages %}
-                    <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
-                        {{ message }}
-                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-                    </div>
-                {% endfor %}
-            {% endif %}
-        {% endwith %}
+                <div class="button-group">
+                    <button type="submit" class="btn btn-primary">💾 Salvar Alterações</button>
+                    <a href="/obreiros/{{ obreiro.id }}" class="btn btn-secondary">Cancelar</a>
+                </div>
+            </form>
 
-        <!-- Cards de Estatísticas -->
-        <div class="row mb-4">
-            <div class="col-md-3">
-                <div class="card bg-primary text-white shadow">
-                    <div class="card-body">
-                        <div class="d-flex justify-content-between align-items-center">
-                            <div>
-                                <h6 class="card-title mb-0">Total de Obreiros</h6>
-                                <h2 class="mb-0">{{ estatisticas.total_obreiros }}</h2>
-                            </div>
-                            <i class="bi bi-people-fill fs-1"></i>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            <div class="col-md-3">
-                <div class="card bg-success text-white shadow">
-                    <div class="card-body">
-                        <div class="d-flex justify-content-between align-items-center">
-                            <div>
-                                <h6 class="card-title mb-0">Ativos</h6>
-                                <h2 class="mb-0">{{ estatisticas.total_ativos }}</h2>
-                            </div>
-                            <i class="bi bi-check-circle-fill fs-1"></i>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            <div class="col-md-3">
-                <div class="card bg-secondary text-white shadow">
-                    <div class="card-body">
-                        <div class="d-flex justify-content-between align-items-center">
-                            <div>
-                                <h6 class="card-title mb-0">Inativos</h6>
-                                <h2 class="mb-0">{{ estatisticas.total_inativos }}</h2>
-                            </div>
-                            <i class="bi bi-ban-fill fs-1"></i>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            <div class="col-md-3">
-                <div class="card bg-info text-white shadow">
-                    <div class="card-body">
-                        <div class="d-flex justify-content-between align-items-center">
-                            <div>
-                                <h6 class="card-title mb-0">Exibidos</h6>
-                                <h2 class="mb-0">{{ estatisticas.exibidos }}</h2>
-                            </div>
-                            <i class="bi bi-funnel-fill fs-1"></i>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Filtros -->
-        <div class="card shadow mb-4">
-            <div class="card-header bg-light">
-                <h6 class="mb-0"><i class="bi bi-funnel"></i> Filtros</h6>
-            </div>
-            <div class="card-body">
-                <form method="GET" class="row g-3">
-                    <div class="col-md-3">
-                        <label class="form-label">Nome/Usuário</label>
-                        <input type="text" class="form-control" name="nome" 
-                               value="{{ filtros.nome }}" placeholder="Buscar por nome...">
-                    </div>
-                    <div class="col-md-2">
-                        <label class="form-label">Grau</label>
-                        <select class="form-select" name="grau">
-                            <option value="">Todos</option>
-                            {% for g in graus %}
-                            <option value="{{ g.grau }}" {% if filtros.grau == g.grau|string %}selected{% endif %}>
-                                {% if g.grau == 3 %}
-                                    <i class="bi bi-star-fill"></i> Mestre
-                                {% elif g.grau == 2 %}
-                                    <i class="bi bi-star"></i> Companheiro
-                                {% elif g.grau == 1 %}
-                                    <i class="bi bi-star"></i> Aprendiz
-                                {% else %}
-                                    {{ g.nome_grau }}
-                                {% endif %}
-                            </option>
-                            {% endfor %}
-                        </select>
-                    </div>
-                    <div class="col-md-2">
-                        <label class="form-label">Cargo</label>
-                        <select class="form-select" name="cargo">
-                            <option value="">Todos</option>
-                            {% for c in cargos %}
-                            <option value="{{ c.id }}" {% if filtros.cargo == c.id|string %}selected{% endif %}>
-                                <i class="bi bi-briefcase"></i> {{ c.nome }}
-                            </option>
-                            {% endfor %}
-                        </select>
-                    </div>
-                    <div class="col-md-2">
-                        <label class="form-label">Loja</label>
-                        <select class="form-select" name="loja">
-                            <option value="">Todas</option>
-                            {% for l in lojas %}
-                            <option value="{{ l.nome }}" {% if filtros.loja == l.nome %}selected{% endif %}>
-                                <i class="bi bi-building"></i> {{ l.nome }}
-                            </option>
-                            {% endfor %}
-                        </select>
-                    </div>
-                    <div class="col-md-2">
-                        <label class="form-label">Status</label>
-                        <select class="form-select" name="status">
-                            <option value="ativos" {% if filtros.status == 'ativos' %}selected{% endif %}>
-                                <i class="bi bi-check-circle"></i> Ativos
-                            </option>
-                            <option value="inativos" {% if filtros.status == 'inativos' %}selected{% endif %}>
-                                <i class="bi bi-ban"></i> Inativos
-                            </option>
-                            <option value="todos" {% if filtros.status == 'todos' %}selected{% endif %}>
-                                <i class="bi bi-people"></i> Todos
-                            </option>
-                        </select>
-                    </div>
-                    <div class="col-md-1 d-flex align-items-end">
-                        <button type="submit" class="btn btn-primary w-100">
-                            <i class="bi bi-search"></i>
-                        </button>
-                    </div>
-                    <div class="col-md-1 d-flex align-items-end">
-                        <a href="/obreiros" class="btn btn-secondary w-100">
-                            <i class="bi bi-eraser"></i>
-                        </a>
-                    </div>
-                </form>
-            </div>
-        </div>
-
-        <!-- Lista de Obreiros -->
-        <div class="card shadow">
-            <div class="card-body">
-                <div class="table-responsive">
-                    <table class="table table-hover" id="tabelaObreiros">
-                        <thead class="table-light">
-                            <tr>
-                                <th>Foto</th>
-                                <th>Nome</th>
-                                <th>Grau</th>
-                                <th>Cargos</th>
-                                <th>Loja</th>
-                                <th>Presença</th>
-                                <th>Status</th>
-                                <th>Ações</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% for obreiro in obreiros %}
-                            <tr class="{% if obreiro.ativo == 1 %}table-active{% else %}table-secondary{% endif %}">
-                                <td class="text-center">
-                                    {% if obreiro.foto %}
-                                    <img src="/uploads/fotos/{{ obreiro.foto }}" 
-                                         class="rounded-circle" 
-                                         style="width: 40px; height: 40px; object-fit: cover;"
-                                         alt="Foto de {{ obreiro.nome_completo }}">
-                                    {% else %}
-                                    <div class="rounded-circle bg-secondary text-white d-flex align-items-center justify-content-center mx-auto"
-                                         style="width: 40px; height: 40px;">
-                                        <i class="bi bi-person"></i>
-                                    </div>
-                                    {% endif %}
-                                </td>
-                                <td>
-                                    <strong>{{ obreiro.nome_completo or obreiro.usuario }}</strong>
-                                    {% if obreiro.nome_maconico %}
-                                    <br>
-                                    <small class="text-muted">
-                                        <i class="bi bi-handshake"></i> {{ obreiro.nome_maconico }}
-                                    </small>
-                                    {% endif %}
-                                    {% if obreiro.cim_numero %}
-                                    <br>
-                                    <small class="text-muted">
-                                        <i class="bi bi-card-text"></i> CIM: {{ obreiro.cim_numero }}
-                                    </small>
-                                    {% endif %}
-                                    <br>
-                                    <small class="text-muted">
-                                        <i class="bi bi-person-circle"></i> {{ obreiro.usuario }}
-                                    </small>
-                                </td>
-                                <td>
-                                    {% if obreiro.grau_atual == 3 %}
-                                        <span class="badge bg-warning text-dark">
-                                            <i class="bi bi-star-fill"></i> Mestre
-                                        </span>
-                                    {% elif obreiro.grau_atual == 2 %}
-                                        <span class="badge bg-primary">
-                                            <i class="bi bi-star"></i> Companheiro
-                                        </span>
-                                    {% elif obreiro.grau_atual == 1 %}
-                                        <span class="badge bg-secondary">
-                                            <i class="bi bi-star"></i> Aprendiz
-                                        </span>
-                                    {% else %}
-                                        <span class="badge bg-info">
-                                            {{ obreiro.grau_descricao }}
-                                        </span>
-                                    {% endif %}
-                                </td>
-                                <td>
-                                    {% if obreiro.cargos_atuais %}
-                                        {% set cargos_lista = obreiro.cargos_atuais.split(', ') %}
-                                        {% for cargo in cargos_lista[:2] %}
-                                        <span class="badge bg-info mb-1 d-block">
-                                            <i class="bi bi-briefcase"></i> {{ cargo }}
-                                        </span>
-                                        {% endfor %}
-                                        {% if cargos_lista|length > 2 %}
-                                        <small class="text-muted">
-                                            <i class="bi bi-plus-circle"></i> +{{ cargos_lista|length - 2 }}
-                                        </small>
-                                        {% endif %}
-                                    {% else %}
-                                    <span class="text-muted">
-                                        <i class="bi bi-x-circle"></i> Nenhum cargo
-                                    </span>
-                                    {% endif %}
-                                </td>
-                                <td>
-                                    {% if obreiro.loja_nome %}
-                                    <i class="bi bi-building"></i> {{ obreiro.loja_nome }}
-                                    {% if obreiro.loja_cidade %}
-                                    <br>
-                                    <small class="text-muted">
-                                        <i class="bi bi-geo-alt"></i> {{ obreiro.loja_cidade }}/{{ obreiro.loja_estado }}
-                                    </small>
-                                    {% endif %}
-                                    {% else %}
-                                    <span class="text-muted">
-                                        <i class="bi bi-question-circle"></i> Não vinculado
-                                    </span>
-                                    {% endif %}
-                                </td>
-                                <td style="min-width: 100px;">
-                                    {% if obreiro.presencas_ano > 0 %}
-                                    <div class="progress" style="height: 20px;"
-                                         title="{{ obreiro.presencas_confirmadas_ano }}/{{ obreiro.presencas_ano }} presenças">
-                                        <div class="progress-bar bg-success" 
-                                             role="progressbar" 
-                                             style="width: {{ obreiro.percentual_presenca }}%;">
-                                            {{ "%.0f"|format(obreiro.percentual_presenca) }}%
-                                        </div>
-                                    </div>
-                                    <small class="text-muted">
-                                        <i class="bi bi-calendar-check"></i> 
-                                        {{ obreiro.presencas_confirmadas_ano }}/{{ obreiro.presencas_ano }}
-                                    </small>
-                                    {% else %}
-                                    <div class="text-center text-muted">
-                                        <i class="bi bi-chart-line"></i> Sem registros
-                                    </div>
-                                    {% endif %}
-                                </td>
-                                <td>
-                                    {% if obreiro.ativo == 1 %}
-                                    <span class="badge bg-success">
-                                        <i class="bi bi-check-circle"></i> Ativo
-                                    </span>
-                                    {% else %}
-                                    <span class="badge bg-secondary">
-                                        <i class="bi bi-ban"></i> Inativo
-                                    </span>
-                                    {% endif %}
-                                </td>
-                                <td>
-                                    <div class="btn-group btn-group-sm" role="group">
-                                        <a href="/obreiros/{{ obreiro.id }}" 
-                                           class="btn btn-info" 
-                                           title="Visualizar detalhes">
-                                            <i class="bi bi-eye"></i>
-                                        </a>
-                                        {% if session.tipo == 'admin' or session.user_id == obreiro.id %}
-                                        <a href="/obreiros/{{ obreiro.id }}/editar" 
-                                           class="btn btn-warning" 
-                                           title="Editar obreiro">
-                                            <i class="bi bi-pencil"></i>
-                                        </a>
-                                        {% endif %}
-                                        {% if session.tipo == 'admin' %}
-                                            {% if obreiro.ativo == 1 %}
-                                            <a href="/obreiros/{{ obreiro.id }}/excluir" 
-                                               class="btn btn-danger" 
-                                               title="Desativar obreiro"
-                                               onclick="return confirm('⚠️ ATENÇÃO!\n\nDeseja DESATIVAR este obreiro?\n\nNome: {{ obreiro.nome_completo }}\nUsuário: {{ obreiro.usuario }}\n\nO obreiro será desativado, mas seus dados serão mantidos no sistema.\n\nPara excluir permanentemente, procure um administrador.')">
-                                                <i class="bi bi-person-x"></i>
-                                            </a>
-                                            {% else %}
-                                            <a href="/obreiros/{{ obreiro.id }}/reativar" 
-                                               class="btn btn-success" 
-                                               title="Reativar obreiro"
-                                               onclick="return confirm('Deseja REATIVAR este obreiro?\n\nNome: {{ obreiro.nome_completo }}\nUsuário: {{ obreiro.usuario }}')">
-                                                <i class="bi bi-play-fill"></i>
-                                            </a>
-                                            {% endif %}
-                                        {% endif %}
-                                    </div>
-                                </td>
-                            </tr>
-                            {% else %}
-                            <tr>
-                                <td colspan="8" class="text-center text-muted py-5">
-                                    <i class="bi bi-inbox fs-1"></i><br>
-                                    Nenhum obreiro encontrado
-                                    {% if session.tipo == 'admin' %}
-                                    <br>
-                                    <a href="/obreiros/novo" class="btn btn-primary mt-3">
-                                        <i class="bi bi-plus-circle"></i> Criar primeiro obreiro
-                                    </a>
-                                    {% endif %}
-                                </td>
-                            </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-        </div>
-
-        <!-- Legenda -->
-        <div class="card shadow mt-4">
-            <div class="card-header bg-light">
-                <h6 class="mb-0"><i class="bi bi-info-circle"></i> Legenda</h6>
-            </div>
-            <div class="card-body">
-                <div class="row">
-                    <div class="col-md-3">
-                        <span class="badge bg-success">Verde</span> = Ativo
-                    </div>
-                    <div class="col-md-3">
-                        <span class="badge bg-secondary">Cinza</span> = Inativo
-                    </div>
-                    <div class="col-md-3">
-                        <i class="bi bi-star-fill text-warning"></i> = Mestre
-                        <i class="bi bi-star text-primary"></i> = Companheiro
-                        <i class="bi bi-star text-secondary"></i> = Aprendiz
-                    </div>
-                    <div class="col-md-3">
-                        <i class="bi bi-briefcase text-info"></i> = Cargo
-                        <i class="bi bi-building"></i> = Loja
-                    </div>
-                </div>
+            <!-- Help Section -->
+            <div style="margin-top: 30px; padding: 20px; background: #f8f9fa; border-radius: 8px;">
+                <h4 style="color: #1a472a; margin-bottom: 10px;">📌 Dicas</h4>
+                <ul style="margin-left: 20px; color: #666; line-height: 1.6;">
+                    <li>Os campos com <span class="required">*</span> são obrigatórios</li>
+                    <li>Para alterar a foto, clique em "Escolher arquivo" e selecione uma imagem</li>
+                    <li>Formatos aceitos: JPG, PNG, GIF, WEBP</li>
+                    <li>Após salvar, você será redirecionado para a página do obreiro</li>
+                </ul>
             </div>
         </div>
     </div>
-</div>
 
-<style>
-    .card {
-        border-radius: 10px;
-        overflow: hidden;
-    }
-    .card-header {
-        font-weight: 600;
-    }
-    .progress {
-        border-radius: 10px;
-        overflow: hidden;
-        margin-bottom: 5px;
-        height: 20px;
-    }
-    .progress-bar {
-        transition: width 0.3s ease;
-        font-size: 10px;
-        line-height: 20px;
-    }
-    .table-hover tbody tr:hover {
-        cursor: pointer;
-        background-color: rgba(0, 123, 255, 0.05);
-    }
-    .badge {
-        font-size: 0.8rem;
-        padding: 0.4rem 0.6rem;
-    }
-    .btn-group-sm .btn {
-        padding: 0.25rem 0.5rem;
-    }
-    .rounded-circle {
-        border: 2px solid #fff;
-        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-    }
-    @media (max-width: 768px) {
-        .btn-group {
-            flex-direction: column;
-        }
-        .btn-group .btn {
-            margin-bottom: 5px;
-        }
-        .table-responsive {
-            font-size: 0.85rem;
-        }
-        .progress {
-            height: 15px;
-        }
-        .progress-bar {
-            font-size: 8px;
-            line-height: 15px;
-        }
-    }
-</style>
+    <script>
+        // Auto-fechar alerts após 5 segundos
+        setTimeout(function() {
+            document.querySelectorAll('.alert').forEach(function(alert) {
+                alert.style.opacity = '0';
+                setTimeout(function() {
+                    alert.remove();
+                }, 300);
+            });
+        }, 5000);
 
-{% endblock %}
+        // Função para fechar alert manualmente
+        document.querySelectorAll('.close-alert').forEach(function(btn) {
+            btn.onclick = function() {
+                this.parentElement.remove();
+            };
+        });
+
+        // Preview da foto antes de enviar
+        document.querySelector('input[name="foto"]').addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const preview = document.querySelector('.current-photo img');
+                    if (preview) {
+                        preview.src = e.target.result;
+                    }
+                }
+                reader.readAsDataURL(file);
+            }
+        });
+    </script>
+</body>
+</html>

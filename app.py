@@ -1024,7 +1024,9 @@ def editar_obreiro(id):
     if session["tipo"] != "admin" and session["user_id"] != id:
         flash("Você não tem permissão para editar este obreiro", "danger")
         return redirect("/obreiros")
+    
     cursor, conn = get_db()
+    
     if request.method == "POST":
         nome_completo = request.form.get("nome_completo", "")
         nome_maconico = request.form.get("nome_maconico", "")
@@ -1035,9 +1037,46 @@ def editar_obreiro(id):
         loja_nome = request.form.get("loja_nome", "")
         loja_numero = request.form.get("loja_numero", "")
         loja_orient = request.form.get("loja_orient", "")
+        
         cursor.execute("SELECT * FROM usuarios WHERE id = %s", (id,))
         dados_antigos = dict(cursor.fetchone())
         grau_antigo = dados_antigos.get("grau_atual")
+        
+        # ============================================
+        # PROCESSAR UPLOAD DA FOTO
+        # ============================================
+        foto_path = None
+        
+        if 'foto' in request.files:
+            arquivo_foto = request.files['foto']
+            if arquivo_foto and arquivo_foto.filename:
+                # Salvar nova foto
+                from werkzeug.utils import secure_filename
+                from datetime import datetime
+                import os
+                
+                # Criar diretório se não existir
+                UPLOAD_FOLDER = 'uploads/obreiros'
+                os.makedirs(UPLOAD_FOLDER, exist_ok=True)
+                
+                # Verificar extensão
+                ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif', 'webp'}
+                ext = arquivo_foto.filename.rsplit('.', 1)[1].lower() if '.' in arquivo_foto.filename else ''
+                
+                if ext in ALLOWED_EXTENSIONS:
+                    # Gerar nome único
+                    timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+                    nome_seguro = secure_filename(arquivo_foto.filename)
+                    nome_arquivo = f"{timestamp}_{nome_seguro}"
+                    caminho_arquivo = os.path.join(UPLOAD_FOLDER, nome_arquivo)
+                    
+                    # Salvar arquivo
+                    arquivo_foto.save(caminho_arquivo)
+                    foto_path = f"uploads/obreiros/{nome_arquivo}"
+                    print(f"✅ Foto salva: {foto_path}")
+                else:
+                    flash("Formato de imagem não permitido. Use: PNG, JPG, JPEG, GIF ou WEBP", "warning")
+        
         if session["tipo"] == "admin":
             tipo = request.form.get("tipo", "obreiro")
             grau_atual = request.form.get("grau_atual", 1)
@@ -1045,24 +1084,43 @@ def editar_obreiro(id):
             data_iniciacao = request.form.get("data_iniciacao", "")
             data_elevacao = request.form.get("data_elevacao", "")
             data_exaltacao = request.form.get("data_exaltacao", "")
+            
             data_iniciacao = data_iniciacao if data_iniciacao and data_iniciacao.strip() else None
             data_elevacao = data_elevacao if data_elevacao and data_elevacao.strip() else None
             data_exaltacao = data_exaltacao if data_exaltacao and data_exaltacao.strip() else None
+            
             try:
                 grau_atual = int(grau_atual)
             except ValueError:
                 grau_atual = 1
-            cursor.execute("""
-                UPDATE usuarios 
-                SET nome_completo = %s, nome_maconico = %s, cim_numero = %s, tipo = %s,
-                    grau_atual = %s, data_iniciacao = %s, data_elevacao = %s, data_exaltacao = %s,
-                    telefone = %s, email = %s, endereco = %s,
-                    loja_nome = %s, loja_numero = %s, loja_orient = %s, ativo = %s
-                WHERE id = %s
-            """, (nome_completo, nome_maconico, cim_numero, tipo,
-                  grau_atual, data_iniciacao, data_elevacao, data_exaltacao,
-                  telefone, email, endereco,
-                  loja_nome, loja_numero, loja_orient, ativo, id))
+            
+            # Construir query com ou sem foto
+            if foto_path:
+                cursor.execute("""
+                    UPDATE usuarios 
+                    SET nome_completo = %s, nome_maconico = %s, cim_numero = %s, tipo = %s,
+                        grau_atual = %s, data_iniciacao = %s, data_elevacao = %s, data_exaltacao = %s,
+                        telefone = %s, email = %s, endereco = %s,
+                        loja_nome = %s, loja_numero = %s, loja_orient = %s, ativo = %s,
+                        foto = %s
+                    WHERE id = %s
+                """, (nome_completo, nome_maconico, cim_numero, tipo,
+                      grau_atual, data_iniciacao, data_elevacao, data_exaltacao,
+                      telefone, email, endereco,
+                      loja_nome, loja_numero, loja_orient, ativo, foto_path, id))
+            else:
+                cursor.execute("""
+                    UPDATE usuarios 
+                    SET nome_completo = %s, nome_maconico = %s, cim_numero = %s, tipo = %s,
+                        grau_atual = %s, data_iniciacao = %s, data_elevacao = %s, data_exaltacao = %s,
+                        telefone = %s, email = %s, endereco = %s,
+                        loja_nome = %s, loja_numero = %s, loja_orient = %s, ativo = %s
+                    WHERE id = %s
+                """, (nome_completo, nome_maconico, cim_numero, tipo,
+                      grau_atual, data_iniciacao, data_elevacao, data_exaltacao,
+                      telefone, email, endereco,
+                      loja_nome, loja_numero, loja_orient, ativo, id))
+            
             if grau_atual != grau_antigo:
                 cursor.execute("SELECT nome FROM graus WHERE nivel = %s", (grau_atual,))
                 grau_info = cursor.fetchone()
@@ -1073,26 +1131,45 @@ def editar_obreiro(id):
                 """, (id, grau_atual, datetime.now().date(), f"Atualização de grau para {nome_grau}"))
                 flash(f"Grau alterado. Registro adicionado ao histórico!", "info")
         else:
-            cursor.execute("""
-                UPDATE usuarios 
-                SET nome_completo = %s, nome_maconico = %s, cim_numero = %s,
-                    telefone = %s, email = %s, endereco = %s,
-                    loja_nome = %s, loja_numero = %s, loja_orient = %s
-                WHERE id = %s
-            """, (nome_completo, nome_maconico, cim_numero,
-                  telefone, email, endereco,
-                  loja_nome, loja_numero, loja_orient, id))
+            # Não admin - atualizar sem campos admin
+            if foto_path:
+                cursor.execute("""
+                    UPDATE usuarios 
+                    SET nome_completo = %s, nome_maconico = %s, cim_numero = %s,
+                        telefone = %s, email = %s, endereco = %s,
+                        loja_nome = %s, loja_numero = %s, loja_orient = %s,
+                        foto = %s
+                    WHERE id = %s
+                """, (nome_completo, nome_maconico, cim_numero,
+                      telefone, email, endereco,
+                      loja_nome, loja_numero, loja_orient, foto_path, id))
+            else:
+                cursor.execute("""
+                    UPDATE usuarios 
+                    SET nome_completo = %s, nome_maconico = %s, cim_numero = %s,
+                        telefone = %s, email = %s, endereco = %s,
+                        loja_nome = %s, loja_numero = %s, loja_orient = %s
+                    WHERE id = %s
+                """, (nome_completo, nome_maconico, cim_numero,
+                      telefone, email, endereco,
+                      loja_nome, loja_numero, loja_orient, id))
+        
         conn.commit()
+        
+        # Atualizar sessão se for o próprio perfil
         if session["user_id"] == id:
             session["nome_completo"] = nome_completo
             session["cim_numero"] = cim_numero
             session["loja_nome"] = loja_nome
             session["loja_numero"] = loja_numero
             session["loja_orient"] = loja_orient
+        
         registrar_log("editar", "obreiro", id, dados_anteriores=dados_antigos, dados_novos={"nome": nome_completo})
         flash("Perfil atualizado com sucesso!", "success")
         return_connection(conn)
         return redirect(f"/obreiros/{id}")
+    
+    # GET - Carregar dados
     cursor.execute("SELECT * FROM usuarios WHERE id = %s", (id,))
     obreiro = cursor.fetchone()
     cursor.execute("SELECT * FROM lojas ORDER BY nome")
@@ -1102,9 +1179,15 @@ def editar_obreiro(id):
     cursor.execute("SELECT nome FROM graus WHERE nivel = %s", (obreiro['grau_atual'],))
     grau_atual_info = cursor.fetchone()
     nome_grau_atual = grau_atual_info['nome'] if grau_atual_info else None
+    
     return_connection(conn)
-    return render_template("obreiros/editar.html", obreiro=obreiro, lojas=lojas, graus=graus,
-                          nome_grau_atual=nome_grau_atual, is_admin=(session["tipo"] == "admin"),
+    
+    return render_template("obreiros/editar.html", 
+                          obreiro=obreiro, 
+                          lojas=lojas, 
+                          graus=graus,
+                          nome_grau_atual=nome_grau_atual, 
+                          is_admin=(session["tipo"] == "admin"),
                           is_own_profile=(session["user_id"] == id))
 
 @app.route("/obreiros/<int:id>/excluir")

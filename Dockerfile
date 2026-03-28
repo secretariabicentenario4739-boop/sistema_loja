@@ -31,3 +31,7 @@ ENV PYTHONUNBUFFERED=1
 
 # Comando para iniciar a aplicação
 CMD ["gunicorn", "--bind", "0.0.0.0:10000", "app:app"]
+
+# Criar diretório para uploads
+RUN mkdir -p /app/uploads/obreiros
+RUN chmod 755 /app/uploads/obreiros
