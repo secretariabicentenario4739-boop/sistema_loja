@@ -7142,51 +7142,137 @@ def api_backup_logs():
 @app.route('/admin/migrar-tabelas')
 @admin_required
 def migrar_tabelas():
-    """Endpoint para criar tabelas faltantes no banco"""
+    """Endpoint para criar/ajustar tabelas no banco"""
     try:
         cursor, conn = get_db()
         resultados = []
         
-        # Criar tabela atas se não existir
+        # Verificar se tabela atas existe
         cursor.execute("""
-            CREATE TABLE IF NOT EXISTS atas (
-                id SERIAL PRIMARY KEY,
-                reuniao_id INTEGER,
-                numero VARCHAR(50),
-                data DATE NOT NULL,
-                titulo VARCHAR(200),
-                conteudo TEXT,
-                status VARCHAR(20) DEFAULT 'rascunho',
-                aprovada_em TIMESTAMP,
-                criado_por INTEGER,
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            SELECT EXISTS (
+                SELECT FROM information_schema.tables 
+                WHERE table_name = 'atas'
             )
         """)
-        resultados.append("✅ Tabela 'atas' verificada/criada")
+        tabela_atas_existe = cursor.fetchone()[0]
         
-        # Criar índices para atas
-        cursor.execute("CREATE INDEX IF NOT EXISTS idx_atas_reuniao_id ON atas(reuniao_id)")
-        cursor.execute("CREATE INDEX IF NOT EXISTS idx_atas_data ON atas(data)")
-        resultados.append("✅ Índices da tabela 'atas' criados")
+        if not tabela_atas_existe:
+            # Criar tabela completa
+            cursor.execute("""
+                CREATE TABLE atas (
+                    id SERIAL PRIMARY KEY,
+                    reuniao_id INTEGER,
+                    numero VARCHAR(50),
+                    data DATE NOT NULL,
+                    titulo VARCHAR(200),
+                    conteudo TEXT,
+                    status VARCHAR(20) DEFAULT 'rascunho',
+                    aprovada_em TIMESTAMP,
+                    criado_por INTEGER,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                )
+            """)
+            resultados.append("✅ Tabela 'atas' criada com sucesso")
+        else:
+            # Adicionar colunas faltantes uma por uma
+            colunas_necessarias = {
+                'reuniao_id': 'INTEGER',
+                'numero': 'VARCHAR(50)',
+                'data': 'DATE NOT NULL',
+                'titulo': 'VARCHAR(200)',
+                'conteudo': 'TEXT',
+                'status': 'VARCHAR(20) DEFAULT rascunho',
+                'aprovada_em': 'TIMESTAMP',
+                'criado_por': 'INTEGER',
+                'created_at': 'TIMESTAMP DEFAULT CURRENT_TIMESTAMP',
+                'updated_at': 'TIMESTAMP DEFAULT CURRENT_TIMESTAMP'
+            }
+            
+            for coluna, tipo in colunas_necessarias.items():
+                try:
+                    cursor.execute(f"""
+                        ALTER TABLE atas ADD COLUMN IF NOT EXISTS {coluna} {tipo}
+                    """)
+                    resultados.append(f"✅ Coluna '{coluna}' adicionada/verificada")
+                except Exception as e:
+                    resultados.append(f"⚠️ Coluna '{coluna}': {e}")
         
-        # Criar tabela assinaturas_ata se não existir
+        # Criar índices
+        try:
+            cursor.execute("CREATE INDEX IF NOT EXISTS idx_atas_reuniao_id ON atas(reuniao_id)")
+            resultados.append("✅ Índice idx_atas_reuniao_id criado")
+        except Exception as e:
+            resultados.append(f"⚠️ Erro ao criar índice reuniao_id: {e}")
+        
+        try:
+            cursor.execute("CREATE INDEX IF NOT EXISTS idx_atas_data ON atas(data)")
+            resultados.append("✅ Índice idx_atas_data criado")
+        except Exception as e:
+            resultados.append(f"⚠️ Erro ao criar índice data: {e}")
+        
+        # ============================================
+        # CORRIGIR TABELA ASSINATURAS_ATA
+        # ============================================
+        
         cursor.execute("""
-            CREATE TABLE IF NOT EXISTS assinaturas_ata (
-                id SERIAL PRIMARY KEY,
-                ata_id INTEGER,
-                obreiro_id INTEGER,
-                assinado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                ip VARCHAR(45),
-                UNIQUE(ata_id, obreiro_id)
+            SELECT EXISTS (
+                SELECT FROM information_schema.tables 
+                WHERE table_name = 'assinaturas_ata'
             )
         """)
-        resultados.append("✅ Tabela 'assinaturas_ata' verificada/criada")
+        tabela_assinaturas_existe = cursor.fetchone()[0]
+        
+        if not tabela_assinaturas_existe:
+            cursor.execute("""
+                CREATE TABLE assinaturas_ata (
+                    id SERIAL PRIMARY KEY,
+                    ata_id INTEGER,
+                    obreiro_id INTEGER,
+                    assinado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    ip VARCHAR(45),
+                    UNIQUE(ata_id, obreiro_id)
+                )
+            """)
+            resultados.append("✅ Tabela 'assinaturas_ata' criada")
+        else:
+            # Adicionar colunas faltantes
+            try:
+                cursor.execute("ALTER TABLE assinaturas_ata ADD COLUMN IF NOT EXISTS ata_id INTEGER")
+                resultados.append("✅ Coluna 'ata_id' verificada")
+            except Exception as e:
+                resultados.append(f"⚠️ Coluna ata_id: {e}")
+            
+            try:
+                cursor.execute("ALTER TABLE assinaturas_ata ADD COLUMN IF NOT EXISTS obreiro_id INTEGER")
+                resultados.append("✅ Coluna 'obreiro_id' verificada")
+            except Exception as e:
+                resultados.append(f"⚠️ Coluna obreiro_id: {e}")
+            
+            try:
+                cursor.execute("ALTER TABLE assinaturas_ata ADD COLUMN IF NOT EXISTS assinado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP")
+                resultados.append("✅ Coluna 'assinado_em' verificada")
+            except Exception as e:
+                resultados.append(f"⚠️ Coluna assinado_em: {e}")
+            
+            try:
+                cursor.execute("ALTER TABLE assinaturas_ata ADD COLUMN IF NOT EXISTS ip VARCHAR(45)")
+                resultados.append("✅ Coluna 'ip' verificada")
+            except Exception as e:
+                resultados.append(f"⚠️ Coluna ip: {e}")
         
         # Criar índices para assinaturas_ata
-        cursor.execute("CREATE INDEX IF NOT EXISTS idx_assinaturas_ata_id ON assinaturas_ata(ata_id)")
-        cursor.execute("CREATE INDEX IF NOT EXISTS idx_assinaturas_obreiro_id ON assinaturas_ata(obreiro_id)")
-        resultados.append("✅ Índices da tabela 'assinaturas_ata' criados")
+        try:
+            cursor.execute("CREATE INDEX IF NOT EXISTS idx_assinaturas_ata_id ON assinaturas_ata(ata_id)")
+            resultados.append("✅ Índice idx_assinaturas_ata_id criado")
+        except Exception as e:
+            resultados.append(f"⚠️ Erro: {e}")
+        
+        try:
+            cursor.execute("CREATE INDEX IF NOT EXISTS idx_assinaturas_obreiro_id ON assinaturas_ata(obreiro_id)")
+            resultados.append("✅ Índice idx_assinaturas_obreiro_id criado")
+        except Exception as e:
+            resultados.append(f"⚠️ Erro: {e}")
         
         conn.commit()
         return_connection(conn)
