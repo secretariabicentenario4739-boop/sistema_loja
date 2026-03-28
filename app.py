@@ -2213,14 +2213,13 @@ def nova_reuniao():
             emails_enviados = 0
             
             try:
-                # Buscar participantes que receberão o e-mail (usuários ativos com e-mail)
+                # Buscar participantes que receberão o e-mail
                 cursor.execute("""
-                    SELECT id, nome_completo, email, cargo 
+                    SELECT id, nome_completo, email 
                     FROM usuarios 
                     WHERE ativo = 1 
                     AND email IS NOT NULL 
                     AND email != ''
-                    AND receber_notificacoes = 1
                     ORDER BY nome_completo
                 """)
                 participantes = cursor.fetchall()
@@ -2232,15 +2231,27 @@ def nova_reuniao():
                     data_formatada = data_obj.strftime('%d/%m/%Y') if data_obj else data
                     hora_formatada = hora_inicio_obj.strftime('%H:%M') if hora_inicio_obj else hora_inicio
                     
+                    # Buscar nome do tipo de reunião
+                    cursor.execute("SELECT nome FROM tipos_reuniao WHERE id = %s", (tipo,))
+                    tipo_result = cursor.fetchone()
+                    tipo_nome = tipo_result['nome'] if tipo_result else tipo
+                    
+                    # Buscar nome da loja
+                    loja_nome = None
+                    if loja_id:
+                        cursor.execute("SELECT nome FROM lojas WHERE id = %s", (loja_id,))
+                        loja_result = cursor.fetchone()
+                        loja_nome = loja_result['nome'] if loja_result else None
+                    
                     # Dados da reunião
                     dados_reuniao = {
                         'titulo': titulo,
-                        'tipo': tipo,
+                        'tipo': tipo_nome,
                         'grau': grau,
                         'data': data_formatada,
                         'hora_inicio': hora_formatada,
                         'hora_termino': hora_termino_obj.strftime('%H:%M') if hora_termino_obj else None,
-                        'local': local or 'Templo Maçônico',
+                        'local': local or (loja_nome if loja_nome else 'Templo Maçônico'),
                         'pauta': pauta,
                         'observacoes': observacoes
                     }
@@ -2257,22 +2268,6 @@ def nova_reuniao():
                             if resultado.get('success'):
                                 emails_enviados += 1
                                 print(f"✅ E-mail enviado para {participante['email']}")
-                                
-                                # Registrar log do envio
-                                cursor.execute("""
-                                    INSERT INTO logs_auditoria 
-                                    (usuario_id, usuario_nome, acao, entidade, entidade_id, dados_novos, ip)
-                                    VALUES (%s, %s, %s, %s, %s, %s, %s)
-                                """, (
-                                    session.get('user_id'),
-                                    session.get('nome_completo'),
-                                    'email_reuniao',
-                                    'reuniao',
-                                    reuniao_id,
-                                    f"E-mail enviado para {participante['email']} - Reunião: {titulo}",
-                                    request.remote_addr
-                                ))
-                                conn.commit()
                             else:
                                 print(f"❌ Falha ao enviar para {participante['email']}: {resultado.get('message')}")
                                 
@@ -2308,7 +2303,6 @@ def nova_reuniao():
     return_connection(conn)
     hoje = datetime.now().strftime("%Y-%m-%d")
     return render_template("reunioes/nova.html", tipos=tipos, lojas=lojas, hoje=hoje)
-
 
 
 @app.route("/reunioes/<int:id>")
