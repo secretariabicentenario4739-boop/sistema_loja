@@ -1,277 +1,127 @@
 {% extends "base.html" %}
-{% block title %}Detalhes da Loja{% endblock %}
+
+{% block title %}Gerenciar Lojas{% endblock %}
 
 {% block content %}
 <div class="container-fluid py-4">
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <h1>
-            <i class="bi bi-building me-2"></i>
-            Detalhes da Loja
-        </h1>
-        <div>
-            <a href="/lojas" class="btn btn-secondary">
-                <i class="bi bi-arrow-left me-1"></i> Voltar
-            </a>
-            {% if session.tipo == 'admin' %}
-            <a href="/lojas/editar/{{ loja.id }}" class="btn btn-primary">
-                <i class="bi bi-pencil me-1"></i> Editar
-            </a>
+    <div class="container">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h2>
+                <i class="bi bi-building"></i> 
+                Lojas Maçônicas
+                <span class="badge bg-primary">{{ lojas|length if lojas else 0 }}</span>
+            </h2>
+            <div>
+                <a href="/dashboard" class="btn btn-outline-secondary">
+                    <i class="bi bi-arrow-left"></i> Voltar
+                </a>
+                <a href="/lojas/nova" class="btn btn-success">
+                    <i class="bi bi-plus-circle"></i> Nova Loja
+                </a>
+            </div>
+        </div>
+
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+                        {{ message }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>
+                {% endfor %}
             {% endif %}
-        </div>
-    </div>
+        {% endwith %}
 
-    <!-- Informações da Loja -->
-    <div class="row">
-        <div class="col-md-6">
-            <div class="card mb-4">
-                <div class="card-header bg-primary text-white">
-                    <i class="bi bi-info-circle me-1"></i>
-                    Informações Gerais
-                </div>
-                <div class="card-body">
-                    <table class="table table-bordered">
-                        <tr>
-                            <th width="35%">Nome</th>
-                            <td>{{ loja.nome }}</td>
-                        </tr>
-                        <tr>
-                            <th>Número</th>
-                            <td>{{ loja.numero }}</td>
-                        </tr>
-                        <tr>
-                            <th>Oriente</th>
-                            <td>{{ loja.oriente or '-' }}</td>
-                        </tr>
-                        <tr>
-                            <th>Cidade/UF</th>
-                            <td>{{ loja.cidade or '-' }} / {{ loja.estado or '-' }}</td>
-                        </tr>
-                        <tr>
-                            <th>Data de Fundação</th>
-                            <td>{{ loja.data_fundacao.strftime('%d/%m/%Y') if loja.data_fundacao else '-' }}</td>
-                        </tr>
-                        <tr>
-                            <th>Rito</th>
-                            <td>{{ loja.rito or '-' }}</td>
-                        </tr>
-                        <tr>
-                            <th>Status</th>
-                            <td>
-                                {% if loja.ativo %}
-                                    <span class="badge bg-success">Ativa</span>
-                                {% else %}
-                                    <span class="badge bg-danger">Inativa</span>
-                                {% endif %}
-                            </td>
-                        </tr>
-                    </table>
-                </div>
-            </div>
-        </div>
-        
-        <div class="col-md-6">
-            <div class="card mb-4">
-                <div class="card-header bg-primary text-white">
-                    <i class="bi bi-geo-alt me-1"></i>
-                    Endereço e Contato
-                </div>
-                <div class="card-body">
-                    <table class="table table-bordered">
-                        <tr>
-                            <th width="35%">Endereço</th>
-                            <td>{{ loja.endereco or '-' }}</td>
-                        </tr>
-                        <tr>
-                            <th>Bairro</th>
-                            <td>{{ loja.bairro or '-' }}</td>
-                        </tr>
-                        <tr>
-                            <th>CEP</th>
-                            <td>{{ loja.cep or '-' }}</td>
-                        </tr>
-                        <tr>
-                            <th>Telefone</th>
-                            <td>{{ loja.telefone or '-' }}</td>
-                        </tr>
-                        <tr>
-                            <th>E-mail</th>
-                            <td>{{ loja.email or '-' }}</td>
-                        </tr>
-                        <tr>
-                            <th>Site</th>
-                            <td>{{ loja.site or '-' }}</td>
-                        </tr>
+        <div class="card shadow">
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead class="table-light">
+                            <tr>
+                                <th>ID</th>
+                                <th>Nome</th>
+                                <th>Número</th>
+                                <th>Orientação</th>
+                                <th>Cidade/UF</th>
+                                <th>Status</th>
+                                <th>Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% if lojas %}
+                                {% for loja in lojas %}
+                                <tr>
+                                    <td>{{ loja.id }}</td>
+                                    <td>
+                                        <strong>{{ loja.nome }}</strong>
+                                        {% if loja.nome_maconico %}
+                                            <br>
+                                            <small class="text-muted">{{ loja.nome_maconico }}</small>
+                                        {% endif %}
+                                    </td>
+                                    <td>{{ loja.numero or '-' }}</td>
+                                    <td>{{ loja.orientacao or '-' }}</td>
+                                    <td>
+                                        {{ loja.cidade or '-' }}/{{ loja.uf or '-' }}
+                                    </td>
+                                    <td>
+                                        {% if loja.ativo == 1 %}
+                                            <span class="badge bg-success">Ativa</span>
+                                        {% else %}
+                                            <span class="badge bg-danger">Inativa</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <div class="btn-group btn-group-sm">
+                                            <a href="/lojas/editar/{{ loja.id }}" class="btn btn-warning" title="Editar">
+                                                <i class="bi bi-pencil"></i>
+                                            </a>
+                                            <button type="button" class="btn btn-danger" title="Excluir"
+                                                    onclick="excluirLoja({{ loja.id }}, '{{ loja.nome }}')">
+                                                <i class="bi bi-trash"></i>
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            {% else %}
+                                <tr>
+                                    <td colspan="7" class="text-center text-muted py-5">
+                                        <i class="bi bi-inbox fs-1"></i><br>
+                                        Nenhuma loja cadastrada
+                                    </td>
+                                </tr>
+                            {% endif %}
+                        </tbody>
                     </table>
                 </div>
             </div>
         </div>
     </div>
-
-    <!-- Diretoria -->
-    <div class="card mb-4">
-        <div class="card-header bg-primary text-white">
-            <i class="bi bi-people me-1"></i>
-            Diretoria
-        </div>
-        <div class="card-body">
-            <div class="row">
-                <div class="col-md-6">
-                    <table class="table table-bordered">
-                        <tr>
-                            <th width="40%">Venerável Mestre</th>
-                            <td>{{ loja.veneravel_mestre or '-' }}</td>
-                        </tr>
-                        <tr>
-                            <th>Secretário</th>
-                            <td>{{ loja.secretario or '-' }}</td>
-                        </tr>
-                        <tr>
-                            <th>Tesoureiro</th>
-                            <td>{{ loja.tesoureiro or '-' }}</td>
-                        </tr>
-                        <tr>
-                            <th>Orador</th>
-                            <td>{{ loja.orador or '-' }}</td>
-                        </tr>
-                    </table>
-                </div>
-                <div class="col-md-6">
-                    <table class="table table-bordered">
-                        <tr>
-                            <th width="40%">Dia da Reunião</th>
-                            <td>{{ loja.dia_reuniao or '-' }}</td>
-                        </tr>
-                        <tr>
-                            <th>Horário</th>
-                            <td>{{ loja.horario_reuniao or '-' }}</td>
-                        </tr>
-                    </table>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Próximas Reuniões -->
-    <div class="card mb-4">
-        <div class="card-header bg-primary text-white">
-            <i class="bi bi-calendar-event me-1"></i>
-            Próximas Reuniões
-        </div>
-        <div class="card-body">
-            {% if reunioes and reunioes|length > 0 %}
-            <div class="table-responsive">
-                <table class="table table-hover">
-                    <thead>
-                        <tr>
-                            <th>Data</th>
-                            <th>Horário</th>
-                            <th>Título</th>
-                            <th>Tipo</th>
-                            <th>Status</th>
-                            <th>Ações</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for reuniao in reunioes %}
-                        <tr>
-                            <td>{{ reuniao.data.strftime('%d/%m/%Y') if reuniao.data else '-' }}</td>
-                            <td>{{ reuniao.hora_inicio.strftime('%H:%M') if reuniao.hora_inicio else '-' }}</td>
-                            <td>{{ reuniao.titulo }}</td>
-                            <td>{{ reuniao.tipo or '-' }}</td>
-                            <td>
-                                {% if reuniao.status == 'agendada' %}
-                                    <span class="badge bg-primary">Agendada</span>
-                                {% elif reuniao.status == 'realizada' %}
-                                    <span class="badge bg-success">Realizada</span>
-                                {% elif reuniao.status == 'cancelada' %}
-                                    <span class="badge bg-danger">Cancelada</span>
-                                {% else %}
-                                    <span class="badge bg-secondary">{{ reuniao.status }}</span>
-                                {% endif %}
-                            </td>
-                            <td>
-                                <a href="/reunioes/{{ reuniao.id }}" class="btn btn-sm btn-primary">
-                                    <i class="bi bi-eye"></i> Ver
-                                </a>
-                            </td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-            </div>
-            {% else %}
-            <div class="alert alert-info text-center mb-0">
-                <i class="bi bi-info-circle me-2"></i>
-                Nenhuma reunião encontrada para esta loja.
-            </div>
-            {% endif %}
-        </div>
-    </div>
-
-    <!-- Obreiros da Loja -->
-    <div class="card mb-4">
-        <div class="card-header bg-primary text-white">
-            <i class="bi bi-person-workspace me-1"></i>
-            Obreiros da Loja
-        </div>
-        <div class="card-body">
-            {% if obreiros and obreiros|length > 0 %}
-            <div class="table-responsive">
-                <table class="table table-hover">
-                    <thead>
-                        <tr>
-                            <th>Nome</th>
-                            <th>Grau</th>
-                            <th>Cargo</th>
-                            <th>Ações</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for obreiro in obreiros %}
-                        <tr>
-                            <td>{{ obreiro.nome_completo or obreiro.usuario }}</td>
-                            <td>
-                                {% if obreiro.grau_atual == 1 %}
-                                    <span class="badge bg-success">Aprendiz</span>
-                                {% elif obreiro.grau_atual == 2 %}
-                                    <span class="badge bg-info">Companheiro</span>
-                                {% elif obreiro.grau_atual == 3 %}
-                                    <span class="badge bg-warning">Mestre</span>
-                                {% else %}
-                                    <span class="badge bg-secondary">Grau {{ obreiro.grau_atual }}</span>
-                                {% endif %}
-                            </td>
-                            <td>{{ obreiro.cargo or '-' }}</td>
-                            <td>
-                                <a href="/obreiros/{{ obreiro.id }}" class="btn btn-sm btn-primary">
-                                    <i class="bi bi-eye"></i> Ver
-                                </a>
-                            </td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-            </div>
-            {% else %}
-            <div class="alert alert-info text-center mb-0">
-                <i class="bi bi-info-circle me-2"></i>
-                Nenhum obreiro encontrado para esta loja.
-            </div>
-            {% endif %}
-        </div>
-    </div>
-
-    <!-- Observações -->
-    {% if loja.observacoes %}
-    <div class="card">
-        <div class="card-header bg-primary text-white">
-            <i class="bi bi-chat-text me-1"></i>
-            Observações
-        </div>
-        <div class="card-body">
-            <p class="mb-0">{{ loja.observacoes }}</p>
-        </div>
-    </div>
-    {% endif %}
 </div>
+
+<script>
+function excluirLoja(id, nome) {
+    if (confirm(`Tem certeza que deseja excluir a loja "${nome}"?\n\nEsta ação não pode ser desfeita!`)) {
+        fetch(`/lojas/excluir/${id}`, {
+            method: 'DELETE',
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert('Loja excluída com sucesso!');
+                location.reload();
+            } else {
+                alert('Erro ao excluir loja: ' + data.error);
+            }
+        })
+        .catch(error => {
+            alert('Erro na requisição: ' + error.message);
+        });
+    }
+}
+</script>
 {% endblock %}

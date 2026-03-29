@@ -276,7 +276,7 @@ def nivel_ata_required():
                 cursor, conn = get_db()
                 cursor.execute("""
                     SELECT a.*, r.grau as reuniao_grau
-                    FROM atas a
+                    FROM atas_view_view_view a
                     JOIN reunioes r ON a.reuniao_id = r.id
                     WHERE a.id = %s
                 """, (ata_id,))
@@ -2436,7 +2436,7 @@ def detalhes_reuniao(id):
     cursor.execute("""
         SELECT id, aprovada, numero_ata, ano_ata, conteudo, data_criacao, 
                redator_id, versao, data_aprovacao, redator_nome
-        FROM atas 
+        FROM atas_view_view_view 
         WHERE reuniao_id = %s
         ORDER BY versao DESC
         LIMIT 1
@@ -2570,7 +2570,7 @@ def excluir_reuniao(id):
         flash("Reunião não encontrada", "danger")
         return_connection(conn)
         return redirect("/reunioes")
-    cursor.execute("SELECT id FROM atas WHERE reuniao_id = %s", (id,))
+    cursor.execute("SELECT id FROM atas_view_view_view WHERE reuniao_id = %s", (id,))
     if cursor.fetchone():
         flash("Não é possível excluir uma reunião que já possui ata.", "danger")
     else:
@@ -2657,7 +2657,7 @@ def redigir_ata(id):
             
             # Verificar se já existe uma ata para esta reunião
             cursor.execute("""
-                SELECT id, versao FROM atas WHERE reuniao_id = %s
+                SELECT id, versao FROM atas_view_view_view WHERE reuniao_id = %s
             """, (id,))
             
             existing = cursor.fetchone()
@@ -2683,13 +2683,13 @@ def redigir_ata(id):
                 flash("Ata atualizada com sucesso!", "success")
             else:
                 # Obter próximo ID de forma segura
-                cursor.execute("SELECT MAX(id) FROM atas")
+                cursor.execute("SELECT MAX(id) FROM atas_view_view_view")
                 max_id = cursor.fetchone()['max']
                 next_id = (max_id or 0) + 1
                 
                 # Obter número da ata para o ano atual
                 ano_atual = datetime.now().year
-                cursor.execute("SELECT COUNT(*) as total FROM atas WHERE ano_ata = %s", (ano_atual,))
+                cursor.execute("SELECT COUNT(*) as total FROM atas_view_view WHERE ano_ata = %s", (ano_atual,))
                 total = cursor.fetchone()["total"]
                 numero_ata = total + 1
                 
@@ -2730,7 +2730,7 @@ def redigir_ata(id):
         return_connection(conn)
         return redirect("/reunioes")
     
-    cursor.execute("SELECT * FROM atas WHERE reuniao_id = %s", (id,))
+    cursor.execute("SELECT * FROM atas_view_view WHERE reuniao_id = %s", (id,))
     ata = cursor.fetchone()
     
     return_connection(conn)
@@ -2944,8 +2944,94 @@ def gerar_alertas():
     flash(f"Alertas gerados! ({len(alertas_ausencias)} por ausencias + alertas de presenca)", "success")
     return redirect("/presenca/alertas")
 # =============================
-# ROTAS DE ATAS
+# ROTAS DE ATAS (CORRIGIDAS)
 # =============================
+
+@app.route("/atas/<int:id>")
+@login_required
+def ver_ata_por_id(id):
+    """Visualizar ata pelo ID"""
+    try:
+        cursor, conn = get_db()
+        
+        cursor.execute("""
+            SELECT 
+                a.*,
+                a.numero_ata as numero,
+                a.data_criacao as data,
+                r.titulo as reuniao_titulo,
+                r.data as reuniao_data,
+                r.hora_inicio,
+                r.hora_termino,
+                r.local,
+                r.pauta,
+                u.nome_completo as redator_nome,
+                u2.nome_completo as aprovado_por_nome
+            FROM atas a
+            JOIN reunioes r ON a.reuniao_id = r.id
+            LEFT JOIN usuarios u ON a.redator_id = u.id
+            LEFT JOIN usuarios u2 ON a.aprovada_por = u2.id
+            WHERE a.id = %s
+        """, (id,))
+        
+        ata = cursor.fetchone()
+        
+        if not ata:
+            flash("Ata não encontrada", "danger")
+            return_connection(conn)
+            return redirect("/atas")
+        
+        # Buscar lista de presença da reunião
+        cursor.execute("""
+            SELECT u.nome_completo, u.grau_atual,
+                   p.presente, p.tipo_ausencia,
+                   c.nome as cargo_nome
+            FROM presenca p
+            JOIN usuarios u ON p.obreiro_id = u.id
+            LEFT JOIN ocupacao_cargos oc ON u.id = oc.obreiro_id AND oc.ativo = 1
+            LEFT JOIN cargos c ON oc.cargo_id = c.id
+            WHERE p.reuniao_id = %s
+            ORDER BY 
+                CASE WHEN c.ordem IS NOT NULL THEN c.ordem ELSE 999 END,
+                u.grau_atual DESC,
+                u.nome_completo
+        """, (ata["reuniao_id"],))
+        
+        presenca = cursor.fetchall()
+        
+        # Buscar assinaturas da ata
+        cursor.execute("""
+            SELECT 
+                s.id,
+                s.data_assinatura,
+                s.ip_assinatura,
+                s.validada,
+                u.nome_completo,
+                u.grau_atual,
+                c.nome as cargo_nome
+            FROM assinaturas_ata s
+            LEFT JOIN usuarios u ON s.obreiro_id = u.id
+            LEFT JOIN cargos c ON s.cargo_id = c.id
+            WHERE s.ata_id = %s
+            ORDER BY s.data_assinatura DESC
+        """, (id,))
+        
+        assinaturas = cursor.fetchall()
+        
+        return_connection(conn)
+        
+        return render_template("atas/visualizar.html", ata=ata, presenca=presenca, assinaturas=assinaturas)
+        
+    except Exception as e:
+        print(f"❌ Erro ao ver ata {id}: {e}")
+        import traceback
+        traceback.print_exc()
+        
+        if 'conn' in locals():
+            return_connection(conn)
+        
+        flash(f"Erro ao carregar ata: {str(e)}", "danger")
+        return redirect("/atas")
 
 @app.route("/atas")
 @login_required
@@ -2954,46 +3040,34 @@ def listar_atas():
     try:
         cursor, conn = get_db()
         
-        # Verificar se a tabela atas existe
-        cursor.execute("""
-            SELECT EXISTS (
-                SELECT FROM information_schema.tables 
-                WHERE table_name = 'atas'
-            )
-        """)
-        tabela_existe = cursor.fetchone()['exists']
-        
-        if not tabela_existe:
-            flash("Tabela de atas não encontrada!", "danger")
-            return_connection(conn)
-            return redirect("/dashboard")
-        
-        # Buscar atas com informações da reunião
+        # Buscar atas com informações da reunião e total de assinaturas
         cursor.execute("""
             SELECT 
                 a.id,
                 a.reuniao_id,
-                a.numero,
-                a.data,
-                a.titulo,
+                a.numero_ata as numero,
+                a.data_criacao as data,
                 a.conteudo,
-                a.status,
+                a.aprovada,
                 a.aprovada_em,
-                a.criado_por,
-                a.created_at,
+                a.redator_id as criado_por,
+                a.data_criacao as created_at,
                 r.titulo as reuniao_titulo,
                 r.data as reuniao_data,
-                u.nome_completo as criado_por_nome
+                u.nome_completo as criado_por_nome,
+                (SELECT COUNT(*) FROM assinaturas_ata WHERE ata_id = a.id) as total_assinaturas
             FROM atas a
             LEFT JOIN reunioes r ON a.reuniao_id = r.id
-            LEFT JOIN usuarios u ON a.criado_por = u.id
-            ORDER BY a.data DESC, a.numero DESC
+            LEFT JOIN usuarios u ON a.redator_id = u.id
+            ORDER BY a.data_criacao DESC, a.numero_ata DESC
         """)
         
         atas = cursor.fetchall()
         return_connection(conn)
         
-        return render_template("atas/lista.html", atas=atas)
+        filtros = {}
+        
+        return render_template("atas/lista.html", atas=atas, filtros=filtros)
         
     except Exception as e:
         print(f"❌ Erro ao listar atas: {e}")
@@ -3007,58 +3081,44 @@ def listar_atas():
         return redirect("/dashboard")
 
 
-@app.route("/ata/<int:id>")
+@app.route("/atas/<int:id>/visualizar_simples")
 @login_required
-def ver_ata(id):
-    """Visualizar uma ata específica"""
+def visualizar_ata_simples(id):
+    """Visualizar ata de forma simples"""
     try:
         cursor, conn = get_db()
         
         cursor.execute("""
             SELECT 
                 a.*,
+                a.numero_ata as numero,
+                a.data_criacao as data,
                 r.titulo as reuniao_titulo,
                 r.data as reuniao_data,
                 r.hora_inicio,
+                r.hora_termino,
                 r.local,
-                u.nome_completo as criado_por_nome
+                r.pauta,
+                u.nome_completo as redator_nome
             FROM atas a
-            LEFT JOIN reunioes r ON a.reuniao_id = r.id
-            LEFT JOIN usuarios u ON a.criado_por = u.id
+            JOIN reunioes r ON a.reuniao_id = r.id
+            LEFT JOIN usuarios u ON a.redator_id = u.id
             WHERE a.id = %s
         """, (id,))
         
         ata = cursor.fetchone()
         
         if not ata:
-            flash("Ata não encontrada!", "danger")
+            flash("Ata não encontrada", "danger")
             return_connection(conn)
             return redirect("/atas")
         
-        # Buscar assinaturas da ata
-        cursor.execute("""
-            SELECT 
-                s.id,
-                s.obreiro_id,
-                s.assinado_em,
-                s.ip,
-                u.nome_completo,
-                u.cargo,
-                u.grau_atual
-            FROM assinaturas_ata s
-            LEFT JOIN usuarios u ON s.obreiro_id = u.id
-            WHERE s.ata_id = %s
-            ORDER BY s.assinado_em DESC
-        """, (id,))
-        
-        assinaturas = cursor.fetchall()
-        
         return_connection(conn)
         
-        return render_template("atas/ver.html", ata=ata, assinaturas=assinaturas)
+        return render_template("atas/visualizar_simples.html", ata=ata)
         
     except Exception as e:
-        print(f"❌ Erro ao ver ata {id}: {e}")
+        print(f"❌ Erro ao visualizar ata simples {id}: {e}")
         import traceback
         traceback.print_exc()
         
@@ -3067,6 +3127,98 @@ def ver_ata(id):
         
         flash(f"Erro ao carregar ata: {str(e)}", "danger")
         return redirect("/atas")
+
+
+@app.route("/atas/<int:id>/visualizar")
+@login_required
+def visualizar_ata_completa(id):
+    """Visualizar ata completa com presença e assinaturas"""
+    try:
+        cursor, conn = get_db()
+        
+        cursor.execute("""
+            SELECT 
+                a.*,
+                a.numero_ata as numero,
+                a.data_criacao as data,
+                r.titulo as reuniao_titulo,
+                r.data as reuniao_data,
+                r.hora_inicio,
+                r.hora_termino,
+                r.local,
+                r.pauta,
+                r.grau as reuniao_grau,
+                u.nome_completo as redator_nome,
+                u2.nome_completo as aprovado_por_nome
+            FROM atas a
+            JOIN reunioes r ON a.reuniao_id = r.id
+            LEFT JOIN usuarios u ON a.redator_id = u.id
+            LEFT JOIN usuarios u2 ON a.aprovada_por = u2.id
+            WHERE a.id = %s
+        """, (id,))
+        
+        ata = cursor.fetchone()
+        
+        if not ata:
+            flash("Ata não encontrada", "danger")
+            return_connection(conn)
+            return redirect("/atas")
+        
+        # Buscar lista de presença da reunião
+        cursor.execute("""
+            SELECT u.nome_completo, u.grau_atual,
+                   p.presente, p.tipo_ausencia,
+                   c.nome as cargo_nome
+            FROM presenca p
+            JOIN usuarios u ON p.obreiro_id = u.id
+            LEFT JOIN ocupacao_cargos oc ON u.id = oc.obreiro_id AND oc.ativo = 1
+            LEFT JOIN cargos c ON oc.cargo_id = c.id
+            WHERE p.reuniao_id = %s
+            ORDER BY 
+                CASE WHEN c.ordem IS NOT NULL THEN c.ordem ELSE 999 END,
+                u.grau_atual DESC,
+                u.nome_completo
+        """, (ata["reuniao_id"],))
+        
+        presenca = cursor.fetchall()
+        
+        # Buscar assinaturas da ata
+        cursor.execute("""
+            SELECT 
+                s.id,
+                s.ata_id,
+                s.obreiro_id,
+                s.cargo_id,
+                s.data_assinatura,
+                s.ip_assinatura,
+                s.validada,
+                u.nome_completo,
+                u.grau_atual,
+                c.nome as cargo_nome
+            FROM assinaturas_ata s
+            LEFT JOIN usuarios u ON s.obreiro_id = u.id
+            LEFT JOIN cargos c ON s.cargo_id = c.id
+            WHERE s.ata_id = %s
+            ORDER BY s.data_assinatura DESC
+        """, (id,))
+        
+        assinaturas = cursor.fetchall()
+        
+        return_connection(conn)
+        
+        return render_template("atas/visualizar.html", ata=ata, presenca=presenca, assinaturas=assinaturas)
+        
+    except Exception as e:
+        print(f"❌ Erro ao visualizar ata completa {id}: {e}")
+        import traceback
+        traceback.print_exc()
+        
+        if 'conn' in locals():
+            return_connection(conn)
+        
+        flash(f"Erro ao carregar ata: {str(e)}", "danger")
+        return redirect("/atas")
+
 
 @app.route("/atas/nova/<int:reuniao_id>", methods=["GET", "POST"])
 @admin_required
@@ -3092,19 +3244,6 @@ def nova_ata(reuniao_id):
         modelo_id = request.form.get("modelo_id")
         
         try:
-            # Tratar modelo_id
-            modelo_id_val = modelo_id if modelo_id and modelo_id.strip() else None
-            if modelo_id_val:
-                try:
-                    modelo_id_val = int(modelo_id_val)
-                except ValueError:
-                    modelo_id_val = None
-            
-            # Obter próximo ID de forma segura
-            cursor.execute("SELECT MAX(id) FROM atas")
-            max_id = cursor.fetchone()['max']
-            next_id = (max_id or 0) + 1
-            
             # Obter número da ata para o ano atual
             ano_atual = datetime.now().year
             cursor.execute("SELECT COUNT(*) as total FROM atas WHERE ano_ata = %s", (ano_atual,))
@@ -3114,20 +3253,21 @@ def nova_ata(reuniao_id):
             # Inserir ata
             cursor.execute("""
                 INSERT INTO atas (
-                    id, reuniao_id, conteudo, redator_id, numero_ata, 
+                    reuniao_id, conteudo, redator_id, numero_ata, 
                     ano_ata, tipo_ata, data_criacao
-                ) VALUES (%s, %s, %s, %s, %s, %s, %s, CURRENT_TIMESTAMP)
-            """, (next_id, reuniao_id, conteudo, session["user_id"], numero_ata, 
+                ) VALUES (%s, %s, %s, %s, %s, %s, CURRENT_TIMESTAMP)
+                RETURNING id
+            """, (reuniao_id, conteudo, session["user_id"], numero_ata, 
                   ano_atual, reuniao["tipo"]))
             
+            ata_id = cursor.fetchone()['id']
             conn.commit()
-            ata_id = next_id
             
             registrar_log("criar", "ata", ata_id, dados_novos={"reuniao_id": reuniao_id, "numero": numero_ata, "ano": ano_atual})
             flash(f"Ata nº {numero_ata}/{ano_atual} criada com sucesso!", "success")
             
             return_connection(conn)
-            return redirect(f"/atas/{ata_id}")
+            return redirect(f"/atas/{ata_id}/visualizar")
             
         except Exception as e:
             print(f"ERRO ao criar ata: {e}")
@@ -3143,59 +3283,6 @@ def nova_ata(reuniao_id):
     
     return render_template("atas/nova.html", reuniao=reuniao, modelos=modelos)
 
-@app.route("/atas/<int:id>")
-@login_required
-@nivel_ata_required()
-def visualizar_ata(id):
-    cursor, conn = get_db()
-    cursor.execute("""
-        SELECT a.*, 
-               r.titulo as reuniao_titulo,
-               r.data as reuniao_data,
-               r.hora_inicio,
-               r.hora_termino,
-               r.local,
-               r.pauta,
-               r.grau as reuniao_grau,
-               u.nome_completo as redator_nome,
-               u2.nome_completo as aprovado_por_nome
-        FROM atas a
-        JOIN reunioes r ON a.reuniao_id = r.id
-        LEFT JOIN usuarios u ON a.redator_id = u.id
-        LEFT JOIN usuarios u2 ON a.aprovada_por = u2.id
-        WHERE a.id = %s
-    """, (id,))
-    ata = cursor.fetchone()
-    if not ata:
-        flash("Ata não encontrada", "danger")
-        return_connection(conn)
-        return redirect("/atas")
-    cursor.execute("""
-        SELECT u.nome_completo, u.grau_atual,
-               p.presente, p.tipo_ausencia,
-               c.nome as cargo_nome
-        FROM presenca p
-        JOIN usuarios u ON p.obreiro_id = u.id
-        LEFT JOIN ocupacao_cargos oc ON u.id = oc.obreiro_id AND oc.ativo = 1
-        LEFT JOIN cargos c ON oc.cargo_id = c.id
-        WHERE p.reuniao_id = %s
-        ORDER BY 
-            CASE WHEN c.ordem IS NOT NULL THEN c.ordem ELSE 999 END,
-            u.grau_atual DESC,
-            u.nome_completo
-    """, (ata["reuniao_id"],))
-    presenca = cursor.fetchall()
-    cursor.execute("""
-        SELECT ass.*, u.nome_completo, c.nome as cargo_nome
-        FROM assinaturas_ata ass
-        JOIN usuarios u ON ass.obreiro_id = u.id
-        LEFT JOIN cargos c ON ass.cargo_id = c.id
-        WHERE ass.ata_id = %s
-        ORDER BY ass.data_assinatura
-    """, (id,))
-    assinaturas = cursor.fetchall()
-    return_connection(conn)
-    return render_template("atas/visualizar.html", ata=ata, presenca=presenca, assinaturas=assinaturas)
 
 @app.route("/atas/<int:id>/editar", methods=["GET", "POST"])
 @admin_required
@@ -3220,7 +3307,7 @@ def editar_ata(id):
     if ata["aprovada"] == 1:
         flash("Ata já aprovada, não pode ser editada!", "warning")
         return_connection(conn)
-        return redirect(f"/atas/{id}")
+        return redirect(f"/atas/{id}/visualizar")
     
     if request.method == "POST":
         conteudo = request.form.get("conteudo")
@@ -3229,7 +3316,7 @@ def editar_ata(id):
             flash("Conteúdo da ata é obrigatório", "danger")
         else:
             try:
-                # Obter versão atual, tratando None
+                # Obter versão atual
                 versao_atual = ata.get('versao') or 0
                 nova_versao = versao_atual + 1
                 
@@ -3243,7 +3330,7 @@ def editar_ata(id):
                 registrar_log("editar", "ata", id, dados_novos={"versao": nova_versao})
                 flash("Ata atualizada com sucesso!", "success")
                 return_connection(conn)
-                return redirect(f"/atas/{id}")
+                return redirect(f"/atas/{id}/visualizar")
                 
             except Exception as e:
                 print(f"Erro ao atualizar ata: {e}")
@@ -3252,6 +3339,7 @@ def editar_ata(id):
     
     return_connection(conn)
     return render_template("atas/editar.html", ata=ata)
+
 
 @app.route("/atas/<int:id>/aprovar", methods=["POST"])
 @admin_required
@@ -3268,7 +3356,8 @@ def aprovar_ata(id):
     registrar_log("aprovar", "ata", id, dados_novos={"aprovada": 1})
     flash("Ata aprovada com sucesso!", "success")
     return_connection(conn)
-    return redirect(f"/atas/{id}")
+    return redirect(f"/atas/{id}/visualizar")
+
 
 @app.route("/atas/<int:id>/assinar", methods=["POST"])
 @login_required
@@ -3294,16 +3383,11 @@ def assinar_ata(id):
             cargo = cursor.fetchone()
             cargo_id = cargo["cargo_id"] if cargo else None
             
-            # Obter próximo ID para assinaturas_ata
-            cursor.execute("SELECT MAX(id) FROM assinaturas_ata")
-            max_id = cursor.fetchone()['max']
-            next_id = (max_id or 0) + 1
-            
             # Inserir assinatura
             cursor.execute("""
-                INSERT INTO assinaturas_ata (id, ata_id, obreiro_id, cargo_id, ip_assinatura, data_assinatura)
-                VALUES (%s, %s, %s, %s, %s, CURRENT_TIMESTAMP)
-            """, (next_id, id, session["user_id"], cargo_id, request.remote_addr))
+                INSERT INTO assinaturas_ata (ata_id, obreiro_id, cargo_id, ip_assinatura, data_assinatura, validada)
+                VALUES (%s, %s, %s, %s, CURRENT_TIMESTAMP, 1)
+            """, (id, session["user_id"], cargo_id, request.remote_addr))
             
             conn.commit()
             registrar_log("assinar", "ata", id)
@@ -3315,12 +3399,12 @@ def assinar_ata(id):
         flash(f"Erro ao assinar ata: {str(e)}", "danger")
     
     return_connection(conn)
-    return redirect(f"/atas/{id}")
+    return redirect(f"/atas/{id}/visualizar")
+
 
 @app.route("/atas/<int:id>/excluir", methods=["POST"])
 @admin_required
 def excluir_ata(id):
-    """Exclui uma ata permanentemente"""
     cursor, conn = get_db()
     
     try:
@@ -3353,7 +3437,7 @@ def excluir_ata(id):
             "aprovada": "Sim" if ata['aprovada'] == 1 else "Não"
         })
         
-        # Excluir assinaturas primeiro (por causa da chave estrangeira)
+        # Excluir assinaturas primeiro
         cursor.execute("DELETE FROM assinaturas_ata WHERE ata_id = %s", (id,))
         
         # Excluir a ata
@@ -3372,184 +3456,6 @@ def excluir_ata(id):
     return_connection(conn)
     return redirect("/atas")
 
-@app.route("/api/atas/excluir/<int:id>", methods=["DELETE"])
-@admin_required
-def api_excluir_ata(id):
-    """API para excluir uma ata (retorna JSON)"""
-    try:
-        cursor, conn = get_db()
-        
-        # Buscar dados da ata antes de excluir
-        cursor.execute("""
-            SELECT a.id, a.numero_ata, a.ano_ata, a.aprovada, a.reuniao_id,
-                   r.titulo as reuniao_titulo
-            FROM atas a
-            JOIN reunioes r ON a.reuniao_id = r.id
-            WHERE a.id = %s
-        """, (id,))
-        ata = cursor.fetchone()
-        
-        if not ata:
-            return jsonify({'success': False, 'error': 'Ata não encontrada'}), 404
-        
-        # Registrar log antes de excluir
-        registrar_log("excluir_ata", "ata", id, dados_anteriores={
-            "numero": ata['numero_ata'],
-            "ano": ata['ano_ata'],
-            "reuniao": ata['reuniao_titulo'],
-            "aprovada": "Sim" if ata['aprovada'] == 1 else "Não"
-        })
-        
-        # Excluir assinaturas primeiro (por causa da chave estrangeira)
-        cursor.execute("DELETE FROM assinaturas_ata WHERE ata_id = %s", (id,))
-        
-        # Excluir a ata
-        cursor.execute("DELETE FROM atas WHERE id = %s", (id,))
-        
-        conn.commit()
-        
-        return jsonify({
-            'success': True,
-            'message': f"Ata {ata['numero_ata']}/{ata['ano_ata']} excluída com sucesso",
-            'ata_id': id,
-            'ata_numero': ata['numero_ata'],
-            'ata_ano': ata['ano_ata']
-        })
-        
-    except Exception as e:
-        print(f"Erro ao excluir ata via API: {e}")
-        traceback.print_exc()
-        if conn:
-            conn.rollback()
-        return jsonify({'success': False, 'error': str(e)}), 500
-    finally:
-        if conn:
-            return_connection(conn)
-
-@app.route("/atas/<int:id>/pdf")
-@login_required
-def gerar_pdf_ata(id):
-    try:
-        from reportlab.lib import colors
-        from reportlab.lib.pagesizes import A4
-        from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle
-        from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
-        from reportlab.lib.units import cm
-        from io import BytesIO
-        
-        cursor, conn = get_db()
-        cursor.execute("""
-            SELECT a.*, 
-                   r.titulo as reuniao_titulo,
-                   r.data as reuniao_data,
-                   r.hora_inicio,
-                   r.hora_termino,
-                   r.local,
-                   u.nome_completo as redator_nome
-            FROM atas a
-            JOIN reunioes r ON a.reuniao_id = r.id
-            LEFT JOIN usuarios u ON a.redator_id = u.id
-            WHERE a.id = %s
-        """, (id,))
-        ata = cursor.fetchone()
-        if not ata:
-            flash("Ata não encontrada", "danger")
-            return_connection(conn)
-            return redirect("/atas")
-        cursor.execute("""
-            SELECT u.nome_completo, 
-                   CASE WHEN p.presente = 1 THEN 'Presente' ELSE 'Ausente' END as status
-            FROM presenca p
-            JOIN usuarios u ON p.obreiro_id = u.id
-            WHERE p.reuniao_id = %s
-            ORDER BY u.nome_completo
-        """, (ata["reuniao_id"],))
-        presenca = cursor.fetchall()
-        cursor.execute("""
-            SELECT u.nome_completo, c.nome as cargo
-            FROM assinaturas_ata ass
-            JOIN usuarios u ON ass.obreiro_id = u.id
-            LEFT JOIN cargos c ON ass.cargo_id = c.id
-            WHERE ass.ata_id = %s
-        """, (id,))
-        assinaturas = cursor.fetchall()
-        return_connection(conn)
-        
-        buffer = BytesIO()
-        doc = SimpleDocTemplate(buffer, pagesize=A4, rightMargin=72, leftMargin=72, topMargin=72, bottomMargin=72)
-        styles = getSampleStyleSheet()
-        elementos = []
-        styles.add(ParagraphStyle(name='CenteredTitle', parent=styles['Title'], alignment=1, spaceAfter=30))
-        titulo = Paragraph(f"ATA Nº {ata['numero_ata']}/{ata['ano_ata']}", styles['CenteredTitle'])
-        elementos.append(titulo)
-        elementos.append(Spacer(1, 0.5*cm))
-        info_data = [
-            ["Reuniao:", ata["reuniao_titulo"]],
-            ["Data:", f"{ata['reuniao_data']} {ata['hora_inicio']} as {ata['hora_termino']}"],
-            ["Local:", ata["local"] or "Nao informado"],
-            ["Redator:", ata["redator_nome"] or "Sistema"],
-            ["Data de Criacao:", ata["data_criacao"].strftime("%d/%m/%Y %H:%M") if ata["data_criacao"] else "N/A"]
-        ]
-        info_table = Table(info_data, colWidths=[4*cm, 12*cm])
-        info_table.setStyle(TableStyle([
-            ('FONTNAME', (0, 0), (-1, -1), 'Helvetica'),
-            ('FONTSIZE', (0, 0), (-1, -1), 10),
-            ('GRID', (0, 0), (-1, -1), 0.5, colors.grey),
-            ('BACKGROUND', (0, 0), (0, -1), colors.HexColor('#ecf0f1')),
-        ]))
-        elementos.append(info_table)
-        elementos.append(Spacer(1, 0.5*cm))
-        elementos.append(Paragraph("<b>ATA DA REUNIAO</b>", styles['Heading2']))
-        elementos.append(Spacer(1, 0.3*cm))
-        elementos.append(Paragraph(ata["conteudo"].replace('\n', '<br/>'), styles['Normal']))
-        elementos.append(Spacer(1, 0.5*cm))
-        elementos.append(Paragraph("<b>LISTA DE PRESENCA</b>", styles['Heading2']))
-        elementos.append(Spacer(1, 0.3*cm))
-        presenca_data = [["Obreiro", "Status"]]
-        for p in presenca:
-            presenca_data.append([p["nome_completo"], p["status"]])
-        presenca_table = Table(presenca_data, colWidths=[12*cm, 4*cm])
-        presenca_table.setStyle(TableStyle([
-            ('FONTNAME', (0, 0), (-1, -1), 'Helvetica'),
-            ('FONTSIZE', (0, 0), (-1, -1), 9),
-            ('GRID', (0, 0), (-1, -1), 0.5, colors.grey),
-            ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#2c3e50')),
-            ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
-        ]))
-        elementos.append(presenca_table)
-        elementos.append(Spacer(1, 0.5*cm))
-        if assinaturas:
-            elementos.append(Paragraph("<b>ASSINATURAS</b>", styles['Heading2']))
-            elementos.append(Spacer(1, 0.3*cm))
-            for i in range(0, len(assinaturas), 2):
-                linha = assinaturas[i:i+2]
-                dados_linha = []
-                for ass in linha:
-                    dados_linha.append(f"{ass['nome_completo']}\n{ass['cargo'] or 'Obreiro'}")
-                while len(dados_linha) < 2:
-                    dados_linha.append("")
-                linha_table = Table([dados_linha], colWidths=[8*cm, 8*cm])
-                linha_table.setStyle(TableStyle([
-                    ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
-                    ('LINEABOVE', (0, 0), (-1, -1), 1, colors.black),
-                    ('TOPPADDING', (0, 0), (-1, -1), 20),
-                ]))
-                elementos.append(linha_table)
-                elementos.append(Spacer(1, 0.3*cm))
-        elementos.append(Spacer(1, 1*cm))
-        data_emissao = datetime.now().strftime("%d/%m/%Y %H:%M")
-        rodape = Paragraph(f"<i>Documento gerado em {data_emissao} - Sistema Maconico</i>", styles['Italic'])
-        elementos.append(rodape)
-        doc.build(elementos)
-        buffer.seek(0)
-        nome_arquivo = f"ata_{ata['numero_ata']}_{ata['ano_ata']}.pdf"
-        return send_file(buffer, as_attachment=True, download_name=nome_arquivo, mimetype='application/pdf')
-    except ImportError:
-        flash("Biblioteca reportlab nao instalada. Execute: pip install reportlab", "warning")
-        return redirect("/atas")
-    except Exception as e:
-        flash(f"Erro ao gerar PDF: {str(e)}", "danger")
-        return redirect("/atas")
 
 @app.route("/atas/modelos")
 @admin_required
@@ -3568,6 +3474,7 @@ def listar_modelos():
     return_connection(conn)
     return render_template("atas/modelos.html", modelos=modelos)
 
+
 @app.route("/atas/modelos/novo", methods=["GET", "POST"])
 @admin_required
 def novo_modelo():
@@ -3577,7 +3484,7 @@ def novo_modelo():
         tipo = request.form.get("tipo")
         estrutura = request.form.get("estrutura")
         if not nome or not estrutura:
-            flash("Nome e estrutura sao obrigatorios", "danger")
+            flash("Nome e estrutura são obrigatórios", "danger")
         else:
             cursor, conn = get_db()
             cursor.execute("""
@@ -3591,7 +3498,34 @@ def novo_modelo():
             return_connection(conn)
             return redirect("/atas/modelos")
     return render_template("atas/modelo_form.html")
+
+
+@app.route("/atas/modelos/<int:id>/editar", methods=["GET", "POST"])
+@admin_required
+def editar_modelo(id):
+    cursor, conn = get_db()
     
+    if request.method == "POST":
+        nome = request.form.get("nome")
+        descricao = request.form.get("descricao")
+        tipo = request.form.get("tipo")
+        estrutura = request.form.get("estrutura")
+        
+        cursor.execute("""
+            UPDATE modelos_ata 
+            SET nome = %s, descricao = %s, tipo = %s, estrutura = %s
+            WHERE id = %s
+        """, (nome, descricao, tipo, estrutura, id))
+        conn.commit()
+        registrar_log("editar", "modelo_ata", id, dados_novos={"nome": nome})
+        flash("Modelo atualizado com sucesso!", "success")
+        return_connection(conn)
+        return redirect("/atas/modelos")
+    
+    cursor.execute("SELECT * FROM modelos_ata WHERE id = %s", (id,))
+    modelo = cursor.fetchone()
+    return_connection(conn)
+    return render_template("atas/modelo_editar.html", modelo=modelo)
     
 # =============================
 # ROTAS DE COMUNICADOS
@@ -4464,163 +4398,148 @@ def editar_sindicante(id):
 # =============================
 # ROTAS DE LOJAS
 # =============================
-@app.route("/lojas", methods=["GET", "POST"])
-@admin_required
+
+@app.route("/lojas")
+@login_required
 def gerenciar_lojas():
-    cursor, conn = get_db()
+    """Lista todas as lojas"""
+    try:
+        cursor, conn = get_db()
+        cursor.execute("SELECT * FROM lojas ORDER BY nome")
+        lojas = cursor.fetchall()
+        return_connection(conn)
+        return render_template("lojas.html", lojas=lojas)
+    except Exception as e:
+        print(f"Erro ao carregar lojas: {e}")
+        if 'conn' in locals():
+            return_connection(conn)
+        flash(f"Erro ao carregar lojas: {str(e)}", "danger")
+        return redirect("/dashboard")
+
+
+@app.route("/lojas/nova", methods=["GET", "POST"])
+@admin_required
+def nova_loja():
+    """Criar nova loja"""
     if request.method == "POST":
-        nome = request.form.get("nome", "")
-        numero = request.form.get("numero", "")
-        oriente = request.form.get("oriente", "")
-        cidade = request.form.get("cidade", "")
-        estado = request.form.get("estado", "")
-        endereco = request.form.get("endereco", "")
-        bairro = request.form.get("bairro", "")
-        cep = request.form.get("cep", "")
-        telefone = request.form.get("telefone", "")
-        email = request.form.get("email", "")
-        site = request.form.get("site", "")
-        data_fundacao = request.form.get("data_fundacao", "")
-        data_instalacao = request.form.get("data_instalacao", "")
-        data_autorizacao = request.form.get("data_autorizacao", "")
-        veneravel_mestre = request.form.get("veneravel_mestre", "")
-        secretario = request.form.get("secretario", "")
-        tesoureiro = request.form.get("tesoureiro", "")
-        orador = request.form.get("orador", "")
-        horario_reuniao = request.form.get("horario_reuniao", "")
-        dia_reuniao = request.form.get("dia_reuniao", "")
-        rito = request.form.get("rito", "")
-        observacoes = request.form.get("observacoes", "")
-        ativo = 1 if request.form.get("ativo") else 0
-        data_fundacao = data_fundacao if data_fundacao and data_fundacao.strip() else None
-        data_instalacao = data_instalacao if data_instalacao and data_instalacao.strip() else None
-        data_autorizacao = data_autorizacao if data_autorizacao and data_autorizacao.strip() else None
-        if nome and numero:
-            try:
-                cursor.execute("""
-                    INSERT INTO lojas 
-                    (nome, numero, oriente, cidade, estado, endereco, bairro, cep,
-                     telefone, email, site, data_fundacao, data_instalacao, data_autorizacao,
-                     veneravel_mestre, secretario, tesoureiro, orador, horario_reuniao,
-                     dia_reuniao, rito, observacoes, ativo)
-                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s,
-                            %s, %s, %s, %s, %s, %s, %s, %s, %s)
-                """, (nome, numero, oriente, cidade, estado, endereco, bairro, cep,
-                      telefone, email, site, data_fundacao, data_instalacao, data_autorizacao,
-                      veneravel_mestre, secretario, tesoureiro, orador, horario_reuniao,
-                      dia_reuniao, rito, observacoes, ativo))
-                conn.commit()
-                loja_id = cursor.lastrowid
-                registrar_log("criar", "loja", loja_id, dados_novos={"nome": nome, "numero": numero})
-                flash(f"Loja '{nome}' adicionada com sucesso!", "success")
-            except Exception as e:
-                print(f"Erro ao criar loja: {e}")
-                conn.rollback()
-                flash(f"Erro ao criar loja: {str(e)}", "danger")
-        else:
-            flash("Nome e número da loja são obrigatórios", "danger")
-    cursor.execute("""
-        SELECT l.*, 
-               (SELECT COUNT(*) FROM usuarios WHERE loja_nome = l.nome) as total_obreiros
-        FROM lojas l
-        ORDER BY l.nome
-    """)
-    lojas = cursor.fetchall()
-    return_connection(conn)
-    return render_template("lojas.html", lojas=lojas)
+        nome = request.form.get("nome")
+        nome_maconico = request.form.get("nome_maconico")
+        numero = request.form.get("numero")
+        orientacao = request.form.get("orientacao")
+        endereco = request.form.get("endereco")
+        cidade = request.form.get("cidade")
+        uf = request.form.get("uf")
+        cep = request.form.get("cep")
+        telefone = request.form.get("telefone")
+        email = request.form.get("email")
+        site = request.form.get("site")
+        data_fundacao = request.form.get("data_fundacao")
+        descricao = request.form.get("descricao")
+        
+        try:
+            cursor, conn = get_db()
+            cursor.execute("""
+                INSERT INTO lojas (nome, nome_maconico, numero, orientacao, endereco, 
+                                  cidade, uf, cep, telefone, email, site, 
+                                  data_fundacao, descricao, ativo, created_by)
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, 1, %s)
+            """, (nome, nome_maconico, numero, orientacao, endereco, cidade, uf, 
+                  cep, telefone, email, site, data_fundacao, descricao, session["user_id"]))
+            conn.commit()
+            flash("Loja criada com sucesso!", "success")
+            return_connection(conn)
+            return redirect("/lojas")
+        except Exception as e:
+            print(f"Erro ao criar loja: {e}")
+            conn.rollback()
+            flash(f"Erro ao criar loja: {str(e)}", "danger")
+            return_connection(conn)
+            return redirect("/lojas/nova")
+    
+    return render_template("lojas_nova.html")
+
 
 @app.route("/lojas/editar/<int:id>", methods=["GET", "POST"])
 @admin_required
 def editar_loja(id):
+    """Editar loja existente"""
     cursor, conn = get_db()
+    
     if request.method == "POST":
-        nome = request.form.get("nome", "")
-        numero = request.form.get("numero", "")
-        oriente = request.form.get("oriente", "")
-        cidade = request.form.get("cidade", "")
-        estado = request.form.get("estado", "")
-        endereco = request.form.get("endereco", "")
-        bairro = request.form.get("bairro", "")
-        cep = request.form.get("cep", "")
-        telefone = request.form.get("telefone", "")
-        email = request.form.get("email", "")
-        site = request.form.get("site", "")
-        data_fundacao = request.form.get("data_fundacao", "")
-        data_instalacao = request.form.get("data_instalacao", "")
-        data_autorizacao = request.form.get("data_autorizacao", "")
-        veneravel_mestre = request.form.get("veneravel_mestre", "")
-        secretario = request.form.get("secretario", "")
-        tesoureiro = request.form.get("tesoureiro", "")
-        orador = request.form.get("orador", "")
-        horario_reuniao = request.form.get("horario_reuniao", "")
-        dia_reuniao = request.form.get("dia_reuniao", "")
-        rito = request.form.get("rito", "")
-        observacoes = request.form.get("observacoes", "")
-        ativo = 1 if request.form.get("ativo") else 0
-        data_fundacao = data_fundacao if data_fundacao and data_fundacao.strip() else None
-        data_instalacao = data_instalacao if data_instalacao and data_instalacao.strip() else None
-        data_autorizacao = data_autorizacao if data_autorizacao and data_autorizacao.strip() else None
-        if nome and numero:
-            try:
-                cursor.execute("SELECT * FROM lojas WHERE id = %s", (id,))
-                dados_antigos = dict(cursor.fetchone())
-                cursor.execute("""
-                    UPDATE lojas 
-                    SET nome = %s, numero = %s, oriente = %s, cidade = %s, estado = %s,
-                        endereco = %s, bairro = %s, cep = %s, telefone = %s, email = %s,
-                        site = %s, data_fundacao = %s, data_instalacao = %s, data_autorizacao = %s,
-                        veneravel_mestre = %s, secretario = %s, tesoureiro = %s, orador = %s,
-                        horario_reuniao = %s, dia_reuniao = %s, rito = %s, observacoes = %s, ativo = %s
-                    WHERE id = %s
-                """, (nome, numero, oriente, cidade, estado, endereco, bairro, cep,
-                      telefone, email, site, data_fundacao, data_instalacao, data_autorizacao,
-                      veneravel_mestre, secretario, tesoureiro, orador, horario_reuniao,
-                      dia_reuniao, rito, observacoes, ativo, id))
-                conn.commit()
-                registrar_log("editar", "loja", id, dados_anteriores=dados_antigos, dados_novos={"nome": nome, "numero": numero})
-                flash(f"Loja '{nome}' atualizada com sucesso!", "success")
-                return_connection(conn)
-                return redirect("/lojas")
-            except Exception as e:
-                print(f"Erro ao editar loja: {e}")
-                conn.rollback()
-                flash(f"Erro ao editar loja: {str(e)}", "danger")
-        else:
-            flash("Nome e número da loja são obrigatórios", "danger")
+        nome = request.form.get("nome")
+        nome_maconico = request.form.get("nome_maconico")
+        numero = request.form.get("numero")
+        orientacao = request.form.get("orientacao")
+        endereco = request.form.get("endereco")
+        cidade = request.form.get("cidade")
+        uf = request.form.get("uf")
+        cep = request.form.get("cep")
+        telefone = request.form.get("telefone")
+        email = request.form.get("email")
+        site = request.form.get("site")
+        data_fundacao = request.form.get("data_fundacao")
+        descricao = request.form.get("descricao")
+        ativo = 1 if request.form.get("ativo") == "on" else 0
+        
+        try:
+            cursor.execute("""
+                UPDATE lojas 
+                SET nome = %s, nome_maconico = %s, numero = %s, orientacao = %s,
+                    endereco = %s, cidade = %s, uf = %s, cep = %s, telefone = %s,
+                    email = %s, site = %s, data_fundacao = %s, descricao = %s, ativo = %s
+                WHERE id = %s
+            """, (nome, nome_maconico, numero, orientacao, endereco, cidade, uf,
+                  cep, telefone, email, site, data_fundacao, descricao, ativo, id))
+            conn.commit()
+            flash("Loja atualizada com sucesso!", "success")
+            return_connection(conn)
+            return redirect("/lojas")
+        except Exception as e:
+            print(f"Erro ao atualizar loja: {e}")
+            conn.rollback()
+            flash(f"Erro ao atualizar loja: {str(e)}", "danger")
+            return_connection(conn)
+            return redirect(f"/lojas/editar/{id}")
+    
+    # GET - Buscar dados da loja
     cursor.execute("SELECT * FROM lojas WHERE id = %s", (id,))
     loja = cursor.fetchone()
     return_connection(conn)
+    
     if not loja:
         flash("Loja não encontrada", "danger")
         return redirect("/lojas")
-    return render_template("editar_loja.html", loja=loja)
+    
+    return render_template("lojas_editar.html", loja=loja)
 
-@app.route("/lojas/excluir/<int:id>")
+
+@app.route("/lojas/excluir/<int:id>", methods=["DELETE"])
 @admin_required
 def excluir_loja(id):
-    cursor, conn = get_db()
-    cursor.execute("SELECT * FROM lojas WHERE id = %s", (id,))
-    loja = cursor.fetchone()
-    if not loja:
-        flash("Loja não encontrada", "danger")
-        return_connection(conn)
-        return redirect("/lojas")
-    dados = dict(loja)
-    cursor.execute("SELECT COUNT(*) as total FROM usuarios WHERE loja_nome = %s", (loja["nome"],))
-    resultado = cursor.fetchone()
-    if resultado and resultado["total"] > 0:
-        cursor.execute("UPDATE lojas SET ativo = 0 WHERE id = %s", (id,))
-        conn.commit()
-        registrar_log("desativar", "loja", id, dados_anteriores=dados)
-        flash(f"Loja '{loja['nome']}' desativada pois possui obreiros vinculados.", "warning")
-    else:
+    """Excluir loja via API"""
+    try:
+        cursor, conn = get_db()
+        
+        # Verificar se existem reuniões vinculadas
+        cursor.execute("SELECT COUNT(*) as total FROM reunioes WHERE loja_id = %s", (id,))
+        total = cursor.fetchone()['total']
+        
+        if total > 0:
+            return jsonify({'success': False, 'error': f'Existem {total} reuniões vinculadas a esta loja. Não é possível excluir.'}), 400
+        
         cursor.execute("DELETE FROM lojas WHERE id = %s", (id,))
         conn.commit()
-        registrar_log("excluir", "loja", id, dados_anteriores=dados)
-        flash(f"Loja '{loja['nome']}' excluída com sucesso!", "success")
-    return_connection(conn)
-    return redirect("/lojas")
-
+        
+        return jsonify({'success': True, 'message': 'Loja excluída com sucesso'})
+        
+    except Exception as e:
+        print(f"Erro ao excluir loja: {e}")
+        if conn:
+            conn.rollback()
+        return jsonify({'success': False, 'error': str(e)}), 500
+    finally:
+        if conn:
+            return_connection(conn)
 # =============================
 # ROTAS DE CARGOS
 # =============================
@@ -7139,154 +7058,7 @@ def api_backup_logs():
     
     return jsonify({'success': True, 'logs': logs, 'total': len(logs)})
 
-@app.route('/admin/migrar-tabelas')
-@admin_required
-def migrar_tabelas():
-    """Endpoint para criar/ajustar tabelas no banco"""
-    try:
-        cursor, conn = get_db()
-        resultados = []
-        
-        # Verificar se tabela atas existe
-        cursor.execute("""
-            SELECT EXISTS (
-                SELECT FROM information_schema.tables 
-                WHERE table_name = 'atas'
-            )
-        """)
-        tabela_atas_existe = cursor.fetchone()[0]
-        
-        if not tabela_atas_existe:
-            # Criar tabela completa
-            cursor.execute("""
-                CREATE TABLE atas (
-                    id SERIAL PRIMARY KEY,
-                    reuniao_id INTEGER,
-                    numero VARCHAR(50),
-                    data DATE NOT NULL,
-                    titulo VARCHAR(200),
-                    conteudo TEXT,
-                    status VARCHAR(20) DEFAULT 'rascunho',
-                    aprovada_em TIMESTAMP,
-                    criado_por INTEGER,
-                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-                )
-            """)
-            resultados.append("✅ Tabela 'atas' criada com sucesso")
-        else:
-            # Adicionar colunas faltantes uma por uma
-            colunas_necessarias = {
-                'reuniao_id': 'INTEGER',
-                'numero': 'VARCHAR(50)',
-                'data': 'DATE NOT NULL',
-                'titulo': 'VARCHAR(200)',
-                'conteudo': 'TEXT',
-                'status': 'VARCHAR(20) DEFAULT rascunho',
-                'aprovada_em': 'TIMESTAMP',
-                'criado_por': 'INTEGER',
-                'created_at': 'TIMESTAMP DEFAULT CURRENT_TIMESTAMP',
-                'updated_at': 'TIMESTAMP DEFAULT CURRENT_TIMESTAMP'
-            }
-            
-            for coluna, tipo in colunas_necessarias.items():
-                try:
-                    cursor.execute(f"""
-                        ALTER TABLE atas ADD COLUMN IF NOT EXISTS {coluna} {tipo}
-                    """)
-                    resultados.append(f"✅ Coluna '{coluna}' adicionada/verificada")
-                except Exception as e:
-                    resultados.append(f"⚠️ Coluna '{coluna}': {e}")
-        
-        # Criar índices
-        try:
-            cursor.execute("CREATE INDEX IF NOT EXISTS idx_atas_reuniao_id ON atas(reuniao_id)")
-            resultados.append("✅ Índice idx_atas_reuniao_id criado")
-        except Exception as e:
-            resultados.append(f"⚠️ Erro ao criar índice reuniao_id: {e}")
-        
-        try:
-            cursor.execute("CREATE INDEX IF NOT EXISTS idx_atas_data ON atas(data)")
-            resultados.append("✅ Índice idx_atas_data criado")
-        except Exception as e:
-            resultados.append(f"⚠️ Erro ao criar índice data: {e}")
-        
-        # ============================================
-        # CORRIGIR TABELA ASSINATURAS_ATA
-        # ============================================
-        
-        cursor.execute("""
-            SELECT EXISTS (
-                SELECT FROM information_schema.tables 
-                WHERE table_name = 'assinaturas_ata'
-            )
-        """)
-        tabela_assinaturas_existe = cursor.fetchone()[0]
-        
-        if not tabela_assinaturas_existe:
-            cursor.execute("""
-                CREATE TABLE assinaturas_ata (
-                    id SERIAL PRIMARY KEY,
-                    ata_id INTEGER,
-                    obreiro_id INTEGER,
-                    assinado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                    ip VARCHAR(45),
-                    UNIQUE(ata_id, obreiro_id)
-                )
-            """)
-            resultados.append("✅ Tabela 'assinaturas_ata' criada")
-        else:
-            # Adicionar colunas faltantes
-            try:
-                cursor.execute("ALTER TABLE assinaturas_ata ADD COLUMN IF NOT EXISTS ata_id INTEGER")
-                resultados.append("✅ Coluna 'ata_id' verificada")
-            except Exception as e:
-                resultados.append(f"⚠️ Coluna ata_id: {e}")
-            
-            try:
-                cursor.execute("ALTER TABLE assinaturas_ata ADD COLUMN IF NOT EXISTS obreiro_id INTEGER")
-                resultados.append("✅ Coluna 'obreiro_id' verificada")
-            except Exception as e:
-                resultados.append(f"⚠️ Coluna obreiro_id: {e}")
-            
-            try:
-                cursor.execute("ALTER TABLE assinaturas_ata ADD COLUMN IF NOT EXISTS assinado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP")
-                resultados.append("✅ Coluna 'assinado_em' verificada")
-            except Exception as e:
-                resultados.append(f"⚠️ Coluna assinado_em: {e}")
-            
-            try:
-                cursor.execute("ALTER TABLE assinaturas_ata ADD COLUMN IF NOT EXISTS ip VARCHAR(45)")
-                resultados.append("✅ Coluna 'ip' verificada")
-            except Exception as e:
-                resultados.append(f"⚠️ Coluna ip: {e}")
-        
-        # Criar índices para assinaturas_ata
-        try:
-            cursor.execute("CREATE INDEX IF NOT EXISTS idx_assinaturas_ata_id ON assinaturas_ata(ata_id)")
-            resultados.append("✅ Índice idx_assinaturas_ata_id criado")
-        except Exception as e:
-            resultados.append(f"⚠️ Erro: {e}")
-        
-        try:
-            cursor.execute("CREATE INDEX IF NOT EXISTS idx_assinaturas_obreiro_id ON assinaturas_ata(obreiro_id)")
-            resultados.append("✅ Índice idx_assinaturas_obreiro_id criado")
-        except Exception as e:
-            resultados.append(f"⚠️ Erro: {e}")
-        
-        conn.commit()
-        return_connection(conn)
-        
-        return jsonify({
-            "status": "sucesso",
-            "mensagens": resultados
-        })
-        
-    except Exception as e:
-        if 'conn' in locals():
-            conn.rollback()
-            return_connection(conn)
-        return jsonify({"erro": str(e)}), 500
+
 # =============================
 # INICIALIZAÇÃO DA APLICAÇÃO
 # =============================
