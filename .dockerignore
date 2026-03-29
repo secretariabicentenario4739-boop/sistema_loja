@@ -16,17 +16,6 @@ venv/
 backups/
 *.sql
 
-# Uploads
-uploads/
-*.pdf
-*.jpg
-*.jpeg
-*.png
-*.gif
-*.doc
-*.docx
-*.xls
-*.xlsx
 
 # Git
 .git/
