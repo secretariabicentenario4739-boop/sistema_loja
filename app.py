@@ -2,6 +2,8 @@
 # -*- coding: utf-8 -*-
 
 import os
+import cloudinary
+import cloudinary.uploader
 import json
 import zipfile
 import shutil
@@ -31,6 +33,16 @@ from dotenv import load_dotenv
 import openpyxl
 from openpyxl.styles import Font, Alignment, PatternFill
 from openpyxl.utils import get_column_letter
+
+# =============================
+# CONFIGURAÇÃO DO CLOUDINARY
+# =============================
+
+cloudinary.config(
+    cloud_name="da57u8plb",
+    api_key=os.getenv("231643853831969"),
+    api_secret=os.getenv("a6UQfWtibAvnRrb63v5CvxQlsXo")
+)
 
 # =============================
 # CARREGAR VARIÁVEIS DE AMBIENTE
@@ -1484,43 +1496,73 @@ def upload_documento(id):
     if session["tipo"] != "admin" and session["user_id"] != id:
         flash("Você não tem permissão para esta ação", "danger")
         return redirect(f"/obreiros/{id}/documentos")
+
     if 'arquivo' not in request.files:
         flash("Nenhum arquivo selecionado", "danger")
         return redirect(f"/obreiros/{id}/documentos")
+
     arquivo = request.files['arquivo']
+
     if arquivo.filename == '':
         flash("Nenhum arquivo selecionado", "danger")
         return redirect(f"/obreiros/{id}/documentos")
+
     if not allowed_file(arquivo.filename):
         flash("Tipo de arquivo não permitido. Use: PDF, imagens, Word, Excel, TXT, ZIP", "danger")
         return redirect(f"/obreiros/{id}/documentos")
+
     try:
         titulo = request.form.get('titulo', '')
         descricao = request.form.get('descricao', '')
         categoria = request.form.get('categoria', 'outros')
+
         if not titulo:
             titulo = arquivo.filename
+
         filename = secure_filename(arquivo.filename)
-        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-        nome_arquivo = f"{id}_{timestamp}_{filename}"
-        caminho = os.path.join(UPLOAD_FOLDER, nome_arquivo)
-        arquivo.save(caminho)
-        tamanho = os.path.getsize(caminho)
+        extensao = filename.split('.')[-1]
+
+        # 🔥 Upload para Cloudinary
+        resultado = cloudinary.uploader.upload(
+            arquivo,
+            resource_type="auto",  # aceita pdf, zip, doc, etc
+            folder="documentos_obreiro"
+        )
+
+        url_arquivo = resultado['secure_url']
+        public_id = resultado['public_id']
+        tamanho = resultado.get('bytes', 0)
+
+        # Banco de dados
         cursor, conn = get_db()
         cursor.execute("""
             INSERT INTO documentos_obreiro 
             (obreiro_id, titulo, descricao, categoria, tipo_arquivo, nome_arquivo, caminho_arquivo, tamanho, uploaded_by)
             VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
-        """, (id, titulo, descricao, categoria, filename.split('.')[-1], nome_arquivo, caminho, tamanho, session["user_id"]))
+        """, (
+            id,
+            titulo,
+            descricao,
+            categoria,
+            extensao,
+            public_id,     # 👈 substitui nome_arquivo
+            url_arquivo,   # 👈 agora é URL, não caminho local
+            tamanho,
+            session["user_id"]
+        ))
+
         conn.commit()
         doc_id = cursor.lastrowid
         return_connection(conn)
+
         registrar_log("upload_documento", "documento", doc_id, dados_novos={"titulo": titulo, "categoria": categoria})
+
         flash(f"Documento '{titulo}' enviado com sucesso!", "success")
+
     except Exception as e:
         flash(f"Erro ao enviar arquivo: {str(e)}", "danger")
-    return redirect(f"/obreiros/{id}/documentos")
 
+    return redirect(f"/obreiros/{id}/documentos")
 @app.route("/documentos/<int:id>/baixar")
 @login_required
 def baixar_documento(id):
