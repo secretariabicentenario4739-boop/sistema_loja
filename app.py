@@ -40,9 +40,11 @@ from openpyxl.utils import get_column_letter
 
 cloudinary.config(
     cloud_name="da57u8plb",
-    api_key=os.getenv("231643853831969"),
-    api_secret=os.getenv("a6UQfWtibAvnRrb63v5CvxQlsXo")
+    api_key="231643853831969",
+    api_secret="a6UQfWtibAvnRrb63v5CvxQlsXo"
 )
+
+
 
 # =============================
 # CARREGAR VARIÁVEIS DE AMBIENTE
