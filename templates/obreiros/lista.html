@@ -196,18 +196,18 @@
                             {% for obreiro in obreiros %}
                             <tr class="{% if obreiro.ativo == 1 %}table-active{% else %}table-secondary{% endif %}">
                                 <td class="text-center">
-                                    {% if obreiro.foto %}
-                                    <img src="{{ obreiro.foto }}"> 
-                                         class="rounded-circle" 
-                                         style="width: 40px; height: 40px; object-fit: cover;"
-                                         alt="Foto de {{ obreiro.nome_completo }}">
-                                    {% else %}
-                                    <div class="rounded-circle bg-secondary text-white d-flex align-items-center justify-content-center mx-auto"
-                                         style="width: 40px; height: 40px;">
-                                        <i class="bi bi-person"></i>
-                                    </div>
-                                    {% endif %}
-                                </td>
+    {% if obreiro.foto %}
+    <img src="{{ obreiro.foto }}" 
+         class="rounded-circle" 
+         style="width: 40px; height: 40px; object-fit: cover;"
+         alt="Foto de {{ obreiro.nome_completo }}">
+    {% else %}
+    <div class="rounded-circle bg-secondary text-white d-flex align-items-center justify-content-center mx-auto"
+         style="width: 40px; height: 40px;">
+        <i class="bi bi-person"></i>
+    </div>
+    {% endif %}
+</td>
                                 <td>
                                     <strong>{{ obreiro.nome_completo or obreiro.usuario }}</strong>
                                     {% if obreiro.nome_maconico %}
