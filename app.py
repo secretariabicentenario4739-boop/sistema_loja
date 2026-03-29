@@ -38,10 +38,13 @@ from openpyxl.utils import get_column_letter
 # CONFIGURAÇÃO DO CLOUDINARY
 # =============================
 
+import os
+import cloudinary
+
 cloudinary.config(
     cloud_name="da57u8plb",
-    api_key="231643853831969",
-    api_secret="a6UQfWtibAvnRrb63v5CvxQlsXo"
+    api_key=os.getenv("CLOUDINARY_API_KEY"),
+    api_secret=os.getenv("CLOUDINARY_API_SECRET")
 )
 
 
@@ -1315,37 +1318,37 @@ import cloudinary.uploader
 @app.route("/obreiros/<int:id>/foto", methods=["POST"])
 @login_required
 def upload_foto(id):
-    if 'foto' not in request.files:
-        flash("Nenhuma foto enviada", "danger")
+    import cloudinary.uploader
+
+    # 🔐 Validação de permissão
+    if session["tipo"] != "admin" and session["user_id"] != id:
+        flash("Você não tem permissão para esta ação", "danger")
         return redirect(f"/obreiros/{id}/editar")
 
-    foto = request.files['foto']
+    foto = request.files.get("foto")
 
-    if foto.filename == '':
-        flash("Arquivo inválido", "danger")
+    if not foto or foto.filename == "":
+        flash("Nenhuma foto selecionada", "danger")
         return redirect(f"/obreiros/{id}/editar")
 
     try:
-        # 🔥 Upload para Cloudinary
+        # 🚀 Upload para Cloudinary com otimização
         resultado = cloudinary.uploader.upload(
             foto,
-            folder="obreiros"
+            folder="obreiros",
+            transformation=[
+                {"width": 300, "height": 300, "crop": "fill"}
+            ]
         )
 
-        # 🔥 URL da imagem
-        url_foto = resultado.get("secure_url")
+        url = resultado["secure_url"]
 
-        if not url_foto:
-            flash("Erro ao obter URL da imagem", "danger")
-            return redirect(f"/obreiros/{id}/editar")
-
-        # 🔥 Salvar no banco
+        # 💾 Salvar URL no banco
         cursor, conn = get_db()
-        cursor.execute("""
-            UPDATE usuarios
-            SET foto = %s
-            WHERE id = %s
-        """, (url_foto, id))
+        cursor.execute(
+            "UPDATE usuarios SET foto=%s WHERE id=%s",
+            (url, id)
+        )
         conn.commit()
         return_connection(conn)
 
