@@ -1308,46 +1308,51 @@ def reativar_obreiro(id):
     return_connection(conn)
     return redirect("/obreiros")
 
+import cloudinary.uploader
+
 @app.route("/obreiros/<int:id>/foto", methods=["POST"])
 @login_required
-def upload_foto_obreiro(id):
-    if session["tipo"] != "admin" and session["user_id"] != id:
-        flash("Você não tem permissão para alterar esta foto", "danger")
-        return redirect(f"/obreiros/{id}")
+def upload_foto(id):
     if 'foto' not in request.files:
-        flash("Nenhum arquivo selecionado", "danger")
+        flash("Nenhuma foto enviada", "danger")
         return redirect(f"/obreiros/{id}/editar")
-    file = request.files['foto']
-    if file.filename == '':
-        flash("Nenhum arquivo selecionado", "danger")
+
+    foto = request.files['foto']
+
+    if foto.filename == '':
+        flash("Arquivo inválido", "danger")
         return redirect(f"/obreiros/{id}/editar")
-    if not allowed_foto(file.filename):
-        flash("Tipo de arquivo não permitido. Use: PNG, JPG, JPEG, GIF, WEBP", "danger")
-        return redirect(f"/obreiros/{id}/editar")
+
     try:
+        # 🔥 Upload para Cloudinary
+        resultado = cloudinary.uploader.upload(
+            foto,
+            folder="obreiros"
+        )
+
+        # 🔥 URL da imagem
+        url_foto = resultado.get("secure_url")
+
+        if not url_foto:
+            flash("Erro ao obter URL da imagem", "danger")
+            return redirect(f"/obreiros/{id}/editar")
+
+        # 🔥 Salvar no banco
         cursor, conn = get_db()
-        cursor.execute("SELECT foto FROM usuarios WHERE id = %s", (id,))
-        foto_antiga = cursor.fetchone()
-        timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
-        filename = secure_filename(f"{id}_{timestamp}_{file.filename}")
-        caminho = os.path.join(UPLOAD_FOLDER_FOTOS, filename)
-        file.save(caminho)
-        redimensionar_foto(caminho)
-        cursor.execute("UPDATE usuarios SET foto = %s WHERE id = %s", (filename, id))
+        cursor.execute("""
+            UPDATE usuarios
+            SET foto = %s
+            WHERE id = %s
+        """, (url_foto, id))
         conn.commit()
-        if foto_antiga and foto_antiga['foto']:
-            caminho_antigo = os.path.join(UPLOAD_FOLDER_FOTOS, foto_antiga['foto'])
-            if os.path.exists(caminho_antigo):
-                os.remove(caminho_antigo)
-        registrar_log("upload_foto", "obreiro", id, dados_novos={"foto": filename})
+        return_connection(conn)
+
         flash("Foto atualizada com sucesso!", "success")
-        return_connection(conn)
-        return redirect(f"/obreiros/{id}")
+
     except Exception as e:
-        print(f"Erro ao fazer upload: {e}")
-        flash(f"Erro ao fazer upload: {str(e)}", "danger")
-        return_connection(conn)
-        return redirect(f"/obreiros/{id}/editar")
+        flash(f"Erro ao enviar foto: {str(e)}", "danger")
+
+    return redirect(f"/obreiros/{id}/editar")
 
 @app.route("/obreiros/<int:id>/foto/remover")
 @login_required
