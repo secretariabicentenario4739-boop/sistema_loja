@@ -197,7 +197,7 @@
                             <tr class="{% if obreiro.ativo == 1 %}table-active{% else %}table-secondary{% endif %}">
                                 <td class="text-center">
                                     {% if obreiro.foto %}
-                                    <img src="/uploads/fotos/{{ obreiro.foto }}" 
+                                    <img src="{{ obreiro.foto }}"> 
                                          class="rounded-circle" 
                                          style="width: 40px; height: 40px; object-fit: cover;"
                                          alt="Foto de {{ obreiro.nome_completo }}">
