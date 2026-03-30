@@ -11,7 +11,7 @@
                 <div class="d-flex align-items-center">
                     <div class="me-4">
                         {% if obreiro.foto %}
-                        <img src="/uploads/fotos/{{ obreiro.foto }}" 
+                        <img src="{{ obreiro.foto }}" 
                              alt="Foto de {{ obreiro.nome_completo }}"
                              class="rounded-circle shadow-sm"
                              style="width: 120px; height: 120px; object-fit: cover; border: 3px solid #fff; box-shadow: 0 2px 10px rgba(0,0,0,0.1);">
@@ -147,20 +147,50 @@
                 <div class="row">
                     <div class="col-md-6">
                         <table class="table table-sm table-borderless">
-                              <tr><td class="text-muted" style="width: 120px;">Nome Completo:</td><td><strong>{{ obreiro.nome_completo }}</strong></td></tr>
-                              <tr><td class="text-muted">Nome Maçônico:</td><td>{{ obreiro.nome_maconico or '-' }}</td></tr>
-                              <tr><td class="text-muted">Usuário:</td><td>{{ obreiro.usuario }}</td></tr>
-                              <tr><td class="text-muted">CIM Nº:</td><td>{{ obreiro.cim_numero or '-' }}</td></tr>
-                              <tr><td class="text-muted">Data Cadastro:</td><td>{{ obreiro.data_cadastro.strftime('%d/%m/%Y') if obreiro.data_cadastro else '-' }}</td></tr>
+                            <tr>
+                                <td class="text-muted" style="width: 120px;">Nome Completo:</td>
+                                <td><strong>{{ obreiro.nome_completo }}</strong></td>
+                            </tr>
+                            <tr>
+                                <td class="text-muted">Nome Maçônico:</td>
+                                <td>{{ obreiro.nome_maconico or '-' }}</td>
+                            </tr>
+                            <tr>
+                                <td class="text-muted">Usuário:</td>
+                                <td>{{ obreiro.usuario }}</td>
+                            </tr>
+                            <tr>
+                                <td class="text-muted">CIM Nº:</td>
+                                <td>{{ obreiro.cim_numero or '-' }}</td>
+                            </tr>
+                            <tr>
+                                <td class="text-muted">Data Cadastro:</td>
+                                <td>{{ obreiro.data_cadastro.strftime('%d/%m/%Y') if obreiro.data_cadastro else '-' }}</td>
+                            </tr>
                         </table>
                     </div>
                     <div class="col-md-6">
                         <table class="table table-sm table-borderless">
-                              <tr><td class="text-muted" style="width: 120px;">Telefone:</td><td>{{ obreiro.telefone or '-' }}</td></tr>
-                              <tr><td class="text-muted">E-mail:</td><td>{{ obreiro.email or '-' }}</td></tr>
-                              <tr><td class="text-muted">Endereço:</td><td>{{ obreiro.endereco or '-' }}</td></tr>
-                              <tr><td class="text-muted">Loja:</td><td>{{ obreiro.loja_nome or '-' }} (Nº {{ obreiro.loja_numero or '-' }})</td></tr>
-                              <tr><td class="text-muted">Oriente:</td><td>{{ obreiro.loja_orient or '-' }}</td></tr>
+                            <tr>
+                                <td class="text-muted" style="width: 120px;">Telefone:</td>
+                                <td>{{ obreiro.telefone or '-' }}</td>
+                            </tr>
+                            <tr>
+                                <td class="text-muted">E-mail:</td>
+                                <td>{{ obreiro.email or '-' }}</td>
+                            </tr>
+                            <tr>
+                                <td class="text-muted">Endereço:</td>
+                                <td>{{ obreiro.endereco or '-' }}</td>
+                            </tr>
+                            <tr>
+                                <td class="text-muted">Loja:</td>
+                                <td>{{ obreiro.loja_nome or '-' }} (Nº {{ obreiro.loja_numero or '-' }})</td>
+                            </tr>
+                            <tr>
+                                <td class="text-muted">Oriente:</td>
+                                <td>{{ obreiro.loja_orient or '-' }}</td>
+                            </tr>
                         </table>
                     </div>
                 </div>
@@ -201,29 +231,67 @@
                         {% if cargos and cargos|length > 0 %}
                             <div class="table-responsive">
                                 <table class="table table-sm">
-                                    <thead><tr><th>Cargo</th><th>Início</th><th>Fim</th>{% if session.tipo == 'admin' %}<th></th>{% endif %}</tr></thead>
+                                    <thead>
+                                        <tr>
+                                            <th>Cargo</th>
+                                            <th>Início</th>
+                                            <th>Fim</th>
+                                            {% if session.tipo == 'admin' %}<th></th>{% endif %}
+                                        </tr>
+                                    </thead>
                                     <tbody>
                                         {% for cargo in cargos %}
                                         <tr>
-                                            <td><strong>{{ cargo.cargo_nome }}</strong><br><small class="text-muted">{{ cargo.sigla }}</small></td>
+                                            <td>
+                                                <strong>{{ cargo.cargo_nome }}</strong><br>
+                                                <small class="text-muted">{{ cargo.sigla }}</small>
+                                            </td>
                                             <td class="text-nowrap">{{ cargo.data_inicio.strftime('%d/%m/%Y') if cargo.data_inicio else '-' }}</td>
-                                            <td class="text-nowrap">{% if cargo.data_fim %}{{ cargo.data_fim.strftime('%d/%m/%Y') }}{% else %}<span class="badge bg-success">Atual</span>{% endif %}</td>
-                                            {% if session.tipo == 'admin' %}<td class="text-end"><a href="/obreiros/cargo/{{ cargo.id }}/remover" class="btn btn-sm btn-outline-danger" onclick="return confirm('Remover este cargo?')"><i class="bi bi-trash"></i></a></td>{% endif %}
+                                            <td class="text-nowrap">
+                                                {% if cargo.data_fim %}
+                                                    {{ cargo.data_fim.strftime('%d/%m/%Y') }}
+                                                {% else %}
+                                                    <span class="badge bg-success">Atual</span>
+                                                {% endif %}
+                                            </td>
+                                            {% if session.tipo == 'admin' %}
+                                            <td class="text-end">
+                                                <a href="/obreiros/cargo/{{ cargo.id }}/remover" class="btn btn-sm btn-outline-danger" onclick="return confirm('Remover este cargo?')">
+                                                    <i class="bi bi-trash"></i>
+                                                </a>
+                                            </td>
+                                            {% endif %}
                                         </tr>
                                         {% endfor %}
                                     </tbody>
                                 </table>
                             </div>
                         {% else %}
-                            <div class="text-center text-muted py-3"><i class="bi bi-journal-x fs-1"></i><p class="mb-0">Nenhum cargo ocupado</p></div>
+                            <div class="text-center text-muted py-3">
+                                <i class="bi bi-journal-x fs-1"></i>
+                                <p class="mb-0">Nenhum cargo ocupado</p>
+                            </div>
                         {% endif %}
 
                         {% if session.tipo == 'admin' and cargos_disponiveis %}
                         <hr>
                         <form method="POST" action="/obreiros/{{ obreiro.id }}/cargo" class="row g-2">
-                            <div class="col-6"><select name="cargo_id" class="form-select form-select-sm" required><option value="">Adicionar cargo...</option>{% for cargo in cargos_disponiveis %}<option value="{{ cargo.id }}">{{ cargo.nome }}</option>{% endfor %}</select></div>
-                            <div class="col-3"><input type="date" name="data_inicio" class="form-control form-control-sm" required></div>
-                            <div class="col-3"><button type="submit" class="btn btn-success btn-sm w-100"><i class="bi bi-plus"></i> Adicionar</button></div>
+                            <div class="col-6">
+                                <select name="cargo_id" class="form-select form-select-sm" required>
+                                    <option value="">Adicionar cargo...</option>
+                                    {% for cargo in cargos_disponiveis %}
+                                    <option value="{{ cargo.id }}">{{ cargo.nome }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div class="col-3">
+                                <input type="date" name="data_inicio" class="form-control form-control-sm" required>
+                            </div>
+                            <div class="col-3">
+                                <button type="submit" class="btn btn-success btn-sm w-100">
+                                    <i class="bi bi-plus"></i> Adicionar
+                                </button>
+                            </div>
                         </form>
                         {% endif %}
                     </div>
@@ -244,26 +312,58 @@
                                         <tr>
                                             <td class="ps-0">
                                                 <i class="bi bi-star-fill text-warning"></i> 
-                                                <strong>{% if grau.grau_id and grau.grau_nome %}{{ grau.grau_nome }}{% else %}{% if grau.grau == 3 %}Mestre{% elif grau.grau == 2 %}Companheiro{% elif grau.grau == 1 %}Aprendiz{% else %}Grau {{ grau.grau }}{% endif %}{% endif %}</strong>
-                                                {% if grau.observacao %}<br><small class="text-muted">{{ grau.observacao }}</small>{% endif %}
+                                                <strong>
+                                                    {% if grau.grau_id and grau.grau_nome %}
+                                                        {{ grau.grau_nome }}
+                                                    {% else %}
+                                                        {% if grau.grau == 3 %}Mestre
+                                                        {% elif grau.grau == 2 %}Companheiro
+                                                        {% elif grau.grau == 1 %}Aprendiz
+                                                        {% else %}Grau {{ grau.grau }}
+                                                        {% endif %}
+                                                    {% endif %}
+                                                </strong>
+                                                {% if grau.observacao %}
+                                                <br><small class="text-muted">{{ grau.observacao }}</small>
+                                                {% endif %}
                                             </td>
-                                            <td class="text-end text-nowrap">{{ grau.data.strftime('%d/%m/%Y') if grau.data else '-' }}</td>
+                                            <td class="text-end text-nowrap">
+                                                {{ grau.data.strftime('%d/%m/%Y') if grau.data else '-' }}
+                                            </td>
                                         </tr>
                                         {% endfor %}
                                     </tbody>
                                 </table>
                             </div>
                         {% else %}
-                            <div class="text-center text-muted py-3"><i class="bi bi-clock-history fs-1"></i><p class="mb-0">Nenhum histórico registrado</p></div>
+                            <div class="text-center text-muted py-3">
+                                <i class="bi bi-clock-history fs-1"></i>
+                                <p class="mb-0">Nenhum histórico registrado</p>
+                            </div>
                         {% endif %}
 
                         {% if session.tipo == 'admin' %}
                         <hr>
                         <form method="POST" action="/obreiros/{{ obreiro.id }}/grau" class="row g-2">
-                            <div class="col-5"><select name="grau_id" class="form-select form-select-sm" required><option value="">Registrar grau...</option>{% for grau in graus_disponiveis %}<option value="{{ grau.id }}">{{ grau.nome }}</option>{% endfor %}</select></div>
-                            <div class="col-4"><input type="date" name="data" class="form-control form-control-sm" required></div>
-                            <div class="col-3"><button type="submit" class="btn btn-primary btn-sm w-100"><i class="bi bi-save"></i></button></div>
-                            <div class="col-12 mt-1"><input type="text" name="observacao" class="form-control form-control-sm" placeholder="Observação"></div>
+                            <div class="col-5">
+                                <select name="grau_id" class="form-select form-select-sm" required>
+                                    <option value="">Registrar grau...</option>
+                                    {% for grau in graus_disponiveis %}
+                                    <option value="{{ grau.id }}">{{ grau.nome }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div class="col-4">
+                                <input type="date" name="data" class="form-control form-control-sm" required>
+                            </div>
+                            <div class="col-3">
+                                <button type="submit" class="btn btn-primary btn-sm w-100">
+                                    <i class="bi bi-save"></i>
+                                </button>
+                            </div>
+                            <div class="col-12 mt-1">
+                                <input type="text" name="observacao" class="form-control form-control-sm" placeholder="Observação">
+                            </div>
                         </form>
                         {% endif %}
                     </div>
@@ -275,39 +375,84 @@
         <div class="row mt-4">
             <div class="col-md-6">
                 <div class="card shadow">
-                    <div class="card-header bg-info text-white"><h5 class="mb-0"><i class="bi bi-people"></i> Familiares</h5></div>
+                    <div class="card-header bg-info text-white">
+                        <h5 class="mb-0"><i class="bi bi-people"></i> Familiares</h5>
+                    </div>
                     <div class="card-body text-center py-4">
-                        <i class="bi bi-people fs-1 text-info"></i><h3 class="mt-2">{{ familiares_count }}</h3>
+                        <i class="bi bi-people fs-1 text-info"></i>
+                        <h3 class="mt-2">{{ familiares_count }}</h3>
                         <p class="text-muted">familiares cadastrados</p>
-                        <a href="/obreiros/{{ obreiro.id }}/familiares" class="btn btn-outline-info"><i class="bi bi-eye"></i> Gerenciar Familiares</a>
+                        <a href="/obreiros/{{ obreiro.id }}/familiares" class="btn btn-outline-info">
+                            <i class="bi bi-eye"></i> Gerenciar Familiares
+                        </a>
                     </div>
                 </div>
             </div>
             <div class="col-md-6">
                 <div class="card shadow">
-                    <div class="card-header bg-warning text-dark"><h5 class="mb-0"><i class="bi bi-award"></i> Condecorações</h5></div>
-                    <div class="card-body text-center py-4">
-                        <i class="bi bi-award fs-1 text-warning"></i><h3 class="mt-2">{{ condecoracoes_count }}</h3>
-                        <p class="text-muted">condecorações recebidas</p>
-                        <a href="/obreiros/{{ obreiro.id }}/condecoracoes" class="btn btn-outline-warning"><i class="bi bi-eye"></i> Gerenciar Condecorações</a>
+                    <div class="card-header bg-warning text-dark">
+                        <h5 class="mb-0"><i class="bi bi-award"></i> Condecorações</h5>
                     </div>
-                    {% if ultimas_condecoracoes %}<div class="card-footer bg-white"><small class="text-muted">Últimas:</small><div class="mt-1">{% for c in ultimas_condecoracoes[:2] %}<div class="d-inline-block me-2"><i class="bi {{ c.icone }}" style="color: {{ c.cor }}"></i><small>{{ c.tipo_nome }}</small></div>{% endfor %}</div></div>{% endif %}
+                    <div class="card-body text-center py-4">
+                        <i class="bi bi-award fs-1 text-warning"></i>
+                        <h3 class="mt-2">{{ condecoracoes_count }}</h3>
+                        <p class="text-muted">condecorações recebidas</p>
+                        <a href="/obreiros/{{ obreiro.id }}/condecoracoes" class="btn btn-outline-warning">
+                            <i class="bi bi-eye"></i> Gerenciar Condecorações
+                        </a>
+                    </div>
+                    {% if ultimas_condecoracoes %}
+                    <div class="card-footer bg-white">
+                        <small class="text-muted">Últimas:</small>
+                        <div class="mt-1">
+                            {% for c in ultimas_condecoracoes[:2] %}
+                            <div class="d-inline-block me-2">
+                                <i class="bi {{ c.icone }}" style="color: {{ c.cor }}"></i>
+                                <small>{{ c.tipo_nome }}</small>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    {% endif %}
                 </div>
             </div>
         </div>
 
         <div class="mt-4 text-center">
-            <a href="/obreiros" class="btn btn-outline-secondary"><i class="bi bi-arrow-left"></i> Voltar para Lista de Obreiros</a>
+            <a href="/obreiros" class="btn btn-outline-secondary">
+                <i class="bi bi-arrow-left"></i> Voltar para Lista de Obreiros
+            </a>
         </div>
     </div>
 </div>
 
 <style>
-    .card { border-radius: 10px; overflow: hidden; }
-    .card-header { font-weight: 600; }
-    .table-borderless td { padding: 0.3rem 0; }
-    .rounded-circle { border-radius: 50% !important; }
-    @media (max-width: 768px) { .table-responsive { font-size: 0.85rem; } }
+    .card {
+        border-radius: 10px;
+        overflow: hidden;
+    }
+    .card-header {
+        font-weight: 600;
+    }
+    .table-borderless td {
+        padding: 0.3rem 0;
+    }
+    .rounded-circle {
+        border-radius: 50% !important;
+    }
+    @media (max-width: 768px) {
+        .table-responsive {
+            font-size: 0.85rem;
+        }
+        .d-flex.align-items-center {
+            flex-direction: column;
+            text-align: center;
+        }
+        .me-4 {
+            margin-right: 0 !important;
+            margin-bottom: 1rem;
+        }
+    }
 </style>
 
 {% endblock %}
