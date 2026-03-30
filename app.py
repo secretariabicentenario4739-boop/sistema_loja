@@ -5062,6 +5062,7 @@ def gerenciar_candidatos():
             flash(f"Candidato '{nome}' adicionado com sucesso!", "success")
         else:
             flash("Nome do candidato não pode estar vazio", "danger")
+    
     cursor.execute("""
         SELECT c.*,
                (SELECT COUNT(*) FROM sindicancias WHERE candidato_id = c.id) as total_votos,
@@ -5071,13 +5072,18 @@ def gerenciar_candidatos():
         ORDER BY c.data_criacao DESC
     """)
     candidatos = cursor.fetchall()
+    
+    # ✅ CORRIGIDO: Adicionado campo telefone
     cursor.execute("""
-        SELECT id, usuario, nome_completo, cim_numero, loja_nome, loja_numero, loja_orient, ativo 
+        SELECT id, usuario, nome_completo, cim_numero, 
+               loja_nome, loja_numero, loja_orient, ativo,
+               telefone
         FROM usuarios 
         WHERE tipo = 'sindicante' AND ativo = 1
         ORDER BY nome_completo
     """)
     sindicantes = cursor.fetchall()
+    
     return_connection(conn)
     return render_template("candidatos.html", candidatos=candidatos, sindicantes=sindicantes, tipo=session["tipo"])
 
