@@ -53,7 +53,7 @@
 
                     <div class="card-body">
 
-                        <form method="POST">
+                        <form method="POST" id="formEditarObreiro">
 
                             <!-- ===================== -->
                             <!-- LOGIN + TIPO -->
@@ -104,8 +104,6 @@
 
                                 <div class="col-md-6 mb-3">
                                     <label class="form-label">Loja</label>
-
-                                    <!-- 🔥 ALTERAÇÃO: SELECT DE LOJAS -->
                                     <select class="form-select" name="loja_nome">
                                         <option value="">Selecione a Loja</option>
                                         {% for l in lojas %}
@@ -182,7 +180,7 @@
                             {% endif %}
 
                             <div class="text-center mt-3">
-                                <button type="submit" class="btn btn-success">
+                                <button type="submit" class="btn btn-success" id="btnSalvar" onclick="return validarSenha()">
                                     <i class="bi bi-save"></i> Salvar
                                 </button>
                             </div>
@@ -194,7 +192,8 @@
             </div>
 
             <div class="col-md-4">
-                <div class="card shadow">
+                <!-- Card da Foto -->
+                <div class="card shadow mb-4">
                     <div class="card-header bg-primary text-white">
                         <i class="bi bi-camera"></i> Foto do Obreiro
                     </div>
@@ -214,16 +213,40 @@
 
                         <form method="POST" action="/obreiros/{{ obreiro.id }}/foto" enctype="multipart/form-data">
                             <input type="file" name="foto" class="form-control mb-2" accept="image/*" required>
-
                             <small class="text-muted d-block mb-2">
                                 JPG, PNG, WEBP • Máx: 5MB
                             </small>
-
                             <button type="submit" class="btn btn-primary w-100">
                                 <i class="bi bi-upload"></i> Upload
                             </button>
                         </form>
 
+                    </div>
+                </div>
+
+                <!-- Card da Senha (NOVO) -->
+                <div class="card shadow">
+                    <div class="card-header bg-warning text-dark">
+                        <i class="bi bi-lock"></i> Alterar Senha
+                    </div>
+
+                    <div class="card-body">
+                        <div class="alert alert-info small mb-3">
+                            <i class="bi bi-info-circle"></i> 
+                            Preencha apenas se deseja modificar a senha atual.
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Nova Senha</label>
+                            <input type="password" class="form-control" name="senha" id="senha" placeholder="Deixe em branco para manter a atual">
+                            <small class="text-muted">Mínimo de 6 caracteres</small>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Confirmar Nova Senha</label>
+                            <input type="password" class="form-control" id="confirmar_senha" placeholder="Digite a senha novamente">
+                            <small class="text-muted" id="senha_erro" style="color: red; display: none;">As senhas não coincidem</small>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -233,15 +256,67 @@
 </div>
 
 <script>
-document.getElementById('telefone').addEventListener('input', function(e) {
-    var value = e.target.value.replace(/\D/g, '');
-    if (value.length <= 10) {
-        value = value.replace(/^(\d{2})(\d{4})(\d{4})/, '($1) $2-$3');
-    } else {
-        value = value.replace(/^(\d{2})(\d{5})(\d{4})/, '($1) $2-$3');
+// Máscara de telefone
+var telefoneInput = document.getElementById('telefone');
+if (telefoneInput) {
+    telefoneInput.addEventListener('input', function(e) {
+        var value = e.target.value.replace(/\D/g, '');
+        if (value.length <= 10) {
+            value = value.replace(/^(\d{2})(\d{4})(\d{4})/, '($1) $2-$3');
+        } else {
+            value = value.replace(/^(\d{2})(\d{5})(\d{4})/, '($1) $2-$3');
+        }
+        e.target.value = value;
+    });
+}
+
+// Validação de senha
+function validarSenha() {
+    var senha = document.getElementById('senha');
+    var confirmar = document.getElementById('confirmar_senha');
+    var erroSpan = document.getElementById('senha_erro');
+    
+    if (!senha || !confirmar) return true;
+    
+    // Se ambos estiverem vazios, permite salvar (mantém senha atual)
+    if (senha.value === '' && confirmar.value === '') {
+        return true;
     }
-    e.target.value = value;
-});
+    
+    // Se a senha tem menos de 6 caracteres
+    if (senha.value.length > 0 && senha.value.length < 6) {
+        alert('A senha deve ter no mínimo 6 caracteres!');
+        return false;
+    }
+    
+    // Verifica se as senhas coincidem
+    if (senha.value !== confirmar.value) {
+        if (erroSpan) erroSpan.style.display = 'inline';
+        alert('As senhas não coincidem!');
+        return false;
+    }
+    
+    if (erroSpan) erroSpan.style.display = 'none';
+    return true;
+}
+
+// Validação em tempo real
+var confirmarInput = document.getElementById('confirmar_senha');
+if (confirmarInput) {
+    confirmarInput.addEventListener('input', function() {
+        var senha = document.getElementById('senha');
+        var confirmar = this;
+        var erroSpan = document.getElementById('senha_erro');
+        
+        if (senha && erroSpan) {
+            if (senha.value !== confirmar.value && confirmar.value !== '') {
+                erroSpan.style.display = 'inline';
+            } else {
+                erroSpan.style.display = 'none';
+            }
+        }
+    });
+}
 </script>
 
 {% endblock %}
