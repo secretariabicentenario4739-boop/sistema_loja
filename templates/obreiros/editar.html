@@ -5,6 +5,7 @@
 {% block content %}
 <div class="container-fluid py-4">
     <div class="container">
+
         <div class="d-flex justify-content-between align-items-center mb-4">
             <h2>
                 <i class="bi bi-pencil-square"></i> 
@@ -14,6 +15,7 @@
                     Editar Obreiro: {{ obreiro.nome_completo }}
                 {% endif %}
             </h2>
+
             <div>
                 <a href="/obreiros/{{ obreiro.id }}" class="btn btn-outline-info me-2">
                     <i class="bi bi-eye"></i> Visualizar
@@ -48,10 +50,14 @@
                             {% endif %}
                         </h5>
                     </div>
+
                     <div class="card-body">
+
                         <form method="POST">
-                            
-                            <!-- LOGIN -->
+
+                            <!-- ===================== -->
+                            <!-- LOGIN + TIPO -->
+                            <!-- ===================== -->
                             <div class="row">
                                 <div class="col-md-6 mb-3">
                                     <label class="form-label">Usuário</label>
@@ -67,6 +73,8 @@
                                         <option value="admin" {% if obreiro.tipo == 'admin' %}selected{% endif %}>Administrador</option>
                                     </select>
                                 </div>
+                                {% else %}
+                                    <input type="hidden" name="tipo" value="{{ obreiro.tipo }}">
                                 {% endif %}
                             </div>
 
@@ -75,10 +83,50 @@
 
                             <div class="row">
                                 <div class="col-md-6 mb-3">
+                                    <label class="form-label">Nome Completo</label>
                                     <input type="text" class="form-control" name="nome_completo" value="{{ obreiro.nome_completo }}" required>
                                 </div>
+
                                 <div class="col-md-6 mb-3">
+                                    <label class="form-label">Nome Maçônico</label>
                                     <input type="text" class="form-control" name="nome_maconico" value="{{ obreiro.nome_maconico or '' }}">
+                                </div>
+                            </div>
+
+                            <hr>
+                            <h6>🏛️ Dados Maçônicos</h6>
+
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label">CIM</label>
+                                    <input type="text" class="form-control" name="cim_numero" value="{{ obreiro.cim_numero or '' }}">
+                                </div>
+
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label">Loja</label>
+
+                                    <!-- 🔥 ALTERAÇÃO: SELECT DE LOJAS -->
+                                    <select class="form-select" name="loja_nome">
+                                        <option value="">Selecione a Loja</option>
+                                        {% for l in lojas %}
+                                            <option value="{{ l.nome }}"
+                                                {% if l.nome == obreiro.loja_nome %}selected{% endif %}>
+                                                {{ l.nome }}
+                                            </option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label">Número da Loja</label>
+                                    <input type="text" class="form-control" name="loja_numero" value="{{ obreiro.loja_numero or '' }}">
+                                </div>
+
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label">Oriente</label>
+                                    <input type="text" class="form-control" name="loja_orient" value="{{ obreiro.loja_orient or '' }}">
                                 </div>
                             </div>
 
@@ -87,69 +135,98 @@
 
                             <div class="row">
                                 <div class="col-md-6 mb-3">
+                                    <label class="form-label">Telefone</label>
                                     <input type="text" class="form-control" name="telefone" id="telefone" value="{{ obreiro.telefone or '' }}">
                                 </div>
+
                                 <div class="col-md-6 mb-3">
+                                    <label class="form-label">Email</label>
                                     <input type="email" class="form-control" name="email" value="{{ obreiro.email or '' }}">
                                 </div>
                             </div>
 
                             <div class="mb-3">
+                                <label class="form-label">Endereço</label>
                                 <textarea class="form-control" name="endereco">{{ obreiro.endereco or '' }}</textarea>
                             </div>
 
-                            <div class="text-center">
+                            {% if is_admin %}
+
+                            <hr>
+                            <h6>⚙️ Administração</h6>
+
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label">Grau Atual</label>
+                                    <select class="form-select" name="grau_atual">
+                                        {% for g in graus %}
+                                        <option value="{{ g.nivel }}" {% if g.nivel == obreiro.grau_atual %}selected{% endif %}>
+                                            {{ g.nome }}
+                                        </option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label">Status</label>
+                                    <select class="form-select" name="ativo">
+                                        <option value="1" {% if obreiro.ativo == 1 %}selected{% endif %}>Ativo</option>
+                                        <option value="0" {% if obreiro.ativo == 0 %}selected{% endif %}>Inativo</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            {% else %}
+                                <input type="hidden" name="grau_atual" value="{{ obreiro.grau_atual }}">
+                                <input type="hidden" name="ativo" value="{{ obreiro.ativo }}">
+                            {% endif %}
+
+                            <div class="text-center mt-3">
                                 <button type="submit" class="btn btn-success">
                                     <i class="bi bi-save"></i> Salvar
                                 </button>
                             </div>
 
                         </form>
+
                     </div>
                 </div>
             </div>
 
-            <!-- FOTO -->
-           <div class="col-md-4">
-    <div class="card shadow">
-        <div class="card-header bg-primary text-white">
-            <i class="bi bi-camera"></i> Foto do Obreiro
-        </div>
-        <div class="card-body text-center">
+            <div class="col-md-4">
+                <div class="card shadow">
+                    <div class="card-header bg-primary text-white">
+                        <i class="bi bi-camera"></i> Foto do Obreiro
+                    </div>
 
-            {% if obreiro.foto %}
-            <img src="{{ obreiro.foto }}" 
-                 class="rounded-circle mb-3 shadow-sm"
-                 style="width:150px; height:150px; object-fit:cover;"
-                 alt="Foto de {{ obreiro.nome_completo }}">
-            {% else %}
-            <div class="bg-light rounded-circle d-flex align-items-center justify-content-center mx-auto mb-3 shadow-sm"
-                 style="width:150px; height:150px;">
-                <i class="bi bi-person fs-1 text-secondary"></i>
-            </div>
-            {% endif %}
+                    <div class="card-body text-center">
 
-            <form method="POST" action="/obreiros/{{ obreiro.id }}/foto" enctype="multipart/form-data">
-                <div class="mb-2">
-                    <input type="file" 
-                           name="foto" 
-                           class="form-control" 
-                           accept="image/*" 
-                           required>
+                        {% if obreiro.foto %}
+                        <img src="{{ obreiro.foto }}" 
+                             class="rounded-circle mb-3 shadow-sm"
+                             style="width:150px; height:150px; object-fit:cover;">
+                        {% else %}
+                        <div class="bg-light rounded-circle d-flex align-items-center justify-content-center mx-auto mb-3 shadow-sm"
+                             style="width:150px; height:150px;">
+                            <i class="bi bi-person fs-1 text-secondary"></i>
+                        </div>
+                        {% endif %}
+
+                        <form method="POST" action="/obreiros/{{ obreiro.id }}/foto" enctype="multipart/form-data">
+                            <input type="file" name="foto" class="form-control mb-2" accept="image/*" required>
+
+                            <small class="text-muted d-block mb-2">
+                                JPG, PNG, WEBP • Máx: 5MB
+                            </small>
+
+                            <button type="submit" class="btn btn-primary w-100">
+                                <i class="bi bi-upload"></i> Upload
+                            </button>
+                        </form>
+
+                    </div>
                 </div>
-
-                <small class="text-muted d-block mb-2">
-                    JPG, PNG, WEBP • Máx: 5MB
-                </small>
-
-                <button type="submit" class="btn btn-primary w-100">
-                    <i class="bi bi-upload"></i> Upload
-                </button>
-            </form>
-
-        </div>
-    </div>
-</div>
+            </div>
 
         </div>
     </div>

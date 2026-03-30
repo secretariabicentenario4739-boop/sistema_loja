@@ -41,7 +41,7 @@
                                 <th>ID</th>
                                 <th>Nome</th>
                                 <th>Número</th>
-                                <th>Orientação</th>
+                                <th>Oriente</th>
                                 <th>Cidade/UF</th>
                                 <th>Status</th>
                                 <th>Ações</th>
@@ -60,7 +60,7 @@
                                         {% endif %}
                                     </td>
                                     <td>{{ loja.numero or '-' }}</td>
-                                    <td>{{ loja.orientacao or '-' }}</td>
+                                    <td>{{ loja.oriente or '-' }}</td>
                                     <td>
                                         {{ loja.cidade or '-' }}/{{ loja.uf or '-' }}
                                     </td>
@@ -103,23 +103,34 @@
 <script>
 function excluirLoja(id, nome) {
     if (confirm(`Tem certeza que deseja excluir a loja "${nome}"?\n\nEsta ação não pode ser desfeita!`)) {
+
         fetch(`/lojas/excluir/${id}`, {
-            method: 'DELETE',
+            method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
             }
         })
-        .then(response => response.json())
+        .then(res => res.json())
         .then(data => {
-            if (data.success) {
-                alert('Loja excluída com sucesso!');
-                location.reload();
+
+            if (data.ok) {
+               alert('Loja excluída com sucesso!');
+			   location.reload();
+
+                // remove a linha da tabela sem recarregar
+                const row = document.getElementById(`row-${id}`);
+                if (row) {
+                    row.remove();
+                }
+
             } else {
-                alert('Erro ao excluir loja: ' + data.error);
+                alert('Erro: ' + data.msg);
             }
+
         })
         .catch(error => {
-            alert('Erro na requisição: ' + error.message);
+            console.error(error);
+            alert('Erro na requisição');
         });
     }
 }

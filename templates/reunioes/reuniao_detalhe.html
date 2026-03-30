@@ -1,0 +1,171 @@
+{% extends "base.html" %}
+
+{% block title %}Detalhes da Reunião - {{ reuniao.titulo }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+<div class="container">
+
+<!-- HEADER -->
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2>
+        <i class="bi bi-calendar-event"></i> 
+        {{ reuniao.titulo }}
+    </h2>
+    <a href="/reunioes" class="btn btn-outline-secondary">
+        <i class="bi bi-arrow-left"></i> Voltar
+    </a>
+</div>
+
+<!-- ALERTAS -->
+{% with messages = get_flashed_messages(with_categories=true) %}
+{% if messages %}
+    {% for category, message in messages %}
+        <div class="alert alert-{{ category }}">{{ message }}</div>
+    {% endfor %}
+{% endif %}
+{% endwith %}
+
+<!-- ===================== -->
+<!-- INFORMAÇÕES -->
+<!-- ===================== -->
+<div class="card mb-4">
+<div class="card-body">
+
+<p><strong>Tipo:</strong> {{ reuniao.tipo }}</p>
+<p><strong>Data:</strong> {{ reuniao.data }}</p>
+<p><strong>Local:</strong> {{ reuniao.local }}</p>
+
+</div>
+</div>
+
+<!-- ===================== -->
+<!-- ESTATÍSTICAS -->
+<!-- ===================== -->
+<div class="row mb-4 text-center">
+
+<div class="col">
+    <div class="card">
+        <div class="card-body">
+            <h3>{{ total_obreiros }}</h3>
+            <small>Total</small>
+        </div>
+    </div>
+</div>
+
+<div class="col">
+    <div class="card">
+        <div class="card-body text-success">
+            <h3>{{ presentes }}</h3>
+            <small>Presentes</small>
+        </div>
+    </div>
+</div>
+
+<div class="col">
+    <div class="card">
+        <div class="card-body text-danger">
+            <h3>{{ ausentes }}</h3>
+            <small>Ausentes</small>
+        </div>
+    </div>
+</div>
+
+</div>
+
+<!-- ===================== -->
+<!-- PRESENÇA (CORE DO SISTEMA) -->
+<!-- ===================== -->
+<div class="card">
+<div class="card-header bg-dark text-white">
+    <h5>Lista de Presença</h5>
+</div>
+
+<div class="card-body table-responsive">
+
+<table class="table table-hover">
+
+<thead>
+<tr>
+    <th>Obreiro</th>
+    <th>Grau</th>
+    <th>Status</th>
+    <th>Ação</th>
+</tr>
+</thead>
+
+<tbody>
+
+{% for p in presenca %}
+
+<tr>
+
+<td><strong>{{ p.nome_completo }}</strong></td>
+
+<td>
+    {% if p.grau_atual == 3 %}
+        Mestre
+    {% elif p.grau_atual == 2 %}
+        Companheiro
+    {% else %}
+        Aprendiz
+    {% endif %}
+</td>
+
+<td>
+    {% if p.presente == 1 %}
+        <span class="badge bg-success">Presente</span>
+    {% elif p.presente == 0 %}
+        <span class="badge bg-danger">Ausente</span>
+    {% else %}
+        <span class="badge bg-warning">Pendente</span>
+    {% endif %}
+</td>
+
+<td>
+
+<form method="POST" action="/presenca/update/{{ p.presenca_id }}">
+
+    <select name="presente" class="form-select form-select-sm mb-1">
+        <option value="1" {% if p.presente == 1 %}selected{% endif %}>Presente</option>
+        <option value="0" {% if p.presente == 0 %}selected{% endif %}>Ausente</option>
+    </select>
+
+    <select name="tipo_ausencia" class="form-select form-select-sm mb-1">
+        <option value="">Tipo ausência</option>
+        {% for tipo in tipos_ausencia %}
+            <option value="{{ tipo.nome }}"
+                {% if p.tipo_ausencia == tipo.nome %}selected{% endif %}>
+                {{ tipo.nome }}
+            </option>
+        {% endfor %}
+    </select>
+
+    <input type="text"
+           name="justificativa"
+           value="{{ p.justificativa or '' }}"
+           class="form-control form-control-sm mb-1"
+           placeholder="Justificativa">
+
+    <button class="btn btn-sm btn-primary w-100">
+        Salvar
+    </button>
+
+</form>
+
+</td>
+
+</tr>
+
+{% endfor %}
+
+</tbody>
+</table>
+
+</div>
+</div>
+
+</div>
+</div>
+
+{% endblock %}

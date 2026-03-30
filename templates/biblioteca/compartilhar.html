@@ -1,0 +1,118 @@
+{% extends "base.html" %}
+
+{% block title %}Compartilhar - {{ dados.titulo }}{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card shadow">
+                <div class="card-header bg-primary text-white text-center">
+                    <h4 class="mb-0">
+                        <i class="bi bi-share"></i> Compartilhar Material
+                    </h4>
+                </div>
+                <div class="card-body text-center">
+                    <!-- Prévia do Material -->
+                    <div class="card mb-4">
+                        <div class="row g-0">
+                            <div class="col-md-4">
+                                {% if dados.imagem %}
+                                <img src="{{ dados.imagem }}" class="img-fluid rounded-start" style="height: 150px; object-fit: cover; width: 100%;">
+                                {% else %}
+                                <div class="bg-light d-flex align-items-center justify-content-center" style="height: 150px;">
+                                    <i class="bi bi-file-earmark-text fs-1 text-muted"></i>
+                                </div>
+                                {% endif %}
+                            </div>
+                            <div class="col-md-8">
+                                <div class="card-body">
+                                    <h5 class="card-title">{{ dados.titulo }}</h5>
+                                    <p class="card-text text-muted small">{{ dados.descricao }}</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Link de Compartilhamento -->
+                    <div class="mb-4">
+                        <label class="form-label fw-bold">Link para compartilhar</label>
+                        <div class="input-group">
+                            <input type="text" class="form-control" id="linkCompartilhar" value="{{ dados.url }}" readonly>
+                            <button class="btn btn-outline-secondary" onclick="copiarLink()">
+                                <i class="bi bi-clipboard"></i> Copiar
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Botões de Redes Sociais -->
+                    <h6 class="mb-3">Compartilhar em:</h6>
+                    <div class="d-flex justify-content-center gap-3 mb-4">
+                        <a href="https://wa.me/?text={{ dados.url|urlencode }}" target="_blank" class="btn btn-success" onclick="registrarCompartilhamento('whatsapp')">
+                            <i class="bi bi-whatsapp"></i> WhatsApp
+                        </a>
+                        <a href="https://t.me/share/url?url={{ dados.url|urlencode }}&text={{ dados.titulo|urlencode }}" target="_blank" class="btn btn-info text-white" onclick="registrarCompartilhamento('telegram')">
+                            <i class="bi bi-telegram"></i> Telegram
+                        </a>
+                        <a href="https://www.facebook.com/sharer/sharer.php?u={{ dados.url|urlencode }}" target="_blank" class="btn btn-primary" onclick="registrarCompartilhamento('facebook')">
+                            <i class="bi bi-facebook"></i> Facebook
+                        </a>
+                        <a href="mailto:?subject={{ dados.titulo|urlencode }}&body={{ dados.url|urlencode }}" class="btn btn-secondary" onclick="registrarCompartilhamento('email')">
+                            <i class="bi bi-envelope"></i> E-mail
+                        </a>
+                    </div>
+
+                    <!-- Código para Embed -->
+                    <hr>
+                    <h6 class="mb-3"><i class="bi bi-code-slash"></i> Incorporar em site</h6>
+                    <div class="mb-3">
+                        <label class="form-label small">Código HTML para incorporar</label>
+                        <div class="input-group">
+                            <input type="text" class="form-control form-control-sm" id="codigoEmbed" 
+                                   value='<iframe src="{{ dados.url|urlencode }}" width="100%" height="400" frameborder="0"></iframe>' readonly>
+                            <button class="btn btn-outline-secondary btn-sm" onclick="copiarEmbed()">
+                                <i class="bi bi-clipboard"></i> Copiar
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="alert alert-info mt-3">
+                        <i class="bi bi-info-circle"></i>
+                        <small>O link é público e pode ser compartilhado com qualquer pessoa. Os materiais só estarão acessíveis conforme o grau de acesso configurado.</small>
+                    </div>
+
+                    <div class="mt-3">
+                        <a href="/biblioteca" class="btn btn-outline-secondary">
+                            <i class="bi bi-arrow-left"></i> Voltar
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function copiarLink() {
+    const input = document.getElementById('linkCompartilhar');
+    input.select();
+    document.execCommand('copy');
+    alert('Link copiado para a área de transferência!');
+}
+
+function copiarEmbed() {
+    const input = document.getElementById('codigoEmbed');
+    input.select();
+    document.execCommand('copy');
+    alert('Código embed copiado!');
+}
+
+function registrarCompartilhamento(plataforma) {
+    fetch(window.location.href, {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({plataforma: plataforma})
+    });
+}
+</script>
+{% endblock %}

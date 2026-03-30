@@ -1,0 +1,349 @@
+{% extends "base.html" %}
+
+{% block title %}{{ material.titulo }} - Biblioteca{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <!-- Breadcrumb -->
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="/biblioteca">Biblioteca</a></li>
+            {% if material.categoria_nome %}
+            <li class="breadcrumb-item"><a href="/biblioteca/categoria/{{ material.categoria_id }}">{{ material.categoria_nome }}</a></li>
+            {% endif %}
+            <li class="breadcrumb-item active">{{ material.titulo }}</li>
+        </ol>
+    </nav>
+
+    <div class="row">
+        <div class="col-md-4">
+            <!-- Capa do Material -->
+            <div class="card shadow mb-4">
+                {% if material.capa_url %}
+                <img src="{{ material.capa_url }}" class="card-img-top" alt="{{ material.titulo }}" style="height: 300px; object-fit: cover;">
+                {% else %}
+                <div class="card-img-top bg-light d-flex align-items-center justify-content-center" style="height: 300px;">
+                    <i class="bi bi-file-earmark-{{ material.tipo }}" style="font-size: 5rem; color: #6c757d;"></i>
+                </div>
+                {% endif %}
+                <div class="card-body text-center">
+                    <span class="badge mb-2" style="background-color: {{ material.categoria_cor or '#6c757d' }}">
+                        {{ material.categoria_nome or 'Geral' }}
+                    </span>
+                    
+                    <div class="mt-3">
+                        <button class="btn btn-primary w-100 mb-2" onclick="baixarMaterial()">
+                            <i class="bi bi-download"></i> Baixar Material
+                        </button>
+                        <button class="btn btn-outline-secondary w-100" id="btnFavoritar" onclick="favoritarMaterial()">
+                            <i class="bi bi-star{% if favoritado %}-fill{% endif %}"></i> 
+                            {% if favoritado %}Favoritado{% else %}Favoritar{% endif %}
+                        </button>
+                        
+                        <!-- Botão de Upload - Apenas para Admin e Mestres -->
+                        {% if session.get('tipo') == 'admin' or session.get('grau_atual') >= 3 %}
+                        <hr>
+                        <a href="/biblioteca/admin/upload" class="btn btn-success w-100 mt-2">
+                            <i class="bi bi-cloud-upload"></i> Enviar Novo Material
+                        </a>
+                        {% endif %}
+                    </div>
+                    
+                    <hr>
+                    
+                    <div class="row text-center">
+                        <div class="col-4">
+                            <i class="bi bi-eye"></i><br>
+                            <small>{{ material.visualizacoes_count or 0 }}</small>
+                        </div>
+                        <div class="col-4">
+                            <i class="bi bi-download"></i><br>
+                            <small>{{ material.downloads_count or 0 }}</small>
+                        </div>
+                        <div class="col-4">
+                            <i class="bi bi-file-text"></i><br>
+                            <small>{{ material.formato or material.tipo|upper }}</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+<div class="mt-3">
+    <button class="btn btn-primary w-100 mb-2" onclick="baixarMaterial()">
+        <i class="bi bi-download"></i> Baixar Material
+    </button>
+    <a href="/biblioteca/material/{{ material.id }}/compartilhar" class="btn btn-outline-info w-100 mb-2">
+        <i class="bi bi-share"></i> Compartilhar
+    </a>
+    <button class="btn btn-outline-secondary w-100" id="btnFavoritar" onclick="favoritarMaterial()">
+        <i class="bi bi-star{% if favoritado %}-fill{% endif %}"></i> 
+        {% if favoritado %}Favoritado{% else %}Favoritar{% endif %}
+    </button>
+</div>
+
+        <div class="col-md-8">
+            <!-- Detalhes do Material -->
+            <div class="card shadow mb-4">
+                <div class="card-header bg-white d-flex justify-content-between align-items-center">
+                    <h3 class="mb-0">{{ material.titulo }}</h3>
+                    <div>
+                        {% if session.get('tipo') == 'admin' %}
+                        <a href="/biblioteca/admin/editar/{{ material.id }}" class="btn btn-sm btn-warning me-2" title="Editar Material">
+                            <i class="bi bi-pencil"></i> Editar
+                        </a>
+                        <button type="button" class="btn btn-sm btn-danger" title="Excluir Material" onclick="confirmarExclusao({{ material.id }}, '{{ material.titulo }}')">
+                            <i class="bi bi-trash"></i> Excluir
+                        </button>
+                        {% endif %}
+                    </div>
+                </div>
+                {% if material.subtitulo %}
+                <div class="card-body pt-0">
+                    <p class="text-muted mt-1">{{ material.subtitulo }}</p>
+                </div>
+                {% endif %}
+                <div class="card-body">
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <small class="text-muted">Autor:</small>
+                            <p><strong>{{ material.autor or 'Não informado' }}</strong></p>
+                        </div>
+                        <div class="col-md-6">
+                            <small class="text-muted">Editora:</small>
+                            <p><strong>{{ material.editora or 'Não informada' }}</strong></p>
+                        </div>
+                        <div class="col-md-6">
+                            <small class="text-muted">Ano:</small>
+                            <p><strong>{{ material.ano_publicacao or '-' }}</strong></p>
+                        </div>
+                        <div class="col-md-6">
+                            <small class="text-muted">Grau de Acesso:</small>
+                            <p>
+                                {% if material.grau_acesso == 1 %}
+                                    <span class="badge bg-secondary">Aprendiz</span>
+                                {% elif material.grau_acesso == 2 %}
+                                    <span class="badge bg-primary">Companheiro</span>
+                                {% else %}
+                                    <span class="badge bg-success">Mestre</span>
+                                {% endif %}
+                            </p>
+                        </div>
+                        {% if material.num_paginas %}
+                        <div class="col-md-6">
+                            <small class="text-muted">Páginas:</small>
+                            <p><strong>{{ material.num_paginas }}</strong></p>
+                        </div>
+                        {% endif %}
+                        {% if material.isbn %}
+                        <div class="col-md-6">
+                            <small class="text-muted">ISBN:</small>
+                            <p><strong>{{ material.isbn }}</strong></p>
+                        </div>
+                        {% endif %}
+                    </div>
+                    
+                    <hr>
+                    
+                    <h5><i class="bi bi-info-circle"></i> Descrição</h5>
+                    <p>{{ material.descricao or 'Sem descrição disponível.' }}</p>
+                    
+                    {% if material.tags %}
+                    <hr>
+                    <h5><i class="bi bi-tags"></i> Tags</h5>
+                    <div>
+                        {% for tag in material.tags.split(',') %}
+                        <span class="badge bg-secondary me-1">{{ tag.strip() }}</span>
+                        {% endfor %}
+                    </div>
+                    {% endif %}
+                    
+                    <!-- Informações do Cloudinary -->
+                    <hr>
+                    <div class="alert alert-info small">
+                        <i class="bi bi-cloud-check"></i>
+                        <strong>Armazenamento:</strong> Material hospedado na nuvem do Cloudinary
+                        {% if material.arquivo_url %}
+                        <br><i class="bi bi-link"></i> <a href="{{ material.arquivo_url }}" target="_blank" class="text-break">Link direto</a>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Avaliações -->
+            <div class="card shadow">
+                <div class="card-header bg-white">
+                    <h5 class="mb-0"><i class="bi bi-star"></i> Avaliações</h5>
+                </div>
+                <div class="card-body">
+                    <form id="formAvaliacao" class="mb-4">
+                        <div class="mb-2">
+                            <label class="form-label fw-bold">Sua nota</label>
+                            <div class="rating">
+                                {% for i in range(1, 6) %}
+                                <i class="bi bi-star fs-3" data-nota="{{ i }}" style="cursor: pointer;"></i>
+                                {% endfor %}
+                            </div>
+                            <input type="hidden" name="nota" id="nota" required>
+                        </div>
+                        <div class="mb-2">
+                            <label class="form-label fw-bold">Comentário</label>
+                            <textarea name="comentario" class="form-control" rows="3" 
+                                      placeholder="Escreva seu comentário..."></textarea>
+                        </div>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-send"></i> Enviar Avaliação
+                        </button>
+                    </form>
+                    
+                    <hr>
+                    
+                    <div id="avaliacoesLista">
+                        {% if avaliacoes %}
+                        <div class="avaliacoes">
+                            {% for aval in avaliacoes %}
+                            <div class="mb-3">
+                                <div class="d-flex justify-content-between">
+                                    <strong>{{ aval.usuario_nome }}</strong>
+                                    <small class="text-muted">{{ aval.data_avaliacao.strftime('%d/%m/%Y') if aval.data_avaliacao else '-' }}</small>
+                                </div>
+                                <div class="text-warning">
+                                    {% for i in range(aval.nota) %}
+                                        <i class="bi bi-star-fill"></i>
+                                    {% endfor %}
+                                    {% for i in range(5 - aval.nota) %}
+                                        <i class="bi bi-star"></i>
+                                    {% endfor %}
+                                </div>
+                                <p class="mt-1">{{ aval.comentario }}</p>
+                                {% if not loop.last %}<hr>{% endif %}
+                            </div>
+                            {% endfor %}
+                        </div>
+                        {% else %}
+                        <p class="text-muted text-center">Seja o primeiro a avaliar este material!</p>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+let notaSelecionada = 0;
+
+// Sistema de estrelas para avaliação
+document.querySelectorAll('.rating i').forEach(estrela => {
+    estrela.addEventListener('mouseenter', function() {
+        const nota = parseInt(this.dataset.nota);
+        preencherEstrelas(nota);
+    });
+    
+    estrela.addEventListener('mouseleave', function() {
+        preencherEstrelas(notaSelecionada);
+    });
+    
+    estrela.addEventListener('click', function() {
+        notaSelecionada = parseInt(this.dataset.nota);
+        document.getElementById('nota').value = notaSelecionada;
+        preencherEstrelas(notaSelecionada);
+    });
+});
+
+function preencherEstrelas(nota) {
+    const estrelas = document.querySelectorAll('.rating i');
+    estrelas.forEach((estrela, index) => {
+        if (index < nota) {
+            estrela.classList.remove('bi-star');
+            estrela.classList.add('bi-star-fill');
+        } else {
+            estrela.classList.remove('bi-star-fill');
+            estrela.classList.add('bi-star');
+        }
+    });
+}
+
+// Enviar avaliação
+document.getElementById('formAvaliacao').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    
+    if (!notaSelecionada) {
+        alert('Por favor, selecione uma nota!');
+        return;
+    }
+    
+    const comentario = document.querySelector('textarea[name="comentario"]').value;
+    
+    try {
+        const response = await fetch(`/biblioteca/material/{{ material.id }}/avaliar`, {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({
+                nota: notaSelecionada,
+                comentario: comentario
+            })
+        });
+        
+        const result = await response.json();
+        if (result.success) {
+            alert(result.mensagem);
+            location.reload();
+        } else {
+            alert(result.mensagem || 'Erro ao enviar avaliação');
+        }
+    } catch (error) {
+        alert('Erro ao enviar avaliação');
+    }
+});
+
+// Download material
+function baixarMaterial() {
+    window.location.href = `/biblioteca/material/{{ material.id }}/download`;
+}
+
+// Favoritar material
+async function favoritarMaterial() {
+    try {
+        const response = await fetch(`/biblioteca/material/{{ material.id }}/favoritar`, {
+            method: 'POST'
+        });
+        const result = await response.json();
+        
+        const btn = document.getElementById('btnFavoritar');
+        if (result.favoritado) {
+            btn.innerHTML = '<i class="bi bi-star-fill"></i> Favoritado';
+            btn.classList.remove('btn-outline-secondary');
+            btn.classList.add('btn-warning');
+        } else {
+            btn.innerHTML = '<i class="bi bi-star"></i> Favoritar';
+            btn.classList.remove('btn-warning');
+            btn.classList.add('btn-outline-secondary');
+        }
+    } catch (error) {
+        alert('Erro ao favoritar');
+    }
+}
+
+// Confirmar exclusão
+function confirmarExclusao(materialId, materialTitulo) {
+    if (confirm(`Tem certeza que deseja excluir o material "${materialTitulo}"?\n\n⚠️ Esta ação é irreversível e também removerá:\n- O arquivo da nuvem\n- Todas as avaliações\n- Todos os favoritos\n- Os registros de download`)) {
+        const form = document.createElement('form');
+        form.method = 'POST';
+        form.action = `/biblioteca/admin/excluir/${materialId}`;
+        document.body.appendChild(form);
+        form.submit();
+    }
+}
+</script>
+
+<style>
+.rating i {
+    font-size: 1.5rem;
+    margin-right: 5px;
+    transition: all 0.2s;
+}
+.rating i:hover {
+    transform: scale(1.1);
+}
+</style>
+{% endblock %}

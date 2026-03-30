@@ -1,0 +1,307 @@
+{% extends "base.html" %}
+
+{% block title %}Relatórios - Biblioteca{% endblock %}
+
+{% block styles %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>
+            <i class="bi bi-graph-up"></i> 
+            Relatórios da Biblioteca
+        </h2>
+        <div>
+            <a href="/biblioteca" class="btn btn-outline-secondary me-2">
+                <i class="bi bi-arrow-left"></i> Voltar
+            </a>
+            <div class="btn-group">
+                <button type="button" class="btn btn-success dropdown-toggle" data-bs-toggle="dropdown">
+                    <i class="bi bi-download"></i> Exportar
+                </button>
+                <ul class="dropdown-menu">
+                    <li><a class="dropdown-item" href="/biblioteca/relatorios/exportar/csv">
+                        <i class="bi bi-filetype-csv"></i> Exportar CSV
+                    </a></li>
+                    <li><a class="dropdown-item" href="/biblioteca/relatorios/exportar/pdf">
+                        <i class="bi bi-filetype-pdf"></i> Exportar PDF
+                    </a></li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <!-- Cards de Estatísticas -->
+    <div class="row mb-4">
+        <div class="col-md-3 mb-3">
+            <div class="card bg-primary text-white shadow">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="mb-0">Total de Materiais</h6>
+                            <h2 class="mb-0">{{ estatisticas_gerais.total_materiais }}</h2>
+                        </div>
+                        <i class="bi bi-book fs-1 opacity-50"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 mb-3">
+            <div class="card bg-success text-white shadow">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="mb-0">Publicados</h6>
+                            <h2 class="mb-0">{{ estatisticas_gerais.publicados }}</h2>
+                        </div>
+                        <i class="bi bi-check-circle fs-1 opacity-50"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 mb-3">
+            <div class="card bg-info text-white shadow">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="mb-0">Total Downloads</h6>
+                            <h2 class="mb-0">{{ estatisticas_gerais.total_downloads or 0 }}</h2>
+                        </div>
+                        <i class="bi bi-download fs-1 opacity-50"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 mb-3">
+            <div class="card bg-warning text-white shadow">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="mb-0">Contribuidores</h6>
+                            <h2 class="mb-0">{{ estatisticas_gerais.total_contribuidores or 0 }}</h2>
+                        </div>
+                        <i class="bi bi-people fs-1 opacity-50"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Gráfico por Grau -->
+        <div class="col-md-6 mb-4">
+            <div class="card shadow">
+                <div class="card-header bg-light">
+                    <h6 class="mb-0"><i class="bi bi-pie-chart"></i> Materiais por Grau</h6>
+                </div>
+                <div class="card-body">
+                    <canvas id="graficoGrau" height="250"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- Gráfico por Tipo -->
+        <div class="col-md-6 mb-4">
+            <div class="card shadow">
+                <div class="card-header bg-light">
+                    <h6 class="mb-0"><i class="bi bi-bar-chart"></i> Materiais por Tipo</h6>
+                </div>
+                <div class="card-body">
+                    <canvas id="graficoTipo" height="250"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Materiais por Categoria -->
+        <div class="col-md-6 mb-4">
+            <div class="card shadow">
+                <div class="card-header bg-light">
+                    <h6 class="mb-0"><i class="bi bi-folder"></i> Materiais por Categoria</h6>
+                </div>
+                <div class="card-body">
+                    <canvas id="graficoCategoria" height="250"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- Top 10 Materiais -->
+        <div class="col-md-6 mb-4">
+            <div class="card shadow">
+                <div class="card-header bg-light">
+                    <h6 class="mb-0"><i class="bi bi-trophy"></i> Top 10 Materiais Mais Acessados</h6>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-sm table-hover mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>#</th>
+                                    <th>Título</th>
+                                    <th>Categoria</th>
+                                    <th class="text-center">👁️</th>
+                                    <th class="text-center">⬇️</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for mat in materiais_top %}
+                                <tr>
+                                    <td>{{ loop.index }}</td>
+                                    <td>
+                                        <a href="/biblioteca/material/{{ mat.id }}" target="_blank">
+                                            {{ mat.titulo|truncate(30) }}
+                                        </a>
+                                    </td>
+                                    <td><span class="badge bg-secondary">{{ mat.categoria or '-' }}</span></td>
+                                    <td class="text-center">{{ mat.visualizacoes }}</td>
+                                    <td class="text-center">{{ mat.downloads }}</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Materiais Recentes -->
+        <div class="col-md-6 mb-4">
+            <div class="card shadow">
+                <div class="card-header bg-light">
+                    <h6 class="mb-0"><i class="bi bi-clock-history"></i> Materiais Recentes</h6>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-sm table-hover mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Título</th>
+                                    <th>Categoria</th>
+                                    <th>Adicionado por</th>
+                                    <th>Data</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for mat in materiais_recentes %}
+                                <tr>
+                                    <td>
+                                        <a href="/biblioteca/material/{{ mat.id }}" target="_blank">
+                                            {{ mat.titulo|truncate(25) }}
+                                        </a>
+                                    </td>
+                                    <td><span class="badge bg-secondary">{{ mat.categoria or '-' }}</span></td>
+                                    <td>{{ mat.autor_nome or 'Sistema' }}</td>
+                                    <td><small>{{ mat.created_at.strftime('%d/%m/%Y') if mat.created_at else '-' }}</small></td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Atividade dos Usuários -->
+        <div class="col-md-6 mb-4">
+            <div class="card shadow">
+                <div class="card-header bg-light">
+                    <h6 class="mb-0"><i class="bi bi-person"></i> Top Usuários Ativos</h6>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-sm table-hover mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Usuário</th>
+                                    <th class="text-center">⬇️ Baixados</th>
+                                    <th class="text-center">⭐ Favoritos</th>
+                                    <th class="text-center">📝 Avaliações</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for usuario in atividade_usuarios %}
+                                <tr>
+                                    <td>{{ usuario.usuario or '-' }}</td>
+                                    <td class="text-center">{{ usuario.materiais_baixados or 0 }}</td>
+                                    <td class="text-center">{{ usuario.favoritos or 0 }}</td>
+                                    <td class="text-center">{{ usuario.avaliacoes or 0 }}</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Gráfico por Grau
+{% if labels_grau and dados_grau %}
+new Chart(document.getElementById('graficoGrau'), {
+    type: 'pie',
+    data: {
+        labels: {{ labels_grau|tojson }},
+        datasets: [{
+            data: {{ dados_grau|tojson }},
+            backgroundColor: ['#6c757d', '#0d6efd', '#198754']
+        }]
+    },
+    options: {
+        responsive: true,
+        plugins: {
+            legend: { position: 'bottom' }
+        }
+    }
+});
+{% endif %}
+
+// Gráfico por Tipo
+{% if labels_tipo and dados_tipo %}
+new Chart(document.getElementById('graficoTipo'), {
+    type: 'bar',
+    data: {
+        labels: {{ labels_tipo|tojson }},
+        datasets: [{
+            label: 'Quantidade',
+            data: {{ dados_tipo|tojson }},
+            backgroundColor: '#0d6efd'
+        }]
+    },
+    options: {
+        responsive: true,
+        scales: {
+            y: { beginAtZero: true }
+        }
+    }
+});
+{% endif %}
+
+// Gráfico por Categoria
+{% if labels_categoria and dados_categoria %}
+new Chart(document.getElementById('graficoCategoria'), {
+    type: 'bar',
+    data: {
+        labels: {{ labels_categoria|tojson }},
+        datasets: [{
+            label: 'Quantidade',
+            data: {{ dados_categoria|tojson }},
+            backgroundColor: '#20c997'
+        }]
+    },
+    options: {
+        responsive: true,
+        scales: {
+            y: { beginAtZero: true }
+        }
+    }
+});
+{% endif %}
+</script>
+{% endblock %}

@@ -1,0 +1,182 @@
+{% extends "base.html" %}
+
+{% block title %}Editar Material - Biblioteca{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>
+            <i class="bi bi-pencil-square"></i> 
+            Editar Material: {{ material.titulo }}
+        </h2>
+        <div>
+            <a href="/biblioteca/material/{{ material.id }}" class="btn btn-outline-secondary">
+                <i class="bi bi-arrow-left"></i> Voltar
+            </a>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-8 mx-auto">
+            <div class="card shadow">
+                <div class="card-header bg-warning text-dark">
+                    <h5 class="mb-0"><i class="bi bi-info-circle"></i> Editar informações do material</h5>
+                </div>
+                <div class="card-body">
+                    <form method="POST" enctype="multipart/form-data" id="formEditar">
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">Título *</label>
+                            <input type="text" class="form-control" name="titulo" value="{{ material.titulo }}" required>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">Subtítulo</label>
+                            <input type="text" class="form-control" name="subtitulo" value="{{ material.subtitulo or '' }}">
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">Descrição</label>
+                            <textarea class="form-control" name="descricao" rows="4">{{ material.descricao or '' }}</textarea>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label fw-bold">Tipo *</label>
+                                <select class="form-select" name="tipo" required>
+                                    <option value="livro" {% if material.tipo == 'livro' %}selected{% endif %}>📚 Livro</option>
+                                    <option value="apostila" {% if material.tipo == 'apostila' %}selected{% endif %}>📖 Apostila</option>
+                                    <option value="video" {% if material.tipo == 'video' %}selected{% endif %}>🎥 Vídeo</option>
+                                    <option value="audio" {% if material.tipo == 'audio' %}selected{% endif %}>🎵 Áudio</option>
+                                    <option value="documento" {% if material.tipo == 'documento' %}selected{% endif %}>📄 Documento</option>
+                                    <option value="slide" {% if material.tipo == 'slide' %}selected{% endif %}>📊 Slide</option>
+                                </select>
+                            </div>
+
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label fw-bold">Categoria *</label>
+                                <select class="form-select" name="categoria_id" required>
+                                    <option value="">Selecione...</option>
+                                    {% for cat in categorias %}
+                                    <option value="{{ cat.id }}" {% if material.categoria_id == cat.id %}selected{% endif %}>
+                                        {{ cat.nome }}
+                                    </option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label fw-bold">Grau de Acesso *</label>
+                                <select class="form-select" name="grau_acesso" required>
+                                    <option value="1" {% if material.grau_acesso == 1 %}selected{% endif %}>📘 Aprendiz (Grau 1)</option>
+                                    <option value="2" {% if material.grau_acesso == 2 %}selected{% endif %}>📙 Companheiro (Grau 2)</option>
+                                    <option value="3" {% if material.grau_acesso == 3 %}selected{% endif %}>📕 Mestre (Grau 3)</option>
+                                </select>
+                            </div>
+
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label fw-bold">Autor</label>
+                                <input type="text" class="form-control" name="autor" value="{{ material.autor or '' }}">
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label fw-bold">Editora</label>
+                                <input type="text" class="form-control" name="editora" value="{{ material.editora or '' }}">
+                            </div>
+
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label fw-bold">Ano de Publicação</label>
+                                <input type="number" class="form-control" name="ano_publicacao" value="{{ material.ano_publicacao or '' }}" min="1800" max="2026">
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label fw-bold">Número de Páginas</label>
+                                <input type="number" class="form-control" name="num_paginas" value="{{ material.num_paginas or '' }}">
+                            </div>
+
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label fw-bold">ISBN</label>
+                                <input type="text" class="form-control" name="isbn" value="{{ material.isbn or '' }}">
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">Tags (separadas por vírgula)</label>
+                            <input type="text" class="form-control" name="tags" value="{{ material.tags or '' }}" placeholder="Ex: maçonaria, aprendizado, ritual">
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">Arquivo (deixe em branco para manter o atual)</label>
+                            <input type="file" class="form-control" name="arquivo" accept=".pdf,.doc,.docx,.jpg,.jpeg,.png,.mp4,.mp3">
+                            {% if material.arquivo_url %}
+                            <small class="text-success mt-1 d-block">
+                                <i class="bi bi-check-circle"></i> Arquivo atual: {{ material.arquivo_nome }}
+                            </small>
+                            {% endif %}
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">Capa (deixe em branco para manter a atual)</label>
+                            <input type="file" class="form-control" name="capa" accept="image/*">
+                            {% if material.capa_url %}
+                            <small class="text-success mt-1 d-block">
+                                <i class="bi bi-image"></i> Capa atual
+                            </small>
+                            {% endif %}
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6 mb-3 form-check">
+                                <input type="checkbox" class="form-check-input" name="destaque" id="destaque" {% if material.destaque %}checked{% endif %}>
+                                <label class="form-check-label fw-bold" for="destaque">
+                                    <i class="bi bi-star-fill text-warning"></i> Destacar este material
+                                </label>
+                            </div>
+
+                            <div class="col-md-6 mb-3 form-check">
+                                <input type="checkbox" class="form-check-input" name="publicado" id="publicado" {% if material.publicado %}checked{% endif %}>
+                                <label class="form-check-label fw-bold" for="publicado">
+                                    <i class="bi bi-eye"></i> Publicado (visível para usuários)
+                                </label>
+                            </div>
+                        </div>
+
+                        <div class="alert alert-info">
+                            <i class="bi bi-cloud-upload"></i>
+                            <strong>Armazenamento em Nuvem:</strong> Os arquivos são hospedados no Cloudinary.
+                        </div>
+
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-warning btn-lg">
+                                <i class="bi bi-save"></i> Salvar Alterações
+                            </button>
+                            <a href="/biblioteca/material/{{ material.id }}" class="btn btn-outline-secondary">
+                                <i class="bi bi-x-circle"></i> Cancelar
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.getElementById('formEditar').addEventListener('submit', function(e) {
+    const arquivo = document.querySelector('input[name="arquivo"]').files[0];
+    if (arquivo) {
+        const maxSize = 50 * 1024 * 1024;
+        if (arquivo.size > maxSize) {
+            e.preventDefault();
+            alert('Arquivo muito grande! O tamanho máximo é 50MB.');
+            return false;
+        }
+    }
+});
+</script>
+{% endblock %}

@@ -1,0 +1,85 @@
+{% extends "base.html" %}
+
+{% block title %}{{ categoria.nome }} - Biblioteca{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <!-- Breadcrumb -->
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="/biblioteca">Biblioteca</a></li>
+            <li class="breadcrumb-item active">{{ categoria.nome }}</li>
+        </ol>
+    </nav>
+
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>
+            <i class="bi bi-folder" style="color: {{ categoria.cor }}"></i> 
+            {{ categoria.nome }}
+            <small class="text-muted fs-6">({{ materiais|length }} materiais)</small>
+        </h2>
+        <div>
+            <a href="/biblioteca" class="btn btn-outline-secondary">
+                <i class="bi bi-arrow-left"></i> Voltar
+            </a>
+        </div>
+    </div>
+
+    {% if categoria.descricao %}
+    <div class="card shadow mb-4">
+        <div class="card-body">
+            <p class="mb-0">{{ categoria.descricao }}</p>
+        </div>
+    </div>
+    {% endif %}
+
+    <div class="row">
+        {% for material in materiais %}
+        <div class="col-md-4 col-lg-3 mb-4">
+            <div class="card h-100 shadow-sm hover-card">
+                {% if material.capa_url %}
+                <img src="{{ material.capa_url }}" class="card-img-top" style="height: 180px; object-fit: cover;" alt="{{ material.titulo }}">
+                {% else %}
+                <div class="card-img-top bg-light d-flex align-items-center justify-content-center" style="height: 180px;">
+                    <i class="bi bi-file-earmark-{{ material.tipo }}" style="font-size: 3rem; color: #6c757d;"></i>
+                </div>
+                {% endif %}
+                <div class="card-body">
+                    <span class="badge mb-2" style="background-color: {{ categoria.cor }}">
+                        {{ categoria.nome }}
+                    </span>
+                    <h6 class="card-title">{{ material.titulo }}</h6>
+                    <p class="card-text text-muted small">{{ material.descricao|truncate(80) }}</p>
+                    <div class="d-flex justify-content-between align-items-center mt-2">
+                        <small class="text-muted">
+                            <i class="bi bi-download"></i> {{ material.downloads_count or 0 }}
+                        </small>
+                        <a href="/biblioteca/material/{{ material.id }}" class="btn btn-sm btn-outline-primary">
+                            Visualizar
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% else %}
+        <div class="col-12 text-center py-5">
+            <i class="bi bi-inbox fs-1 text-muted"></i>
+            <p class="text-muted mt-2">Nenhum material disponível nesta categoria para seu grau.</p>
+            <a href="/biblioteca" class="btn btn-primary mt-3">
+                <i class="bi bi-arrow-left"></i> Voltar para Biblioteca
+            </a>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+
+<style>
+.hover-card {
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+.hover-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15) !important;
+}
+</style>
+{% endblock %}

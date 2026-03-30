@@ -1,0 +1,177 @@
+{% extends "base.html" %}
+
+{% block title %}Upload de Material - Biblioteca{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>
+            <i class="bi bi-cloud-upload"></i> 
+            Upload de Material
+        </h2>
+        <div>
+            <a href="/biblioteca" class="btn btn-outline-secondary">
+                <i class="bi bi-arrow-left"></i> Voltar
+            </a>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-8 mx-auto">
+            <div class="card shadow">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0"><i class="bi bi-info-circle"></i> Enviar novo material para a biblioteca</h5>
+                </div>
+                <div class="card-body">
+                    <form method="POST" enctype="multipart/form-data" id="formUpload">
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">Título *</label>
+                            <input type="text" class="form-control" name="titulo" required>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">Subtítulo</label>
+                            <input type="text" class="form-control" name="subtitulo">
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">Descrição</label>
+                            <textarea class="form-control" name="descricao" rows="4"></textarea>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label fw-bold">Tipo *</label>
+                                <select class="form-select" name="tipo" required>
+                                    <option value="livro">📚 Livro</option>
+                                    <option value="apostila">📖 Apostila</option>
+                                    <option value="video">🎥 Vídeo</option>
+                                    <option value="audio">🎵 Áudio</option>
+                                    <option value="documento">📄 Documento</option>
+                                    <option value="slide">📊 Slide</option>
+                                </select>
+                            </div>
+
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label fw-bold">Categoria *</label>
+                                <select class="form-select" name="categoria_id" required>
+                                    <option value="">Selecione...</option>
+                                    {% for cat in categorias %}
+                                    <option value="{{ cat.id }}">{{ cat.nome }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label fw-bold">Grau de Acesso *</label>
+                                <select class="form-select" name="grau_acesso" required>
+                                    <option value="1">📘 Aprendiz (Grau 1)</option>
+                                    <option value="2">📙 Companheiro (Grau 2)</option>
+                                    <option value="3">📕 Mestre (Grau 3)</option>
+                                </select>
+                            </div>
+
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label fw-bold">Autor</label>
+                                <input type="text" class="form-control" name="autor">
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label fw-bold">Editora</label>
+                                <input type="text" class="form-control" name="editora">
+                            </div>
+
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label fw-bold">Ano de Publicação</label>
+                                <input type="number" class="form-control" name="ano_publicacao" min="1800" max="2026">
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">Tags (separadas por vírgula)</label>
+                            <input type="text" class="form-control" name="tags" placeholder="Ex: maçonaria, aprendizado, ritual">
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">Arquivo *</label>
+                            <input type="file" class="form-control" name="arquivo" accept=".pdf,.doc,.docx,.jpg,.jpeg,.png,.mp4,.mp3" required>
+                            <small class="text-muted">Formatos aceitos: PDF, DOC, DOCX, JPG, PNG, MP4, MP3 (máx 50MB)</small>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">Capa (imagem)</label>
+                            <input type="file" class="form-control" name="capa" accept="image/*">
+                            <small class="text-muted">Imagem para capa do material (JPG, PNG - recomendado 300x400px)</small>
+                        </div>
+
+                        <div class="mb-3 form-check">
+                            <input type="checkbox" class="form-check-input" name="destaque" id="destaque">
+                            <label class="form-check-label fw-bold" for="destaque">
+                                <i class="bi bi-star-fill text-warning"></i> Destacar este material
+                            </label>
+                        </div>
+
+                        <div class="alert alert-info">
+                            <i class="bi bi-cloud-upload"></i>
+                            <strong>Armazenamento em Nuvem:</strong> O arquivo será enviado para o Cloudinary e estará disponível globalmente.
+                        </div>
+
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-primary btn-lg" id="btnSubmit">
+                                <i class="bi bi-cloud-upload"></i> Enviar para a Nuvem
+                            </button>
+                            <a href="/biblioteca" class="btn btn-outline-secondary">
+                                <i class="bi bi-x-circle"></i> Cancelar
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Loading Overlay -->
+<div id="loadingOverlay" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.7); z-index: 9999; justify-content: center; align-items: center;">
+    <div class="text-center text-white">
+        <div class="spinner-border spinner-border-lg" style="width: 3rem; height: 3rem;" role="status">
+            <span class="visually-hidden">Carregando...</span>
+        </div>
+        <h4 class="mt-3">Enviando para a nuvem...</h4>
+        <p>Aguarde, o arquivo está sendo processado</p>
+        <div class="progress mt-3" style="width: 300px;">
+            <div class="progress-bar progress-bar-striped progress-bar-animated" style="width: 100%"></div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.getElementById('formUpload').addEventListener('submit', function(e) {
+    const arquivo = document.querySelector('input[name="arquivo"]').files[0];
+    if (arquivo) {
+        const maxSize = 50 * 1024 * 1024; // 50MB
+        if (arquivo.size > maxSize) {
+            e.preventDefault();
+            alert('Arquivo muito grande! O tamanho máximo é 50MB.');
+            return false;
+        }
+    }
+    
+    // Mostrar loading
+    document.getElementById('loadingOverlay').style.display = 'flex';
+    document.getElementById('btnSubmit').disabled = true;
+    document.getElementById('btnSubmit').innerHTML = '<i class="bi bi-hourglass-split"></i> Enviando...';
+});
+</script>
+
+<style>
+.spinner-border-lg {
+    width: 3rem;
+    height: 3rem;
+}
+</style>
+{% endblock %}

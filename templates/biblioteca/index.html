@@ -1,0 +1,258 @@
+{% extends "base.html" %}
+
+{% block title %}Biblioteca Maçônica{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <!-- Cabeçalho com botão de upload -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>
+            <i class="bi bi-book"></i> Biblioteca Maçônica
+            {% if session.get('grau_atual') == 1 %}
+                <span class="badge bg-secondary">Aprendiz</span>
+            {% elif session.get('grau_atual') == 2 %}
+                <span class="badge bg-primary">Companheiro</span>
+            {% elif session.get('grau_atual') == 3 %}
+                <span class="badge bg-success">Mestre</span>
+            {% endif %}
+        </h2>
+        <div>
+            {% if session.get('tipo') == 'admin' or session.get('grau_atual') >= 3 %}
+            <a href="/biblioteca/admin/upload" class="btn btn-success me-2">
+                <i class="bi bi-cloud-upload"></i> Enviar Material
+            </a>
+            {% endif %}
+
+        {% if session.get('tipo') == 'admin' %}
+        <a href="/biblioteca/relatorios" class="btn btn-info me-2">
+            <i class="bi bi-graph-up"></i> Relatórios
+        </a>
+        {% endif %}
+			
+            <a href="/dashboard" class="btn btn-outline-secondary">
+                <i class="bi bi-arrow-left"></i> Voltar
+            </a>
+        </div>
+    </div>
+
+    <!-- Barra de Busca -->
+    <div class="card shadow mb-4">
+        <div class="card-body">
+            <form action="/biblioteca/buscar" method="GET" class="row g-3">
+                <div class="col-md-8">
+                    <div class="input-group">
+                        <span class="input-group-text"><i class="bi bi-search"></i></span>
+                        <input type="text" class="form-control" name="q" 
+                               placeholder="Buscar por título, autor ou tags..." 
+                               value="{{ request.args.get('q', '') }}">
+                    </div>
+                </div>
+                <div class="col-md-2">
+                    <select class="form-select" name="tipo">
+                        <option value="">Todos os tipos</option>
+                        <option value="livro">📚 Livros</option>
+                        <option value="apostila">📖 Apostilas</option>
+                        <option value="video">🎥 Vídeos</option>
+                        <option value="audio">🎵 Áudios</option>
+                        <option value="documento">📄 Documentos</option>
+                        <option value="slide">📊 Slides</option>
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <button type="submit" class="btn btn-primary w-100">
+                        <i class="bi bi-search"></i> Buscar
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2>
+        <i class="bi bi-book"></i> Biblioteca Maçônica
+        ...
+    </h2>
+    <div>
+           
+    </div>
+</div>	
+
+    <!-- Destaques -->
+    {% if destaques %}
+    <div class="mb-5">
+        <h4 class="mb-3">
+            <i class="bi bi-star-fill text-warning"></i> Materiais em Destaque
+        </h4>
+        <div class="row">
+            {% for material in destaques %}
+            <div class="col-md-4 col-lg-3 mb-4">
+                <div class="card h-100 shadow-sm hover-card">
+                    {% if material.capa_url %}
+                    <img src="{{ material.capa_url }}" class="card-img-top" style="height: 180px; object-fit: cover;" alt="{{ material.titulo }}">
+                    {% else %}
+                    <div class="card-img-top bg-light d-flex align-items-center justify-content-center" style="height: 180px;">
+                        <i class="bi bi-file-earmark-{{ material.tipo }}" style="font-size: 3rem; color: #6c757d;"></i>
+                    </div>
+                    {% endif %}
+                    <div class="card-body">
+                        <span class="badge mb-2" style="background-color: {{ material.categoria_cor or '#6c757d' }}">
+                            {{ material.categoria_nome or 'Geral' }}
+                        </span>
+                        <h6 class="card-title">{{ material.titulo }}</h6>
+                        <p class="card-text text-muted small">{{ material.descricao|truncate(80) }}</p>
+                        <div class="d-flex justify-content-between align-items-center mt-2">
+                            <small class="text-muted">
+                                <i class="bi bi-download"></i> {{ material.downloads_count or 0 }}
+                            </small>
+                            <div>
+                                {% if session.get('tipo') == 'admin' %}
+                                <a href="/biblioteca/admin/editar/{{ material.id }}" class="btn btn-sm btn-outline-warning me-1" title="Editar">
+                                    <i class="bi bi-pencil"></i>
+                                </a>
+                                <button onclick="confirmarExclusao({{ material.id }}, '{{ material.titulo }}')" class="btn btn-sm btn-outline-danger me-1" title="Excluir">
+                                    <i class="bi bi-trash"></i>
+                                </button>
+                                {% endif %}
+                                <a href="/biblioteca/material/{{ material.id }}" class="btn btn-sm btn-outline-primary">
+                                    Visualizar
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Categorias -->
+    {% if categorias %}
+    <div class="mb-5">
+        <h4 class="mb-3">
+            <i class="bi bi-grid"></i> Categorias
+        </h4>
+        <div class="row">
+            {% for cat in categorias %}
+            <div class="col-md-3 col-6 mb-3">
+                <a href="/biblioteca/categoria/{{ cat.id }}" class="text-decoration-none">
+                    <div class="card text-center hover-card">
+                        <div class="card-body">
+                            <i class="bi bi-folder" style="font-size: 2rem; color: {{ cat.cor }}"></i>
+                            <h6 class="mt-2 mb-0">{{ cat.nome }}</h6>
+                            <small class="text-muted">{{ cat.descricao|truncate(40) }}</small>
+                        </div>
+                    </div>
+                </a>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Todos os Materiais -->
+    <div>
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <h4 class="mb-0">
+                <i class="bi bi-collection"></i> Todos os Materiais
+                <small class="text-muted fs-6">({{ materiais|length }} materiais)</small>
+            </h4>
+            {% if session.get('tipo') == 'admin' or session.get('grau_atual') >= 3 %}
+            <small class="text-muted">
+                <i class="bi bi-info-circle"></i> Administradores e Mestres podem adicionar novos materiais
+            </small>
+            {% endif %}
+        </div>
+        
+        <div class="row">
+            {% for material in materiais %}
+            <div class="col-md-4 col-lg-3 mb-4">
+                <div class="card h-100 shadow-sm hover-card">
+                    {% if material.capa_url %}
+                    <img src="{{ material.capa_url }}" class="card-img-top" style="height: 180px; object-fit: cover;" alt="{{ material.titulo }}">
+                    {% else %}
+                    <div class="card-img-top bg-light d-flex align-items-center justify-content-center" style="height: 180px;">
+                        <i class="bi bi-file-earmark-{{ material.tipo }}" style="font-size: 3rem; color: #6c757d;"></i>
+                    </div>
+                    {% endif %}
+                    <div class="card-body">
+                        <span class="badge mb-2" style="background-color: {{ material.categoria_cor or '#6c757d' }}">
+                            {{ material.categoria_nome or 'Geral' }}
+                        </span>
+                        <h6 class="card-title">{{ material.titulo }}</h6>
+                        {% if material.autor %}
+                        <small class="text-muted">
+                            <i class="bi bi-person"></i> {{ material.autor }}
+                        </small>
+                        {% endif %}
+                        <p class="card-text text-muted small mt-2">{{ material.descricao|truncate(80) }}</p>
+                        <div class="d-flex justify-content-between align-items-center mt-2">
+                            <small class="text-muted">
+                                <i class="bi bi-download"></i> {{ material.downloads_count or 0 }}
+                            </small>
+                            <div>
+                                {% if session.get('tipo') == 'admin' %}
+                                <a href="/biblioteca/admin/editar/{{ material.id }}" class="btn btn-sm btn-outline-warning me-1" title="Editar">
+                                    <i class="bi bi-pencil"></i>
+                                </a>
+                                <button onclick="confirmarExclusao({{ material.id }}, '{{ material.titulo }}')" class="btn btn-sm btn-outline-danger me-1" title="Excluir">
+                                    <i class="bi bi-trash"></i>
+                                </button>
+                                {% endif %}
+                                <a href="/biblioteca/material/{{ material.id }}" class="btn btn-sm btn-outline-primary">
+                                    Visualizar
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% else %}
+            <div class="col-12 text-center py-5">
+                <i class="bi bi-inbox fs-1 text-muted"></i>
+                <p class="text-muted mt-2">Nenhum material disponível para seu grau no momento.</p>
+                {% if session.get('tipo') == 'admin' or session.get('grau_atual') >= 3 %}
+                <a href="/biblioteca/admin/upload" class="btn btn-primary mt-3">
+                    <i class="bi bi-cloud-upload"></i> Adicionar Primeiro Material
+                </a>
+                {% endif %}
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    
+    <!-- Botão flutuante para mobile (apenas admin/mestre) -->
+    {% if session.get('tipo') == 'admin' or session.get('grau_atual') >= 3 %}
+    <div class="d-md-none position-fixed bottom-0 end-0 m-3">
+        <a href="/biblioteca/admin/upload" class="btn btn-success btn-lg rounded-circle shadow-lg" style="width: 60px; height: 60px;">
+            <i class="bi bi-plus-lg fs-3"></i>
+        </a>
+    </div>
+    {% endif %}
+</div>
+
+<script>
+// Função para confirmar exclusão
+function confirmarExclusao(materialId, materialTitulo) {
+    if (confirm(`Tem certeza que deseja excluir "${materialTitulo}"?\n\n⚠️ Esta ação é irreversível e também removerá:\n- O arquivo da nuvem\n- Todas as avaliações\n- Todos os favoritos\n- Os registros de download`)) {
+        const form = document.createElement('form');
+        form.method = 'POST';
+        form.action = `/biblioteca/admin/excluir/${materialId}`;
+        document.body.appendChild(form);
+        form.submit();
+    }
+}
+</script>
+
+<style>
+.hover-card {
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+.hover-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15) !important;
+}
+.card-img-top {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+}
+</style>
+{% endblock %}

@@ -156,10 +156,12 @@
                                                     <i class="bi bi-check2-circle"></i>
                                                 </a>
                                                 {% endif %}
-                                                <a href="/excluir_candidato/{{ c.id }}" class="btn btn-danger" 
-                                                   onclick="return confirm('Excluir este candidato?')" title="Excluir">
-                                                    <i class="bi bi-trash"></i>
-                                                </a>
+                                                <form action="/candidatos/excluir/{{ c.id }}" method="POST" style="display:inline;">
+													<button type="submit" class="btn btn-danger"
+														onclick="return confirm('Excluir este candidato?')">
+														<i class="bi bi-trash"></i>
+													</button>
+												</form>
                                             </div>
                                         </td>
                                     </tr>

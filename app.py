@@ -1,4 +1,4 @@
-# app.py - Sistema Maçônico com PostgreSQL (VERSÃO COMPLETA)
+# app.py - Sistema Maçônico com PostgreSQL (VERSÃO COMPLETA COM BIBLIOTECA)
 # -*- coding: utf-8 -*-
 
 import os
@@ -21,7 +21,7 @@ from functools import wraps
 from urllib.parse import quote
 
 from flask import (
-    Flask, render_template, request, redirect, session, flash,
+    Blueprint, Flask, render_template, request, redirect, url_for, session, flash,
     jsonify, send_file, Response, after_this_request
 )
 import psycopg2
@@ -35,19 +35,1295 @@ from openpyxl.styles import Font, Alignment, PatternFill
 from openpyxl.utils import get_column_letter
 
 # =============================
-# CONFIGURAÇÃO DO CLOUDINARY
+# BLUEPRINT DA BIBLIOTECA
+# =============================
+biblioteca_bp = Blueprint('biblioteca', __name__, url_prefix='/biblioteca')
+
+# =============================
+# FUNÇÕES DA BIBLIOTECA
 # =============================
 
-import os
-import cloudinary
+def tem_permissao_biblioteca():
+    """Verifica se o usuário tem permissão para acessar a biblioteca"""
+    if 'usuario_id' not in session:
+        print(f"DEBUG: Usuário não está logado na sessão")
+        print(f"DEBUG: Sessão keys: {list(session.keys())}")
+        return False
+    
+    if session.get('tipo') == 'admin':
+        print(f"DEBUG: Usuário é admin, acesso liberado")
+        return True
+    
+    grau = session.get('grau_atual', 0)
+    print(f"DEBUG: Grau do usuário: {grau}")
+    
+    if grau in [1, 2, 3]:
+        print(f"DEBUG: Usuário tem grau {grau}, acesso liberado")
+        return True
+    
+    print(f"DEBUG: Usuário sem permissão, grau {grau}")
+    return False
+
+def get_grau_usuario():
+    """Retorna o grau do usuário logado"""
+    return session.get('grau_atual', 1)
+
+# =============================
+# DECORATORS
+# =============================
+
+# Decorator para verificar permissão por grau
+def require_grau(min_grau):
+    def decorator(f):
+        @wraps(f)
+        def decorated_function(*args, **kwargs):
+            if 'usuario_id' not in session:
+                flash('Faça login para acessar esta página', 'warning')
+                return redirect(url_for('login'))
+            
+            # Buscar grau do usuário
+            cursor, conn = get_db()
+            cursor.execute("SELECT grau_atual FROM usuarios WHERE id = %s", (session['usuario_id'],))
+            usuario = cursor.fetchone()
+            return_connection(conn)
+            
+            if not usuario or usuario['grau_atual'] < min_grau:
+                flash('Você não tem permissão para acessar este conteúdo', 'danger')
+                return redirect(url_for('biblioteca.listar_materiais'))
+            
+            return f(*args, **kwargs)
+        return decorated_function
+    return decorator
+
+def login_required(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if "usuario" not in session:
+            flash("Faça login para acessar esta página", "warning")
+            return redirect("/")
+        return f(*args, **kwargs)
+    return decorated_function
+
+def admin_required(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if "usuario" not in session or session.get("tipo") != "admin":
+            flash("Acesso restrito a administradores", "danger")
+            return redirect("/dashboard")
+        return f(*args, **kwargs)
+    return decorated_function
+
+def sindicante_required(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if "usuario" not in session or session.get("tipo") != "sindicante":
+            flash("Acesso restrito a sindicantes", "danger")
+            return redirect("/dashboard")
+        return f(*args, **kwargs)
+    return decorated_function
+
+def nivel_required(nivel_minimo):
+    def decorator(f):
+        @wraps(f)
+        def decorated_function(*args, **kwargs):
+            if "usuario" not in session:
+                flash("Faça login para acessar esta página", "warning")
+                return redirect("/")
+            nivel_usuario = session.get("nivel_acesso", 1)
+            tipo_usuario = session.get("tipo", "obreiro")
+            if tipo_usuario == "admin":
+                return f(*args, **kwargs)
+            if nivel_usuario >= nivel_minimo:
+                return f(*args, **kwargs)
+            else:
+                flash("Você não tem permissão para acessar esta página", "danger")
+                return redirect("/dashboard")
+        return decorated_function
+    return decorator
+
+def nivel_ata_required():
+    def decorator(f):
+        @wraps(f)
+        def decorated_function(*args, **kwargs):
+            if "usuario" not in session:
+                flash("Faça login para acessar esta página", "warning")
+                return redirect("/")
+            ata_id = kwargs.get('id')
+            if ata_id:
+                cursor, conn = get_db()
+                cursor.execute("""
+                    SELECT a.*, r.grau as reuniao_grau
+                    FROM atas a
+                    JOIN reunioes r ON a.reuniao_id = r.id
+                    WHERE a.id = %s
+                """, (ata_id,))
+                ata = cursor.fetchone()
+                return_connection(conn)
+                if ata:
+                    reuniao_grau = ata.get('reuniao_grau') or 1
+                    nivel_usuario = session.get("nivel_acesso", 1)
+                    tipo_usuario = session.get("tipo", "obreiro")
+                    if tipo_usuario == "admin":
+                        return f(*args, **kwargs)
+                    if nivel_usuario == 1 and reuniao_grau == 1:
+                        return f(*args, **kwargs)
+                    elif nivel_usuario == 2 and reuniao_grau <= 2:
+                        return f(*args, **kwargs)
+                    elif nivel_usuario >= 3:
+                        return f(*args, **kwargs)
+                    else:
+                        flash("Você não tem permissão para visualizar esta ata", "danger")
+                        return redirect("/dashboard")
+            return f(*args, **kwargs)
+        return decorated_function
+    return decorator
+
+def permissao_required(permissao_codigo):
+    def decorator(f):
+        @wraps(f)
+        def decorated_function(*args, **kwargs):
+            if not tem_permissao(permissao_codigo):
+                flash("Você não tem permissão para acessar esta página", "danger")
+                return redirect("/dashboard")
+            return f(*args, **kwargs)
+        return decorated_function
+    return decorator
+
+def tem_permissao(permissao_codigo):
+    if 'user_id' not in session:
+        return False
+    if session.get('tipo') == 'admin':
+        return True
+    try:
+        cursor, conn = get_db()
+        cursor.execute("""
+            SELECT COUNT(*) as total
+            FROM permissoes_grau pg
+            JOIN permissoes p ON pg.permissao_id = p.id
+            WHERE pg.grau_id = %s AND p.codigo = %s
+        """, (session.get('grau_atual', 1), permissao_codigo))
+        result = cursor.fetchone()
+        return_connection(conn)
+        return result and result['total'] > 0
+    except Exception as e:
+        print(f"Erro ao verificar permissão: {e}")
+        return False
+
+def _verificar_permissao_db(codigo):
+    try:
+        cursor, conn = get_db()
+        cursor.execute("""
+            SELECT permitido
+            FROM permissoes_usuario pu
+            JOIN permissoes p ON pu.permissao_id = p.id
+            WHERE pu.usuario_id = %s AND p.codigo = %s
+        """, (session['user_id'], codigo))
+        result = cursor.fetchone()
+        if result:
+            return_connection(conn)
+            return result['permitido'] == 1
+        grau_atual = session.get('grau_atual', 1)
+        cursor.execute("""
+            SELECT COUNT(*) as total
+            FROM permissoes_grau pg
+            JOIN permissoes p ON pg.permissao_id = p.id
+            WHERE pg.grau_id = %s AND p.codigo = %s
+        """, (grau_atual, codigo))
+        result = cursor.fetchone()
+        return_connection(conn)
+        return result and result['total'] > 0
+    except Exception as e:
+        print(f"Erro ao verificar permissão: {e}")
+        return False    
+
+# =============================
+# ROTAS DA BIBLIOTECA
+# =============================
+@biblioteca_bp.route('/admin/upload', methods=['GET', 'POST'])
+@admin_required
+def upload_material():
+    """Upload de novos materiais para o Cloudinary"""
+    
+    if request.method == 'POST':
+        # Coletar dados do formulário
+        titulo = request.form.get('titulo')
+        subtitulo = request.form.get('subtitulo')
+        descricao = request.form.get('descricao')
+        tipo = request.form.get('tipo')
+        categoria_id = request.form.get('categoria_id')
+        grau_acesso = request.form.get('grau_acesso')
+        autor = request.form.get('autor')
+        editora = request.form.get('editora')
+        ano_publicacao = request.form.get('ano_publicacao')
+        num_paginas = request.form.get('num_paginas')
+        isbn = request.form.get('isbn')
+        tags = request.form.get('tags')
+        destaque = request.form.get('destaque') == 'on'
+        
+        # Validar campos obrigatórios
+        if not titulo:
+            flash('O título é obrigatório', 'danger')
+            return redirect(url_for('biblioteca.upload_material'))
+        
+        if not tipo:
+            flash('O tipo de material é obrigatório', 'danger')
+            return redirect(url_for('biblioteca.upload_material'))
+        
+        if not categoria_id:
+            flash('A categoria é obrigatória', 'danger')
+            return redirect(url_for('biblioteca.upload_material'))
+        
+        if not grau_acesso:
+            flash('O grau de acesso é obrigatório', 'danger')
+            return redirect(url_for('biblioteca.upload_material'))
+        
+        # Processar arquivos
+        arquivo = request.files.get('arquivo')
+        capa = request.files.get('capa')
+        
+        if not arquivo or arquivo.filename == '':
+            flash('Selecione um arquivo para upload', 'danger')
+            return redirect(url_for('biblioteca.upload_material'))
+        
+        # Validar tamanho do arquivo (50MB)
+        arquivo.seek(0, 2)  # Vai para o final do arquivo
+        tamanho_arquivo = arquivo.tell()
+        arquivo.seek(0)  # Volta para o início
+        
+        if tamanho_arquivo > 50 * 1024 * 1024:
+            flash('Arquivo muito grande! O tamanho máximo é 50MB.', 'danger')
+            return redirect(url_for('biblioteca.upload_material'))
+        
+        try:
+            # Upload do arquivo principal para o Cloudinary
+            print(f"📤 Enviando arquivo: {arquivo.filename}")
+            
+            # Gerar nome único para o arquivo
+            import uuid
+            nome_arquivo = f"{uuid.uuid4().hex}_{secure_filename(arquivo.filename)}"
+            
+            # Fazer upload para o Cloudinary
+            upload_result = cloudinary.uploader.upload(
+                arquivo,
+                folder="biblioteca_maconica/materiais",
+                public_id=nome_arquivo,
+                resource_type="auto",
+                use_filename=True,
+                unique_filename=False
+            )
+            
+            arquivo_url = upload_result.get('secure_url')
+            arquivo_tamanho = upload_result.get('bytes')
+            formato = upload_result.get('format')
+            arquivo_nome_original = arquivo.filename
+            
+            print(f"✅ Arquivo enviado: {arquivo_url}")
+            
+            # Upload da capa (se houver)
+            capa_url = None
+            if capa and capa.filename:
+                print(f"📸 Enviando capa: {capa.filename}")
+                capa_result = cloudinary.uploader.upload(
+                    capa,
+                    folder="biblioteca_maconica/capas",
+                    resource_type="image",
+                    transformation=[
+                        {'width': 300, 'height': 400, 'crop': 'fill'},
+                        {'quality': 'auto'}
+                    ]
+                )
+                capa_url = capa_result.get('secure_url')
+                print(f"✅ Capa enviada: {capa_url}")
+            
+            # Inserir no banco de dados
+            cursor, conn = get_db()
+            
+            # Converter ano_publicacao para int se existir
+            ano_publicacao_int = None
+            if ano_publicacao and ano_publicacao.strip():
+                try:
+                    ano_publicacao_int = int(ano_publicacao)
+                except:
+                    pass
+            
+            # Converter num_paginas para int se existir
+            num_paginas_int = None
+            if num_paginas and num_paginas.strip():
+                try:
+                    num_paginas_int = int(num_paginas)
+                except:
+                    pass
+            
+            cursor.execute("""
+                INSERT INTO materiais (
+                    titulo, subtitulo, descricao, tipo, categoria_id, grau_acesso,
+                    arquivo_url, arquivo_nome, arquivo_tamanho, formato, capa_url,
+                    autor, editora, ano_publicacao, num_paginas, isbn, tags, 
+                    destaque, publicado, created_by, created_at, data_publicacao
+                ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, true, %s, NOW(), NOW())
+                RETURNING id
+            """, (
+                titulo, subtitulo, descricao, tipo, categoria_id, grau_acesso,
+                arquivo_url, arquivo_nome_original, arquivo_tamanho, formato, capa_url,
+                autor, editora, ano_publicacao_int, num_paginas_int, isbn, tags,
+                destaque, session['usuario_id']
+            ))
+            
+            material_id = cursor.fetchone()['id']
+            conn.commit()
+            return_connection(conn)
+            
+            flash(f'✅ Material "{titulo}" enviado com sucesso para a nuvem!', 'success')
+            return redirect(url_for('biblioteca.visualizar_material', material_id=material_id))
+            
+        except cloudinary.exceptions.Error as e:
+            print(f"❌ Erro no Cloudinary: {e}")
+            traceback.print_exc()
+            flash(f'Erro no envio para a nuvem: {str(e)}', 'danger')
+            return redirect(url_for('biblioteca.upload_material'))
+        
+        except Exception as e:
+            print(f"❌ Erro no upload: {e}")
+            traceback.print_exc()
+            flash(f'Erro ao enviar arquivo: {str(e)}', 'danger')
+            return redirect(url_for('biblioteca.upload_material'))
+    
+    # GET - mostrar formulário
+    cursor, conn = get_db()
+    cursor.execute("SELECT * FROM categorias_material ORDER BY ordem")
+    categorias = cursor.fetchall()
+    return_connection(conn)
+    
+    return render_template('biblioteca/upload.html', categorias=categorias)
+
+@biblioteca_bp.route('/admin/editar/<int:material_id>', methods=['GET', 'POST'])
+@admin_required
+def editar_material(material_id):
+    """Editar um material existente"""
+    
+    # Buscar o material
+    cursor, conn = get_db()
+    cursor.execute("""
+        SELECT m.*, c.nome as categoria_nome
+        FROM materiais m
+        LEFT JOIN categorias_material c ON m.categoria_id = c.id
+        WHERE m.id = %s
+    """, (material_id,))
+    material = cursor.fetchone()
+    
+    if not material:
+        flash('Material não encontrado', 'danger')
+        return redirect(url_for('biblioteca.listar_materiais'))
+    
+    if request.method == 'POST':
+        # Coletar dados do formulário
+        titulo = request.form.get('titulo')
+        subtitulo = request.form.get('subtitulo')
+        descricao = request.form.get('descricao')
+        tipo = request.form.get('tipo')
+        categoria_id = request.form.get('categoria_id')
+        grau_acesso = request.form.get('grau_acesso')
+        autor = request.form.get('autor')
+        editora = request.form.get('editora')
+        ano_publicacao = request.form.get('ano_publicacao')
+        num_paginas = request.form.get('num_paginas')
+        isbn = request.form.get('isbn')
+        tags = request.form.get('tags')
+        destaque = request.form.get('destaque') == 'on'
+        publicado = request.form.get('publicado') == 'on'
+        
+        # Validar campos obrigatórios
+        if not titulo:
+            flash('O título é obrigatório', 'danger')
+            return redirect(url_for('biblioteca.editar_material', material_id=material_id))
+        
+        # Processar novo arquivo (se houver)
+        arquivo = request.files.get('arquivo')
+        arquivo_url = material['arquivo_url']
+        arquivo_nome = material['arquivo_nome']
+        arquivo_tamanho = material['arquivo_tamanho']
+        formato = material['formato']
+        
+        if arquivo and arquivo.filename:
+            # Upload do novo arquivo
+            import uuid
+            nome_arquivo = f"{uuid.uuid4().hex}_{secure_filename(arquivo.filename)}"
+            
+            upload_result = cloudinary.uploader.upload(
+                arquivo,
+                folder="biblioteca_maconica/materiais",
+                public_id=nome_arquivo,
+                resource_type="auto"
+            )
+            
+            arquivo_url = upload_result.get('secure_url')
+            arquivo_tamanho = upload_result.get('bytes')
+            formato = upload_result.get('format')
+            arquivo_nome = arquivo.filename
+            
+            # Se tinha arquivo antigo, deletar do Cloudinary
+            if material['arquivo_url']:
+                try:
+                    public_id = material['arquivo_url'].split('/')[-1].split('.')[0]
+                    cloudinary.uploader.destroy(f"biblioteca_maconica/materiais/{public_id}")
+                except:
+                    pass
+        
+        # Processar nova capa (se houver)
+        capa = request.files.get('capa')
+        capa_url = material['capa_url']
+        
+        if capa and capa.filename:
+            capa_result = cloudinary.uploader.upload(
+                capa,
+                folder="biblioteca_maconica/capas",
+                resource_type="image",
+                transformation=[
+                    {'width': 300, 'height': 400, 'crop': 'fill'},
+                    {'quality': 'auto'}
+                ]
+            )
+            capa_url = capa_result.get('secure_url')
+            
+            # Se tinha capa antiga, deletar
+            if material['capa_url']:
+                try:
+                    public_id = material['capa_url'].split('/')[-1].split('.')[0]
+                    cloudinary.uploader.destroy(f"biblioteca_maconica/capas/{public_id}")
+                except:
+                    pass
+        
+        # Converter valores
+        ano_publicacao_int = None
+        if ano_publicacao and ano_publicacao.strip():
+            try:
+                ano_publicacao_int = int(ano_publicacao)
+            except:
+                pass
+        
+        num_paginas_int = None
+        if num_paginas and num_paginas.strip():
+            try:
+                num_paginas_int = int(num_paginas)
+            except:
+                pass
+        
+        # Atualizar no banco
+        cursor.execute("""
+            UPDATE materiais SET
+                titulo = %s,
+                subtitulo = %s,
+                descricao = %s,
+                tipo = %s,
+                categoria_id = %s,
+                grau_acesso = %s,
+                arquivo_url = %s,
+                arquivo_nome = %s,
+                arquivo_tamanho = %s,
+                formato = %s,
+                capa_url = %s,
+                autor = %s,
+                editora = %s,
+                ano_publicacao = %s,
+                num_paginas = %s,
+                isbn = %s,
+                tags = %s,
+                destaque = %s,
+                publicado = %s,
+                updated_at = NOW()
+            WHERE id = %s
+        """, (
+            titulo, subtitulo, descricao, tipo, categoria_id, grau_acesso,
+            arquivo_url, arquivo_nome, arquivo_tamanho, formato, capa_url,
+            autor, editora, ano_publicacao_int, num_paginas_int, isbn, tags,
+            destaque, publicado, material_id
+        ))
+        
+        conn.commit()
+        return_connection(conn)
+        
+        flash('Material atualizado com sucesso!', 'success')
+        return redirect(url_for('biblioteca.visualizar_material', material_id=material_id))
+    
+    # GET - mostrar formulário
+    cursor.execute("SELECT * FROM categorias_material ORDER BY ordem")
+    categorias = cursor.fetchall()
+    return_connection(conn)
+    
+    return render_template('biblioteca/editar.html', 
+                         material=material, 
+                         categorias=categorias)
+
+@biblioteca_bp.route('/admin/excluir/<int:material_id>', methods=['POST'])
+@admin_required
+def excluir_material(material_id):
+    """Excluir um material"""
+    
+    cursor, conn = get_db()
+    
+    # Buscar o material para pegar as URLs
+    cursor.execute("SELECT * FROM materiais WHERE id = %s", (material_id,))
+    material = cursor.fetchone()
+    
+    if not material:
+        flash('Material não encontrado', 'danger')
+        return redirect(url_for('biblioteca.listar_materiais'))
+    
+    try:
+        # Deletar arquivo do Cloudinary
+        if material['arquivo_url']:
+            try:
+                public_id = material['arquivo_url'].split('/')[-1].split('.')[0]
+                cloudinary.uploader.destroy(f"biblioteca_maconica/materiais/{public_id}")
+            except Exception as e:
+                print(f"Erro ao deletar arquivo: {e}")
+        
+        # Deletar capa do Cloudinary
+        if material['capa_url']:
+            try:
+                public_id = material['capa_url'].split('/')[-1].split('.')[0]
+                cloudinary.uploader.destroy(f"biblioteca_maconica/capas/{public_id}")
+            except Exception as e:
+                print(f"Erro ao deletar capa: {e}")
+        
+        # Deletar registros relacionados
+        cursor.execute("DELETE FROM downloads_material WHERE material_id = %s", (material_id,))
+        cursor.execute("DELETE FROM favoritos_material WHERE material_id = %s", (material_id,))
+        cursor.execute("DELETE FROM avaliacoes_material WHERE material_id = %s", (material_id,))
+        
+        # Deletar o material
+        cursor.execute("DELETE FROM materiais WHERE id = %s", (material_id,))
+        conn.commit()
+        
+        flash(f'Material "{material["titulo"]}" excluído com sucesso!', 'success')
+        
+    except Exception as e:
+        print(f"Erro ao excluir: {e}")
+        flash('Erro ao excluir o material', 'danger')
+    
+    return_connection(conn)
+    return redirect(url_for('biblioteca.listar_materiais'))                         
+    
+@biblioteca_bp.route('/')
+def listar_materiais():
+    """Página principal da biblioteca"""
+    if 'usuario_id' not in session:
+        flash('Faça login para acessar a biblioteca', 'warning')
+        return redirect(url_for('login'))
+    
+    if not tem_permissao_biblioteca():
+        flash('Você não tem permissão para acessar a biblioteca', 'danger')
+        return redirect(url_for('dashboard'))
+    
+    grau_usuario = get_grau_usuario()
+    
+    try:
+        cursor, conn = get_db()
+        
+        # Buscar materiais liberados para o grau do usuário (com DISTINCT para evitar duplicatas)
+        cursor.execute("""
+            SELECT DISTINCT m.*, c.nome as categoria_nome, c.cor as categoria_cor
+            FROM materiais m
+            LEFT JOIN categorias_material c ON m.categoria_id = c.id
+            WHERE m.publicado = true AND m.grau_acesso <= %s
+            ORDER BY m.destaque DESC, m.data_publicacao DESC
+            LIMIT 20
+        """, (grau_usuario,))
+        materiais = cursor.fetchall()
+        
+        # Buscar categorias (sem duplicatas)
+        cursor.execute("""
+            SELECT DISTINCT c.*
+            FROM categorias_material c
+            ORDER BY c.ordem
+        """)
+        categorias = cursor.fetchall()
+        
+        # Buscar materiais em destaque (com DISTINCT)
+        cursor.execute("""
+            SELECT DISTINCT m.*, c.nome as categoria_nome
+            FROM materiais m
+            LEFT JOIN categorias_material c ON m.categoria_id = c.id
+            WHERE m.destaque = true AND m.publicado = true AND m.grau_acesso <= %s
+            LIMIT 5
+        """, (grau_usuario,))
+        destaques = cursor.fetchall()
+        
+        return_connection(conn)
+        
+        return render_template('biblioteca/index.html',
+                             materiais=materiais,
+                             categorias=categorias,
+                             destaques=destaques,
+                             grau_usuario=grau_usuario)
+    
+    except Exception as e:
+        print(f"Erro ao carregar biblioteca: {e}")
+        traceback.print_exc()
+        flash('Erro ao carregar a biblioteca. Tente novamente mais tarde.', 'danger')
+        return redirect(url_for('dashboard'))
+        
+@biblioteca_bp.route('/material/<int:material_id>')
+def visualizar_material(material_id):
+    """Visualizar um material específico"""
+    if 'usuario_id' not in session:
+        flash('Faça login para acessar a biblioteca', 'warning')
+        return redirect(url_for('login'))
+    
+    if not tem_permissao_biblioteca():
+        flash('Você não tem permissão para acessar este conteúdo', 'danger')
+        return redirect(url_for('biblioteca.listar_materiais'))
+    
+    grau_usuario = get_grau_usuario()
+    
+    try:
+        cursor, conn = get_db()
+        
+        # Buscar material com verificação de permissão
+        cursor.execute("""
+            SELECT m.*, c.nome as categoria_nome, c.cor as categoria_cor
+            FROM materiais m
+            LEFT JOIN categorias_material c ON m.categoria_id = c.id
+            WHERE m.id = %s AND m.publicado = true AND m.grau_acesso <= %s
+        """, (material_id, grau_usuario))
+        material = cursor.fetchone()
+        
+        if not material:
+            flash('Material não encontrado ou sem permissão de acesso', 'danger')
+            return redirect(url_for('biblioteca.listar_materiais'))
+        
+        # Incrementar visualizações
+        cursor.execute("""
+            UPDATE materiais SET visualizacoes_count = visualizacoes_count + 1 
+            WHERE id = %s
+        """, (material_id,))
+        conn.commit()
+        
+        # Buscar avaliações
+        cursor.execute("""
+            SELECT a.*, u.nome_completo as usuario_nome
+            FROM avaliacoes_material a
+            LEFT JOIN usuarios u ON a.usuario_id = u.id
+            WHERE a.material_id = %s AND a.moderado = true
+            ORDER BY a.data_avaliacao DESC
+            LIMIT 10
+        """, (material_id,))
+        avaliacoes = cursor.fetchall()
+        
+        # Verificar se usuário já favoritou
+        cursor.execute("""
+            SELECT id FROM favoritos_material 
+            WHERE material_id = %s AND usuario_id = %s
+        """, (material_id, session['usuario_id']))
+        favoritado = cursor.fetchone() is not None
+        
+        return_connection(conn)
+        
+        return render_template('biblioteca/visualizar.html',
+                             material=material,
+                             avaliacoes=avaliacoes,
+                             favoritado=favoritado)
+    
+    except Exception as e:
+        print(f"Erro ao visualizar material: {e}")
+        traceback.print_exc()
+        flash('Erro ao carregar o material', 'danger')
+        return redirect(url_for('biblioteca.listar_materiais'))
+
+@biblioteca_bp.route('/material/<int:material_id>/download')
+def download_material(material_id):
+    """Download do material"""
+    if 'usuario_id' not in session:
+        flash('Faça login para acessar a biblioteca', 'warning')
+        return redirect(url_for('login'))
+    
+    if not tem_permissao_biblioteca():
+        flash('Você não tem permissão para baixar este conteúdo', 'danger')
+        return redirect(url_for('biblioteca.listar_materiais'))
+    
+    grau_usuario = get_grau_usuario()
+    
+    try:
+        cursor, conn = get_db()
+        
+        cursor.execute("""
+            SELECT * FROM materiais 
+            WHERE id = %s AND publicado = true AND grau_acesso <= %s
+        """, (material_id, grau_usuario))
+        material = cursor.fetchone()
+        
+        if not material or not material.get('arquivo_url'):
+            flash('Arquivo não encontrado', 'danger')
+            return redirect(url_for('biblioteca.listar_materiais'))
+        
+        # Registrar download
+        cursor.execute("""
+            INSERT INTO downloads_material (material_id, usuario_id, ip_address)
+            VALUES (%s, %s, %s)
+        """, (material_id, session['usuario_id'], request.remote_addr))
+        
+        # Incrementar contador de downloads
+        cursor.execute("""
+            UPDATE materiais SET downloads_count = downloads_count + 1 
+            WHERE id = %s
+        """, (material_id,))
+        conn.commit()
+        
+        return_connection(conn)
+        
+        # Se for URL externa, redirecionar
+        if material['arquivo_url'].startswith('http'):
+            return redirect(material['arquivo_url'])
+        
+        flash('Download iniciado!', 'success')
+        return redirect(url_for('biblioteca.visualizar_material', material_id=material_id))
+    
+    except Exception as e:
+        print(f"Erro no download: {e}")
+        traceback.print_exc()
+        flash('Erro ao baixar o arquivo', 'danger')
+        return redirect(url_for('biblioteca.visualizar_material', material_id=material_id))
+
+@biblioteca_bp.route('/buscar')
+def buscar_materiais():
+    """Buscar materiais"""
+    if 'usuario_id' not in session:
+        flash('Faça login para acessar a biblioteca', 'warning')
+        return redirect(url_for('login'))
+    
+    if not tem_permissao_biblioteca():
+        flash('Você não tem permissão para acessar a biblioteca', 'danger')
+        return redirect(url_for('dashboard'))
+    
+    termo = request.args.get('q', '')
+    tipo = request.args.get('tipo', '')
+    categoria = request.args.get('categoria', '')
+    grau_usuario = get_grau_usuario()
+    
+    try:
+        cursor, conn = get_db()
+        
+        query = """
+            SELECT DISTINCT m.*, c.nome as categoria_nome
+            FROM materiais m
+            LEFT JOIN categorias_material c ON m.categoria_id = c.id
+            WHERE m.publicado = true AND m.grau_acesso <= %s
+        """
+        params = [grau_usuario]
+        
+        if termo:
+            query += " AND (m.titulo ILIKE %s OR m.descricao ILIKE %s OR m.tags ILIKE %s OR m.autor ILIKE %s)"
+            termo_like = f"%{termo}%"
+            params.extend([termo_like, termo_like, termo_like, termo_like])
+        
+        if tipo:
+            query += " AND m.tipo = %s"
+            params.append(tipo)
+        
+        if categoria:
+            query += " AND m.categoria_id = %s"
+            params.append(categoria)
+        
+        query += " ORDER BY m.data_publicacao DESC"
+        
+        cursor.execute(query, params)
+        materiais = cursor.fetchall()
+        
+        return_connection(conn)
+        
+        return render_template('biblioteca/buscar.html',
+                             materiais=materiais,
+                             termo=termo,
+                             tipo=tipo,
+                             categoria=categoria)
+    
+    except Exception as e:
+        print(f"Erro na busca: {e}")
+        traceback.print_exc()
+        flash('Erro ao realizar a busca', 'danger')
+        return redirect(url_for('biblioteca.listar_materiais'))
+
+@biblioteca_bp.route('/categoria/<int:categoria_id>')
+def materiais_por_categoria(categoria_id):
+    """Materiais de uma categoria específica"""
+    if 'usuario_id' not in session:
+        flash('Faça login para acessar a biblioteca', 'warning')
+        return redirect(url_for('login'))
+    
+    if not tem_permissao_biblioteca():
+        flash('Você não tem permissão para acessar a biblioteca', 'danger')
+        return redirect(url_for('dashboard'))
+    
+    grau_usuario = get_grau_usuario()
+    
+    try:
+        cursor, conn = get_db()
+        
+        # Buscar materiais da categoria (com DISTINCT)
+        cursor.execute("""
+            SELECT DISTINCT m.*, c.nome as categoria_nome, c.cor as categoria_cor
+            FROM materiais m
+            LEFT JOIN categorias_material c ON m.categoria_id = c.id
+            WHERE m.categoria_id = %s AND m.publicado = true AND m.grau_acesso <= %s
+            ORDER BY m.data_publicacao DESC
+        """, (categoria_id, grau_usuario))
+        materiais = cursor.fetchall()
+        
+        # Buscar a categoria (apenas uma)
+        cursor.execute("SELECT * FROM categorias_material WHERE id = %s", (categoria_id,))
+        categoria = cursor.fetchone()
+        
+        return_connection(conn)
+        
+        if not categoria:
+            flash('Categoria não encontrada', 'danger')
+            return redirect(url_for('biblioteca.listar_materiais'))
+        
+        return render_template('biblioteca/categoria.html',
+                             materiais=materiais,
+                             categoria=categoria)
+    
+    except Exception as e:
+        print(f"Erro ao carregar categoria: {e}")
+        traceback.print_exc()
+        flash('Erro ao carregar a categoria', 'danger')
+        return redirect(url_for('biblioteca.listar_materiais'))
+
+@biblioteca_bp.route('/material/<int:material_id>/favoritar', methods=['POST'])
+def favoritar_material(material_id):
+    """Adicionar ou remover dos favoritos"""
+    if 'usuario_id' not in session:
+        return jsonify({'success': False, 'mensagem': 'Usuário não autenticado'}), 401
+    
+    try:
+        cursor, conn = get_db()
+        
+        # Verificar se já está nos favoritos
+        cursor.execute("""
+            SELECT id FROM favoritos_material 
+            WHERE material_id = %s AND usuario_id = %s
+        """, (material_id, session['usuario_id']))
+        favorito = cursor.fetchone()
+        
+        if favorito:
+            # Remover dos favoritos
+            cursor.execute("""
+                DELETE FROM favoritos_material 
+                WHERE material_id = %s AND usuario_id = %s
+            """, (material_id, session['usuario_id']))
+            conn.commit()
+            mensagem = 'Removido dos favoritos'
+            favoritado = False
+        else:
+            # Adicionar aos favoritos
+            cursor.execute("""
+                INSERT INTO favoritos_material (material_id, usuario_id)
+                VALUES (%s, %s)
+            """, (material_id, session['usuario_id']))
+            conn.commit()
+            mensagem = 'Adicionado aos favoritos'
+            favoritado = True
+        
+        return_connection(conn)
+        
+        return jsonify({
+            'success': True,
+            'favoritado': favoritado,
+            'mensagem': mensagem
+        })
+    
+    except Exception as e:
+        print(f"Erro ao favoritar: {e}")
+        return jsonify({'success': False, 'mensagem': str(e)}), 500
+
+@biblioteca_bp.route('/material/<int:material_id>/avaliar', methods=['POST'])
+def avaliar_material(material_id):
+    """Avaliar um material"""
+    if 'usuario_id' not in session:
+        return jsonify({'success': False, 'mensagem': 'Usuário não autenticado'}), 401
+    
+    data = request.get_json()
+    nota = data.get('nota')
+    comentario = data.get('comentario', '')
+    
+    if not nota or nota < 1 or nota > 5:
+        return jsonify({'success': False, 'mensagem': 'Nota inválida'}), 400
+    
+    try:
+        cursor, conn = get_db()
+        
+        # Verificar se já avaliou
+        cursor.execute("""
+            SELECT id FROM avaliacoes_material 
+            WHERE material_id = %s AND usuario_id = %s
+        """, (material_id, session['usuario_id']))
+        ja_avaliou = cursor.fetchone()
+        
+        if ja_avaliou:
+            # Atualizar avaliação
+            cursor.execute("""
+                UPDATE avaliacoes_material 
+                SET nota = %s, comentario = %s, data_avaliacao = NOW()
+                WHERE id = %s
+            """, (nota, comentario, ja_avaliou['id']))
+        else:
+            # Nova avaliação
+            cursor.execute("""
+                INSERT INTO avaliacoes_material (material_id, usuario_id, nota, comentario)
+                VALUES (%s, %s, %s, %s)
+            """, (material_id, session['usuario_id'], nota, comentario))
+        
+        conn.commit()
+        return_connection(conn)
+        
+        return jsonify({'success': True, 'mensagem': 'Avaliação enviada com sucesso!'})
+    
+    except Exception as e:
+        print(f"Erro ao avaliar: {e}")
+        return jsonify({'success': False, 'mensagem': str(e)}), 500
+        
+
+# =============================
+# RELATÓRIOS DA BIBLIOTECA
+# =============================
+
+@biblioteca_bp.route('/relatorios')
+@admin_required
+def relatorios_biblioteca():
+    """Página de relatórios da biblioteca"""
+    
+    cursor, conn = get_db()
+    
+    # Estatísticas gerais
+    cursor.execute("""
+        SELECT 
+            COUNT(*) as total_materiais,
+            COUNT(CASE WHEN publicado = true THEN 1 END) as publicados,
+            COUNT(CASE WHEN publicado = false THEN 1 END) as nao_publicados,
+            SUM(downloads_count) as total_downloads,
+            SUM(visualizacoes_count) as total_visualizacoes,
+            COUNT(DISTINCT created_by) as total_contribuidores
+        FROM materiais
+    """)
+    estatisticas_gerais = cursor.fetchone()
+    
+    # Materiais por grau
+    cursor.execute("""
+        SELECT 
+            grau_acesso,
+            COUNT(*) as quantidade,
+            SUM(downloads_count) as downloads,
+            SUM(visualizacoes_count) as visualizacoes
+        FROM materiais
+        GROUP BY grau_acesso
+        ORDER BY grau_acesso
+    """)
+    materiais_por_grau = cursor.fetchall()
+    
+    # Materiais por tipo
+    cursor.execute("""
+        SELECT 
+            tipo,
+            COUNT(*) as quantidade,
+            SUM(downloads_count) as downloads,
+            SUM(visualizacoes_count) as visualizacoes
+        FROM materiais
+        GROUP BY tipo
+        ORDER BY quantidade DESC
+    """)
+    materiais_por_tipo = cursor.fetchall()
+    
+    # Materiais por categoria
+    cursor.execute("""
+        SELECT 
+            c.nome as categoria,
+            COUNT(m.id) as quantidade,
+            SUM(m.downloads_count) as downloads,
+            SUM(m.visualizacoes_count) as visualizacoes
+        FROM categorias_material c
+        LEFT JOIN materiais m ON c.id = m.categoria_id
+        GROUP BY c.id, c.nome
+        ORDER BY quantidade DESC
+    """)
+    materiais_por_categoria = cursor.fetchall()
+    
+    # Materiais mais acessados (top 10)
+    cursor.execute("""
+        SELECT 
+            m.id,
+            m.titulo,
+            m.tipo,
+            m.visualizacoes_count as visualizacoes,
+            m.downloads_count as downloads,
+            c.nome as categoria
+        FROM materiais m
+        LEFT JOIN categorias_material c ON m.categoria_id = c.id
+        WHERE m.publicado = true
+        ORDER BY (m.visualizacoes_count + m.downloads_count) DESC
+        LIMIT 10
+    """)
+    materiais_top = cursor.fetchall()
+    
+    # Materiais recentes
+    cursor.execute("""
+        SELECT 
+            m.id,
+            m.titulo,
+            m.tipo,
+            m.created_at,
+            u.nome_completo as autor_nome,
+            c.nome as categoria
+        FROM materiais m
+        LEFT JOIN categorias_material c ON m.categoria_id = c.id
+        LEFT JOIN usuarios u ON m.created_by = u.id
+        WHERE m.publicado = true
+        ORDER BY m.created_at DESC
+        LIMIT 10
+    """)
+    materiais_recentes = cursor.fetchall()
+    
+    # Downloads por período (últimos 30 dias)
+    cursor.execute("""
+        SELECT 
+            DATE(data_download) as data,
+            COUNT(*) as total_downloads
+        FROM downloads_material
+        WHERE data_download >= CURRENT_DATE - INTERVAL '30 days'
+        GROUP BY DATE(data_download)
+        ORDER BY data DESC
+    """)
+    downloads_periodo = cursor.fetchall()
+    
+    # Atividade por usuário
+    cursor.execute("""
+        SELECT 
+            u.nome_completo as usuario,
+            COUNT(DISTINCT d.material_id) as materiais_baixados,
+            COUNT(DISTINCT f.material_id) as favoritos,
+            COUNT(DISTINCT a.material_id) as avaliacoes
+        FROM usuarios u
+        LEFT JOIN downloads_material d ON u.id = d.usuario_id
+        LEFT JOIN favoritos_material f ON u.id = f.usuario_id
+        LEFT JOIN avaliacoes_material a ON u.id = a.usuario_id
+        WHERE u.ativo = 1
+        GROUP BY u.id, u.nome_completo
+        ORDER BY materiais_baixados DESC
+        LIMIT 10
+    """)
+    atividade_usuarios = cursor.fetchall()
+    
+    return_connection(conn)
+    
+    # Preparar dados para gráficos
+    labels_grau = []
+    dados_grau = []
+    for item in materiais_por_grau:
+        grau_nome = {1: 'Aprendiz', 2: 'Companheiro', 3: 'Mestre'}.get(item['grau_acesso'], 'Desconhecido')
+        labels_grau.append(grau_nome)
+        dados_grau.append(item['quantidade'])
+    
+    labels_tipo = [item['tipo'].capitalize() for item in materiais_por_tipo]
+    dados_tipo = [item['quantidade'] for item in materiais_por_tipo]
+    
+    labels_categoria = [item['categoria'] for item in materiais_por_categoria if item['categoria']]
+    dados_categoria = [item['quantidade'] for item in materiais_por_categoria if item['categoria']]
+    
+    return render_template('biblioteca/relatorios.html',
+                         estatisticas_gerais=estatisticas_gerais,
+                         materiais_por_grau=materiais_por_grau,
+                         materiais_por_tipo=materiais_por_tipo,
+                         materiais_por_categoria=materiais_por_categoria,
+                         materiais_top=materiais_top,
+                         materiais_recentes=materiais_recentes,
+                         downloads_periodo=downloads_periodo,
+                         atividade_usuarios=atividade_usuarios,
+                         labels_grau=labels_grau,
+                         dados_grau=dados_grau,
+                         labels_tipo=labels_tipo,
+                         dados_tipo=dados_tipo,
+                         labels_categoria=labels_categoria,
+                         dados_categoria=dados_categoria)
+
+
+@biblioteca_bp.route('/relatorios/exportar/<formato>')
+@admin_required
+def exportar_relatorio(formato):
+    """Exportar relatórios em CSV ou PDF"""
+    
+    cursor, conn = get_db()
+    
+    # Buscar dados para exportar
+    cursor.execute("""
+        SELECT 
+            m.id,
+            m.titulo,
+            m.tipo,
+            c.nome as categoria,
+            CASE 
+                WHEN m.grau_acesso = 1 THEN 'Aprendiz'
+                WHEN m.grau_acesso = 2 THEN 'Companheiro'
+                ELSE 'Mestre'
+            END as grau,
+            m.autor,
+            m.editora,
+            m.ano_publicacao,
+            m.visualizacoes_count as visualizacoes,
+            m.downloads_count as downloads,
+            m.created_at as data_criacao,
+            u.nome_completo as criado_por
+        FROM materiais m
+        LEFT JOIN categorias_material c ON m.categoria_id = c.id
+        LEFT JOIN usuarios u ON m.created_by = u.id
+        WHERE m.publicado = true
+        ORDER BY m.created_at DESC
+    """)
+    materiais = cursor.fetchall()
+    return_connection(conn)
+    
+    if formato == 'csv':
+        # Exportar como CSV
+        output = StringIO()
+        writer = csv.writer(output, delimiter=';')
+        
+        # Cabeçalho
+        writer.writerow(['ID', 'Título', 'Tipo', 'Categoria', 'Grau', 'Autor', 'Editora', 
+                        'Ano', 'Visualizações', 'Downloads', 'Data Criação', 'Criado Por'])
+        
+        # Dados
+        for m in materiais:
+            writer.writerow([
+                m['id'], m['titulo'], m['tipo'], m['categoria'] or '', 
+                m['grau'], m['autor'] or '', m['editora'] or '', 
+                m['ano_publicacao'] or '', m['visualizacoes'], m['downloads'],
+                m['data_criacao'].strftime('%d/%m/%Y') if m['data_criacao'] else '',
+                m['criado_por'] or ''
+            ])
+        
+        output.seek(0)
+        return Response(
+            output.getvalue(),
+            mimetype='text/csv',
+            headers={'Content-Disposition': f'attachment; filename=relatorio_materiais_{datetime.now().strftime("%Y%m%d")}.csv'}
+        )
+    
+    elif formato == 'pdf':
+        # Exportar como PDF (usando ReportLab)
+        try:
+            from reportlab.lib import colors
+            from reportlab.lib.pagesizes import A4, landscape
+            from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer
+            from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+            from reportlab.lib.units import cm
+            
+            buffer = BytesIO()
+            doc = SimpleDocTemplate(buffer, pagesize=landscape(A4), rightMargin=2*cm, leftMargin=2*cm, topMargin=2*cm, bottomMargin=2*cm)
+            elements = []
+            styles = getSampleStyleSheet()
+            
+            # Título
+            titulo_style = ParagraphStyle('CustomTitle', parent=styles['Title'], fontSize=16, alignment=1)
+            elements.append(Paragraph("Relatório de Materiais - Biblioteca Maçônica", titulo_style))
+            elements.append(Spacer(1, 0.5*cm))
+            elements.append(Paragraph(f"Gerado em: {datetime.now().strftime('%d/%m/%Y %H:%M')}", styles['Normal']))
+            elements.append(Spacer(1, 1*cm))
+            
+            # Tabela
+            data = [['ID', 'Título', 'Tipo', 'Categoria', 'Grau', 'Visualizações', 'Downloads']]
+            for m in materiais[:50]:  # Limitar a 50 itens no PDF
+                data.append([
+                    str(m['id']), m['titulo'][:40], m['tipo'], 
+                    m['categoria'] or '', m['grau'], str(m['visualizacoes']), str(m['downloads'])
+                ])
+            
+            table = Table(data)
+            table.setStyle(TableStyle([
+                ('BACKGROUND', (0, 0), (-1, 0), colors.grey),
+                ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
+                ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+                ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+                ('FONTSIZE', (0, 0), (-1, 0), 10),
+                ('BOTTOMPADDING', (0, 0), (-1, 0), 12),
+                ('BACKGROUND', (0, 1), (-1, -1), colors.beige),
+                ('GRID', (0, 0), (-1, -1), 1, colors.black),
+                ('FONTSIZE', (0, 1), (-1, -1), 8),
+            ]))
+            elements.append(table)
+            
+            doc.build(elements)
+            buffer.seek(0)
+            
+            return Response(
+                buffer.getvalue(),
+                mimetype='application/pdf',
+                headers={'Content-Disposition': f'attachment; filename=relatorio_materiais_{datetime.now().strftime("%Y%m%d")}.pdf'}
+            )
+        except ImportError:
+            flash('Módulo ReportLab não instalado. Use CSV para exportar.', 'warning')
+            return redirect(url_for('biblioteca.relatorios_biblioteca'))
+
+
+# =============================
+# COMPARTILHAMENTO
+# =============================
+
+@biblioteca_bp.route('/material/<int:material_id>/compartilhar')
+def compartilhar_material(material_id):
+    """Gerar link de compartilhamento para o material"""
+    
+    cursor, conn = get_db()
+    cursor.execute("""
+        SELECT titulo, descricao, capa_url, tipo
+        FROM materiais 
+        WHERE id = %s AND publicado = true
+    """, (material_id,))
+    material = cursor.fetchone()
+    return_connection(conn)
+    
+    if not material:
+        return jsonify({'error': 'Material não encontrado'}), 404
+    
+    # Gerar URL completa
+    url_completa = request.url_root.rstrip('/') + url_for('biblioteca.visualizar_material', material_id=material_id)
+    
+    # Preparar dados para compartilhamento
+    dados_compartilhamento = {
+        'url': url_completa,
+        'titulo': material['titulo'],
+        'descricao': material['descricao'][:150] if material['descricao'] else '',
+        'imagem': material['capa_url'] or request.url_root + 'static/img/logo.png',
+        'tipo': material['tipo']
+    }
+    
+    return render_template('biblioteca/compartilhar.html', dados=dados_compartilhamento)
+
+
+@biblioteca_bp.route('/api/material/<int:material_id>/compartilhar', methods=['POST'])
+def api_compartilhar_material(material_id):
+    """API para registrar compartilhamento"""
+    
+    plataforma = request.json.get('plataforma', 'link')
+    
+    cursor, conn = get_db()
+    cursor.execute("""
+        UPDATE materiais 
+        SET compartilhamentos_count = compartilhamentos_count + 1 
+        WHERE id = %s
+    """, (material_id,))
+    conn.commit()
+    return_connection(conn)
+    
+    return jsonify({'success': True})        
+
+
+# =============================
+# CONFIGURAÇÃO DO CLOUDINARY
+# =============================
 
 cloudinary.config(
     cloud_name="da57u8plb",
     api_key=os.getenv("CLOUDINARY_API_KEY"),
     api_secret=os.getenv("CLOUDINARY_API_SECRET")
 )
-
-
 
 # =============================
 # CARREGAR VARIÁVEIS DE AMBIENTE
@@ -72,6 +1348,12 @@ app = Flask(__name__)
 app.secret_key = os.getenv('SECRET_KEY', os.urandom(24))
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 app.config['MAX_CONTENT_LENGTH'] = 50 * 1024 * 1024  # 50MB
+
+# =============================
+# REGISTRAR BLUEPRINT DA BIBLIOTECA
+# =============================
+app.register_blueprint(biblioteca_bp)
+
 # =============================
 # CONEXÃO COM BANCO DE DADOS
 # =============================
@@ -134,6 +1416,7 @@ if __name__ != '__main__':
     # Opcional: testar conexão (mas não falhar se não conectar no primeiro momento)
     if os.getenv('DATABASE_URL'):
         test_connection()
+
 # =============================
 # FUNÇÕES AUXILIARES
 # =============================
@@ -232,149 +1515,7 @@ def enviar_whatsapp(numero, mensagem):
         print(f"Erro ao abrir WhatsApp: {e}")
         return False
 
-# =============================
-# DECORATORS
-# =============================
-def login_required(f):
-    @wraps(f)
-    def decorated_function(*args, **kwargs):
-        if "usuario" not in session:
-            flash("Faça login para acessar esta página", "warning")
-            return redirect("/")
-        return f(*args, **kwargs)
-    return decorated_function
 
-def admin_required(f):
-    @wraps(f)
-    def decorated_function(*args, **kwargs):
-        if "usuario" not in session or session.get("tipo") != "admin":
-            flash("Acesso restrito a administradores", "danger")
-            return redirect("/dashboard")
-        return f(*args, **kwargs)
-    return decorated_function
-
-def sindicante_required(f):
-    @wraps(f)
-    def decorated_function(*args, **kwargs):
-        if "usuario" not in session or session.get("tipo") != "sindicante":
-            flash("Acesso restrito a sindicantes", "danger")
-            return redirect("/dashboard")
-        return f(*args, **kwargs)
-    return decorated_function
-
-def nivel_required(nivel_minimo):
-    def decorator(f):
-        @wraps(f)
-        def decorated_function(*args, **kwargs):
-            if "usuario" not in session:
-                flash("Faça login para acessar esta página", "warning")
-                return redirect("/")
-            nivel_usuario = session.get("nivel_acesso", 1)
-            tipo_usuario = session.get("tipo", "obreiro")
-            if tipo_usuario == "admin":
-                return f(*args, **kwargs)
-            if nivel_usuario >= nivel_minimo:
-                return f(*args, **kwargs)
-            else:
-                flash("Você não tem permissão para acessar esta página", "danger")
-                return redirect("/dashboard")
-        return decorated_function
-    return decorator
-
-def nivel_ata_required():
-    def decorator(f):
-        @wraps(f)
-        def decorated_function(*args, **kwargs):
-            if "usuario" not in session:
-                flash("Faça login para acessar esta página", "warning")
-                return redirect("/")
-            ata_id = kwargs.get('id')
-            if ata_id:
-                cursor, conn = get_db()
-                cursor.execute("""
-                    SELECT a.*, r.grau as reuniao_grau
-                    FROM atas_view_view_view a
-                    JOIN reunioes r ON a.reuniao_id = r.id
-                    WHERE a.id = %s
-                """, (ata_id,))
-                ata = cursor.fetchone()
-                return_connection(conn)
-                if ata:
-                    reuniao_grau = ata.get('reuniao_grau') or 1
-                    nivel_usuario = session.get("nivel_acesso", 1)
-                    tipo_usuario = session.get("tipo", "obreiro")
-                    if tipo_usuario == "admin":
-                        return f(*args, **kwargs)
-                    if nivel_usuario == 1 and reuniao_grau == 1:
-                        return f(*args, **kwargs)
-                    elif nivel_usuario == 2 and reuniao_grau <= 2:
-                        return f(*args, **kwargs)
-                    elif nivel_usuario >= 3:
-                        return f(*args, **kwargs)
-                    else:
-                        flash("Você não tem permissão para visualizar esta ata", "danger")
-                        return redirect("/dashboard")
-            return f(*args, **kwargs)
-        return decorated_function
-    return decorator
-
-def permissao_required(permissao_codigo):
-    def decorator(f):
-        @wraps(f)
-        def decorated_function(*args, **kwargs):
-            if not tem_permissao(permissao_codigo):
-                flash("Você não tem permissão para acessar esta página", "danger")
-                return redirect("/dashboard")
-            return f(*args, **kwargs)
-        return decorated_function
-    return decorator
-
-def tem_permissao(permissao_codigo):
-    if 'user_id' not in session:
-        return False
-    if session.get('tipo') == 'admin':
-        return True
-    try:
-        cursor, conn = get_db()
-        cursor.execute("""
-            SELECT COUNT(*) as total
-            FROM permissoes_grau pg
-            JOIN permissoes p ON pg.permissao_id = p.id
-            WHERE pg.grau_id = %s AND p.codigo = %s
-        """, (session.get('grau_atual', 1), permissao_codigo))
-        result = cursor.fetchone()
-        return_connection(conn)
-        return result and result['total'] > 0
-    except Exception as e:
-        print(f"Erro ao verificar permissão: {e}")
-        return False
-
-def _verificar_permissao_db(codigo):
-    try:
-        cursor, conn = get_db()
-        cursor.execute("""
-            SELECT permitido
-            FROM permissoes_usuario pu
-            JOIN permissoes p ON pu.permissao_id = p.id
-            WHERE pu.usuario_id = %s AND p.codigo = %s
-        """, (session['user_id'], codigo))
-        result = cursor.fetchone()
-        if result:
-            return_connection(conn)
-            return result['permitido'] == 1
-        grau_atual = session.get('grau_atual', 1)
-        cursor.execute("""
-            SELECT COUNT(*) as total
-            FROM permissoes_grau pg
-            JOIN permissoes p ON pg.permissao_id = p.id
-            WHERE pg.grau_id = %s AND p.codigo = %s
-        """, (grau_atual, codigo))
-        result = cursor.fetchone()
-        return_connection(conn)
-        return result and result['total'] > 0
-    except Exception as e:
-        print(f"Erro ao verificar permissão: {e}")
-        return False
 
 # =============================
 # CONTEXTO GLOBAL
@@ -451,42 +1592,46 @@ def noticias():
 def galeria():
     return render_template("public/galeria.html")
 
+
 # =============================
 # ROTAS DE AUTENTICAÇÃO
 # =============================
 @app.route("/login", methods=["GET", "POST"])
 def login():
     if request.method == "POST":
-        usuario = request.form["usuario"]
-        senha = request.form["senha"]
+        usuario = request.form.get("usuario")
+        senha = request.form.get("senha")
+        
         cursor, conn = get_db()
-        cursor.execute("SELECT * FROM usuarios WHERE usuario = %s AND ativo = 1", (usuario,))
+        cursor.execute("""
+            SELECT id, usuario, senha_hash, tipo, grau_atual, nome_completo 
+            FROM usuarios 
+            WHERE usuario = %s AND ativo = 1
+        """, (usuario,))
         user = cursor.fetchone()
         return_connection(conn)
-        if user and check_password_hash(user["senha_hash"], senha):
-            session["usuario"] = user["usuario"]
-            session["tipo"] = user["tipo"]
-            session["user_id"] = user["id"]
-            session["nome_completo"] = user["nome_completo"] or ""
-            session["cim_numero"] = user["cim_numero"] or ""
-            session["loja_nome"] = user["loja_nome"] or ""
-            session["loja_numero"] = user["loja_numero"] or ""
-            session["loja_orient"] = user["loja_orient"] or ""
-            session["grau_atual"] = user["grau_atual"] or 1
-            session["nivel_acesso"] = user.get("nivel_acesso", 1)
-            registrar_log("login", "usuarios", user["id"], dados_novos={"usuario": usuario})
-            flash(f"Bem-vindo, {user['nome_completo'] or user['usuario']}!", "success")
-            return redirect("/dashboard")
+        
+        if user and check_password_hash(user['senha_hash'], senha):
+            # DEFINIR TODAS AS VARIÁVEIS DE SESSÃO
+            session['usuario_id'] = user['id']
+            session['usuario'] = user['usuario']
+            session['tipo'] = user['tipo']
+            session['grau_atual'] = user['grau_atual']
+            session['nome_completo'] = user['nome_completo']
+            session['user_id'] = user['id']  # Alguns decorators usam user_id
+            
+            flash('Login realizado com sucesso!', 'success')
+            
+            # Redirecionar para a página que o usuário estava tentando acessar
+            next_page = request.args.get('next')
+            if next_page:
+                return redirect(next_page)
+            return redirect(url_for('dashboard'))
         else:
-            flash("Usuário ou senha inválidos", "danger")
+            flash('Usuário ou senha inválidos', 'danger')
+    
     return render_template("login.html")
 
-@app.route("/logout")
-def logout():
-    registrar_log("logout", "usuarios", session.get("user_id"))
-    session.clear()
-    flash("Logout realizado com sucesso", "info")
-    return redirect("/")
 
 # =============================
 # ROTAS DO DASHBOARD
@@ -696,7 +1841,7 @@ def listar_obreiros():
         SELECT DISTINCT u.*, 
                l.nome as loja_nome_completo,
                l.cidade as loja_cidade,
-               l.estado as loja_estado,
+               l.uf as loja_uf,
                CASE 
                    WHEN u.grau_atual = 1 THEN 'Aprendiz'
                    WHEN u.grau_atual = 2 THEN 'Companheiro'
@@ -1034,31 +2179,7 @@ def visualizar_obreiro(id):
             return_connection(conn)
         flash(f"Erro ao carregar dados do obreiro: {str(e)}", "danger")
         return redirect("/obreiros")
-
-@app.route("/obreiros/<int:id>/editar", methods=["GET", "POST"])
-@login_required
-def editar_obreiro(id):
-    if session["tipo"] != "admin" and session["user_id"] != id:
-        flash("Você não tem permissão para editar este obreiro", "danger")
-        return redirect("/obreiros")
     
-    cursor, conn = get_db()
-    
-    if request.method == "POST":
-        nome_completo = request.form.get("nome_completo", "")
-        nome_maconico = request.form.get("nome_maconico", "")
-        cim_numero = request.form.get("cim_numero", "")
-        telefone = request.form.get("telefone", "")
-        email = request.form.get("email", "")
-        endereco = request.form.get("endereco", "")
-        loja_nome = request.form.get("loja_nome", "")
-        loja_numero = request.form.get("loja_numero", "")
-        loja_orient = request.form.get("loja_orient", "")
-        
-        cursor.execute("SELECT * FROM usuarios WHERE id = %s", (id,))
-        dados_antigos = dict(cursor.fetchone())
-        grau_antigo = dados_antigos.get("grau_atual")
-        
         # ============================================
         # PROCESSAR UPLOAD DA FOTO
         # ============================================
@@ -1206,6 +2327,155 @@ def editar_obreiro(id):
                           nome_grau_atual=nome_grau_atual, 
                           is_admin=(session["tipo"] == "admin"),
                           is_own_profile=(session["user_id"] == id))
+from datetime import datetime
+
+@app.route("/obreiros/<int:id>/editar", methods=["GET", "POST"])
+@login_required
+def editar_obreiro(id):
+
+    # 🔐 Controle de acesso
+    if session["tipo"] != "admin" and session["user_id"] != id:
+        flash("Você não tem permissão para editar este obreiro", "danger")
+        return redirect("/obreiros")
+
+    cursor, conn = get_db()
+
+    try:
+        # 🔎 Buscar dados atuais
+        cursor.execute("SELECT * FROM usuarios WHERE id = %s", (id,))
+        obreiro = cursor.fetchone()
+
+        if not obreiro:
+            flash("Obreiro não encontrado", "danger")
+            return redirect("/obreiros")
+
+        # =============================
+        # 📥 POST (SALVAR ALTERAÇÕES)
+        # =============================
+        if request.method == "POST":
+
+            # 🧾 Campos do formulário
+            nome_completo = request.form.get("nome_completo")
+            nome_maconico = request.form.get("nome_maconico")
+            cim_numero = request.form.get("cim_numero")
+            telefone = request.form.get("telefone")
+            email = request.form.get("email")
+            endereco = request.form.get("endereco")
+            loja_nome = request.form.get("loja_nome")
+            loja_numero = request.form.get("loja_numero")
+            loja_orient = request.form.get("loja_orient")
+
+
+            # 🔥 CAMPO CORRIGIDO (TIPO)
+            tipo = request.form.get("tipo", obreiro["tipo"])
+
+            # =============================
+            # 🎯 GRAU (somente admin)
+            # =============================
+            grau_antigo = obreiro["grau_atual"]
+
+            if session["tipo"] == "admin":
+                grau_form = request.form.get("grau_atual")
+
+                if grau_form and str(grau_form).isdigit():
+                    grau_atual = int(grau_form)
+                else:
+                    grau_atual = grau_antigo
+            else:
+                grau_atual = grau_antigo
+
+            # =============================
+            # 🔒 STATUS (somente admin)
+            # =============================
+            if session["tipo"] == "admin":
+                ativo = request.form.get("ativo", obreiro["ativo"])
+            else:
+                ativo = obreiro["ativo"]
+
+            # =============================
+            # 💾 UPDATE COMPLETO
+            # =============================
+            cursor.execute("""
+UPDATE usuarios SET
+    nome_completo = %s,
+    nome_maconico = %s,
+    cim_numero = %s,
+    telefone = %s,
+    email = %s,
+    endereco = %s,
+    loja_nome = %s,
+    grau_atual = %s,
+    ativo = %s,
+    tipo = %s
+WHERE id = %s
+""", (
+    nome_completo,
+    nome_maconico,
+    cim_numero,
+    telefone,
+    email,
+    endereco,
+    loja_nome,
+    grau_atual,
+    ativo,
+    tipo,
+    id
+))
+
+            # =============================
+            # 📜 HISTÓRICO DE GRAU
+            # =============================
+            if (
+                session["tipo"] == "admin"
+                and grau_atual != grau_antigo
+            ):
+                cursor.execute("""
+                    INSERT INTO historico_graus
+                    (obreiro_id, grau, data, observacao)
+                    VALUES (%s, %s, %s, %s)
+                """, (
+                    id,
+                    grau_atual,
+                    datetime.now().date(),
+                    f"Alteração de grau de {grau_antigo} para {grau_atual}"
+                ))
+
+            conn.commit()
+
+            flash("Obreiro atualizado com sucesso!", "success")
+            return redirect(f"/obreiros/{id}")
+
+    except Exception as e:
+        conn.rollback()
+        flash(f"Erro ao atualizar: {str(e)}", "danger")
+
+    finally:
+        return_connection(conn)
+
+    # =============================
+    # 📊 GET (CARREGAR TELA)
+    # =============================
+    cursor, conn = get_db()
+
+    cursor.execute("SELECT * FROM usuarios WHERE id = %s", (id,))
+    obreiro = cursor.fetchone()
+
+    cursor.execute("SELECT * FROM lojas ORDER BY nome")
+    lojas = cursor.fetchall()
+
+    cursor.execute("SELECT * FROM graus ORDER BY nivel")
+    graus = cursor.fetchall()
+
+    return_connection(conn)
+
+    return render_template(
+        "obreiros/editar.html",
+        obreiro=obreiro,
+        lojas=lojas,
+        graus=graus,
+        is_admin=(session["tipo"] == "admin"),
+        is_own_profile=(session["user_id"] == id)
+    )
 
 @app.route("/obreiros/<int:id>/excluir")
 @admin_required
@@ -1314,6 +2584,7 @@ def reativar_obreiro(id):
     return redirect("/obreiros")
 
 import cloudinary.uploader
+
 
 @app.route("/obreiros/<int:id>/foto", methods=["POST"])
 @login_required
@@ -2454,11 +3725,9 @@ def nova_reuniao():
 @login_required
 def detalhes_reuniao(id):
     cursor, conn = get_db()
+    
     cursor.execute("""
-        SELECT r.id, r.titulo, r.tipo, r.grau, r.data, r.hora_inicio, 
-               r.hora_termino, r.local, r.loja_id, r.pauta, r.observacoes, 
-               r.status, r.criado_por,
-               l.nome as loja_nome, t.cor as tipo_cor,
+        SELECT r.*, l.nome as loja_nome, t.cor as tipo_cor,
                u.nome_completo as criado_por_nome
         FROM reunioes r
         LEFT JOIN lojas l ON r.loja_id = l.id
@@ -2467,10 +3736,13 @@ def detalhes_reuniao(id):
         WHERE r.id = %s
     """, (id,))
     reuniao = cursor.fetchone()
+    
     if not reuniao:
         flash("Reunião não encontrada", "danger")
         return_connection(conn)
         return redirect("/reunioes")
+
+    # Buscar presenças
     cursor.execute("""
         SELECT u.id, u.nome_completo, u.grau_atual, 
                p.id as presenca_id, p.presente, p.tipo_ausencia, 
@@ -2482,33 +3754,40 @@ def detalhes_reuniao(id):
         ORDER BY u.grau_atual DESC, u.nome_completo
     """, (id,))
     presenca = cursor.fetchall()
+    
     total_obreiros = len(presenca)
     presentes = sum(1 for p in presenca if p["presente"] == 1)
     ausentes = total_obreiros - presentes
+
+    # Buscar ata
     cursor.execute("""
-        SELECT id, aprovada, numero_ata, ano_ata, conteudo, data_criacao, 
-               redator_id, versao, data_aprovacao, redator_nome
-        FROM atas_view_view_view 
+        SELECT id, aprovada, numero_ata, ano_ata 
+        FROM atas 
         WHERE reuniao_id = %s
-        ORDER BY versao DESC
-        LIMIT 1
     """, (id,))
-    ata = cursor.fetchone()
-    ata_id = ata["id"] if ata else None
-    ata_aprovada = ata["aprovada"] if ata else None
-    ata_numero = ata["numero_ata"] if ata else None
-    ata_ano = ata["ano_ata"] if ata else None
-    ata_conteudo = ata["conteudo"] if ata else None
-    ata_data_criacao = ata["data_criacao"] if ata else None
-    ata_versao = ata["versao"] if ata else None
+    ata_row = cursor.fetchone()
+    ata_id = ata_row["id"] if ata_row else None
+    ata_aprovada = ata_row["aprovada"] if ata_row else None
+    ata_numero = ata_row["numero_ata"] if ata_row else None
+    ata_ano = ata_row["ano_ata"] if ata_row else None
+
+    # Buscar tipos de ausência
     cursor.execute("SELECT * FROM tipos_ausencia WHERE ativo = 1 ORDER BY nome")
     tipos_ausencia = cursor.fetchall()
+
     return_connection(conn)
-    return render_template("reunioes/detalhes.html", reuniao=reuniao, presenca=presenca,
-                          total_obreiros=total_obreiros, presentes=presentes, ausentes=ausentes,
-                          ata_id=ata_id, ata_aprovada=ata_aprovada, ata_numero=ata_numero,
-                          ata_ano=ata_ano, ata_conteudo=ata_conteudo, ata_data_criacao=ata_data_criacao,
-                          ata_versao=ata_versao, tipos_ausencia=tipos_ausencia)
+    
+    return render_template("reunioes/detalhes.html",
+                          reuniao=reuniao,
+                          presenca=presenca,
+                          total_obreiros=total_obreiros,
+                          presentes=presentes,
+                          ausentes=ausentes,
+                          ata_id=ata_id,
+                          ata_aprovada=ata_aprovada,
+                          ata_numero=ata_numero,
+                          ata_ano=ata_ano,
+                          tipos_ausencia=tipos_ausencia)
 
 @app.route("/reunioes/<int:id>/editar", methods=["GET", "POST"])
 @admin_required
@@ -2622,7 +3901,7 @@ def excluir_reuniao(id):
         flash("Reunião não encontrada", "danger")
         return_connection(conn)
         return redirect("/reunioes")
-    cursor.execute("SELECT id FROM atas_view_view_view WHERE reuniao_id = %s", (id,))
+    cursor.execute("SELECT id FROM atas WHERE reuniao_id = %s", (id,))
     if cursor.fetchone():
         flash("Não é possível excluir uma reunião que já possui ata.", "danger")
     else:
@@ -2709,7 +3988,7 @@ def redigir_ata(id):
             
             # Verificar se já existe uma ata para esta reunião
             cursor.execute("""
-                SELECT id, versao FROM atas_view_view_view WHERE reuniao_id = %s
+                SELECT id, versao FROM atas WHERE reuniao_id = %s
             """, (id,))
             
             existing = cursor.fetchone()
@@ -2735,13 +4014,13 @@ def redigir_ata(id):
                 flash("Ata atualizada com sucesso!", "success")
             else:
                 # Obter próximo ID de forma segura
-                cursor.execute("SELECT MAX(id) FROM atas_view_view_view")
+                cursor.execute("SELECT MAX(id) FROM atas")
                 max_id = cursor.fetchone()['max']
                 next_id = (max_id or 0) + 1
                 
                 # Obter número da ata para o ano atual
                 ano_atual = datetime.now().year
-                cursor.execute("SELECT COUNT(*) as total FROM atas_view_view WHERE ano_ata = %s", (ano_atual,))
+                cursor.execute("SELECT COUNT(*) as total FROM atas WHERE ano_ata = %s", (ano_atual,))
                 total = cursor.fetchone()["total"]
                 numero_ata = total + 1
                 
@@ -2782,7 +4061,7 @@ def redigir_ata(id):
         return_connection(conn)
         return redirect("/reunioes")
     
-    cursor.execute("SELECT * FROM atas_view_view WHERE reuniao_id = %s", (id,))
+    cursor.execute("SELECT * FROM atas WHERE reuniao_id = %s", (id,))
     ata = cursor.fetchone()
     
     return_connection(conn)
@@ -3802,6 +5081,17 @@ def gerenciar_candidatos():
     return_connection(conn)
     return render_template("candidatos.html", candidatos=candidatos, sindicantes=sindicantes, tipo=session["tipo"])
 
+@app.route("/candidatos/excluir/<int:id>", methods=["POST"])
+def excluir_candidato(id):
+    cursor, conn = get_db()
+
+    cursor.execute("DELETE FROM candidatos WHERE id=%s", (id,))
+    conn.commit()
+
+    return_connection(conn)
+
+    return redirect("/candidatos")
+
 @app.route("/candidato/formulario/<int:candidato_id>", methods=["GET", "POST"])
 @login_required
 def formulario_candidato(candidato_id):
@@ -4302,103 +5592,258 @@ def baixar_parecer_conclusivo(id):
 @admin_required
 def gerenciar_sindicantes():
     cursor, conn = get_db()
-    if request.method == "POST":
-        obreiro_id = request.form.get("obreiro_id")
-        if obreiro_id and obreiro_id != "":
-            cursor.execute("""
-                SELECT id, usuario, nome_completo, cim_numero, loja_nome, loja_numero, loja_orient, grau_atual
-                FROM usuarios 
-                WHERE id = %s AND tipo = 'obreiro' AND grau_atual = 3 AND ativo = 1
-            """, (obreiro_id,))
-            obreiro = cursor.fetchone()
-            if obreiro:
-                try:
-                    cursor.execute("UPDATE usuarios SET tipo = 'sindicante' WHERE id = %s", (obreiro_id,))
-                    conn.commit()
-                    registrar_log("promover_sindicante", "sindicante", obreiro_id, dados_novos={"usuario": obreiro["usuario"], "nome": obreiro["nome_completo"]})
-                    flash(f"Obreiro {obreiro['nome_completo']} promovido a sindicante com sucesso!", "success")
-                except Exception as e:
-                    flash(f"Erro ao promover obreiro: {str(e)}", "danger")
-                    conn.rollback()
-            else:
-                flash("Obreiro não encontrado ou não é um Mestre", "danger")
-        else:
-            usuario = request.form.get("usuario", "").strip()
-            senha = request.form.get("senha")
-            nome_completo = request.form.get("nome_completo", "")
-            cim_numero = request.form.get("cim_numero", "")
-            loja_nome = request.form.get("loja_nome", "")
-            loja_numero = request.form.get("loja_numero", "")
-            loja_orient = request.form.get("loja_orient", "")
-            if usuario and senha:
-                try:
-                    senha_hash = generate_password_hash(senha)
-                    agora = datetime.now()
-                    cursor.execute("""
-                        INSERT INTO usuarios 
-                        (usuario, senha_hash, tipo, data_cadastro, ativo, nome_completo, cim_numero, loja_nome, loja_numero, loja_orient, grau_atual) 
-                        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
-                    """, (usuario, senha_hash, "sindicante", agora, 1, nome_completo, cim_numero, 
-                          loja_nome, loja_numero, loja_orient, 3))
-                    conn.commit()
-                    sindicante_id = cursor.lastrowid
-                    registrar_log("criar", "sindicante", sindicante_id, dados_novos={"usuario": usuario})
-                    flash(f"Sindicante '{usuario}' adicionado com sucesso!", "success")
-                except psycopg2.IntegrityError:
-                    flash("Usuário já existe", "danger")
-                    conn.rollback()
-            else:
-                flash("Usuário e senha são obrigatórios", "danger")
-    cursor.execute("""
-        SELECT id, usuario, nome_completo, cim_numero, loja_nome, loja_numero, loja_orient, grau_atual
-        FROM usuarios 
-        WHERE tipo = 'obreiro' AND grau_atual = 3 AND ativo = 1
-        ORDER BY nome_completo
-    """)
-    obreiros_mestres = cursor.fetchall()
-    cursor.execute("""
-        SELECT id, usuario, nome_completo, cim_numero, loja_nome, loja_numero, loja_orient, ativo 
-        FROM usuarios 
-        WHERE tipo = 'sindicante' AND ativo = 1
-        ORDER BY nome_completo
-    """)
-    sindicantes = cursor.fetchall()
-    cursor.execute("SELECT * FROM lojas")
-    lojas = cursor.fetchall()
-    return_connection(conn)
-    return render_template("sindicantes.html", sindicantes=sindicantes, lojas=lojas, obreiros_mestres=obreiros_mestres)
 
+    try:
+        # =========================
+        # PROMOVER OU CRIAR
+        # =========================
+        if request.method == "POST":
+
+            obreiro_id = request.form.get("obreiro_id")
+
+            # =========================
+            # PROMOVER O OBRERO PARA SINDICANTE
+            # =========================
+            if obreiro_id and obreiro_id.strip() != "":
+
+                cursor.execute("""
+                    SELECT id, usuario, nome_completo, cim_numero,
+                           loja_nome, loja_numero, loja_orient, grau_atual
+                    FROM usuarios
+                    WHERE id = %s
+                      AND tipo = 'obreiro'
+                      AND grau_atual = 3
+                      AND ativo = 1
+                """, (obreiro_id,))
+
+                obreiro = cursor.fetchone()
+
+                if obreiro:
+
+                    try:
+                        cursor.execute("""
+                            UPDATE usuarios
+                            SET tipo = 'sindicante',
+                                grau_atual = 3
+                            WHERE id = %s
+                        """, (obreiro_id,))
+
+                        conn.commit()
+
+                        registrar_log(
+                            "promover_sindicante",
+                            "usuarios",
+                            obreiro_id,
+                            dados_anteriores={"tipo": "obreiro"},
+                            dados_novos={
+                                "tipo": "sindicante",
+                                "usuario": obreiro["usuario"],
+                                "nome": obreiro["nome_completo"]
+                            }
+                        )
+
+                        flash(
+                            f"Obreiro {obreiro['nome_completo']} promovido a sindicante com sucesso!",
+                            "success"
+                        )
+
+                    except Exception as e:
+                        conn.rollback()
+                        flash(f"Erro ao promover obreiro: {str(e)}", "danger")
+
+                else:
+                    flash("Obreiro não encontrado ou não é um Mestre", "danger")
+
+            # =========================
+            # CRIAR NOVO SINDICANTE
+            # =========================
+            else:
+                usuario = request.form.get("usuario", "").strip()
+                senha = request.form.get("senha")
+                nome_completo = request.form.get("nome_completo", "")
+                cim_numero = request.form.get("cim_numero", "")
+                loja_nome = request.form.get("loja_nome", "")
+                loja_numero = request.form.get("loja_numero", "")
+                loja_orient = request.form.get("loja_orient", "")
+
+                if usuario and senha:
+
+                    try:
+                        senha_hash = generate_password_hash(senha)
+                        agora = datetime.now()
+
+                        cursor.execute("""
+                            INSERT INTO usuarios
+                            (usuario, senha_hash, tipo, data_cadastro, ativo,
+                             nome_completo, cim_numero,
+                             loja_nome, loja_numero, loja_orient,
+                             grau_atual)
+                            VALUES (%s, %s, %s, %s, %s,
+                                    %s, %s, %s, %s, %s, %s)
+                            RETURNING id
+                        """, (
+                            usuario,
+                            senha_hash,
+                            "sindicante",
+                            agora,
+                            1,
+                            nome_completo,
+                            cim_numero,
+                            loja_nome,
+                            loja_numero,
+                            loja_orient,
+                            3
+                        ))
+
+                        sindicante_id = cursor.fetchone()["id"]
+
+                        conn.commit()
+
+                        registrar_log(
+                            "criar",
+                            "usuarios",
+                            sindicante_id,
+                            dados_novos={"usuario": usuario}
+                        )
+
+                        flash(f"Sindicante '{usuario}' adicionado com sucesso!", "success")
+
+                    except psycopg2.IntegrityError:
+                        conn.rollback()
+                        flash("Usuário já existe", "danger")
+
+                    except Exception as e:
+                        conn.rollback()
+                        flash(f"Erro ao criar sindicante: {str(e)}", "danger")
+
+                else:
+                    flash("Usuário e senha são obrigatórios", "danger")
+
+        # =========================
+        # LISTA OBREIROS MESTRES
+        # =========================
+        cursor.execute("""
+            SELECT id, usuario, nome_completo, cim_numero,
+                   loja_nome, loja_numero, loja_orient, grau_atual
+            FROM usuarios
+            WHERE tipo = 'obreiro'
+              AND grau_atual = 3
+              AND ativo = 1
+            ORDER BY nome_completo
+        """)
+        obreiros_mestres = cursor.fetchall()
+
+        # =========================
+        # LISTA SINDICANTES
+        # =========================
+        cursor.execute("""
+            SELECT id, usuario, nome_completo, cim_numero,
+                   loja_nome, loja_numero, loja_orient, ativo
+            FROM usuarios
+            WHERE tipo = 'sindicante'
+              AND ativo = 1
+            ORDER BY nome_completo
+        """)
+        sindicantes = cursor.fetchall()
+
+        # =========================
+        # LOJAS
+        # =========================
+        cursor.execute("SELECT * FROM lojas")
+        lojas = cursor.fetchall()
+
+        return render_template(
+            "sindicantes.html",
+            sindicantes=sindicantes,
+            lojas=lojas,
+            obreiros_mestres=obreiros_mestres
+        )
+
+    finally:
+        return_connection(conn)
+        
 @app.route("/reverter_sindicante/<int:id>")
 @admin_required
 def reverter_sindicante(id):
     cursor, conn = get_db()
-    cursor.execute("SELECT * FROM usuarios WHERE id = %s AND tipo = 'sindicante'", (id,))
-    sindicante = cursor.fetchone()
-    if sindicante:
-        cursor.execute("UPDATE usuarios SET tipo = 'obreiro' WHERE id = %s", (id,))
+
+    try:
+        # buscar usuário independente do tipo
+        cursor.execute("SELECT * FROM usuarios WHERE id = %s", (id,))
+        sindicante = cursor.fetchone()
+
+        if not sindicante:
+            flash("Usuário não encontrado", "danger")
+            return redirect("/sindicantes")
+
+        if sindicante["tipo"] != "sindicante":
+            flash("Este usuário não é sindicante", "warning")
+            return redirect("/sindicantes")
+
+        # update seguro
+        cursor.execute("""
+            UPDATE usuarios
+            SET tipo = 'obreiro'
+            WHERE id = %s
+        """, (id,))
+
         conn.commit()
-        registrar_log("reverter_sindicante", "sindicante", id, dados_anteriores={"tipo": "sindicante"}, dados_novos={"tipo": "obreiro"})
+
+        registrar_log(
+            "reverter_sindicante",
+            "usuarios",
+            id,
+            dados_anteriores={"tipo": "sindicante"},
+            dados_novos={"tipo": "obreiro"}
+        )
+
         flash(f"Sindicante {sindicante['usuario']} revertido para obreiro", "success")
-    else:
-        flash("Sindicante não encontrado", "danger")
-    return_connection(conn)
+
+    except Exception as e:
+        conn.rollback()
+        flash(f"Erro ao reverter: {str(e)}", "danger")
+
+    finally:
+        return_connection(conn)
+
     return redirect("/sindicantes")
 
 @app.route("/excluir_sindicante/<int:id>")
 @admin_required
 def excluir_sindicante(id):
     cursor, conn = get_db()
+
+    # pega usuário UMA vez só
     cursor.execute("SELECT * FROM usuarios WHERE id = %s", (id,))
-    dados = dict(cursor.fetchone()) if cursor.fetchone() else None
-    cursor.execute("SELECT tipo FROM usuarios WHERE id = %s", (id,))
-    usuario = cursor.fetchone()
-    if usuario and usuario["tipo"] == "sindicante":
-        cursor.execute("UPDATE usuarios SET ativo = 0 WHERE id = %s", (id,))
-        conn.commit()
-        registrar_log("desativar", "sindicante", id, dados_anteriores=dados)
-        flash("Sindicante removido com sucesso!", "success")
-    else:
-        flash("Usuário não encontrado ou não é sindicante", "danger")
+    row = cursor.fetchone()
+
+    if not row:
+        flash("Usuário não encontrado", "danger")
+        return redirect("/sindicantes")
+
+    usuario = dict(row)
+
+    # valida tipo
+    if usuario["tipo"] != "sindicante":
+        flash("Usuário não é sindicante", "danger")
+        return redirect("/sindicantes")
+
+    # desativa
+    cursor.execute(
+        "UPDATE usuarios SET ativo = 0 WHERE id = %s",
+        (id,)
+    )
+    conn.commit()
+
+    registrar_log(
+        "desativar",
+        "sindicante",
+        id,
+        dados_anteriores=usuario
+    )
+
+    flash("Sindicante removido com sucesso!", "success")
+
     return_connection(conn)
     return redirect("/sindicantes")
 
@@ -4452,146 +5897,224 @@ def editar_sindicante(id):
 # =============================
 
 @app.route("/lojas")
-@login_required
-def gerenciar_lojas():
-    """Lista todas as lojas"""
-    try:
-        cursor, conn = get_db()
-        cursor.execute("SELECT * FROM lojas ORDER BY nome")
-        lojas = cursor.fetchall()
-        return_connection(conn)
-        return render_template("lojas.html", lojas=lojas)
-    except Exception as e:
-        print(f"Erro ao carregar lojas: {e}")
-        if 'conn' in locals():
-            return_connection(conn)
-        flash(f"Erro ao carregar lojas: {str(e)}", "danger")
-        return redirect("/dashboard")
+@admin_required
+def listar_lojas():
+    cursor, conn = get_db()
 
+    cursor.execute("""
+        SELECT id, nome, numero, oriente, cidade, uf, ativo
+        FROM lojas
+        ORDER BY id DESC
+    """)
+
+    lojas = cursor.fetchall()
+    return_connection(conn)
+
+    return render_template("lojas_listar.html", lojas=lojas)
 
 @app.route("/lojas/nova", methods=["GET", "POST"])
 @admin_required
 def nova_loja():
-    """Criar nova loja"""
     if request.method == "POST":
-        nome = request.form.get("nome")
-        nome_maconico = request.form.get("nome_maconico")
-        numero = request.form.get("numero")
-        orientacao = request.form.get("orientacao")
-        endereco = request.form.get("endereco")
-        cidade = request.form.get("cidade")
-        uf = request.form.get("uf")
-        cep = request.form.get("cep")
-        telefone = request.form.get("telefone")
-        email = request.form.get("email")
-        site = request.form.get("site")
-        data_fundacao = request.form.get("data_fundacao")
-        descricao = request.form.get("descricao")
-        
+
+        def safe(v):
+            return v if v and v.strip() != "" else None
+
+        nome = safe(request.form.get("nome"))
+        numero = safe(request.form.get("numero"))
+        oriente = safe(request.form.get("oriente"))
+        cidade = safe(request.form.get("cidade"))
+        uf = safe(request.form.get("uf"))
+        endereco = safe(request.form.get("endereco"))
+        bairro = safe(request.form.get("bairro"))
+        cep = safe(request.form.get("cep"))
+        telefone = safe(request.form.get("telefone"))
+        email = safe(request.form.get("email"))
+        site = safe(request.form.get("site"))
+        data_fundacao = safe(request.form.get("data_fundacao"))
+        data_instalacao = safe(request.form.get("data_instalacao"))
+        data_autorizacao = safe(request.form.get("data_autorizacao"))
+        veneravel_mestre = safe(request.form.get("veneravel_mestre"))
+        secretario = safe(request.form.get("secretario"))
+        tesoureiro = safe(request.form.get("tesoureiro"))
+        orador = safe(request.form.get("orador"))
+        horario_reuniao = safe(request.form.get("horario_reuniao"))
+        dia_reuniao = safe(request.form.get("dia_reuniao"))
+        rito = safe(request.form.get("rito"))
+        observacoes = safe(request.form.get("observacoes"))
+
         try:
             cursor, conn = get_db()
-            cursor.execute("""
-                INSERT INTO lojas (nome, nome_maconico, numero, orientacao, endereco, 
-                                  cidade, uf, cep, telefone, email, site, 
-                                  data_fundacao, descricao, ativo, created_by)
-                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, 1, %s)
-            """, (nome, nome_maconico, numero, orientacao, endereco, cidade, uf, 
-                  cep, telefone, email, site, data_fundacao, descricao, session["user_id"]))
-            conn.commit()
-            flash("Loja criada com sucesso!", "success")
-            return_connection(conn)
-            return redirect("/lojas")
-        except Exception as e:
-            print(f"Erro ao criar loja: {e}")
-            conn.rollback()
-            flash(f"Erro ao criar loja: {str(e)}", "danger")
-            return_connection(conn)
-            return redirect("/lojas/nova")
-    
-    return render_template("lojas_nova.html")
 
+            cursor.execute("""
+                INSERT INTO lojas (
+                    nome, numero, oriente,
+                    cidade, uf,
+                    endereco, bairro, cep,
+                    telefone, email, site,
+                    data_fundacao,
+                    data_instalacao,
+                    data_autorizacao,
+                    veneravel_mestre,
+                    secretario,
+                    tesoureiro,
+                    orador,
+                    horario_reuniao,
+                    dia_reuniao,
+                    rito,
+                    observacoes,
+                    ativo,
+                    created_by
+                )
+                VALUES (
+                    %s, %s, %s,
+                    %s, %s,
+                    %s, %s, %s,
+                    %s, %s, %s,
+                    %s,
+                    %s,
+                    %s,
+                    %s,
+                    %s,
+                    %s,
+                    %s,
+                    %s,
+                    %s,
+                    %s,
+                    %s,
+                    1,
+                    %s
+                )
+            """, (
+                nome, numero, oriente,
+                cidade, uf,
+                endereco, bairro, cep,
+                telefone, email, site,
+                data_fundacao,
+                data_instalacao,
+                data_autorizacao,
+                veneravel_mestre,
+                secretario,
+                tesoureiro,
+                orador,
+                horario_reuniao,
+                dia_reuniao,
+                rito,
+                observacoes,
+                session.get("user_id")
+            ))
+
+            conn.commit()
+            return_connection(conn)
+
+            flash("Loja criada com sucesso!", "success")
+            return redirect("/lojas")
+
+        except Exception as e:
+            print("Erro ao criar loja:", e)
+            conn.rollback()
+            return_connection(conn)
+
+            flash(str(e), "danger")
+            return redirect("/lojas/nova")
+
+    return render_template("lojas_nova.html")
 
 @app.route("/lojas/editar/<int:id>", methods=["GET", "POST"])
 @admin_required
 def editar_loja(id):
-    """Editar loja existente"""
     cursor, conn = get_db()
-    
+
     if request.method == "POST":
+
         nome = request.form.get("nome")
-        nome_maconico = request.form.get("nome_maconico")
         numero = request.form.get("numero")
-        orientacao = request.form.get("orientacao")
-        endereco = request.form.get("endereco")
+        oriente = request.form.get("oriente")
         cidade = request.form.get("cidade")
         uf = request.form.get("uf")
         cep = request.form.get("cep")
         telefone = request.form.get("telefone")
         email = request.form.get("email")
         site = request.form.get("site")
-        data_fundacao = request.form.get("data_fundacao")
-        descricao = request.form.get("descricao")
-        ativo = 1 if request.form.get("ativo") == "on" else 0
-        
-        try:
-            cursor.execute("""
-                UPDATE lojas 
-                SET nome = %s, nome_maconico = %s, numero = %s, orientacao = %s,
-                    endereco = %s, cidade = %s, uf = %s, cep = %s, telefone = %s,
-                    email = %s, site = %s, data_fundacao = %s, descricao = %s, ativo = %s
-                WHERE id = %s
-            """, (nome, nome_maconico, numero, orientacao, endereco, cidade, uf,
-                  cep, telefone, email, site, data_fundacao, descricao, ativo, id))
-            conn.commit()
-            flash("Loja atualizada com sucesso!", "success")
-            return_connection(conn)
-            return redirect("/lojas")
-        except Exception as e:
-            print(f"Erro ao atualizar loja: {e}")
-            conn.rollback()
-            flash(f"Erro ao atualizar loja: {str(e)}", "danger")
-            return_connection(conn)
-            return redirect(f"/lojas/editar/{id}")
-    
-    # GET - Buscar dados da loja
-    cursor.execute("SELECT * FROM lojas WHERE id = %s", (id,))
+        endereco = request.form.get("endereco")
+        bairro = request.form.get("bairro")
+        observacoes = request.form.get("observacoes")
+
+        cursor.execute("""
+    UPDATE lojas
+    SET nome=%s,
+        numero=%s,
+        oriente=%s,
+        cidade=%s,
+        uf=%s,
+        cep=%s,
+        telefone=%s,
+        email=%s,
+        site=%s,
+        endereco=%s,
+        bairro=%s,
+        observacoes=%s
+    WHERE id=%s
+""", (
+    nome,
+    numero,
+    oriente,
+    cidade,
+    uf,
+    cep,
+    telefone,
+    email,
+    site,
+    endereco,
+    bairro,
+    observacoes,
+    id
+ 
+))
+
+        conn.commit()
+        return_connection(conn)
+
+        flash("Loja atualizada!", "success")
+        return redirect("/lojas")
+
+    cursor.execute("SELECT * FROM lojas WHERE id=%s", (id,))
     loja = cursor.fetchone()
     return_connection(conn)
-    
-    if not loja:
-        flash("Loja não encontrada", "danger")
-        return redirect("/lojas")
-    
-    return render_template("lojas_editar.html", loja=loja)
 
+    return render_template("lojas_editar.html", loja=loja)    
 
-@app.route("/lojas/excluir/<int:id>", methods=["DELETE"])
+from flask import jsonify
+
+@app.route("/lojas/excluir/<int:id>", methods=["POST"])
 @admin_required
 def excluir_loja(id):
-    """Excluir loja via API"""
     try:
         cursor, conn = get_db()
-        
-        # Verificar se existem reuniões vinculadas
-        cursor.execute("SELECT COUNT(*) as total FROM reunioes WHERE loja_id = %s", (id,))
-        total = cursor.fetchone()['total']
-        
-        if total > 0:
-            return jsonify({'success': False, 'error': f'Existem {total} reuniões vinculadas a esta loja. Não é possível excluir.'}), 400
-        
-        cursor.execute("DELETE FROM lojas WHERE id = %s", (id,))
+
+        cursor.execute("DELETE FROM lojas WHERE id=%s", (id,))
         conn.commit()
-        
-        return jsonify({'success': True, 'message': 'Loja excluída com sucesso'})
-        
+        return_connection(conn)
+
+        return jsonify({
+            "ok": True,
+            "msg": "Loja excluída com sucesso"
+        })
+
     except Exception as e:
-        print(f"Erro ao excluir loja: {e}")
-        if conn:
+        print("ERRO EXCLUIR LOJA:", e)
+
+        try:
             conn.rollback()
-        return jsonify({'success': False, 'error': str(e)}), 500
-    finally:
-        if conn:
             return_connection(conn)
+        except:
+            pass
+
+        return jsonify({
+            "ok": False,
+            "msg": str(e)
+        }), 500
+
 # =============================
 # ROTAS DE CARGOS
 # =============================

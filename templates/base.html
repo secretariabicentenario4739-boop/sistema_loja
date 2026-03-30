@@ -700,6 +700,13 @@
             </a>
             {% endif %}
             
+            <!-- BIBLIOTECA - NOVO LINK ADICIONADO -->
+            {% if tem_permissao('biblioteca.view') or session.tipo == 'admin' or session.grau_atual >= 1 %}
+            <a class="nav-link" href="/biblioteca">
+                <i class="bi bi-book"></i> <span>Biblioteca</span>
+            </a>
+            {% endif %}
+            
             {% if tem_permissao('comunicados.view') %}
             <a class="nav-link" href="/comunicados">
                 <i class="bi bi-megaphone"></i> <span>Comunicados</span>
