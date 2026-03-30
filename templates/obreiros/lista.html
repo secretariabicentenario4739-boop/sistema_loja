@@ -190,24 +190,23 @@
                                 <th>Presença</th>
                                 <th>Status</th>
                                 <th>Ações</th>
-                            </tr>
-                        </thead>
+                            </thead>
                         <tbody>
                             {% for obreiro in obreiros %}
                             <tr class="{% if obreiro.ativo == 1 %}table-active{% else %}table-secondary{% endif %}">
                                 <td class="text-center">
-    {% if obreiro.foto %}
-    <img src="{{ obreiro.foto }}" 
-         class="rounded-circle" 
-         style="width: 40px; height: 40px; object-fit: cover;"
-         alt="Foto de {{ obreiro.nome_completo }}">
-    {% else %}
-    <div class="rounded-circle bg-secondary text-white d-flex align-items-center justify-content-center mx-auto"
-         style="width: 40px; height: 40px;">
-        <i class="bi bi-person"></i>
-    </div>
-    {% endif %}
-</td>
+                                    {% if obreiro.foto %}
+                                    <img src="{{ obreiro.foto }}" 
+                                         class="rounded-circle" 
+                                         style="width: 40px; height: 40px; object-fit: cover;"
+                                         alt="Foto de {{ obreiro.nome_completo }}">
+                                    {% else %}
+                                    <div class="rounded-circle bg-secondary text-white d-flex align-items-center justify-content-center mx-auto"
+                                         style="width: 40px; height: 40px;">
+                                        <i class="bi bi-person"></i>
+                                    </div>
+                                    {% endif %}
+                                </td>
                                 <td>
                                     <strong>{{ obreiro.nome_completo or obreiro.usuario }}</strong>
                                     {% if obreiro.nome_maconico %}
@@ -330,10 +329,16 @@
                                             <a href="/obreiros/{{ obreiro.id }}/excluir" 
                                                class="btn btn-danger" 
                                                title="Desativar obreiro"
-                                               onclick="return confirm('⚠️ ATENÇÃO!\n\nDeseja DESATIVAR este obreiro?\n\nNome: {{ obreiro.nome_completo }}\nUsuário: {{ obreiro.usuario }}\n\nO obreiro será desativado, mas seus dados serão mantidos no sistema.\n\nPara excluir permanentemente, procure um administrador.')">
+                                               onclick="return confirm('⚠️ ATENÇÃO!\n\nDeseja DESATIVAR este obreiro?\n\nNome: {{ obreiro.nome_completo }}\nUsuário: {{ obreiro.usuario }}\n\nO obreiro será desativado, mas seus dados serão mantidos no sistema.\n\nPara excluir permanentemente, clique no botão vermelho de excluir.')">
                                                 <i class="bi bi-person-x"></i>
                                             </a>
                                             {% else %}
+                                            <button type="button" 
+                                                    class="btn btn-danger"
+                                                    title="Excluir Permanentemente"
+                                                    onclick="confirmarExclusaoDefinitiva('{{ obreiro.id }}', '{{ obreiro.nome_completo }}')">
+                                                <i class="bi bi-trash3-fill"></i>
+                                            </button>
                                             <a href="/obreiros/{{ obreiro.id }}/reativar" 
                                                class="btn btn-success" 
                                                title="Reativar obreiro"
@@ -386,12 +391,163 @@
                     <div class="col-md-3">
                         <i class="bi bi-briefcase text-info"></i> = Cargo
                         <i class="bi bi-building"></i> = Loja
+                        <i class="bi bi-trash3-fill text-danger"></i> = Excluir definitivo
                     </div>
                 </div>
             </div>
         </div>
     </div>
 </div>
+
+<!-- Modal de Confirmação para Exclusão Definitiva -->
+<div class="modal fade" id="modalConfirmExclusaoDefinitiva" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title">
+                    <i class="bi bi-exclamation-triangle-fill"></i> Confirmar Exclusão Definitiva
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="alert alert-danger">
+                    <i class="bi bi-skull"></i>
+                    <strong>Esta operação é IRREVERSÍVEL!</strong>
+                </div>
+                <p>Você está prestes a excluir permanentemente o obreiro:</p>
+                <p class="alert alert-info">
+                    <i class="bi bi-person"></i>
+                    <strong id="obreiroNomeExcluir"></strong>
+                </p>
+                <p><strong>Consequências:</strong></p>
+                <ul>
+                    <li><i class="bi bi-trash"></i> O obreiro será removido permanentemente do sistema</li>
+                    <li><i class="bi bi-file-text"></i> Todos os vínculos serão removidos</li>
+                    <li><i class="bi bi-people"></i> Cargos, graus e familiares serão excluídos</li>
+                    <li><i class="bi bi-arrow-repeat"></i> Esta ação não pode ser desfeita</li>
+                </ul>
+                <div class="alert alert-info">
+                    <i class="bi bi-info-circle"></i>
+                    Para confirmar, digite <strong class="text-danger">EXCLUIR PERMANENTEMENTE</strong> no campo abaixo:
+                </div>
+                <input type="text" id="confirmExclusaoText" class="form-control" 
+                       placeholder="Digite EXCLUIR PERMANENTEMENTE para confirmar" autocomplete="off">
+                <input type="hidden" id="obreiroIdExcluir">
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                    <i class="bi bi-x-circle"></i> Cancelar
+                </button>
+                <button type="button" class="btn btn-danger" id="btnConfirmExclusao" onclick="executarExclusaoDefinitiva()" disabled>
+                    <i class="bi bi-trash3-fill"></i> Excluir Permanentemente
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+let modalExclusaoDefinitiva;
+
+document.addEventListener('DOMContentLoaded', function() {
+    modalExclusaoDefinitiva = new bootstrap.Modal(document.getElementById('modalConfirmExclusaoDefinitiva'));
+    
+    const confirmInput = document.getElementById('confirmExclusaoText');
+    if (confirmInput) {
+        confirmInput.addEventListener('input', function() {
+            const btn = document.getElementById('btnConfirmExclusao');
+            btn.disabled = this.value !== 'EXCLUIR PERMANENTEMENTE';
+        });
+        
+        confirmInput.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter' && this.value === 'EXCLUIR PERMANENTEMENTE') {
+                executarExclusaoDefinitiva();
+            }
+        });
+    }
+});
+
+function confirmarExclusaoDefinitiva(obreiroId, obreiroNome) {
+    document.getElementById('obreiroIdExcluir').value = obreiroId;
+    document.getElementById('obreiroNomeExcluir').textContent = obreiroNome;
+    document.getElementById('confirmExclusaoText').value = '';
+    document.getElementById('btnConfirmExclusao').disabled = true;
+    modalExclusaoDefinitiva.show();
+}
+
+function executarExclusaoDefinitiva() {
+    const obreiroId = document.getElementById('obreiroIdExcluir').value;
+    if (!obreiroId) return;
+
+    const btn = document.getElementById('btnConfirmExclusao');
+    const originalText = btn.innerHTML;
+    btn.innerHTML = '<i class="bi bi-hourglass-split"></i> Excluindo...';
+    btn.disabled = true;
+
+    fetch(`/obreiros/${obreiroId}/excluir_definitivo`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        modalExclusaoDefinitiva.hide();
+        
+        if (data.success) {
+            mostrarAlerta('success', 
+                `<i class="bi bi-check-circle"></i> ${data.message || 'Obreiro excluído permanentemente com sucesso!'}`,
+                4000);
+            setTimeout(() => {
+                location.reload();
+            }, 1500);
+        } else {
+            mostrarAlerta('danger', 
+                `<i class="bi bi-exclamation-triangle"></i> ${data.error || 'Erro ao excluir obreiro'}`,
+                5000);
+        }
+    })
+    .catch(error => {
+        modalExclusaoDefinitiva.hide();
+        mostrarAlerta('danger', 
+            `<i class="bi bi-bug"></i> Erro na requisição: ${error.message}`,
+            5000);
+    })
+    .finally(() => {
+        btn.innerHTML = originalText;
+        btn.disabled = false;
+    });
+}
+
+function mostrarAlerta(tipo, mensagem, timeout = 5000) {
+    const alertContainer = document.getElementById('alert-container') || criarContainerAlerta();
+    const alertId = 'alert-' + Date.now();
+    const alertHtml = `
+        <div id="${alertId}" class="alert alert-${tipo} alert-dismissible fade show" role="alert">
+            ${mensagem}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    `;
+    alertContainer.insertAdjacentHTML('beforeend', alertHtml);
+    
+    setTimeout(() => {
+        const el = document.getElementById(alertId);
+        if (el) el.remove();
+    }, timeout);
+}
+
+function criarContainerAlerta() {
+    const container = document.createElement('div');
+    container.id = 'alert-container';
+    container.style.position = 'fixed';
+    container.style.top = '20px';
+    container.style.right = '20px';
+    container.style.zIndex = '9999';
+    container.style.maxWidth = '500px';
+    document.body.appendChild(container);
+    return container;
+}
+</script>
 
 <style>
     .card {

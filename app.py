@@ -2113,6 +2113,47 @@ def novo_obreiro():
     return_connection(conn)
     return render_template("obreiros/novo.html", lojas=lojas, graus=graus)
 
+@app.route("/obreiros/<int:id>/excluir_definitivo", methods=["POST"])
+@admin_required
+def excluir_obreiro_definitivo(id):
+    """Exclui um obreiro permanentemente e todos os seus vínculos (CASCADE)"""
+    try:
+        cursor, conn = get_db()
+        
+        # Verificar se o obreiro existe
+        cursor.execute("SELECT id, nome_completo, ativo FROM usuarios WHERE id = %s", (id,))
+        obreiro = cursor.fetchone()
+        
+        if not obreiro:
+            return jsonify({'success': False, 'error': 'Obreiro não encontrado!'}), 404
+        
+        # Verificar se está inativo (obrigatório para exclusão definitiva)
+        if obreiro["ativo"] == 1:
+            return jsonify({'success': False, 'error': f'Obreiro {obreiro["nome_completo"]} está ATIVO. Desative primeiro para excluir definitivamente.'}), 400
+        
+        # Registrar log antes de excluir
+        registrar_log("excluir_definitivo", "usuario", id, dados_anteriores={
+            "nome": obreiro['nome_completo'],
+            "id": id,
+            "ativo": obreiro['ativo']
+        })
+        
+        # Excluir com CASCADE (se as FKs estiverem configuradas com ON DELETE CASCADE)
+        cursor.execute("DELETE FROM usuarios WHERE id = %s", (id,))
+        conn.commit()
+        
+        return jsonify({'success': True, 'message': f'Obreiro {obreiro["nome_completo"]} excluído permanentemente!'})
+        
+    except Exception as e:
+        print(f"❌ Erro ao excluir obreiro: {e}")
+        import traceback
+        traceback.print_exc()
+        if conn:
+            conn.rollback()
+        return jsonify({'success': False, 'error': str(e)}), 500
+    finally:
+        if conn:
+            return_connection(conn)
 @app.route("/obreiros/<int:id>")
 @login_required
 def visualizar_obreiro(id):
@@ -2186,6 +2227,8 @@ def visualizar_obreiro(id):
             return_connection(conn)
         flash(f"Erro ao carregar dados do obreiro: {str(e)}", "danger")
         return redirect("/obreiros")
+
+
     
         # ============================================
         # PROCESSAR UPLOAD DA FOTO
