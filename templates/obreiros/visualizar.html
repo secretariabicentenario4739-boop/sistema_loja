@@ -35,9 +35,47 @@
                             {% else %}
                                 <span class="badge bg-info">Obreiro</span>
                             {% endif %}
+                            
+                            <!-- Grau principal (sempre Mestre para graus >= 3) -->
                             <span class="badge bg-success">
-                                {{ nome_grau_atual if nome_grau_atual else 'Mestre' }}
+                                {% if obreiro.grau_atual == 1 %}
+                                    Aprendiz
+                                {% elif obreiro.grau_atual == 2 %}
+                                    Companheiro
+                                {% elif obreiro.grau_atual >= 3 %}
+                                    Mestre
+                                {% else %}
+                                    Mestre
+                                {% endif %}
                             </span>
+                            
+                            <!-- Grau detalhado (aparece como badge separado para graus superiores) -->
+                            {% if obreiro.grau_atual >= 4 %}
+                                <span class="badge bg-info ms-1">
+                                    <i class="bi bi-star-fill"></i> 
+                                    {% if obreiro.grau_atual == 4 %}
+                                        Mestre Instalado
+                                    {% elif obreiro.grau_atual == 5 %}
+                                        Arquiteto Real
+                                    {% elif obreiro.grau_atual == 6 %}
+                                        Soberano Grande Inspetor Geral
+                                    {% elif obreiro.grau_atual == 7 %}
+                                        Mestre Perfeito
+                                    {% elif obreiro.grau_atual == 8 %}
+                                        Eleito dos Nove
+                                    {% elif obreiro.grau_atual == 9 %}
+                                        Mestre da Maçonaria Real
+                                    {% elif obreiro.grau_atual == 10 %}
+                                        Cavaleiro Rosa-Cruz
+                                    {% elif obreiro.grau_atual == 11 %}
+                                        Cavaleiro Kadosch
+                                    {% elif obreiro.grau_atual == 12 %}
+                                        Grande Escocês
+                                    {% else %}
+                                        Grau Superior {{ obreiro.grau_atual }}
+                                    {% endif %}
+                                </span>
+                            {% endif %}
                         </div>
                         {% if obreiro.nome_maconico %}
                         <p class="text-muted mt-2 mb-0">
@@ -157,47 +195,47 @@
                              <tr>
                                 <td class="text-muted" style="width: 120px;">Nome Completo:</td>
                                 <td><strong>{{ obreiro.nome_completo }}</strong></td>
-                            </tr>
-                            <tr>
+                             </tr>
+                             <tr>
                                 <td class="text-muted">Nome Maçônico:</td>
                                 <td>{{ obreiro.nome_maconico or '-' }}</td>
-                            </tr>
-                            <tr>
+                             </tr>
+                             <tr>
                                 <td class="text-muted">Usuário:</td>
                                 <td>{{ obreiro.usuario }}</td>
-                            </tr>
-                            <tr>
+                             </tr>
+                             <tr>
                                 <td class="text-muted">CIM Nº:</td>
                                 <td>{{ obreiro.cim_numero or '-' }}</td>
-                            </tr>
-                            <tr>
+                             </tr>
+                             <tr>
                                 <td class="text-muted">Data Cadastro:</td>
                                 <td>{{ obreiro.data_cadastro.strftime('%d/%m/%Y') if obreiro.data_cadastro else '-' }}</td>
-                            </tr>
+                             </tr>
                         </table>
                     </div>
                     <div class="col-md-6">
                         <table class="table table-sm table-borderless">
-                            <tr>
+                             <tr>
                                 <td class="text-muted" style="width: 120px;">Telefone:</td>
                                 <td>{{ obreiro.telefone or '-' }}</td>
-                            </tr>
-                            <tr>
+                             </tr>
+                             <tr>
                                 <td class="text-muted">E-mail:</td>
                                 <td>{{ obreiro.email or '-' }}</td>
-                            </tr>
-                            <tr>
+                             </tr>
+                             <tr>
                                 <td class="text-muted">Endereço:</td>
                                 <td>{{ obreiro.endereco or '-' }}</td>
-                            </tr>
-                            <tr>
+                             </tr>
+                             <tr>
                                 <td class="text-muted">Loja:</td>
                                 <td>{{ obreiro.loja_nome or '-' }} (Nº {{ obreiro.loja_numero or '-' }})</td>
-                            </tr>
-                            <tr>
+                             </tr>
+                             <tr>
                                 <td class="text-muted">Oriente:</td>
                                 <td>{{ obreiro.loja_orient or '-' }}</td>
-                            </tr>
+                             </tr>
                         </table>
                     </div>
                 </div>
@@ -239,7 +277,7 @@
                             <div class="table-responsive">
                                 <table class="table table-sm">
                                     <thead>
-                                        <tr>
+                                         <tr>
                                             <th>Cargo</th>
                                             <th>Início</th>
                                             <th>Fim</th>
@@ -326,6 +364,18 @@
                                                         {% if grau.grau == 3 %}Mestre
                                                         {% elif grau.grau == 2 %}Companheiro
                                                         {% elif grau.grau == 1 %}Aprendiz
+                                                        {% elif grau.grau >= 4 %}
+                                                            {% if grau.grau == 4 %}Mestre Instalado
+                                                            {% elif grau.grau == 5 %}Arquiteto Real
+                                                            {% elif grau.grau == 6 %}Soberano Grande Inspetor Geral
+                                                            {% elif grau.grau == 7 %}Mestre Perfeito
+                                                            {% elif grau.grau == 8 %}Eleito dos Nove
+                                                            {% elif grau.grau == 9 %}Mestre da Maçonaria Real
+                                                            {% elif grau.grau == 10 %}Cavaleiro Rosa-Cruz
+                                                            {% elif grau.grau == 11 %}Cavaleiro Kadosch
+                                                            {% elif grau.grau == 12 %}Grande Escocês
+                                                            {% else %}Grau Superior {{ grau.grau }}
+                                                            {% endif %}
                                                         {% else %}Grau {{ grau.grau }}
                                                         {% endif %}
                                                     {% endif %}
