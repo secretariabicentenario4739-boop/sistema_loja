@@ -5215,18 +5215,34 @@ def excluir_candidato(id):
 @login_required
 def formulario_candidato(candidato_id):
     cursor, conn = get_db()
+    
+    # Buscar dados do candidato
     cursor.execute("SELECT * FROM candidatos WHERE id = %s", (candidato_id,))
     candidato = cursor.fetchone()
+    
     if not candidato:
         flash("Candidato não encontrado", "danger")
         return_connection(conn)
         return redirect("/candidatos")
+    
+    # ✅ Buscar dados do usuário logado (loja do obreiro que está preenchendo)
+    cursor.execute("""
+        SELECT u.id, u.nome_completo, u.loja_nome, u.loja_numero, u.loja_orient,
+               l.numero as loja_numero_completo, l.oriente as loja_oriente
+        FROM usuarios u
+        LEFT JOIN lojas l ON u.loja_nome = l.nome
+        WHERE u.id = %s
+    """, (session['user_id'],))
+    usuario = cursor.fetchone()
+    
+    # Buscar filhos do candidato
     cursor.execute("SELECT * FROM filhos_candidato WHERE candidato_id = %s ORDER BY data_nascimento", (candidato_id,))
     filhos = cursor.fetchall()
+    
     if request.method == "POST":
         dados = {
-            'loja_nome': request.form.get('loja_nome'),
-            'loja_numero': request.form.get('loja_numero'),
+            'loja_nome': request.form.get('loja_nome') or (usuario['loja_nome'] if usuario else None),
+            'loja_numero': request.form.get('loja_numero') or (usuario['loja_numero'] or usuario['loja_numero_completo'] if usuario else None),
             'data_nascimento': request.form.get('data_nascimento') or None,
             'naturalidade': request.form.get('naturalidade'),
             'uf_naturalidade': request.form.get('uf_naturalidade'),
@@ -5260,6 +5276,7 @@ def formulario_candidato(candidato_id):
             'cep_profissional': request.form.get('cep_profissional'),
             'telefone_comercial': request.form.get('telefone_comercial')
         }
+        
         update_sql = """
             UPDATE candidatos SET
                 loja_nome = %s, loja_numero = %s, data_nascimento = %s,
@@ -5280,6 +5297,8 @@ def formulario_candidato(candidato_id):
         """
         values = list(dados.values()) + [candidato_id]
         cursor.execute(update_sql, values)
+        
+        # Atualizar filhos
         cursor.execute("DELETE FROM filhos_candidato WHERE candidato_id = %s", (candidato_id,))
         filhos_nomes = request.form.getlist('filho_nome[]')
         filhos_datas = request.form.getlist('filho_data[]')
@@ -5289,14 +5308,18 @@ def formulario_candidato(candidato_id):
                     INSERT INTO filhos_candidato (candidato_id, nome, data_nascimento)
                     VALUES (%s, %s, %s)
                 """, (candidato_id, filhos_nomes[i], filhos_datas[i] or None))
+        
         conn.commit()
         registrar_log("preencher_formulario", "candidato", candidato_id, dados_novos={"nome": candidato["nome"]})
         flash("Formulário do candidato salvo com sucesso!", "success")
         return_connection(conn)
         return redirect(f"/sindicancia/{candidato_id}")
+    
     return_connection(conn)
-    return render_template("candidatos/formulario.html", candidato=candidato, filhos=filhos)
-
+    return render_template("candidatos/formulario.html", 
+                          candidato=candidato, 
+                          filhos=filhos,
+                          usuario=usuario)
 @app.route("/sindicancia/<int:id>", methods=["GET", "POST"])
 @login_required
 def visualizar_sindicancia(id):

@@ -34,20 +34,47 @@
             </div>
             <div class="card-body">
                 <form method="POST" id="formCandidato">
-                    <!-- Informações da Loja -->
+                    <!-- Informações da Loja (pré-preenchidas com dados do obreiro logado) -->
                     <div class="card mb-4">
                         <div class="card-header bg-info text-white">
                             <h6 class="mb-0"><i class="bi bi-building"></i> Dados da Loja</h6>
                         </div>
                         <div class="card-body">
+                            <div class="alert alert-light border mb-3">
+                                <i class="bi bi-info-circle"></i>
+                                <strong>Loja do Obreiro Responsável:</strong> 
+                                {{ usuario.nome_completo }}
+                                <br>
+                                <small class="text-muted">Os campos abaixo foram preenchidos automaticamente com os dados da sua loja. Você pode alterá-los se necessário.</small>
+                            </div>
                             <div class="row">
                                 <div class="col-md-8 mb-3">
                                     <label class="form-label">Loja Maçônica</label>
-                                    <input type="text" class="form-control" name="loja_nome" value="{{ candidato.loja_nome or '' }}">
+                                    <select class="form-select" name="loja_nome" id="lojaSelect">
+                                        <option value="{{ usuario.loja_nome }}" selected>{{ usuario.loja_nome }}</option>
+                                        {% for loja in lojas %}
+                                            {% if loja.nome != usuario.loja_nome %}
+                                            <option value="{{ loja.nome }}" 
+                                                    data-numero="{{ loja.numero }}"
+                                                    data-oriente="{{ loja.oriente }}">
+                                                {{ loja.nome }}
+                                            </option>
+                                            {% endif %}
+                                        {% endfor %}
+                                    </select>
+                                    <small class="text-muted">Selecione a loja do candidato (pode ser diferente da sua)</small>
                                 </div>
                                 <div class="col-md-4 mb-3">
                                     <label class="form-label">Nº da Loja</label>
-                                    <input type="text" class="form-control" name="loja_numero" value="{{ candidato.loja_numero or '' }}">
+                                    <input type="text" class="form-control" name="loja_numero" id="lojaNumero" 
+                                           value="{{ candidato.loja_numero or usuario.loja_numero or usuario.loja_numero_completo }}" readonly>
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col-md-12 mb-3">
+                                    <label class="form-label">Oriente</label>
+                                    <input type="text" class="form-control" name="loja_orient" id="lojaOriente" 
+                                           value="{{ candidato.loja_orient or usuario.loja_orient or usuario.loja_oriente }}" readonly>
                                 </div>
                             </div>
                         </div>
@@ -306,6 +333,19 @@
 </div>
 
 <script>
+    // Autopreenchimento dos dados da loja
+    const lojaSelect = document.getElementById('lojaSelect');
+    const lojaNumero = document.getElementById('lojaNumero');
+    const lojaOriente = document.getElementById('lojaOriente');
+
+    if (lojaSelect) {
+        lojaSelect.addEventListener('change', function() {
+            const selected = this.options[this.selectedIndex];
+            lojaNumero.value = selected.dataset.numero || '';
+            lojaOriente.value = selected.dataset.oriente || '';
+        });
+    }
+
     // Máscaras
     document.getElementById('cpf')?.addEventListener('input', function(e) {
         let value = e.target.value.replace(/\D/g, '');
@@ -395,6 +435,10 @@
     .form-control:focus, .form-select:focus {
         border-color: #0d6efd;
         box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.25);
+    }
+    .alert-light {
+        background-color: #f8f9fa;
+        border-left: 4px solid #0d6efd;
     }
 </style>
 
