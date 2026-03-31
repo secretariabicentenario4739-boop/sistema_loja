@@ -6895,7 +6895,6 @@ def exportar_logs():
     registrar_log("exportar_logs", "auditoria", None, dados_novos={"periodo": f"{data_ini} a {data_fim}"})
     return Response(output.getvalue(), mimetype="text/csv; charset=utf-8",
                    headers={"Content-Disposition": f"attachment;filename=logs_auditoria_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv"})
-
 # =============================
 # ROTAS DE CONFIGURAÇÃO DE E-MAIL
 # =============================
@@ -6909,11 +6908,29 @@ from flask import render_template, request, flash, redirect, jsonify
 RESEND_API_KEY = os.getenv('RESEND_API_KEY')
 EMAIL_FROM_DEFAULT = os.getenv('EMAIL_FROM', 'contato@juramelo.com.br')
 
+# DEBUG - Verificar se a chave foi carregada
+print("=" * 50)
+print("🔧 CONFIGURAÇÃO DE E-MAIL")
+print(f"RESEND_API_KEY presente: {RESEND_API_KEY is not None}")
 if RESEND_API_KEY:
-    resend.api_key = RESEND_API_KEY
-    print("✅ Resend configurado com sucesso")
+    print(f"RESEND_API_KEY (primeiros 10 caracteres): {RESEND_API_KEY[:10]}...")
+    print(f"Tamanho da chave: {len(RESEND_API_KEY)}")
 else:
-    print("⚠️ RESEND_API_KEY não configurada")
+    print("⚠️ RESEND_API_KEY NÃO ENCONTRADA no ambiente!")
+    print("Variáveis de ambiente disponíveis:")
+    for key in os.environ.keys():
+        if 'RESEND' in key or 'EMAIL' in key:
+            print(f"  - {key}")
+print("=" * 50)
+
+if RESEND_API_KEY:
+    try:
+        resend.api_key = RESEND_API_KEY
+        print("✅ Resend configurado com sucesso")
+    except Exception as e:
+        print(f"❌ Erro ao configurar Resend: {e}")
+else:
+    print("⚠️ RESEND_API_KEY não configurada - e-mails não serão enviados")
 
 def enviar_email_resend(destinatario, assunto, conteudo_html, conteudo_texto=None):
     """
@@ -6923,18 +6940,27 @@ def enviar_email_resend(destinatario, assunto, conteudo_html, conteudo_texto=Non
         if not RESEND_API_KEY:
             return {
                 'success': False,
-                'message': 'Resend não configurado. Adicione RESEND_API_KEY nas variáveis de ambiente.'
+                'message': 'Resend não configurado. Adicione RESEND_API_KEY nas variáveis de ambiente do Render.'
             }
+        
+        # Garantir que destinatário é uma lista
+        if isinstance(destinatario, str):
+            destinatario_lista = [destinatario]
+        else:
+            destinatario_lista = destinatario
         
         params = {
             "from": f"Sistema Maçônico <{EMAIL_FROM_DEFAULT}>",
-            "to": [destinatario] if isinstance(destinatario, str) else destinatario,
+            "to": destinatario_lista,
             "subject": assunto,
             "html": conteudo_html,
         }
         
         if conteudo_texto:
             params["text"] = conteudo_texto
+        
+        print(f"📧 Enviando e-mail para: {destinatario_lista}")
+        print(f"📧 Assunto: {assunto}")
         
         email = resend.Emails.send(params)
         print(f"✅ E-mail enviado para {destinatario} - ID: {email}")
@@ -6946,6 +6972,8 @@ def enviar_email_resend(destinatario, assunto, conteudo_html, conteudo_texto=Non
         
     except Exception as e:
         print(f"❌ Erro ao enviar e-mail: {e}")
+        import traceback
+        traceback.print_exc()
         return {
             'success': False,
             'message': str(e)
@@ -6953,6 +6981,7 @@ def enviar_email_resend(destinatario, assunto, conteudo_html, conteudo_texto=Non
 
 def enviar_email_reuniao(destinatario, nome_destinatario, dados_reuniao):
     """Envia e-mail de convocação para reunião via Resend"""
+    reuniao_id = dados_reuniao.get('id', '')
     assunto = f"📅 Convite: {dados_reuniao.get('titulo', 'Nova Reunião')} - Sistema Maçônico"
     
     # Formatar horário
@@ -6980,6 +7009,9 @@ def enviar_email_reuniao(destinatario, nome_destinatario, dados_reuniao):
             <div class="info-value">{dados_reuniao.get('observacoes')}</div>
         </div>
         """
+    
+    # Link para confirmação (ajuste conforme sua rota)
+    link_confirmacao = f"https://www.juramelo.com.br/reunioes/{reuniao_id}" if reuniao_id else "#"
     
     conteudo_html = f"""
     <!DOCTYPE html>
@@ -7033,7 +7065,7 @@ def enviar_email_reuniao(destinatario, nome_destinatario, dados_reuniao):
                 </div>
                 
                 <p style="text-align: center;">
-                    <a href="https://www.juramelo.com.br/reunioes/{reuniao_id}" class="button">Ver Detalhes</a>
+                    <a href="{link_confirmacao}" class="button">Ver Detalhes</a>
                 </p>
                 
                 <p>Por favor, confirme sua presença através do sistema.</p>
@@ -7049,7 +7081,6 @@ def enviar_email_reuniao(destinatario, nome_destinatario, dados_reuniao):
     """
     
     return enviar_email_resend(destinatario, assunto, conteudo_html)
-
 # =============================
 # ROTA: CONFIGURAÇÃO DE E-MAIL
 # =============================
@@ -7970,92 +8001,145 @@ def estatisticas_sugestoes():
                           em_andamento=em_andamento, implementadas=implementadas, rejeitadas=rejeitadas,
                           por_categoria=por_categoria, por_prioridade=por_prioridade)
 
-# =============================
-# ROTAS DE NOTIFICAÇÕES (API)
-# =============================
-@app.route('/api/notificacoes')
-def api_notificacoes():
-    try:
-        if 'user_id' not in session:
-            return jsonify({'success': True, 'notificacoes': [], 'nao_lidas': 0})
-        cursor, conn = get_db()
+@app.route("/configuracoes/notificacoes", methods=["GET", "POST"])
+@login_required
+def configuracoes_notificacoes():
+    """Página de configurações de notificações do usuário"""
+    cursor, conn = get_db()
+    user_id = session["user_id"]
+    
+    # Verificar e criar tabela se necessário
+    cursor.execute("""
+        SELECT EXISTS (
+            SELECT FROM information_schema.tables 
+            WHERE table_name = 'notificacoes_config'
+        )
+    """)
+    tabela_existe = cursor.fetchone()['exists']
+    
+    if not tabela_existe:
+        cursor.execute("""
+            CREATE TABLE notificacoes_config (
+                id SERIAL PRIMARY KEY,
+                usuario_id INTEGER NOT NULL UNIQUE,
+                notificar_aniversario_obreiro INTEGER DEFAULT 1,
+                notificar_aniversario_familiar INTEGER DEFAULT 1,
+                notificar_reuniao INTEGER DEFAULT 1,
+                notificar_ata_publicada INTEGER DEFAULT 1,
+                notificar_sindicancia INTEGER DEFAULT 1,
+                dias_antecedencia INTEGER DEFAULT 3,
+                horario_envio TIME DEFAULT '08:00:00',
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        """)
+        conn.commit()
+    
+    # Verificar se as colunas existem (se não, adicionar)
+    cursor.execute("""
+        SELECT column_name 
+        FROM information_schema.columns 
+        WHERE table_name = 'notificacoes_config'
+    """)
+    colunas = [c['column_name'] for c in cursor.fetchall()]
+    
+    if 'dias_antecedencia' not in colunas:
+        cursor.execute("ALTER TABLE notificacoes_config ADD COLUMN dias_antecedencia INTEGER DEFAULT 3")
+        conn.commit()
+    
+    if 'horario_envio' not in colunas:
+        cursor.execute("ALTER TABLE notificacoes_config ADD COLUMN horario_envio TIME DEFAULT '08:00:00'")
+        conn.commit()
+    
+    if 'notificar_reuniao' not in colunas:
+        cursor.execute("ALTER TABLE notificacoes_config ADD COLUMN notificar_reuniao INTEGER DEFAULT 1")
+        conn.commit()
+    
+    if 'notificar_ata_publicada' not in colunas:
+        cursor.execute("ALTER TABLE notificacoes_config ADD COLUMN notificar_ata_publicada INTEGER DEFAULT 1")
+        conn.commit()
+    
+    if 'notificar_sindicancia' not in colunas:
+        cursor.execute("ALTER TABLE notificacoes_config ADD COLUMN notificar_sindicancia INTEGER DEFAULT 1")
+        conn.commit()
+    
+    if request.method == "POST":
         try:
-            cursor.execute("""
-                SELECT id, titulo, mensagem, tipo, link, lida, data_criacao as data
-                FROM notificacoes
-                WHERE usuario_id = %s
-                ORDER BY data_criacao DESC
-                LIMIT 50
-            """, (session['user_id'],))
-            notificacoes = cursor.fetchall()
-            cursor.execute("""
-                SELECT COUNT(*) as total
-                FROM notificacoes
-                WHERE usuario_id = %s AND lida = 0
-            """, (session['user_id'],))
-            nao_lidas = cursor.fetchone()['total'] if cursor.rowcount > 0 else 0
+            # Coletar dados do formulário
+            notificar_aniversario_obreiro = 1 if request.form.get("notificar_aniversario_obreiro") else 0
+            notificar_aniversario_familiar = 1 if request.form.get("notificar_aniversario_familiar") else 0
+            notificar_reuniao = 1 if request.form.get("notificar_reuniao") else 0
+            notificar_ata_publicada = 1 if request.form.get("notificar_ata_publicada") else 0
+            notificar_sindicancia = 1 if request.form.get("notificar_sindicancia") else 0
+            dias_antecedencia = request.form.get("dias_antecedencia", 3)
+            horario_envio = request.form.get("horario_envio", "08:00")
+            
+            # Verificar se já existe configuração
+            cursor.execute("SELECT id FROM notificacoes_config WHERE usuario_id = %s", (user_id,))
+            existing = cursor.fetchone()
+            
+            if existing:
+                cursor.execute("""
+                    UPDATE notificacoes_config SET
+                        notificar_aniversario_obreiro = %s,
+                        notificar_aniversario_familiar = %s,
+                        notificar_reuniao = %s,
+                        notificar_ata_publicada = %s,
+                        notificar_sindicancia = %s,
+                        dias_antecedencia = %s,
+                        horario_envio = %s,
+                        updated_at = CURRENT_TIMESTAMP
+                    WHERE usuario_id = %s
+                """, (notificar_aniversario_obreiro, notificar_aniversario_familiar,
+                      notificar_reuniao, notificar_ata_publicada, notificar_sindicancia,
+                      dias_antecedencia, horario_envio, user_id))
+            else:
+                cursor.execute("""
+                    INSERT INTO notificacoes_config 
+                    (usuario_id, notificar_aniversario_obreiro, notificar_aniversario_familiar,
+                     notificar_reuniao, notificar_ata_publicada, notificar_sindicancia,
+                     dias_antecedencia, horario_envio)
+                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+                """, (user_id, notificar_aniversario_obreiro, notificar_aniversario_familiar,
+                      notificar_reuniao, notificar_ata_publicada, notificar_sindicancia,
+                      dias_antecedencia, horario_envio))
+            
+            conn.commit()
+            flash("✅ Configurações de notificações salvas com sucesso!", "success")
+            
         except Exception as e:
-            print(f"Erro na tabela notificacoes: {e}")
-            notificacoes = []
-            nao_lidas = 0
+            print(f"Erro ao salvar configurações: {e}")
+            import traceback
+            traceback.print_exc()
+            conn.rollback()
+            flash(f"Erro ao salvar configurações: {str(e)}", "danger")
+        
         return_connection(conn)
-        notificacoes_list = []
-        for n in notificacoes:
-            notificacoes_list.append({
-                'id': n['id'], 'titulo': n['titulo'], 'mensagem': n['mensagem'],
-                'tipo': n['tipo'], 'link': n['link'], 'lida': n['lida'],
-                'data': n['data'].isoformat() if n['data'] else datetime.now().isoformat()
-            })
-        return jsonify({'success': True, 'notificacoes': notificacoes_list, 'nao_lidas': nao_lidas})
-    except Exception as e:
-        print(f"Erro ao buscar notificações: {e}")
-        return jsonify({'success': True, 'notificacoes': [], 'nao_lidas': 0})
-
-@app.route('/api/notificacoes/marcar-lida/<int:id>', methods=['POST'])
-def api_marcar_notificacao_lida(id):
+        return redirect("/configuracoes/notificacoes")
+    
+    # GET - Carregar configurações existentes
     try:
-        if 'user_id' not in session:
-            return jsonify({'success': False, 'error': 'Não autenticado'}), 401
-        cursor, conn = get_db()
-        cursor.execute("""
-            UPDATE notificacoes SET lida = 1, data_leitura = CURRENT_TIMESTAMP
-            WHERE id = %s AND usuario_id = %s
-        """, (id, session['user_id']))
-        conn.commit()
-        return_connection(conn)
-        return jsonify({'success': True})
+        cursor.execute("SELECT * FROM notificacoes_config WHERE usuario_id = %s", (user_id,))
+        config = cursor.fetchone()
     except Exception as e:
-        print(f"Erro ao marcar notificação: {e}")
-        return jsonify({'success': False, 'error': str(e)}), 500
-
-@app.route('/api/notificacoes/marcar-todas-lidas', methods=['POST'])
-def api_marcar_todas_notificacoes_lidas():
-    try:
-        if 'user_id' not in session:
-            return jsonify({'success': False, 'error': 'Não autenticado'}), 401
-        cursor, conn = get_db()
-        cursor.execute("""
-            UPDATE notificacoes SET lida = 1, data_leitura = CURRENT_TIMESTAMP
-            WHERE usuario_id = %s AND lida = 0
-        """, (session['user_id'],))
-        conn.commit()
-        return_connection(conn)
-        return jsonify({'success': True})
-    except Exception as e:
-        print(f"Erro ao marcar todas: {e}")
-        return jsonify({'success': False, 'error': str(e)}), 500
-
-@app.route('/api/notificacoes/stream')
-def notificacoes_stream():
-    def generate():
-        try:
-            yield f"data: {json.dumps({'type': 'connected', 'message': 'Conectado'})}\n\n"
-            while True:
-                yield f"data: {json.dumps({'type': 'heartbeat', 'timestamp': datetime.now().isoformat()})}\n\n"
-                time.sleep(30)
-        except GeneratorExit:
-            pass
-    return Response(generate(), mimetype="text/event-stream")
+        print(f"Erro ao buscar configurações: {e}")
+        config = None
+    
+    # Se não tiver configuração, criar valores padrão
+    if not config:
+        config = {
+            'notificar_aniversario_obreiro': 1,
+            'notificar_aniversario_familiar': 1,
+            'notificar_reuniao': 1,
+            'notificar_ata_publicada': 1,
+            'notificar_sindicancia': 1,
+            'dias_antecedencia': 3,
+            'horario_envio': '08:00:00'
+        }
+    
+    return_connection(conn)
+    
+    return render_template("configuracoes/notificacoes.html", config=config)
 
 
 

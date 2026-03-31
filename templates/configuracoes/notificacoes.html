@@ -1,0 +1,200 @@
+{% extends "base.html" %}
+
+{% block title %}Configurações de Notificações{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="container">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h2>
+                <i class="bi bi-bell"></i> 
+                Configurações de Notificações
+            </h2>
+            <a href="/dashboard" class="btn btn-outline-secondary">
+                <i class="bi bi-arrow-left"></i> Voltar
+            </a>
+        </div>
+
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+                        {{ message }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
+        <div class="row">
+            <div class="col-md-8">
+                <div class="card shadow">
+                    <div class="card-header bg-primary text-white">
+                        <h5 class="mb-0"><i class="bi bi-envelope-paper"></i> Tipos de Notificações</h5>
+                    </div>
+                    <div class="card-body">
+                        <form method="POST">
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <div class="form-check form-switch">
+                                        <input class="form-check-input" type="checkbox" name="notificar_aniversario_obreiro" 
+                                               id="notificar_aniversario_obreiro" value="1"
+                                               {% if config.notificar_aniversario_obreiro == 1 %}checked{% endif %}>
+                                        <label class="form-check-label" for="notificar_aniversario_obreiro">
+                                            <i class="bi bi-gift text-warning"></i> Aniversário do Obreiro
+                                        </label>
+                                        <small class="d-block text-muted">Receber notificação no aniversário do obreiro</small>
+                                    </div>
+                                </div>
+
+                                <div class="col-md-6 mb-3">
+                                    <div class="form-check form-switch">
+                                        <input class="form-check-input" type="checkbox" name="notificar_aniversario_familiar" 
+                                               id="notificar_aniversario_familiar" value="1"
+                                               {% if config.notificar_aniversario_familiar == 1 %}checked{% endif %}>
+                                        <label class="form-check-label" for="notificar_aniversario_familiar">
+                                            <i class="bi bi-people text-info"></i> Aniversário de Familiar
+                                        </label>
+                                        <small class="d-block text-muted">Receber notificação quando um familiar faz aniversário</small>
+                                    </div>
+                                </div>
+
+                                <div class="col-md-6 mb-3">
+                                    <div class="form-check form-switch">
+                                        <input class="form-check-input" type="checkbox" name="notificar_reuniao" 
+                                               id="notificar_reuniao" value="1"
+                                               {% if config.notificar_reuniao == 1 %}checked{% endif %}>
+                                        <label class="form-check-label" for="notificar_reuniao">
+                                            <i class="bi bi-calendar-event text-success"></i> Reuniões Agendadas
+                                        </label>
+                                        <small class="d-block text-muted">Receber convites para novas reuniões</small>
+                                    </div>
+                                </div>
+
+                                <div class="col-md-6 mb-3">
+                                    <div class="form-check form-switch">
+                                        <input class="form-check-input" type="checkbox" name="notificar_ata_publicada" 
+                                               id="notificar_ata_publicada" value="1"
+                                               {% if config.notificar_ata_publicada == 1 %}checked{% endif %}>
+                                        <label class="form-check-label" for="notificar_ata_publicada">
+                                            <i class="bi bi-file-text text-secondary"></i> Atas Publicadas
+                                        </label>
+                                        <small class="d-block text-muted">Receber notificação quando uma ata é publicada</small>
+                                    </div>
+                                </div>
+
+                                <div class="col-md-6 mb-3">
+                                    <div class="form-check form-switch">
+                                        <input class="form-check-input" type="checkbox" name="notificar_sindicancia" 
+                                               id="notificar_sindicancia" value="1"
+                                               {% if config.notificar_sindicancia == 1 %}checked{% endif %}>
+                                        <label class="form-check-label" for="notificar_sindicancia">
+                                            <i class="bi bi-person-check text-primary"></i> Sindicâncias
+                                        </label>
+                                        <small class="d-block text-muted">Receber notificações sobre sindicâncias</small>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <hr class="my-4">
+
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label">
+                                        <i class="bi bi-calendar-range"></i> Dias de Antecedência
+                                    </label>
+                                    <select class="form-select" name="dias_antecedencia">
+                                        <option value="1" {% if config.dias_antecedencia == 1 %}selected{% endif %}>1 dia antes</option>
+                                        <option value="2" {% if config.dias_antecedencia == 2 %}selected{% endif %}>2 dias antes</option>
+                                        <option value="3" {% if config.dias_antecedencia == 3 %}selected{% endif %}>3 dias antes</option>
+                                        <option value="5" {% if config.dias_antecedencia == 5 %}selected{% endif %}>5 dias antes</option>
+                                        <option value="7" {% if config.dias_antecedencia == 7 %}selected{% endif %}>7 dias antes</option>
+                                    </select>
+                                    <small class="text-muted">Para notificações de eventos futuros</small>
+                                </div>
+
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label">
+                                        <i class="bi bi-clock"></i> Horário de Envio
+                                    </label>
+                                    <input type="time" class="form-control" name="horario_envio" 
+                                           value="{{ config.horario_envio.strftime('%H:%M') if config.horario_envio else '08:00' }}">
+                                    <small class="text-muted">Horário que as notificações serão enviadas</small>
+                                </div>
+                            </div>
+
+                            <div class="alert alert-info mt-3">
+                                <i class="bi bi-info-circle"></i>
+                                <strong>Informações:</strong>
+                                <ul class="mb-0 mt-2">
+                                    <li>As notificações de aniversário são verificadas diariamente às 08:00</li>
+                                    <li>Você pode configurar quantos dias antes deseja receber lembretes de eventos</li>
+                                    <li>As notificações são enviadas por e-mail e aparecem no sistema</li>
+                                </ul>
+                            </div>
+
+                            <div class="text-center mt-4">
+                                <button type="submit" class="btn btn-success btn-lg px-5">
+                                    <i class="bi bi-save"></i> Salvar Configurações
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-4">
+                <div class="card shadow">
+                    <div class="card-header bg-light">
+                        <h6 class="mb-0"><i class="bi bi-question-circle"></i> Ajuda</h6>
+                    </div>
+                    <div class="card-body">
+                        <p class="small">
+                            <i class="bi bi-bell-fill text-primary"></i>
+                            <strong>Como funcionam as notificações?</strong>
+                        </p>
+                        <ul class="small">
+                            <li><strong>Aniversários:</strong> Você receberá uma notificação no dia do aniversário</li>
+                            <li><strong>Reuniões:</strong> Notificações com X dias de antecedência</li>
+                            <li><strong>Atas:</strong> Quando uma nova ata é publicada</li>
+                            <li><strong>Sindicâncias:</strong> Quando você precisa avaliar um candidato</li>
+                        </ul>
+                        <hr>
+                        <p class="small text-muted mb-0">
+                            <i class="bi bi-envelope"></i> 
+                            As notificações são enviadas para seu e-mail cadastrado.
+                            Mantenha seu e-mail atualizado em "Meu Perfil".
+                        </p>
+                    </div>
+                </div>
+
+                <div class="card shadow mt-3">
+                    <div class="card-header bg-light">
+                        <h6 class="mb-0"><i class="bi bi-clock-history"></i> Últimas Notificações</h6>
+                    </div>
+                    <div class="card-body">
+                        <div class="text-center text-muted py-3">
+                            <i class="bi bi-inbox fs-1"></i>
+                            <p class="mt-2 small">Nenhuma notificação recente</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .form-check-input:checked {
+        background-color: #198754;
+        border-color: #198754;
+    }
+    .form-switch .form-check-input {
+        width: 2.5em;
+    }
+    .form-check-label {
+        font-weight: 500;
+        margin-left: 0.5rem;
+    }
+</style>
+{% endblock %}
