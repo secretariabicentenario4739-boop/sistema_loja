@@ -19,6 +19,13 @@
             {% if messages %}
                 {% for category, message in messages %}
                     <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+                        {% if category == 'success' %}
+                            <i class="bi bi-check-circle-fill"></i>
+                        {% elif category == 'danger' %}
+                            <i class="bi bi-exclamation-triangle-fill"></i>
+                        {% else %}
+                            <i class="bi bi-info-circle-fill"></i>
+                        {% endif %}
                         {{ message }}
                         <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
                     </div>
@@ -43,7 +50,7 @@
                                         <label class="form-check-label" for="notificar_aniversario_obreiro">
                                             <i class="bi bi-gift text-warning"></i> Aniversário do Obreiro
                                         </label>
-                                        <small class="d-block text-muted">Receber notificação no aniversário do obreiro</small>
+                                        <small class="d-block text-muted">Receber notificação no dia do aniversário</small>
                                     </div>
                                 </div>
 
@@ -67,7 +74,7 @@
                                         <label class="form-check-label" for="notificar_reuniao">
                                             <i class="bi bi-calendar-event text-success"></i> Reuniões Agendadas
                                         </label>
-                                        <small class="d-block text-muted">Receber convites para novas reuniões</small>
+                                        <small class="d-block text-muted">Receber lembrete de reuniões agendadas</small>
                                     </div>
                                 </div>
 
@@ -101,18 +108,33 @@
                             <div class="row">
                                 <div class="col-md-6 mb-3">
                                     <label class="form-label">
-                                        <i class="bi bi-calendar-range"></i> Dias de Antecedência
+                                        <i class="bi bi-calendar-range"></i> Antecedência para Aniversários
                                     </label>
-                                    <select class="form-select" name="dias_antecedencia">
-                                        <option value="1" {% if config.dias_antecedencia == 1 %}selected{% endif %}>1 dia antes</option>
-                                        <option value="2" {% if config.dias_antecedencia == 2 %}selected{% endif %}>2 dias antes</option>
-                                        <option value="3" {% if config.dias_antecedencia == 3 %}selected{% endif %}>3 dias antes</option>
-                                        <option value="5" {% if config.dias_antecedencia == 5 %}selected{% endif %}>5 dias antes</option>
-                                        <option value="7" {% if config.dias_antecedencia == 7 %}selected{% endif %}>7 dias antes</option>
+                                    <select class="form-select" name="dias_antecedencia_aniversario">
+                                        <option value="0" {% if config.dias_antecedencia_aniversario == 0 %}selected{% endif %}>No mesmo dia</option>
+                                        <option value="1" {% if config.dias_antecedencia_aniversario == 1 %}selected{% endif %}>1 dia antes</option>
+                                        <option value="2" {% if config.dias_antecedencia_aniversario == 2 %}selected{% endif %}>2 dias antes</option>
+                                        <option value="3" {% if config.dias_antecedencia_aniversario == 3 %}selected{% endif %}>3 dias antes</option>
                                     </select>
-                                    <small class="text-muted">Para notificações de eventos futuros</small>
+                                    <small class="text-muted">Quando receber notificação de aniversário</small>
                                 </div>
 
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label">
+                                        <i class="bi bi-calendar-range"></i> Antecedência para Reuniões
+                                    </label>
+                                    <select class="form-select" name="dias_antecedencia_reuniao">
+                                        <option value="1" {% if config.dias_antecedencia_reuniao == 1 %}selected{% endif %}>1 dia antes</option>
+                                        <option value="2" {% if config.dias_antecedencia_reuniao == 2 %}selected{% endif %}>2 dias antes</option>
+                                        <option value="3" {% if config.dias_antecedencia_reuniao == 3 %}selected{% endif %}>3 dias antes</option>
+                                        <option value="5" {% if config.dias_antecedencia_reuniao == 5 %}selected{% endif %}>5 dias antes</option>
+                                        <option value="7" {% if config.dias_antecedencia_reuniao == 7 %}selected{% endif %}>7 dias antes</option>
+                                    </select>
+                                    <small class="text-muted">Quando receber lembrete de reunião</small>
+                                </div>
+                            </div>
+
+                            <div class="row">
                                 <div class="col-md-6 mb-3">
                                     <label class="form-label">
                                         <i class="bi bi-clock"></i> Horário de Envio
@@ -127,9 +149,10 @@
                                 <i class="bi bi-info-circle"></i>
                                 <strong>Informações:</strong>
                                 <ul class="mb-0 mt-2">
-                                    <li>As notificações de aniversário são verificadas diariamente às 08:00</li>
-                                    <li>Você pode configurar quantos dias antes deseja receber lembretes de eventos</li>
-                                    <li>As notificações são enviadas por e-mail e aparecem no sistema</li>
+                                    <li>🎂 <strong>Aniversários:</strong> Você pode escolher receber no mesmo dia ou com antecedência</li>
+                                    <li>📅 <strong>Reuniões:</strong> Lembretes são enviados com a antecedência configurada (padrão: 1 dia antes)</li>
+                                    <li>📧 <strong>E-mails:</strong> Todas as notificações são enviadas para seu e-mail cadastrado</li>
+                                    <li>🔔 <strong>Notificações no sistema:</strong> Aparecem no ícone de sino no topo da página</li>
                                 </ul>
                             </div>
 
@@ -146,25 +169,67 @@
             <div class="col-md-4">
                 <div class="card shadow">
                     <div class="card-header bg-light">
-                        <h6 class="mb-0"><i class="bi bi-question-circle"></i> Ajuda</h6>
+                        <h6 class="mb-0"><i class="bi bi-question-circle"></i> Como funcionam as notificações?</h6>
                     </div>
                     <div class="card-body">
-                        <p class="small">
-                            <i class="bi bi-bell-fill text-primary"></i>
-                            <strong>Como funcionam as notificações?</strong>
-                        </p>
-                        <ul class="small">
-                            <li><strong>Aniversários:</strong> Você receberá uma notificação no dia do aniversário</li>
-                            <li><strong>Reuniões:</strong> Notificações com X dias de antecedência</li>
-                            <li><strong>Atas:</strong> Quando uma nova ata é publicada</li>
-                            <li><strong>Sindicâncias:</strong> Quando você precisa avaliar um candidato</li>
-                        </ul>
+                        <div class="mb-3">
+                            <i class="bi bi-gift text-warning"></i>
+                            <strong class="ms-2">Aniversários</strong>
+                            <p class="small text-muted mt-1 mb-0">Receba uma notificação no dia do aniversário do obreiro ou de seus familiares. Você pode configurar para receber com antecedência.</p>
+                        </div>
+                        <hr>
+                        <div class="mb-3">
+                            <i class="bi bi-calendar-event text-success"></i>
+                            <strong class="ms-2">Reuniões</strong>
+                            <p class="small text-muted mt-1 mb-0">Receba lembretes das reuniões agendadas. Configure quantos dias antes deseja ser lembrado.</p>
+                        </div>
+                        <hr>
+                        <div class="mb-3">
+                            <i class="bi bi-file-text text-secondary"></i>
+                            <strong class="ms-2">Atas</strong>
+                            <p class="small text-muted mt-1 mb-0">Seja notificado quando uma nova ata for publicada.</p>
+                        </div>
+                        <hr>
+                        <div class="mb-3">
+                            <i class="bi bi-person-check text-primary"></i>
+                            <strong class="ms-2">Sindicâncias</strong>
+                            <p class="small text-muted mt-1 mb-0">Receba notificações quando precisar avaliar um candidato ou quando houver resultados.</p>
+                        </div>
                         <hr>
                         <p class="small text-muted mb-0">
                             <i class="bi bi-envelope"></i> 
-                            As notificações são enviadas para seu e-mail cadastrado.
-                            Mantenha seu e-mail atualizado em "Meu Perfil".
+                            <strong>Importante:</strong> As notificações são enviadas para o e-mail cadastrado no seu perfil. Mantenha seu e-mail atualizado.
                         </p>
+                    </div>
+                </div>
+
+                <div class="card shadow mt-3">
+                    <div class="card-header bg-light">
+                        <h6 class="mb-0"><i class="bi bi-clock-history"></i> Agenda de Envios</h6>
+                    </div>
+                    <div class="card-body">
+                        <ul class="list-unstyled mb-0 small">
+                            <li class="mb-2">
+                                <i class="bi bi-gift text-warning"></i>
+                                <strong>Aniversários:</strong>
+                                <span class="text-muted">Diariamente às {{ config.horario_envio.strftime('%H:%M') if config.horario_envio else '08:00' }}</span>
+                            </li>
+                            <li class="mb-2">
+                                <i class="bi bi-calendar-event text-success"></i>
+                                <strong>Reuniões:</strong>
+                                <span class="text-muted">Diariamente às {{ config.horario_envio.strftime('%H:%M') if config.horario_envio else '08:00' }}</span>
+                            </li>
+                            <li class="mb-2">
+                                <i class="bi bi-file-text text-secondary"></i>
+                                <strong>Atas:</strong>
+                                <span class="text-muted">Imediato após publicação</span>
+                            </li>
+                            <li>
+                                <i class="bi bi-person-check text-primary"></i>
+                                <strong>Sindicâncias:</strong>
+                                <span class="text-muted">Imediato após voto ou resultado</span>
+                            </li>
+                        </ul>
                     </div>
                 </div>
 
@@ -195,6 +260,24 @@
     .form-check-label {
         font-weight: 500;
         margin-left: 0.5rem;
+    }
+    .alert {
+        border-left: 4px solid;
+    }
+    .alert-success {
+        border-left-color: #28a745;
+    }
+    .alert-danger {
+        border-left-color: #dc3545;
+    }
+    .alert-info {
+        border-left-color: #17a2b8;
+    }
+    .alert-warning {
+        border-left-color: #ffc107;
+    }
+    .card-header {
+        font-weight: 600;
     }
 </style>
 {% endblock %}

@@ -1515,77 +1515,294 @@ def enviar_whatsapp(numero, mensagem):
         print(f"Erro ao abrir WhatsApp: {e}")
         return False
 
-# =====================
-# FUNÇÕES DE GRAU (NOVAS)
-# =====================
+# =============================
+# FUNÇÕES DE NOTIFICAÇÕES (NOVAS)
+# =============================
 
-def get_grau_principal(grau_nivel):
-    """Retorna a classificação principal do grau (para exibição em listas)"""
-    if grau_nivel == 1:
-        return "Aprendiz"
-    elif grau_nivel == 2:
-        return "Companheiro"
-    elif grau_nivel >= 3:
-        return "Mestre"
-    else:
-        return "Mestre"
+def registrar_notificacao_sistema(usuario_id, titulo, mensagem, tipo='sistema', link=None):
+    """Registra notificação no sistema"""
+    try:
+        cursor, conn = get_db()
+        cursor.execute("""
+            INSERT INTO notificacoes (usuario_id, titulo, mensagem, tipo, link, data_criacao, lida)
+            VALUES (%s, %s, %s, %s, %s, CURRENT_TIMESTAMP, 0)
+        """, (usuario_id, titulo, mensagem, tipo, link))
+        conn.commit()
+        return_connection(conn)
+        return True
+    except Exception as e:
+        print(f"Erro ao registrar notificação: {e}")
+        return False
 
-def get_grau_detalhado(grau_nivel):
-    """Retorna o nome detalhado do grau (para tooltips e detalhes)"""
-    grau_map = {
-        1: "Aprendiz",
-        2: "Companheiro",
-        3: "Mestre",
-        4: "Mestre Instalado",
-        5: "Mestre Instalado - 5° Grau",
-        6: "Grau Superior 6",
-        7: "Grau Superior 7",
-        8: "Grau Superior 8",
-        9: "Grau Superior 9",
-        10: "Grau Superior 10",
+def enviar_notificacao_reuniao_lembrete(participante, reuniao):
+    """Envia lembrete de reunião para o dia anterior"""
+    assunto = f"🔔 Lembrete: Reunião {reuniao['titulo']} - Amanhã"
+    
+    data_formatada = reuniao['data'].strftime('%d/%m/%Y')
+    hora_formatada = reuniao['hora_inicio'].strftime('%H:%M') if reuniao['hora_inicio'] else 'Horário a confirmar'
+    
+    conteudo_html = f"""
+    <html>
+    <body style="font-family: Arial, sans-serif;">
+        <div style="max-width: 600px; margin: 0 auto; padding: 20px;">
+            <div style="background: linear-gradient(135deg, #1a472a, #0a2a1a); color: #ffd700; padding: 30px; text-align: center; border-radius: 10px;">
+                <h1>🔔 Lembrete de Reunião</h1>
+                <p>Não esqueça! Amanhã tem reunião</p>
+            </div>
+            <div style="background: white; padding: 30px; border-radius: 10px; margin-top: 20px;">
+                <h2>Olá {participante['nome_completo']},</h2>
+                <p>Você tem uma reunião marcada para <strong>AMANHÃ</strong>:</p>
+                
+                <div style="background: #f8f9fa; padding: 20px; border-radius: 8px; margin: 20px 0;">
+                    <p><strong>📌 Título:</strong> {reuniao['titulo']}</p>
+                    <p><strong>📅 Data:</strong> {data_formatada}</p>
+                    <p><strong>⏰ Horário:</strong> {hora_formatada}</p>
+                    <p><strong>📍 Local:</strong> {reuniao['local'] or reuniao['loja_nome'] or 'Templo Maçônico'}</p>
+                </div>
+                
+                <p>Por favor, confirme sua presença através do sistema.</p>
+                <p>Atenciosamente,<br><strong>Sistema Maçônico</strong></p>
+            </div>
+        </div>
+    </body>
+    </html>
+    """
+    
+    # Registrar notificação no sistema
+    registrar_notificacao_sistema(
+        participante['id'],
+        assunto,
+        f"Lembrete: Reunião {reuniao['titulo']} amanhã às {hora_formatada}",
+        'reuniao_lembrete',
+        f"/reunioes/{reuniao['id']}"
+    )
+    
+    # Enviar e-mail
+    if 'enviar_email_resend' in globals():
+        enviar_email_resend(participante['email'], assunto, conteudo_html)
+
+def verificar_reunioes_e_enviar_notificacoes():
+    """Verifica reuniões do dia seguinte e envia notificações"""
+    cursor, conn = get_db()
+    
+    try:
+        hoje = datetime.now().date()
+        amanha = hoje + timedelta(days=1)
+        
+        # Buscar reuniões agendadas para AMANHÃ
+        cursor.execute("""
+            SELECT r.*, l.nome as loja_nome
+            FROM reunioes r
+            LEFT JOIN lojas l ON r.loja_id = l.id
+            WHERE r.status = 'agendada'
+            AND r.data = %s
+            ORDER BY r.hora_inicio
+        """, (amanha,))
+        
+        reunioes_amanha = cursor.fetchall()
+        
+        total_notificados = 0
+        
+        for reuniao in reunioes_amanha:
+            # Buscar participantes que receberão o lembrete
+            cursor.execute("""
+                SELECT u.id, u.nome_completo, u.email, 
+                       COALESCE(nc.dias_antecedencia_reuniao, 1) as dias_antecedencia
+                FROM usuarios u
+                LEFT JOIN notificacoes_config nc ON u.id = nc.usuario_id
+                WHERE u.ativo = 1 
+                AND u.email IS NOT NULL 
+                AND u.email != ''
+            """)
+            participantes = cursor.fetchall()
+            
+            for participante in participantes:
+                # Verificar se o participante quer receber notificações com a antecedência configurada
+                dias_antecedencia = participante.get('dias_antecedencia', 1)
+                if dias_antecedencia >= 1:
+                    enviar_notificacao_reuniao_lembrete(participante, reuniao)
+                    total_notificados += 1
+        
+        return_connection(conn)
+        return {
+            'success': True,
+            'reunioes_amanha': len(reunioes_amanha),
+            'participantes_notificados': total_notificados
+        }
+        
+    except Exception as e:
+        print(f"Erro ao verificar reuniões: {e}")
+        import traceback
+        traceback.print_exc()
+        if conn:
+            return_connection(conn)
+        return {'success': False, 'error': str(e)}
+
+def verificar_aniversarios_e_enviar_notificacoes():
+    """Verifica aniversários do dia e envia notificações"""
+    cursor, conn = get_db()
+    
+    try:
+        hoje = datetime.now().date()
+        
+        # Buscar obreiros que fazem aniversário hoje
+        cursor.execute("""
+            SELECT u.id, u.nome_completo, u.email, u.telefone,
+                   nc.notificar_aniversario_obreiro
+            FROM usuarios u
+            LEFT JOIN notificacoes_config nc ON u.id = nc.usuario_id
+            WHERE EXTRACT(MONTH FROM u.data_nascimento) = %s
+              AND EXTRACT(DAY FROM u.data_nascimento) = %s
+              AND u.ativo = 1
+              AND u.data_nascimento IS NOT NULL
+        """, (hoje.month, hoje.day))
+        
+        obreiros_aniversariantes = cursor.fetchall()
+        
+        # Buscar familiares que fazem aniversário hoje
+        cursor.execute("""
+            SELECT f.id, f.nome, f.obreiro_id, f.grau_parentesco,
+                   u.nome_completo as obreiro_nome, u.email as obreiro_email,
+                   nc.notificar_aniversario_familiar
+            FROM familiares f
+            JOIN usuarios u ON f.obreiro_id = u.id
+            LEFT JOIN notificacoes_config nc ON u.id = nc.usuario_id
+            WHERE EXTRACT(MONTH FROM f.data_nascimento) = %s
+              AND EXTRACT(DAY FROM f.data_nascimento) = %s
+              AND f.ativo = 1
+              AND f.data_nascimento IS NOT NULL
+        """, (hoje.month, hoje.day))
+        
+        familiares_aniversariantes = cursor.fetchall()
+        
+        # Enviar notificações para obreiros aniversariantes
+        for obreiro in obreiros_aniversariantes:
+            if obreiro.get('notificar_aniversario_obreiro', 1):
+                titulo = f"🎂 Feliz Aniversário, {obreiro['nome_completo']}!"
+                mensagem = f"Neste dia especial, toda a Loja Maçônica celebra sua vida. Que a Sabedoria, Força e Beleza continuem guiando seus passos."
+                
+                registrar_notificacao_sistema(
+                    obreiro['id'], 
+                    titulo, 
+                    mensagem, 
+                    'aniversario_obreiro',
+                    '/obreiros/perfil'
+                )
+                
+                if obreiro.get('email'):
+                    enviar_email_aniversario_obreiro(obreiro['email'], obreiro['nome_completo'])
+        
+        # Enviar notificações para obreiros sobre aniversário de familiares
+        for familiar in familiares_aniversariantes:
+            if familiar.get('notificar_aniversario_familiar', 1):
+                titulo = f"🎂 Aniversário do Familiar: {familiar['nome']}"
+                mensagem = f"Hoje é aniversário de {familiar['nome']} ({familiar['grau_parentesco']}). Que este dia seja repleto de alegria para sua família."
+                
+                registrar_notificacao_sistema(
+                    familiar['obreiro_id'], 
+                    titulo, 
+                    mensagem, 
+                    'aniversario_familiar',
+                    '/familiares'
+                )
+                
+                if familiar.get('obreiro_email'):
+                    enviar_email_aniversario_familiar(
+                        familiar['obreiro_email'], 
+                        familiar['obreiro_nome'], 
+                        familiar['nome'], 
+                        familiar['grau_parentesco']
+                    )
+        
+        return_connection(conn)
+        return {
+            'success': True,
+            'obreiro_aniversariantes': len(obreiros_aniversariantes),
+            'familiar_aniversariantes': len(familiares_aniversariantes)
+        }
+        
+    except Exception as e:
+        print(f"Erro ao verificar aniversários: {e}")
+        import traceback
+        traceback.print_exc()
+        if conn:
+            conn.rollback()
+        return_connection(conn)
+        return {'success': False, 'error': str(e)}
+
+def enviar_email_aniversario_obreiro(email, nome):
+    """Envia e-mail de aniversário para obreiro"""
+    assunto = f"🎂 Feliz Aniversário, {nome}!"
+    
+    conteudo_html = f"""
+    <html>
+    <body style="font-family: Arial, sans-serif;">
+        <div style="max-width: 600px; margin: 0 auto; padding: 20px;">
+            <div style="background: linear-gradient(135deg, #1a472a, #0a2a1a); color: #ffd700; padding: 30px; text-align: center; border-radius: 10px;">
+                <h1>🎂 Feliz Aniversário!</h1>
+            </div>
+            <div style="background: white; padding: 30px; border-radius: 10px; margin-top: 20px;">
+                <h2>Querido {nome},</h2>
+                <p>Neste dia especial, toda a Loja Maçônica se une para celebrar sua vida e sua jornada.</p>
+                <p>Que a Sabedoria, Força e Beleza continuem guiando seus passos.</p>
+                <p style="margin-top: 30px;">Com fraternal abraço,<br><strong>Sistema Maçônico</strong></p>
+            </div>
+        </div>
+    </body>
+    </html>
+    """
+    
+    if 'enviar_email_resend' in globals():
+        enviar_email_resend(email, assunto, conteudo_html)
+
+def enviar_email_aniversario_familiar(email, obreiro_nome, familiar_nome, parentesco):
+    """Envia e-mail de aniversário de familiar para obreiro"""
+    assunto = f"🎂 Aniversário do Familiar: {familiar_nome}"
+    
+    conteudo_html = f"""
+    <html>
+    <body style="font-family: Arial, sans-serif;">
+        <div style="max-width: 600px; margin: 0 auto; padding: 20px;">
+            <div style="background: linear-gradient(135deg, #1a472a, #0a2a1a); color: #ffd700; padding: 30px; text-align: center; border-radius: 10px;">
+                <h1>🎂 Aniversário de Familiar</h1>
+            </div>
+            <div style="background: white; padding: 30px; border-radius: 10px; margin-top: 20px;">
+                <h2>Querido {obreiro_nome},</h2>
+                <p>Hoje é aniversário de <strong>{familiar_nome}</strong> ({parentesco}).</p>
+                <p>Que este dia seja repleto de alegria e realizações para sua família.</p>
+                <p style="margin-top: 30px;">Com fraternal abraço,<br><strong>Sistema Maçônico</strong></p>
+            </div>
+        </div>
+    </body>
+    </html>
+    """
+    
+    if 'enviar_email_resend' in globals():
+        enviar_email_resend(email, assunto, conteudo_html)
+
+def executar_rotinas_diarias():
+    """Executa todas as rotinas diárias (aniversários e lembretes)"""
+    print(f"\n{'='*50}")
+    print(f"🔄 Executando rotinas diárias em {datetime.now().strftime('%d/%m/%Y %H:%M')}")
+    print(f"{'='*50}")
+    
+    # Verificar aniversários (mesmo dia)
+    print("📅 Verificando aniversários...")
+    resultado_aniversarios = verificar_aniversarios_e_enviar_notificacoes()
+    
+    # Verificar reuniões (dia anterior)
+    print("📆 Verificando reuniões de amanhã...")
+    resultado_reunioes = verificar_reunioes_e_enviar_notificacoes()
+    
+    print(f"\n✅ Rotinas concluídas!")
+    print(f"   - Aniversários: {resultado_aniversarios.get('obreiro_aniversariantes', 0)} obreiros, {resultado_aniversarios.get('familiar_aniversariantes', 0)} familiares")
+    print(f"   - Reuniões amanhã: {resultado_reunioes.get('reunioes_amanha', 0)} reuniões, {resultado_reunioes.get('participantes_notificados', 0)} notificações")
+    print(f"{'='*50}\n")
+    
+    return {
+        'aniversarios': resultado_aniversarios,
+        'reunioes': resultado_reunioes
     }
-    return grau_map.get(grau_nivel, f"Grau Superior {grau_nivel}")
-
-def get_grau_descricao(grau):
-    """Retorna a descrição do grau (mantido para compatibilidade)"""
-    if grau == 1:
-        return "Aprendiz"
-    elif grau == 2:
-        return "Companheiro"
-    elif grau == 3:
-        return "Mestre"
-    elif grau == 4:
-        return "Mestre Instalado"
-    elif grau == 5:
-        return "Mestre Inst. (5°)"
-    elif grau == 6:
-        return "Grau 6 - Superior"
-    elif grau >= 7:
-        return f"Grau Superior {grau}"
-    else:
-        return "Mestre"
-
-def get_grau_badge_class(grau_nivel):
-    """Retorna a classe CSS para o badge do grau"""
-    if grau_nivel == 1:
-        return 'bg-secondary'
-    elif grau_nivel == 2:
-        return 'bg-primary'
-    elif grau_nivel == 3:
-        return 'bg-warning text-dark'
-    elif grau_nivel >= 4:
-        return 'bg-info'
-    else:
-        return 'bg-secondary'
-
-def get_grau_icon(grau_nivel):
-    """Retorna o ícone para o grau"""
-    if grau_nivel == 1 or grau_nivel == 2:
-        return 'bi bi-star'
-    elif grau_nivel >= 3:
-        return 'bi bi-star-fill'
-    else:
-        return 'bi bi-star'
 
 # =====================
 # FUNÇÕES DE GRAU (NOVAS)
