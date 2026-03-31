@@ -379,57 +379,109 @@ if (confirmarInput) {
 }
 
 // =====================
-// CONTROLE DE GRAUS
+// CONTROLE DE GRAUS (VERSÃO COMPLETA)
 // =====================
-const grauPrincipalSelect = document.getElementById('grauPrincipalSelect');
-const divGrauSuperior = document.getElementById('divGrauSuperior');
-const grauSuperiorSelect = document.getElementById('grauSuperiorSelect');
-const grauAtualHidden = document.getElementById('grauAtualHidden');
 
-function atualizarGrauSuperior() {
-    if (grauPrincipalSelect) {
+// Aguardar o DOM carregar completamente
+document.addEventListener('DOMContentLoaded', function() {
+    
+    console.log('=== INICIANDO CONTROLE DE GRAUS ===');
+    
+    // Obter elementos
+    const grauPrincipalSelect = document.getElementById('grauPrincipalSelect');
+    const divGrauSuperior = document.getElementById('divGrauSuperior');
+    const grauSuperiorSelect = document.getElementById('grauSuperiorSelect');
+    const grauAtualHidden = document.getElementById('grauAtualHidden');
+    
+    // Verificar se os elementos existem
+    console.log('grauPrincipalSelect existe:', !!grauPrincipalSelect);
+    console.log('divGrauSuperior existe:', !!divGrauSuperior);
+    console.log('grauSuperiorSelect existe:', !!grauSuperiorSelect);
+    console.log('grauAtualHidden existe:', !!grauAtualHidden);
+    
+    if (!grauPrincipalSelect) {
+        console.error('❌ Elemento grauPrincipalSelect não encontrado!');
+        return;
+    }
+    
+    // Função para atualizar visibilidade do dropdown de graus superiores
+    function atualizarGrauSuperior() {
         const grauPrincipal = parseInt(grauPrincipalSelect.value);
+        console.log('Grau principal selecionado:', grauPrincipal);
         
+        // Apenas quando seleciona Mestre (3) mostra o dropdown de graus superiores
         if (grauPrincipal === 3) {
-            divGrauSuperior.style.display = 'block';
+            if (divGrauSuperior) {
+                divGrauSuperior.style.display = 'block';
+                console.log('✅ Dropdown de graus superiores VISÍVEL');
+            }
         } else {
-            divGrauSuperior.style.display = 'none';
-            if (grauSuperiorSelect) grauSuperiorSelect.value = '';
+            if (divGrauSuperior) {
+                divGrauSuperior.style.display = 'none';
+                console.log('❌ Dropdown de graus superiores ESCONDIDO');
+            }
+            // Limpar seleção de grau superior
+            if (grauSuperiorSelect) {
+                grauSuperiorSelect.value = '';
+            }
         }
         atualizarGrauFinal();
     }
-}
-
-function atualizarGrauFinal() {
-    if (grauPrincipalSelect && grauAtualHidden) {
+    
+    // Função para atualizar o valor final do grau
+    function atualizarGrauFinal() {
+        if (!grauAtualHidden) return;
+        
         const grauPrincipal = parseInt(grauPrincipalSelect.value);
         const grauSuperior = grauSuperiorSelect ? grauSuperiorSelect.value : '';
         
+        let grauFinal;
+        
         if (grauPrincipal === 3 && grauSuperior && grauSuperior !== '') {
-            grauAtualHidden.value = parseInt(grauSuperior);
+            grauFinal = parseInt(grauSuperior);
         } else {
-            grauAtualHidden.value = grauPrincipal;
+            grauFinal = grauPrincipal;
         }
         
-        console.log('Grau final:', grauAtualHidden.value);
+        grauAtualHidden.value = grauFinal;
+        
+        console.log('📊 Grau Principal:', grauPrincipal);
+        console.log('📊 Grau Superior:', grauSuperior || 'nenhum');
+        console.log('📊 Grau Final:', grauFinal);
     }
-}
-
-// Event listeners
-if (grauPrincipalSelect) {
+    
+    // Adicionar event listeners
     grauPrincipalSelect.addEventListener('change', function() {
+        console.log('🔄 Mudou grau principal');
         atualizarGrauSuperior();
     });
-}
-
-if (grauSuperiorSelect) {
-    grauSuperiorSelect.addEventListener('change', function() {
-        atualizarGrauFinal();
-    });
-}
-
-// Executar ao carregar
-atualizarGrauSuperior();
+    
+    if (grauSuperiorSelect) {
+        grauSuperiorSelect.addEventListener('change', function() {
+            console.log('🔄 Mudou grau superior');
+            atualizarGrauFinal();
+        });
+    }
+    
+    // Executar uma vez ao carregar
+    console.log('🚀 Executando inicialização...');
+    atualizarGrauSuperior();
+    
+    // Adicionar um botão de teste para debug (opcional, remova depois)
+    const debugBtn = document.createElement('button');
+    debugBtn.textContent = 'Debug Grau';
+    debugBtn.type = 'button';
+    debugBtn.className = 'btn btn-sm btn-secondary mt-2';
+    debugBtn.onclick = function() {
+        alert('Grau final: ' + grauAtualHidden.value);
+        console.log('Debug - Grau final:', grauAtualHidden.value);
+    };
+    const adminSection = document.querySelector('.row .col-md-6:first-child .mb-3:last-child');
+    if (adminSection) {
+        adminSection.appendChild(debugBtn);
+    }
+    
+});
 
 // =====================
 // VALIDAÇÃO DINÂMICA PARA SINDICANTE

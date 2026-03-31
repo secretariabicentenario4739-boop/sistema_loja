@@ -2540,17 +2540,21 @@ def editar_obreiro(id):
             tipo = request.form.get("tipo", obreiro["tipo"])
 
             # =============================
-            # 🎯 GRAU (novo formato com grau principal e superior)
+            # 🎯 GRAU (capturar do campo hidden)
             # =============================
             grau_antigo = obreiro["grau_atual"]
-            grau_final = request.form.get("grau_atual")
-
-            if grau_final and str(grau_final).strip().isdigit():
-                grau_atual = int(grau_final)
+            
+            # ✅ CAPTURAR O GRAU DO CAMPO HIDDEN
+            grau_form = request.form.get("grau_atual")
+            print(f"🔍 DEBUG - grau_form recebido: {grau_form}")
+            print(f"🔍 DEBUG - tipo: {type(grau_form)}")
+            
+            if grau_form and str(grau_form).strip().isdigit():
+                grau_atual = int(grau_form)
             else:
                 grau_atual = grau_antigo
-
-            print(f"DEBUG: Grau final capturado = {grau_atual}")
+            
+            print(f"🔍 DEBUG - grau_atual final: {grau_atual}")
 
             # =============================
             # 🔒 STATUS (somente admin)
@@ -2565,7 +2569,7 @@ def editar_obreiro(id):
                 ativo = obreiro["ativo"]
 
             # =============================
-            # ✅ VALIDAÇÃO DE SINDICANTE (apenas mestres e superiores)
+            # ✅ VALIDAÇÃO DE SINDICANTE
             # =============================
             if tipo == 'sindicante' and grau_atual < 3:
                 flash("⚠️ Apenas obreiros com grau de Mestre (3) ou superior podem ser Sindicantes!", "danger")
@@ -2600,7 +2604,7 @@ def editar_obreiro(id):
                 loja_nome,
                 loja_numero,
                 loja_orient,
-                grau_atual,
+                grau_atual,  # ✅ USANDO O GRAU CAPTURADO
                 ativo,
                 tipo,
                 id
@@ -2615,7 +2619,7 @@ def editar_obreiro(id):
                 cursor.execute("UPDATE usuarios SET senha_hash = %s WHERE id = %s", (senha_hash, id))
 
             # =============================
-            # 📜 HISTÓRICO DE GRAU (CORRIGIDO)
+            # 📜 HISTÓRICO DE GRAU
             # =============================
             if (
                 session["tipo"] == "admin"
@@ -2628,7 +2632,6 @@ def editar_obreiro(id):
                     grau_info = cursor.fetchone()
                     grau_nome = grau_info['nome'] if grau_info else f"Grau {grau_atual}"
                     
-                    # Inserir no histórico de graus usando obreiro_id
                     cursor.execute("""
                         INSERT INTO historico_graus 
                         (obreiro_id, grau, data, observacao)
@@ -2638,19 +2641,15 @@ def editar_obreiro(id):
                         grau_atual,
                         f"Alteração de grau de {grau_antigo} para {grau_atual} - {grau_nome}"
                     ))
-                    
-                    print(f"✅ Histórico de grau registrado: {grau_antigo} -> {grau_atual}")
-                    
                 except Exception as e:
-                    print(f"⚠️ Erro ao registrar histórico de grau: {e}")
-                    # Não impede o salvamento principal
+                    print(f"⚠️ Erro ao registrar histórico: {e}")
 
             conn.commit()
             
             # ✅ VERIFICAR SE O GRAU FOI SALVO
             cursor.execute("SELECT grau_atual FROM usuarios WHERE id = %s", (id,))
             verificar_grau = cursor.fetchone()
-            print(f"DEBUG: Grau no banco após UPDATE = {verificar_grau['grau_atual']}")
+            print(f"🔍 DEBUG - Grau no banco após UPDATE: {verificar_grau['grau_atual']}")
 
             flash("Obreiro atualizado com sucesso!", "success")
             return_connection(conn)
@@ -8000,6 +7999,147 @@ def estatisticas_sugestoes():
     return render_template("sugestoes/estatisticas.html", total=total, pendentes=pendentes,
                           em_andamento=em_andamento, implementadas=implementadas, rejeitadas=rejeitadas,
                           por_categoria=por_categoria, por_prioridade=por_prioridade)
+
+# =============================
+# ROTAS DE NOTIFICAÇÕES (API)
+# =============================
+
+@app.route('/api/notificacoes')
+def api_notificacoes():
+    """Retorna as notificações do usuário logado"""
+    try:
+        if 'user_id' not in session:
+            return jsonify({'success': True, 'notificacoes': [], 'nao_lidas': 0})
+        
+        cursor, conn = get_db()
+        
+        # Verificar se a tabela notificacoes existe
+        cursor.execute("""
+            SELECT EXISTS (
+                SELECT FROM information_schema.tables 
+                WHERE table_name = 'notificacoes'
+            )
+        """)
+        tabela_existe = cursor.fetchone()['exists']
+        
+        if not tabela_existe:
+            # Criar tabela se não existir
+            cursor.execute("""
+                CREATE TABLE IF NOT EXISTS notificacoes (
+                    id SERIAL PRIMARY KEY,
+                    usuario_id INTEGER NOT NULL,
+                    titulo VARCHAR(200) NOT NULL,
+                    mensagem TEXT NOT NULL,
+                    tipo VARCHAR(50) DEFAULT 'sistema',
+                    link VARCHAR(500),
+                    lida INTEGER DEFAULT 0,
+                    data_criacao TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    data_leitura TIMESTAMP
+                )
+            """)
+            conn.commit()
+            notificacoes = []
+            nao_lidas = 0
+        else:
+            try:
+                cursor.execute("""
+                    SELECT id, titulo, mensagem, tipo, link, lida, data_criacao as data
+                    FROM notificacoes
+                    WHERE usuario_id = %s
+                    ORDER BY data_criacao DESC
+                    LIMIT 50
+                """, (session['user_id'],))
+                notificacoes = cursor.fetchall()
+                
+                cursor.execute("""
+                    SELECT COUNT(*) as total
+                    FROM notificacoes
+                    WHERE usuario_id = %s AND lida = 0
+                """, (session['user_id'],))
+                nao_lidas = cursor.fetchone()['total'] if cursor.rowcount > 0 else 0
+                
+            except Exception as e:
+                print(f"Erro ao buscar notificações: {e}")
+                notificacoes = []
+                nao_lidas = 0
+        
+        return_connection(conn)
+        
+        notificacoes_list = []
+        for n in notificacoes:
+            notificacoes_list.append({
+                'id': n['id'], 
+                'titulo': n['titulo'], 
+                'mensagem': n['mensagem'],
+                'tipo': n['tipo'], 
+                'link': n['link'], 
+                'lida': n['lida'],
+                'data': n['data'].isoformat() if n['data'] else datetime.now().isoformat()
+            })
+        
+        return jsonify({'success': True, 'notificacoes': notificacoes_list, 'nao_lidas': nao_lidas})
+        
+    except Exception as e:
+        print(f"Erro ao buscar notificações: {e}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({'success': True, 'notificacoes': [], 'nao_lidas': 0})
+
+
+@app.route('/api/notificacoes/marcar-lida/<int:id>', methods=['POST'])
+def api_marcar_notificacao_lida(id):
+    """Marca uma notificação como lida"""
+    try:
+        if 'user_id' not in session:
+            return jsonify({'success': False, 'error': 'Não autenticado'}), 401
+        
+        cursor, conn = get_db()
+        cursor.execute("""
+            UPDATE notificacoes SET lida = 1, data_leitura = CURRENT_TIMESTAMP
+            WHERE id = %s AND usuario_id = %s
+        """, (id, session['user_id']))
+        conn.commit()
+        return_connection(conn)
+        return jsonify({'success': True})
+        
+    except Exception as e:
+        print(f"Erro ao marcar notificação: {e}")
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+
+@app.route('/api/notificacoes/marcar-todas-lidas', methods=['POST'])
+def api_marcar_todas_notificacoes_lidas():
+    """Marca todas as notificações como lidas"""
+    try:
+        if 'user_id' not in session:
+            return jsonify({'success': False, 'error': 'Não autenticado'}), 401
+        
+        cursor, conn = get_db()
+        cursor.execute("""
+            UPDATE notificacoes SET lida = 1, data_leitura = CURRENT_TIMESTAMP
+            WHERE usuario_id = %s AND lida = 0
+        """, (session['user_id'],))
+        conn.commit()
+        return_connection(conn)
+        return jsonify({'success': True})
+        
+    except Exception as e:
+        print(f"Erro ao marcar todas: {e}")
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+
+@app.route('/api/notificacoes/stream')
+def notificacoes_stream():
+    """Stream de notificações em tempo real (Server-Sent Events)"""
+    def generate():
+        try:
+            yield f"data: {json.dumps({'type': 'connected', 'message': 'Conectado'})}\n\n"
+            while True:
+                yield f"data: {json.dumps({'type': 'heartbeat', 'timestamp': datetime.now().isoformat()})}\n\n"
+                time.sleep(30)
+        except GeneratorExit:
+            pass
+    return Response(generate(), mimetype="text/event-stream")
 
 @app.route("/configuracoes/notificacoes", methods=["GET", "POST"])
 @login_required
