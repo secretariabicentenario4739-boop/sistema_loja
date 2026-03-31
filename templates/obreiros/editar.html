@@ -62,16 +62,35 @@
                                 <div class="col-md-6 mb-3">
                                     <label class="form-label">Usuário</label>
                                     <input type="text" class="form-control" value="{{ obreiro.usuario }}" readonly>
+                                    <small class="text-muted">O nome de usuário não pode ser alterado</small>
                                 </div>
 
                                 {% if is_admin %}
                                 <div class="col-md-6 mb-3">
                                     <label class="form-label">Tipo</label>
-                                    <select class="form-select" name="tipo">
+                                    <select class="form-select" name="tipo" id="tipoSelect">
                                         <option value="obreiro" {% if obreiro.tipo == 'obreiro' %}selected{% endif %}>Obreiro</option>
-                                        <option value="sindicante" {% if obreiro.tipo == 'sindicante' %}selected{% endif %}>Sindicante</option>
+                                        
+                                        {% if obreiro.grau_atual >= 3 %}
+                                            <option value="sindicante" {% if obreiro.tipo == 'sindicante' %}selected{% endif %}>Sindicante</option>
+                                        {% else %}
+                                            <option value="sindicante" disabled title="Apenas Mestres (grau 3) e superiores podem ser Sindicantes">
+                                                Sindicante (Mestres e superiores apenas)
+                                            </option>
+                                        {% endif %}
+                                        
                                         <option value="admin" {% if obreiro.tipo == 'admin' %}selected{% endif %}>Administrador</option>
                                     </select>
+                                    
+                                    <div id="feedbackSindicante" class="small mt-1">
+                                        {% if obreiro.grau_atual >= 3 %}
+                                            <i class="bi bi-check-circle text-success"></i> 
+                                            <span class="text-success">Este obreiro pode ser Sindicante (grau Mestre ou superior)</span>
+                                        {% else %}
+                                            <i class="bi bi-info-circle text-warning"></i> 
+                                            <span class="text-warning">Apenas Mestres (grau 3) e superiores podem ser Sindicantes.</span>
+                                        {% endif %}
+                                    </div>
                                 </div>
                                 {% else %}
                                     <input type="hidden" name="tipo" value="{{ obreiro.tipo }}">
@@ -104,7 +123,7 @@
 
                                 <div class="col-md-6 mb-3">
                                     <label class="form-label">Loja</label>
-                                    <select class="form-select" name="loja_nome">
+                                    <select class="form-select" name="loja_nome" id="lojaSelect">
                                         <option value="">Selecione a Loja</option>
                                         {% for l in lojas %}
                                             <option value="{{ l.nome }}"
@@ -145,7 +164,7 @@
 
                             <div class="mb-3">
                                 <label class="form-label">Endereço</label>
-                                <textarea class="form-control" name="endereco">{{ obreiro.endereco or '' }}</textarea>
+                                <textarea class="form-control" name="endereco" rows="2">{{ obreiro.endereco or '' }}</textarea>
                             </div>
 
                             {% if is_admin %}
@@ -155,16 +174,35 @@
 
                             <div class="row">
                                 <div class="col-md-6 mb-3">
-                                    <label class="form-label">Grau Atual</label>
-                                    <select class="form-select" name="grau_atual">
-                                        {% for g in graus %}
+                                    <label class="form-label">Grau Principal</label>
+                                    <select class="form-select" name="grau_principal" id="grauPrincipalSelect">
+                                        <option value="1" {% if obreiro.grau_atual == 1 %}selected{% endif %}>1 - Aprendiz</option>
+                                        <option value="2" {% if obreiro.grau_atual == 2 %}selected{% endif %}>2 - Companheiro</option>
+                                        <option value="3" {% if obreiro.grau_atual >= 3 %}selected{% endif %}>3 - Mestre</option>
+                                    </select>
+                                    <small class="text-muted">Grau principal na Maçonaria Simbólica</small>
+                                </div>
+
+                                <div class="col-md-6 mb-3" id="divGrauSuperior" style="display: {% if obreiro.grau_atual >= 4 %}block{% else %}none{% endif %};">
+                                    <label class="form-label">Grau Superior (Opcional)</label>
+                                    <select class="form-select" name="grau_superior" id="grauSuperiorSelect">
+                                        <option value="">Nenhum (Mestre)</option>
+                                        {% for g in graus_superiores %}
                                         <option value="{{ g.nivel }}" {% if g.nivel == obreiro.grau_atual %}selected{% endif %}>
-                                            {{ g.nome }}
+                                            {{ g.nivel }} - {{ g.nome }}
                                         </option>
                                         {% endfor %}
                                     </select>
+                                    <small class="text-muted">
+                                        <i class="bi bi-info-circle"></i> 
+                                        Graus superiores são aperfeiçoamentos dentro do grau de Mestre
+                                    </small>
                                 </div>
+                            </div>
 
+                            <input type="hidden" name="grau_atual" id="grauAtualHidden" value="{{ obreiro.grau_atual }}">
+
+                            <div class="row">
                                 <div class="col-md-6 mb-3">
                                     <label class="form-label">Status</label>
                                     <select class="form-select" name="ativo">
@@ -224,8 +262,8 @@
                     </div>
                 </div>
 
-                <!-- Card da Senha (NOVO) -->
-                <div class="card shadow">
+                <!-- Card da Senha -->
+                <div class="card shadow mb-4">
                     <div class="card-header bg-warning text-dark">
                         <i class="bi bi-lock"></i> Alterar Senha
                     </div>
@@ -249,6 +287,31 @@
                         </div>
                     </div>
                 </div>
+
+                <!-- Card de Informação sobre Sindicante -->
+                {% if obreiro.tipo == 'sindicante' and obreiro.grau_atual < 3 %}
+                <div class="card shadow border-warning">
+                    <div class="card-header bg-warning text-dark">
+                        <i class="bi bi-exclamation-triangle"></i> Atenção
+                    </div>
+                    <div class="card-body">
+                        <p class="mb-0">
+                            <i class="bi bi-info-circle"></i>
+                            Este obreiro está como <strong>Sindicante</strong> mas possui grau 
+                            <strong>
+                                {% if obreiro.grau_atual == 1 %}Aprendiz
+                                {% elif obreiro.grau_atual == 2 %}Companheiro
+                                {% else %}Grau {{ obreiro.grau_atual }}
+                                {% endif %}
+                            </strong>.
+                        </p>
+                        <p class="mt-2 mb-0 small text-muted">
+                            Recomenda-se ajustar o grau para Mestre (3) ou superior, 
+                            ou alterar o tipo para Obreiro.
+                        </p>
+                    </div>
+                </div>
+                {% endif %}
             </div>
 
         </div>
@@ -278,18 +341,15 @@ function validarSenha() {
     
     if (!senha || !confirmar) return true;
     
-    // Se ambos estiverem vazios, permite salvar (mantém senha atual)
     if (senha.value === '' && confirmar.value === '') {
         return true;
     }
     
-    // Se a senha tem menos de 6 caracteres
     if (senha.value.length > 0 && senha.value.length < 6) {
         alert('A senha deve ter no mínimo 6 caracteres!');
         return false;
     }
     
-    // Verifica se as senhas coincidem
     if (senha.value !== confirmar.value) {
         if (erroSpan) erroSpan.style.display = 'inline';
         alert('As senhas não coincidem!');
@@ -317,6 +377,140 @@ if (confirmarInput) {
         }
     });
 }
+
+// =====================
+// CONTROLE DE GRAUS
+// =====================
+const grauPrincipalSelect = document.getElementById('grauPrincipalSelect');
+const divGrauSuperior = document.getElementById('divGrauSuperior');
+const grauSuperiorSelect = document.getElementById('grauSuperiorSelect');
+const grauAtualHidden = document.getElementById('grauAtualHidden');
+
+function atualizarGrauSuperior() {
+    if (grauPrincipalSelect) {
+        const grauPrincipal = parseInt(grauPrincipalSelect.value);
+        
+        if (grauPrincipal === 3) {
+            divGrauSuperior.style.display = 'block';
+        } else {
+            divGrauSuperior.style.display = 'none';
+            if (grauSuperiorSelect) grauSuperiorSelect.value = '';
+        }
+        atualizarGrauFinal();
+    }
+}
+
+function atualizarGrauFinal() {
+    if (grauPrincipalSelect && grauAtualHidden) {
+        const grauPrincipal = parseInt(grauPrincipalSelect.value);
+        const grauSuperior = grauSuperiorSelect ? grauSuperiorSelect.value : '';
+        
+        if (grauPrincipal === 3 && grauSuperior && grauSuperior !== '') {
+            grauAtualHidden.value = parseInt(grauSuperior);
+        } else {
+            grauAtualHidden.value = grauPrincipal;
+        }
+        
+        console.log('Grau final:', grauAtualHidden.value);
+    }
+}
+
+// Event listeners
+if (grauPrincipalSelect) {
+    grauPrincipalSelect.addEventListener('change', function() {
+        atualizarGrauSuperior();
+    });
+}
+
+if (grauSuperiorSelect) {
+    grauSuperiorSelect.addEventListener('change', function() {
+        atualizarGrauFinal();
+    });
+}
+
+// Executar ao carregar
+atualizarGrauSuperior();
+
+// =====================
+// VALIDAÇÃO DINÂMICA PARA SINDICANTE
+// =====================
+var grauAtualHidden = document.getElementById('grauAtualHidden');
+var tipoSelect = document.getElementById('tipoSelect');
+
+if (grauAtualHidden && tipoSelect && {{ is_admin|tojson }}) {
+    function atualizarStatusSindicante() {
+        var grauAtual = parseInt(grauAtualHidden.value);
+        var opcoes = tipoSelect.options;
+        
+        for (var i = 0; i < opcoes.length; i++) {
+            if (opcoes[i].value === 'sindicante') {
+                if (grauAtual >= 3) {
+                    opcoes[i].disabled = false;
+                    opcoes[i].title = '';
+                } else {
+                    opcoes[i].disabled = true;
+                    opcoes[i].title = 'Apenas Mestres (grau 3) e superiores podem ser Sindicantes';
+                }
+            }
+        }
+        
+        // Se o tipo atual é sindicante e o grau não permite, mudar para obreiro
+        if (tipoSelect.value === 'sindicante' && grauAtual < 3) {
+            tipoSelect.value = 'obreiro';
+            alert('⚠️ Atenção: O obreiro foi alterado para "Obreiro" pois o grau atual não permite ser Sindicante.\n\nApenas Mestres (grau 3) e superiores podem ser Sindicantes.');
+        }
+        
+        // Mostrar feedback visual
+        var feedback = document.getElementById('feedbackSindicante');
+        if (feedback) {
+            if (grauAtual >= 3) {
+                feedback.innerHTML = '<i class="bi bi-check-circle text-success"></i> <span class="text-success">Este obreiro pode ser Sindicante (grau Mestre ou superior)</span>';
+            } else {
+                feedback.innerHTML = '<i class="bi bi-info-circle text-warning"></i> <span class="text-warning">Apenas Mestres (grau 3) e superiores podem ser Sindicantes.</span>';
+            }
+        }
+    }
+    
+    // Observar mudanças no grau
+    const observer = new MutationObserver(function() {
+        atualizarStatusSindicante();
+    });
+    observer.observe(grauAtualHidden, { attributes: true, attributeFilter: ['value'] });
+    
+    // Executar inicial
+    atualizarStatusSindicante();
+}
 </script>
+
+<style>
+    .card {
+        border-radius: 10px;
+        overflow: hidden;
+    }
+    .card-header {
+        font-weight: 600;
+    }
+    .form-control:focus, .form-select:focus {
+        border-color: #0d6efd;
+        box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.25);
+    }
+    @media (max-width: 768px) {
+        .d-flex.align-items-center {
+            flex-direction: column;
+            text-align: center;
+        }
+        .me-4 {
+            margin-right: 0 !important;
+            margin-bottom: 1rem;
+        }
+        .btn-group {
+            margin-top: 1rem;
+            flex-direction: column;
+        }
+        .btn-group .btn {
+            margin: 5px 0;
+        }
+    }
+</style>
 
 {% endblock %}

@@ -111,19 +111,13 @@
                         <select class="form-select" name="grau">
                             <option value="">Todos</option>
                             {% for g in graus %}
-                            <option value="{{ g.grau }}" {% if filtros.grau == g.grau|string %}selected{% endif %}>
-                                {% if g.grau == 3 %}
-                                    <i class="bi bi-star-fill"></i> Mestre
-                                {% elif g.grau == 2 %}
-                                    <i class="bi bi-star"></i> Companheiro
-                                {% elif g.grau == 1 %}
-                                    <i class="bi bi-star"></i> Aprendiz
-                                {% else %}
-                                    {{ g.nome_grau }}
-                                {% endif %}
+                            <option value="{{ g.grau }}" {% if filtros.grau == g.grau|string %}selected{% endif %} 
+                                    title="{{ g.nome_detalhado }}">
+                                <i class="bi bi-star"></i> {{ g.nome_grau }}
                             </option>
                             {% endfor %}
                         </select>
+                        <small class="text-muted">Grau 3 = Mestre e superiores</small>
                     </div>
                     <div class="col-md-2">
                         <label class="form-label">Cargo</label>
@@ -182,15 +176,16 @@
                     <table class="table table-hover" id="tabelaObreiros">
                         <thead class="table-light">
                             <tr>
-                                <th>Foto</th>
-                                <th>Nome</th>
-                                <th>Grau</th>
-                                <th>Cargos</th>
-                                <th>Loja</th>
-                                <th>Presença</th>
-                                <th>Status</th>
-                                <th>Ações</th>
-                            </thead>
+                                <th style="width: 5%">Foto</th>
+                                <th style="width: 25%">Nome</th>
+                                <th style="width: 12%">Grau</th>
+                                <th style="width: 15%">Cargos</th>
+                                <th style="width: 15%">Loja</th>
+                                <th style="width: 12%">Presença</th>
+                                <th style="width: 8%">Status</th>
+                                <th style="width: 8%">Ações</th>
+                            </tr>
+                        </thead>
                         <tbody>
                             {% for obreiro in obreiros %}
                             <tr class="{% if obreiro.ativo == 1 %}table-active{% else %}table-secondary{% endif %}">
@@ -226,23 +221,14 @@
                                         <i class="bi bi-person-circle"></i> {{ obreiro.usuario }}
                                     </small>
                                 </td>
-                                <td>
-                                    {% if obreiro.grau_atual == 3 %}
-                                        <span class="badge bg-warning text-dark">
-                                            <i class="bi bi-star-fill"></i> Mestre
-                                        </span>
-                                    {% elif obreiro.grau_atual == 2 %}
-                                        <span class="badge bg-primary">
-                                            <i class="bi bi-star"></i> Companheiro
-                                        </span>
-                                    {% elif obreiro.grau_atual == 1 %}
-                                        <span class="badge bg-secondary">
-                                            <i class="bi bi-star"></i> Aprendiz
-                                        </span>
-                                    {% else %}
-                                        <span class="badge bg-info">
-                                            {{ obreiro.grau_descricao }}
-                                        </span>
+                                <td class="align-middle">
+                                    <span class="badge {{ obreiro.grau_badge_class }}" 
+                                          title="{{ obreiro.grau_detalhado }}">
+                                        <i class="{{ obreiro.grau_icon }}"></i> {{ obreiro.grau_principal }}
+                                    </span>
+                                    {% if obreiro.grau_atual >= 4 %}
+                                    <br>
+                                    <small class="text-muted">{{ obreiro.grau_detalhado }}</small>
                                     {% endif %}
                                 </td>
                                 <td>
@@ -299,7 +285,7 @@
                                     </div>
                                     {% endif %}
                                 </td>
-                                <td>
+                                <td class="align-middle">
                                     {% if obreiro.ativo == 1 %}
                                     <span class="badge bg-success">
                                         <i class="bi bi-check-circle"></i> Ativo
@@ -310,7 +296,7 @@
                                     </span>
                                     {% endif %}
                                 </td>
-                                <td>
+                                <td class="align-middle">
                                     <div class="btn-group btn-group-sm" role="group">
                                         <a href="/obreiros/{{ obreiro.id }}" 
                                            class="btn btn-info" 
@@ -329,7 +315,7 @@
                                             <a href="/obreiros/{{ obreiro.id }}/excluir" 
                                                class="btn btn-danger" 
                                                title="Desativar obreiro"
-                                               onclick="return confirm('⚠️ ATENÇÃO!\n\nDeseja DESATIVAR este obreiro?\n\nNome: {{ obreiro.nome_completo }}\nUsuário: {{ obreiro.usuario }}\n\nO obreiro será desativado, mas seus dados serão mantidos no sistema.\n\nPara excluir permanentemente, clique no botão vermelho de excluir.')">
+                                               onclick="return confirm('⚠️ ATENÇÃO!\n\nDeseja DESATIVAR este obreiro?\n\nNome: {{ obreiro.nome_completo }}\nUsuário: {{ obreiro.usuario }}\n\nO obreiro será desativado, mas seus dados serão mantidos no sistema.\n\nPara excluir permanentemente, procure um administrador.')">
                                                 <i class="bi bi-person-x"></i>
                                             </a>
                                             {% else %}
@@ -379,19 +365,30 @@
                 <div class="row">
                     <div class="col-md-3">
                         <span class="badge bg-success">Verde</span> = Ativo
-                    </div>
-                    <div class="col-md-3">
                         <span class="badge bg-secondary">Cinza</span> = Inativo
                     </div>
                     <div class="col-md-3">
-                        <i class="bi bi-star-fill text-warning"></i> = Mestre
-                        <i class="bi bi-star text-primary"></i> = Companheiro
-                        <i class="bi bi-star text-secondary"></i> = Aprendiz
+                        <span class="badge bg-warning text-dark">Amarelo</span> = Mestre<br>
+                        <span class="badge bg-info">Azul</span> = Mestre Instalado e Superiores
+                    </div>
+                    <div class="col-md-3">
+                        <i class="bi bi-star-fill text-warning"></i> = Mestre<br>
+                        <i class="bi bi-star-fill text-info"></i> = Mestre Instalado
                     </div>
                     <div class="col-md-3">
                         <i class="bi bi-briefcase text-info"></i> = Cargo
                         <i class="bi bi-building"></i> = Loja
                         <i class="bi bi-trash3-fill text-danger"></i> = Excluir definitivo
+                    </div>
+                </div>
+                <hr>
+                <div class="row">
+                    <div class="col-12">
+                        <small class="text-muted">
+                            <i class="bi bi-info-circle"></i> 
+                            <strong>Nota:</strong> Todos os obreiros com grau Mestre (3) ou superior aparecem como "Mestre" na lista.
+                            Passe o mouse sobre o badge para ver o grau detalhado.
+                        </small>
                     </div>
                 </div>
             </div>

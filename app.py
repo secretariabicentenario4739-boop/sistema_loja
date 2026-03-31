@@ -1515,7 +1515,149 @@ def enviar_whatsapp(numero, mensagem):
         print(f"Erro ao abrir WhatsApp: {e}")
         return False
 
+# =====================
+# FUNÇÕES DE GRAU (NOVAS)
+# =====================
 
+def get_grau_principal(grau_nivel):
+    """Retorna a classificação principal do grau (para exibição em listas)"""
+    if grau_nivel == 1:
+        return "Aprendiz"
+    elif grau_nivel == 2:
+        return "Companheiro"
+    elif grau_nivel >= 3:
+        return "Mestre"
+    else:
+        return "Mestre"
+
+def get_grau_detalhado(grau_nivel):
+    """Retorna o nome detalhado do grau (para tooltips e detalhes)"""
+    grau_map = {
+        1: "Aprendiz",
+        2: "Companheiro",
+        3: "Mestre",
+        4: "Mestre Instalado",
+        5: "Mestre Instalado - 5° Grau",
+        6: "Grau Superior 6",
+        7: "Grau Superior 7",
+        8: "Grau Superior 8",
+        9: "Grau Superior 9",
+        10: "Grau Superior 10",
+    }
+    return grau_map.get(grau_nivel, f"Grau Superior {grau_nivel}")
+
+def get_grau_descricao(grau):
+    """Retorna a descrição do grau (mantido para compatibilidade)"""
+    if grau == 1:
+        return "Aprendiz"
+    elif grau == 2:
+        return "Companheiro"
+    elif grau == 3:
+        return "Mestre"
+    elif grau == 4:
+        return "Mestre Instalado"
+    elif grau == 5:
+        return "Mestre Inst. (5°)"
+    elif grau == 6:
+        return "Grau 6 - Superior"
+    elif grau >= 7:
+        return f"Grau Superior {grau}"
+    else:
+        return "Mestre"
+
+def get_grau_badge_class(grau_nivel):
+    """Retorna a classe CSS para o badge do grau"""
+    if grau_nivel == 1:
+        return 'bg-secondary'
+    elif grau_nivel == 2:
+        return 'bg-primary'
+    elif grau_nivel == 3:
+        return 'bg-warning text-dark'
+    elif grau_nivel >= 4:
+        return 'bg-info'
+    else:
+        return 'bg-secondary'
+
+def get_grau_icon(grau_nivel):
+    """Retorna o ícone para o grau"""
+    if grau_nivel == 1 or grau_nivel == 2:
+        return 'bi bi-star'
+    elif grau_nivel >= 3:
+        return 'bi bi-star-fill'
+    else:
+        return 'bi bi-star'
+
+# =====================
+# FUNÇÕES DE GRAU (NOVAS)
+# =====================
+
+def get_grau_principal(grau_nivel):
+    """Retorna a classificação principal do grau (para exibição em listas)"""
+    if grau_nivel == 1:
+        return "Aprendiz"
+    elif grau_nivel == 2:
+        return "Companheiro"
+    elif grau_nivel >= 3:
+        return "Mestre"
+    else:
+        return "Mestre"
+
+def get_grau_detalhado(grau_nivel):
+    """Retorna o nome detalhado do grau (para tooltips e detalhes)"""
+    grau_map = {
+        1: "Aprendiz",
+        2: "Companheiro",
+        3: "Mestre",
+        4: "Mestre Instalado",
+        5: "Mestre Instalado - 5° Grau",
+        6: "Grau Superior 6",
+        7: "Grau Superior 7",
+        8: "Grau Superior 8",
+        9: "Grau Superior 9",
+        10: "Grau Superior 10",
+    }
+    return grau_map.get(grau_nivel, f"Grau Superior {grau_nivel}")
+
+def get_grau_descricao(grau):
+    """Retorna a descrição do grau (mantido para compatibilidade)"""
+    if grau == 1:
+        return "Aprendiz"
+    elif grau == 2:
+        return "Companheiro"
+    elif grau == 3:
+        return "Mestre"
+    elif grau == 4:
+        return "Mestre Instalado"
+    elif grau == 5:
+        return "Mestre Inst. (5°)"
+    elif grau == 6:
+        return "Grau 6 - Superior"
+    elif grau >= 7:
+        return f"Grau Superior {grau}"
+    else:
+        return "Mestre"
+
+def get_grau_badge_class(grau_nivel):
+    """Retorna a classe CSS para o badge do grau"""
+    if grau_nivel == 1:
+        return 'bg-secondary'
+    elif grau_nivel == 2:
+        return 'bg-primary'
+    elif grau_nivel == 3:
+        return 'bg-warning text-dark'
+    elif grau_nivel >= 4:
+        return 'bg-info'
+    else:
+        return 'bg-secondary'
+
+def get_grau_icon(grau_nivel):
+    """Retorna o ícone para o grau"""
+    if grau_nivel == 1 or grau_nivel == 2:
+        return 'bi bi-star'
+    elif grau_nivel >= 3:
+        return 'bi bi-star-fill'
+    else:
+        return 'bi bi-star'
 
 # =============================
 # CONTEXTO GLOBAL
@@ -1830,6 +1972,7 @@ def perfil():
 # =============================
 # ROTAS DE OBREIROS
 # =============================
+
 @app.route("/obreiros")
 @login_required
 def listar_obreiros():
@@ -1849,12 +1992,7 @@ def listar_obreiros():
                l.nome as loja_nome_completo,
                l.cidade as loja_cidade,
                l.uf as loja_uf,
-               CASE 
-                   WHEN u.grau_atual = 1 THEN 'Aprendiz'
-                   WHEN u.grau_atual = 2 THEN 'Companheiro'
-                   WHEN u.grau_atual = 3 THEN 'Mestre'
-                   ELSE (SELECT nome FROM graus WHERE nivel = u.grau_atual LIMIT 1)
-               END as grau_descricao,
+               u.grau_atual as grau_nivel,
                (SELECT COUNT(*) FROM ocupacao_cargos oc 
                 WHERE oc.obreiro_id = u.id AND oc.ativo = 1) as total_cargos_ativos,
                (SELECT string_agg(c.nome, ', ') 
@@ -1887,12 +2025,16 @@ def listar_obreiros():
         query += " AND (u.nome_completo ILIKE %s OR u.usuario ILIKE %s)"
         params.extend([f"%{nome}%", f"%{nome}%"])
     
-    # Filtro por grau
+    # Filtro por grau (considerando que grau >= 3 inclui todos os mestres)
     if grau:
         try:
             grau_int = int(grau)
-            query += " AND u.grau_atual = %s"
-            params.append(grau_int)
+            if grau_int == 3:
+                # Mestre inclui todos os graus >= 3
+                query += " AND u.grau_atual >= 3"
+            else:
+                query += " AND u.grau_atual = %s"
+                params.append(grau_int)
         except ValueError:
             pass
     
@@ -1937,6 +2079,16 @@ def listar_obreiros():
     for row in obreiros:
         obreiro = dict(row)
         
+        # Obter nível do grau
+        grau_nivel = obreiro.get('grau_atual', 0)
+        
+        # ✅ Adicionar campos de grau usando as funções auxiliares
+        obreiro['grau_principal'] = get_grau_principal(grau_nivel)
+        obreiro['grau_detalhado'] = get_grau_detalhado(grau_nivel)
+        obreiro['grau_badge_class'] = get_grau_badge_class(grau_nivel)
+        obreiro['grau_icon'] = get_grau_icon(grau_nivel)
+        obreiro['grau_descricao'] = get_grau_descricao(grau_nivel)  # compatibilidade
+        
         # Calcular percentual de presença
         if obreiro.get('presencas_ano', 0) > 0:
             percentual = (obreiro.get('presencas_confirmadas_ano', 0) / obreiro.get('presencas_ano', 1)) * 100
@@ -1953,20 +2105,23 @@ def listar_obreiros():
     
     # Buscar dados para os filtros (dropdowns)
     
-    # Lista de graus disponíveis
+    # ✅ Lista de graus disponíveis (usando as funções auxiliares)
     cursor.execute("""
-        SELECT DISTINCT grau_atual as grau, 
-               CASE 
-                   WHEN grau_atual = 1 THEN 'Aprendiz'
-                   WHEN grau_atual = 2 THEN 'Companheiro'
-                   WHEN grau_atual = 3 THEN 'Mestre'
-                   ELSE (SELECT nome FROM graus WHERE nivel = grau_atual LIMIT 1)
-               END as nome_grau
+        SELECT DISTINCT grau_atual as grau
         FROM usuarios 
         WHERE grau_atual IS NOT NULL
         ORDER BY grau_atual
     """)
-    graus_disponiveis = cursor.fetchall()
+    graus_raw = cursor.fetchall()
+    
+    graus_disponiveis = []
+    for g in graus_raw:
+        grau_nivel = g['grau']
+        graus_disponiveis.append({
+            'grau': grau_nivel,
+            'nome_grau': get_grau_principal(grau_nivel),
+            'nome_detalhado': get_grau_detalhado(grau_nivel)
+        })
     
     # Lista de cargos ativos
     cursor.execute("""
@@ -1996,26 +2151,30 @@ def listar_obreiros():
     cursor.execute("SELECT COUNT(*) as total FROM usuarios WHERE tipo = 'admin'")
     total_admins = cursor.fetchone()['total']
     
-    cursor.execute("SELECT COUNT(*) as total FROM usuarios WHERE tipo = 'sindicante' AND ativo = 1")
+    # ✅ Sindicantes: apenas mestres e superiores (grau >= 3)
+    cursor.execute("SELECT COUNT(*) as total FROM usuarios WHERE tipo = 'sindicante' AND ativo = 1 AND grau_atual >= 3")
     total_sindicantes = cursor.fetchone()['total']
     
-    # Estatísticas por grau
+    # ✅ Estatísticas por grau (com nome principal)
     cursor.execute("""
         SELECT 
             grau_atual,
-            CASE 
-                WHEN grau_atual = 1 THEN 'Aprendiz'
-                WHEN grau_atual = 2 THEN 'Companheiro'
-                WHEN grau_atual = 3 THEN 'Mestre'
-                ELSE 'Outros'
-            END as grau_nome,
             COUNT(*) as total
         FROM usuarios 
         WHERE ativo = 1
         GROUP BY grau_atual
         ORDER BY grau_atual
     """)
-    estatisticas_graus = cursor.fetchall()
+    estatisticas_graus_raw = cursor.fetchall()
+    
+    estatisticas_graus = []
+    for eg in estatisticas_graus_raw:
+        estatisticas_graus.append({
+            'grau_atual': eg['grau_atual'],
+            'grau_nome': get_grau_principal(eg['grau_atual']),
+            'grau_detalhado': get_grau_detalhado(eg['grau_atual']),
+            'total': eg['total']
+        })
     
     return_connection(conn)
     
@@ -2049,6 +2208,9 @@ def listar_obreiros():
         estatisticas=estatisticas,
         now=datetime.now()
     )
+
+
+    
 @app.route("/obreiros/novo", methods=["GET", "POST"])
 @admin_required
 def novo_obreiro():
@@ -2113,47 +2275,6 @@ def novo_obreiro():
     return_connection(conn)
     return render_template("obreiros/novo.html", lojas=lojas, graus=graus)
 
-@app.route("/obreiros/<int:id>/excluir_definitivo", methods=["POST"])
-@admin_required
-def excluir_obreiro_definitivo(id):
-    """Exclui um obreiro permanentemente e todos os seus vínculos (CASCADE)"""
-    try:
-        cursor, conn = get_db()
-        
-        # Verificar se o obreiro existe
-        cursor.execute("SELECT id, nome_completo, ativo FROM usuarios WHERE id = %s", (id,))
-        obreiro = cursor.fetchone()
-        
-        if not obreiro:
-            return jsonify({'success': False, 'error': 'Obreiro não encontrado!'}), 404
-        
-        # Verificar se está inativo (obrigatório para exclusão definitiva)
-        if obreiro["ativo"] == 1:
-            return jsonify({'success': False, 'error': f'Obreiro {obreiro["nome_completo"]} está ATIVO. Desative primeiro para excluir definitivamente.'}), 400
-        
-        # Registrar log antes de excluir
-        registrar_log("excluir_definitivo", "usuario", id, dados_anteriores={
-            "nome": obreiro['nome_completo'],
-            "id": id,
-            "ativo": obreiro['ativo']
-        })
-        
-        # Excluir com CASCADE (se as FKs estiverem configuradas com ON DELETE CASCADE)
-        cursor.execute("DELETE FROM usuarios WHERE id = %s", (id,))
-        conn.commit()
-        
-        return jsonify({'success': True, 'message': f'Obreiro {obreiro["nome_completo"]} excluído permanentemente!'})
-        
-    except Exception as e:
-        print(f"❌ Erro ao excluir obreiro: {e}")
-        import traceback
-        traceback.print_exc()
-        if conn:
-            conn.rollback()
-        return jsonify({'success': False, 'error': str(e)}), 500
-    finally:
-        if conn:
-            return_connection(conn)
 @app.route("/obreiros/<int:id>")
 @login_required
 def visualizar_obreiro(id):
@@ -2227,8 +2348,6 @@ def visualizar_obreiro(id):
             return_connection(conn)
         flash(f"Erro ao carregar dados do obreiro: {str(e)}", "danger")
         return redirect("/obreiros")
-
-
     
         # ============================================
         # PROCESSAR UPLOAD DA FOTO
@@ -2397,6 +2516,7 @@ def editar_obreiro(id):
 
         if not obreiro:
             flash("Obreiro não encontrado", "danger")
+            return_connection(conn)
             return redirect("/obreiros")
 
         # =============================
@@ -2414,107 +2534,153 @@ def editar_obreiro(id):
             loja_nome = request.form.get("loja_nome")
             loja_numero = request.form.get("loja_numero")
             loja_orient = request.form.get("loja_orient")
+            senha = request.form.get("senha", "")
 
-
-            # 🔥 CAMPO CORRIGIDO (TIPO)
+            # 🔥 CAMPO TIPO
             tipo = request.form.get("tipo", obreiro["tipo"])
 
             # =============================
-            # 🎯 GRAU (somente admin)
+            # 🎯 GRAU (novo formato com grau principal e superior)
             # =============================
             grau_antigo = obreiro["grau_atual"]
+            grau_final = request.form.get("grau_atual")
 
-            if session["tipo"] == "admin":
-                grau_form = request.form.get("grau_atual")
-
-                if grau_form and str(grau_form).isdigit():
-                    grau_atual = int(grau_form)
-                else:
-                    grau_atual = grau_antigo
+            if grau_final and str(grau_final).strip().isdigit():
+                grau_atual = int(grau_final)
             else:
                 grau_atual = grau_antigo
+
+            print(f"DEBUG: Grau final capturado = {grau_atual}")
 
             # =============================
             # 🔒 STATUS (somente admin)
             # =============================
             if session["tipo"] == "admin":
                 ativo = request.form.get("ativo", obreiro["ativo"])
+                if ativo:
+                    ativo = int(ativo)
+                else:
+                    ativo = obreiro["ativo"]
             else:
                 ativo = obreiro["ativo"]
+
+            # =============================
+            # ✅ VALIDAÇÃO DE SINDICANTE (apenas mestres e superiores)
+            # =============================
+            if tipo == 'sindicante' and grau_atual < 3:
+                flash("⚠️ Apenas obreiros com grau de Mestre (3) ou superior podem ser Sindicantes!", "danger")
+                return_connection(conn)
+                return redirect(f"/obreiros/{id}/editar")
 
             # =============================
             # 💾 UPDATE COMPLETO
             # =============================
             cursor.execute("""
-UPDATE usuarios SET
-    nome_completo = %s,
-    nome_maconico = %s,
-    cim_numero = %s,
-    telefone = %s,
-    email = %s,
-    endereco = %s,
-    loja_nome = %s,
-    grau_atual = %s,
-    ativo = %s,
-    tipo = %s
-WHERE id = %s
-""", (
-    nome_completo,
-    nome_maconico,
-    cim_numero,
-    telefone,
-    email,
-    endereco,
-    loja_nome,
-    grau_atual,
-    ativo,
-    tipo,
-    id
-))
+                UPDATE usuarios SET
+                    nome_completo = %s,
+                    nome_maconico = %s,
+                    cim_numero = %s,
+                    telefone = %s,
+                    email = %s,
+                    endereco = %s,
+                    loja_nome = %s,
+                    loja_numero = %s,
+                    loja_orient = %s,
+                    grau_atual = %s,
+                    ativo = %s,
+                    tipo = %s
+                WHERE id = %s
+            """, (
+                nome_completo,
+                nome_maconico,
+                cim_numero,
+                telefone,
+                email,
+                endereco,
+                loja_nome,
+                loja_numero,
+                loja_orient,
+                grau_atual,
+                ativo,
+                tipo,
+                id
+            ))
 
             # =============================
-            # 📜 HISTÓRICO DE GRAU
+            # 🔐 ATUALIZAR SENHA SE FORNECIDA
+            # =============================
+            if senha and len(senha) >= 6:
+                import hashlib
+                senha_hash = hashlib.sha256(senha.encode()).hexdigest()
+                cursor.execute("UPDATE usuarios SET senha_hash = %s WHERE id = %s", (senha_hash, id))
+
+            # =============================
+            # 📜 HISTÓRICO DE GRAU (CORRIGIDO)
             # =============================
             if (
                 session["tipo"] == "admin"
                 and grau_atual != grau_antigo
+                and grau_atual > 0
             ):
-                cursor.execute("""
-                    INSERT INTO historico_graus
-                    (obreiro_id, grau, data, observacao)
-                    VALUES (%s, %s, %s, %s)
-                """, (
-                    id,
-                    grau_atual,
-                    datetime.now().date(),
-                    f"Alteração de grau de {grau_antigo} para {grau_atual}"
-                ))
+                try:
+                    # Buscar nome do grau
+                    cursor.execute("SELECT nome FROM graus WHERE nivel = %s", (grau_atual,))
+                    grau_info = cursor.fetchone()
+                    grau_nome = grau_info['nome'] if grau_info else f"Grau {grau_atual}"
+                    
+                    # Inserir no histórico de graus usando obreiro_id
+                    cursor.execute("""
+                        INSERT INTO historico_graus 
+                        (obreiro_id, grau, data, observacao)
+                        VALUES (%s, %s, CURRENT_DATE, %s)
+                    """, (
+                        id,
+                        grau_atual,
+                        f"Alteração de grau de {grau_antigo} para {grau_atual} - {grau_nome}"
+                    ))
+                    
+                    print(f"✅ Histórico de grau registrado: {grau_antigo} -> {grau_atual}")
+                    
+                except Exception as e:
+                    print(f"⚠️ Erro ao registrar histórico de grau: {e}")
+                    # Não impede o salvamento principal
 
             conn.commit()
+            
+            # ✅ VERIFICAR SE O GRAU FOI SALVO
+            cursor.execute("SELECT grau_atual FROM usuarios WHERE id = %s", (id,))
+            verificar_grau = cursor.fetchone()
+            print(f"DEBUG: Grau no banco após UPDATE = {verificar_grau['grau_atual']}")
 
             flash("Obreiro atualizado com sucesso!", "success")
+            return_connection(conn)
             return redirect(f"/obreiros/{id}")
 
     except Exception as e:
-        conn.rollback()
+        print(f"❌ Erro ao editar obreiro: {e}")
+        import traceback
+        traceback.print_exc()
+        if conn:
+            conn.rollback()
         flash(f"Erro ao atualizar: {str(e)}", "danger")
-
-    finally:
         return_connection(conn)
+        return redirect(f"/obreiros/{id}")
 
     # =============================
     # 📊 GET (CARREGAR TELA)
     # =============================
-    cursor, conn = get_db()
-
     cursor.execute("SELECT * FROM usuarios WHERE id = %s", (id,))
     obreiro = cursor.fetchone()
 
-    cursor.execute("SELECT * FROM lojas ORDER BY nome")
+    cursor.execute("SELECT id, nome, numero, oriente FROM lojas WHERE ativo = 1 ORDER BY nome")
     lojas = cursor.fetchall()
 
-    cursor.execute("SELECT * FROM graus ORDER BY nivel")
+    cursor.execute("SELECT nivel, nome FROM graus ORDER BY nivel")
     graus = cursor.fetchall()
+    
+    # Buscar graus superiores (nivel >= 4)
+    cursor.execute("SELECT nivel, nome FROM graus WHERE nivel >= 4 ORDER BY nivel")
+    graus_superiores = cursor.fetchall()
 
     return_connection(conn)
 
@@ -2523,117 +2689,10 @@ WHERE id = %s
         obreiro=obreiro,
         lojas=lojas,
         graus=graus,
+        graus_superiores=graus_superiores,
         is_admin=(session["tipo"] == "admin"),
         is_own_profile=(session["user_id"] == id)
     )
-
-@app.route("/obreiros/<int:id>/excluir")
-@admin_required
-def excluir_obreiro(id):
-    """Desativa ou exclui um obreiro dependendo dos vínculos existentes"""
-    cursor, conn = get_db()
-    try:
-        # Buscar dados do obreiro
-        cursor.execute("SELECT nome_completo, usuario, tipo FROM usuarios WHERE id = %s", (id,))
-        obreiro = cursor.fetchone()
-        
-        if not obreiro:
-            flash("Obreiro não encontrado", "danger")
-            return_connection(conn)
-            return redirect("/obreiros")
-        
-        # Impedir que o usuário exclua a si mesmo
-        if session["user_id"] == id:
-            flash("Você não pode excluir seu próprio usuário!", "danger")
-            return_connection(conn)
-            return redirect(f"/obreiros/{id}")
-        
-        # Verificar vínculos em outras tabelas
-        cursor.execute("SELECT COUNT(*) as total FROM presenca WHERE obreiro_id = %s", (id,))
-        presencas = cursor.fetchone()["total"]
-        
-        cursor.execute("SELECT COUNT(*) as total FROM ocupacao_cargos WHERE obreiro_id = %s", (id,))
-        cargos = cursor.fetchone()["total"]
-        
-        cursor.execute("SELECT COUNT(*) as total FROM familiares WHERE obreiro_id = %s", (id,))
-        familiares = cursor.fetchone()["total"]
-        
-        cursor.execute("SELECT COUNT(*) as total FROM condecoracoes_obreiro WHERE obreiro_id = %s", (id,))
-        condecoracoes = cursor.fetchone()["total"]
-        
-        cursor.execute("SELECT COUNT(*) as total FROM documentos_obreiro WHERE obreiro_id = %s", (id,))
-        documentos = cursor.fetchone()["total"]
-        
-        cursor.execute("SELECT COUNT(*) as total FROM logs_auditoria WHERE usuario_id = %s", (id,))
-        logs = cursor.fetchone()["total"]
-        
-        cursor.execute("SELECT COUNT(*) as total FROM notificacoes WHERE usuario_id = %s", (id,))
-        notificacoes = cursor.fetchone()["total"]
-        
-        cursor.execute("SELECT COUNT(*) as total FROM votos_sugestao WHERE usuario_id = %s", (id,))
-        votos = cursor.fetchone()["total"]
-        
-        cursor.execute("SELECT COUNT(*) as total FROM comentarios_sugestao WHERE autor_id = %s", (id,))
-        comentarios = cursor.fetchone()["total"]
-        
-        # Total de vínculos
-        total_vinculos = presencas + cargos + familiares + condecoracoes + documentos + logs + notificacoes + votos + comentarios
-        
-        if total_vinculos > 0:
-            # Se há vínculos, apenas desativar
-            cursor.execute("UPDATE usuarios SET ativo = 0 WHERE id = %s", (id,))
-            conn.commit()
-            
-            registrar_log("desativar_obreiro", "obreiro", id, 
-                         dados_anteriores={"nome": obreiro["nome_completo"], "ativo": 1},
-                         dados_novos={"status": "inativo", "motivo": "possui vínculos no sistema"})
-            
-            flash(f"Obreiro '{obreiro['nome_completo']}' foi desativado (possui vínculos no sistema).", "warning")
-        else:
-            # Sem vínculos, pode excluir permanentemente
-            # Remover foto se existir
-            cursor.execute("SELECT foto FROM usuarios WHERE id = %s", (id,))
-            foto = cursor.fetchone()
-            if foto and foto['foto']:
-                caminho_foto = os.path.join(UPLOAD_FOLDER_FOTOS, foto['foto'])
-                if os.path.exists(caminho_foto):
-                    os.remove(caminho_foto)
-            
-            # Excluir obreiro
-            cursor.execute("DELETE FROM usuarios WHERE id = %s", (id,))
-            conn.commit()
-            
-            registrar_log("excluir", "obreiro", id, dados_anteriores={"nome": obreiro["nome_completo"]})
-            flash(f"Obreiro '{obreiro['nome_completo']}' excluído com sucesso!", "success")
-        
-        return_connection(conn)
-        return redirect("/obreiros")
-        
-    except Exception as e:
-        print(f"Erro ao excluir/desativar obreiro: {e}")
-        traceback.print_exc()
-        if conn:
-            conn.rollback()
-        flash(f"Erro ao processar solicitação: {str(e)}", "danger")
-        return_connection(conn)
-        return redirect("/obreiros")
-@app.route("/obreiros/<int:id>/reativar")
-@admin_required
-def reativar_obreiro(id):
-    cursor, conn = get_db()
-    try:
-        cursor.execute("UPDATE usuarios SET ativo = 1 WHERE id = %s", (id,))
-        conn.commit()
-        cursor.execute("SELECT nome_completo FROM usuarios WHERE id = %s", (id,))
-        obreiro = cursor.fetchone()
-        registrar_log("reativar_obreiro", "obreiro", id, dados_novos={"nome": obreiro["nome_completo"]})
-        flash(f"Obreiro '{obreiro['nome_completo']}' reativado com sucesso!", "success")
-    except Exception as e:
-        flash(f"Erro ao reativar: {str(e)}", "danger")
-    return_connection(conn)
-    return redirect("/obreiros")
-
-import cloudinary.uploader
 
 
 @app.route("/obreiros/<int:id>/foto", methods=["POST"])
@@ -5648,175 +5707,165 @@ def baixar_parecer_conclusivo(id):
 @admin_required
 def gerenciar_sindicantes():
     cursor, conn = get_db()
-
-    try:
-        # =========================
-        # PROMOVER OU CRIAR
-        # =========================
-        if request.method == "POST":
-
-            obreiro_id = request.form.get("obreiro_id")
-
-            # =========================
-            # PROMOVER O OBRERO PARA SINDICANTE
-            # =========================
-            if obreiro_id and obreiro_id.strip() != "":
-
-                cursor.execute("""
-                    SELECT id, usuario, nome_completo, cim_numero,
-                           loja_nome, loja_numero, loja_orient, grau_atual
-                    FROM usuarios
-                    WHERE id = %s
-                      AND tipo = 'obreiro'
-                      AND grau_atual = 3
-                      AND ativo = 1
-                """, (obreiro_id,))
-
-                obreiro = cursor.fetchone()
-
-                if obreiro:
-
-                    try:
-                        cursor.execute("""
-                            UPDATE usuarios
-                            SET tipo = 'sindicante',
-                                grau_atual = 3
-                            WHERE id = %s
-                        """, (obreiro_id,))
-
-                        conn.commit()
-
-                        registrar_log(
-                            "promover_sindicante",
-                            "usuarios",
-                            obreiro_id,
-                            dados_anteriores={"tipo": "obreiro"},
-                            dados_novos={
-                                "tipo": "sindicante",
-                                "usuario": obreiro["usuario"],
-                                "nome": obreiro["nome_completo"]
-                            }
-                        )
-
-                        flash(
-                            f"Obreiro {obreiro['nome_completo']} promovido a sindicante com sucesso!",
-                            "success"
-                        )
-
-                    except Exception as e:
-                        conn.rollback()
-                        flash(f"Erro ao promover obreiro: {str(e)}", "danger")
-
-                else:
-                    flash("Obreiro não encontrado ou não é um Mestre", "danger")
-
-            # =========================
-            # CRIAR NOVO SINDICANTE
-            # =========================
+    
+    if request.method == "POST":
+        # Verificar se veio obreiro_id (promoção) ou dados de novo sindicante
+        obreiro_id = request.form.get("obreiro_id")
+        
+        if obreiro_id:
+            # PROMOVER OBREIRO EXISTENTE A SINDICANTE
+            cursor.execute("""
+                SELECT id, nome_completo, grau_atual FROM usuarios 
+                WHERE id = %s AND tipo = 'obreiro' AND ativo = 1 AND grau_atual >= 3
+            """, (obreiro_id,))
+            obreiro = cursor.fetchone()
+            
+            if obreiro:
+                cursor.execute("UPDATE usuarios SET tipo = 'sindicante' WHERE id = %s", (obreiro_id,))
+                conn.commit()
+                registrar_log("promover", "sindicante", obreiro_id, 
+                            dados_novos={"nome": obreiro['nome_completo'], "grau": obreiro['grau_atual']})
+                flash(f"✅ {obreiro['nome_completo']} foi promovido a Sindicante com sucesso!", "success")
             else:
-                usuario = request.form.get("usuario", "").strip()
-                senha = request.form.get("senha")
-                nome_completo = request.form.get("nome_completo", "")
-                cim_numero = request.form.get("cim_numero", "")
-                loja_nome = request.form.get("loja_nome", "")
-                loja_numero = request.form.get("loja_numero", "")
-                loja_orient = request.form.get("loja_orient", "")
-
-                if usuario and senha:
-
-                    try:
-                        senha_hash = generate_password_hash(senha)
-                        agora = datetime.now()
-
-                        cursor.execute("""
-                            INSERT INTO usuarios
-                            (usuario, senha_hash, tipo, data_cadastro, ativo,
-                             nome_completo, cim_numero,
-                             loja_nome, loja_numero, loja_orient,
-                             grau_atual)
-                            VALUES (%s, %s, %s, %s, %s,
-                                    %s, %s, %s, %s, %s, %s)
-                            RETURNING id
-                        """, (
-                            usuario,
-                            senha_hash,
-                            "sindicante",
-                            agora,
-                            1,
-                            nome_completo,
-                            cim_numero,
-                            loja_nome,
-                            loja_numero,
-                            loja_orient,
-                            3
-                        ))
-
-                        sindicante_id = cursor.fetchone()["id"]
-
-                        conn.commit()
-
-                        registrar_log(
-                            "criar",
-                            "usuarios",
-                            sindicante_id,
-                            dados_novos={"usuario": usuario}
-                        )
-
-                        flash(f"Sindicante '{usuario}' adicionado com sucesso!", "success")
-
-                    except psycopg2.IntegrityError:
-                        conn.rollback()
-                        flash("Usuário já existe", "danger")
-
-                    except Exception as e:
-                        conn.rollback()
-                        flash(f"Erro ao criar sindicante: {str(e)}", "danger")
-
-                else:
-                    flash("Usuário e senha são obrigatórios", "danger")
-
-        # =========================
-        # LISTA OBREIROS MESTRES
-        # =========================
-        cursor.execute("""
-            SELECT id, usuario, nome_completo, cim_numero,
-                   loja_nome, loja_numero, loja_orient, grau_atual
-            FROM usuarios
-            WHERE tipo = 'obreiro'
-              AND grau_atual = 3
-              AND ativo = 1
-            ORDER BY nome_completo
-        """)
-        obreiros_mestres = cursor.fetchall()
-
-        # =========================
-        # LISTA SINDICANTES
-        # =========================
-        cursor.execute("""
-            SELECT id, usuario, nome_completo, cim_numero,
-                   loja_nome, loja_numero, loja_orient, ativo
-            FROM usuarios
-            WHERE tipo = 'sindicante'
-              AND ativo = 1
-            ORDER BY nome_completo
-        """)
-        sindicantes = cursor.fetchall()
-
-        # =========================
-        # LOJAS
-        # =========================
-        cursor.execute("SELECT * FROM lojas")
-        lojas = cursor.fetchall()
-
-        return render_template(
-            "sindicantes.html",
-            sindicantes=sindicantes,
-            lojas=lojas,
-            obreiros_mestres=obreiros_mestres
-        )
-
-    finally:
+                flash("Obreiro não encontrado ou não atende aos requisitos (precisa ser Mestre ou superior e estar ativo)", "danger")
+        else:
+            # CADASTRAR NOVO SINDICANTE
+            usuario = request.form.get("usuario")
+            senha = request.form.get("senha")
+            nome_completo = request.form.get("nome_completo")
+            cim_numero = request.form.get("cim_numero")
+            grau_atual = request.form.get("grau_atual", 3)  # Padrão Mestre
+            loja_nome = request.form.get("loja_nome")
+            loja_numero = request.form.get("loja_numero")
+            loja_orient = request.form.get("loja_orient")
+            
+            # Validações
+            if not usuario or not senha:
+                flash("Usuário e senha são obrigatórios!", "danger")
+                return_connection(conn)
+                return redirect("/sindicantes")
+            
+            # Verificar se usuário já existe
+            cursor.execute("SELECT id FROM usuarios WHERE usuario = %s", (usuario,))
+            if cursor.fetchone():
+                flash("Usuário já existe!", "danger")
+                return_connection(conn)
+                return redirect("/sindicantes")
+            
+            # Verificar senha mínima
+            if len(senha) < 6:
+                flash("A senha deve ter no mínimo 6 caracteres!", "danger")
+                return_connection(conn)
+                return redirect("/sindicantes")
+            
+            import hashlib
+            senha_hash = hashlib.sha256(senha.encode()).hexdigest()
+            
+            cursor.execute("""
+                INSERT INTO usuarios 
+                (usuario, senha_hash, tipo, nome_completo, cim_numero, grau_atual, 
+                 loja_nome, loja_numero, loja_orient, ativo, data_cadastro)
+                VALUES (%s, %s, 'sindicante', %s, %s, %s, %s, %s, %s, 1, CURRENT_TIMESTAMP)
+                RETURNING id
+            """, (usuario, senha_hash, nome_completo, cim_numero, grau_atual, 
+                  loja_nome, loja_numero, loja_orient))
+            
+            novo_id = cursor.fetchone()['id']
+            conn.commit()
+            registrar_log("criar", "sindicante", novo_id, dados_novos={"usuario": usuario, "nome": nome_completo})
+            flash(f"✅ Sindicante {usuario} cadastrado com sucesso!", "success")
+        
         return_connection(conn)
+        return redirect("/sindicantes")
+    
+    # =============================
+    # GET - Listar sindicantes e obreiros mestres
+    # =============================
+    
+    # ✅ Buscar sindicantes ativos (INCLUINDO grau_atual)
+    cursor.execute("""
+        SELECT id, usuario, nome_completo, cim_numero, loja_nome, loja_numero, loja_orient, 
+               ativo, telefone, email, grau_atual
+        FROM usuarios 
+        WHERE tipo = 'sindicante' AND ativo = 1
+        ORDER BY nome_completo
+    """)
+    sindicantes = cursor.fetchall()
+    
+    # ✅ Buscar obreiros que podem ser promovidos a sindicante (Mestre ou superior, ativo, não sindicante)
+    cursor.execute("""
+        SELECT id, usuario, nome_completo, cim_numero, loja_nome, grau_atual
+        FROM usuarios 
+        WHERE tipo = 'obreiro' 
+        AND ativo = 1 
+        AND grau_atual >= 3
+        ORDER BY grau_atual DESC, nome_completo
+    """)
+    obreiros_mestres = cursor.fetchall()
+    
+    # Buscar lojas para o cadastro
+    cursor.execute("SELECT id, nome, numero, oriente FROM lojas WHERE ativo = 1 ORDER BY nome")
+    lojas = cursor.fetchall()
+    
+    return_connection(conn)
+    
+    return render_template(
+        "sindicantes.html",
+        sindicantes=sindicantes,
+        obreiros_mestres=obreiros_mestres,
+        lojas=lojas
+    )
+    
+@app.route("/sindicantes/<int:id>/rebaixar")
+@admin_required
+def rebaixar_sindicante(id):
+    """Rebaixa um sindicante para obreiro (mantém o grau de Mestre)"""
+    cursor, conn = get_db()
+    
+    try:
+        # Buscar dados do sindicante
+        cursor.execute("""
+            SELECT id, nome_completo, usuario, grau_atual, tipo 
+            FROM usuarios 
+            WHERE id = %s AND tipo = 'sindicante'
+        """, (id,))
+        sindicante = cursor.fetchone()
+        
+        if not sindicante:
+            flash("Sindicante não encontrado!", "danger")
+            return_connection(conn)
+            return redirect("/sindicantes")
+        
+        # Verificar se o sindicante tem grau suficiente para ser obreiro
+        if sindicante['grau_atual'] < 1:
+            flash("Grau inválido para rebaixamento!", "danger")
+            return_connection(conn)
+            return redirect("/sindicantes")
+        
+        # Rebaixar para obreiro
+        cursor.execute("""
+            UPDATE usuarios 
+            SET tipo = 'obreiro' 
+            WHERE id = %s
+        """, (id,))
+        conn.commit()
+        
+        # Registrar log
+        registrar_log("rebaixar", "sindicante", id, 
+                     dados_anteriores={"tipo": "sindicante", "nome": sindicante['nome_completo']},
+                     dados_novos={"tipo": "obreiro", "nome": sindicante['nome_completo']})
+        
+        flash(f"✅ {sindicante['nome_completo']} foi rebaixado para Obreiro com sucesso!", "success")
+        
+    except Exception as e:
+        print(f"Erro ao rebaixar sindicante: {e}")
+        conn.rollback()
+        flash(f"Erro ao rebaixar sindicante: {str(e)}", "danger")
+    
+    return_connection(conn)
+    return redirect("/sindicantes")
+
+    
         
 @app.route("/reverter_sindicante/<int:id>")
 @admin_required
@@ -5864,44 +5913,6 @@ def reverter_sindicante(id):
 
     return redirect("/sindicantes")
 
-@app.route("/excluir_sindicante/<int:id>")
-@admin_required
-def excluir_sindicante(id):
-    cursor, conn = get_db()
-
-    # pega usuário UMA vez só
-    cursor.execute("SELECT * FROM usuarios WHERE id = %s", (id,))
-    row = cursor.fetchone()
-
-    if not row:
-        flash("Usuário não encontrado", "danger")
-        return redirect("/sindicantes")
-
-    usuario = dict(row)
-
-    # valida tipo
-    if usuario["tipo"] != "sindicante":
-        flash("Usuário não é sindicante", "danger")
-        return redirect("/sindicantes")
-
-    # desativa
-    cursor.execute(
-        "UPDATE usuarios SET ativo = 0 WHERE id = %s",
-        (id,)
-    )
-    conn.commit()
-
-    registrar_log(
-        "desativar",
-        "sindicante",
-        id,
-        dados_anteriores=usuario
-    )
-
-    flash("Sindicante removido com sucesso!", "success")
-
-    return_connection(conn)
-    return redirect("/sindicantes")
 
 @app.route("/reativar_sindicante/<int:id>")
 @admin_required
@@ -5947,6 +5958,91 @@ def editar_sindicante(id):
     lojas = cursor.fetchall()
     return_connection(conn)
     return render_template("editar_sindicante.html", sindicante=sindicante, lojas=lojas)
+    
+
+@app.route("/sindicantes/<int:id>/excluir", methods=["GET", "POST"])
+@admin_required
+def excluir_sindicante(id):
+    """Exclui um sindicante permanentemente"""
+    cursor, conn = get_db()
+    
+    try:
+        # Buscar dados do sindicante
+        cursor.execute("""
+            SELECT id, nome_completo, usuario, grau_atual, tipo, ativo, foto
+            FROM usuarios 
+            WHERE id = %s AND tipo = 'sindicante'
+        """, (id,))
+        sindicante = cursor.fetchone()
+        
+        if not sindicante:
+            flash("Sindicante não encontrado!", "danger")
+            return_connection(conn)
+            return redirect("/sindicantes")
+        
+        # Verificar se o sindicante tem vínculos em outras tabelas
+        # CORRIGIDO: Converter id para texto porque a coluna sindicante é text
+        cursor.execute("SELECT COUNT(*) as total FROM sindicancias WHERE sindicante = %s", (str(id),))
+        sindicancias_votos = cursor.fetchone()['total']
+        
+        cursor.execute("SELECT COUNT(*) as total FROM presenca WHERE obreiro_id = %s", (id,))
+        presencas = cursor.fetchone()['total']
+        
+        cursor.execute("SELECT COUNT(*) as total FROM ocupacao_cargos WHERE obreiro_id = %s", (id,))
+        cargos = cursor.fetchone()['total']
+        
+        cursor.execute("SELECT COUNT(*) as total FROM atas WHERE redator_id = %s", (id,))
+        atas = cursor.fetchone()['total']
+        
+        cursor.execute("SELECT COUNT(*) as total FROM comunicados WHERE criado_por = %s", (id,))
+        comunicados = cursor.fetchone()['total']
+        
+        cursor.execute("SELECT COUNT(*) as total FROM logs_auditoria WHERE usuario_id = %s", (id,))
+        logs = cursor.fetchone()['total']
+        
+        # Total de vínculos
+        total_vinculos = sindicancias_votos + presencas + cargos + atas + comunicados + logs
+        
+        if total_vinculos > 0:
+            # Se tiver vínculos, apenas desativar
+            cursor.execute("UPDATE usuarios SET ativo = 0 WHERE id = %s", (id,))
+            conn.commit()
+            
+            registrar_log("desativar", "sindicante", id, 
+                         dados_anteriores={"nome": sindicante['nome_completo'], "ativo": 1},
+                         dados_novos={"status": "inativo", "motivo": f"possui {total_vinculos} vínculos no sistema"})
+            
+            flash(f"⚠️ Sindicante '{sindicante['nome_completo']}' foi DESATIVADO (possui {total_vinculos} vínculos no sistema).", "warning")
+        else:
+            # Sem vínculos, pode excluir permanentemente
+            # Remover foto se existir
+            if sindicante.get('foto'):
+                try:
+                    import os
+                    if os.path.exists(os.path.join(UPLOAD_FOLDER_FOTOS, sindicante['foto'])):
+                        os.remove(os.path.join(UPLOAD_FOLDER_FOTOS, sindicante['foto']))
+                except:
+                    pass  # Se for Cloudinary, ignora
+            
+            # Excluir o sindicante
+            cursor.execute("DELETE FROM usuarios WHERE id = %s", (id,))
+            conn.commit()
+            
+            registrar_log("excluir", "sindicante", id, dados_anteriores={"nome": sindicante['nome_completo']})
+            flash(f"✅ Sindicante '{sindicante['nome_completo']}' excluído permanentemente!", "success")
+        
+        return_connection(conn)
+        return redirect("/sindicantes")
+        
+    except Exception as e:
+        print(f"Erro ao excluir sindicante: {e}")
+        import traceback
+        traceback.print_exc()
+        if conn:
+            conn.rollback()
+        flash(f"Erro ao excluir sindicante: {str(e)}", "danger")
+        return_connection(conn)
+        return redirect("/sindicantes")    
 
 # =============================
 # ROTAS DE LOJAS
