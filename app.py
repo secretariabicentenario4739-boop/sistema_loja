@@ -3709,25 +3709,29 @@ def nova_reuniao():
             return redirect("/reunioes/nova")
         
         try:
-            # Inserir reunião
+            # Inserir reunião com RETURNING
             cursor.execute("""
                 INSERT INTO reunioes 
                 (titulo, tipo, grau, data, hora_inicio, hora_termino, local, loja_id, pauta, observacoes, criado_por)
                 VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                RETURNING id
             """, (titulo, tipo, grau, data_obj, hora_inicio_obj, hora_termino_obj, 
                   local, loja_id, pauta, observacoes, session["user_id"]))
+            
+            reuniao_id = cursor.fetchone()['id']
             conn.commit()
-            reuniao_id = cursor.lastrowid
+            
+            print(f"✅ Reunião criada com ID: {reuniao_id}")
             
             registrar_log("criar", "reuniao", reuniao_id, dados_novos={"titulo": titulo, "data": data, "tipo": tipo})
             
             # ============================================
-            # ENVIO DE E-MAILS VIA RESEND (CORRIGIDO)
+            # ENVIO DE E-MAILS VIA RESEND
             # ============================================
             emails_enviados = 0
             
             try:
-                # Buscar participantes que receberão o e-mail
+                # Buscar participantes
                 cursor.execute("""
                     SELECT id, nome_completo, email 
                     FROM usuarios 
@@ -3741,15 +3745,9 @@ def nova_reuniao():
                 if participantes:
                     print(f"📧 Enviando e-mails para {len(participantes)} participantes...")
                     
-                    # Formatar data para exibição
                     data_formatada = data_obj.strftime('%d/%m/%Y') if data_obj else data
                     hora_formatada = hora_inicio_obj.strftime('%H:%M') if hora_inicio_obj else hora_inicio
                     
-                    # Buscar nome do tipo de reunião - CORRIGIDO: tipo já é o nome, não o ID
-                    # O campo 'tipo' na tabela reunioes armazena o nome, não o ID
-                    tipo_nome = tipo  # tipo já é o nome da reunião (ex: "Ordinária")
-                    
-                    # Buscar nome da loja (se houver loja_id)
                     loja_nome = None
                     if loja_id:
                         try:
@@ -3758,12 +3756,11 @@ def nova_reuniao():
                             loja_nome = loja_result['nome'] if loja_result else None
                         except Exception as e:
                             print(f"Erro ao buscar loja: {e}")
-                            loja_nome = None
                     
-                    # Dados da reunião
                     dados_reuniao = {
+                        'id': reuniao_id,
                         'titulo': titulo,
-                        'tipo': tipo_nome,
+                        'tipo': tipo,
                         'grau': grau,
                         'data': data_formatada,
                         'hora_inicio': hora_formatada,
@@ -3773,10 +3770,8 @@ def nova_reuniao():
                         'observacoes': observacoes
                     }
                     
-                    # Enviar e-mail para cada participante
                     for participante in participantes:
                         try:
-                            # Verificar se a função existe
                             if 'enviar_email_reuniao' not in globals():
                                 print("❌ Função enviar_email_reuniao não encontrada!")
                                 continue
@@ -3810,6 +3805,7 @@ def nova_reuniao():
                 flash(f"✅ Reunião agendada com sucesso! Mas houve erro no envio de e-mails: {str(e)}", "warning")
             
             return_connection(conn)
+            # ✅ REDIRECIONAR PARA A ROTA CORRETA (SEM /detalhes)
             return redirect(f"/reunioes/{reuniao_id}")
             
         except Exception as e:
