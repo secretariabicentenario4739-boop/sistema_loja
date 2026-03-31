@@ -75,7 +75,7 @@
                                     {% elif reuniao.status == 'cancelada' %}
                                         <span class="badge bg-danger">Cancelada</span>
                                     {% else %}
-                                        <span class="badge bg-secondary">{{ reuniao.status or '-' }}</span>
+                                        <span class="badge bg-secondary">{{ reuniao.status or 'Agendada' }}</span>
                                     {% endif %}
                                 </p>
                                 <p><strong>Loja:</strong> {{ reuniao.loja_nome or 'Templo Maçônico' }}</p>
@@ -167,7 +167,7 @@
                     </div>
                 </div>
 
-                <!-- Lista de Presença (restante do template igual ao seu, apenas com verificações) -->
+                <!-- Lista de Presença -->
                 <div class="card shadow">
                     <div class="card-header bg-secondary text-white">
                         <h5 class="mb-0"><i class="bi bi-check2-square"></i> Lista de Presença</h5>
@@ -188,10 +188,10 @@
                                 <tbody>
                                     {% for p in presenca %}
                                     <tr class="{% if p.presente == 1 %}table-success{% elif p.tipo_ausencia %}table-warning{% else %}table-danger{% endif %}">
-                                        <td>
+                                        <tr>
                                             <strong>{{ p.nome_completo or '-' }}</strong>
-                                        </td>
-                                        <td>
+                                         </tr>
+                                         <td>
                                             {% if p.grau_atual == 3 %}
                                                 <span class="badge bg-success">Mestre</span>
                                             {% elif p.grau_atual == 2 %}
@@ -201,8 +201,8 @@
                                             {% else %}
                                                 <span class="badge bg-secondary">-</span>
                                             {% endif %}
-                                        </td>
-                                        <td>
+                                         </td>
+                                         <td>
                                             {% if p.presente == 1 %}
                                                 <span class="badge bg-success">
                                                     <i class="bi bi-check-circle"></i> Presente
@@ -212,15 +212,15 @@
                                                     <i class="bi bi-x-circle"></i> Ausente
                                                 </span>
                                             {% endif %}
-                                        </td>
-                                        <td>
+                                         </td>
+                                         <td>
                                             {% if p.tipo_ausencia %}
                                                 <span class="badge bg-warning">{{ p.tipo_ausencia }}</span>
                                             {% else %}
                                                 -
                                             {% endif %}
-                                        </td>
-                                        <td>
+                                         </td>
+                                         <td>
                                             <small>{{ p.justificativa or '-' }}</small>
                                             {% if p.comprovante %}
                                                 <br><a href="/uploads/{{ p.comprovante }}" target="_blank" class="small">
@@ -232,8 +232,8 @@
                                                     <i class="bi bi-check-circle"></i> Validado
                                                 </small>
                                             {% endif %}
-                                        </td>
-                                        <td>
+                                         </td>
+                                         <td>
                                             {% if session.tipo == 'admin' %}
                                                 {% if p.presente == 0 %}
                                                     <a href="/presenca/justificar/{{ p.presenca_id }}" 
@@ -252,8 +252,8 @@
                                                     {% endif %}
                                                 {% endif %}
                                             {% endif %}
-                                        </td>
-                                    </tr>
+                                         </td>
+                                     </tr>
                                     {% endfor %}
                                 </tbody>
                             </table>
@@ -442,7 +442,6 @@
                                 if (selectObreiro) selectObreiro.addEventListener('change', atualizarInfoObreiro);
                                 toggleAusenciaFields();
                                 
-                                // Adicionar confirmação antes de enviar
                                 const formPresenca = document.getElementById('formPresenca');
                                 if (formPresenca) {
                                     formPresenca.addEventListener('submit', function(e) {
@@ -554,6 +553,7 @@
 
                         <hr>
 
+                        <!-- ✅ SEÇÃO DE ATA CORRIGIDA - PERMITE CRIAR MESMO COM REUNIÃO AGENDADA -->
                         <h6 class="mb-2"><i class="bi bi-file-text"></i> Ata da Reunião</h6>
                         {% if ata_id %}
                             <div class="text-center">
@@ -582,11 +582,14 @@
                         {% else %}
                             <div class="text-center">
                                 <i class="bi bi-file-earmark-text fs-2 text-muted"></i>
-                                <p class="text-muted mt-2 mb-2">Nenhuma ata registrada.</p>
-                                {% if session.tipo == 'admin' and reuniao.status == 'realizada' %}
+                                <p class="text-muted mt-2 mb-2">Nenhuma ata registrada para esta reunião.</p>
+                                {% if session.tipo == 'admin' %}
                                     <a href="/atas/nova/{{ reuniao.id }}" class="btn btn-success btn-sm w-100">
                                         <i class="bi bi-plus-circle"></i> Criar Ata
                                     </a>
+                                    <small class="text-muted d-block mt-2">A ata pode ser criada mesmo com a reunião agendada.</small>
+                                {% else %}
+                                    <p class="small text-muted">Apenas administradores podem criar atas.</p>
                                 {% endif %}
                             </div>
                         {% endif %}
@@ -603,7 +606,7 @@
                             <li><i class="bi bi-x-circle-fill text-danger"></i> Vermelho: Ausente</li>
                             <li><i class="bi bi-pencil-square"></i> Clique para justificar ausências</li>
                             <li><i class="bi bi-file-pdf"></i> Ata disponível em PDF</li>
-                            <li><i class="bi bi-dropbox"></i> Use o dropdown para marcar presença rapidamente</li>
+                            <li><i class="bi bi-plus-circle"></i> Crie a ata mesmo com reunião agendada</li>
                         </ul>
                     </div>
                 </div>
