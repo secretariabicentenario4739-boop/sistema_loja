@@ -3,6 +3,8 @@ from models import get_db_connection
 
 biblioteca_bp = Blueprint('biblioteca', __name__, url_prefix='/biblioteca')
 
+
+
 def tem_permissao_biblioteca(grau_usuario):
     """Verifica se o usuário tem permissão para acessar a biblioteca"""
     # Admin tem acesso total

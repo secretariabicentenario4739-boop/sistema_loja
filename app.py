@@ -3709,11 +3709,11 @@ def nova_reuniao():
             return redirect("/reunioes/nova")
         
         try:
-            # Inserir reunião com RETURNING
+            # ✅ INSERIR REUNIÃO COM STATUS PADRÃO 'agendada'
             cursor.execute("""
                 INSERT INTO reunioes 
-                (titulo, tipo, grau, data, hora_inicio, hora_termino, local, loja_id, pauta, observacoes, criado_por)
-                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                (titulo, tipo, grau, data, hora_inicio, hora_termino, local, loja_id, pauta, observacoes, criado_por, status)
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, 'agendada')
                 RETURNING id
             """, (titulo, tipo, grau, data_obj, hora_inicio_obj, hora_termino_obj, 
                   local, loja_id, pauta, observacoes, session["user_id"]))
@@ -3805,7 +3805,6 @@ def nova_reuniao():
                 flash(f"✅ Reunião agendada com sucesso! Mas houve erro no envio de e-mails: {str(e)}", "warning")
             
             return_connection(conn)
-            # ✅ REDIRECIONAR PARA A ROTA CORRETA (SEM /detalhes)
             return redirect(f"/reunioes/{reuniao_id}")
             
         except Exception as e:
@@ -3823,7 +3822,6 @@ def nova_reuniao():
     return_connection(conn)
     hoje = datetime.now().strftime("%Y-%m-%d")
     return render_template("reunioes/nova.html", tipos=tipos, lojas=lojas, hoje=hoje)
-
 
 @app.route("/reunioes/<int:id>")
 @login_required
@@ -3845,7 +3843,18 @@ def detalhes_reuniao(id):
         flash("Reunião não encontrada", "danger")
         return_connection(conn)
         return redirect("/reunioes")
-
+    
+    # =============================
+    # DEBUG - Mostrar todos os campos
+    # =============================
+    print(f"\n=== DEBUG REUNIÃO ID {id} ===")
+    for key, value in reuniao.items():
+        if value is None:
+            print(f"❌ Campo '{key}' está NULO")
+        else:
+            print(f"✅ Campo '{key}' = {value}")
+    print("============================\n")
+    
     # Buscar presenças
     cursor.execute("""
         SELECT u.id, u.nome_completo, u.grau_atual, 
