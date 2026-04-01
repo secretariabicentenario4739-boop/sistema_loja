@@ -903,6 +903,48 @@ def get_grau_nome(grau):
     }
     return graus.get(int(grau) if grau else 3, f"Grau Superior {grau}")
 
+import secrets
+from datetime import datetime, timedelta
+
+def gerar_token_recuperacao(usuario_id):
+    """Gera token único para recuperação de senha"""
+    token = secrets.token_urlsafe(32)
+    
+    cursor, conn = get_db()
+    expira_em = datetime.now() + timedelta(hours=24)
+    
+    cursor.execute("""
+        INSERT INTO password_reset_tokens (usuario_id, token, expira_em)
+        VALUES (%s, %s, %s)
+    """, (usuario_id, token, expira_em))
+    conn.commit()
+    return_connection(conn)
+    
+    return token
+
+def verificar_token_recuperacao(token):
+    """Verifica se o token de recuperação é válido"""
+    cursor, conn = get_db()
+    
+    cursor.execute("""
+        SELECT usuario_id FROM password_reset_tokens 
+        WHERE token = %s 
+        AND expira_em > NOW()
+        AND usado = FALSE
+    """, (token,))
+    
+    result = cursor.fetchone()
+    return_connection(conn)
+    
+    return result['usuario_id'] if result else None
+
+def usar_token_recuperacao(token):
+    """Marca token como usado"""
+    cursor, conn = get_db()
+    cursor.execute("UPDATE password_reset_tokens SET usado = TRUE WHERE token = %s", (token,))
+    conn.commit()
+    return_connection(conn)
+
 # =============================
 # FUNÇÕES DE NOTIFICAÇÕES (NOVAS)
 # =============================
@@ -2824,6 +2866,8 @@ def visualizar_obreiro(id):
             return_connection(conn)
         flash(f"Erro ao carregar dados do obreiro: {str(e)}", "danger")
         return redirect("/obreiros")
+
+        
     
         # ============================================
         # PROCESSAR UPLOAD DA FOTO
@@ -2973,6 +3017,107 @@ def visualizar_obreiro(id):
                           is_admin=(session["tipo"] == "admin"),
                           is_own_profile=(session["user_id"] == id))
 from datetime import datetime
+@app.route("/recuperar-senha", methods=["GET", "POST"])
+def recuperar_senha():
+    if request.method == "POST":
+        email = request.form.get("email")
+        
+        try:
+            cursor, conn = get_db()
+            cursor.execute("""
+                SELECT id, nome_completo, usuario, email
+                FROM usuarios 
+                WHERE email = %s AND ativo = 1
+            """, (email,))
+            user = cursor.fetchone()
+            return_connection(conn)
+            
+            if user:
+                # Gerar token
+                token = gerar_token_recuperacao(user['id'])
+                link = f"{request.url_root}redefinir-senha?token={token}"
+                
+                assunto = "🔐 Recuperação de Senha - Sistema Maçônico"
+                conteudo_html = f"""
+                <html>
+                <body style="font-family: Arial, sans-serif;">
+                    <div style="max-width: 600px; margin: 0 auto; padding: 20px;">
+                        <div style="background: linear-gradient(135deg, #1a472a, #0a2a1a); color: #ffd700; padding: 30px; text-align: center; border-radius: 10px;">
+                            <h1>🔐 Recuperação de Senha</h1>
+                        </div>
+                        <div style="background: white; padding: 30px; border-radius: 10px; margin-top: 20px;">
+                            <h2>Olá {user['nome_completo']},</h2>
+                            <p>Recebemos uma solicitação para redefinir sua senha.</p>
+                            <p>Clique no botão abaixo para criar uma nova senha:</p>
+                            <div style="text-align: center; margin: 30px 0;">
+                                <a href="{link}" style="background: #1a472a; color: #ffd700; padding: 12px 30px; text-decoration: none; border-radius: 5px;">
+                                    🔐 Redefinir Senha
+                                </a>
+                            </div>
+                            <p>Este link é válido por <strong>24 horas</strong>.</p>
+                            <p>Se você não solicitou esta alteração, ignore este e-mail.</p>
+                            <hr>
+                            <p style="font-size: 12px; color: #666;">Caso o botão não funcione, copie e cole o link abaixo:</p>
+                            <p style="font-size: 12px; word-break: break-all;">{link}</p>
+                        </div>
+                    </div>
+                </body>
+                </html>
+                """
+                
+                enviar_email_resend(user['email'], assunto, conteudo_html)
+                flash("✅ Link de recuperação enviado para seu e-mail!", "success")
+            else:
+                flash("Se o e-mail estiver cadastrado, você receberá um link de recuperação.", "info")
+                
+        except Exception as e:
+            print(f"Erro ao recuperar senha: {e}")
+            flash("Erro ao processar solicitação. Tente novamente.", "danger")
+        
+        return redirect("/login")
+    
+    return render_template("recuperar_senha.html")
+    
+@app.route("/redefinir-senha", methods=["GET", "POST"])
+def redefinir_senha():
+    token = request.args.get("token")
+    
+    if not token:
+        flash("Token inválido!", "danger")
+        return redirect("/login")
+    
+    # Verificar token
+    usuario_id = verificar_token_recuperacao(token)
+    
+    if not usuario_id:
+        flash("Link inválido ou expirado! Solicite uma nova recuperação.", "danger")
+        return redirect("/recuperar-senha")
+    
+    if request.method == "POST":
+        nova_senha = request.form.get("nova_senha")
+        confirmar_senha = request.form.get("confirmar_senha")
+        
+        if not nova_senha or len(nova_senha) < 6:
+            flash("A senha deve ter no mínimo 6 caracteres!", "danger")
+        elif nova_senha != confirmar_senha:
+            flash("As senhas não coincidem!", "danger")
+        else:
+            import hashlib
+            senha_hash = hashlib.sha256(nova_senha.encode()).hexdigest()
+            
+            cursor, conn = get_db()
+            cursor.execute("UPDATE usuarios SET senha_hash = %s WHERE id = %s", (senha_hash, usuario_id))
+            conn.commit()
+            
+            # Marcar token como usado
+            usar_token_recuperacao(token)
+            return_connection(conn)
+            
+            registrar_log("redefinir_senha", "usuario", usuario_id)
+            flash("✅ Senha redefinida com sucesso! Faça login com sua nova senha.", "success")
+            return redirect("/login")
+    
+    return render_template("redefinir_senha.html", token=token)    
 
 @app.route("/obreiros/<int:id>/editar", methods=["GET", "POST"])
 @login_required
@@ -3007,6 +3152,8 @@ def editar_obreiro(id):
                 flash("Você não tem permissão para editar obreiros de grau superior ao seu.", "danger")
                 return_connection(conn)
                 return redirect("/obreiros")
+
+
 
         # =============================
         # 📥 POST (SALVAR ALTERAÇÕES)

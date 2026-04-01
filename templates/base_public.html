@@ -143,6 +143,23 @@
             transform: translateY(-2px);
         }
         
+        /* Card de formulário */
+        .card {
+            border-radius: 15px;
+            overflow: hidden;
+            border: none;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+        }
+        
+        .card-header {
+            border-bottom: none;
+        }
+        
+        /* Alertas */
+        .alert {
+            border-radius: 10px;
+        }
+        
         @media (max-width: 768px) {
             .navbar {
                 background: var(--azul-bicentenario);
@@ -180,16 +197,16 @@
                         <a class="nav-link" href="/sobre">Sobre</a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" href="#">Calendário</a>
+                        <a class="nav-link" href="/calendario">Calendário</a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" href="#">Notícias</a>
+                        <a class="nav-link" href="/noticias">Notícias</a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" href="#">Galeria</a>
+                        <a class="nav-link" href="/galeria">Galeria</a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" href="#">Contato</a>
+                        <a class="nav-link" href="/contato">Contato</a>
                     </li>
                     <li class="nav-item ms-lg-3">
                         <a class="btn btn-outline-primary" href="/login">Área Restrita</a>
@@ -246,6 +263,18 @@
                 navbar.classList.remove('scrolled');
             }
         });
+        
+        // Fechar alerts automaticamente após 5 segundos
+        setTimeout(function() {
+            document.querySelectorAll('.alert').forEach(function(alert) {
+                setTimeout(function() {
+                    alert.classList.remove('show');
+                    setTimeout(function() {
+                        alert.remove();
+                    }, 150);
+                }, 5000);
+            });
+        }, 1000);
     </script>
     {% block scripts %}{% endblock %}
 </body>

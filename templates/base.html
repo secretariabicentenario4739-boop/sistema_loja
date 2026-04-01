@@ -743,7 +743,7 @@
     <hr>
     
     <!-- Notificações -->
-    {% if tem_permissao('configuracoes.view') or session.grau_atual >= 3 %}
+    {% if session and session.get('grau_atual') and (tem_permissao('configuracoes.view') or session.grau_atual >= 3) %}
     <a class="nav-link" href="/configuracoes/notificacoes">
         <i class="bi bi-bell"></i> <span>Notificações</span>
     </a>
