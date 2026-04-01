@@ -61,7 +61,8 @@
                                 </div>
                                 <div class="col-md-6 mb-3">
                                     <label class="form-label">Grau Atual</label>
-                                    <input type="text" class="form-control" value="{% if usuario.grau_atual == 3 %}Mestre{% elif usuario.grau_atual == 2 %}Companheiro{% else %}Aprendiz{% endif %}" readonly>
+                                    <input type="text" class="form-control" value="{{ get_grau_nome(usuario.grau_atual) }}" readonly>
+                                    <small class="text-muted">Grau atual no sistema maçônico</small>
                                 </div>
                             </div>
 
@@ -185,42 +186,52 @@
 
 <script>
     // Autopreenchimento dos dados da loja
-    document.getElementById('lojaSelect').addEventListener('change', function() {
-        var selected = this.options[this.selectedIndex];
-        document.getElementById('lojaNumero').value = selected.dataset.numero || '';
-        document.getElementById('lojaOriente').value = selected.dataset.oriente || '';
-    });
+    var lojaSelect = document.getElementById('lojaSelect');
+    if (lojaSelect) {
+        lojaSelect.addEventListener('change', function() {
+            var selected = this.options[this.selectedIndex];
+            document.getElementById('lojaNumero').value = selected.dataset.numero || '';
+            document.getElementById('lojaOriente').value = selected.dataset.oriente || '';
+        });
+    }
 
     // Máscara para telefone
-    document.getElementById('telefone').addEventListener('input', function(e) {
-        var value = e.target.value.replace(/\D/g, '');
-        if (value.length <= 10) {
-            value = value.replace(/^(\d{2})(\d{4})(\d{4})/, '($1) $2-$3');
-        } else {
-            value = value.replace(/^(\d{2})(\d{5})(\d{4})/, '($1) $2-$3');
-        }
-        e.target.value = value;
-    });
+    var telefoneInput = document.getElementById('telefone');
+    if (telefoneInput) {
+        telefoneInput.addEventListener('input', function(e) {
+            var value = e.target.value.replace(/\D/g, '');
+            if (value.length <= 10) {
+                value = value.replace(/^(\d{2})(\d{4})(\d{4})/, '($1) $2-$3');
+            } else {
+                value = value.replace(/^(\d{2})(\d{5})(\d{4})/, '($1) $2-$3');
+            }
+            e.target.value = value;
+        });
+    }
     
     // Validar senha no formulário
-    document.querySelector('form[action*="perfil"]').addEventListener('submit', function(e) {
-        if (this.querySelector('input[name="acao"]') && this.querySelector('input[name="acao"]').value === 'alterar_senha') {
-            var novaSenha = this.querySelector('input[name="nova_senha"]').value;
-            var confirmarSenha = this.querySelector('input[name="confirmar_senha"]').value;
-            
-            if (novaSenha !== confirmarSenha) {
-                e.preventDefault();
-                alert('As senhas não conferem!');
-                return false;
+    var formAlterarSenha = document.querySelector('form[action*="perfil"]');
+    if (formAlterarSenha) {
+        formAlterarSenha.addEventListener('submit', function(e) {
+            var acaoInput = this.querySelector('input[name="acao"]');
+            if (acaoInput && acaoInput.value === 'alterar_senha') {
+                var novaSenha = this.querySelector('input[name="nova_senha"]').value;
+                var confirmarSenha = this.querySelector('input[name="confirmar_senha"]').value;
+                
+                if (novaSenha !== confirmarSenha) {
+                    e.preventDefault();
+                    alert('As senhas não conferem!');
+                    return false;
+                }
+                
+                if (novaSenha.length < 6) {
+                    e.preventDefault();
+                    alert('A nova senha deve ter pelo menos 6 caracteres!');
+                    return false;
+                }
             }
-            
-            if (novaSenha.length < 6) {
-                e.preventDefault();
-                alert('A nova senha deve ter pelo menos 6 caracteres!');
-                return false;
-            }
-        }
-    });
+        });
+    }
 </script>
 
 <style>
@@ -234,6 +245,9 @@
     .form-control:focus, .form-select:focus {
         border-color: #0d6efd;
         box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.25);
+    }
+    input[readonly] {
+        background-color: #e9ecef;
     }
 </style>
 

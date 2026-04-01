@@ -22,61 +22,55 @@
                         </div>
                         {% endif %}
                     </div>
-                    <div class="flex-grow-1">
-                        <h2 class="mb-0">{{ obreiro.nome_completo }}</h2>
-                        <div class="mt-2">
-                            <span class="badge {% if obreiro.ativo == 1 %}bg-success{% else %}bg-danger{% endif %} me-2">
-                                {% if obreiro.ativo == 1 %}Ativo{% else %}Inativo{% endif %}
-                            </span>
-                            {% if obreiro.tipo == 'admin' %}
-                                <span class="badge bg-danger">Administrador</span>
-                            {% elif obreiro.tipo == 'sindicante' %}
-                                <span class="badge bg-warning">Sindicante</span>
-                            {% else %}
-                                <span class="badge bg-info">Obreiro</span>
-                            {% endif %}
-                            
-                            <!-- Grau principal (sempre Mestre para graus >= 3) -->
-                            <span class="badge bg-success">
-                                {% if obreiro.grau_atual == 1 %}
-                                    Aprendiz
-                                {% elif obreiro.grau_atual == 2 %}
-                                    Companheiro
-                                {% elif obreiro.grau_atual >= 3 %}
-                                    Mestre
-                                {% else %}
-                                    Mestre
-                                {% endif %}
-                            </span>
-                            
-                            <!-- Grau detalhado (aparece como badge separado para graus superiores) -->
-                            {% if obreiro.grau_atual >= 4 %}
-                                <span class="badge bg-info ms-1">
-                                    <i class="bi bi-star-fill"></i> 
-                                    {% if obreiro.grau_atual == 4 %}
-                                        Mestre Instalado
-                                    {% elif obreiro.grau_atual == 5 %}
-                                        Arquiteto Real
-                                    {% elif obreiro.grau_atual == 6 %}
-                                        Soberano Grande Inspetor Geral
-                                    {% elif obreiro.grau_atual == 7 %}
-                                        Mestre Perfeito
-                                    {% elif obreiro.grau_atual == 8 %}
-                                        Eleito dos Nove
-                                    {% elif obreiro.grau_atual == 9 %}
-                                        Mestre da Maçonaria Real
-                                    {% elif obreiro.grau_atual == 10 %}
-                                        Cavaleiro Rosa-Cruz
-                                    {% elif obreiro.grau_atual == 11 %}
-                                        Cavaleiro Kadosch
-                                    {% elif obreiro.grau_atual == 12 %}
-                                        Grande Escocês
-                                    {% else %}
-                                        Grau Superior {{ obreiro.grau_atual }}
-                                    {% endif %}
-                                </span>
-                            {% endif %}
-                        </div>
+                    <!-- Seção de Badges -->
+<div class="mt-2">
+    <span class="badge {% if obreiro.ativo == 1 %}bg-success{% else %}bg-danger{% endif %} me-2">
+        {% if obreiro.ativo == 1 %}Ativo{% else %}Inativo{% endif %}
+    </span>
+    {% if obreiro.tipo == 'admin' %}
+        <span class="badge bg-danger">Administrador</span>
+    {% elif obreiro.tipo == 'sindicante' %}
+        <span class="badge bg-warning">Sindicante</span>
+    {% else %}
+        <span class="badge bg-info">Obreiro</span>
+    {% endif %}
+    
+    <!-- Grau principal -->
+    <span class="badge bg-success">
+        {% if obreiro.grau_atual == 1 %}
+            Aprendiz
+        {% elif obreiro.grau_atual == 2 %}
+            Companheiro
+        {% elif obreiro.grau_atual >= 3 %}
+            Mestre
+        {% else %}
+            Mestre
+        {% endif %}
+    </span>
+    
+    <!-- Grau detalhado para graus superiores (>= 4) -->
+    {% if obreiro.grau_atual >= 4 %}
+        <span class="badge bg-info ms-1">
+            {% if obreiro.grau_atual == 4 %}
+                Mestre Instalado
+            {% elif obreiro.grau_atual == 5 %}
+                Arquiteto Real
+            {% elif obreiro.grau_atual == 6 %}
+                Soberano Grande Inspetor Geral
+            {% elif obreiro.grau_atual == 7 %}
+                Mestre Perfeito
+            {% elif obreiro.grau_atual == 8 %}
+                Eleito dos Nove
+            {% elif obreiro.grau_atual == 9 %}
+                Mestre da Maçonaria Real
+            {% elif obreiro.grau_atual == 10 %}
+                Cavaleiro Rosa-Cruz
+            {% else %}
+                Grau Superior {{ obreiro.grau_atual }}
+            {% endif %}
+        </span>
+    {% endif %}
+</div>
                         {% if obreiro.nome_maconico %}
                         <p class="text-muted mt-2 mb-0">
                             <i class="bi bi-star-fill text-warning"></i> {{ obreiro.nome_maconico }}

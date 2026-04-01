@@ -140,7 +140,7 @@
                                         <i class="bi bi-clock"></i> Horário de Envio
                                     </label>
                                     <input type="time" class="form-control" name="horario_envio" 
-                                           value="{{ config.horario_envio.strftime('%H:%M') if config.horario_envio else '08:00' }}">
+                                           value="{% if config.horario_envio %}{{ config.horario_envio }}{% else %}08:00{% endif %}">
                                     <small class="text-muted">Horário que as notificações serão enviadas</small>
                                 </div>
                             </div>
@@ -212,12 +212,12 @@
                             <li class="mb-2">
                                 <i class="bi bi-gift text-warning"></i>
                                 <strong>Aniversários:</strong>
-                                <span class="text-muted">Diariamente às {{ config.horario_envio.strftime('%H:%M') if config.horario_envio else '08:00' }}</span>
+                                <span class="text-muted">Diariamente às {% if config.horario_envio %}{{ config.horario_envio }}{% else %}08:00{% endif %}</span>
                             </li>
                             <li class="mb-2">
                                 <i class="bi bi-calendar-event text-success"></i>
                                 <strong>Reuniões:</strong>
-                                <span class="text-muted">Diariamente às {{ config.horario_envio.strftime('%H:%M') if config.horario_envio else '08:00' }}</span>
+                                <span class="text-muted">Diariamente às {% if config.horario_envio %}{{ config.horario_envio }}{% else %}08:00{% endif %}</span>
                             </li>
                             <li class="mb-2">
                                 <i class="bi bi-file-text text-secondary"></i>

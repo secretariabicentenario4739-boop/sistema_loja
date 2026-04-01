@@ -379,10 +379,9 @@ if (confirmarInput) {
 }
 
 // =====================
-// CONTROLE DE GRAUS (VERSÃO COMPLETA)
+// CONTROLE DE GRAUS (VERSÃO CORRIGIDA)
 // =====================
 
-// Aguardar o DOM carregar completamente
 document.addEventListener('DOMContentLoaded', function() {
     
     console.log('=== INICIANDO CONTROLE DE GRAUS ===');
@@ -393,15 +392,42 @@ document.addEventListener('DOMContentLoaded', function() {
     const grauSuperiorSelect = document.getElementById('grauSuperiorSelect');
     const grauAtualHidden = document.getElementById('grauAtualHidden');
     
-    // Verificar se os elementos existem
-    console.log('grauPrincipalSelect existe:', !!grauPrincipalSelect);
-    console.log('divGrauSuperior existe:', !!divGrauSuperior);
-    console.log('grauSuperiorSelect existe:', !!grauSuperiorSelect);
-    console.log('grauAtualHidden existe:', !!grauAtualHidden);
-    
     if (!grauPrincipalSelect) {
         console.error('❌ Elemento grauPrincipalSelect não encontrado!');
         return;
+    }
+    
+    // ✅ Valor atual do grau (do banco)
+    const grauAtual = parseInt(grauAtualHidden.value);
+    console.log('📌 Grau atual do obreiro:', grauAtual);
+    
+    // ✅ Configurar os selects baseado no grau atual
+    function configurarSelectsPorGrau() {
+        if (grauAtual === 1 || grauAtual === 2) {
+            // Grau 1 ou 2: selecionar no grau principal
+            grauPrincipalSelect.value = grauAtual;
+            divGrauSuperior.style.display = 'none';
+            grauSuperiorSelect.value = '';
+        } else if (grauAtual === 3) {
+            // Grau 3: selecionar Mestre e sem grau superior
+            grauPrincipalSelect.value = 3;
+            divGrauSuperior.style.display = 'none';
+            grauSuperiorSelect.value = '';
+        } else if (grauAtual >= 4) {
+            // Grau 4 ou superior: selecionar Mestre e grau superior correspondente
+            grauPrincipalSelect.value = 3;
+            divGrauSuperior.style.display = 'block';
+            // Procurar a opção com o valor igual ao grau atual
+            for (let i = 0; i < grauSuperiorSelect.options.length; i++) {
+                if (parseInt(grauSuperiorSelect.options[i].value) === grauAtual) {
+                    grauSuperiorSelect.value = grauAtual;
+                    break;
+                }
+            }
+        }
+        
+        // Atualizar o campo hidden com o grau final
+        atualizarGrauFinal();
     }
     
     // Função para atualizar visibilidade do dropdown de graus superiores
@@ -409,21 +435,12 @@ document.addEventListener('DOMContentLoaded', function() {
         const grauPrincipal = parseInt(grauPrincipalSelect.value);
         console.log('Grau principal selecionado:', grauPrincipal);
         
-        // Apenas quando seleciona Mestre (3) mostra o dropdown de graus superiores
         if (grauPrincipal === 3) {
-            if (divGrauSuperior) {
-                divGrauSuperior.style.display = 'block';
-                console.log('✅ Dropdown de graus superiores VISÍVEL');
-            }
+            divGrauSuperior.style.display = 'block';
+            console.log('✅ Dropdown de graus superiores VISÍVEL');
         } else {
-            if (divGrauSuperior) {
-                divGrauSuperior.style.display = 'none';
-                console.log('❌ Dropdown de graus superiores ESCONDIDO');
-            }
-            // Limpar seleção de grau superior
-            if (grauSuperiorSelect) {
-                grauSuperiorSelect.value = '';
-            }
+            divGrauSuperior.style.display = 'none';
+            if (grauSuperiorSelect) grauSuperiorSelect.value = '';
         }
         atualizarGrauFinal();
     }
@@ -463,11 +480,11 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
     
-    // Executar uma vez ao carregar
-    console.log('🚀 Executando inicialização...');
-    atualizarGrauSuperior();
+    // ✅ Executar configuração inicial
+    console.log('🚀 Executando configuração inicial...');
+    configurarSelectsPorGrau();
     
-    // Adicionar um botão de teste para debug (opcional, remova depois)
+    // Botão de debug (opcional)
     const debugBtn = document.createElement('button');
     debugBtn.textContent = 'Debug Grau';
     debugBtn.type = 'button';

@@ -98,6 +98,23 @@
     .accordion-button:focus {
         box-shadow: none;
     }
+    .badge-module {
+        font-size: 0.7rem;
+        padding: 3px 6px;
+        margin-left: 5px;
+    }
+    .permission-group {
+        border-left: 3px solid #0d6efd;
+        padding-left: 10px;
+        margin-bottom: 10px;
+    }
+    .permission-special {
+        background-color: #fff3cd;
+        border-left: 3px solid #ffc107;
+        padding: 5px 10px;
+        margin: 5px 0;
+        border-radius: 5px;
+    }
 </style>
 {% endblock %}
 
@@ -151,7 +168,7 @@
                                     {{ grau.nome }}
                                 </h5>
                             </div>
-                            <div class="card-body" style="max-height: 500px; overflow-y: auto;">
+                            <div class="card-body" style="max-height: 600px; overflow-y: auto;">
                                 <form method="POST" action="/admin/permissoes/grau/{{ grau.id }}">
                                     <div class="accordion" id="accordionGrau{{ grau.id }}">
                                         {% for modulo_nome, modulo_data in permissoes_por_modulo.items() %}
@@ -161,8 +178,15 @@
                                                         data-bs-toggle="collapse" 
                                                         data-bs-target="#collapse{{ grau.id }}{{ loop.index }}">
                                                     <i class="bi {{ modulo_data.icone }} me-2"></i>
-                                                    {{ modulo_nome }}
+                                                    {{ modulo_nome|capitalize }}
                                                     <span class="badge bg-secondary ms-2">{{ modulo_data.permissoes|length }}</span>
+                                                    
+                                                    <!-- Badge indicando módulo Biblioteca -->
+                                                    {% if modulo_nome == 'biblioteca' %}
+                                                    <span class="badge bg-info ms-2">
+                                                        <i class="bi bi-book"></i> Biblioteca
+                                                    </span>
+                                                    {% endif %}
                                                 </button>
                                             </h2>
                                             <div id="collapse{{ grau.id }}{{ loop.index }}" 
@@ -170,18 +194,35 @@
                                                  data-bs-parent="#accordionGrau{{ grau.id }}">
                                                 <div class="accordion-body">
                                                     {% for permissao in modulo_data.permissoes %}
-                                                    <div class="form-check">
+                                                    <div class="form-check {% if 'superior' in permissao.nome %}permission-special{% endif %}">
                                                         <input class="form-check-input" type="checkbox" 
                                                                name="permissoes" value="{{ permissao.id }}"
                                                                {% for pg in permissoes_grau %}
                                                                    {% if pg[0] == grau.id and pg[1] == permissao.id %}
                                                                        checked
                                                                    {% endif %}
-                                                               {% endfor %}>
+                                                               {% endfor %}
+                                                               {% if 'superior' in permissao.nome and grau.nivel < 3 %}
+                                                               data-special="true"
+                                                               {% endif %}>
                                                         <label class="form-check-label small">
-                                                            {{ permissao.nome }}
+                                                            <strong>{{ permissao.nome }}</strong>
                                                             <br>
                                                             <small class="text-muted">{{ permissao.descricao }}</small>
+                                                            
+                                                            <!-- Indicador de permissão especial -->
+                                                            {% if 'superior' in permissao.nome %}
+                                                            <span class="badge bg-warning text-dark ms-2">
+                                                                <i class="bi bi-star"></i> Especial
+                                                            </span>
+                                                            {% endif %}
+                                                            
+                                                            <!-- Indicador de permissão de categoria -->
+                                                            {% if 'categoria' in permissao.nome %}
+                                                            <span class="badge bg-secondary ms-2">
+                                                                <i class="bi bi-folder"></i> Categoria
+                                                            </span>
+                                                            {% endif %}
                                                         </label>
                                                     </div>
                                                     {% endfor %}
@@ -233,7 +274,7 @@
                                                 <div class="card-header bg-success text-white py-1">
                                                     <small><i class="bi bi-plus-circle"></i> Permissões Extras</small>
                                                 </div>
-                                                <div class="card-body" style="max-height: 400px; overflow-y: auto;">
+                                                <div class="card-body" style="max-height: 450px; overflow-y: auto;">
                                                     <div class="accordion" id="accordionExtra{{ usuario.id }}">
                                                         {% for modulo_nome, modulo_data in permissoes_por_modulo.items() %}
                                                         <div class="accordion-item">
@@ -242,26 +283,108 @@
                                                                         data-bs-toggle="collapse" 
                                                                         data-bs-target="#collapseExtra{{ usuario.id }}{{ loop.index }}">
                                                                     <i class="bi {{ modulo_data.icone }} me-2"></i>
-                                                                    {{ modulo_nome }}
+                                                                    {{ modulo_nome|capitalize }}
+                                                                    
+                                                                    {% if modulo_nome == 'biblioteca' %}
+                                                                    <span class="badge bg-info ms-2">📚</span>
+                                                                    {% endif %}
                                                                 </button>
                                                             </h2>
                                                             <div id="collapseExtra{{ usuario.id }}{{ loop.index }}" 
                                                                  class="accordion-collapse collapse">
                                                                 <div class="accordion-body">
-                                                                    {% for permissao in modulo_data.permissoes %}
-                                                                    <div class="form-check">
-                                                                        <input class="form-check-input" type="checkbox" 
-                                                                               name="permissoes_extra" value="{{ permissao.id }}"
-                                                                               {% for pu in permissoes_usuario %}
-                                                                                   {% if pu[0] == usuario.id and pu[1] == permissao.id and pu[2] == 1 %}
-                                                                                       checked
-                                                                                   {% endif %}
-                                                                               {% endfor %}>
-                                                                        <label class="form-check-label small">
-                                                                            {{ permissao.nome }}
-                                                                        </label>
+                                                                    <!-- Permissões básicas -->
+                                                                    <div class="permission-group">
+                                                                        <small class="text-muted">Básicas</small>
+                                                                        {% for permissao in modulo_data.permissoes %}
+                                                                            {% if 'view' in permissao.nome or 'download' in permissao.nome or 'favorite' in permissao.nome or 'rate' in permissao.nome %}
+                                                                            <div class="form-check">
+                                                                                <input class="form-check-input" type="checkbox" 
+                                                                                       name="permissoes_extra" value="{{ permissao.id }}"
+                                                                                       {% for pu in permissoes_usuario %}
+                                                                                           {% if pu[0] == usuario.id and pu[1] == permissao.id and pu[2] == 1 %}
+                                                                                               checked
+                                                                                           {% endif %}
+                                                                                       {% endfor %}>
+                                                                                <label class="form-check-label small">
+                                                                                    {{ permissao.nome }}
+                                                                                    <br>
+                                                                                    <small class="text-muted">{{ permissao.descricao }}</small>
+                                                                                </label>
+                                                                            </div>
+                                                                            {% endif %}
+                                                                        {% endfor %}
                                                                     </div>
-                                                                    {% endfor %}
+                                                                    
+                                                                    <!-- Permissões administrativas -->
+                                                                    <div class="permission-group mt-2">
+                                                                        <small class="text-muted">Administrativas</small>
+                                                                        {% for permissao in modulo_data.permissoes %}
+                                                                            {% if 'create' in permissao.nome or 'edit' in permissao.nome or 'delete' in permissao.nome or 'publish' in permissao.nome %}
+                                                                            <div class="form-check">
+                                                                                <input class="form-check-input" type="checkbox" 
+                                                                                       name="permissoes_extra" value="{{ permissao.id }}"
+                                                                                       {% for pu in permissoes_usuario %}
+                                                                                           {% if pu[0] == usuario.id and pu[1] == permissao.id and pu[2] == 1 %}
+                                                                                               checked
+                                                                                           {% endif %}
+                                                                                       {% endfor %}>
+                                                                                <label class="form-check-label small">
+                                                                                    {{ permissao.nome }}
+                                                                                    <br>
+                                                                                    <small class="text-muted">{{ permissao.descricao }}</small>
+                                                                                </label>
+                                                                            </div>
+                                                                            {% endif %}
+                                                                        {% endfor %}
+                                                                    </div>
+                                                                    
+                                                                    <!-- Permissões de categoria -->
+                                                                    <div class="permission-group mt-2">
+                                                                        <small class="text-muted">Categorias</small>
+                                                                        {% for permissao in modulo_data.permissoes %}
+                                                                            {% if 'categoria' in permissao.nome %}
+                                                                            <div class="form-check">
+                                                                                <input class="form-check-input" type="checkbox" 
+                                                                                       name="permissoes_extra" value="{{ permissao.id }}"
+                                                                                       {% for pu in permissoes_usuario %}
+                                                                                           {% if pu[0] == usuario.id and pu[1] == permissao.id and pu[2] == 1 %}
+                                                                                               checked
+                                                                                           {% endif %}
+                                                                                       {% endfor %}>
+                                                                                <label class="form-check-label small">
+                                                                                    {{ permissao.nome }}
+                                                                                    <br>
+                                                                                    <small class="text-muted">{{ permissao.descricao }}</small>
+                                                                                </label>
+                                                                            </div>
+                                                                            {% endif %}
+                                                                        {% endfor %}
+                                                                    </div>
+                                                                    
+                                                                    <!-- Permissões especiais (superiores) -->
+                                                                    <div class="permission-group mt-2">
+                                                                        <small class="text-muted">Especiais</small>
+                                                                        {% for permissao in modulo_data.permissoes %}
+                                                                            {% if 'superior' in permissao.nome %}
+                                                                            <div class="form-check">
+                                                                                <input class="form-check-input" type="checkbox" 
+                                                                                       name="permissoes_extra" value="{{ permissao.id }}"
+                                                                                       {% for pu in permissoes_usuario %}
+                                                                                           {% if pu[0] == usuario.id and pu[1] == permissao.id and pu[2] == 1 %}
+                                                                                               checked
+                                                                                           {% endif %}
+                                                                                       {% endfor %}>
+                                                                                <label class="form-check-label small">
+                                                                                    {{ permissao.nome }}
+                                                                                    <br>
+                                                                                    <small class="text-muted">{{ permissao.descricao }}</small>
+                                                                                    <span class="badge bg-warning text-dark ms-1">Especial</span>
+                                                                                </label>
+                                                                            </div>
+                                                                            {% endif %}
+                                                                        {% endfor %}
+                                                                    </div>
                                                                 </div>
                                                             </div>
                                                         </div>
@@ -275,7 +398,7 @@
                                                 <div class="card-header bg-danger text-white py-1">
                                                     <small><i class="bi bi-ban"></i> Permissões Bloqueadas</small>
                                                 </div>
-                                                <div class="card-body" style="max-height: 400px; overflow-y: auto;">
+                                                <div class="card-body" style="max-height: 450px; overflow-y: auto;">
                                                     <div class="accordion" id="accordionBloqueio{{ usuario.id }}">
                                                         {% for modulo_nome, modulo_data in permissoes_por_modulo.items() %}
                                                         <div class="accordion-item">
@@ -284,7 +407,11 @@
                                                                         data-bs-toggle="collapse" 
                                                                         data-bs-target="#collapseBloqueio{{ usuario.id }}{{ loop.index }}">
                                                                     <i class="bi {{ modulo_data.icone }} me-2"></i>
-                                                                    {{ modulo_nome }}
+                                                                    {{ modulo_nome|capitalize }}
+                                                                    
+                                                                    {% if modulo_nome == 'biblioteca' %}
+                                                                    <span class="badge bg-info ms-2">📚</span>
+                                                                    {% endif %}
                                                                 </button>
                                                             </h2>
                                                             <div id="collapseBloqueio{{ usuario.id }}{{ loop.index }}" 
@@ -301,6 +428,12 @@
                                                                                {% endfor %}>
                                                                         <label class="form-check-label small">
                                                                             {{ permissao.nome }}
+                                                                            <br>
+                                                                            <small class="text-muted">{{ permissao.descricao }}</small>
+                                                                            
+                                                                            {% if 'superior' in permissao.nome %}
+                                                                            <span class="badge bg-warning text-dark ms-1">Especial</span>
+                                                                            {% endif %}
                                                                         </label>
                                                                     </div>
                                                                     {% endfor %}
@@ -343,9 +476,21 @@
         });
     }
     
-    // Adicionar botões de expandir/recolher
+    // Adicionar tooltips para permissões especiais
     document.addEventListener('DOMContentLoaded', function() {
-        // Para a aba de graus
+        // Adicionar tooltips
+        var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-special="true"]'));
+        tooltipTriggerList.forEach(function(element) {
+            element.setAttribute('title', 'Permissão especial - requer atenção na atribuição');
+            element.setAttribute('data-bs-toggle', 'tooltip');
+        });
+        
+        // Inicializar tooltips
+        var tooltipList = tooltipTriggerList.map(function(tooltipTriggerEl) {
+            return new bootstrap.Tooltip(tooltipTriggerEl);
+        });
+        
+        // Botões de expandir/recolher para a aba de graus
         const grausCards = document.querySelectorAll('#graus .card');
         grausCards.forEach((card, index) => {
             const header = card.querySelector('.card-header');
@@ -362,6 +507,30 @@
                 `;
                 header.appendChild(btnGroup);
             }
+        });
+        
+        // Adicionar contador de permissões para o módulo Biblioteca
+        const bibliotecaModules = document.querySelectorAll('.accordion-button');
+        bibliotecaModules.forEach(button => {
+            if (button.textContent.includes('biblioteca')) {
+                const badge = button.querySelector('.badge');
+                if (badge) {
+                    badge.style.backgroundColor = '#0d6efd';
+                }
+            }
+        });
+        
+        // Adicionar confirmação para permissões especiais
+        const specialCheckboxes = document.querySelectorAll('input[data-special="true"]');
+        specialCheckboxes.forEach(checkbox => {
+            checkbox.addEventListener('change', function(e) {
+                if (this.checked) {
+                    if (!confirm('⚠️ Você está concedendo uma permissão ESPECIAL (superior).\n\nIsso permite que o usuário veja/edite conteúdos de grau superior ao seu.\n\nTem certeza que deseja continuar?')) {
+                        e.preventDefault();
+                        this.checked = false;
+                    }
+                }
+            });
         });
     });
 </script>
