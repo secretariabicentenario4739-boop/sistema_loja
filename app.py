@@ -2439,7 +2439,214 @@ def listar_obreiros():
         now=datetime.now()
     )
 
+@app.route("/obreiros/<int:id>/reativar")
+@login_required
+@permissao_required('obreiro.edit')
+def reativar_obreiro(id):
+    """Reativa um obreiro que estava inativo"""
+    cursor, conn = get_db()
+    
+    try:
+        # Buscar dados do obreiro
+        cursor.execute("SELECT id, nome_completo, usuario, ativo FROM usuarios WHERE id = %s", (id,))
+        obreiro = cursor.fetchone()
+        
+        if not obreiro:
+            flash("Obreiro não encontrado!", "danger")
+            return_connection(conn)
+            return redirect("/obreiros")
+        
+        # Verificar se já está ativo
+        if obreiro['ativo'] == 1:
+            flash(f"Obreiro {obreiro['nome_completo']} já está ativo!", "warning")
+            return_connection(conn)
+            return redirect(f"/obreiros/{id}")
+        
+        # Reativar obreiro
+        cursor.execute("UPDATE usuarios SET ativo = 1 WHERE id = %s", (id,))
+        conn.commit()
+        
+        registrar_log("reativar", "obreiro", id, dados_novos={"nome": obreiro['nome_completo'], "status": "ativo"})
+        
+        flash(f"✅ Obreiro {obreiro['nome_completo']} reativado com sucesso!", "success")
+        
+    except Exception as e:
+        print(f"Erro ao reativar obreiro: {e}")
+        conn.rollback()
+        flash(f"Erro ao reativar obreiro: {str(e)}", "danger")
+    
+    return_connection(conn)
+    return redirect("/obreiros")
+    
 
+@app.route("/obreiros/<int:id>/excluir")
+@login_required
+@permissao_required('obreiro.delete')
+def excluir_obreiro(id):
+    """Desativa ou exclui um obreiro dependendo dos vínculos existentes"""
+    cursor, conn = get_db()
+    
+    try:
+        # Buscar dados do obreiro
+        cursor.execute("""
+            SELECT id, nome_completo, usuario, tipo, ativo, grau_atual
+            FROM usuarios 
+            WHERE id = %s
+        """, (id,))
+        obreiro = cursor.fetchone()
+        
+        if not obreiro:
+            flash("Obreiro não encontrado!", "danger")
+            return_connection(conn)
+            return redirect("/obreiros")
+        
+        # Impedir que o usuário exclua a si mesmo
+        if session.get("user_id") == id:
+            flash("Você não pode excluir seu próprio usuário!", "danger")
+            return_connection(conn)
+            return redirect(f"/obreiros/{id}")
+        
+        # Impedir excluir admin (opcional)
+        if obreiro['tipo'] == 'admin' and session.get('tipo') != 'admin':
+            flash("Você não tem permissão para excluir administradores!", "danger")
+            return_connection(conn)
+            return redirect("/obreiros")
+        
+        # Verificar vínculos em outras tabelas
+        cursor.execute("SELECT COUNT(*) as total FROM presenca WHERE obreiro_id = %s", (id,))
+        presencas = cursor.fetchone()['total']
+        
+        cursor.execute("SELECT COUNT(*) as total FROM ocupacao_cargos WHERE obreiro_id = %s", (id,))
+        cargos = cursor.fetchone()['total']
+        
+        cursor.execute("SELECT COUNT(*) as total FROM familiares WHERE obreiro_id = %s", (id,))
+        familiares = cursor.fetchone()['total']
+        
+        cursor.execute("SELECT COUNT(*) as total FROM condecoracoes_obreiro WHERE obreiro_id = %s", (id,))
+        condecoracoes = cursor.fetchone()['total']
+        
+        cursor.execute("SELECT COUNT(*) as total FROM documentos_obreiro WHERE obreiro_id = %s", (id,))
+        documentos = cursor.fetchone()['total']
+        
+        cursor.execute("SELECT COUNT(*) as total FROM logs_auditoria WHERE usuario_id = %s", (id,))
+        logs = cursor.fetchone()['total']
+        
+        cursor.execute("SELECT COUNT(*) as total FROM notificacoes WHERE usuario_id = %s", (id,))
+        notificacoes = cursor.fetchone()['total']
+        
+        # ✅ CORRIGIDO: sindicancias usa a coluna 'sindicante'
+        cursor.execute("SELECT COUNT(*) as total FROM sindicancias WHERE sindicante = %s", (str(id),))
+        sindicancias = cursor.fetchone()['total']
+        
+        # Total de vínculos
+        total_vinculos = presencas + cargos + familiares + condecoracoes + documentos + logs + notificacoes + sindicancias
+        
+        if total_vinculos > 0:
+            # Se há vínculos, apenas desativar
+            cursor.execute("UPDATE usuarios SET ativo = 0 WHERE id = %s", (id,))
+            conn.commit()
+            
+            registrar_log("desativar", "obreiro", id, 
+                         dados_anteriores={"nome": obreiro['nome_completo'], "ativo": 1},
+                         dados_novos={"status": "inativo", "motivo": f"possui {total_vinculos} vínculos no sistema"})
+            
+            flash(f"⚠️ Obreiro '{obreiro['nome_completo']}' foi DESATIVADO (possui {total_vinculos} vínculos no sistema).", "warning")
+        else:
+            # Sem vínculos, pode excluir permanentemente
+            # Remover foto se existir
+            cursor.execute("SELECT foto FROM usuarios WHERE id = %s", (id,))
+            foto = cursor.fetchone()
+            if foto and foto['foto']:
+                try:
+                    import os
+                    if os.path.exists(os.path.join(UPLOAD_FOLDER_FOTOS, foto['foto'])):
+                        os.remove(os.path.join(UPLOAD_FOLDER_FOTOS, foto['foto']))
+                except:
+                    pass  # Se for Cloudinary, ignora
+            
+            # Excluir registros relacionados
+            cursor.execute("DELETE FROM presenca WHERE obreiro_id = %s", (id,))
+            cursor.execute("DELETE FROM ocupacao_cargos WHERE obreiro_id = %s", (id,))
+            cursor.execute("DELETE FROM familiares WHERE obreiro_id = %s", (id,))
+            cursor.execute("DELETE FROM condecoracoes_obreiro WHERE obreiro_id = %s", (id,))
+            cursor.execute("DELETE FROM documentos_obreiro WHERE obreiro_id = %s", (id,))
+            cursor.execute("DELETE FROM notificacoes WHERE usuario_id = %s", (id,))
+            cursor.execute("DELETE FROM logs_auditoria WHERE usuario_id = %s", (id,))
+            cursor.execute("DELETE FROM sindicancias WHERE sindicante = %s", (str(id),))
+            
+            # Excluir o obreiro
+            cursor.execute("DELETE FROM usuarios WHERE id = %s", (id,))
+            conn.commit()
+            
+            registrar_log("excluir", "obreiro", id, dados_anteriores={"nome": obreiro['nome_completo']})
+            flash(f"✅ Obreiro '{obreiro['nome_completo']}' excluído permanentemente!", "success")
+        
+        return_connection(conn)
+        return redirect("/obreiros")
+        
+    except Exception as e:
+        print(f"Erro ao excluir/desativar obreiro: {e}")
+        import traceback
+        traceback.print_exc()
+        if conn:
+            conn.rollback()
+        flash(f"Erro ao processar solicitação: {str(e)}", "danger")
+        return_connection(conn)
+        return redirect("/obreiros")   
+        
+@app.route("/obreiros/<int:id>/excluir_definitivo", methods=["POST"])
+@login_required
+@permissao_required('obreiro.delete')
+def excluir_obreiro_definitivo(id):
+    """Exclui um obreiro permanentemente (apenas se estiver inativo)"""
+    try:
+        cursor, conn = get_db()
+        
+        # Verificar se o obreiro existe
+        cursor.execute("SELECT id, nome_completo, ativo FROM usuarios WHERE id = %s", (id,))
+        obreiro = cursor.fetchone()
+        
+        if not obreiro:
+            return jsonify({'success': False, 'error': 'Obreiro não encontrado!'}), 404
+        
+        # Verificar se está inativo
+        if obreiro['ativo'] == 1:
+            return jsonify({'success': False, 'error': f'Obreiro {obreiro["nome_completo"]} está ATIVO. Desative primeiro para excluir definitivamente.'}), 400
+        
+        # Registrar log antes de excluir
+        registrar_log("excluir_definitivo", "usuario", id, dados_anteriores={
+            "nome": obreiro['nome_completo'],
+            "id": id,
+            "ativo": obreiro['ativo']
+        })
+        
+        # Excluir registros relacionados
+        cursor.execute("DELETE FROM presenca WHERE obreiro_id = %s", (id,))
+        cursor.execute("DELETE FROM ocupacao_cargos WHERE obreiro_id = %s", (id,))
+        cursor.execute("DELETE FROM familiares WHERE obreiro_id = %s", (id,))
+        cursor.execute("DELETE FROM condecoracoes_obreiro WHERE obreiro_id = %s", (id,))
+        cursor.execute("DELETE FROM documentos_obreiro WHERE obreiro_id = %s", (id,))
+        cursor.execute("DELETE FROM notificacoes WHERE usuario_id = %s", (id,))
+        cursor.execute("DELETE FROM logs_auditoria WHERE usuario_id = %s", (id,))
+        cursor.execute("DELETE FROM sindicancias WHERE sindicante = %s", (str(id),))
+        cursor.execute("DELETE FROM historico_graus WHERE obreiro_id = %s", (id,))
+        
+        # Excluir o obreiro
+        cursor.execute("DELETE FROM usuarios WHERE id = %s", (id,))
+        conn.commit()
+        
+        return jsonify({'success': True, 'message': f'Obreiro {obreiro["nome_completo"]} excluído permanentemente!'})
+        
+    except Exception as e:
+        print(f"❌ Erro ao excluir obreiro: {e}")
+        import traceback
+        traceback.print_exc()
+        if conn:
+            conn.rollback()
+        return jsonify({'success': False, 'error': str(e)}), 500
+    finally:
+        if conn:
+            return_connection(conn)        
     
 @app.route("/obreiros/novo", methods=["GET", "POST"])
 @login_required
