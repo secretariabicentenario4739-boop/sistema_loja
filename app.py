@@ -4145,6 +4145,64 @@ def api_reunioes():
             }
         })
     return {"eventos": eventos}
+@app.route("/reunioes/<int:id>/cancelar", methods=["POST"])
+@login_required
+@permissao_required('reuniao.edit')
+def cancelar_reuniao(id):
+    """Cancela uma reunião (muda status para cancelada)"""
+    cursor, conn = get_db()
+    
+    try:
+        # Buscar dados da reunião
+        cursor.execute("SELECT id, titulo, status FROM reunioes WHERE id = %s", (id,))
+        reuniao = cursor.fetchone()
+        
+        if not reuniao:
+            flash("Reunião não encontrada!", "danger")
+            return_connection(conn)
+            return redirect("/reunioes")
+        
+        # Verificar se já está cancelada
+        if reuniao['status'] == 'cancelada':
+            flash(f"A reunião '{reuniao['titulo']}' já está cancelada!", "warning")
+            return_connection(conn)
+            return redirect(f"/reunioes/{id}")
+        
+        # Cancelar a reunião
+        cursor.execute("UPDATE reunioes SET status = 'cancelada' WHERE id = %s", (id,))
+        conn.commit()
+        
+        registrar_log("cancelar", "reuniao", id, dados_novos={"status": "cancelada"})
+        
+        flash(f"✅ Reunião '{reuniao['titulo']}' cancelada com sucesso!", "success")
+        
+    except Exception as e:
+        print(f"Erro ao cancelar reunião: {e}")
+        conn.rollback()
+        flash(f"Erro ao cancelar reunião: {str(e)}", "danger")
+    
+    return_connection(conn)
+    return redirect("/reunioes")
+
+@app.route("/reunioes/<int:id>/reativar", methods=["POST"])
+@login_required
+@permissao_required('reuniao.edit')
+def reativar_reuniao(id):
+    """Reativa uma reunião cancelada (volta para agendada)"""
+    cursor, conn = get_db()
+    
+    try:
+        cursor.execute("UPDATE reunioes SET status = 'agendada' WHERE id = %s", (id,))
+        conn.commit()
+        
+        registrar_log("reativar", "reuniao", id, dados_novos={"status": "agendada"})
+        flash("Reunião reativada com sucesso!", "success")
+        
+    except Exception as e:
+        flash(f"Erro ao reativar reunião: {str(e)}", "danger")
+    
+    return_connection(conn)
+    return redirect("/reunioes")    
 
 @app.route("/reunioes/nova", methods=["GET", "POST"])
 @login_required
@@ -4574,24 +4632,48 @@ def alterar_status_reuniao(id):
         return redirect(f"/reunioes/{id}")
 
 @app.route("/reunioes/<int:id>/excluir")
-@admin_required
+@login_required
+@permissao_required('reuniao.delete')
 def excluir_reuniao(id):
+    """Exclui uma reunião (somente se não tiver ata vinculada)"""
     cursor, conn = get_db()
-    cursor.execute("SELECT * FROM reunioes WHERE id = %s", (id,))
-    reuniao = cursor.fetchone()
-    if not reuniao:
-        flash("Reunião não encontrada", "danger")
-        return_connection(conn)
-        return redirect("/reunioes")
-    cursor.execute("SELECT id FROM atas WHERE reuniao_id = %s", (id,))
-    if cursor.fetchone():
-        flash("Não é possível excluir uma reunião que já possui ata.", "danger")
-    else:
-        dados = dict(reuniao)
+    
+    try:
+        # Buscar dados da reunião
+        cursor.execute("SELECT id, titulo, data, status FROM reunioes WHERE id = %s", (id,))
+        reuniao = cursor.fetchone()
+        
+        if not reuniao:
+            flash("Reunião não encontrada!", "danger")
+            return_connection(conn)
+            return redirect("/reunioes")
+        
+        # Verificar se tem ata vinculada
+        cursor.execute("SELECT id FROM atas WHERE reuniao_id = %s", (id,))
+        ata = cursor.fetchone()
+        
+        if ata:
+            flash(f"Não é possível excluir a reunião '{reuniao['titulo']}' pois ela possui uma ata vinculada!", "danger")
+            return_connection(conn)
+            return redirect(f"/reunioes/{id}")
+        
+        # Registrar log antes de excluir
+        registrar_log("excluir", "reuniao", id, dados_anteriores={"titulo": reuniao['titulo'], "data": reuniao['data']})
+        
+        # Excluir presenças primeiro
+        cursor.execute("DELETE FROM presenca WHERE reuniao_id = %s", (id,))
+        
+        # Excluir a reunião
         cursor.execute("DELETE FROM reunioes WHERE id = %s", (id,))
         conn.commit()
-        registrar_log("excluir", "reuniao", id, dados_anteriores=dados)
-        flash("Reunião excluída com sucesso!", "success")
+        
+        flash(f"Reunião '{reuniao['titulo']}' excluída com sucesso!", "success")
+        
+    except Exception as e:
+        print(f"Erro ao excluir reunião: {e}")
+        conn.rollback()
+        flash(f"Erro ao excluir reunião: {str(e)}", "danger")
+    
     return_connection(conn)
     return redirect("/reunioes")
 
@@ -5562,15 +5644,16 @@ def assinar_ata(id):
 
 
 @app.route("/atas/<int:id>/excluir", methods=["POST"])
-@admin_required
+@login_required
+@permissao_required('ata.delete')
 def excluir_ata(id):
+    """Exclui uma ata (apenas se não estiver aprovada ou se for admin)"""
     cursor, conn = get_db()
     
     try:
-        # Buscar dados da ata antes de excluir
+        # Buscar dados da ata
         cursor.execute("""
-            SELECT a.id, a.numero_ata, a.ano_ata, a.aprovada, a.reuniao_id,
-                   r.titulo as reuniao_titulo
+            SELECT a.id, a.numero_ata, a.ano_ata, a.aprovada, r.titulo as reuniao_titulo
             FROM atas a
             JOIN reunioes r ON a.reuniao_id = r.id
             WHERE a.id = %s
@@ -5578,22 +5661,32 @@ def excluir_ata(id):
         ata = cursor.fetchone()
         
         if not ata:
-            flash("Ata não encontrada", "danger")
+            flash("Ata não encontrada!", "danger")
             return_connection(conn)
             return redirect("/atas")
         
-        # Verificar se é admin
-        if session.get("tipo") != "admin":
-            flash("Apenas administradores podem excluir atas", "danger")
+        # Verificar se a ata está aprovada
+        if ata['aprovada'] == 1 and session.get('tipo') != 'admin':
+            flash("Não é possível excluir uma ata já aprovada!", "danger")
             return_connection(conn)
-            return redirect("/atas")
+            return redirect(f"/atas/{id}")
         
-        # Registrar log antes de excluir
-        registrar_log("excluir_ata", "ata", id, dados_anteriores={
+        # Verificar se tem assinaturas
+        cursor.execute("SELECT COUNT(*) as total FROM assinaturas_ata WHERE ata_id = %s", (id,))
+        assinaturas = cursor.fetchone()['total']
+        
+        if assinaturas > 0:
+            # Se tiver assinaturas, perguntar se quer excluir mesmo assim
+            if session.get('tipo') != 'admin':
+                flash(f"Não é possível excluir a ata pois existem {assinaturas} assinaturas vinculadas!", "danger")
+                return_connection(conn)
+                return redirect(f"/atas/{id}")
+        
+        # Registrar log
+        registrar_log("excluir", "ata", id, dados_anteriores={
             "numero": ata['numero_ata'],
             "ano": ata['ano_ata'],
-            "reuniao": ata['reuniao_titulo'],
-            "aprovada": "Sim" if ata['aprovada'] == 1 else "Não"
+            "reuniao": ata['reuniao_titulo']
         })
         
         # Excluir assinaturas primeiro
@@ -5601,14 +5694,12 @@ def excluir_ata(id):
         
         # Excluir a ata
         cursor.execute("DELETE FROM atas WHERE id = %s", (id,))
-        
         conn.commit()
         
-        flash(f"Ata {ata['numero_ata']}/{ata['ano_ata']} excluída com sucesso!", "success")
+        flash(f"Ata nº {ata['numero_ata']}/{ata['ano_ata']} excluída com sucesso!", "success")
         
     except Exception as e:
         print(f"Erro ao excluir ata: {e}")
-        traceback.print_exc()
         conn.rollback()
         flash(f"Erro ao excluir ata: {str(e)}", "danger")
     

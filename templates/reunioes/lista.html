@@ -122,7 +122,7 @@
                 <div class="table-responsive">
                     <table class="table table-hover" id="tabelaReunioes">
                         <thead class="table-light">
-                             <tr>
+                              <thead>
                                 <th>Título</th>
                                 <th>Data</th>
                                 <th>Horário</th>
@@ -131,7 +131,7 @@
                                 <th>Status</th>
                                 <th>Presença</th>
                                 <th>Ações</th>
-                            </tr>
+                              </thead>
                         </thead>
                         <tbody>
                             {% for reuniao in reunioes %}
@@ -150,8 +150,8 @@
                                         {% endif %}
                                     </small>
                                     {% endif %}
-                                </td>
-                                <td>
+                                 </td>
+                                 <td>
                                     <i class="bi bi-calendar"></i> 
                                     {{ reuniao.data.strftime('%d/%m/%Y') if reuniao.data else '-' }}
                                     {% if reuniao.data and reuniao.data < now.date() %}
@@ -159,8 +159,8 @@
                                     {% elif reuniao.data and reuniao.data == now.date() %}
                                     <br><span class="badge bg-warning">Hoje</span>
                                     {% endif %}
-                                </td>
-                                <td>
+                                 </td>
+                                 <td>
                                     {% if reuniao.hora_inicio %}
                                         <i class="bi bi-clock"></i> 
                                         {{ reuniao.hora_inicio.strftime('%H:%M') if reuniao.hora_inicio else '-' }}
@@ -170,20 +170,20 @@
                                     {% else %}
                                         -
                                     {% endif %}
-                                </td>
-                                <td>
+                                 </td>
+                                 <td>
                                     <span class="badge" style="background-color: {{ reuniao.cor or '#6c757d' }}; color: white;">
                                         {{ reuniao.tipo }}
                                     </span>
-                                </td>
-                                <td>
+                                 </td>
+                                 <td>
                                     <i class="bi bi-geo-alt"></i> 
                                     {{ reuniao.local or '-' }}
                                     {% if reuniao.loja_nome %}
                                     <br><small class="text-muted">{{ reuniao.loja_nome }}</small>
                                     {% endif %}
-                                </td>
-                                <td>
+                                 </td>
+                                 <td>
                                     {% if reuniao.status == 'realizada' %}
                                         <span class="badge bg-success">
                                             <i class="bi bi-check-circle"></i> Realizada
@@ -199,8 +199,8 @@
                                     {% else %}
                                         <span class="badge bg-secondary">{{ reuniao.status }}</span>
                                     {% endif %}
-                                </td>
-                                <td class="text-center">
+                                 </td>
+                                 <td class="text-center">
                                     {% if reuniao.presentes_confirmados is defined %}
                                         <div class="progress" style="height: 20px;">
                                             {% set percentual = (reuniao.presentes_confirmados / reuniao.total_presentes * 100) if reuniao.total_presentes and reuniao.total_presentes > 0 else 0 %}
@@ -216,33 +216,57 @@
                                     {% else %}
                                         -
                                     {% endif %}
-                                </td>
-                                <td>
+                                 </td>
+                                 <td>
                                     <div class="btn-group btn-group-sm" role="group">
                                         <a href="/reunioes/{{ reuniao.id }}" class="btn btn-info" title="Visualizar">
                                             <i class="bi bi-eye"></i>
                                         </a>
-                                        {% if session.tipo == 'admin' and reuniao.status != 'realizada' %}
+                                        
+                                        {% if session.tipo == 'admin' and reuniao.status != 'realizada' and reuniao.status != 'cancelada' %}
                                         <a href="/reunioes/{{ reuniao.id }}/editar" class="btn btn-warning" title="Editar">
                                             <i class="bi bi-pencil"></i>
                                         </a>
                                         {% endif %}
-                                        {% if session.tipo == 'admin' and reuniao.status != 'realizada' %}
+                                        
+                                        {% if session.tipo == 'admin' and reuniao.status != 'realizada' and reuniao.status != 'cancelada' %}
                                         <a href="/reunioes/{{ reuniao.id }}/excluir" class="btn btn-danger" 
                                            title="Excluir" onclick="return confirm('Tem certeza que deseja excluir esta reunião?')">
                                             <i class="bi bi-trash"></i>
                                         </a>
                                         {% endif %}
+                                        
+                                        {% if reuniao.status == 'realizada' %}
+                                            <!-- Botão Cancelar para reuniões realizadas -->
+                                            <form method="POST" action="/reunioes/{{ reuniao.id }}/cancelar" style="display: inline;">
+                                                <button type="submit" class="btn btn-secondary" 
+                                                        onclick="return confirm('⚠️ ATENÇÃO!\n\nDeseja CANCELAR esta reunião realizada?\n\nA reunião será marcada como CANCELADA.\n\nEsta ação pode ser desfeita.\n\nDeseja continuar?')" 
+                                                        title="Cancelar Reunião">
+                                                    <i class="bi bi-x-circle"></i>
+                                                </button>
+                                            </form>
+                                        {% endif %}
+                                        
                                         {% if reuniao.status == 'realizada' %}
                                         <a href="/atas/nova/{{ reuniao.id }}" class="btn btn-success" title="Criar Ata">
                                             <i class="bi bi-file-text"></i>
                                         </a>
                                         {% endif %}
+                                        
+                                        {% if reuniao.status == 'cancelada' and session.tipo == 'admin' %}
+                                        <form method="POST" action="/reunioes/{{ reuniao.id }}/reativar" style="display: inline;">
+                                            <button type="submit" class="btn btn-warning" 
+                                                    onclick="return confirm('Deseja REATIVAR esta reunião cancelada?\n\nEla voltará ao status AGENDADA.')" 
+                                                    title="Reativar Reunião">
+                                                <i class="bi bi-arrow-repeat"></i>
+                                            </button>
+                                        </form>
+                                        {% endif %}
                                     </div>
-                                </td>
-                            </tr>
+                                 </td>
+                             </tr>
                             {% else %}
-                            <tr>
+                             <tr>
                                 <td colspan="8" class="text-center text-muted py-5">
                                     <i class="bi bi-inbox fs-1"></i><br>
                                     Nenhuma reunião encontrada
@@ -252,8 +276,8 @@
                                         <i class="bi bi-plus-circle"></i> Criar primeira reunião
                                     </a>
                                     {% endif %}
-                                </td>
-                            </tr>
+                                 </td>
+                             </tr>
                             {% endfor %}
                         </tbody>
                     </table>
@@ -281,6 +305,16 @@
                         <i class="bi bi-star-fill text-warning"></i> = Mestre
                         <i class="bi bi-star text-primary"></i> = Companheiro
                         <i class="bi bi-star text-secondary"></i> = Aprendiz
+                    </div>
+                </div>
+                <hr>
+                <div class="row">
+                    <div class="col-12">
+                        <small class="text-muted">
+                            <i class="bi bi-info-circle"></i> 
+                            <strong>Dica:</strong> Reuniões realizadas podem ser canceladas (mantendo o histórico). 
+                            Reuniões canceladas podem ser reativadas.
+                        </small>
                     </div>
                 </div>
             </div>
