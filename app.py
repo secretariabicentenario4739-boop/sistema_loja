@@ -1692,12 +1692,32 @@ def editar_material(material_id):
         grau_acesso = request.form.get('grau_acesso')
         autor = request.form.get('autor')
         editora = request.form.get('editora')
+        
+        # Tratar campos numéricos
         ano_publicacao = request.form.get('ano_publicacao')
+        if ano_publicacao and ano_publicacao.strip():
+            try:
+                ano_publicacao = int(ano_publicacao)
+            except ValueError:
+                ano_publicacao = None
+        else:
+            ano_publicacao = None
+        
         num_paginas = request.form.get('num_paginas')
+        if num_paginas and num_paginas.strip():
+            try:
+                num_paginas = int(num_paginas)
+            except ValueError:
+                num_paginas = None
+        else:
+            num_paginas = None
+        
         isbn = request.form.get('isbn')
         tags = request.form.get('tags')
-        destaque = 1 if request.form.get('destaque') else 0
-        publicado = 1 if request.form.get('publicado') else 0
+        
+        # ✅ CORREÇÃO: Usar BOOLEAN (True/False) em vez de INTEGER (1/0)
+        destaque = True if request.form.get('destaque') else False
+        publicado = True if request.form.get('publicado') else False
         
         try:
             cursor.execute("""
