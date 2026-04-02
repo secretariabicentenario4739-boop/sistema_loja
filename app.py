@@ -693,6 +693,7 @@ if __name__ != '__main__':
 # =============================
 # FUNÇÕES AUXILIARES
 # =============================
+
 def tratar_valor_nulo(valor, tipo='string'):
     if valor is None:
         return None
@@ -2072,6 +2073,28 @@ def dashboard():
             pass
         total_sindicantes_ativos = len(sindicantes)
         total_candidatos = len(candidatos)
+        
+        # ========== INÍCIO - CÓDIGO DOS AVISOS ==========
+        # Buscar últimos avisos para o dashboard
+        usuario_grau = session.get('grau_atual', 1)
+        usuario_id = session['user_id']
+        
+        cursor.execute("""
+            SELECT a.*, u.nome_completo as autor_nome,
+                   CASE WHEN av.id IS NOT NULL THEN 1 ELSE 0 END as ja_visto
+            FROM avisos a
+            LEFT JOIN usuarios u ON a.created_by = u.id
+            LEFT JOIN avisos_visualizacoes av ON a.id = av.aviso_id AND av.usuario_id = %s
+            WHERE a.ativo = 1 
+            AND a.data_inicio <= CURRENT_TIMESTAMP
+            AND (a.data_fim IS NULL OR a.data_fim >= CURRENT_TIMESTAMP)
+            AND a.grau_destino <= %s
+            ORDER BY a.created_at DESC
+            LIMIT 5
+        """, (usuario_id, usuario_grau))
+        ultimos_avisos = cursor.fetchall()
+        # ========== FIM - CÓDIGO DOS AVISOS ==========
+        
         if session["tipo"] == "admin":
             em_analise = sum(1 for c in candidatos if c["status"] == "Em análise" and not c["fechado"])
             aprovados = sum(1 for c in candidatos if c["status"] == "Aprovado")
@@ -2134,7 +2157,9 @@ def dashboard():
                         reprovados += 1
                 elif not c["fechado"]:
                     em_analise += 1
+        
         return_connection(conn)
+        
         return render_template(
             "dashboard.html",
             tipo=session["tipo"],
@@ -2156,6 +2181,7 @@ def dashboard():
             prazo_vencido=prazo_vencido,
             sindicantes=sindicantes,
             pareceres_conclusivos=pareceres_conclusivos,
+            ultimos_avisos=ultimos_avisos,  # ← ADICIONE ESTA LINHA
             now=datetime.now()
         )
     except Exception as e:
@@ -2163,7 +2189,6 @@ def dashboard():
         traceback.print_exc()
         flash(f"Erro ao carregar dashboard: {e}", "danger")
         return redirect("/")
-
 # =============================
 # ROTAS DE PERFIL
 # =============================
@@ -6085,194 +6110,366 @@ def editar_modelo(id):
     return render_template("atas/modelo_editar.html", modelo=modelo)
     
 # =============================
-# ROTAS DE COMUNICADOS
+# ROTAS DE AVISOS/COMUNICADOS
 # =============================
 
-@app.route("/comunicados")
+@app.route("/avisos")
 @login_required
-def listar_comunicados():
+def listar_avisos():
+    """Lista avisos conforme grau do usuário"""
     cursor, conn = get_db()
-    tipo = request.args.get('tipo', '')
-    prioridade = request.args.get('prioridade', '')
-    data_ini = request.args.get('data_ini', '')
-    data_fim = request.args.get('data_fim', '')
-    ativo = request.args.get('ativo', '')
-    hoje = datetime.now().strftime("%Y-%m-%d")
-    query = """
-        SELECT c.*, u.nome_completo as autor_nome,
-               (SELECT COUNT(*) FROM visualizacoes_comunicado WHERE comunicado_id = c.id AND obreiro_id = %s) as ja_visto
-        FROM comunicados c
-        JOIN usuarios u ON c.criado_por = u.id
-        WHERE 1=1
-    """
-    params = [session["user_id"]]
-    if tipo:
-        query += " AND c.tipo = %s"
-        params.append(tipo)
-    if prioridade:
-        query += " AND c.prioridade = %s"
-        params.append(prioridade)
-    if data_ini:
-        query += " AND c.data_inicio >= %s"
-        params.append(data_ini)
-    if data_fim:
-        query += " AND c.data_fim <= %s"
-        params.append(data_fim)
-    if ativo != '':
-        query += " AND c.ativo = %s"
-        params.append(ativo)
-    else:
-        query += " AND c.ativo = 1 AND c.data_inicio <= %s AND (c.data_fim IS NULL OR c.data_fim >= %s)"
-        params.extend([hoje, hoje])
-    query += " ORDER BY c.prioridade = 'urgente' DESC, c.data_criacao DESC"
-    cursor.execute(query, params)
-    comunicados = cursor.fetchall()
-    cursor.execute("SELECT DISTINCT tipo FROM comunicados ORDER BY tipo")
-    tipos = cursor.fetchall()
-    cursor.execute("SELECT DISTINCT prioridade FROM comunicados ORDER BY prioridade")
-    prioridades = cursor.fetchall()
+    
+    usuario_grau = session.get('grau_atual', 1)
+    usuario_id = session['user_id']
+    
+    # Buscar avisos permitidos para o grau do usuário
+    cursor.execute("""
+        SELECT a.*, u.nome_completo as autor_nome,
+               CASE WHEN av.id IS NOT NULL THEN 1 ELSE 0 END as ja_visto
+        FROM avisos a
+        LEFT JOIN usuarios u ON a.created_by = u.id
+        LEFT JOIN avisos_visualizacoes av ON a.id = av.aviso_id AND av.usuario_id = %s
+        WHERE a.ativo = 1 
+        AND a.data_inicio <= CURRENT_TIMESTAMP
+        AND (a.data_fim IS NULL OR a.data_fim >= CURRENT_TIMESTAMP)
+        AND a.grau_destino <= %s
+        ORDER BY 
+            CASE a.prioridade 
+                WHEN 'urgente' THEN 1 
+                WHEN 'importante' THEN 2 
+                ELSE 3 
+            END,
+            a.created_at DESC
+    """, (usuario_id, usuario_grau))
+    
+    avisos = cursor.fetchall()
+    
+    # Estatísticas
+    cursor.execute("""
+        SELECT COUNT(*) as total_nao_lidos
+        FROM avisos a
+        LEFT JOIN avisos_visualizacoes av ON a.id = av.aviso_id AND av.usuario_id = %s
+        WHERE a.ativo = 1 
+        AND a.data_inicio <= CURRENT_TIMESTAMP
+        AND (a.data_fim IS NULL OR a.data_fim >= CURRENT_TIMESTAMP)
+        AND a.grau_destino <= %s
+        AND av.id IS NULL
+    """, (usuario_id, usuario_grau))
+    
+    nao_lidos = cursor.fetchone()['total_nao_lidos']
+    
     return_connection(conn)
-    return render_template("comunicados/lista.html", comunicados=comunicados, tipos=tipos,
-                          prioridades=prioridades, filtros={'tipo': tipo, 'prioridade': prioridade,
-                                  'data_ini': data_ini, 'data_fim': data_fim, 'ativo': ativo})
+    
+    return render_template("avisos/lista.html", 
+                          avisos=avisos, 
+                          nao_lidos=nao_lidos,
+                          usuario_grau=usuario_grau)
 
-@app.route("/comunicados/novo", methods=["GET", "POST"])
-@admin_required
-def novo_comunicado():
+
+@app.route("/avisos/novo", methods=["GET", "POST"])
+@login_required
+def novo_aviso():
+    """Criar novo aviso (Mestres e Admin)"""
+    cursor, conn = get_db()
+    
+    usuario_grau = session.get('grau_atual', 1)
+    usuario_tipo = session.get('tipo', '')
+    
+    # Verificar permissão: apenas Mestres (grau >= 3) e Admin
+    if usuario_grau < 3 and usuario_tipo != 'admin':
+        flash("Apenas Mestres e Administradores podem criar avisos!", "danger")
+        return redirect("/dashboard")
+    
     if request.method == "POST":
         titulo = request.form.get("titulo")
         conteudo = request.form.get("conteudo")
-        tipo = request.form.get("tipo")
-        prioridade = request.form.get("prioridade")
-        data_inicio = request.form.get("data_inicio")
-        data_fim = request.form.get("data_fim") or None
+        grau_destino = request.form.get("grau_destino", 1)
+        prioridade = request.form.get("prioridade", "normal")
+        data_fim = request.form.get("data_fim")
         
-        if not titulo or not conteudo or not tipo:
-            flash("Preencha todos os campos obrigatórios (Título, Conteúdo e Tipo)", "danger")
-            return redirect("/comunicados/novo")
-        
-        cursor, conn = get_db()
+        if not titulo or not conteudo:
+            flash("Título e conteúdo são obrigatórios!", "danger")
+            return redirect("/avisos/novo")
         
         try:
-            # Obter próximo ID para comunicados
-            cursor.execute("SELECT MAX(id) FROM comunicados")
-            max_id = cursor.fetchone()['max']
-            next_id = (max_id or 0) + 1
+            data_fim = data_fim if data_fim and data_fim.strip() else None
             
-            # Inserir comunicado com ID explícito
             cursor.execute("""
-                INSERT INTO comunicados (
-                    id, titulo, conteudo, tipo, prioridade, 
-                    data_inicio, data_fim, ativo, criado_por, data_criacao
-                ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, CURRENT_TIMESTAMP)
-            """, (next_id, titulo, conteudo, tipo, prioridade, data_inicio, data_fim, 1, session["user_id"]))
+                INSERT INTO avisos (titulo, conteudo, grau_destino, prioridade, 
+                                   data_fim, created_by, created_at)
+                VALUES (%s, %s, %s, %s, %s, %s, CURRENT_TIMESTAMP)
+                RETURNING id
+            """, (titulo, conteudo, grau_destino, prioridade, data_fim, session['user_id']))
             
+            aviso_id = cursor.fetchone()['id']
             conn.commit()
-            comunicado_id = next_id
             
-            registrar_log("criar", "comunicado", comunicado_id, dados_novos={"titulo": titulo, "prioridade": prioridade})
-            flash("Comunicado publicado com sucesso!", "success")
+            registrar_log("criar", "aviso", aviso_id, dados_novos={"titulo": titulo})
+            flash("Aviso criado com sucesso!", "success")
             
-            return_connection(conn)
-            return redirect("/comunicados")
+            return redirect("/avisos")
             
         except Exception as e:
-            print(f"Erro ao criar comunicado: {e}")
+            print(f"Erro ao criar aviso: {e}")
             conn.rollback()
-            flash(f"Erro ao criar comunicado: {str(e)}", "danger")
-            return_connection(conn)
-            return redirect("/comunicados/novo")
+            flash(f"Erro ao criar aviso: {str(e)}", "danger")
+            return redirect("/avisos/novo")
     
-    hoje = datetime.now().strftime("%Y-%m-%d")
-    return render_template("comunicados/novo.html", hoje=hoje)
+    return_connection(conn)
+    return render_template("avisos/novo.html")
 
-@app.route("/comunicados/<int:id>/visualizar")
+
+@app.route("/avisos/<int:id>/editar", methods=["GET", "POST"])
 @login_required
-def visualizar_comunicado(id):
+def editar_aviso(id):
+    """Editar aviso (apenas autor ou admin)"""
+    cursor, conn = get_db()
+    
+    usuario_id = session['user_id']
+    usuario_grau = session.get('grau_atual', 1)
+    usuario_tipo = session.get('tipo', '')
+    
+    # Buscar aviso
+    cursor.execute("""
+        SELECT * FROM avisos WHERE id = %s
+    """, (id,))
+    aviso = cursor.fetchone()
+    
+    if not aviso:
+        flash("Aviso não encontrado!", "danger")
+        return redirect("/avisos")
+    
+    # Verificar permissão (autor ou admin)
+    if aviso['created_by'] != usuario_id and usuario_tipo != 'admin':
+        flash("Você não tem permissão para editar este aviso!", "danger")
+        return redirect("/avisos")
+    
+    if request.method == "POST":
+        titulo = request.form.get("titulo")
+        conteudo = request.form.get("conteudo")
+        grau_destino = request.form.get("grau_destino")
+        prioridade = request.form.get("prioridade")
+        data_fim = request.form.get("data_fim")
+        ativo = 1 if request.form.get("ativo") else 0
+        
+        if not titulo or not conteudo:
+            flash("Título e conteúdo são obrigatórios!", "danger")
+            return redirect(f"/avisos/{id}/editar")
+        
+        try:
+            data_fim = data_fim if data_fim and data_fim.strip() else None
+            
+            dados_antigos = dict(aviso)
+            
+            cursor.execute("""
+                UPDATE avisos SET
+                    titulo = %s,
+                    conteudo = %s,
+                    grau_destino = %s,
+                    prioridade = %s,
+                    data_fim = %s,
+                    ativo = %s,
+                    updated_at = CURRENT_TIMESTAMP,
+                    updated_by = %s
+                WHERE id = %s
+            """, (titulo, conteudo, grau_destino, prioridade, data_fim, ativo, usuario_id, id))
+            
+            conn.commit()
+            
+            registrar_log("editar", "aviso", id, 
+                         dados_anteriores=dados_antigos,
+                         dados_novos={"titulo": titulo})
+            
+            flash("Aviso atualizado com sucesso!", "success")
+            return redirect("/avisos")
+            
+        except Exception as e:
+            print(f"Erro ao editar aviso: {e}")
+            conn.rollback()
+            flash(f"Erro ao editar aviso: {str(e)}", "danger")
+            return redirect(f"/avisos/{id}/editar")
+    
+    return_connection(conn)
+    return render_template("avisos/editar.html", aviso=aviso)
+
+
+@app.route("/avisos/<int:id>/excluir", methods=["POST"])
+@login_required
+def excluir_aviso(id):
+    """Excluir aviso (apenas autor ou admin)"""
+    cursor, conn = get_db()
+    
+    usuario_id = session['user_id']
+    usuario_tipo = session.get('tipo', '')
+    
+    # Buscar aviso
+    cursor.execute("SELECT * FROM avisos WHERE id = %s", (id,))
+    aviso = cursor.fetchone()
+    
+    if not aviso:
+        flash("Aviso não encontrado!", "danger")
+        return redirect("/avisos")
+    
+    # Verificar permissão
+    if aviso['created_by'] != usuario_id and usuario_tipo != 'admin':
+        flash("Você não tem permissão para excluir este aviso!", "danger")
+        return redirect("/avisos")
+    
+    try:
+        # Excluir visualizações primeiro
+        cursor.execute("DELETE FROM avisos_visualizacoes WHERE aviso_id = %s", (id,))
+        # Excluir aviso
+        cursor.execute("DELETE FROM avisos WHERE id = %s", (id,))
+        conn.commit()
+        
+        registrar_log("excluir", "aviso", id, dados_anteriores={"titulo": aviso['titulo']})
+        flash("Aviso excluído com sucesso!", "success")
+        
+    except Exception as e:
+        print(f"Erro ao excluir aviso: {e}")
+        conn.rollback()
+        flash(f"Erro ao excluir aviso: {str(e)}", "danger")
+    
+    return_connection(conn)
+    return redirect("/avisos")
+
+
+@app.route("/avisos/<int:id>/marcar-visto", methods=["POST"])
+@login_required
+def marcar_aviso_visto(id):
+    """Marcar aviso como visualizado"""
     cursor, conn = get_db()
     
     try:
-        # Registrar visualização
         cursor.execute("""
-            SELECT id FROM visualizacoes_comunicado 
-            WHERE comunicado_id = %s AND obreiro_id = %s
-        """, (id, session["user_id"]))
+            INSERT INTO avisos_visualizacoes (aviso_id, usuario_id)
+            VALUES (%s, %s)
+            ON CONFLICT (aviso_id, usuario_id) DO NOTHING
+        """, (id, session['user_id']))
         
-        if not cursor.fetchone():
-            cursor.execute("""
-                INSERT INTO visualizacoes_comunicado (comunicado_id, obreiro_id)
-                VALUES (%s, %s)
-            """, (id, session["user_id"]))
-            conn.commit()
+        cursor.execute("""
+            UPDATE avisos SET visualizacoes = visualizacoes + 1
+            WHERE id = %s
+        """, (id,))
+        
+        conn.commit()
+        return jsonify({'success': True})
+        
     except Exception as e:
-        print(f"Erro ao registrar visualização: {e}")
-        conn.rollback()
+        print(f"Erro ao marcar visto: {e}")
+        return jsonify({'success': False, 'error': str(e)}), 500
+    finally:
+        return_connection(conn)
+
+
+@app.route("/api/avisos/nao-lidos")
+@login_required
+def api_avisos_nao_lidos():
+    """API para buscar quantidade de avisos não lidos (para o badge)"""
+    cursor, conn = get_db()
+    
+    usuario_grau = session.get('grau_atual', 1)
+    usuario_id = session['user_id']
     
     cursor.execute("""
-        SELECT c.*, u.nome_completo as autor_nome
-        FROM comunicados c
-        JOIN usuarios u ON c.criado_por = u.id
-        WHERE c.id = %s
-    """, (id,))
-    comunicado = cursor.fetchone()
+        SELECT COUNT(*) as total
+        FROM avisos a
+        LEFT JOIN avisos_visualizacoes av ON a.id = av.aviso_id AND av.usuario_id = %s
+        WHERE a.ativo = 1 
+        AND a.data_inicio <= CURRENT_TIMESTAMP
+        AND (a.data_fim IS NULL OR a.data_fim >= CURRENT_TIMESTAMP)
+        AND a.grau_destino <= %s
+        AND av.id IS NULL
+    """, (usuario_id, usuario_grau))
+    
+    total = cursor.fetchone()['total']
     return_connection(conn)
     
-    if not comunicado:
-        flash("Comunicado não encontrado", "danger")
-        return redirect("/comunicados")
+    return jsonify({'nao_lidos': total})
     
-    return render_template("comunicados/detalhes.html", comunicado=comunicado)
-
-@app.route("/comunicados/<int:id>/editar", methods=["GET", "POST"])
-@admin_required
-def editar_comunicado(id):
+@app.route("/api/avisos/ultimos")
+@login_required
+def api_avisos_ultimos():
+    """Retorna os últimos 5 avisos para o sininho"""
     cursor, conn = get_db()
-    if request.method == "POST":
-        titulo = request.form.get("titulo")
-        conteudo = request.form.get("conteudo")
-        tipo = request.form.get("tipo")
-        prioridade = request.form.get("prioridade")
-        data_inicio = request.form.get("data_inicio")
-        data_fim = request.form.get("data_fim") or None
-        ativo = 1 if request.form.get("ativo") else 0
-        cursor.execute("SELECT * FROM comunicados WHERE id = %s", (id,))
-        dados_antigos = dict(cursor.fetchone())
+    
+    usuario_grau = session.get('grau_atual', 1)
+    usuario_id = session['user_id']
+    
+    cursor.execute("""
+        SELECT a.id, a.titulo, a.conteudo, a.prioridade, a.created_at,
+               u.nome_completo as autor_nome,
+               CASE WHEN av.id IS NOT NULL THEN 1 ELSE 0 END as ja_visto
+        FROM avisos a
+        LEFT JOIN usuarios u ON a.created_by = u.id
+        LEFT JOIN avisos_visualizacoes av ON a.id = av.aviso_id AND av.usuario_id = %s
+        WHERE a.ativo = 1 
+        AND a.data_inicio <= CURRENT_TIMESTAMP
+        AND (a.data_fim IS NULL OR a.data_fim >= CURRENT_TIMESTAMP)
+        AND a.grau_destino <= %s
+        ORDER BY a.created_at DESC
+        LIMIT 5
+    """, (usuario_id, usuario_grau))
+    
+    avisos = cursor.fetchall()
+    
+    # Contar não lidos
+    cursor.execute("""
+        SELECT COUNT(*) as total
+        FROM avisos a
+        LEFT JOIN avisos_visualizacoes av ON a.id = av.aviso_id AND av.usuario_id = %s
+        WHERE a.ativo = 1 
+        AND a.data_inicio <= CURRENT_TIMESTAMP
+        AND (a.data_fim IS NULL OR a.data_fim >= CURRENT_TIMESTAMP)
+        AND a.grau_destino <= %s
+        AND av.id IS NULL
+    """, (usuario_id, usuario_grau))
+    
+    nao_lidos = cursor.fetchone()['total']
+    
+    return_connection(conn)
+    
+    # Converter dados para JSON
+    avisos_list = []
+    for aviso in avisos:
+        avisos_list.append({
+            'id': aviso['id'],
+            'titulo': aviso['titulo'],
+            'conteudo': aviso['conteudo'],
+            'prioridade': aviso['prioridade'],
+            'created_at': aviso['created_at'].isoformat() if aviso['created_at'] else None,
+            'autor_nome': aviso['autor_nome'],
+            'ja_visto': aviso['ja_visto']
+        })
+    
+    return jsonify({
+        'success': True,
+        'avisos': avisos_list,
+        'nao_lidos': nao_lidos
+    })
+
+
+@app.route("/api/avisos/marcar-visto/<int:id>", methods=["POST"])
+@login_required
+def api_marcar_aviso_visto(id):
+    """Marca aviso como visualizado via AJAX"""
+    cursor, conn = get_db()
+    
+    try:
         cursor.execute("""
-            UPDATE comunicados
-            SET titulo=%s, conteudo=%s, tipo=%s, prioridade=%s, data_inicio=%s, data_fim=%s, ativo=%s
-            WHERE id=%s
-        """, (titulo, conteudo, tipo, prioridade, data_inicio, data_fim, ativo, id))
+            INSERT INTO avisos_visualizacoes (aviso_id, usuario_id, visualizado_em)
+            VALUES (%s, %s, CURRENT_TIMESTAMP)
+            ON CONFLICT (aviso_id, usuario_id) DO NOTHING
+        """, (id, session['user_id']))
+        
         conn.commit()
-        registrar_log("editar", "comunicado", id, dados_anteriores=dados_antigos,
-                     dados_novos={"titulo": titulo, "prioridade": prioridade})
-        flash("Comunicado atualizado com sucesso!", "success")
-        return_connection(conn)
-        return redirect("/comunicados")
-    cursor.execute("SELECT * FROM comunicados WHERE id = %s", (id,))
-    comunicado = cursor.fetchone()
-    return_connection(conn)
-    return render_template("comunicados/editar.html", comunicado=comunicado)
+        return jsonify({'success': True})
+    except Exception as e:
+        print(f"Erro ao marcar visto: {e}")
+        return jsonify({'success': False, 'error': str(e)}), 500
+    finally:
+        return_connection(conn)    
 
-@app.route("/comunicados/<int:id>/excluir")
-@admin_required
-def excluir_comunicado(id):
-    cursor, conn = get_db()
-    cursor.execute("SELECT * FROM comunicados WHERE id = %s", (id,))
-    comunicado = cursor.fetchone()
-    if comunicado:
-        dados = dict(comunicado)
-        cursor.execute("DELETE FROM comunicados WHERE id = %s", (id,))
-        conn.commit()
-        registrar_log("excluir", "comunicado", id, dados_anteriores=dados)
-        flash("Comunicado excluído com sucesso!", "success")
-    else:
-        flash("Comunicado nao encontrado", "danger")
-    return_connection(conn)
-    return redirect("/comunicados")
-
-# =============================
-# ROTAS DE CANDIDATOS E SINDICÂNCIA
-# =============================
 # =============================
 # ROTAS DE CANDIDATOS E SINDICÂNCIA
 # =============================
@@ -7308,15 +7505,9 @@ def editar_loja(id):
             return redirect(f"/lojas/editar/{id}")
 
         try:
-            # Verificar duplicidade (exceto a própria loja)
-            cursor.execute("SELECT id FROM lojas WHERE nome = %s AND id != %s", (nome, id))
-            if cursor.fetchone():
-                flash(f"Já existe outra loja com o nome '{nome}'!", "danger")
-                return_connection(conn)
-                return redirect(f"/lojas/editar/{id}")
-
             dados_anteriores = dict(loja)
             
+            # Query SEM o updated_at
             cursor.execute("""
                 UPDATE lojas SET
                     nome = %s,
@@ -7341,8 +7532,7 @@ def editar_loja(id):
                     dia_reuniao = %s,
                     rito = %s,
                     observacoes = %s,
-                    ativo = %s,
-                    updated_at = CURRENT_TIMESTAMP
+                    ativo = %s
                 WHERE id = %s
             """, (
                 nome, numero, oriente, cidade, uf,
@@ -7376,51 +7566,86 @@ def editar_loja(id):
 @login_required
 @permissao_required('loja.delete')
 def excluir_loja(id):
-    cursor, conn = get_db()
-    
     try:
+        cursor, conn = get_db()
+        
         # Buscar dados da loja
         cursor.execute("SELECT id, nome FROM lojas WHERE id = %s", (id,))
         loja = cursor.fetchone()
         
         if not loja:
             flash("Loja não encontrada!", "danger")
-            return_connection(conn)
             return redirect("/lojas")
         
-        # Verificar se existem obreiros vinculados
-        cursor.execute("SELECT COUNT(*) as total FROM usuarios WHERE loja_nome = %s", (loja['nome'],))
-        obreiros = cursor.fetchone()['total']
+        # Verificar obreiros vinculados
+        cursor.execute("""
+            SELECT id, usuario, nome_completo, cim_numero 
+            FROM usuarios 
+            WHERE loja_nome = %s
+            ORDER BY nome_completo
+        """, (loja['nome'],))
+        obreiros = cursor.fetchall()
+        total_obreiros = len(obreiros)
         
-        if obreiros > 0:
-            flash(f"Não é possível excluir a loja '{loja['nome']}' pois existem {obreiros} obreiros vinculados!", "danger")
-            return_connection(conn)
-            return redirect("/lojas")
+        if total_obreiros > 0:
+            # Redirecionar para página de erro com detalhes
+            return render_template("erro_exclusao_loja.html", 
+                                 loja_id=loja['id'],
+                                 loja_nome=loja['nome'],
+                                 total_obreiros=total_obreiros,
+                                 obreiros=obreiros)
         
-        # Verificar se existem reuniões vinculadas
+        # Verificar reuniões vinculadas
         cursor.execute("SELECT COUNT(*) as total FROM reunioes WHERE loja_id = %s", (id,))
         reunioes = cursor.fetchone()['total']
         
         if reunioes > 0:
-            flash(f"Não é possível excluir a loja '{loja['nome']}' pois existem {reunioes} reuniões vinculadas!", "danger")
-            return_connection(conn)
+            flash(f"""
+                <div class="d-flex align-items-center">
+                    <i class="bi bi-calendar-x-fill fs-1 me-3 text-danger"></i>
+                    <div>
+                        <strong class="fs-5">Não é possível excluir a loja "{loja['nome']}"</strong><br>
+                        <span>{reunioes} reuniões estão vinculadas a esta loja.</span>
+                    </div>
+                </div>
+            """, "danger")
             return redirect("/lojas")
         
-        # Excluir loja
+        # Excluir loja (se não houver vínculos)
         cursor.execute("DELETE FROM lojas WHERE id = %s", (id,))
         conn.commit()
         
         registrar_log("excluir", "loja", id, dados_anteriores={"nome": loja['nome']})
-        flash(f"Loja '{loja['nome']}' excluída com sucesso!", "success")
+        
+        flash(f"""
+            <div class="d-flex align-items-center">
+                <i class="bi bi-check-circle-fill fs-1 me-3 text-success"></i>
+                <div>
+                    <strong class="fs-5">Loja excluída com sucesso!</strong><br>
+                    A loja "{loja['nome']}" foi removida permanentemente.
+                </div>
+            </div>
+        """, "success")
+        
+        return redirect("/lojas")
         
     except Exception as e:
         print(f"Erro ao excluir loja: {e}")
-        conn.rollback()
-        flash(f"Erro ao excluir loja: {str(e)}", "danger")
-    
-    return_connection(conn)
-    return redirect("/lojas")
-
+        if conn:
+            conn.rollback()
+        flash(f"""
+            <div class="d-flex align-items-center">
+                <i class="bi bi-bug-fill fs-1 me-3 text-danger"></i>
+                <div>
+                    <strong class="fs-5">Erro ao excluir loja</strong><br>
+                    {str(e)}
+                </div>
+            </div>
+        """, "danger")
+        return redirect("/lojas")
+    finally:
+        if conn:
+            return_connection(conn)
 
 
 # =============================

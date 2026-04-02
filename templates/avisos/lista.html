@@ -1,0 +1,168 @@
+{% extends "base.html" %}
+
+{% block title %}Avisos e Comunicados{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="container">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <div>
+                <h2>
+                    <i class="bi bi-megaphone-fill"></i> 
+                    Avisos e Comunicados
+                    {% if nao_lidos > 0 %}
+                    <span class="badge bg-danger">{{ nao_lidos }} novo(s)</span>
+                    {% endif %}
+                </h2>
+                <p class="text-muted mb-0">Avisos direcionados por grau maçônico</p>
+            </div>
+            <div>
+                <a href="/dashboard" class="btn btn-outline-secondary">
+                    <i class="bi bi-arrow-left"></i> Voltar
+                </a>
+                {% if session.grau_atual >= 3 or session.tipo == 'admin' %}
+                <a href="/avisos/novo" class="btn btn-primary">
+                    <i class="bi bi-plus-circle"></i> Novo Aviso
+                </a>
+                {% endif %}
+            </div>
+        </div>
+
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+                        {{ message | safe }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
+        {% if avisos %}
+            <div class="row">
+                {% for aviso in avisos %}
+                <div class="col-md-6 col-lg-4 mb-4">
+                    <div class="card shadow h-100 {% if not aviso.ja_visto %}border-primary{% endif %}">
+                        <div class="card-header {% if aviso.prioridade == 'urgente' %}bg-danger text-white{% elif aviso.prioridade == 'importante' %}bg-warning text-dark{% else %}bg-secondary text-white{% endif %}">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <span class="badge bg-light text-dark">
+                                    {% if aviso.grau_destino == 1 %}📘 Aprendiz
+                                    {% elif aviso.grau_destino == 2 %}📙 Companheiro
+                                    {% else %}📕 Mestre{% endif %}
+                                </span>
+                                <small>
+                                    <i class="bi bi-person-circle"></i> {{ aviso.autor_nome or 'Sistema' }}
+                                </small>
+                            </div>
+                        </div>
+                        <div class="card-body">
+                            <div class="mb-2">
+                                {% if aviso.prioridade == 'urgente' %}
+                                    <span class="badge bg-danger">🔴 URGENTE</span>
+                                {% elif aviso.prioridade == 'importante' %}
+                                    <span class="badge bg-warning">🟡 IMPORTANTE</span>
+                                {% else %}
+                                    <span class="badge bg-info">🔵 NORMAL</span>
+                                {% endif %}
+                                
+                                {% if not aviso.ja_visto %}
+                                    <span class="badge bg-primary">🆕 NOVO</span>
+                                {% endif %}
+                            </div>
+                            
+                            <h5 class="card-title">{{ aviso.titulo }}</h5>
+                            <p class="card-text text-muted small">
+                                <i class="bi bi-clock"></i> 
+                                {{ aviso.created_at.strftime('%d/%m/%Y %H:%M') }}
+                                {% if aviso.data_fim %}
+                                <br><i class="bi bi-calendar-x"></i> Válido até: {{ aviso.data_fim.strftime('%d/%m/%Y') }}
+                                {% endif %}
+                            </p>
+                            <p class="card-text">{{ aviso.conteudo[:150] }}{% if aviso.conteudo|length > 150 %}...{% endif %}</p>
+                        </div>
+                        <div class="card-footer bg-transparent">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <button onclick="marcarVisto({{ aviso.id }})" class="btn btn-sm btn-outline-success" {% if aviso.ja_visto %}disabled{% endif %}>
+                                        <i class="bi bi-check-circle"></i> 
+                                        {% if aviso.ja_visto %}Visto{% else %}Marcar como Visto{% endif %}
+                                    </button>
+                                    <small class="text-muted ms-2">
+                                        <i class="bi bi-eye"></i> {{ aviso.visualizacoes }} visualizações
+                                    </small>
+                                </div>
+                                <div>
+                                    {% if session.user_id == aviso.created_by or session.tipo == 'admin' %}
+                                    <div class="btn-group btn-group-sm">
+                                        <a href="/avisos/{{ aviso.id }}/editar" class="btn btn-warning" title="Editar">
+                                            <i class="bi bi-pencil"></i>
+                                        </a>
+                                        <form action="/avisos/{{ aviso.id }}/excluir" method="POST" style="display:inline;" 
+                                              onsubmit="return confirm('Tem certeza que deseja excluir este aviso?')">
+                                            <button type="submit" class="btn btn-danger" title="Excluir">
+                                                <i class="bi bi-trash"></i>
+                                            </button>
+                                        </form>
+                                    </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <div class="card shadow">
+                <div class="card-body text-center py-5">
+                    <i class="bi bi-megaphone-slash fs-1 text-muted"></i>
+                    <h5 class="mt-3">Nenhum aviso disponível</h5>
+                    <p class="text-muted">Não há avisos para o seu grau no momento.</p>
+                    {% if session.grau_atual >= 3 or session.tipo == 'admin' %}
+                    <a href="/avisos/novo" class="btn btn-primary">
+                        <i class="bi bi-plus-circle"></i> Criar Primeiro Aviso
+                    </a>
+                    {% endif %}
+                </div>
+            </div>
+        {% endif %}
+    </div>
+</div>
+
+<script>
+function marcarVisto(avisoId) {
+    fetch(`/avisos/${avisoId}/marcar-visto`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            location.reload();
+        } else {
+            alert('Erro ao marcar como visto');
+        }
+    })
+    .catch(error => {
+        console.error('Erro:', error);
+        alert('Erro ao marcar como visto');
+    });
+}
+</script>
+
+<style>
+    .card {
+        transition: transform 0.2s;
+        border-radius: 12px;
+    }
+    .card:hover {
+        transform: translateY(-5px);
+    }
+    .btn-group-sm .btn {
+        padding: 0.2rem 0.5rem;
+    }
+</style>
+{% endblock %}

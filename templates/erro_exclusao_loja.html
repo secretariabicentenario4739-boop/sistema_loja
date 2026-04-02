@@ -1,0 +1,101 @@
+{% extends "base.html" %}
+
+{% block title %}Erro - Exclusão de Loja{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card shadow border-danger">
+                <div class="card-header bg-danger text-white">
+                    <h4 class="mb-0">
+                        <i class="bi bi-exclamation-triangle-fill"></i> 
+                        Não é possível excluir a loja
+                    </h4>
+                </div>
+                <div class="card-body">
+                    <div class="text-center mb-4">
+                        <i class="bi bi-building-x fs-1 text-danger"></i>
+                        <h3 class="mt-2">{{ loja_nome }}</h3>
+                        <p class="text-muted">ID: #{{ loja_id }}</p>
+                    </div>
+                    
+                    <div class="alert alert-warning">
+                        <div class="d-flex align-items-center">
+                            <i class="bi bi-people-fill fs-3 me-3"></i>
+                            <div>
+                                <strong>{{ total_obreiros }} obreiro(s)</strong> estão vinculados a esta loja.
+                            </div>
+                        </div>
+                    </div>
+                    
+                    {% if obreiros %}
+                    <div class="mb-4">
+                        <label class="form-label fw-bold">
+                            <i class="bi bi-list-ul"></i> Obreiros vinculados:
+                        </label>
+                        <div class="list-group" style="max-height: 300px; overflow-y: auto;">
+                            {% for obreiro in obreiros %}
+                            <div class="list-group-item">
+                                <div class="d-flex align-items-center">
+                                    <i class="bi bi-person-badge me-3 fs-4 text-primary"></i>
+                                    <div>
+                                        <strong>{{ obreiro.nome_completo or obreiro.usuario }}</strong>
+                                        <br>
+                                        <small class="text-muted">
+                                            <i class="bi bi-person-circle"></i> Usuário: {{ obreiro.usuario }}
+                                            {% if obreiro.cim_numero %}
+                                            | <i class="bi bi-hash"></i> CIM: {{ obreiro.cim_numero }}
+                                            {% endif %}
+                                        </small>
+                                    </div>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    {% endif %}
+                    
+                    <div class="alert alert-info">
+                        <div class="d-flex align-items-start">
+                            <i class="bi bi-lightbulb-fill fs-3 me-3"></i>
+                            <div>
+                                <strong>Solução:</strong> Antes de excluir esta loja, você precisa:
+                                <ul class="mt-2 mb-0">
+                                    <li>Transferir ou remover todos os obreiros vinculados</li>
+                                    <li>Mover ou excluir as reuniões associadas</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="d-flex justify-content-between gap-2 mt-4">
+                        <a href="/lojas" class="btn btn-secondary flex-grow-1">
+                            <i class="bi bi-arrow-left"></i> Voltar para Lojas
+                        </a>
+                        <a href="/obreiros?loja={{ loja_nome }}" class="btn btn-primary flex-grow-1">
+                            <i class="bi bi-people"></i> Ver Obreiros da Loja
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .list-group-item {
+        transition: background-color 0.2s;
+    }
+    .list-group-item:hover {
+        background-color: #f8f9fa;
+    }
+    .alert {
+        border-radius: 12px;
+    }
+    .card {
+        border-radius: 16px;
+        overflow: hidden;
+    }
+</style>
+{% endblock %}

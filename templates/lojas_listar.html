@@ -15,9 +15,12 @@
                 <a href="/dashboard" class="btn btn-outline-secondary">
                     <i class="bi bi-arrow-left"></i> Voltar
                 </a>
+                <!-- Botão Nova Loja - APENAS ADMIN -->
+                {% if session.tipo == 'admin' %}
                 <a href="/lojas/nova" class="btn btn-success">
                     <i class="bi bi-plus-circle"></i> Nova Loja
                 </a>
+                {% endif %}
             </div>
         </div>
 
@@ -44,44 +47,53 @@
                                 <th>Oriente</th>
                                 <th>Cidade/UF</th>
                                 <th>Status</th>
-                                <th>Ações</th>
+                                {% if session.tipo == 'admin' %}
+                                <th class="text-center">Ações</th>
+                                {% endif %}
                             </tr>
                         </thead>
                         <tbody>
                             {% if lojas %}
                                 {% for loja in lojas %}
-                                <tr>
-                                    <td>{{ loja.id }}</td>
-                                    <td>
+                                <tr id="row-{{ loja.id }}">
+                                    <td class="align-middle">{{ loja.id }}</td>
+                                    <td class="align-middle">
                                         <strong>{{ loja.nome }}</strong>
                                         {% if loja.nome_maconico %}
                                             <br>
                                             <small class="text-muted">{{ loja.nome_maconico }}</small>
                                         {% endif %}
                                     </td>
-                                    <td>{{ loja.numero or '-' }}</td>
-                                    <td>{{ loja.oriente or '-' }}</td>
-                                    <td>
+                                    <td class="align-middle">{{ loja.numero or '-' }}</td>
+                                    <td class="align-middle">{{ loja.oriente or '-' }}</td>
+                                    <td class="align-middle">
                                         {{ loja.cidade or '-' }}/{{ loja.uf or '-' }}
                                     </td>
-                                    <td>
+                                    <td class="align-middle">
                                         {% if loja.ativo == 1 %}
                                             <span class="badge bg-success">Ativa</span>
                                         {% else %}
                                             <span class="badge bg-danger">Inativa</span>
                                         {% endif %}
                                     </td>
-                                    <td>
+                                    {% if session.tipo == 'admin' %}
+                                    <td class="text-center align-middle">
                                         <div class="btn-group btn-group-sm">
-                                            <a href="/lojas/editar/{{ loja.id }}" class="btn btn-warning" title="Editar">
+                                            <!-- Editar - APENAS ADMIN -->
+                                            <a href="/lojas/editar/{{ loja.id }}" class="btn btn-warning" title="Editar Loja">
                                                 <i class="bi bi-pencil"></i>
                                             </a>
-                                            <button type="button" class="btn btn-danger" title="Excluir"
-                                                    onclick="excluirLoja({{ loja.id }}, '{{ loja.nome }}')">
-                                                <i class="bi bi-trash"></i>
-                                            </button>
+                                            
+                                            <!-- Excluir - APENAS ADMIN (Formulário tradicional) -->
+                                            <form action="/lojas/excluir/{{ loja.id }}" method="POST" style="display:inline;" 
+                                                  onsubmit="return confirm('Tem certeza que deseja excluir a loja \"{{ loja.nome }}\"?\n\nEsta ação não pode ser desfeita!');">
+                                                <button type="submit" class="btn btn-danger" title="Excluir Loja">
+                                                    <i class="bi bi-trash"></i>
+                                                </button>
+                                            </form>
                                         </div>
                                     </td>
+                                    {% endif %}
                                 </tr>
                                 {% endfor %}
                             {% else %}
@@ -99,40 +111,4 @@
         </div>
     </div>
 </div>
-
-<script>
-function excluirLoja(id, nome) {
-    if (confirm(`Tem certeza que deseja excluir a loja "${nome}"?\n\nEsta ação não pode ser desfeita!`)) {
-
-        fetch(`/lojas/excluir/${id}`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            }
-        })
-        .then(res => res.json())
-        .then(data => {
-
-            if (data.ok) {
-               alert('Loja excluída com sucesso!');
-			   location.reload();
-
-                // remove a linha da tabela sem recarregar
-                const row = document.getElementById(`row-${id}`);
-                if (row) {
-                    row.remove();
-                }
-
-            } else {
-                alert('Erro: ' + data.msg);
-            }
-
-        })
-        .catch(error => {
-            console.error(error);
-            alert('Erro na requisição');
-        });
-    }
-}
-</script>
 {% endblock %}

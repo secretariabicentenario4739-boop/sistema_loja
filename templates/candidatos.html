@@ -146,24 +146,31 @@
                                             </a>
                                         </td>
                                         <td>
-                                            <div class="btn-group btn-group-sm">
-                                                <a href="/sindicancia/{{ c.id }}" class="btn btn-info" title="Visualizar Sindicância">
-                                                    <i class="bi bi-eye"></i>
-                                                </a>
-                                                {% if not c.fechado %}
-                                                <a href="/fechar_sindicancia/{{ c.id }}" class="btn btn-warning" 
-                                                   onclick="return confirm('Encerrar sindicância deste candidato?')" title="Encerrar Sindicância">
-                                                    <i class="bi bi-check2-circle"></i>
-                                                </a>
-                                                {% endif %}
-                                                <form action="/candidatos/excluir/{{ c.id }}" method="POST" style="display:inline;">
-													<button type="submit" class="btn btn-danger"
-														onclick="return confirm('Excluir este candidato?')">
-														<i class="bi bi-trash"></i>
-													</button>
-												</form>
-                                            </div>
-                                        </td>
+    {% if session.tipo == 'admin' or session.tipo == 'sindicante' %}
+<div class="btn-group btn-group-sm">
+    <!-- Visualizar Sindicância -->
+    <a href="/sindicancia/{{ c.id }}" class="btn btn-info" title="Visualizar Sindicância">
+        <i class="bi bi-eye"></i>
+    </a>
+    
+    <!-- Encerrar Sindicância -->
+    {% if not c.fechado %}
+    <a href="/fechar_sindicancia/{{ c.id }}" class="btn btn-warning" 
+       onclick="return confirm('Encerrar sindicância deste candidato?')" title="Encerrar Sindicância">
+        <i class="bi bi-check2-circle"></i>
+    </a>
+    {% endif %}
+    
+    <!-- Excluir Candidato -->
+    <form action="/candidatos/excluir/{{ c.id }}" method="POST" style="display:inline;">
+        <button type="submit" class="btn btn-danger" 
+                onclick="return confirm('Excluir este candidato?')" title="Excluir Candidato">
+            <i class="bi bi-trash"></i>
+        </button>
+    </form>
+</div>
+{% endif %}
+</td>
                                     </tr>
                                     {% endfor %}
                                 </tbody>
@@ -180,56 +187,58 @@
             </div>
         </div>
 
-        <!-- Sindicantes Ativos -->
-        <div class="row mt-4">
-            <div class="col-md-12">
-                <div class="card shadow">
-                    <div class="card-header bg-secondary text-white">
-                        <h5 class="mb-0"><i class="bi bi-person-badge"></i> Sindicantes Ativos</h5>
-                    </div>
-                    <div class="card-body">
-                        {% if sindicantes %}
-                        <div class="table-responsive">
-                            <table class="table table-sm">
-                                <thead>
-                                    <tr>
-                                        <th>Usuário</th>
-                                        <th>Nome</th>
-                                        <th>Loja</th>
-                                        <th>CIM</th>
-                                        <th>Telefone</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {% for s in sindicantes %}
-                                    <tr>
-                                        <td><strong>{{ s.usuario }}</strong></td>
-                                        <td>{{ s.nome_completo or '-' }}</td>
-                                        <td>
-                                            {% if s.loja_nome %}
-                                                {{ s.loja_nome }} - Nº {{ s.loja_numero or '-' }}
-                                            {% else %}
-                                                -
-                                            {% endif %}
-                                        </td>
-                                        <td>{{ s.cim_numero or '-' }}</td>
-                                        <td>{{ s.telefone or '-' }}</td>
-                                    </tr>
-                                    {% endfor %}
-                                </tbody>
-                            </table>
-                        </div>
-                        {% else %}
-                        <div class="alert alert-warning mb-0">
-                            <i class="bi bi-exclamation-triangle"></i>
-                            Nenhum sindicante ativo cadastrado. 
-                            <a href="/sindicantes" class="alert-link">Cadastre sindicantes</a> para iniciar as sindicâncias.
-                        </div>
-                        {% endif %}
-                    </div>
+       <!-- Sindicantes Ativos - APENAS ADMIN -->
+{% if session.tipo == 'admin' %}
+<div class="row mt-4">
+    <div class="col-md-12">
+        <div class="card shadow">
+            <div class="card-header bg-secondary text-white">
+                <h5 class="mb-0"><i class="bi bi-person-badge"></i> Sindicantes Ativos</h5>
+            </div>
+            <div class="card-body">
+                {% if sindicantes %}
+                <div class="table-responsive">
+                    <table class="table table-sm">
+                        <thead>
+                            <tr>
+                                <th>Usuário</th>
+                                <th>Nome</th>
+                                <th>Loja</th>
+                                <th>CIM</th>
+                                <th>Telefone</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for s in sindicantes %}
+                            <tr>
+                                <td><strong>{{ s.usuario }}</strong></td>
+                                <td>{{ s.nome_completo or '-' }}</td>
+                                <td>
+                                    {% if s.loja_nome %}
+                                        {{ s.loja_nome }} - Nº {{ s.loja_numero or '-' }}
+                                    {% else %}
+                                        -
+                                    {% endif %}
+                                 </td>
+                                <td>{{ s.cim_numero or '-' }}</td>
+                                <td>{{ s.telefone or '-' }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
                 </div>
+                {% else %}
+                <div class="alert alert-warning mb-0">
+                    <i class="bi bi-exclamation-triangle"></i>
+                    Nenhum sindicante ativo cadastrado. 
+                    <a href="/sindicantes" class="alert-link">Cadastre sindicantes</a> para iniciar as sindicâncias.
+                </div>
+                {% endif %}
             </div>
         </div>
+    </div>
+</div>
+{% endif %}
 
         <!-- Instruções -->
         <div class="row mt-4">
@@ -276,36 +285,40 @@
             </div>
         </div>
 
-        <!-- Candidatos com formulário pendente (opcional) -->
-        {% set pendentes = candidatos|selectattr('cpf', 'equalto', None)|list %}
-        {% if pendentes %}
-        <div class="row mt-4">
-            <div class="col-md-12">
-                <div class="card shadow border-warning">
-                    <div class="card-header bg-warning text-dark">
-                        <h5 class="mb-0"><i class="bi bi-exclamation-triangle"></i> Formulários Pendentes</h5>
-                    </div>
-                    <div class="card-body">
-                        <p class="mb-2">Os seguintes candidatos ainda não tiveram o formulário completo preenchido:</p>
-                        <div class="list-group">
-                            {% for c in pendentes %}
-                            <div class="list-group-item d-flex justify-content-between align-items-center">
-                                <div>
-                                    <strong>{{ c.nome }}</strong>
-                                    <br>
-                                    <small class="text-muted">Cadastrado em: {{ c.data_criacao.strftime('%d/%m/%Y') }}</small>
-                                </div>
-                                <a href="/candidato/formulario/{{ c.id }}" class="btn btn-sm btn-warning">
-                                    <i class="bi bi-file-text"></i> Preencher Formulário
-                                </a>
+        <!-- Candidatos com formulário pendente (opcional) - APENAS ADMIN -->
+{% if session.tipo == 'admin' %}
+    {% set pendentes = candidatos|selectattr('cpf', 'equalto', None)|list %}
+    {% if pendentes %}
+	
+	
+    <div class="row mt-4">
+        <div class="col-md-12">
+            <div class="card shadow border-warning">
+                <div class="card-header bg-warning text-dark">
+                    <h5 class="mb-0"><i class="bi bi-exclamation-triangle"></i> Formulários Pendentes</h5>
+                </div>
+                <div class="card-body">
+                    <p class="mb-2">Os seguintes candidatos ainda não tiveram o formulário completo preenchido:</p>
+                    <div class="list-group">
+                        {% for c in pendentes %}
+                        <div class="list-group-item d-flex justify-content-between align-items-center">
+                            <div>
+                                <strong>{{ c.nome }}</strong>
+                                <br>
+                                <small class="text-muted">Cadastrado em: {{ c.data_criacao.strftime('%d/%m/%Y') }}</small>
                             </div>
-                            {% endfor %}
+                            <a href="/candidato/formulario/{{ c.id }}" class="btn btn-sm btn-warning">
+                                <i class="bi bi-file-text"></i> Preencher Formulário
+                            </a>
                         </div>
+                        {% endfor %}
                     </div>
                 </div>
             </div>
         </div>
-        {% endif %}
+    </div>
+    {% endif %}
+{% endif %}
     </div>
 </div>
 

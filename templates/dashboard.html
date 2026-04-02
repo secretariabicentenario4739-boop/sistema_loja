@@ -345,107 +345,169 @@
                 {% endif %}
             </div>
         </div>
-
-        <!-- Seção 4: Próximas Reuniões e Atividades -->
-        <div class="row">
-            <div class="col-md-6 mb-4">
-                <div class="card shadow h-100">
-                    <div class="card-header bg-primary text-white">
-                        <h5 class="mb-0"><i class="bi bi-calendar-week"></i> Próximas Reuniões</h5>
-                    </div>
-                    <div class="card-body">
-                        {% if proximas_reunioes %}
-                            <div class="list-group">
-                                {% for r in proximas_reunioes %}
-                                <a href="/reunioes/{{ r.id }}" class="list-group-item list-group-item-action">
-                                    <div class="d-flex w-100 justify-content-between">
-                                        <h6 class="mb-1">{{ r.titulo }}</h6>
-                                        <small class="text-muted">
-                                            {{ r.data.strftime('%d/%m/%Y') if r.data else '-' }}
-                                        </small>
-                                    </div>
-                                    <small class="text-muted">
-                                        <i class="bi bi-clock"></i> 
-                                        {{ r.hora_inicio.strftime('%H:%M') if r.hora_inicio else '-' }}
-                                        {% if r.hora_termino %}
-                                        às {{ r.hora_termino.strftime('%H:%M') if r.hora_termino else '-' }}
-                                        {% endif %}
-                                    </small>
-                                    {% if r.local %}
-                                    <br><small class="text-muted">
-                                        <i class="bi bi-geo-alt"></i> {{ r.local }}
-                                    </small>
-                                    {% endif %}
-                                </a>
-                                {% endfor %}
-                            </div>
-                            {% if proxima_reuniao %}
-                            <div class="mt-3 text-center">
-                                <div class="alert alert-info">
-                                    <i class="bi bi-bell"></i> 
-                                    Próxima reunião: {{ proxima_reuniao.data.strftime('%d/%m/%Y') if proxima_reuniao.data else '-' }}
-                                </div>
-                            </div>
-                            {% endif %}
-                        {% else %}
-                            <p class="text-center text-muted py-4">
-                                <i class="bi bi-calendar-x fs-1"></i><br>
-                                Nenhuma reunião agendada
-                            </p>
-                            {% if session.tipo == 'admin' %}
-                            <div class="text-center">
-                                <a href="/reunioes/nova" class="btn btn-sm btn-success">
-                                    <i class="bi bi-plus-circle"></i> Agendar Reunião
-                                </a>
-                            </div>
-                            {% endif %}
-                        {% endif %}
-                    </div>
-                </div>
+<!-- Seção: Últimos Avisos -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card shadow">
+            <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">
+                    <i class="bi bi-megaphone-fill"></i> 
+                    Últimos Avisos
+                </h5>
+                <a href="/avisos" class="btn btn-sm btn-light">
+                    Ver todos <i class="bi bi-arrow-right"></i>
+                </a>
             </div>
-
-            <div class="col-md-6 mb-4">
-                <div class="card shadow h-100">
-                    <div class="card-header bg-success text-white">
-                        <h5 class="mb-0"><i class="bi bi-people"></i> Sindicantes Ativos</h5>
-                    </div>
-                    <div class="card-body">
-                        {% if sindicantes %}
-                            <div class="list-group">
-                                {% for s in sindicantes %}
-                                <div class="list-group-item">
-                                    <div class="d-flex w-100 justify-content-between">
-                                        <h6 class="mb-1">{{ s.nome_completo or s.usuario }}</h6>
-                                        <small class="text-muted">{{ s.usuario }}</small>
+            <div class="card-body">
+                {% if ultimos_avisos %}
+                    <div class="list-group">
+                        {% for aviso in ultimos_avisos %}
+                        <div class="list-group-item {% if not aviso.ja_visto %}list-group-item-primary{% endif %}">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div class="flex-grow-1">
+                                    <div class="mb-1">
+                                        <strong>{{ aviso.titulo }}</strong>
+                                        {% if aviso.prioridade == 'urgente' %}
+                                            <span class="badge bg-danger ms-2">🔴 URGENTE</span>
+                                        {% elif aviso.prioridade == 'importante' %}
+                                            <span class="badge bg-warning text-dark ms-2">🟡 IMPORTANTE</span>
+                                        {% endif %}
+                                        {% if not aviso.ja_visto %}
+                                            <span class="badge bg-primary ms-2">🆕 NOVO</span>
+                                        {% endif %}
                                     </div>
                                     <small class="text-muted">
-                                        <i class="bi bi-building"></i> {{ s.loja_nome or 'Loja não informada' }}
+                                        <i class="bi bi-clock"></i> {{ aviso.created_at.strftime('%d/%m/%Y %H:%M') if aviso.created_at else '-' }}
+                                        <i class="bi bi-person-circle ms-2"></i> {{ aviso.autor_nome or 'Sistema' }}
+                                        <i class="bi bi-eye ms-2"></i> {{ aviso.visualizacoes or 0 }} visualizações
                                     </small>
-                                    <br>
-                                    <small class="text-muted">
-                                        <i class="bi bi-hash"></i> CIM: {{ s.cim_numero or 'Não informado' }}
-                                    </small>
+                                    <p class="mb-0 mt-1 small">{{ aviso.conteudo[:100] }}{% if aviso.conteudo|length > 100 %}...{% endif %}</p>
                                 </div>
-                                {% endfor %}
+                                <div class="ms-3">
+                                    <a href="/avisos" class="btn btn-sm btn-outline-primary">
+                                        Ver <i class="bi bi-chevron-right"></i>
+                                    </a>
+                                </div>
                             </div>
-                        {% else %}
-                            <p class="text-center text-muted py-4">
-                                <i class="bi bi-person-x fs-1"></i><br>
-                                Nenhum sindicante ativo
-                            </p>
-                            {% if session.tipo == 'admin' %}
-                            <div class="text-center">
-                                <a href="/sindicantes" class="btn btn-sm btn-success">
-                                    <i class="bi bi-plus-circle"></i> Cadastrar Sindicante
-                                </a>
-                            </div>
-                            {% endif %}
+                        </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <div class="text-center py-4">
+                        <i class="bi bi-megaphone-slash fs-1 text-muted"></i>
+                        <p class="mt-2 text-muted mb-0">Nenhum aviso recente</p>
+                        {% if session.grau_atual >= 3 or session.tipo == 'admin' %}
+                        <a href="/avisos/novo" class="btn btn-sm btn-primary mt-2">
+                            <i class="bi bi-plus-circle"></i> Criar Primeiro Aviso
+                        </a>
                         {% endif %}
                     </div>
-                </div>
+                {% endif %}
             </div>
         </div>
     </div>
+</div>
+        
+            <!-- Seção 4: Próximas Reuniões -->
+<div class="row">
+    <!-- Card Próximas Reuniões - ÚNICO -->
+    <div class="{% if session.tipo == 'admin' %}col-md-6{% else %}col-md-12{% endif %} mb-4">
+        <div class="card shadow h-100">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0"><i class="bi bi-calendar-week"></i> Próximas Reuniões</h5>
+            </div>
+            <div class="card-body">
+                {% if proximas_reunioes %}
+                    <div class="list-group">
+                        {% for r in proximas_reunioes %}
+                        <a href="/reunioes/{{ r.id }}" class="list-group-item list-group-item-action">
+                            <div class="d-flex w-100 justify-content-between">
+                                <h6 class="mb-1">{{ r.titulo }}</h6>
+                                <small class="text-muted">
+                                    {{ r.data.strftime('%d/%m/%Y') if r.data else '-' }}
+                                </small>
+                            </div>
+                            <small class="text-muted">
+                                <i class="bi bi-clock"></i> 
+                                {{ r.hora_inicio.strftime('%H:%M') if r.hora_inicio else '-' }}
+                                {% if r.hora_termino %}
+                                às {{ r.hora_termino.strftime('%H:%M') if r.hora_termino else '-' }}
+                                {% endif %}
+                            </small>
+                            {% if r.local %}
+                            <br><small class="text-muted">
+                                <i class="bi bi-geo-alt"></i> {{ r.local }}
+                            </small>
+                            {% endif %}
+                        </a>
+                        {% endfor %}
+                    </div>
+                    {% if proxima_reuniao %}
+                    <div class="mt-3 text-center">
+                        <div class="alert alert-info">
+                            <i class="bi bi-bell"></i> 
+                            Próxima reunião: {{ proxima_reuniao.data.strftime('%d/%m/%Y') if proxima_reuniao.data else '-' }}
+                        </div>
+                    </div>
+                    {% endif %}
+                {% else %}
+                    <p class="text-center text-muted py-4">
+                        <i class="bi bi-calendar-x fs-1"></i><br>
+                        Nenhuma reunião agendada
+                    </p>
+                    {% if session.tipo == 'admin' %}
+                    <div class="text-center">
+                        <a href="/reunioes/nova" class="btn btn-sm btn-success">
+                            <i class="bi bi-plus-circle"></i> Agendar Reunião
+                        </a>
+                    </div>
+                    {% endif %}
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Card Sindicantes Ativos - APENAS ADMIN -->
+    {% if session.tipo == 'admin' %}
+    <div class="col-md-6 mb-4">
+        <div class="card shadow h-100">
+            <div class="card-header bg-success text-white">
+                <h5 class="mb-0"><i class="bi bi-people"></i> Sindicantes Ativos</h5>
+            </div>
+            <div class="card-body">
+                {% if sindicantes %}
+                    <div class="list-group">
+                        {% for s in sindicantes %}
+                        <div class="list-group-item">
+                            <div class="d-flex w-100 justify-content-between">
+                                <h6 class="mb-1">{{ s.nome_completo or s.usuario }}</h6>
+                                <small class="text-muted">{{ s.usuario }}</small>
+                            </div>
+                            <small class="text-muted">
+                                <i class="bi bi-building"></i> {{ s.loja_nome or 'Loja não informada' }}
+                            </small>
+                            <br>
+                            <small class="text-muted">
+                                <i class="bi bi-hash"></i> CIM: {{ s.cim_numero or 'Não informado' }}
+                            </small>
+                        </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <p class="text-center text-muted py-4">
+                        <i class="bi bi-person-x fs-1"></i><br>
+                        Nenhum sindicante ativo
+                    </p>
+                    <div class="text-center">
+                        <a href="/sindicantes" class="btn btn-sm btn-success">
+                            <i class="bi bi-plus-circle"></i> Cadastrar Sindicante
+                        </a>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    {% endif %}
 </div>
 
 <style>

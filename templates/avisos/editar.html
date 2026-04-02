@@ -1,0 +1,79 @@
+{% extends "base.html" %}
+
+{% block title %}{{ 'Editar' if aviso else 'Novo' }} Aviso{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card shadow">
+                <div class="card-header {% if aviso %}bg-warning{% else %}bg-primary{% endif %} text-white">
+                    <h4 class="mb-0">
+                        <i class="bi bi-megaphone-fill"></i> 
+                        {{ 'Editar Aviso' if aviso else 'Novo Aviso' }}
+                    </h4>
+                </div>
+                <div class="card-body">
+                    <form method="POST">
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">Título *</label>
+                            <input type="text" class="form-control" name="titulo" 
+                                   value="{{ aviso.titulo if aviso else '' }}" required>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">Conteúdo *</label>
+                            <textarea class="form-control" name="conteudo" rows="6" required>{{ aviso.conteudo if aviso else '' }}</textarea>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label fw-bold">Grau Destino</label>
+                                <select class="form-select" name="grau_destino" required>
+                                    <option value="1" {% if aviso and aviso.grau_destino == 1 %}selected{% endif %}>📘 Aprendiz (Grau 1)</option>
+                                    <option value="2" {% if aviso and aviso.grau_destino == 2 %}selected{% endif %}>📙 Companheiro (Grau 2)</option>
+                                    <option value="3" {% if aviso and aviso.grau_destino == 3 %}selected{% endif %}>📕 Mestre (Grau 3+)</option>
+                                </select>
+                            </div>
+                            
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label fw-bold">Prioridade</label>
+                                <select class="form-select" name="prioridade">
+                                    <option value="normal" {% if aviso and aviso.prioridade == 'normal' %}selected{% endif %}>🔵 Normal</option>
+                                    <option value="importante" {% if aviso and aviso.prioridade == 'importante' %}selected{% endif %}>🟡 Importante</option>
+                                    <option value="urgente" {% if aviso and aviso.prioridade == 'urgente' %}selected{% endif %}>🔴 Urgente</option>
+                                </select>
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">Data de Expiração (opcional)</label>
+                            <input type="date" class="form-control" name="data_fim" 
+                                   value="{{ aviso.data_fim.strftime('%Y-%m-%d') if aviso and aviso.data_fim else '' }}">
+                            <small class="text-muted">Deixe em branco para não expirar</small>
+                        </div>
+                        
+                        {% if aviso %}
+                        <div class="mb-3 form-check">
+                            <input type="checkbox" class="form-check-input" name="ativo" id="ativo" {% if aviso.ativo == 1 %}checked{% endif %}>
+                            <label class="form-check-label" for="ativo">
+                                <i class="bi bi-check-circle"></i> Ativo (visível para os obreiros)
+                            </label>
+                        </div>
+                        {% endif %}
+                        
+                        <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                            <a href="/avisos" class="btn btn-secondary">
+                                <i class="bi bi-arrow-left"></i> Cancelar
+                            </a>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="bi bi-save"></i> {{ 'Salvar Alterações' if aviso else 'Publicar Aviso' }}
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
