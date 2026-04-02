@@ -1483,35 +1483,31 @@ def login():
     if request.method == "POST":
         usuario = request.form.get("usuario")
         senha = request.form.get("senha")
-        
+
         cursor, conn = get_db()
         cursor.execute("""
-            SELECT id, usuario, senha_hash, tipo, grau_atual, nome_completo 
-            FROM usuarios 
-            WHERE usuario = %s AND ativo = 1
-        """, (usuario,))
+                       SELECT id, usuario, senha_hash, tipo, grau_atual, nome_completo
+                       FROM usuarios
+                       WHERE usuario = %s
+                         AND ativo = 1
+                       """, (usuario,))
         user = cursor.fetchone()
         return_connection(conn)
-        
+
+        # APENAS Werkzeug - simples e seguro
         if user and check_password_hash(user['senha_hash'], senha):
-            # DEFINIR TODAS AS VARIÁVEIS DE SESSÃO
             session['usuario_id'] = user['id']
             session['usuario'] = user['usuario']
             session['tipo'] = user['tipo']
             session['grau_atual'] = user['grau_atual']
             session['nome_completo'] = user['nome_completo']
-            session['user_id'] = user['id']  # Alguns decorators usam user_id
-            session['grau_atual'] = user['grau_atual']
+            session['user_id'] = user['id']
+
             flash('Login realizado com sucesso!', 'success')
-            
-            # Redirecionar para a página que o usuário estava tentando acessar
-            next_page = request.args.get('next')
-            if next_page:
-                return redirect(next_page)
             return redirect(url_for('dashboard'))
         else:
             flash('Usuário ou senha inválidos', 'danger')
-    
+
     return render_template("login.html")
 
 @app.route("/logout")
@@ -2740,7 +2736,8 @@ def novo_obreiro():
             
             try:
                 import hashlib
-                senha_hash = hashlib.sha256(senha.encode()).hexdigest()
+                from werkzeug.security import generate_password_hash
+                senha_hash = generate_password_hash(senha)
                 
                 cursor.execute("""
                     INSERT INTO usuarios 
@@ -3019,22 +3016,33 @@ def visualizar_obreiro(id):
 from datetime import datetime
 @app.route("/recuperar-senha", methods=["GET", "POST"])
 def recuperar_senha():
+    """Página de recuperação de senha"""
+    
     if request.method == "POST":
         email = request.form.get("email")
         
+        if not email:
+            flash("Digite seu e-mail!", "danger")
+            return redirect("/recuperar-senha")
+        
         try:
             cursor, conn = get_db()
+            
+            # Buscar usuário pelo e-mail
             cursor.execute("""
                 SELECT id, nome_completo, usuario, email
                 FROM usuarios 
                 WHERE email = %s AND ativo = 1
             """, (email,))
+            
             user = cursor.fetchone()
             return_connection(conn)
             
             if user:
-                # Gerar token
+                # Gerar token de recuperação
                 token = gerar_token_recuperacao(user['id'])
+                
+                # Criar link de redefinição (CORRIGIDO)
                 link = f"{request.url_root}redefinir-senha?token={token}"
                 
                 assunto = "🔐 Recuperação de Senha - Sistema Maçônico"
@@ -3065,13 +3073,26 @@ def recuperar_senha():
                 </html>
                 """
                 
-                enviar_email_resend(user['email'], assunto, conteudo_html)
-                flash("✅ Link de recuperação enviado para seu e-mail!", "success")
+                # Tentar enviar e-mail
+                if RESEND_API_KEY:
+                    enviar_email_resend(user['email'], assunto, conteudo_html)
+                    flash("✅ Link de recuperação enviado para seu e-mail!", "success")
+                else:
+                    # Se não tiver API key, mostrar o link no console
+                    print(f"\n{'='*60}")
+                    print(f"🔗 LINK DE RECUPERAÇÃO PARA {user['email']}:")
+                    print(f"{link}")
+                    print(f"{'='*60}\n")
+                    flash("⚠️ E-mail não configurado. Use o link abaixo para redefinir sua senha:", "warning")
+                    flash(f"Link: {link}", "info")
             else:
+                # Não revelar se o e-mail existe ou não (segurança)
                 flash("Se o e-mail estiver cadastrado, você receberá um link de recuperação.", "info")
                 
         except Exception as e:
             print(f"Erro ao recuperar senha: {e}")
+            import traceback
+            traceback.print_exc()
             flash("Erro ao processar solicitação. Tente novamente.", "danger")
         
         return redirect("/login")
@@ -3080,7 +3101,10 @@ def recuperar_senha():
     
 @app.route("/redefinir-senha", methods=["GET", "POST"])
 def redefinir_senha():
-    token = request.args.get("token")
+    """Redefine a senha usando token de recuperação"""
+    
+    # Buscar token da URL (GET) ou do formulário (POST)
+    token = request.args.get("token") or request.form.get("token")
     
     if not token:
         flash("Token inválido!", "danger")
@@ -3097,37 +3121,46 @@ def redefinir_senha():
         nova_senha = request.form.get("nova_senha")
         confirmar_senha = request.form.get("confirmar_senha")
         
+        # Validações
         if not nova_senha or len(nova_senha) < 6:
             flash("A senha deve ter no mínimo 6 caracteres!", "danger")
         elif nova_senha != confirmar_senha:
             flash("As senhas não coincidem!", "danger")
         else:
-            import hashlib
-            senha_hash = hashlib.sha256(nova_senha.encode()).hexdigest()
-            
-            cursor, conn = get_db()
-            cursor.execute("UPDATE usuarios SET senha_hash = %s WHERE id = %s", (senha_hash, usuario_id))
-            conn.commit()
-            
-            # Marcar token como usado
-            usar_token_recuperacao(token)
-            return_connection(conn)
-            
-            registrar_log("redefinir_senha", "usuario", usuario_id)
-            flash("✅ Senha redefinida com sucesso! Faça login com sua nova senha.", "success")
-            return redirect("/login")
+            try:
+                from werkzeug.security import generate_password_hash
+                
+                # Gerar novo hash
+                senha_hash = generate_password_hash(nova_senha)
+                
+                cursor, conn = get_db()
+                cursor.execute("UPDATE usuarios SET senha_hash = %s WHERE id = %s", (senha_hash, usuario_id))
+                conn.commit()
+                
+                # Marcar token como usado
+                usar_token_recuperacao(token)
+                return_connection(conn)
+                
+                registrar_log("redefinir_senha", "usuario", usuario_id)
+                flash("✅ Senha redefinida com sucesso! Faça login com sua nova senha.", "success")
+                return redirect("/login")
+                
+            except Exception as e:
+                print(f"Erro ao redefinir senha: {e}")
+                flash(f"Erro ao redefinir senha: {str(e)}", "danger")
+                if conn:
+                    return_connection(conn)
     
-    return render_template("redefinir_senha.html", token=token)    
+    return render_template("redefinir_senha.html", token=token)
 
 @app.route("/obreiros/<int:id>/editar", methods=["GET", "POST"])
 @login_required
 def editar_obreiro(id):
     """Edita um obreiro existente"""
-    
     cursor, conn = get_db()
 
     try:
-        # 🔎 Buscar dados atuais
+        # Buscar dados atuais
         cursor.execute("SELECT * FROM usuarios WHERE id = %s", (id,))
         obreiro = cursor.fetchone()
 
@@ -3136,22 +3169,129 @@ def editar_obreiro(id):
             return_connection(conn)
             return redirect("/obreiros")
 
-        # 🔐 Controle de acesso
         is_admin = session.get("tipo") == "admin"
         is_own_profile = session.get("user_id") == id
-        
+
         # Se não for admin e não for o próprio perfil, não pode editar
         if not is_admin and not is_own_profile:
             flash("Você não tem permissão para editar este obreiro", "danger")
             return_connection(conn)
             return redirect("/obreiros")
+
+        if request.method == "POST":
+            nome_completo = request.form.get("nome_completo")
+            nome_maconico = request.form.get("nome_maconico")
+            cim_numero = request.form.get("cim_numero")
+            telefone = request.form.get("telefone")
+            email = request.form.get("email")
+            endereco = request.form.get("endereco")
+            loja_nome = request.form.get("loja_nome")
+            loja_numero = request.form.get("loja_numero")
+            loja_orient = request.form.get("loja_orient")
+            senha = request.form.get("senha", "")
+            senha_atual = request.form.get("senha_atual", "")
+
+            if is_admin:
+                tipo = request.form.get("tipo", obreiro["tipo"])
+                grau_atual = request.form.get("grau_atual", obreiro["grau_atual"])
+                ativo = 1 if request.form.get("ativo") else obreiro["ativo"]
+                try:
+                    grau_atual = int(grau_atual)
+                except:
+                    grau_atual = obreiro["grau_atual"]
+            else:
+                tipo = obreiro["tipo"]
+                grau_atual = obreiro["grau_atual"]
+                ativo = obreiro["ativo"]
+
+            # Validar senha atual se for alterar a senha
+            if senha:
+                if not senha_atual:
+                    flash("Digite sua senha atual para alterar a senha!", "danger")
+                    return_connection(conn)
+                    return redirect(f"/obreiros/{id}/editar")
+                
+                # Verificar senha atual
+                cursor.execute("SELECT senha_hash FROM usuarios WHERE id = %s", (id,))
+                user_data = cursor.fetchone()
+                
+                from werkzeug.security import check_password_hash
+                if not check_password_hash(user_data['senha_hash'], senha_atual):
+                    flash("Senha atual incorreta!", "danger")
+                    return_connection(conn)
+                    return redirect(f"/obreiros/{id}/editar")
+                
+                if len(senha) < 6:
+                    flash("A nova senha deve ter no mínimo 6 caracteres!", "danger")
+                    return_connection(conn)
+                    return redirect(f"/obreiros/{id}/editar")
+                
+                # Atualizar senha com Werkzeug
+                from werkzeug.security import generate_password_hash
+                nova_senha_hash = generate_password_hash(senha)
+                cursor.execute("UPDATE usuarios SET senha_hash = %s WHERE id = %s", (nova_senha_hash, id))
+                flash("Senha alterada com sucesso!", "success")
+
+            # Atualizar outros campos
+            cursor.execute("""
+                UPDATE usuarios SET
+                    nome_completo = %s,
+                    nome_maconico = %s,
+                    cim_numero = %s,
+                    telefone = %s,
+                    email = %s,
+                    endereco = %s,
+                    loja_nome = %s,
+                    loja_numero = %s,
+                    loja_orient = %s,
+                    grau_atual = %s,
+                    tipo = %s,
+                    ativo = %s
+                WHERE id = %s
+            """, (nome_completo, nome_maconico, cim_numero, telefone, email, endereco,
+                  loja_nome, loja_numero, loja_orient, grau_atual, tipo, ativo, id))
+
+            conn.commit()
+            
+            # Atualizar sessão se for o próprio perfil
+            if is_own_profile:
+                session['nome_completo'] = nome_completo
+                session['grau_atual'] = grau_atual
+                session['tipo'] = tipo
+
+            registrar_log("editar", "obreiro", id, dados_novos={"nome": nome_completo})
+            flash("Obreiro atualizado com sucesso!", "success")
+            return_connection(conn)
+            return redirect(f"/obreiros/{id}")
+
+        # GET - Carregar dados para o formulário
+        cursor.execute("SELECT * FROM usuarios WHERE id = %s", (id,))
+        obreiro = cursor.fetchone()
         
-        # Verificar se o usuário pode editar obreiros de grau superior
-        if not is_admin and obreiro['grau_atual'] > session.get('grau_atual', 0):
-            if not verificar_permissao(session['user_id'], 'obreiro.edit_superior'):
-                flash("Você não tem permissão para editar obreiros de grau superior ao seu.", "danger")
-                return_connection(conn)
-                return redirect("/obreiros")
+        cursor.execute("SELECT id, nome, numero, oriente FROM lojas WHERE ativo = 1 ORDER BY nome")
+        lojas = cursor.fetchall()
+        
+        cursor.execute("SELECT nivel, nome FROM graus ORDER BY nivel")
+        graus = cursor.fetchall()
+        
+        return_connection(conn)
+        
+        return render_template("obreiros/editar.html", 
+                              obreiro=obreiro, 
+                              lojas=lojas, 
+                              graus=graus,
+                              is_admin=is_admin,
+                              is_own_profile=is_own_profile)
+                              
+    except Exception as e:
+        print(f"❌ Erro ao editar obreiro: {e}")
+        import traceback
+        traceback.print_exc()
+        if conn:
+            conn.rollback()
+        flash(f"Erro ao atualizar: {str(e)}", "danger")
+        return_connection(conn)
+        return redirect(f"/obreiros/{id}")
 
 
 
