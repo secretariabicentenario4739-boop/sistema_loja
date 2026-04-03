@@ -2251,7 +2251,183 @@ def perfil():
     lojas = cursor.fetchall()
     return_connection(conn)
     return render_template("perfil.html", usuario=usuario, lojas=lojas)
+# =============================
+# ROTAS DE DOCUMENTOS DO OBREIRO
+# =============================
 
+@app.route("/api/obreiros/<int:obreiro_id>/documentos")
+@login_required
+def api_listar_documentos_obreiro(obreiro_id):
+    """Lista documentos do obreiro via API"""
+    cursor, conn = get_db()
+    
+    # Verificar permissão
+    if session.get('tipo') != 'admin' and session['user_id'] != obreiro_id:
+        return jsonify({'success': False, 'error': 'Permissão negada'}), 403
+    
+    # Buscar documentos
+    cursor.execute("""
+        SELECT 
+            id, 
+            titulo, 
+            descricao, 
+            categoria, 
+            tipo_arquivo, 
+            caminho_arquivo as url, 
+            data_upload
+        FROM documentos_obreiro
+        WHERE obreiro_id = %s
+        ORDER BY data_upload DESC
+    """, (obreiro_id,))
+    
+    rows = cursor.fetchall()
+    return_connection(conn)
+    
+    documentos = []
+    for row in rows:
+        documentos.append({
+            'id': row['id'],
+            'titulo': row['titulo'],
+            'descricao': row['descricao'],
+            'categoria': row['categoria'],
+            'tipo_arquivo': row['tipo_arquivo'],
+            'url': row['url'],
+            'data_upload': row['data_upload'].isoformat() if row['data_upload'] else None
+        })
+    
+    return jsonify({
+        'success': True,
+        'documentos': documentos
+    })
+
+
+@app.route("/obreiros/<int:obreiro_id>/documentos/upload", methods=["POST"])
+@login_required
+def upload_documento_obreiro(obreiro_id):
+    """Upload de documento para o Cloudinary"""
+    cursor, conn = get_db()
+    
+    # Verificar permissão
+    if session.get('tipo') != 'admin' and session['user_id'] != obreiro_id:
+        flash("Permissão negada!", "danger")
+        return redirect(f"/obreiros/{obreiro_id}/editar")
+    
+    if 'arquivo' not in request.files:
+        flash("Nenhum arquivo selecionado!", "danger")
+        return redirect(f"/obreiros/{obreiro_id}/editar")
+    
+    arquivo = request.files['arquivo']
+    titulo = request.form.get('titulo')
+    descricao = request.form.get('descricao')
+    categoria = request.form.get('categoria', 'outros')
+    
+    if not titulo:
+        titulo = arquivo.filename
+    
+    if arquivo.filename == '':
+        flash("Nenhum arquivo selecionado!", "danger")
+        return redirect(f"/obreiros/{obreiro_id}/editar")
+    
+    try:
+        # Upload para Cloudinary
+        import cloudinary.uploader
+        from werkzeug.utils import secure_filename
+        
+        nome_arquivo = secure_filename(arquivo.filename)
+        extensao = nome_arquivo.split('.')[-1].lower()
+        
+        # Validar extensão
+        allowed_extensions = ['pdf', 'jpg', 'jpeg', 'png', 'doc', 'docx']
+        if extensao not in allowed_extensions:
+            flash(f"Tipo de arquivo não permitido. Use: {', '.join(allowed_extensions)}", "danger")
+            return redirect(f"/obreiros/{obreiro_id}/editar")
+        
+        # Upload para Cloudinary
+        upload_result = cloudinary.uploader.upload(
+            arquivo,
+            folder=f"obreiros/{obreiro_id}/documentos",
+            resource_type="auto",
+            use_filename=True,
+            unique_filename=True
+        )
+        
+        url_arquivo = upload_result.get('secure_url')
+        public_id = upload_result.get('public_id')
+        tamanho = upload_result.get('bytes', 0)
+        
+        # Salvar no banco
+        cursor.execute("""
+            INSERT INTO documentos_obreiro 
+            (obreiro_id, titulo, descricao, categoria, tipo_arquivo, 
+             nome_arquivo, caminho_arquivo, tamanho, uploaded_by)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
+            RETURNING id
+        """, (obreiro_id, titulo, descricao, categoria, extensao,
+              public_id, url_arquivo, tamanho, session['user_id']))
+        
+        doc_id = cursor.fetchone()['id']
+        conn.commit()
+        
+        registrar_log("upload_documento", "documento_obreiro", doc_id, 
+                     dados_novos={"obreiro_id": obreiro_id, "titulo": titulo})
+        
+        flash(f"Documento '{titulo}' enviado com sucesso!", "success")
+        
+    except Exception as e:
+        print(f"Erro no upload: {e}")
+        flash(f"Erro ao enviar documento: {str(e)}", "danger")
+        if conn:
+            conn.rollback()
+    
+    return_connection(conn)
+    return redirect(f"/obreiros/{obreiro_id}/editar")
+
+
+@app.route("/api/documentos/<int:doc_id>/excluir", methods=["DELETE"])
+@login_required
+def api_excluir_documento_obreiro(doc_id):
+    """Excluir documento do Cloudinary e do banco"""
+    cursor, conn = get_db()
+    
+    try:
+        # Buscar documento
+        cursor.execute("""
+            SELECT d.*, u.id as obreiro_id
+            FROM documentos_obreiro d
+            JOIN usuarios u ON d.obreiro_id = u.id
+            WHERE d.id = %s
+        """, (doc_id,))
+        
+        doc = cursor.fetchone()
+        
+        if not doc:
+            return jsonify({'success': False, 'error': 'Documento não encontrado'}), 404
+        
+        # Verificar permissão
+        if session.get('tipo') != 'admin' and session['user_id'] != doc['obreiro_id']:
+            return jsonify({'success': False, 'error': 'Permissão negada'}), 403
+        
+        # Excluir do Cloudinary
+        import cloudinary.uploader
+        if doc.get('nome_arquivo'):
+            cloudinary.uploader.destroy(doc['nome_arquivo'])
+        
+        # Excluir do banco
+        cursor.execute("DELETE FROM documentos_obreiro WHERE id = %s", (doc_id,))
+        conn.commit()
+        
+        registrar_log("excluir_documento", "documento_obreiro", doc_id,
+                     dados_anteriores={"titulo": doc['titulo']})
+        
+        return jsonify({'success': True, 'message': 'Documento excluído com sucesso!'})
+        
+    except Exception as e:
+        print(f"Erro ao excluir documento: {e}")
+        if conn:
+            conn.rollback()
+        return jsonify({'success': False, 'error': str(e)}), 500
+    finally:
+        return_connection(conn)
 # =============================
 # ROTAS DE OBREIROS
 # =============================
@@ -2852,10 +3028,7 @@ def novo_obreiro():
     cursor.execute("SELECT nivel, nome FROM graus WHERE nivel >= 4 AND ativo = 1 ORDER BY nivel")
     graus_superiores = cursor.fetchall()
     
-    print(f"DEBUG: {len(graus_superiores)} graus superiores encontrados")
-    for g in graus_superiores:
-        print(f"  - Nível {g['nivel']}: {g['nome']}")
-    
+       
     return_connection(conn)
     
     return render_template("obreiros/novo.html", 

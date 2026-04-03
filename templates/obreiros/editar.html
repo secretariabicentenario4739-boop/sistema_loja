@@ -260,7 +260,61 @@
 
                     </div>
                 </div>
-
+<!-- Card de Documentos -->
+<div class="card shadow mb-4">
+    <div class="card-header bg-info text-white">
+        <i class="bi bi-cloud-upload"></i> Documentos do Obreiro
+    </div>
+    <div class="card-body">
+        <div class="alert alert-info small mb-3">
+            <i class="bi bi-info-circle"></i> 
+            Envie documentos importantes como: CIM, Certificados, Diplomas, etc.
+        </div>
+        
+        <form method="POST" action="/obreiros/{{ obreiro.id }}/documentos/upload" enctype="multipart/form-data" class="mb-3">
+            <div class="mb-2">
+                <label class="form-label fw-bold">Título do Documento</label>
+                <input type="text" class="form-control" name="titulo" placeholder="Ex: CIM, Certificado de Mestre, etc." required>
+            </div>
+            <div class="mb-2">
+                <label class="form-label fw-bold">Categoria</label>
+                <select class="form-select" name="categoria" required>
+                    <option value="identificacao">Identificação (CIM, RG, CPF)</option>
+                    <option value="certificado">Certificados</option>
+                    <option value="diploma">Diplomas</option>
+                    <option value="ritual">Rituais</option>
+                    <option value="outros">Outros</option>
+                </select>
+            </div>
+            <div class="mb-2">
+                <label class="form-label fw-bold">Arquivo</label>
+                <input type="file" class="form-control" name="arquivo" accept=".pdf,.jpg,.jpeg,.png,.doc,.docx" required>
+                <small class="text-muted">PDF, imagens, Word (max 10MB)</small>
+            </div>
+            <div class="mb-2">
+                <label class="form-label">Descrição (opcional)</label>
+                <textarea class="form-control" name="descricao" rows="2" placeholder="Informações adicionais sobre o documento"></textarea>
+            </div>
+            <button type="submit" class="btn btn-info w-100">
+                <i class="bi bi-cloud-upload"></i> Enviar Documento
+            </button>
+        </form>
+        
+        <hr>
+        
+        <h6 class="mb-3">
+            <i class="bi bi-files"></i> Documentos Enviados
+            <span class="badge bg-secondary" id="totalDocumentos">0</span>
+        </h6>
+        
+        <div id="listaDocumentos" style="max-height: 300px; overflow-y: auto;">
+            <div class="text-center text-muted py-3" id="semDocumentosMsg">
+                <i class="bi bi-cloud-slash fs-1"></i>
+                <p class="mb-0">Nenhum documento enviado</p>
+            </div>
+        </div>
+    </div>
+</div>
                 <!-- Card da Senha -->
                 <div class="card shadow mb-4">
                     <div class="card-header bg-warning text-dark">
@@ -292,6 +346,8 @@
                         </div>
                     </div>
                 </div>
+				
+				
 
                 <!-- Card de Informação sobre Sindicante -->
                 {% if obreiro.tipo == 'sindicante' and obreiro.grau_atual < 3 %}
@@ -388,7 +444,150 @@ if (confirmarInput) {
         }
     });
 }
+// =====================
+// CARREGAR DOCUMENTOS - EDITAR
+// =====================
+function carregarDocumentos() {
+    const obreiroId = {{ obreiro.id }};
+    const container = document.getElementById('listaDocumentos');
+    const totalSpan = document.getElementById('totalDocumentos');
+    const semMsg = document.getElementById('semDocumentosMsg');
+    
+    console.log('🔍 Carregando documentos para obreiro:', obreiroId);
+    
+    if (!container) {
+        console.error('❌ Container listaDocumentos não encontrado!');
+        return;
+    }
+    
+    fetch(`/api/obreiros/${obreiroId}/documentos`)
+        .then(response => {
+            console.log('📡 Resposta da API:', response.status);
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}`);
+            }
+            return response.json();
+        })
+        .then(data => {
+            console.log('📦 Dados recebidos da API:', data);
+            
+            if (data.success && data.documentos && data.documentos.length > 0) {
+                console.log('✅ Documentos encontrados:', data.documentos.length);
+                if (semMsg) semMsg.style.display = 'none';
+                if (totalSpan) totalSpan.textContent = data.documentos.length;
+                
+                let html = '<div class="list-group list-group-flush">';
+                data.documentos.forEach(doc => {
+                    const dataUpload = new Date(doc.data_upload).toLocaleDateString('pt-BR');
+                    const icone = getIconePorTipo(doc.tipo_arquivo);
+                    
+                    html += `
+                        <div class="list-group-item" id="doc-${doc.id}">
+                            <div class="d-flex justify-content-between align-items-start">
+                                <div class="flex-grow-1">
+                                    <div class="d-flex align-items-center mb-1">
+                                        <i class="bi ${icone} fs-4 me-2 text-info"></i>
+                                        <div>
+                                            <strong class="d-block">${escapeHtml(doc.titulo)}</strong>
+                                            <small class="text-muted">
+                                                <i class="bi bi-folder"></i> ${doc.categoria}
+                                                <i class="bi bi-calendar ms-2"></i> ${dataUpload}
+                                            </small>
+                                        </div>
+                                    </div>
+                                    ${doc.descricao ? `<p class="small text-muted mb-1">${escapeHtml(doc.descricao)}</p>` : ''}
+                                </div>
+                                <div class="btn-group btn-group-sm">
+                                    <a href="${doc.url}" target="_blank" class="btn btn-outline-primary" title="Visualizar">
+                                        <i class="bi bi-eye"></i>
+                                    </a>
+                                    <a href="${doc.url}" download class="btn btn-outline-success" title="Baixar">
+                                        <i class="bi bi-download"></i>
+                                    </a>
+                                    <button type="button" class="btn btn-outline-danger" onclick="excluirDocumento(${doc.id})" title="Excluir">
+                                        <i class="bi bi-trash"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                });
+                html += '</div>';
+                container.innerHTML = html;
+            } else {
+                console.log('⚠️ Nenhum documento encontrado');
+                if (semMsg) semMsg.style.display = 'block';
+                if (totalSpan) totalSpan.textContent = '0';
+                container.innerHTML = '<div id="semDocumentosMsg" class="text-center text-muted py-3"><i class="bi bi-cloud-slash fs-1"></i><p class="mb-0">Nenhum documento enviado</p></div>';
+            }
+        })
+        .catch(error => {
+            console.error('❌ Erro ao carregar documentos:', error);
+            if (semMsg) semMsg.style.display = 'block';
+            if (totalSpan) totalSpan.textContent = '0';
+        });
+}
 
+function getIconePorTipo(tipo) {
+    const tipos = {
+        'pdf': 'bi-file-pdf',
+        'jpg': 'bi-file-image',
+        'jpeg': 'bi-file-image',
+        'png': 'bi-file-image',
+        'doc': 'bi-file-word',
+        'docx': 'bi-file-word'
+    };
+    return tipos[tipo] || 'bi-file-earmark';
+}
+
+function escapeHtml(text) {
+    if (!text) return '';
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+}
+
+function excluirDocumento(docId) {
+    if (!confirm('Tem certeza que deseja excluir este documento?')) return;
+    
+    fetch(`/api/documentos/${docId}/excluir`, {
+        method: 'DELETE',
+        headers: {
+            'Content-Type': 'application/json'
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            const docElement = document.getElementById(`doc-${docId}`);
+            if (docElement) docElement.remove();
+            
+            // Atualizar contador
+            const remainingDocs = document.querySelectorAll('#listaDocumentos .list-group-item').length;
+            const totalSpan = document.getElementById('totalDocumentos');
+            if (totalSpan) totalSpan.textContent = remainingDocs;
+            
+            if (remainingDocs === 0) {
+                const container = document.getElementById('listaDocumentos');
+                container.innerHTML = '<div id="semDocumentosMsg" class="text-center text-muted py-3"><i class="bi bi-cloud-slash fs-1"></i><p class="mb-0">Nenhum documento enviado</p></div>';
+            }
+            
+            alert('Documento excluído com sucesso!');
+        } else {
+            alert('Erro ao excluir documento: ' + (data.error || 'Erro desconhecido'));
+        }
+    })
+    .catch(error => {
+        console.error('Erro:', error);
+        alert('Erro ao excluir documento');
+    });
+}
+
+// Carregar documentos ao iniciar a página
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('🚀 Página carregada, iniciando carregamento de documentos...');
+    carregarDocumentos();
+});
 // =====================
 // CONTROLE DE GRAUS - VERSÃO DEFINITIVA
 // =====================
@@ -555,6 +754,7 @@ document.addEventListener('DOMContentLoaded', function() {
             margin: 5px 0;
         }
     }
+	
 </style>
 
 {% endblock %}

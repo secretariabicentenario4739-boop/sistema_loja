@@ -183,7 +183,34 @@
                 </div>
             </div>
         </div>
-
+<!-- Documentos do Obreiro -->
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="card shadow">
+            <div class="card-header bg-info text-white">
+                <h5 class="mb-0">
+                    <i class="bi bi-cloud-arrow-up"></i> Documentos do Obreiro
+                    <span class="badge bg-light text-dark ms-2" id="totalDocumentosVis">0</span>
+                </h5>
+            </div>
+            <div class="card-body">
+                <div id="listaDocumentosVis">
+                    <div class="text-center text-muted py-4" id="semDocumentosVis">
+                        <i class="bi bi-cloud-slash fs-1"></i>
+                        <p class="mb-0 mt-2">Nenhum documento enviado</p>
+                    </div>
+                </div>
+            </div>
+            {% if session.tipo == 'admin' or session.user_id == obreiro.id %}
+            <div class="card-footer bg-white">
+                <a href="/obreiros/{{ obreiro.id }}/editar#documentos" class="btn btn-sm btn-info">
+                    <i class="bi bi-cloud-upload"></i> Gerenciar Documentos
+                </a>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
         <!-- Informações Principais -->
         <div class="card shadow">
             <div class="card-header bg-light">
@@ -694,5 +721,111 @@ function criarContainerAlerta() {
         border-top: 1px solid rgba(0,0,0,0.1);
     }
 </style>
+<script>
+// =====================
+// CARREGAR DOCUMENTOS NA VISUALIZAÇÃO
+// =====================
+function carregarDocumentosVisualizacao() {
+    const obreiroId = {{ obreiro.id }};
+    const container = document.getElementById('listaDocumentosVis');
+    const totalSpan = document.getElementById('totalDocumentosVis');
+    const semMsg = document.getElementById('semDocumentosVis');
+    
+    console.log('🔍 Carregando documentos para visualização - Obreiro:', obreiroId);
+    
+    fetch(`/api/obreiros/${obreiroId}/documentos`)
+        .then(response => response.json())
+        .then(data => {
+            console.log('📦 Documentos recebidos:', data);
+            
+            if (data.success && data.documentos && data.documentos.length > 0) {
+                if (semMsg) semMsg.style.display = 'none';
+                if (totalSpan) totalSpan.textContent = data.documentos.length;
+                
+                let html = '<div class="row">';
+                data.documentos.forEach(doc => {
+                    const dataUpload = new Date(doc.data_upload).toLocaleDateString('pt-BR');
+                    const icone = getIconePorTipoVisualizacao(doc.tipo_arquivo);
+                    const corCategoria = getCorCategoria(doc.categoria);
+                    
+                    html += `
+                        <div class="col-md-6 col-lg-4 mb-3">
+                            <div class="card h-100 border-${corCategoria} shadow-sm">
+                                <div class="card-body">
+                                    <div class="d-flex align-items-center mb-2">
+                                        <i class="bi ${icone} fs-2 me-2 text-${corCategoria}"></i>
+                                        <div class="flex-grow-1">
+                                            <h6 class="mb-0 text-truncate" title="${escapeHtml(doc.titulo)}">${escapeHtml(doc.titulo)}</h6>
+                                            <small class="text-muted">
+                                                <i class="bi bi-folder"></i> ${doc.categoria}
+                                            </small>
+                                        </div>
+                                    </div>
+                                    ${doc.descricao ? `<p class="small text-muted mb-2">${escapeHtml(doc.descricao.substring(0, 80))}${doc.descricao.length > 80 ? '...' : ''}</p>` : ''}
+                                    <div class="d-flex justify-content-between align-items-center mt-2">
+                                        <small class="text-muted">
+                                            <i class="bi bi-calendar"></i> ${dataUpload}
+                                        </small>
+                                        <div class="btn-group btn-group-sm">
+                                            <a href="${doc.url}" target="_blank" class="btn btn-outline-primary" title="Visualizar">
+                                                <i class="bi bi-eye"></i>
+                                            </a>
+                                            <a href="${doc.url}" download class="btn btn-outline-success" title="Baixar">
+                                                <i class="bi bi-download"></i>
+                                            </a>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                });
+                html += '</div>';
+                container.innerHTML = html;
+            } else {
+                console.log('⚠️ Nenhum documento encontrado');
+                if (semMsg) semMsg.style.display = 'block';
+                if (totalSpan) totalSpan.textContent = '0';
+            }
+        })
+        .catch(error => {
+            console.error('❌ Erro ao carregar documentos:', error);
+        });
+}
 
+function getIconePorTipoVisualizacao(tipo) {
+    const tipos = {
+        'pdf': 'bi-file-pdf',
+        'jpg': 'bi-file-image',
+        'jpeg': 'bi-file-image',
+        'png': 'bi-file-image',
+        'doc': 'bi-file-word',
+        'docx': 'bi-file-word'
+    };
+    return tipos[tipo] || 'bi-file-earmark';
+}
+
+function getCorCategoria(categoria) {
+    const cores = {
+        'identificacao': 'primary',
+        'certificado': 'success',
+        'diploma': 'warning',
+        'ritual': 'info',
+        'outros': 'secondary'
+    };
+    return cores[categoria] || 'secondary';
+}
+
+function escapeHtml(text) {
+    if (!text) return '';
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+}
+
+// Carregar documentos ao iniciar a página
+document.addEventListener('DOMContentLoaded', function() {
+    carregarDocumentosVisualizacao();
+});
+</script>
 {% endblock %}
