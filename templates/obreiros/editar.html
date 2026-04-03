@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}Editar Obreiro - {{ obreiro.nome_completo }}{% endblock %}
+{% block title %}Editar Obreiro - {{ obreiro.nome_completo or obreiro.usuario }}{% endblock %}
 
 {% block content %}
 <div class="container-fluid py-4">
@@ -12,7 +12,7 @@
                 {% if is_own_profile %}
                     Meu Perfil
                 {% else %}
-                    Editar Obreiro: {{ obreiro.nome_completo }}
+                    Editar Obreiro: {{ obreiro.nome_completo or obreiro.usuario }}
                 {% endif %}
             </h2>
 
@@ -103,7 +103,7 @@
                             <div class="row">
                                 <div class="col-md-6 mb-3">
                                     <label class="form-label">Nome Completo</label>
-                                    <input type="text" class="form-control" name="nome_completo" value="{{ obreiro.nome_completo }}" required>
+                                    <input type="text" class="form-control" name="nome_completo" value="{{ obreiro.nome_completo or obreiro.usuario }}" required>
                                 </div>
 
                                 <div class="col-md-6 mb-3">
@@ -169,56 +169,85 @@
 
                             {% if is_admin %}
 
-<hr>
-<h6>⚙️ Administração</h6>
+                            <hr>
+                            <h6>⚙️ Administração</h6>
 
-<div class="row">
-    <div class="col-md-6 mb-3">
-        <label class="form-label">Grau Principal</label>
-        <select class="form-select" name="grau_principal" id="grauPrincipalSelect">
-            <option value="1" {% if obreiro.grau_atual == 1 %}selected{% endif %}>1 - Aprendiz</option>
-            <option value="2" {% if obreiro.grau_atual == 2 %}selected{% endif %}>2 - Companheiro</option>
-            <option value="3" {% if obreiro.grau_atual >= 3 %}selected{% endif %}>3 - Mestre</option>
-        </select>
-        <small class="text-muted">Grau principal na Maçonaria Simbólica</small>
-    </div>
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label">Grau Principal</label>
+                                    <select class="form-select" name="grau_principal" id="grauPrincipalSelect">
+                                        <option value="1" {% if obreiro.grau_atual == 1 %}selected{% endif %}>1 - Aprendiz</option>
+                                        <option value="2" {% if obreiro.grau_atual == 2 %}selected{% endif %}>2 - Companheiro</option>
+                                        <option value="3" {% if obreiro.grau_atual >= 3 %}selected{% endif %}>3 - Mestre</option>
+                                    </select>
+                                    <small class="text-muted">Grau principal na Maçonaria Simbólica</small>
+                                </div>
 
-    <div class="col-md-6 mb-3" id="divGrauSuperior">
-        <label class="form-label">Grau Superior (Opcional)</label>
-        <select class="form-select" name="grau_superior" id="grauSuperiorSelect">
-            <option value="">Nenhum (Mestre)</option>
-            {% for g in graus_superiores %}
-            <option value="{{ g.nivel }}" {% if g.nivel == obreiro.grau_atual %}selected{% endif %}>
-                {{ g.nivel }} - {{ g.nome }}
-            </option>
-            {% endfor %}
-        </select>
-        <small class="text-muted">
-            <i class="bi bi-info-circle"></i> 
-            Graus superiores são aperfeiçoamentos dentro do grau de Mestre
-        </small>
-    </div>
-</div>
+                                <div class="col-md-6 mb-3" id="divGrauSuperior">
+                                    <label class="form-label">Grau Superior (Opcional)</label>
+                                    <select class="form-select" name="grau_superior" id="grauSuperiorSelect">
+                                        <option value="">Nenhum (Mestre)</option>
+                                        {% for g in graus_superiores %}
+                                        <option value="{{ g.nivel }}" {% if g.nivel == obreiro.grau_atual %}selected{% endif %}>
+                                            {{ g.nivel }} - {{ g.nome }}
+                                        </option>
+                                        {% endfor %}
+                                    </select>
+                                    <small class="text-muted">
+                                        <i class="bi bi-info-circle"></i> 
+                                        Graus superiores são aperfeiçoamentos dentro do grau de Mestre
+                                    </small>
+                                </div>
+                            </div>
 
-<input type="hidden" name="grau_atual" id="grauAtualHidden" value="{{ obreiro.grau_atual }}">
+                            <input type="hidden" name="grau_atual" id="grauAtualHidden" value="{{ obreiro.grau_atual }}">
 
-<div class="row">
-    <div class="col-md-6 mb-3">
-        <label class="form-label">Status</label>
-        <select class="form-select" name="ativo">
-            <option value="1" {% if obreiro.ativo == 1 %}selected{% endif %}>Ativo</option>
-            <option value="0" {% if obreiro.ativo == 0 %}selected{% endif %}>Inativo</option>
-        </select>
-    </div>
-</div>
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label">Status</label>
+                                    <select class="form-select" name="ativo">
+                                        <option value="1" {% if obreiro.ativo == 1 %}selected{% endif %}>Ativo</option>
+                                        <option value="0" {% if obreiro.ativo == 0 %}selected{% endif %}>Inativo</option>
+                                    </select>
+                                </div>
+                            </div>
 
-{% else %}
-    <input type="hidden" name="grau_atual" value="{{ obreiro.grau_atual }}">
-    <input type="hidden" name="ativo" value="{{ obreiro.ativo }}">
-{% endif %}
+                            {% else %}
+                                <input type="hidden" name="grau_atual" value="{{ obreiro.grau_atual }}">
+                                <input type="hidden" name="ativo" value="{{ obreiro.ativo }}">
+                            {% endif %}
+
+                            <!-- Campos de senha dentro do formulário principal -->
+                            <hr>
+                            <h6>🔐 Alterar Senha</h6>
+                            <div class="alert alert-info small mb-3">
+                                <i class="bi bi-info-circle"></i> 
+                                Preencha apenas se deseja modificar a senha atual.
+                            </div>
+
+                            <div class="row">
+                                <div class="col-md-12 mb-3">
+                                    <label class="form-label">Senha Atual</label>
+                                    <input type="password" class="form-control" name="senha_atual" id="senha_atual" placeholder="Digite sua senha atual">
+                                    <small class="text-muted">Obrigatório para alterar a senha</small>
+                                </div>
+
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label">Nova Senha</label>
+                                    <input type="password" class="form-control" name="senha" id="senha" placeholder="Deixe em branco para manter a atual">
+                                    <small class="text-muted">Mínimo de 6 caracteres</small>
+                                </div>
+
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label">Confirmar Nova Senha</label>
+                                    <input type="password" class="form-control" id="confirmar_senha" placeholder="Digite a senha novamente">
+                                    <small class="text-muted" id="senha_erro" style="color: red; display: none;">As senhas não coincidem</small>
+                                </div>
+                            </div>
+
                             <div class="text-center mt-3">
                                 <button type="submit" class="btn btn-success" id="btnSalvar">
-                                    <i class="bi bi-save"></i> Salvar
+                                    <i class="bi bi-save"></i> Salvar Alterações
                                 </button>
                             </div>
 
@@ -260,94 +289,62 @@
 
                     </div>
                 </div>
-<!-- Card de Documentos -->
-<div class="card shadow mb-4">
-    <div class="card-header bg-info text-white">
-        <i class="bi bi-cloud-upload"></i> Documentos do Obreiro
-    </div>
-    <div class="card-body">
-        <div class="alert alert-info small mb-3">
-            <i class="bi bi-info-circle"></i> 
-            Envie documentos importantes como: CIM, Certificados, Diplomas, etc.
-        </div>
-        
-        <form method="POST" action="/obreiros/{{ obreiro.id }}/documentos/upload" enctype="multipart/form-data" class="mb-3">
-            <div class="mb-2">
-                <label class="form-label fw-bold">Título do Documento</label>
-                <input type="text" class="form-control" name="titulo" placeholder="Ex: CIM, Certificado de Mestre, etc." required>
-            </div>
-            <div class="mb-2">
-                <label class="form-label fw-bold">Categoria</label>
-                <select class="form-select" name="categoria" required>
-                    <option value="identificacao">Identificação (CIM, RG, CPF)</option>
-                    <option value="certificado">Certificados</option>
-                    <option value="diploma">Diplomas</option>
-                    <option value="ritual">Rituais</option>
-                    <option value="outros">Outros</option>
-                </select>
-            </div>
-            <div class="mb-2">
-                <label class="form-label fw-bold">Arquivo</label>
-                <input type="file" class="form-control" name="arquivo" accept=".pdf,.jpg,.jpeg,.png,.doc,.docx" required>
-                <small class="text-muted">PDF, imagens, Word (max 10MB)</small>
-            </div>
-            <div class="mb-2">
-                <label class="form-label">Descrição (opcional)</label>
-                <textarea class="form-control" name="descricao" rows="2" placeholder="Informações adicionais sobre o documento"></textarea>
-            </div>
-            <button type="submit" class="btn btn-info w-100">
-                <i class="bi bi-cloud-upload"></i> Enviar Documento
-            </button>
-        </form>
-        
-        <hr>
-        
-        <h6 class="mb-3">
-            <i class="bi bi-files"></i> Documentos Enviados
-            <span class="badge bg-secondary" id="totalDocumentos">0</span>
-        </h6>
-        
-        <div id="listaDocumentos" style="max-height: 300px; overflow-y: auto;">
-            <div class="text-center text-muted py-3" id="semDocumentosMsg">
-                <i class="bi bi-cloud-slash fs-1"></i>
-                <p class="mb-0">Nenhum documento enviado</p>
-            </div>
-        </div>
-    </div>
-</div>
-                <!-- Card da Senha -->
-                <div class="card shadow mb-4">
-                    <div class="card-header bg-warning text-dark">
-                        <i class="bi bi-lock"></i> Alterar Senha
-                    </div>
 
+                <!-- Card de Documentos -->
+                <div class="card shadow mb-4" id="documentos">
+                    <div class="card-header bg-info text-white">
+                        <i class="bi bi-cloud-upload"></i> Documentos do Obreiro
+                    </div>
                     <div class="card-body">
                         <div class="alert alert-info small mb-3">
                             <i class="bi bi-info-circle"></i> 
-                            Preencha apenas se deseja modificar a senha atual.
+                            Envie documentos importantes como: CIM, Certificados, Diplomas, etc.
                         </div>
-
-                        <div class="mb-3">
-                            <label class="form-label">Senha Atual</label>
-                            <input type="password" class="form-control" name="senha_atual" id="senha_atual" placeholder="Digite sua senha atual">
-                            <small class="text-muted">Obrigatório para alterar a senha</small>
-                        </div>
-
-                        <div class="mb-3">
-                            <label class="form-label">Nova Senha</label>
-                            <input type="password" class="form-control" name="senha" id="senha" placeholder="Deixe em branco para manter a atual">
-                            <small class="text-muted">Mínimo de 6 caracteres</small>
-                        </div>
-
-                        <div class="mb-3">
-                            <label class="form-label">Confirmar Nova Senha</label>
-                            <input type="password" class="form-control" id="confirmar_senha" placeholder="Digite a senha novamente">
-                            <small class="text-muted" id="senha_erro" style="color: red; display: none;">As senhas não coincidem</small>
+                        
+                        <form method="POST" action="/obreiros/{{ obreiro.id }}/documentos/upload" enctype="multipart/form-data" class="mb-3">
+                            <div class="mb-2">
+                                <label class="form-label fw-bold">Título do Documento</label>
+                                <input type="text" class="form-control" name="titulo" placeholder="Ex: CIM, Certificado de Mestre, etc." required>
+                            </div>
+                            <div class="mb-2">
+                                <label class="form-label fw-bold">Categoria</label>
+                                <select class="form-select" name="categoria" required>
+                                    <option value="identificacao">Identificação (CIM, RG, CPF)</option>
+                                    <option value="certificado">Certificados</option>
+                                    <option value="diploma">Diplomas</option>
+                                    <option value="ritual">Rituais</option>
+                                    <option value="outros">Outros</option>
+                                </select>
+                            </div>
+                            <div class="mb-2">
+                                <label class="form-label fw-bold">Arquivo</label>
+                                <input type="file" class="form-control" name="arquivo" accept=".pdf,.jpg,.jpeg,.png,.doc,.docx" required>
+                                <small class="text-muted">PDF, imagens, Word (max 10MB)</small>
+                            </div>
+                            <div class="mb-2">
+                                <label class="form-label">Descrição (opcional)</label>
+                                <textarea class="form-control" name="descricao" rows="2" placeholder="Informações adicionais sobre o documento"></textarea>
+                            </div>
+                            <button type="submit" class="btn btn-info w-100">
+                                <i class="bi bi-cloud-upload"></i> Enviar Documento
+                            </button>
+                        </form>
+                        
+                        <hr>
+                        
+                        <h6 class="mb-3">
+                            <i class="bi bi-files"></i> Documentos Enviados
+                            <span class="badge bg-secondary" id="totalDocumentos">0</span>
+                        </h6>
+                        
+                        <div id="listaDocumentos" style="max-height: 300px; overflow-y: auto;">
+                            <div class="text-center text-muted py-3" id="semDocumentosMsg">
+                                <i class="bi bi-cloud-slash fs-1"></i>
+                                <p class="mb-0">Nenhum documento enviado</p>
+                            </div>
                         </div>
                     </div>
                 </div>
-				
-				
 
                 <!-- Card de Informação sobre Sindicante -->
                 {% if obreiro.tipo == 'sindicante' and obreiro.grau_atual < 3 %}
@@ -394,12 +391,13 @@ if (telefoneInput) {
     });
 }
 
-// Validação de senha
+// =====================
+// VALIDAÇÃO DE SENHA
+// =====================
 function validarSenha() {
-    var senhaAtual = document.getElementById('senha_atual');
-    var senha = document.getElementById('senha');
-    var confirmar = document.getElementById('confirmar_senha');
-    var erroSpan = document.getElementById('senha_erro');
+    const senhaAtual = document.getElementById('senha_atual');
+    const senha = document.getElementById('senha');
+    const confirmar = document.getElementById('confirmar_senha');
     
     // Se não está tentando alterar senha
     if ((!senha || senha.value === '') && (!confirmar || confirmar.value === '')) {
@@ -418,12 +416,10 @@ function validarSenha() {
     }
     
     if (senha.value !== confirmar.value) {
-        if (erroSpan) erroSpan.style.display = 'inline';
         alert('As senhas não coincidem!');
         return false;
     }
     
-    if (erroSpan) erroSpan.style.display = 'none';
     return true;
 }
 
@@ -444,6 +440,18 @@ if (confirmarInput) {
         }
     });
 }
+
+// Adicionar validação ao botão salvar
+const btnSalvar = document.getElementById('btnSalvar');
+if (btnSalvar) {
+    btnSalvar.addEventListener('click', function(e) {
+        if (!validarSenha()) {
+            e.preventDefault();
+            return false;
+        }
+    });
+}
+
 // =====================
 // CARREGAR DOCUMENTOS - EDITAR
 // =====================
@@ -562,7 +570,6 @@ function excluirDocumento(docId) {
             const docElement = document.getElementById(`doc-${docId}`);
             if (docElement) docElement.remove();
             
-            // Atualizar contador
             const remainingDocs = document.querySelectorAll('#listaDocumentos .list-group-item').length;
             const totalSpan = document.getElementById('totalDocumentos');
             if (totalSpan) totalSpan.textContent = remainingDocs;
@@ -583,20 +590,18 @@ function excluirDocumento(docId) {
     });
 }
 
-// Carregar documentos ao iniciar a página
-document.addEventListener('DOMContentLoaded', function() {
-    console.log('🚀 Página carregada, iniciando carregamento de documentos...');
-    carregarDocumentos();
-});
 // =====================
-// CONTROLE DE GRAUS - VERSÃO DEFINITIVA
+// CONTROLE DE GRAUS
 // =====================
 
 document.addEventListener('DOMContentLoaded', function() {
     
     console.log('=== CONTROLE DE GRAUS INICIADO ===');
     
-    // Pegar os elementos
+    // Carregar documentos
+    carregarDocumentos();
+    
+    // Pegar os elementos de grau
     const grauPrincipal = document.getElementById('grauPrincipalSelect');
     const divSuperior = document.getElementById('divGrauSuperior');
     const grauSuperior = document.getElementById('grauSuperiorSelect');
@@ -608,33 +613,23 @@ document.addEventListener('DOMContentLoaded', function() {
         return;
     }
     
-    console.log('Elementos encontrados:');
-    console.log('- grauPrincipal:', grauPrincipal);
-    console.log('- divSuperior:', divSuperior);
-    console.log('- grauSuperior:', grauSuperior);
-    console.log('- grauFinal:', grauFinal);
     console.log('Grau atual do obreiro (hidden):', grauFinal ? grauFinal.value : 'N/A');
     
-    // Função para mostrar/esconder grau superior baseado no grau principal selecionado
     function atualizarVisibilidade() {
         if (!grauPrincipal || !divSuperior) return;
         
         const valor = grauPrincipal.value;
-        console.log('Grau principal selecionado:', valor);
         
         if (valor === '3') {
             divSuperior.style.display = 'block';
-            console.log('✅ Mostrando campo de grau superior (block)');
         } else {
             divSuperior.style.display = 'none';
             if (grauSuperior) grauSuperior.value = '';
-            console.log('❌ Escondendo campo de grau superior (none)');
         }
         
         atualizarGrauFinal();
     }
     
-    // Função para atualizar o grau final (o que vai salvar no banco)
     function atualizarGrauFinal() {
         if (!grauFinal || !grauPrincipal) return;
         
@@ -644,20 +639,16 @@ document.addEventListener('DOMContentLoaded', function() {
         let final;
         if (principal === 3 && superior && superior !== '') {
             final = parseInt(superior);
-            console.log('✅ Usando grau superior:', final);
         } else {
             final = principal;
-            console.log('✅ Usando grau principal:', final);
         }
         
         grauFinal.value = final;
-        console.log('📌 Grau final salvo no hidden:', final);
         
         // Atualizar feedback de sindicante
         atualizarFeedbackSindicante(final);
     }
     
-    // Função para atualizar feedback de sindicante
     function atualizarFeedbackSindicante(grau) {
         const tipoSelect = document.getElementById('tipoSelect');
         if (!tipoSelect) return;
@@ -668,23 +659,16 @@ document.addEventListener('DOMContentLoaded', function() {
             if (tipoSelect.options[i].value === 'sindicante') {
                 if (grauAtualVal >= 3) {
                     tipoSelect.options[i].disabled = false;
-                    tipoSelect.options[i].title = '';
-                    console.log('✅ Opção Sindicante habilitada');
                 } else {
                     tipoSelect.options[i].disabled = true;
-                    tipoSelect.options[i].title = 'Apenas Mestres (grau 3) e superiores podem ser Sindicantes';
-                    console.log('❌ Opção Sindicante desabilitada (grau < 3)');
                 }
             }
         }
         
-        // Se o tipo atual é sindicante e o grau não permite, mudar para obreiro
         if (tipoSelect.value === 'sindicante' && grauAtualVal < 3) {
             tipoSelect.value = 'obreiro';
-            console.log('⚠️ Tipo alterado de sindicante para obreiro');
         }
         
-        // Mostrar feedback visual
         const feedback = document.getElementById('feedbackSindicante');
         if (feedback) {
             if (grauAtualVal >= 3) {
@@ -695,32 +679,19 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
     
-    // Adicionar eventos
     if (grauPrincipal) {
         grauPrincipal.addEventListener('change', function() {
-            console.log('🔄 Evento change no grau principal');
             atualizarVisibilidade();
         });
     }
     
     if (grauSuperior) {
         grauSuperior.addEventListener('change', function() {
-            console.log('🔄 Evento change no grau superior');
             atualizarGrauFinal();
         });
     }
     
-    // Executar configuração inicial
-    console.log('🚀 Executando configuração inicial...');
     atualizarVisibilidade();
-    
-    // Forçar o dropdown a aparecer se o grau principal for 3
-    if (grauPrincipal && grauPrincipal.value === '3') {
-        console.log('⚠️ Forçando exibição do dropdown de graus superiores');
-        divSuperior.style.display = 'block';
-    }
-    
-    console.log('=== CONTROLE DE GRAUS FINALIZADO ===');
     
 });
 </script>
@@ -754,7 +725,6 @@ document.addEventListener('DOMContentLoaded', function() {
             margin: 5px 0;
         }
     }
-	
 </style>
 
 {% endblock %}
