@@ -30,59 +30,63 @@
                         </p>
                         {% endif %}
                         
-                        <!-- Badges -->
-                        <div class="mt-2">
-                            <span class="badge {% if obreiro.ativo == 1 %}bg-success{% else %}bg-danger{% endif %} me-2">
-                                {% if obreiro.ativo == 1 %}Ativo{% else %}Inativo{% endif %}
-                            </span>
-                            {% if obreiro.tipo == 'admin' %}
-                                <span class="badge bg-danger">Administrador</span>
-                            {% elif obreiro.tipo == 'sindicante' %}
-                                <span class="badge bg-warning text-dark">Sindicante</span>
-                            {% else %}
-                                <span class="badge bg-info">Obreiro</span>
-                            {% endif %}
-                            
-                            <!-- Grau principal -->
-                            <span class="badge bg-success">
-                                {% if obreiro.grau_atual == 1 %}
-                                    Aprendiz
-                                {% elif obreiro.grau_atual == 2 %}
-                                    Companheiro
-                                {% elif obreiro.grau_atual >= 3 %}
-                                    Mestre
-                                {% else %}
-                                    Mestre
-                                {% endif %}
-                            </span>
-                            
-                            <!-- Grau detalhado para graus superiores (>= 4) -->
-                            {% if obreiro.grau_atual >= 4 %}
-                                <span class="badge bg-info ms-1">
-                                    {% if obreiro.grau_atual == 4 %}
-                                        Mestre Instalado
-                                    {% elif obreiro.grau_atual == 5 %}
-                                        Arquiteto Real
-                                    {% elif obreiro.grau_atual == 6 %}
-                                        Soberano Grande Inspetor Geral
-                                    {% elif obreiro.grau_atual == 7 %}
-                                        Mestre Perfeito
-                                    {% elif obreiro.grau_atual == 8 %}
-                                        Eleito dos Nove
-                                    {% elif obreiro.grau_atual == 9 %}
-                                        Mestre da Maçonaria Real
-                                    {% elif obreiro.grau_atual == 10 %}
-                                        Cavaleiro Rosa-Cruz
-                                    {% elif obreiro.grau_atual == 11 %}
-                                        Cavaleiro Kadosch
-                                    {% elif obreiro.grau_atual == 12 %}
-                                        Grande Escocês
-                                    {% else %}
-                                        Grau Superior {{ obreiro.grau_atual }}
-                                    {% endif %}
-                                </span>
-                            {% endif %}
-                        </div>
+<!-- Badges -->
+<!-- Grau -->
+<div class="mt-2">
+    <!-- Status -->
+    <span class="badge {% if obreiro.ativo == 1 %}bg-success{% else %}bg-danger{% endif %} me-2">
+        {% if obreiro.ativo == 1 %}Ativo{% else %}Inativo{% endif %}
+    </span>
+    
+    <!-- Tipo -->
+    {% if obreiro.tipo == 'admin' %}
+        <span class="badge bg-danger me-2">Administrador</span>
+    {% elif obreiro.tipo == 'sindicante' %}
+        <span class="badge bg-warning text-dark me-2">Sindicante</span>
+    {% else %}
+        <span class="badge bg-info me-2">Obreiro</span>
+    {% endif %}
+    
+    <!-- Cargo Atual -->
+    {% if cargo_atual %}
+    <span class="badge bg-secondary me-2">
+        <i class="bi bi-briefcase"></i> {{ cargo_atual }}
+    </span>
+    {% endif %}
+    
+    <!-- ============================================ -->
+    <!-- GRAU - Convertendo para inteiro explicitamente -->
+    <!-- ============================================ -->
+    {% set grau_num = obreiro.grau_atual|int %}
+    
+    {% if grau_num == 1 %}
+        <span class="badge bg-secondary me-2">Aprendiz</span>
+    {% elif grau_num == 2 %}
+        <span class="badge bg-primary me-2">Companheiro</span>
+    {% elif grau_num == 3 %}
+        <span class="badge bg-success me-2">Mestre</span>
+    {% elif grau_num == 4 %}
+        <span class="badge bg-info me-2">Mestre Instalado</span>
+    {% elif grau_num == 5 %}
+        <span class="badge bg-info me-2">Arquiteto Real</span>
+    {% elif grau_num == 6 %}
+        <span class="badge bg-info me-2">Soberano Grande Inspetor Geral</span>
+    {% elif grau_num == 7 %}
+        <span class="badge bg-info me-2">Mestre Perfeito</span>
+    {% elif grau_num == 8 %}
+        <span class="badge bg-info me-2">Eleito dos Nove</span>
+    {% elif grau_num == 9 %}
+        <span class="badge bg-info me-2">Mestre da Maçonaria Real</span>
+    {% elif grau_num == 10 %}
+        <span class="badge bg-info me-2">Cavaleiro Rosa-Cruz</span>
+    {% elif grau_num == 11 %}
+        <span class="badge bg-info me-2">Cavaleiro Kadosch</span>
+    {% elif grau_num == 12 %}
+        <span class="badge bg-info me-2">Grande Escocês</span>
+    {% else %}
+        <span class="badge bg-secondary me-2">Grau {{ grau_num }}</span>
+    {% endif %}
+</div>
                     </div>
                     <div class="col-auto">
                         {% if pode_editar %}
@@ -185,86 +189,129 @@
         </div>
 
         <!-- Informações Principais -->
-        <div class="card shadow mb-4">
-            <div class="card-header bg-light">
-                <h5 class="mb-0"><i class="bi bi-info-circle"></i> Informações do Obreiro</h5>
+<div class="card shadow">
+    <div class="card-header bg-light">
+        <h5 class="mb-0"><i class="bi bi-info-circle"></i> Informações do Obreiro</h5>
+    </div>
+    <div class="card-body">
+        <div class="row">
+            <div class="col-md-6">
+                <table class="table table-sm table-borderless">
+                    <tr>
+                        <td class="text-muted" style="width: 120px;">Nome Completo:</td>
+                        <td><strong>{{ obreiro.nome_completo or obreiro.usuario }}</strong></td>
+                    </tr>
+                    <tr>
+                        <td class="text-muted">Nome Maçônico:</td>
+                        <td>{{ obreiro.nome_maconico or '-' }}</td>
+                    </tr>
+                    <tr>
+                        <td class="text-muted">Usuário:</td>
+                        <td>{{ obreiro.usuario }}</td>
+                    </tr>
+                    <tr>
+                        <td class="text-muted">Cargo Atual:</td>
+                        <td>
+                            {% if cargo_atual %}
+                                <span class="badge bg-secondary">{{ cargo_atual }}</span>
+                            {% else %}
+                                -
+                            {% endif %}
+                        </td>
+                    </tr>
+                    <tr>
+                        <td class="text-muted">Grau Atual:</td>
+                        <td>
+                            {% set grau_num = obreiro.grau_atual|int %}
+                            {% if grau_num == 1 %}
+                                <span class="badge bg-secondary">Aprendiz</span>
+                            {% elif grau_num == 2 %}
+                                <span class="badge bg-primary">Companheiro</span>
+                            {% elif grau_num == 3 %}
+                                <span class="badge bg-success">Mestre</span>
+                            {% elif grau_num == 4 %}
+                                <span class="badge bg-info">Mestre Instalado</span>
+                            {% elif grau_num == 5 %}
+                                <span class="badge bg-info">Arquiteto Real</span>
+                            {% elif grau_num == 6 %}
+                                <span class="badge bg-info">Soberano Grande Inspetor Geral</span>
+                            {% elif grau_num == 7 %}
+                                <span class="badge bg-info">Mestre Perfeito</span>
+                            {% elif grau_num == 8 %}
+                                <span class="badge bg-info">Eleito dos Nove</span>
+                            {% elif grau_num == 9 %}
+                                <span class="badge bg-info">Mestre da Maçonaria Real</span>
+                            {% elif grau_num == 10 %}
+                                <span class="badge bg-info">Cavaleiro Rosa-Cruz</span>
+                            {% elif grau_num == 11 %}
+                                <span class="badge bg-info">Cavaleiro Kadosch</span>
+                            {% elif grau_num == 12 %}
+                                <span class="badge bg-info">Grande Escocês</span>
+                            {% else %}
+                                <span class="badge bg-secondary">Grau {{ grau_num }}</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    <tr>
+                        <td class="text-muted">CIM Nº:</td>
+                        <td>{{ obreiro.cim_numero or '-' }}</td>
+                    </tr>
+                    <tr>
+                        <td class="text-muted">Data Cadastro:</td>
+                        <td>{{ obreiro.data_cadastro.strftime('%d/%m/%Y') if obreiro.data_cadastro else '-' }}</td>
+                    </tr>
+                </table>
             </div>
-            <div class="card-body">
-                <div class="row">
-                    <div class="col-md-6">
-                        <table class="table table-sm table-borderless">
-                            <tr>
-                                <td class="text-muted" style="width: 120px;">Nome Completo:</td>
-                                <td><strong>{{ obreiro.nome_completo or obreiro.usuario }}</strong></td>
-                            </tr>
-                            <tr>
-                                <td class="text-muted">Nome Maçônico:</td>
-                                <td>{{ obreiro.nome_maconico or '-' }}</td>
-                            </tr>
-                            <tr>
-                                <td class="text-muted">Usuário:</td>
-                                <td>{{ obreiro.usuario }}</td>
-                            </tr>
-                            <tr>
-                                <td class="text-muted">CIM Nº:</td>
-                                <td>{{ obreiro.cim_numero or '-' }}</td>
-                            </tr>
-                            <tr>
-                                <td class="text-muted">Data Cadastro:</td>
-                                <td>{{ obreiro.data_cadastro.strftime('%d/%m/%Y') if obreiro.data_cadastro else '-' }}</td>
-                            </tr>
-                        </table>
-                    </div>
-                    <div class="col-md-6">
-                        <table class="table table-sm table-borderless">
-                            <tr>
-                                <td class="text-muted" style="width: 120px;">Telefone:</td>
-                                <td>{{ obreiro.telefone or '-' }}</td>
-                            </tr>
-                            <tr>
-                                <td class="text-muted">E-mail:</td>
-                                <td>{{ obreiro.email or '-' }}</td>
-                            </tr>
-                            <tr>
-                                <td class="text-muted">Endereço:</td>
-                                <td>{{ obreiro.endereco or '-' }}</td>
-                            </tr>
-                            <tr>
-                                <td class="text-muted">Loja:</td>
-                                <td>{{ obreiro.loja_nome or '-' }} (Nº {{ obreiro.loja_numero or '-' }})</td>
-                            </tr>
-                            <tr>
-                                <td class="text-muted">Oriente:</td>
-                                <td>{{ obreiro.loja_orient or '-' }}</td>
-                            </tr>
-                        </table>
-                    </div>
-                </div>
+            <div class="col-md-6">
+                <table class="table table-sm table-borderless">
+                    <tr>
+                        <td class="text-muted" style="width: 120px;">Telefone:</td>
+                        <td>{{ obreiro.telefone or '-' }}</td>
+                    </tr>
+                    <tr>
+                        <td class="text-muted">E-mail:</td>
+                        <td>{{ obreiro.email or '-' }}</td>
+                    </tr>
+                    <tr>
+                        <td class="text-muted">Endereço:</td>
+                        <td>{{ obreiro.endereco or '-' }}</td>
+                    </tr>
+                    <tr>
+                        <td class="text-muted">Loja:</td>
+                        <td>{{ obreiro.loja_nome or '-' }} (Nº {{ obreiro.loja_numero or '-' }})</td>
+                    </tr>
+                    <tr>
+                        <td class="text-muted">Oriente:</td>
+                        <td>{{ obreiro.loja_orient or '-' }}</td>
+                    </tr>
+                </table>
+            </div>
+        </div>
 
-                <hr>
-                <h6><i class="bi bi-calendar-event"></i> Datas Importantes</h6>
-                <div class="row mt-2">
-                    <div class="col-md-4">
-                        <div class="border rounded p-2 text-center">
-                            <small class="text-muted">Iniciação</small>
-                            <div class="fw-bold">{{ obreiro.data_iniciacao.strftime('%d/%m/%Y') if obreiro.data_iniciacao else '-' }}</div>
-                        </div>
-                    </div>
-                    <div class="col-md-4">
-                        <div class="border rounded p-2 text-center">
-                            <small class="text-muted">Elevação</small>
-                            <div class="fw-bold">{{ obreiro.data_elevacao.strftime('%d/%m/%Y') if obreiro.data_elevacao else '-' }}</div>
-                        </div>
-                    </div>
-                    <div class="col-md-4">
-                        <div class="border rounded p-2 text-center">
-                            <small class="text-muted">Exaltação</small>
-                            <div class="fw-bold">{{ obreiro.data_exaltacao.strftime('%d/%m/%Y') if obreiro.data_exaltacao else '-' }}</div>
-                        </div>
-                    </div>
+        <hr>
+        <h6><i class="bi bi-calendar-event"></i> Datas Importantes</h6>
+        <div class="row mt-2">
+            <div class="col-md-4">
+                <div class="border rounded p-2 text-center">
+                    <small class="text-muted">Iniciação</small>
+                    <div class="fw-bold">{{ obreiro.data_iniciacao.strftime('%d/%m/%Y') if obreiro.data_iniciacao else '-' }}</div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="border rounded p-2 text-center">
+                    <small class="text-muted">Elevação</small>
+                    <div class="fw-bold">{{ obreiro.data_elevacao.strftime('%d/%m/%Y') if obreiro.data_elevacao else '-' }}</div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="border rounded p-2 text-center">
+                    <small class="text-muted">Exaltação</small>
+                    <div class="fw-bold">{{ obreiro.data_exaltacao.strftime('%d/%m/%Y') if obreiro.data_exaltacao else '-' }}</div>
                 </div>
             </div>
         </div>
+    </div>
+</div>
 
         <!-- Familiares e Condecorações e Comunicados -->
 <div class="row mb-4">

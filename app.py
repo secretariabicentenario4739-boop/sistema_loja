@@ -2069,8 +2069,7 @@ def dashboard():
         total_sindicantes_ativos = len(sindicantes)
         total_candidatos = len(candidatos)
         
-        # ========== INÍCIO - CÓDIGO DOS AVISOS ==========
-        # Buscar últimos avisos para o dashboard
+        # ========== AVISOS ==========
         usuario_grau = session.get('grau_atual', 1)
         usuario_id = session['user_id']
         
@@ -2088,9 +2087,12 @@ def dashboard():
             LIMIT 5
         """, (usuario_id, usuario_grau))
         ultimos_avisos = cursor.fetchall()
-        # ========== FIM - CÓDIGO DOS AVISOS ==========
         
+        # ============================================
+        # ADMIN VS NÃO-ADMIN
+        # ============================================
         if session["tipo"] == "admin":
+            # ADMIN - vê todas as reuniões
             em_analise = sum(1 for c in candidatos if c["status"] == "Em análise" and not c["fechado"])
             aprovados = sum(1 for c in candidatos if c["status"] == "Aprovado")
             reprovados = sum(1 for c in candidatos if c["status"] == "Reprovado")
@@ -2136,12 +2138,52 @@ def dashboard():
             proximas_reunioes = cursor.fetchall()
             proxima_reuniao = proximas_reunioes[0] if proximas_reunioes else None
         else:
+            # NÃO-ADMIN - filtrar reuniões por grau
             em_analise = aprovados = reprovados = total_obreiros = mestres = companheiros = aprendizes = 0
-            total_reunioes = reunioes_realizadas = reunioes_agendadas = 0
             pendentes = []
             prazo_vencido = []
-            proximas_reunioes = []
-            proxima_reuniao = None
+            
+            # Buscar próximas reuniões filtradas por grau
+            usuario_grau = session.get('grau_atual', 1)
+            
+            query_reunioes = """
+                SELECT id, titulo, data, hora_inicio, grau, tipo, local, status
+                FROM reunioes 
+                WHERE status = 'agendada' 
+                AND data >= CURRENT_DATE
+            """
+            
+            if usuario_grau == 1:
+                query_reunioes += " AND (grau = 1 OR grau IS NULL)"
+            elif usuario_grau == 2:
+                query_reunioes += " AND (grau IN (1, 2) OR grau IS NULL)"
+            elif usuario_grau >= 3:
+                query_reunioes += " AND (grau <= 3 OR grau IS NULL OR grau > 3)"
+            
+            query_reunioes += " ORDER BY data ASC, hora_inicio ASC LIMIT 5"
+            
+            cursor.execute(query_reunioes)
+            proximas_reunioes = cursor.fetchall()
+            proxima_reuniao = proximas_reunioes[0] if proximas_reunioes else None
+            
+            # Estatísticas de reuniões filtradas por grau
+            if usuario_grau == 1:
+                grau_filter = "(grau = 1 OR grau IS NULL)"
+            elif usuario_grau == 2:
+                grau_filter = "(grau IN (1, 2) OR grau IS NULL)"
+            else:
+                grau_filter = "(grau <= 3 OR grau IS NULL OR grau > 3)"
+            
+            cursor.execute(f"SELECT COUNT(*) as total FROM reunioes WHERE {grau_filter}")
+            total_reunioes = cursor.fetchone()["total"]
+            
+            cursor.execute(f"SELECT COUNT(*) as total FROM reunioes WHERE status = 'realizada' AND {grau_filter}")
+            reunioes_realizadas = cursor.fetchone()["total"]
+            
+            cursor.execute(f"SELECT COUNT(*) as total FROM reunioes WHERE status = 'agendada' AND {grau_filter}")
+            reunioes_agendadas = cursor.fetchone()["total"]
+            
+            # Processar candidatos para sindicância
             for c in candidatos:
                 cursor.execute("SELECT parecer FROM sindicancias WHERE candidato_id = %s AND sindicante = %s", (c["id"], session["usuario"]))
                 parecer = cursor.fetchone()
@@ -2176,7 +2218,7 @@ def dashboard():
             prazo_vencido=prazo_vencido,
             sindicantes=sindicantes,
             pareceres_conclusivos=pareceres_conclusivos,
-            ultimos_avisos=ultimos_avisos,  # ← ADICIONE ESTA LINHA
+            ultimos_avisos=ultimos_avisos,
             now=datetime.now()
         )
     except Exception as e:
@@ -2472,9 +2514,10 @@ def listar_obreiros():
     cursor, conn = get_db()
     
     # ============================================
-    # VERIFICAÇÃO DE PERMISSÃO: Todos os obreiros podem visualizar a lista
+    # PERMISSÃO: Todos os obreiros podem visualizar a lista
     # ============================================
     # Qualquer usuário logado pode ver a lista de obreiros
+    # (Não há restrição por grau ou tipo)
     
     # Obter parâmetros de filtro
     nome = request.args.get('nome', '').strip()
@@ -2483,7 +2526,7 @@ def listar_obreiros():
     loja = request.args.get('loja', '')
     status = request.args.get('status', 'ativos')
     
-    # Construir query base (sem restrição de grau para visualização)
+    # Construir query base
     query = """
         SELECT DISTINCT u.*, 
                l.nome as loja_nome_completo,
@@ -2592,7 +2635,7 @@ def listar_obreiros():
         
         obreiros_list.append(obreiro)
     
-    # Buscar dados para os filtros
+    # Buscar dados para os filtros (dropdowns)
     cursor.execute("SELECT DISTINCT grau_atual as grau FROM usuarios WHERE grau_atual IS NOT NULL ORDER BY grau_atual")
     graus_raw = cursor.fetchall()
     
@@ -2611,7 +2654,7 @@ def listar_obreiros():
     cursor.execute("SELECT DISTINCT loja_nome as nome FROM usuarios WHERE loja_nome IS NOT NULL AND loja_nome != '' ORDER BY loja_nome")
     lojas_disponiveis = cursor.fetchall()
     
-    # Estatísticas gerais
+    # Estatísticas gerais (todos os obreiros)
     cursor.execute("SELECT COUNT(*) as total FROM usuarios WHERE ativo = 1")
     total_ativos = cursor.fetchone()['total']
     
@@ -3001,6 +3044,110 @@ def visualizar_obreiro(id):
             flash("Obreiro não encontrado", "danger")
             return_connection(conn)
             return redirect("/obreiros")
+        
+        # ============================================
+        # TODOS OS OBREIROS PODEM VISUALIZAR
+        # (Sem restrição de grau ou tipo)
+        # ============================================
+        # Qualquer usuário logado pode visualizar qualquer obreiro
+        
+        # Buscar cargo atual
+        cursor.execute("""
+            SELECT c.nome as cargo_nome, c.sigla, oc.data_inicio
+            FROM ocupacao_cargos oc
+            JOIN cargos c ON oc.cargo_id = c.id
+            WHERE oc.obreiro_id = %s AND oc.ativo = 1
+            ORDER BY oc.data_inicio DESC
+            LIMIT 1
+        """, (id,))
+        cargo_atual_row = cursor.fetchone()
+        cargo_atual = cargo_atual_row['cargo_nome'] if cargo_atual_row else None
+        
+        # Buscar todos os cargos do obreiro
+        cursor.execute("""
+            SELECT oc.*, c.nome as cargo_nome, c.sigla
+            FROM ocupacao_cargos oc
+            JOIN cargos c ON oc.cargo_id = c.id
+            WHERE oc.obreiro_id = %s AND oc.ativo = 1
+            ORDER BY oc.data_inicio DESC
+        """, (id,))
+        cargos = cursor.fetchall()
+        
+        # Buscar histórico de graus
+        cursor.execute("""
+            SELECT h.*, g.nome as grau_nome
+            FROM historico_graus h
+            LEFT JOIN graus g ON h.grau_id = g.id
+            WHERE h.obreiro_id = %s
+            ORDER BY h.data DESC
+        """, (id,))
+        historico_graus = cursor.fetchall()
+        
+        # Buscar nome do grau atual
+        cursor.execute("SELECT nome FROM graus WHERE nivel = %s", (obreiro['grau_atual'],))
+        grau_atual_info = cursor.fetchone()
+        nome_grau_atual = grau_atual_info['nome'] if grau_atual_info else None
+        
+        # Contar familiares
+        cursor.execute("SELECT COUNT(*) as total FROM familiares WHERE obreiro_id = %s", (id,))
+        familiares_count = cursor.fetchone()["total"]
+        
+        # Contar condecorações
+        cursor.execute("SELECT COUNT(*) as total FROM condecoracoes_obreiro WHERE obreiro_id = %s", (id,))
+        condecoracoes_count = cursor.fetchone()["total"]
+        
+        # Contar comunicados
+        cursor.execute("SELECT COUNT(*) as total FROM comunicados_obreiro WHERE obreiro_id = %s AND ativo = 1", (id,))
+        comunicados_count = cursor.fetchone()["total"]
+        
+        # Cargos disponíveis para adicionar (apenas admin)
+        cargos_disponiveis = []
+        if session["tipo"] == "admin":
+            cursor.execute("SELECT * FROM cargos WHERE ativo = 1 ORDER BY ordem")
+            cargos_disponiveis = cursor.fetchall()
+        
+        # Graus disponíveis para registrar (apenas admin)
+        graus_disponiveis = []
+        if session["tipo"] == "admin":
+            cursor.execute("SELECT * FROM graus WHERE ativo = 1 ORDER BY nivel, ordem")
+            graus_disponiveis = cursor.fetchall()
+        
+        # Últimas condecorações
+        cursor.execute("""
+            SELECT c.*, t.nome as tipo_nome, t.cor, t.icone
+            FROM condecoracoes_obreiro c
+            JOIN tipos_condecoracoes t ON c.tipo_id = t.id
+            WHERE c.obreiro_id = %s
+            ORDER BY c.data_concessao DESC
+            LIMIT 5
+        """, (id,))
+        ultimas_condecoracoes = cursor.fetchall()
+        
+        return_connection(conn)
+        
+        # Apenas admin ou o próprio obreiro pode editar
+        pode_editar = (session["tipo"] == "admin" or session["user_id"] == id)
+        
+        return render_template("obreiros/visualizar.html",
+                              obreiro=obreiro, 
+                              cargos=cargos, 
+                              cargo_atual=cargo_atual,
+                              historico_graus=historico_graus,
+                              cargos_disponiveis=cargos_disponiveis, 
+                              graus_disponiveis=graus_disponiveis,
+                              familiares_count=familiares_count, 
+                              condecoracoes_count=condecoracoes_count,
+                              comunicados_count=comunicados_count,
+                              ultimas_condecoracoes=ultimas_condecoracoes, 
+                              nome_grau_atual=nome_grau_atual,
+                              pode_editar=pode_editar)
+        
+    except Exception as e:
+        print(f"Erro ao visualizar obreiro: {e}")
+        if conn:
+            return_connection(conn)
+        flash(f"Erro ao carregar dados do obreiro: {str(e)}", "danger")
+        return redirect("/obreiros")
         
         # ============================================
         # VERIFICAÇÃO DE PERMISSÃO: Todos os obreiros podem visualizar
