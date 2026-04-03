@@ -21,7 +21,7 @@
             {% if messages %}
                 {% for category, message in messages %}
                     <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
-                        {{ message }}
+                        {{ message | safe }}
                         <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
                     </div>
                 {% endfor %}
@@ -63,13 +63,11 @@
                         </div>
                         <div class="col-md-4 mb-3">
                             <label class="form-label">Hora Início *</label>
-                            <input type="time" class="form-control" name="hora_inicio" id="horaInicio" 
-                                   value="19:30" required>
+                            <input type="time" class="form-control" name="hora_inicio" id="horaInicio" required>
                         </div>
                         <div class="col-md-4 mb-3">
                             <label class="form-label">Hora Término</label>
-                            <input type="time" class="form-control" name="hora_termino" id="horaTermino" 
-                                   value="22:00">
+                            <input type="time" class="form-control" name="hora_termino" id="horaTermino">
                         </div>
                     </div>
 
@@ -81,10 +79,14 @@
                         </div>
                         <div class="col-md-6 mb-3">
                             <label class="form-label">Loja</label>
-                            <select class="form-select" name="loja_id">
+                            <select class="form-select" name="loja_id" id="lojaSelect">
                                 <option value="">Selecione uma loja...</option>
                                 {% for loja in lojas %}
-                                <option value="{{ loja.id }}">
+                                <option value="{{ loja.id }}" 
+                                        data-horario-inicio="{{ loja.horario_inicio.strftime('%H:%M') if loja.horario_inicio else '' }}"
+                                        data-horario-termino="{{ loja.horario_termino.strftime('%H:%M') if loja.horario_termino else '' }}"
+                                        data-dias-sessao="{{ loja.dias_sessao or '' }}"
+                                        data-observacoes="{{ loja.observacoes_horario or '' }}">
                                     {{ loja.nome }} - Nº {{ loja.numero }}
                                     {% if loja.oriente %} - {{ loja.oriente }}{% endif %}
                                 </option>
@@ -114,19 +116,25 @@
                         </div>
                     </div>
 
+                    <!-- Informações de Horário da Loja -->
+                    <div class="alert alert-info" id="infoHorarios" style="display: none;">
+                        <i class="bi bi-info-circle"></i>
+                        <span id="infoHorariosTexto"></span>
+                    </div>
+
                     <hr>
                     
                     <!-- Pauta e Observações -->
                     <h6 class="mb-3"><i class="bi bi-list-ul"></i> Pauta da Reunião</h6>
                     <div class="mb-3">
-                        <textarea class="form-control" name="pauta" rows="6" 
+                        <textarea class="form-control" name="pauta" id="pauta" rows="6" 
                                   placeholder="Descreva os assuntos a serem tratados na reunião..."></textarea>
                         <small class="text-muted">Você pode usar markdown para formatação</small>
                     </div>
 
                     <h6 class="mb-3"><i class="bi bi-chat-text"></i> Observações</h6>
                     <div class="mb-3">
-                        <textarea class="form-control" name="observacoes" rows="4" 
+                        <textarea class="form-control" name="observacoes" id="observacoes" rows="4" 
                                   placeholder="Observações adicionais sobre a reunião..."></textarea>
                     </div>
 
@@ -228,15 +236,83 @@
 </div>
 
 <script>
-    // Formatação automática do texto
+    // =====================
+    // PRÉ-PREENCHIMENTO DE HORÁRIOS DA LOJA
+    // =====================
+    document.addEventListener('DOMContentLoaded', function() {
+        const lojaSelect = document.getElementById('lojaSelect');
+        const horaInicio = document.getElementById('horaInicio');
+        const horaTermino = document.getElementById('horaTermino');
+        const observacoes = document.getElementById('observacoes');
+        const infoHorarios = document.getElementById('infoHorarios');
+        const infoHorariosTexto = document.getElementById('infoHorariosTexto');
+        
+        function preencherHorariosLoja() {
+            const selectedOption = lojaSelect.options[lojaSelect.selectedIndex];
+            
+            if (selectedOption && selectedOption.value) {
+                const horarioInicioLoja = selectedOption.dataset.horarioInicio;
+                const horarioTerminoLoja = selectedOption.dataset.horarioTermino;
+                const diasSessao = selectedOption.dataset.diasSessao;
+                const observacoesHorario = selectedOption.dataset.observacoes;
+                
+                if (horarioInicioLoja) {
+                    horaInicio.value = horarioInicioLoja;
+                }
+                
+                if (horarioTerminoLoja) {
+                    horaTermino.value = horarioTerminoLoja;
+                }
+                
+                if (observacoesHorario && !observacoes.value) {
+                    observacoes.value = observacoesHorario;
+                }
+                
+                // Mostrar informações adicionais
+                if (diasSessao || observacoesHorario) {
+                    infoHorarios.style.display = 'block';
+                    let texto = '';
+                    if (diasSessao) {
+                        let diasTexto = '';
+                        if (diasSessao === '2,4') diasTexto = 'Terças e Quintas-feiras';
+                        else if (diasSessao === '3,5') diasTexto = 'Quartas e Sextas-feiras';
+                        else if (diasSessao === '1,3') diasTexto = 'Segundas e Quartas-feiras';
+                        else if (diasSessao === 'sabados') diasTexto = 'Sábados (2º e 4º do mês)';
+                        else if (diasSessao === 'domingos') diasTexto = 'Domingos';
+                        else diasTexto = diasSessao;
+                        
+                        texto += `<strong>Dias padrão da loja:</strong> ${diasTexto}<br>`;
+                    }
+                    if (observacoesHorario) {
+                        texto += `<strong>Observações de horário:</strong> ${observacoesHorario}`;
+                    }
+                    infoHorariosTexto.innerHTML = texto;
+                } else {
+                    infoHorarios.style.display = 'none';
+                }
+            } else {
+                // Se não selecionar loja, limpar campos
+                if (!horaInicio.value) horaInicio.value = '';
+                if (!horaTermino.value) horaTermino.value = '';
+                infoHorarios.style.display = 'none';
+            }
+        }
+        
+        if (lojaSelect) {
+            lojaSelect.addEventListener('change', preencherHorariosLoja);
+        }
+    });
+
+    // =====================
+    // FORMATAR TEXTO AUTOMATICAMENTE
+    // =====================
     function formatarTexto() {
-        // Adicionar marcação automática de data e hora
         const data = document.getElementById('dataReuniao').value;
         const horaInicio = document.getElementById('horaInicio').value;
         
         if (data && horaInicio) {
             const dataFormatada = new Date(data).toLocaleDateString('pt-BR');
-            const pauta = document.querySelector('textarea[name="pauta"]');
+            const pauta = document.getElementById('pauta');
             const textoAtual = pauta.value;
             
             if (!textoAtual.includes('Data:')) {
@@ -246,13 +322,14 @@
         }
     }
     
-    // Visualizar pauta formatada
+    // =====================
+    // VISUALIZAR PAUTA
+    // =====================
     function visualizarPauta() {
-        const pauta = document.querySelector('textarea[name="pauta"]').value;
+        const pauta = document.getElementById('pauta').value;
         const modalBody = document.getElementById('pautaPreview');
         
         if (pauta.trim()) {
-            // Converter markdown básico para HTML
             let html = pauta
                 .replace(/\n/g, '<br>')
                 .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
@@ -271,15 +348,19 @@
         new bootstrap.Modal(document.getElementById('modalPauta')).show();
     }
     
-    // Copiar pauta
+    // =====================
+    // COPIAR PAUTA
+    // =====================
     function copiarPauta() {
-        const pauta = document.querySelector('textarea[name="pauta"]').value;
+        const pauta = document.getElementById('pauta').value;
         navigator.clipboard.writeText(pauta).then(() => {
             alert('Pauta copiada para a área de transferência!');
         });
     }
     
-    // Validação de horário
+    // =====================
+    // VALIDAÇÕES
+    // =====================
     document.getElementById('horaInicio').addEventListener('change', function() {
         const horaInicio = this.value;
         const horaTermino = document.getElementById('horaTermino').value;
@@ -300,7 +381,6 @@
         }
     });
     
-    // Validação de data
     document.getElementById('dataReuniao').addEventListener('change', function() {
         const dataSelecionada = new Date(this.value);
         const hoje = new Date();
@@ -312,7 +392,6 @@
         }
     });
     
-    // Mostrar descrição do tipo de reunião
     document.getElementById('tipoReuniao').addEventListener('change', function() {
         const selected = this.options[this.selectedIndex];
         const descricao = selected.getAttribute('data-descricao');
@@ -327,7 +406,6 @@
         }
     });
     
-    // Gerar título automático
     document.getElementById('dataReuniao').addEventListener('change', function() {
         const tituloInput = document.querySelector('input[name="titulo"]');
         if (!tituloInput.value) {
@@ -338,14 +416,15 @@
         }
     });
     
-    // Formatar texto automaticamente
-    document.querySelector('textarea[name="pauta"]').addEventListener('focus', function() {
+    document.getElementById('pauta').addEventListener('focus', function() {
         if (!this.value) {
             formatarTexto();
         }
     });
     
-    // Validar formulário antes de enviar
+    // =====================
+    // VALIDAÇÃO DO FORMULÁRIO
+    // =====================
     document.getElementById('formReuniao').addEventListener('submit', function(e) {
         const titulo = document.querySelector('input[name="titulo"]').value.trim();
         const data = document.getElementById('dataReuniao').value;
@@ -370,7 +449,6 @@
             return false;
         }
         
-        // Confirmar agendamento
         const dataFormatada = new Date(data).toLocaleDateString('pt-BR');
         const confirmacao = confirm(`Confirmar agendamento da reunião:\n\nTítulo: ${titulo}\nData: ${dataFormatada}\nHorário: ${horaInicio}\n\nDeseja prosseguir?`);
         
@@ -379,7 +457,6 @@
             return false;
         }
         
-        // Mostrar loading
         const btnSubmit = this.querySelector('button[type="submit"]');
         const originalText = btnSubmit.innerHTML;
         btnSubmit.innerHTML = '<i class="bi bi-hourglass-split"></i> Salvando...';
@@ -399,7 +476,6 @@
         }
     });
     
-    // Dica de atalho
     console.log('Dica: Use Ctrl+S para salvar rapidamente!');
 </script>
 

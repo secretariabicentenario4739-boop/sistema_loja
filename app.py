@@ -4615,8 +4615,13 @@ def listar_reunioes():
     status = request.args.get('status', '')
     grau = request.args.get('grau', '')
     local = request.args.get('local', '')
-    nivel_usuario = session.get("nivel_acesso", 1)
-    tipo_usuario = session.get("tipo", "obreiro")
+    
+    # ============================================
+    # PERMISSÃO POR GRAU
+    # ============================================
+    usuario_grau = session.get('grau_atual', 1)
+    usuario_tipo = session.get('tipo', 'obreiro')
+    
     query = """
         SELECT r.id, r.titulo, r.tipo, r.grau, r.data, r.hora_inicio, 
                r.hora_termino, r.local, r.loja_id, r.pauta, r.observacoes, 
@@ -4631,11 +4636,21 @@ def listar_reunioes():
         WHERE 1=1
     """
     params = []
-    if tipo_usuario != "admin":
-        if nivel_usuario == 1:
+    
+    # ============================================
+    # FILTRO POR GRAU DO USUÁRIO
+    # ============================================
+    # Se não for admin, só vê reuniões do seu grau ou inferiores
+    if usuario_tipo != 'admin':
+        if usuario_grau == 1:
             query += " AND (r.grau = 1 OR r.grau IS NULL)"
-        elif nivel_usuario == 2:
+        elif usuario_grau == 2:
             query += " AND (r.grau IN (1, 2) OR r.grau IS NULL)"
+        elif usuario_grau >= 3:
+            # Mestres veem todas as reuniões (grau 1, 2, 3 e superiores)
+            query += " AND (r.grau <= 3 OR r.grau IS NULL OR r.grau > 3)"
+    
+    # Filtros adicionais
     if data_ini:
         query += " AND r.data >= %s"
         params.append(data_ini)
@@ -4654,24 +4669,36 @@ def listar_reunioes():
     if local:
         query += " AND r.local LIKE %s"
         params.append(f"%{local}%")
+    
     query += """ 
         GROUP BY r.id, r.titulo, r.tipo, r.grau, r.data, r.hora_inicio, 
                  r.hora_termino, r.local, r.loja_id, r.pauta, r.observacoes, 
                  r.status, r.criado_por, l.nome, t.cor
         ORDER BY r.data DESC, r.hora_inicio DESC
     """
+    
     cursor.execute(query, params)
     reunioes = cursor.fetchall()
+    
+    # Buscar tipos e status para filtros
     cursor.execute("SELECT DISTINCT tipo FROM reunioes ORDER BY tipo")
     tipos = cursor.fetchall()
     cursor.execute("SELECT DISTINCT status FROM reunioes ORDER BY status")
     status_list = cursor.fetchall()
     cursor.execute("SELECT DISTINCT grau FROM reunioes WHERE grau IS NOT NULL ORDER BY grau")
     graus = cursor.fetchall()
+    
     return_connection(conn)
-    return render_template("reunioes/lista.html", reunioes=reunioes, tipos=tipos, status_list=status_list,
-                          graus=graus, filtros={'data_ini': data_ini, 'data_fim': data_fim,
-                                  'tipo': tipo, 'status': status, 'grau': grau, 'local': local})
+    
+    return render_template("reunioes/lista.html", 
+                          reunioes=reunioes, 
+                          tipos=tipos, 
+                          status_list=status_list,
+                          graus=graus, 
+                          filtros={'data_ini': data_ini, 'data_fim': data_fim,
+                                  'tipo': tipo, 'status': status, 'grau': grau, 'local': local},
+                          usuario_grau=usuario_grau,
+                          usuario_tipo=usuario_tipo)
 
 @app.route("/reunioes/calendario")
 @login_required
@@ -4682,8 +4709,38 @@ def calendario_reunioes():
 @login_required
 def api_reunioes():
     cursor, conn = get_db()
-    nivel_usuario = session.get("nivel_acesso", 1)
-    tipo_usuario = session.get("tipo", "obreiro")
+@app.route("/api/lojas/<int:loja_id>/horarios")
+@login_required
+def api_loja_horarios(loja_id):
+    """Retorna os horários configurados da loja"""
+    cursor, conn = get_db()
+    
+    cursor.execute("""
+        SELECT horario_inicio, horario_termino, dias_sessao, frequencia_sessao, observacoes_horario
+        FROM lojas WHERE id = %s
+    """, (loja_id,))
+    
+    loja = cursor.fetchone()
+    return_connection(conn)
+    
+    if loja:
+        return jsonify({
+            'success': True,
+            'horario_inicio': loja['horario_inicio'].strftime('%H:%M') if loja['horario_inicio'] else None,
+            'horario_termino': loja['horario_termino'].strftime('%H:%M') if loja['horario_termino'] else None,
+            'dias_sessao': loja['dias_sessao'],
+            'frequencia_sessao': loja['frequencia_sessao'],
+            'observacoes': loja['observacoes_horario']
+        })
+    else:
+        return jsonify({'success': False, 'error': 'Loja não encontrada'}), 404
+    
+    # ============================================
+    # PERMISSÃO POR GRAU
+    # ============================================
+    usuario_grau = session.get('grau_atual', 1)
+    usuario_tipo = session.get('tipo', 'obreiro')
+    
     query = """
         SELECT r.id, r.titulo, r.data, r.hora_inicio, r.hora_termino, 
                r.tipo, r.local, r.status,
@@ -4696,19 +4753,26 @@ def api_reunioes():
         WHERE 1=1
     """
     params = []
-    if tipo_usuario != "admin":
-        if nivel_usuario == 1:
+    
+    # Filtrar por grau do usuário
+    if usuario_tipo != 'admin':
+        if usuario_grau == 1:
             query += " AND (r.grau = 1 OR r.grau IS NULL)"
-        elif nivel_usuario == 2:
+        elif usuario_grau == 2:
             query += " AND (r.grau IN (1, 2) OR r.grau IS NULL)"
+        elif usuario_grau >= 3:
+            query += " AND (r.grau <= 3 OR r.grau IS NULL OR r.grau > 3)"
+    
     query += """
         GROUP BY r.id, r.titulo, r.data, r.hora_inicio, r.hora_termino, 
                  r.tipo, r.local, r.status, t.cor, t.nome
         ORDER BY r.data
     """
+    
     cursor.execute(query, params)
     rows = cursor.fetchall()
     return_connection(conn)
+    
     eventos = []
     for row in rows:
         r = dict(row)
@@ -4729,7 +4793,9 @@ def api_reunioes():
                 "presentes": f"{r.get('presentes', 0)}/{r.get('total_obreiros', 0)}"
             }
         })
+    
     return {"eventos": eventos}
+    
 @app.route("/reunioes/<int:id>/cancelar", methods=["POST"])
 @login_required
 @permissao_required('reuniao.edit')
@@ -4994,6 +5060,7 @@ def nova_reuniao():
 def detalhes_reuniao(id):
     cursor, conn = get_db()
     
+    # Buscar dados da reunião
     cursor.execute("""
         SELECT r.*, l.nome as loja_nome, t.cor as tipo_cor,
                u.nome_completo as criado_por_nome
@@ -5010,8 +5077,21 @@ def detalhes_reuniao(id):
         return_connection(conn)
         return redirect("/reunioes")
     
-       
-    # Buscar presenças
+    # ============================================
+    # VERIFICAR PERMISSÃO POR GRAU
+    # ============================================
+    usuario_grau = session.get('grau_atual', 1)
+    usuario_tipo = session.get('tipo', 'obreiro')
+    reuniao_grau = reuniao.get('grau', 1)
+    
+    # Se não for admin, verificar se o grau da reunião é permitido
+    if usuario_tipo != 'admin':
+        if reuniao_grau > usuario_grau:
+            flash("Você não tem permissão para visualizar esta reunião (grau superior ao seu).", "danger")
+            return_connection(conn)
+            return redirect("/reunioes")
+    
+    # Buscar presenças (apenas obreiros que podem ver a reunião)
     cursor.execute("""
         SELECT u.id, u.nome_completo, u.grau_atual, 
                p.id as presenca_id, p.presente, p.tipo_ausencia, 
@@ -5020,8 +5100,9 @@ def detalhes_reuniao(id):
         FROM usuarios u
         LEFT JOIN presenca p ON u.id = p.obreiro_id AND p.reuniao_id = %s
         WHERE u.ativo = 1 
+        AND u.grau_atual <= %s
         ORDER BY u.grau_atual DESC, u.nome_completo
-    """, (id,))
+    """, (id, usuario_grau))
     presenca = cursor.fetchall()
     
     total_obreiros = len(presenca)
@@ -7929,7 +8010,121 @@ def excluir_sindicante(id):
 # =============================
 # ROTAS DE LOJAS - COMPLETAS
 # =============================
+@app.route("/lojas/editar/<int:id>", methods=["GET", "POST"])
+@login_required
+@permissao_required('loja.edit')
+def editar_loja(id):
+    cursor, conn = get_db()
+    
+    # Buscar dados da loja
+    cursor.execute("SELECT * FROM lojas WHERE id = %s", (id,))
+    loja = cursor.fetchone()
+    
+    if not loja:
+        flash("Loja não encontrada!", "danger")
+        return_connection(conn)
+        return redirect("/lojas")
+    
+    if request.method == "POST":
+        def safe(v):
+            return v if v and v.strip() != "" else None
 
+        nome = safe(request.form.get("nome"))
+        numero = safe(request.form.get("numero"))
+        oriente = safe(request.form.get("oriente"))
+        cidade = safe(request.form.get("cidade"))
+        uf = safe(request.form.get("uf"))
+        endereco = safe(request.form.get("endereco"))
+        bairro = safe(request.form.get("bairro"))
+        cep = safe(request.form.get("cep"))
+        telefone = safe(request.form.get("telefone"))
+        email = safe(request.form.get("email"))
+        site = safe(request.form.get("site"))
+        data_fundacao = safe(request.form.get("data_fundacao"))
+        data_instalacao = safe(request.form.get("data_instalacao"))
+        data_autorizacao = safe(request.form.get("data_autorizacao"))
+        veneravel_mestre = safe(request.form.get("veneravel_mestre"))
+        secretario = safe(request.form.get("secretario"))
+        tesoureiro = safe(request.form.get("tesoureiro"))
+        orador = safe(request.form.get("orador"))
+        
+        # Campos de horário
+        horario_inicio = request.form.get("horario_inicio")
+        horario_termino = request.form.get("horario_termino")
+        dias_sessao = request.form.get("dias_sessao")
+        frequencia_sessao = request.form.get("frequencia_sessao")
+        observacoes_horario = request.form.get("observacoes_horario")
+        
+        rito = safe(request.form.get("rito"))
+        observacoes = safe(request.form.get("observacoes"))
+        ativo = 1 if request.form.get("ativo") else 0
+
+        if not nome:
+            flash("O nome da loja é obrigatório!", "danger")
+            return_connection(conn)
+            return redirect(f"/lojas/editar/{id}")
+
+        try:
+            dados_anteriores = dict(loja)
+            
+            cursor.execute("""
+                UPDATE lojas SET
+                    nome = %s,
+                    numero = %s,
+                    oriente = %s,
+                    cidade = %s,
+                    uf = %s,
+                    endereco = %s,
+                    bairro = %s,
+                    cep = %s,
+                    telefone = %s,
+                    email = %s,
+                    site = %s,
+                    data_fundacao = %s,
+                    data_instalacao = %s,
+                    data_autorizacao = %s,
+                    veneravel_mestre = %s,
+                    secretario = %s,
+                    tesoureiro = %s,
+                    orador = %s,
+                    horario_inicio = %s,
+                    horario_termino = %s,
+                    dias_sessao = %s,
+                    frequencia_sessao = %s,
+                    observacoes_horario = %s,
+                    rito = %s,
+                    observacoes = %s,
+                    ativo = %s
+                WHERE id = %s
+            """, (
+                nome, numero, oriente, cidade, uf,
+                endereco, bairro, cep,
+                telefone, email, site,
+                data_fundacao, data_instalacao, data_autorizacao,
+                veneravel_mestre, secretario, tesoureiro, orador,
+                horario_inicio, horario_termino, dias_sessao, frequencia_sessao, observacoes_horario,
+                rito, observacoes, ativo,
+                id
+            ))
+            
+            conn.commit()
+            
+            registrar_log("editar", "loja", id, dados_anteriores=dados_anteriores, dados_novos={"nome": nome})
+            flash(f"Loja '{nome}' atualizada com sucesso!", "success")
+            return_connection(conn)
+            return redirect("/lojas")
+            
+        except Exception as e:
+            print(f"Erro ao editar loja: {e}")
+            conn.rollback()
+            flash(f"Erro ao editar loja: {str(e)}", "danger")
+            return_connection(conn)
+            return redirect(f"/lojas/editar/{id}")
+    
+    return_connection(conn)
+    return render_template("lojas_editar.html", loja=loja)
+    
+    
 @app.route("/lojas")
 @login_required
 @permissao_required('loja.view')
@@ -7974,10 +8169,14 @@ def nova_loja():
         secretario = safe(request.form.get("secretario"))
         tesoureiro = safe(request.form.get("tesoureiro"))
         orador = safe(request.form.get("orador"))
-        horario_reuniao = safe(request.form.get("horario_reuniao"))
-        dia_reuniao = safe(request.form.get("dia_reuniao"))
+        horario_inicio = request.form.get("horario_inicio")
+        horario_termino = request.form.get("horario_termino")
+        dias_sessao = request.form.get("dias_sessao")
+        frequencia_sessao = request.form.get("frequencia_sessao")
+        observacoes_horario = request.form.get("observacoes_horario")
         rito = safe(request.form.get("rito"))
         observacoes = safe(request.form.get("observacoes"))
+        ativo = 1 if request.form.get("ativo") else 0
 
         if not nome:
             flash("O nome da loja é obrigatório!", "danger")
@@ -7993,6 +8192,7 @@ def nova_loja():
                 return_connection(conn)
                 return redirect("/lojas/nova")
 
+            # Inserir nova loja (deixar o id ser gerado automaticamente)
             cursor.execute("""
                 INSERT INTO lojas (
                     nome, numero, oriente, cidade, uf,
@@ -8000,11 +8200,11 @@ def nova_loja():
                     telefone, email, site,
                     data_fundacao, data_instalacao, data_autorizacao,
                     veneravel_mestre, secretario, tesoureiro, orador,
-                    horario_reuniao, dia_reuniao, rito, observacoes,
-                    ativo, created_by, created_at
+                    horario_inicio, horario_termino, dias_sessao, frequencia_sessao, observacoes_horario,
+                    rito, observacoes, ativo
                 ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s,
-                          %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s,
-                          1, %s, CURRENT_TIMESTAMP)
+                          %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s,
+                          %s, %s, %s)
                 RETURNING id
             """, (
                 nome, numero, oriente, cidade, uf,
@@ -8012,8 +8212,8 @@ def nova_loja():
                 telefone, email, site,
                 data_fundacao, data_instalacao, data_autorizacao,
                 veneravel_mestre, secretario, tesoureiro, orador,
-                horario_reuniao, dia_reuniao, rito, observacoes,
-                session.get("user_id")
+                horario_inicio, horario_termino, dias_sessao, frequencia_sessao, observacoes_horario,
+                rito, observacoes, ativo
             ))
             
             loja_id = cursor.fetchone()['id']
@@ -8032,112 +8232,6 @@ def nova_loja():
             return redirect("/lojas/nova")
     
     return render_template("lojas_nova.html")
-
-
-@app.route("/lojas/editar/<int:id>", methods=["GET", "POST"])
-@login_required
-@permissao_required('loja.edit')
-def editar_loja(id):
-    cursor, conn = get_db()
-    
-    # Buscar dados da loja
-    cursor.execute("SELECT * FROM lojas WHERE id = %s", (id,))
-    loja = cursor.fetchone()
-    
-    if not loja:
-        flash("Loja não encontrada!", "danger")
-        return_connection(conn)
-        return redirect("/lojas")
-    
-    if request.method == "POST":
-        def safe(v):
-            return v if v and v.strip() != "" else None
-
-        nome = safe(request.form.get("nome"))
-        numero = safe(request.form.get("numero"))
-        oriente = safe(request.form.get("oriente"))
-        cidade = safe(request.form.get("cidade"))
-        uf = safe(request.form.get("uf"))
-        endereco = safe(request.form.get("endereco"))
-        bairro = safe(request.form.get("bairro"))
-        cep = safe(request.form.get("cep"))
-        telefone = safe(request.form.get("telefone"))
-        email = safe(request.form.get("email"))
-        site = safe(request.form.get("site"))
-        data_fundacao = safe(request.form.get("data_fundacao"))
-        data_instalacao = safe(request.form.get("data_instalacao"))
-        data_autorizacao = safe(request.form.get("data_autorizacao"))
-        veneravel_mestre = safe(request.form.get("veneravel_mestre"))
-        secretario = safe(request.form.get("secretario"))
-        tesoureiro = safe(request.form.get("tesoureiro"))
-        orador = safe(request.form.get("orador"))
-        horario_reuniao = safe(request.form.get("horario_reuniao"))
-        dia_reuniao = safe(request.form.get("dia_reuniao"))
-        rito = safe(request.form.get("rito"))
-        observacoes = safe(request.form.get("observacoes"))
-        ativo = 1 if request.form.get("ativo") else 0
-
-        if not nome:
-            flash("O nome da loja é obrigatório!", "danger")
-            return_connection(conn)
-            return redirect(f"/lojas/editar/{id}")
-
-        try:
-            dados_anteriores = dict(loja)
-            
-            # Query SEM o updated_at
-            cursor.execute("""
-                UPDATE lojas SET
-                    nome = %s,
-                    numero = %s,
-                    oriente = %s,
-                    cidade = %s,
-                    uf = %s,
-                    endereco = %s,
-                    bairro = %s,
-                    cep = %s,
-                    telefone = %s,
-                    email = %s,
-                    site = %s,
-                    data_fundacao = %s,
-                    data_instalacao = %s,
-                    data_autorizacao = %s,
-                    veneravel_mestre = %s,
-                    secretario = %s,
-                    tesoureiro = %s,
-                    orador = %s,
-                    horario_reuniao = %s,
-                    dia_reuniao = %s,
-                    rito = %s,
-                    observacoes = %s,
-                    ativo = %s
-                WHERE id = %s
-            """, (
-                nome, numero, oriente, cidade, uf,
-                endereco, bairro, cep,
-                telefone, email, site,
-                data_fundacao, data_instalacao, data_autorizacao,
-                veneravel_mestre, secretario, tesoureiro, orador,
-                horario_reuniao, dia_reuniao, rito, observacoes,
-                ativo, id
-            ))
-            
-            conn.commit()
-            
-            registrar_log("editar", "loja", id, dados_anteriores=dados_anteriores, dados_novos={"nome": nome})
-            flash(f"Loja '{nome}' atualizada com sucesso!", "success")
-            return_connection(conn)
-            return redirect("/lojas")
-            
-        except Exception as e:
-            print(f"Erro ao editar loja: {e}")
-            conn.rollback()
-            flash(f"Erro ao editar loja: {str(e)}", "danger")
-            return_connection(conn)
-            return redirect(f"/lojas/editar/{id}")
-    
-    return_connection(conn)
-    return render_template("lojas_editar.html", loja=loja)
 
 
 @app.route("/lojas/excluir/<int:id>", methods=["POST"])
