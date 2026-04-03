@@ -55,22 +55,7 @@
                         </div>
                     </div>
 
-                    <div class="row">
-                        <div class="col-md-4 mb-3">
-                            <label class="form-label">Data *</label>
-                            <input type="date" class="form-control" name="data" id="dataReuniao" 
-                                   value="{{ hoje }}" required>
-                        </div>
-                        <div class="col-md-4 mb-3">
-                            <label class="form-label">Hora Início *</label>
-                            <input type="time" class="form-control" name="hora_inicio" id="horaInicio" required>
-                        </div>
-                        <div class="col-md-4 mb-3">
-                            <label class="form-label">Hora Término</label>
-                            <input type="time" class="form-control" name="hora_termino" id="horaTermino">
-                        </div>
-                    </div>
-
+                    <!-- LOCAL e LOJA (movidos para cima) -->
                     <div class="row">
                         <div class="col-md-6 mb-3">
                             <label class="form-label">Local</label>
@@ -95,6 +80,30 @@
                         </div>
                     </div>
 
+                    <!-- DATA, HORA INÍCIO e HORA TÉRMINO -->
+                    <div class="row">
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label">Data *</label>
+                            <input type="date" class="form-control" name="data" id="dataReuniao" 
+                                   value="{{ hoje }}" required>
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label">Hora Início *</label>
+                            <input type="time" class="form-control" name="hora_inicio" id="horaInicio" required>
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label">Hora Término</label>
+                            <input type="time" class="form-control" name="hora_termino" id="horaTermino">
+                        </div>
+                    </div>
+
+                    <!-- Informações de Horário da Loja -->
+                    <div class="alert alert-info" id="infoHorarios" style="display: none;">
+                        <i class="bi bi-info-circle"></i>
+                        <span id="infoHorariosTexto"></span>
+                    </div>
+
+                    <!-- Grau e Status -->
                     <div class="row">
                         <div class="col-md-6 mb-3">
                             <label class="form-label">Grau</label>
@@ -114,12 +123,6 @@
                                 <option value="cancelada">Cancelada</option>
                             </select>
                         </div>
-                    </div>
-
-                    <!-- Informações de Horário da Loja -->
-                    <div class="alert alert-info" id="infoHorarios" style="display: none;">
-                        <i class="bi bi-info-circle"></i>
-                        <span id="infoHorariosTexto"></span>
                     </div>
 
                     <hr>
@@ -236,72 +239,86 @@
 </div>
 
 <script>
-    // =====================
-    // PRÉ-PREENCHIMENTO DE HORÁRIOS DA LOJA
-    // =====================
-    document.addEventListener('DOMContentLoaded', function() {
-        const lojaSelect = document.getElementById('lojaSelect');
-        const horaInicio = document.getElementById('horaInicio');
-        const horaTermino = document.getElementById('horaTermino');
-        const observacoes = document.getElementById('observacoes');
-        const infoHorarios = document.getElementById('infoHorarios');
-        const infoHorariosTexto = document.getElementById('infoHorariosTexto');
+   // =====================
+// PRÉ-PREENCHIMENTO DE HORÁRIOS DA LOJA
+// =====================
+document.addEventListener('DOMContentLoaded', function() {
+    const lojaSelect = document.getElementById('lojaSelect');
+    const horaInicio = document.getElementById('horaInicio');
+    const horaTermino = document.getElementById('horaTermino');
+    const observacoes = document.getElementById('observacoes');
+    const infoHorarios = document.getElementById('infoHorarios');
+    const infoHorariosTexto = document.getElementById('infoHorariosTexto');
+    
+    function preencherHorariosLoja() {
+        const selectedOption = lojaSelect.options[lojaSelect.selectedIndex];
         
-        function preencherHorariosLoja() {
-            const selectedOption = lojaSelect.options[lojaSelect.selectedIndex];
+        if (selectedOption && selectedOption.value) {
+            const horarioInicioLoja = selectedOption.dataset.horarioInicio;
+            const horarioTerminoLoja = selectedOption.dataset.horarioTermino;
+            const diasSessao = selectedOption.dataset.diasSessao;
+            const observacoesHorario = selectedOption.dataset.observacoes;
             
-            if (selectedOption && selectedOption.value) {
-                const horarioInicioLoja = selectedOption.dataset.horarioInicio;
-                const horarioTerminoLoja = selectedOption.dataset.horarioTermino;
-                const diasSessao = selectedOption.dataset.diasSessao;
-                const observacoesHorario = selectedOption.dataset.observacoes;
+            if (horarioInicioLoja) {
+                horaInicio.value = horarioInicioLoja;
+            }
+            
+            if (horarioTerminoLoja) {
+                horaTermino.value = horarioTerminoLoja;
+            }
+            
+            if (observacoesHorario && !observacoes.value) {
+                observacoes.value = observacoesHorario;
+            }
+            
+            // Mostrar informações adicionais da loja
+            if (diasSessao || observacoesHorario) {
+                infoHorarios.style.display = 'block';
+                let texto = '';
                 
-                if (horarioInicioLoja) {
-                    horaInicio.value = horarioInicioLoja;
-                }
-                
-                if (horarioTerminoLoja) {
-                    horaTermino.value = horarioTerminoLoja;
-                }
-                
-                if (observacoesHorario && !observacoes.value) {
-                    observacoes.value = observacoesHorario;
-                }
-                
-                // Mostrar informações adicionais
-                if (diasSessao || observacoesHorario) {
-                    infoHorarios.style.display = 'block';
-                    let texto = '';
-                    if (diasSessao) {
-                        let diasTexto = '';
-                        if (diasSessao === '2,4') diasTexto = 'Terças e Quintas-feiras';
-                        else if (diasSessao === '3,5') diasTexto = 'Quartas e Sextas-feiras';
-                        else if (diasSessao === '1,3') diasTexto = 'Segundas e Quartas-feiras';
-                        else if (diasSessao === 'sabados') diasTexto = 'Sábados (2º e 4º do mês)';
-                        else if (diasSessao === 'domingos') diasTexto = 'Domingos';
-                        else diasTexto = diasSessao;
-                        
-                        texto += `<strong>Dias padrão da loja:</strong> ${diasTexto}<br>`;
+                if (diasSessao) {
+                    let diasTexto = '';
+                    if (diasSessao === '2,4') {
+                        diasTexto = 'Terças e Quintas-feiras';
+                    } else if (diasSessao === '3,5') {
+                        diasTexto = 'Quartas e Sextas-feiras';
+                    } else if (diasSessao === '1,3') {
+                        diasTexto = 'Segundas e Quartas-feiras';
+                    } else if (diasSessao === 'sabados') {
+                        diasTexto = 'Sábados (2º e 4º do mês)';
+                    } else if (diasSessao === 'domingos') {
+                        diasTexto = 'Domingos';
+                    } else {
+                        diasTexto = diasSessao;
                     }
-                    if (observacoesHorario) {
-                        texto += `<strong>Observações de horário:</strong> ${observacoesHorario}`;
-                    }
-                    infoHorariosTexto.innerHTML = texto;
-                } else {
-                    infoHorarios.style.display = 'none';
+                    
+                    texto += `<strong>Dias padrão da loja:</strong> ${diasTexto}<br>`;
                 }
+                
+                if (observacoesHorario) {
+                    texto += `<strong>Observações de horário:</strong> ${observacoesHorario}`;
+                }
+                
+                infoHorariosTexto.innerHTML = texto;
             } else {
-                // Se não selecionar loja, limpar campos
-                if (!horaInicio.value) horaInicio.value = '';
-                if (!horaTermino.value) horaTermino.value = '';
                 infoHorarios.style.display = 'none';
             }
+        } else {
+            if (!horaInicio.value) horaInicio.value = '';
+            if (!horaTermino.value) horaTermino.value = '';
+            infoHorarios.style.display = 'none';
         }
+    }
+    
+    if (lojaSelect) {
+        lojaSelect.addEventListener('change', preencherHorariosLoja);
         
-        if (lojaSelect) {
-            lojaSelect.addEventListener('change', preencherHorariosLoja);
+        // Se já tiver uma loja pré-selecionada, preencher
+        if (lojaSelect.value) {
+            preencherHorariosLoja();
         }
-    });
+    }
+});
 
     // =====================
     // FORMATAR TEXTO AUTOMATICAMENTE
