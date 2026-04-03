@@ -2745,7 +2745,17 @@ def novo_obreiro():
         nome_maconico = request.form.get("nome_maconico")
         cim_numero = request.form.get("cim_numero")
         tipo = request.form.get("tipo", "obreiro")
-        grau_atual = request.form.get("grau_atual", 1)
+        
+        # ✅ CORREÇÃO: Receber os campos de grau do formulário
+        grau_principal = request.form.get("grau_principal", 1)
+        grau_superior = request.form.get("grau_superior", "")
+        
+        # Calcular o grau final
+        if int(grau_principal) == 3 and grau_superior and grau_superior != '':
+            grau_atual = int(grau_superior)
+        else:
+            grau_atual = int(grau_principal)
+        
         data_iniciacao = request.form.get("data_iniciacao")
         data_elevacao = request.form.get("data_elevacao")
         data_exaltacao = request.form.get("data_exaltacao")
@@ -2755,6 +2765,7 @@ def novo_obreiro():
         loja_nome = request.form.get("loja_nome")
         loja_numero = request.form.get("loja_numero")
         loja_orient = request.form.get("loja_orient")
+        ativo = 1 if request.form.get("ativo") else 1  # Padrão ativo
         
         # Tratar datas vazias
         data_iniciacao = data_iniciacao if data_iniciacao and data_iniciacao.strip() else None
@@ -2779,8 +2790,13 @@ def novo_obreiro():
                 return_connection(conn)
                 return redirect("/obreiros")
             
+            # Verificar se sindicante tem grau suficiente (>= 3)
+            if tipo == 'sindicante' and grau_atual < 3:
+                flash("Apenas Mestres (grau 3) e superiores podem ser Sindicantes!", "danger")
+                return_connection(conn)
+                return redirect("/obreiros/novo")
+            
             try:
-                import hashlib
                 from werkzeug.security import generate_password_hash
                 senha_hash = generate_password_hash(senha)
                 
@@ -2793,7 +2809,7 @@ def novo_obreiro():
                      loja_nome, loja_numero, loja_orient) 
                     VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
                     RETURNING id
-                """, (usuario, senha_hash, tipo, datetime.now(), 1,
+                """, (usuario, senha_hash, tipo, datetime.now(), ativo,
                       nome_completo, nome_maconico, cim_numero, grau_atual,
                       data_iniciacao, data_elevacao, data_exaltacao,
                       telefone, email, endereco,
@@ -2807,10 +2823,10 @@ def novo_obreiro():
                     cursor.execute("""
                         INSERT INTO historico_graus (obreiro_id, grau, data, observacao)
                         VALUES (%s, %s, %s, %s)
-                    """, (obreiro_id, 1, data_iniciacao, "Iniciação"))
+                    """, (obreiro_id, grau_atual, data_iniciacao, f"{get_nome_grau(grau_atual)} - Iniciação"))
                     conn.commit()
                 
-                registrar_log("criar", "obreiro", obreiro_id, dados_novos={"nome": nome_completo, "usuario": usuario})
+                registrar_log("criar", "obreiro", obreiro_id, dados_novos={"nome": nome_completo, "usuario": usuario, "grau": grau_atual})
                 flash(f"Obreiro '{nome_completo}' adicionado com sucesso!", "success")
                 return_connection(conn)
                 return redirect("/obreiros")
@@ -2825,15 +2841,47 @@ def novo_obreiro():
                 conn.rollback()
     
     # GET - Carregar dados para o formulário
-    cursor.execute("SELECT * FROM lojas ORDER BY nome")
+    cursor.execute("SELECT id, nome, numero, oriente FROM lojas WHERE ativo = 1 ORDER BY nome")
     lojas = cursor.fetchall()
     
-    cursor.execute("SELECT * FROM graus WHERE ativo = 1 ORDER BY nivel, ordem")
+    # Buscar graus (apenas os 3 principais)
+    cursor.execute("SELECT nivel, nome FROM graus WHERE nivel IN (1, 2, 3) AND ativo = 1 ORDER BY nivel")
     graus = cursor.fetchall()
+    
+    # ✅ Buscar graus superiores (nível >= 4)
+    cursor.execute("SELECT nivel, nome FROM graus WHERE nivel >= 4 AND ativo = 1 ORDER BY nivel")
+    graus_superiores = cursor.fetchall()
+    
+    print(f"DEBUG: {len(graus_superiores)} graus superiores encontrados")
+    for g in graus_superiores:
+        print(f"  - Nível {g['nivel']}: {g['nome']}")
     
     return_connection(conn)
     
-    return render_template("obreiros/novo.html", lojas=lojas, graus=graus)
+    return render_template("obreiros/novo.html", 
+                          lojas=lojas, 
+                          graus=graus,
+                          graus_superiores=graus_superiores)
+
+
+# Função auxiliar para obter nome do grau
+def get_nome_grau(grau):
+    """Retorna o nome do grau pelo número"""
+    graus_map = {
+        1: "Aprendiz",
+        2: "Companheiro",
+        3: "Mestre",
+        4: "Mestre Instalado",
+        5: "Arquiteto Real",
+        6: "Soberano Grande Inspetor Geral",
+        7: "Mestre Perfeito",
+        8: "Eleito dos Nove",
+        9: "Mestre da Maçonaria Real",
+        10: "Cavaleiro Rosa-Cruz",
+        11: "Cavaleiro Kadosch",
+        12: "Grande Escocês"
+    }
+    return graus_map.get(grau, f"Grau {grau}")
 
 @app.route("/obreiros/<int:id>")
 @login_required
@@ -3238,6 +3286,7 @@ def editar_obreiro(id):
 
             if is_admin:
                 tipo = request.form.get("tipo", obreiro["tipo"])
+                # Pegar o grau final do campo hidden
                 grau_atual = request.form.get("grau_atual", obreiro["grau_atual"])
                 ativo = 1 if request.form.get("ativo") else obreiro["ativo"]
                 try:
@@ -3309,7 +3358,8 @@ def editar_obreiro(id):
             return_connection(conn)
             return redirect(f"/obreiros/{id}")
 
-        # GET - Carregar dados para o formulário
+        # ===================== GET - Carregar dados para o formulário =====================
+        
         cursor.execute("SELECT * FROM usuarios WHERE id = %s", (id,))
         obreiro = cursor.fetchone()
         
@@ -3319,14 +3369,25 @@ def editar_obreiro(id):
         cursor.execute("SELECT nivel, nome FROM graus ORDER BY nivel")
         graus = cursor.fetchall()
         
+        # ✅ CORREÇÃO: Buscar graus superiores (nível >= 4)
+        cursor.execute("SELECT nivel, nome FROM graus WHERE nivel >= 4 AND ativo = 1 ORDER BY nivel")
+        graus_superiores = cursor.fetchall()
+        
+        print(f"DEBUG: {len(graus_superiores)} graus superiores encontrados")  # Verificar no terminal
+        for g in graus_superiores:
+            print(f"  - Nível {g['nivel']}: {g['nome']}")
+
         return_connection(conn)
         
-        return render_template("obreiros/editar.html", 
-                              obreiro=obreiro, 
-                              lojas=lojas, 
-                              graus=graus,
-                              is_admin=is_admin,
-                              is_own_profile=is_own_profile)
+        return render_template(
+            "obreiros/editar.html",
+            obreiro=obreiro,
+            lojas=lojas,
+            graus=graus,
+            graus_superiores=graus_superiores,  # ✅ Enviar para o template
+            is_admin=is_admin,
+            is_own_profile=is_own_profile
+        )
                               
     except Exception as e:
         print(f"❌ Erro ao editar obreiro: {e}")
@@ -3337,7 +3398,6 @@ def editar_obreiro(id):
         flash(f"Erro ao atualizar: {str(e)}", "danger")
         return_connection(conn)
         return redirect(f"/obreiros/{id}")
-
 
 
         # =============================

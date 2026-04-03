@@ -30,7 +30,7 @@
             {% if messages %}
                 {% for category, message in messages %}
                     <div class="alert alert-{{ category }} alert-dismissible fade show">
-                        {{ message }}
+                        {{ message | safe }}
                         <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
                     </div>
                 {% endfor %}
@@ -169,56 +169,55 @@
 
                             {% if is_admin %}
 
-                            <hr>
-                            <h6>⚙️ Administração</h6>
+<hr>
+<h6>⚙️ Administração</h6>
 
-                            <div class="row">
-                                <div class="col-md-6 mb-3">
-                                    <label class="form-label">Grau Principal</label>
-                                    <select class="form-select" name="grau_principal" id="grauPrincipalSelect">
-                                        <option value="1" {% if obreiro.grau_atual == 1 %}selected{% endif %}>1 - Aprendiz</option>
-                                        <option value="2" {% if obreiro.grau_atual == 2 %}selected{% endif %}>2 - Companheiro</option>
-                                        <option value="3" {% if obreiro.grau_atual >= 3 %}selected{% endif %}>3 - Mestre</option>
-                                    </select>
-                                    <small class="text-muted">Grau principal na Maçonaria Simbólica</small>
-                                </div>
+<div class="row">
+    <div class="col-md-6 mb-3">
+        <label class="form-label">Grau Principal</label>
+        <select class="form-select" name="grau_principal" id="grauPrincipalSelect">
+            <option value="1" {% if obreiro.grau_atual == 1 %}selected{% endif %}>1 - Aprendiz</option>
+            <option value="2" {% if obreiro.grau_atual == 2 %}selected{% endif %}>2 - Companheiro</option>
+            <option value="3" {% if obreiro.grau_atual >= 3 %}selected{% endif %}>3 - Mestre</option>
+        </select>
+        <small class="text-muted">Grau principal na Maçonaria Simbólica</small>
+    </div>
 
-                                <div class="col-md-6 mb-3" id="divGrauSuperior" style="display: {% if obreiro.grau_atual >= 4 %}block{% else %}none{% endif %};">
-                                    <label class="form-label">Grau Superior (Opcional)</label>
-                                    <select class="form-select" name="grau_superior" id="grauSuperiorSelect">
-                                        <option value="">Nenhum (Mestre)</option>
-                                        {% for g in graus_superiores %}
-                                        <option value="{{ g.nivel }}" {% if g.nivel == obreiro.grau_atual %}selected{% endif %}>
-                                            {{ g.nivel }} - {{ g.nome }}
-                                        </option>
-                                        {% endfor %}
-                                    </select>
-                                    <small class="text-muted">
-                                        <i class="bi bi-info-circle"></i> 
-                                        Graus superiores são aperfeiçoamentos dentro do grau de Mestre
-                                    </small>
-                                </div>
-                            </div>
+    <div class="col-md-6 mb-3" id="divGrauSuperior">
+        <label class="form-label">Grau Superior (Opcional)</label>
+        <select class="form-select" name="grau_superior" id="grauSuperiorSelect">
+            <option value="">Nenhum (Mestre)</option>
+            {% for g in graus_superiores %}
+            <option value="{{ g.nivel }}" {% if g.nivel == obreiro.grau_atual %}selected{% endif %}>
+                {{ g.nivel }} - {{ g.nome }}
+            </option>
+            {% endfor %}
+        </select>
+        <small class="text-muted">
+            <i class="bi bi-info-circle"></i> 
+            Graus superiores são aperfeiçoamentos dentro do grau de Mestre
+        </small>
+    </div>
+</div>
 
-                            <input type="hidden" name="grau_atual" id="grauAtualHidden" value="{{ obreiro.grau_atual }}">
+<input type="hidden" name="grau_atual" id="grauAtualHidden" value="{{ obreiro.grau_atual }}">
 
-                            <div class="row">
-                                <div class="col-md-6 mb-3">
-                                    <label class="form-label">Status</label>
-                                    <select class="form-select" name="ativo">
-                                        <option value="1" {% if obreiro.ativo == 1 %}selected{% endif %}>Ativo</option>
-                                        <option value="0" {% if obreiro.ativo == 0 %}selected{% endif %}>Inativo</option>
-                                    </select>
-                                </div>
-                            </div>
+<div class="row">
+    <div class="col-md-6 mb-3">
+        <label class="form-label">Status</label>
+        <select class="form-select" name="ativo">
+            <option value="1" {% if obreiro.ativo == 1 %}selected{% endif %}>Ativo</option>
+            <option value="0" {% if obreiro.ativo == 0 %}selected{% endif %}>Inativo</option>
+        </select>
+    </div>
+</div>
 
-                            {% else %}
-                                <input type="hidden" name="grau_atual" value="{{ obreiro.grau_atual }}">
-                                <input type="hidden" name="ativo" value="{{ obreiro.ativo }}">
-                            {% endif %}
-
+{% else %}
+    <input type="hidden" name="grau_atual" value="{{ obreiro.grau_atual }}">
+    <input type="hidden" name="ativo" value="{{ obreiro.ativo }}">
+{% endif %}
                             <div class="text-center mt-3">
-                                <button type="submit" class="btn btn-success" id="btnSalvar" onclick="return validarSenha()">
+                                <button type="submit" class="btn btn-success" id="btnSalvar">
                                     <i class="bi bi-save"></i> Salvar
                                 </button>
                             </div>
@@ -272,6 +271,12 @@
                         <div class="alert alert-info small mb-3">
                             <i class="bi bi-info-circle"></i> 
                             Preencha apenas se deseja modificar a senha atual.
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Senha Atual</label>
+                            <input type="password" class="form-control" name="senha_atual" id="senha_atual" placeholder="Digite sua senha atual">
+                            <small class="text-muted">Obrigatório para alterar a senha</small>
                         </div>
 
                         <div class="mb-3">
@@ -335,18 +340,24 @@ if (telefoneInput) {
 
 // Validação de senha
 function validarSenha() {
+    var senhaAtual = document.getElementById('senha_atual');
     var senha = document.getElementById('senha');
     var confirmar = document.getElementById('confirmar_senha');
     var erroSpan = document.getElementById('senha_erro');
     
-    if (!senha || !confirmar) return true;
-    
-    if (senha.value === '' && confirmar.value === '') {
+    // Se não está tentando alterar senha
+    if ((!senha || senha.value === '') && (!confirmar || confirmar.value === '')) {
         return true;
     }
     
+    // Se está tentando alterar senha mas não colocou a senha atual
+    if (senhaAtual && senhaAtual.value === '') {
+        alert('Digite sua senha atual para alterar a senha!');
+        return false;
+    }
+    
     if (senha.value.length > 0 && senha.value.length < 6) {
-        alert('A senha deve ter no mínimo 6 caracteres!');
+        alert('A nova senha deve ter no mínimo 6 caracteres!');
         return false;
     }
     
@@ -379,160 +390,105 @@ if (confirmarInput) {
 }
 
 // =====================
-// CONTROLE DE GRAUS (VERSÃO CORRIGIDA)
+// CONTROLE DE GRAUS - VERSÃO DEFINITIVA
 // =====================
 
 document.addEventListener('DOMContentLoaded', function() {
     
-    console.log('=== INICIANDO CONTROLE DE GRAUS ===');
+    console.log('=== CONTROLE DE GRAUS INICIADO ===');
     
-    // Obter elementos
-    const grauPrincipalSelect = document.getElementById('grauPrincipalSelect');
-    const divGrauSuperior = document.getElementById('divGrauSuperior');
-    const grauSuperiorSelect = document.getElementById('grauSuperiorSelect');
-    const grauAtualHidden = document.getElementById('grauAtualHidden');
+    // Pegar os elementos
+    const grauPrincipal = document.getElementById('grauPrincipalSelect');
+    const divSuperior = document.getElementById('divGrauSuperior');
+    const grauSuperior = document.getElementById('grauSuperiorSelect');
+    const grauFinal = document.getElementById('grauAtualHidden');
     
-    if (!grauPrincipalSelect) {
-        console.error('❌ Elemento grauPrincipalSelect não encontrado!');
+    // Se não for admin, os elementos não existem
+    if (!grauPrincipal) {
+        console.log('Usuário não é admin - controles de grau não disponíveis');
         return;
     }
     
-    // ✅ Valor atual do grau (do banco)
-    const grauAtual = parseInt(grauAtualHidden.value);
-    console.log('📌 Grau atual do obreiro:', grauAtual);
+    console.log('Elementos encontrados:');
+    console.log('- grauPrincipal:', grauPrincipal);
+    console.log('- divSuperior:', divSuperior);
+    console.log('- grauSuperior:', grauSuperior);
+    console.log('- grauFinal:', grauFinal);
+    console.log('Grau atual do obreiro (hidden):', grauFinal ? grauFinal.value : 'N/A');
     
-    // ✅ Configurar os selects baseado no grau atual
-    function configurarSelectsPorGrau() {
-        if (grauAtual === 1 || grauAtual === 2) {
-            // Grau 1 ou 2: selecionar no grau principal
-            grauPrincipalSelect.value = grauAtual;
-            divGrauSuperior.style.display = 'none';
-            grauSuperiorSelect.value = '';
-        } else if (grauAtual === 3) {
-            // Grau 3: selecionar Mestre e sem grau superior
-            grauPrincipalSelect.value = 3;
-            divGrauSuperior.style.display = 'none';
-            grauSuperiorSelect.value = '';
-        } else if (grauAtual >= 4) {
-            // Grau 4 ou superior: selecionar Mestre e grau superior correspondente
-            grauPrincipalSelect.value = 3;
-            divGrauSuperior.style.display = 'block';
-            // Procurar a opção com o valor igual ao grau atual
-            for (let i = 0; i < grauSuperiorSelect.options.length; i++) {
-                if (parseInt(grauSuperiorSelect.options[i].value) === grauAtual) {
-                    grauSuperiorSelect.value = grauAtual;
-                    break;
-                }
-            }
-        }
+    // Função para mostrar/esconder grau superior baseado no grau principal selecionado
+    function atualizarVisibilidade() {
+        if (!grauPrincipal || !divSuperior) return;
         
-        // Atualizar o campo hidden com o grau final
-        atualizarGrauFinal();
-    }
-    
-    // Função para atualizar visibilidade do dropdown de graus superiores
-    function atualizarGrauSuperior() {
-        const grauPrincipal = parseInt(grauPrincipalSelect.value);
-        console.log('Grau principal selecionado:', grauPrincipal);
+        const valor = grauPrincipal.value;
+        console.log('Grau principal selecionado:', valor);
         
-        if (grauPrincipal === 3) {
-            divGrauSuperior.style.display = 'block';
-            console.log('✅ Dropdown de graus superiores VISÍVEL');
+        if (valor === '3') {
+            divSuperior.style.display = 'block';
+            console.log('✅ Mostrando campo de grau superior (block)');
         } else {
-            divGrauSuperior.style.display = 'none';
-            if (grauSuperiorSelect) grauSuperiorSelect.value = '';
+            divSuperior.style.display = 'none';
+            if (grauSuperior) grauSuperior.value = '';
+            console.log('❌ Escondendo campo de grau superior (none)');
         }
+        
         atualizarGrauFinal();
     }
     
-    // Função para atualizar o valor final do grau
+    // Função para atualizar o grau final (o que vai salvar no banco)
     function atualizarGrauFinal() {
-        if (!grauAtualHidden) return;
+        if (!grauFinal || !grauPrincipal) return;
         
-        const grauPrincipal = parseInt(grauPrincipalSelect.value);
-        const grauSuperior = grauSuperiorSelect ? grauSuperiorSelect.value : '';
+        const principal = parseInt(grauPrincipal.value);
+        const superior = grauSuperior ? grauSuperior.value : '';
         
-        let grauFinal;
-        
-        if (grauPrincipal === 3 && grauSuperior && grauSuperior !== '') {
-            grauFinal = parseInt(grauSuperior);
+        let final;
+        if (principal === 3 && superior && superior !== '') {
+            final = parseInt(superior);
+            console.log('✅ Usando grau superior:', final);
         } else {
-            grauFinal = grauPrincipal;
+            final = principal;
+            console.log('✅ Usando grau principal:', final);
         }
         
-        grauAtualHidden.value = grauFinal;
+        grauFinal.value = final;
+        console.log('📌 Grau final salvo no hidden:', final);
         
-        console.log('📊 Grau Principal:', grauPrincipal);
-        console.log('📊 Grau Superior:', grauSuperior || 'nenhum');
-        console.log('📊 Grau Final:', grauFinal);
+        // Atualizar feedback de sindicante
+        atualizarFeedbackSindicante(final);
     }
     
-    // Adicionar event listeners
-    grauPrincipalSelect.addEventListener('change', function() {
-        console.log('🔄 Mudou grau principal');
-        atualizarGrauSuperior();
-    });
-    
-    if (grauSuperiorSelect) {
-        grauSuperiorSelect.addEventListener('change', function() {
-            console.log('🔄 Mudou grau superior');
-            atualizarGrauFinal();
-        });
-    }
-    
-    // ✅ Executar configuração inicial
-    console.log('🚀 Executando configuração inicial...');
-    configurarSelectsPorGrau();
-    
-    // Botão de debug (opcional)
-    const debugBtn = document.createElement('button');
-    debugBtn.textContent = 'Debug Grau';
-    debugBtn.type = 'button';
-    debugBtn.className = 'btn btn-sm btn-secondary mt-2';
-    debugBtn.onclick = function() {
-        alert('Grau final: ' + grauAtualHidden.value);
-        console.log('Debug - Grau final:', grauAtualHidden.value);
-    };
-    const adminSection = document.querySelector('.row .col-md-6:first-child .mb-3:last-child');
-    if (adminSection) {
-        adminSection.appendChild(debugBtn);
-    }
-    
-});
-
-// =====================
-// VALIDAÇÃO DINÂMICA PARA SINDICANTE
-// =====================
-var grauAtualHidden = document.getElementById('grauAtualHidden');
-var tipoSelect = document.getElementById('tipoSelect');
-
-if (grauAtualHidden && tipoSelect && {{ is_admin|tojson }}) {
-    function atualizarStatusSindicante() {
-        var grauAtual = parseInt(grauAtualHidden.value);
-        var opcoes = tipoSelect.options;
+    // Função para atualizar feedback de sindicante
+    function atualizarFeedbackSindicante(grau) {
+        const tipoSelect = document.getElementById('tipoSelect');
+        if (!tipoSelect) return;
         
-        for (var i = 0; i < opcoes.length; i++) {
-            if (opcoes[i].value === 'sindicante') {
-                if (grauAtual >= 3) {
-                    opcoes[i].disabled = false;
-                    opcoes[i].title = '';
+        const grauAtualVal = grau || (grauFinal ? parseInt(grauFinal.value) : 1);
+        
+        for (let i = 0; i < tipoSelect.options.length; i++) {
+            if (tipoSelect.options[i].value === 'sindicante') {
+                if (grauAtualVal >= 3) {
+                    tipoSelect.options[i].disabled = false;
+                    tipoSelect.options[i].title = '';
+                    console.log('✅ Opção Sindicante habilitada');
                 } else {
-                    opcoes[i].disabled = true;
-                    opcoes[i].title = 'Apenas Mestres (grau 3) e superiores podem ser Sindicantes';
+                    tipoSelect.options[i].disabled = true;
+                    tipoSelect.options[i].title = 'Apenas Mestres (grau 3) e superiores podem ser Sindicantes';
+                    console.log('❌ Opção Sindicante desabilitada (grau < 3)');
                 }
             }
         }
         
         // Se o tipo atual é sindicante e o grau não permite, mudar para obreiro
-        if (tipoSelect.value === 'sindicante' && grauAtual < 3) {
+        if (tipoSelect.value === 'sindicante' && grauAtualVal < 3) {
             tipoSelect.value = 'obreiro';
-            alert('⚠️ Atenção: O obreiro foi alterado para "Obreiro" pois o grau atual não permite ser Sindicante.\n\nApenas Mestres (grau 3) e superiores podem ser Sindicantes.');
+            console.log('⚠️ Tipo alterado de sindicante para obreiro');
         }
         
         // Mostrar feedback visual
-        var feedback = document.getElementById('feedbackSindicante');
+        const feedback = document.getElementById('feedbackSindicante');
         if (feedback) {
-            if (grauAtual >= 3) {
+            if (grauAtualVal >= 3) {
                 feedback.innerHTML = '<i class="bi bi-check-circle text-success"></i> <span class="text-success">Este obreiro pode ser Sindicante (grau Mestre ou superior)</span>';
             } else {
                 feedback.innerHTML = '<i class="bi bi-info-circle text-warning"></i> <span class="text-warning">Apenas Mestres (grau 3) e superiores podem ser Sindicantes.</span>';
@@ -540,15 +496,34 @@ if (grauAtualHidden && tipoSelect && {{ is_admin|tojson }}) {
         }
     }
     
-    // Observar mudanças no grau
-    const observer = new MutationObserver(function() {
-        atualizarStatusSindicante();
-    });
-    observer.observe(grauAtualHidden, { attributes: true, attributeFilter: ['value'] });
+    // Adicionar eventos
+    if (grauPrincipal) {
+        grauPrincipal.addEventListener('change', function() {
+            console.log('🔄 Evento change no grau principal');
+            atualizarVisibilidade();
+        });
+    }
     
-    // Executar inicial
-    atualizarStatusSindicante();
-}
+    if (grauSuperior) {
+        grauSuperior.addEventListener('change', function() {
+            console.log('🔄 Evento change no grau superior');
+            atualizarGrauFinal();
+        });
+    }
+    
+    // Executar configuração inicial
+    console.log('🚀 Executando configuração inicial...');
+    atualizarVisibilidade();
+    
+    // Forçar o dropdown a aparecer se o grau principal for 3
+    if (grauPrincipal && grauPrincipal.value === '3') {
+        console.log('⚠️ Forçando exibição do dropdown de graus superiores');
+        divSuperior.style.display = 'block';
+    }
+    
+    console.log('=== CONTROLE DE GRAUS FINALIZADO ===');
+    
+});
 </script>
 
 <style>

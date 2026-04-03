@@ -8,8 +8,8 @@
         <!-- Card de Perfil com Foto -->
         <div class="card shadow mb-4">
             <div class="card-body">
-                <div class="d-flex align-items-center">
-                    <div class="me-4">
+                <div class="row align-items-center">
+                    <div class="col-auto">
                         {% if obreiro.foto %}
                         <img src="{{ obreiro.foto }}" 
                              alt="Foto de {{ obreiro.nome_completo }}"
@@ -22,62 +22,69 @@
                         </div>
                         {% endif %}
                     </div>
-                    <!-- Seção de Badges -->
-<div class="mt-2">
-    <span class="badge {% if obreiro.ativo == 1 %}bg-success{% else %}bg-danger{% endif %} me-2">
-        {% if obreiro.ativo == 1 %}Ativo{% else %}Inativo{% endif %}
-    </span>
-    {% if obreiro.tipo == 'admin' %}
-        <span class="badge bg-danger">Administrador</span>
-    {% elif obreiro.tipo == 'sindicante' %}
-        <span class="badge bg-warning">Sindicante</span>
-    {% else %}
-        <span class="badge bg-info">Obreiro</span>
-    {% endif %}
-    
-    <!-- Grau principal -->
-    <span class="badge bg-success">
-        {% if obreiro.grau_atual == 1 %}
-            Aprendiz
-        {% elif obreiro.grau_atual == 2 %}
-            Companheiro
-        {% elif obreiro.grau_atual >= 3 %}
-            Mestre
-        {% else %}
-            Mestre
-        {% endif %}
-    </span>
-    
-    <!-- Grau detalhado para graus superiores (>= 4) -->
-    {% if obreiro.grau_atual >= 4 %}
-        <span class="badge bg-info ms-1">
-            {% if obreiro.grau_atual == 4 %}
-                Mestre Instalado
-            {% elif obreiro.grau_atual == 5 %}
-                Arquiteto Real
-            {% elif obreiro.grau_atual == 6 %}
-                Soberano Grande Inspetor Geral
-            {% elif obreiro.grau_atual == 7 %}
-                Mestre Perfeito
-            {% elif obreiro.grau_atual == 8 %}
-                Eleito dos Nove
-            {% elif obreiro.grau_atual == 9 %}
-                Mestre da Maçonaria Real
-            {% elif obreiro.grau_atual == 10 %}
-                Cavaleiro Rosa-Cruz
-            {% else %}
-                Grau Superior {{ obreiro.grau_atual }}
-            {% endif %}
-        </span>
-    {% endif %}
-</div>
+                    <div class="col">
+                        <h3>{{ obreiro.nome_completo }}</h3>
                         {% if obreiro.nome_maconico %}
-                        <p class="text-muted mt-2 mb-0">
+                        <p class="text-muted mb-2">
                             <i class="bi bi-star-fill text-warning"></i> {{ obreiro.nome_maconico }}
                         </p>
                         {% endif %}
+                        
+                        <!-- Badges -->
+                        <div class="mt-2">
+                            <span class="badge {% if obreiro.ativo == 1 %}bg-success{% else %}bg-danger{% endif %} me-2">
+                                {% if obreiro.ativo == 1 %}Ativo{% else %}Inativo{% endif %}
+                            </span>
+                            {% if obreiro.tipo == 'admin' %}
+                                <span class="badge bg-danger">Administrador</span>
+                            {% elif obreiro.tipo == 'sindicante' %}
+                                <span class="badge bg-warning text-dark">Sindicante</span>
+                            {% else %}
+                                <span class="badge bg-info">Obreiro</span>
+                            {% endif %}
+                            
+                            <!-- Grau principal -->
+                            <span class="badge bg-success">
+                                {% if obreiro.grau_atual == 1 %}
+                                    Aprendiz
+                                {% elif obreiro.grau_atual == 2 %}
+                                    Companheiro
+                                {% elif obreiro.grau_atual >= 3 %}
+                                    Mestre
+                                {% else %}
+                                    Mestre
+                                {% endif %}
+                            </span>
+                            
+                            <!-- Grau detalhado para graus superiores (>= 4) -->
+                            {% if obreiro.grau_atual >= 4 %}
+                                <span class="badge bg-info ms-1">
+                                    {% if obreiro.grau_atual == 4 %}
+                                        Mestre Instalado
+                                    {% elif obreiro.grau_atual == 5 %}
+                                        Arquiteto Real
+                                    {% elif obreiro.grau_atual == 6 %}
+                                        Soberano Grande Inspetor Geral
+                                    {% elif obreiro.grau_atual == 7 %}
+                                        Mestre Perfeito
+                                    {% elif obreiro.grau_atual == 8 %}
+                                        Eleito dos Nove
+                                    {% elif obreiro.grau_atual == 9 %}
+                                        Mestre da Maçonaria Real
+                                    {% elif obreiro.grau_atual == 10 %}
+                                        Cavaleiro Rosa-Cruz
+                                    {% elif obreiro.grau_atual == 11 %}
+                                        Cavaleiro Kadosch
+                                    {% elif obreiro.grau_atual == 12 %}
+                                        Grande Escocês
+                                    {% else %}
+                                        Grau Superior {{ obreiro.grau_atual }}
+                                    {% endif %}
+                                </span>
+                            {% endif %}
+                        </div>
                     </div>
-                    <div>
+                    <div class="col-auto">
                         {% if pode_editar %}
                         <a href="/obreiros/{{ obreiro.id }}/editar" class="btn btn-warning">
                             <i class="bi bi-pencil"></i> Editar Perfil
@@ -114,7 +121,7 @@
             {% if messages %}
                 {% for category, message in messages %}
                     <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
-                        {{ message }}
+                        {{ message | safe }}
                         <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
                     </div>
                 {% endfor %}
@@ -186,50 +193,50 @@
                 <div class="row">
                     <div class="col-md-6">
                         <table class="table table-sm table-borderless">
-                             <tr>
+                            <tr>
                                 <td class="text-muted" style="width: 120px;">Nome Completo:</td>
                                 <td><strong>{{ obreiro.nome_completo }}</strong></td>
-                             </tr>
-                             <tr>
+                            </tr>
+                            <tr>
                                 <td class="text-muted">Nome Maçônico:</td>
                                 <td>{{ obreiro.nome_maconico or '-' }}</td>
-                             </tr>
-                             <tr>
+                            </tr>
+                            <tr>
                                 <td class="text-muted">Usuário:</td>
                                 <td>{{ obreiro.usuario }}</td>
-                             </tr>
-                             <tr>
+                            </tr>
+                            <tr>
                                 <td class="text-muted">CIM Nº:</td>
                                 <td>{{ obreiro.cim_numero or '-' }}</td>
-                             </tr>
-                             <tr>
+                            </tr>
+                            <tr>
                                 <td class="text-muted">Data Cadastro:</td>
                                 <td>{{ obreiro.data_cadastro.strftime('%d/%m/%Y') if obreiro.data_cadastro else '-' }}</td>
-                             </tr>
+                            </tr>
                         </table>
                     </div>
                     <div class="col-md-6">
                         <table class="table table-sm table-borderless">
-                             <tr>
+                            <tr>
                                 <td class="text-muted" style="width: 120px;">Telefone:</td>
                                 <td>{{ obreiro.telefone or '-' }}</td>
-                             </tr>
-                             <tr>
+                            </tr>
+                            <tr>
                                 <td class="text-muted">E-mail:</td>
                                 <td>{{ obreiro.email or '-' }}</td>
-                             </tr>
-                             <tr>
+                            </tr>
+                            <tr>
                                 <td class="text-muted">Endereço:</td>
                                 <td>{{ obreiro.endereco or '-' }}</td>
-                             </tr>
-                             <tr>
+                            </tr>
+                            <tr>
                                 <td class="text-muted">Loja:</td>
                                 <td>{{ obreiro.loja_nome or '-' }} (Nº {{ obreiro.loja_numero or '-' }})</td>
-                             </tr>
-                             <tr>
+                            </tr>
+                            <tr>
                                 <td class="text-muted">Oriente:</td>
                                 <td>{{ obreiro.loja_orient or '-' }}</td>
-                             </tr>
+                            </tr>
                         </table>
                     </div>
                 </div>
@@ -271,7 +278,7 @@
                             <div class="table-responsive">
                                 <table class="table table-sm">
                                     <thead>
-                                         <tr>
+                                        <tr>
                                             <th>Cargo</th>
                                             <th>Início</th>
                                             <th>Fim</th>
@@ -648,12 +655,11 @@ function criarContainerAlerta() {
         .table-responsive {
             font-size: 0.85rem;
         }
-        .d-flex.align-items-center {
+        .row.align-items-center {
             flex-direction: column;
             text-align: center;
         }
-        .me-4 {
-            margin-right: 0 !important;
+        .col-auto {
             margin-bottom: 1rem;
         }
         .btn-group {
@@ -665,7 +671,6 @@ function criarContainerAlerta() {
         }
     }
     
-    /* Animações */
     @keyframes fadeIn {
         from { opacity: 0; transform: translateY(-20px); }
         to { opacity: 1; transform: translateY(0); }
@@ -676,7 +681,6 @@ function criarContainerAlerta() {
         box-shadow: 0 4px 12px rgba(0,0,0,0.15);
     }
     
-    /* Modal personalizado */
     .modal-content {
         border-radius: 12px;
         overflow: hidden;

@@ -21,7 +21,7 @@
             {% if messages %}
                 {% for category, message in messages %}
                     <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
-                        {{ message }}
+                        {{ message | safe }}
                         <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
                     </div>
                 {% endfor %}
@@ -43,7 +43,8 @@
                         </div>
                         <div class="col-md-6 mb-3">
                             <label class="form-label">Senha *</label>
-                            <input type="password" class="form-control" name="senha" required>
+                            <input type="password" class="form-control" name="senha" id="senha" required>
+                            <small class="text-muted">Mínimo 6 caracteres</small>
                         </div>
                     </div>
 
@@ -75,21 +76,44 @@
                             </select>
                         </div>
                         <div class="col-md-4 mb-3">
-                            <label class="form-label">Grau Atual *</label>
-                            <select class="form-select" name="grau_atual" required>
-                                <option value="">Selecione um grau...</option>
-                                {% for grau in graus %}
-                                <option value="{{ grau.nivel }}">
-                                    {{ grau.nome }}
-                                    {% if grau.nivel == 1 %}(Aprendiz)
-                                    {% elif grau.nivel == 2 %}(Companheiro)
-                                    {% elif grau.nivel == 3 %}(Mestre)
-                                    {% else %}(Superior){% endif %}
-                                </option>
-                                {% endfor %}
+                            <label class="form-label">Status</label>
+                            <select class="form-select" name="ativo">
+                                <option value="1">Ativo</option>
+                                <option value="0">Inativo</option>
                             </select>
                         </div>
                     </div>
+
+                    <!-- ===================== -->
+                    <!-- GRAUS: PRINCIPAL + SUPERIOR -->
+                    <!-- ===================== -->
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Grau Principal *</label>
+                            <select class="form-select" name="grau_principal" id="grauPrincipalSelect" required>
+                                <option value="1">1 - Aprendiz</option>
+                                <option value="2">2 - Companheiro</option>
+                                <option value="3">3 - Mestre</option>
+                            </select>
+                            <small class="text-muted">Grau principal na Maçonaria Simbólica</small>
+                        </div>
+
+                        <div class="col-md-6 mb-3" id="divGrauSuperior" style="display: none;">
+                            <label class="form-label">Grau Superior (Opcional)</label>
+                            <select class="form-select" name="grau_superior" id="grauSuperiorSelect">
+                                <option value="">Nenhum (Mestre)</option>
+                                {% for g in graus_superiores %}
+                                <option value="{{ g.nivel }}">{{ g.nivel }} - {{ g.nome }}</option>
+                                {% endfor %}
+                            </select>
+                            <small class="text-muted">
+                                <i class="bi bi-info-circle"></i> 
+                                Graus superiores são aperfeiçoamentos dentro do grau de Mestre
+                            </small>
+                        </div>
+                    </div>
+
+                    <input type="hidden" name="grau_atual" id="grauAtualHidden" value="1">
 
                     <div class="row">
                         <div class="col-md-4 mb-3">
@@ -166,7 +190,7 @@
                         <a href="/obreiros" class="btn btn-secondary me-2">
                             <i class="bi bi-x-circle"></i> Cancelar
                         </a>
-                        <button type="submit" class="btn btn-success btn-lg px-5">
+                        <button type="submit" class="btn btn-success btn-lg px-5" id="btnSalvar">
                             <i class="bi bi-save"></i> Salvar Obreiro
                         </button>
                     </div>
@@ -177,23 +201,109 @@
 </div>
 
 <script>
-    // Autopreenchimento dos dados da loja
-    document.getElementById('lojaSelect').addEventListener('change', function() {
-        var selected = this.options[this.selectedIndex];
-        document.getElementById('lojaNumero').value = selected.dataset.numero || '';
-        document.getElementById('lojaOriente').value = selected.dataset.oriente || '';
-    });
-
-    // Máscara para telefone
-    document.getElementById('telefone').addEventListener('input', function(e) {
-        var value = e.target.value.replace(/\D/g, '');
-        if (value.length <= 10) {
-            value = value.replace(/^(\d{2})(\d{4})(\d{4})/, '($1) $2-$3');
-        } else {
-            value = value.replace(/^(\d{2})(\d{5})(\d{4})/, '($1) $2-$3');
+    // =====================
+    // CONTROLE DE GRAUS
+    // =====================
+    
+    document.addEventListener('DOMContentLoaded', function() {
+        // Pegar os elementos
+        const grauPrincipal = document.getElementById('grauPrincipalSelect');
+        const divSuperior = document.getElementById('divGrauSuperior');
+        const grauSuperior = document.getElementById('grauSuperiorSelect');
+        const grauFinal = document.getElementById('grauAtualHidden');
+        
+        // Função para mostrar/esconder grau superior baseado no grau principal selecionado
+        function atualizarVisibilidade() {
+            const valor = grauPrincipal.value;
+            
+            if (valor === '3') {
+                divSuperior.style.display = 'block';
+            } else {
+                divSuperior.style.display = 'none';
+                if (grauSuperior) grauSuperior.value = '';
+            }
+            
+            atualizarGrauFinal();
         }
-        e.target.value = value;
+        
+        // Função para atualizar o grau final (o que vai salvar no banco)
+        function atualizarGrauFinal() {
+            const principal = parseInt(grauPrincipal.value);
+            const superior = grauSuperior ? grauSuperior.value : '';
+            
+            let final;
+            if (principal === 3 && superior && superior !== '') {
+                final = parseInt(superior);
+            } else {
+                final = principal;
+            }
+            
+            grauFinal.value = final;
+        }
+        
+        // Adicionar eventos
+        if (grauPrincipal) {
+            grauPrincipal.addEventListener('change', function() {
+                atualizarVisibilidade();
+            });
+        }
+        
+        if (grauSuperior) {
+            grauSuperior.addEventListener('change', function() {
+                atualizarGrauFinal();
+            });
+        }
+        
+        // Executar configuração inicial
+        atualizarVisibilidade();
     });
+    
+    // =====================
+    // MÁSCARA DE TELEFONE
+    // =====================
+    const telefoneInput = document.getElementById('telefone');
+    if (telefoneInput) {
+        telefoneInput.addEventListener('input', function(e) {
+            let value = e.target.value.replace(/\D/g, '');
+            if (value.length <= 10) {
+                value = value.replace(/^(\d{2})(\d{4})(\d{4})/, '($1) $2-$3');
+            } else {
+                value = value.replace(/^(\d{2})(\d{5})(\d{4})/, '($1) $2-$3');
+            }
+            e.target.value = value;
+        });
+    }
+    
+    // =====================
+    // AUTOPREENCHIMENTO DA LOJA
+    // =====================
+    const lojaSelect = document.getElementById('lojaSelect');
+    if (lojaSelect) {
+        lojaSelect.addEventListener('change', function() {
+            const selected = this.options[this.selectedIndex];
+            const numeroInput = document.getElementById('lojaNumero');
+            const orienteInput = document.getElementById('lojaOriente');
+            
+            if (numeroInput) numeroInput.value = selected.dataset.numero || '';
+            if (orienteInput) orienteInput.value = selected.dataset.oriente || '';
+        });
+    }
+    
+    // =====================
+    // VALIDAÇÃO DE SENHA
+    // =====================
+    const btnSalvar = document.getElementById('btnSalvar');
+    const senhaInput = document.getElementById('senha');
+    
+    if (btnSalvar && senhaInput) {
+        btnSalvar.addEventListener('click', function(e) {
+            if (senhaInput.value.length < 6) {
+                e.preventDefault();
+                alert('A senha deve ter no mínimo 6 caracteres!');
+                return false;
+            }
+        });
+    }
 </script>
 
 <style>
