@@ -2426,7 +2426,45 @@ def api_excluir_documento_obreiro(doc_id):
 # =============================
 # ROTAS DE OBREIROS
 # =============================
-
+@app.route("/obreiros/<int:id>/reativar")
+@login_required
+@permissao_required('obreiro.edit')
+def reativar_obreiro(id):
+    """Reativa um obreiro que estava inativo"""
+    cursor, conn = get_db()
+    
+    try:
+        # Buscar dados do obreiro
+        cursor.execute("SELECT id, nome_completo, usuario, ativo FROM usuarios WHERE id = %s", (id,))
+        obreiro = cursor.fetchone()
+        
+        if not obreiro:
+            flash("Obreiro não encontrado!", "danger")
+            return_connection(conn)
+            return redirect("/obreiros")
+        
+        # Verificar se já está ativo
+        if obreiro['ativo'] == 1:
+            flash(f"Obreiro {obreiro['nome_completo']} já está ativo!", "warning")
+            return_connection(conn)
+            return redirect(f"/obreiros/{id}")
+        
+        # Reativar obreiro
+        cursor.execute("UPDATE usuarios SET ativo = 1 WHERE id = %s", (id,))
+        conn.commit()
+        
+        registrar_log("reativar", "obreiro", id, dados_novos={"nome": obreiro['nome_completo'], "status": "ativo"})
+        
+        flash(f"✅ Obreiro {obreiro['nome_completo']} reativado com sucesso!", "success")
+        
+    except Exception as e:
+        print(f"Erro ao reativar obreiro: {e}")
+        conn.rollback()
+        flash(f"Erro ao reativar obreiro: {str(e)}", "danger")
+    
+    return_connection(conn)
+    return redirect("/obreiros")
+    
 @app.route("/obreiros")
 @login_required
 def listar_obreiros():
