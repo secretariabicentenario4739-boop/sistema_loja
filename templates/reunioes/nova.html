@@ -321,23 +321,31 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 
     // =====================
-    // FORMATAR TEXTO AUTOMATICAMENTE
-    // =====================
-    function formatarTexto() {
-        const data = document.getElementById('dataReuniao').value;
-        const horaInicio = document.getElementById('horaInicio').value;
+// FORMATAR TEXTO AUTOMATICAMENTE (CORRIGIDO)
+// =====================
+function formatarTexto() {
+    const dataInput = document.getElementById('dataReuniao');
+    const horaInicio = document.getElementById('horaInicio');
+    
+    if (dataInput && dataInput.value && horaInicio && horaInicio.value) {
+        // CORREÇÃO: Extrair ano, mês e dia diretamente da string YYYY-MM-DD
+        const dataParts = dataInput.value.split('-');
+        const ano = dataParts[0];
+        const mes = parseInt(dataParts[1]);
+        const dia = parseInt(dataParts[2]);
         
-        if (data && horaInicio) {
-            const dataFormatada = new Date(data).toLocaleDateString('pt-BR');
-            const pauta = document.getElementById('pauta');
-            const textoAtual = pauta.value;
-            
-            if (!textoAtual.includes('Data:')) {
-                const cabecalho = `## PAUTA DA REUNIÃO\n\n**Data:** ${dataFormatada}\n**Horário:** ${horaInicio}\n\n---\n\n`;
-                pauta.value = cabecalho + textoAtual;
-            }
+        // Formatar a data manualmente (evita problemas de fuso horário)
+        const dataFormatada = `${dia.toString().padStart(2, '0')}/${mes.toString().padStart(2, '0')}/${ano}`;
+        
+        const pauta = document.getElementById('pauta');
+        const textoAtual = pauta.value;
+        
+        if (!textoAtual.includes('Data:')) {
+            const cabecalho = `## PAUTA DA REUNIÃO\n\n**Data:** ${dataFormatada}\n**Horário:** ${horaInicio.value}\n\n---\n\n`;
+            pauta.value = cabecalho + textoAtual;
         }
     }
+}
     
     // =====================
     // VISUALIZAR PAUTA
