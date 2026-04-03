@@ -5239,7 +5239,6 @@ def nova_reuniao():
     hoje = datetime.now().strftime("%Y-%m-%d")
     
     return render_template("reunioes/nova.html", tipos=tipos, lojas=lojas, hoje=hoje)
-
 @app.route("/reunioes/<int:id>")
 @login_required
 def detalhes_reuniao(id):
@@ -5267,14 +5266,32 @@ def detalhes_reuniao(id):
     # ============================================
     usuario_grau = session.get('grau_atual', 1)
     usuario_tipo = session.get('tipo', 'obreiro')
-    reuniao_grau = reuniao.get('grau', 1)
+    reuniao_grau = reuniao.get('grau')
     
     # Se não for admin, verificar se o grau da reunião é permitido
     if usuario_tipo != 'admin':
-        if reuniao_grau > usuario_grau:
-            flash("Você não tem permissão para visualizar esta reunião (grau superior ao seu).", "danger")
-            return_connection(conn)
-            return redirect("/reunioes")
+        # Se a reunião tem grau específico
+        if reuniao_grau is not None:
+            # Aprendiz (grau 1) só pode ver reuniões de grau 1
+            if usuario_grau == 1 and reuniao_grau > 1:
+                flash("Você não tem permissão para visualizar esta reunião (apenas para graus superiores).", "danger")
+                return_connection(conn)
+                return redirect("/reunioes")
+            # Companheiro (grau 2) só pode ver reuniões de grau 1 ou 2
+            elif usuario_grau == 2 and reuniao_grau > 2:
+                flash("Você não tem permissão para visualizar esta reunião (apenas para Companheiros e Mestres).", "danger")
+                return_connection(conn)
+                return redirect("/reunioes")
+            # Mestres (grau >= 3) podem ver todas
+            elif usuario_grau >= 3:
+                pass  # Pode ver
+            else:
+                flash("Você não tem permissão para visualizar esta reunião.", "danger")
+                return_connection(conn)
+                return redirect("/reunioes")
+        # Se a reunião não tem grau específico (NULL), todos podem ver
+        else:
+            pass  # Pode ver
     
     # Buscar presenças (apenas obreiros que podem ver a reunião)
     cursor.execute("""
@@ -5285,9 +5302,8 @@ def detalhes_reuniao(id):
         FROM usuarios u
         LEFT JOIN presenca p ON u.id = p.obreiro_id AND p.reuniao_id = %s
         WHERE u.ativo = 1 
-        AND u.grau_atual <= %s
         ORDER BY u.grau_atual DESC, u.nome_completo
-    """, (id, usuario_grau))
+    """, (id,))
     presenca = cursor.fetchall()
     
     total_obreiros = len(presenca)
