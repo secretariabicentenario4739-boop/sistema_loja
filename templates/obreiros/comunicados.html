@@ -1,0 +1,214 @@
+{% extends "base.html" %}
+
+{% block title %}Comunicados - {{ obreiro.nome_completo }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="container">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h2>
+                <i class="bi bi-envelope-paper"></i> 
+                Comunicados / Ocorrências
+                <small class="text-muted">{{ obreiro.nome_completo }}</small>
+            </h2>
+            <div>
+                <a href="/obreiros/{{ obreiro.id }}" class="btn btn-outline-info me-2">
+                    <i class="bi bi-eye"></i> Voltar
+                </a>
+                {% if session.tipo == 'admin' or session.grau_atual >= 3 %}
+                <a href="/obreiros/{{ obreiro.id }}/comunicados/novo" class="btn btn-primary">
+                    <i class="bi bi-plus-circle"></i> Novo Comunicado
+                </a>
+                {% endif %}
+            </div>
+        </div>
+
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+                        {{ message | safe }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
+        {% if comunicados %}
+            <div class="timeline">
+                {% for comunicado in comunicados %}
+                <div class="card shadow mb-3 border-left-{{ comunicado.tipo_cor }}">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-start">
+                            <div class="d-flex align-items-center">
+                                <div class="me-3">
+                                    <i class="bi {{ comunicado.tipo_icone }} fs-2 text-{{ comunicado.tipo_cor }}"></i>
+                                </div>
+                                <div>
+                                    <h5 class="mb-1">
+                                        {{ comunicado.titulo }}
+                                        <span class="badge bg-{{ comunicado.tipo_cor }} ms-2">{{ comunicado.tipo_nome }}</span>
+                                        {% if comunicado.status == 'pendente' %}
+                                        <span class="badge bg-warning ms-2">⏳ Pendente</span>
+                                        {% elif comunicado.status == 'aprovado' %}
+                                        <span class="badge bg-success ms-2">✓ Aprovado</span>
+                                        {% elif comunicado.status == 'rejeitado' %}
+                                        <span class="badge bg-danger ms-2">✗ Rejeitado</span>
+                                        {% endif %}
+                                    </h5>
+                                    <p class="text-muted small mb-0">
+                                        <i class="bi bi-calendar"></i> {{ comunicado.data_ocorrencia.strftime('%d/%m/%Y') }}
+                                        <i class="bi bi-person ms-2"></i> Registrado por: {{ comunicado.registrado_por_nome }}
+                                    </p>
+                                </div>
+                            </div>
+                            <div class="btn-group">
+                                <button type="button" class="btn btn-sm btn-outline-secondary" data-bs-toggle="collapse" data-bs-target="#detalhes-{{ comunicado.id }}">
+                                    <i class="bi bi-eye"></i> Detalhes
+                                </button>
+                                {% if comunicado.status == 'pendente' and (session.tipo == 'admin' or session.grau_atual >= 3) %}
+                                <button type="button" class="btn btn-sm btn-success" data-bs-toggle="modal" data-bs-target="#modalAprovar-{{ comunicado.id }}">
+                                    <i class="bi bi-check-lg"></i> Aprovar
+                                </button>
+                                <button type="button" class="btn btn-sm btn-danger" data-bs-toggle="modal" data-bs-target="#modalRejeitar-{{ comunicado.id }}">
+                                    <i class="bi bi-x-lg"></i> Rejeitar
+                                </button>
+                                {% endif %}
+                            </div>
+                        </div>
+                        
+                        <div class="collapse mt-3" id="detalhes-{{ comunicado.id }}">
+                            <hr>
+                            <div class="row">
+                                <div class="col-md-12">
+                                    <p><strong>Descrição:</strong></p>
+                                    <p>{{ comunicado.descricao }}</p>
+                                    
+                                    {% if comunicado.motivo %}
+                                    <p><strong>Motivo:</strong> {{ comunicado.motivo }}</p>
+                                    {% endif %}
+                                    
+                                    {% if comunicado.detalhes %}
+                                    <p><strong>Detalhes:</strong> {{ comunicado.detalhes }}</p>
+                                    {% endif %}
+                                    
+                                    {% if comunicado.data_inicio_licenca %}
+                                    <p><strong>Período de Licença:</strong> 
+                                        {{ comunicado.data_inicio_licenca.strftime('%d/%m/%Y') }} 
+                                        até {{ comunicado.data_fim_licenca.strftime('%d/%m/%Y') if comunicado.data_fim_licenca else 'indeterminado' }}
+                                    </p>
+                                    {% endif %}
+                                    
+                                    {% if comunicado.data_desligamento %}
+                                    <p><strong>Data de Desligamento:</strong> {{ comunicado.data_desligamento.strftime('%d/%m/%Y') }}</p>
+                                    {% endif %}
+                                    
+                                    {% if comunicado.motivo_desligamento %}
+                                    <p><strong>Motivo do Desligamento:</strong> {{ comunicado.motivo_desligamento }}</p>
+                                    {% endif %}
+                                    
+                                    {% if comunicado.aprovado_por_nome %}
+                                    <hr>
+                                    <p class="small text-muted">
+                                        <i class="bi bi-check-circle"></i> Aprovado por: {{ comunicado.aprovado_por_nome }}
+                                        em {{ comunicado.data_aprovacao.strftime('%d/%m/%Y %H:%M') if comunicado.data_aprovacao else '-' }}
+                                    </p>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Modal Aprovar -->
+                <div class="modal fade" id="modalAprovar-{{ comunicado.id }}" tabindex="-1">
+                    <div class="modal-dialog">
+                        <div class="modal-content">
+                            <form method="POST" action="/comunicados/{{ comunicado.id }}/aprovar">
+                                <div class="modal-header bg-success text-white">
+                                    <h5 class="modal-title">Aprovar Comunicado</h5>
+                                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                                </div>
+                                <div class="modal-body">
+                                    <p><strong>Título:</strong> {{ comunicado.titulo }}</p>
+                                    <p><strong>Tipo:</strong> {{ comunicado.tipo_nome }}</p>
+                                    <div class="mb-3">
+                                        <label class="form-label">Observação (opcional)</label>
+                                        <textarea name="observacao" class="form-control" rows="3"></textarea>
+                                    </div>
+                                </div>
+                                <div class="modal-footer">
+                                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                                    <button type="submit" class="btn btn-success">Aprovar</button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Modal Rejeitar -->
+                <div class="modal fade" id="modalRejeitar-{{ comunicado.id }}" tabindex="-1">
+                    <div class="modal-dialog">
+                        <div class="modal-content">
+                            <form method="POST" action="/comunicados/{{ comunicado.id }}/rejeitar">
+                                <div class="modal-header bg-danger text-white">
+                                    <h5 class="modal-title">Rejeitar Comunicado</h5>
+                                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                                </div>
+                                <div class="modal-body">
+                                    <p><strong>Título:</strong> {{ comunicado.titulo }}</p>
+                                    <p><strong>Tipo:</strong> {{ comunicado.tipo_nome }}</p>
+                                    <div class="mb-3">
+                                        <label class="form-label">Motivo da rejeição *</label>
+                                        <textarea name="motivo" class="form-control" rows="3" required></textarea>
+                                    </div>
+                                </div>
+                                <div class="modal-footer">
+                                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                                    <button type="submit" class="btn btn-danger">Rejeitar</button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <div class="card shadow">
+                <div class="card-body text-center py-5">
+                    <i class="bi bi-envelope-paper fs-1 text-muted"></i>
+                    <h5 class="mt-3">Nenhum comunicado registrado</h5>
+                    <p class="text-muted">Não há ocorrências registradas para este obreiro.</p>
+                    {% if session.tipo == 'admin' or session.grau_atual >= 3 %}
+                    <a href="/obreiros/{{ obreiro.id }}/comunicados/novo" class="btn btn-primary">
+                        <i class="bi bi-plus-circle"></i> Registrar Primeiro Comunicado
+                    </a>
+                    {% endif %}
+                </div>
+            </div>
+        {% endif %}
+    </div>
+</div>
+
+<style>
+    .border-left-success {
+        border-left: 4px solid #28a745;
+    }
+    .border-left-warning {
+        border-left: 4px solid #ffc107;
+    }
+    .border-left-danger {
+        border-left: 4px solid #dc3545;
+    }
+    .border-left-info {
+        border-left: 4px solid #17a2b8;
+    }
+    .timeline .card {
+        transition: transform 0.2s;
+    }
+    .timeline .card:hover {
+        transform: translateX(5px);
+    }
+</style>
+
+{% endblock %}

@@ -190,24 +190,19 @@ def permissao_required(permissao_codigo):
     return decorator
 
 def tem_permissao(permissao_codigo):
+    """Verifica se o usuário logado tem determinada permissão"""
     if 'user_id' not in session:
         return False
+    
+    # Admin tem todas as permissões
     if session.get('tipo') == 'admin':
         return True
-    try:
-        cursor, conn = get_db()
-        cursor.execute("""
-            SELECT COUNT(*) as total
-            FROM permissoes_grau pg
-            JOIN permissoes p ON pg.permissao_id = p.id
-            WHERE pg.grau_id = %s AND p.codigo = %s
-        """, (session.get('grau_atual', 1), permissao_codigo))
-        result = cursor.fetchone()
-        return_connection(conn)
-        return result and result['total'] > 0
-    except Exception as e:
-        print(f"Erro ao verificar permissão: {e}")
-        return False
+    
+    # Mestres (grau >= 3) têm permissão para visualizar obreiros
+    if permissao_codigo == 'obreiro.view' and session.get('grau_atual', 0) >= 3:
+        return True
+    
+    return _verificar_permissao_db(permissao_codigo)
 
 def _verificar_permissao_db(codigo):
     try:
@@ -2434,19 +2429,23 @@ def api_excluir_documento_obreiro(doc_id):
 
 @app.route("/obreiros")
 @login_required
-@permissao_required('obreiro.view')
 def listar_obreiros():
     """Lista obreiros com filtros por nome, grau, cargo, loja e status"""
     cursor, conn = get_db()
+    
+    # ============================================
+    # VERIFICAÇÃO DE PERMISSÃO: Todos os obreiros podem visualizar a lista
+    # ============================================
+    # Qualquer usuário logado pode ver a lista de obreiros
     
     # Obter parâmetros de filtro
     nome = request.args.get('nome', '').strip()
     grau = request.args.get('grau', '')
     cargo = request.args.get('cargo', '')
     loja = request.args.get('loja', '')
-    status = request.args.get('status', 'ativos')  # ativos, inativos, todos
+    status = request.args.get('status', 'ativos')
     
-    # Construir query base com restrição de permissão
+    # Construir query base (sem restrição de grau para visualização)
     query = """
         SELECT DISTINCT u.*, 
                l.nome as loja_nome_completo,
@@ -2480,24 +2479,16 @@ def listar_obreiros():
     """
     params = []
     
-    # Restrição por nível de permissão
-    # Se não for admin, só pode ver obreiros do seu grau ou inferior
-    if session.get('tipo') != 'admin':
-        usuario_grau = session.get('grau_atual', 0)
-        query += " AND u.grau_atual <= %s"
-        params.append(usuario_grau)
-    
     # Filtro por nome (nome completo ou usuário)
     if nome:
         query += " AND (u.nome_completo ILIKE %s OR u.usuario ILIKE %s)"
         params.extend([f"%{nome}%", f"%{nome}%"])
     
-    # Filtro por grau (considerando que grau >= 3 inclui todos os mestres)
+    # Filtro por grau
     if grau:
         try:
             grau_int = int(grau)
             if grau_int == 3:
-                # Mestre inclui todos os graus >= 3
                 query += " AND u.grau_atual >= 3"
             else:
                 query += " AND u.grau_atual = %s"
@@ -2505,7 +2496,7 @@ def listar_obreiros():
         except ValueError:
             pass
     
-    # Filtro por cargo (apenas obreiros que possuem um cargo específico)
+    # Filtro por cargo
     if cargo:
         query += """ AND EXISTS (
             SELECT 1 FROM ocupacao_cargos oc 
@@ -2520,20 +2511,19 @@ def listar_obreiros():
         query += " AND u.loja_nome = %s"
         params.append(loja)
     
-    # Filtro por status (ativo/inativo)
+    # Filtro por status
     if status == 'inativos':
         query += " AND u.ativo = 0"
     elif status == 'todos':
-        # Não filtrar por status
         pass
-    else:  # ativos (padrão)
+    else:
         query += " AND u.ativo = 1"
     
     # Ordenação
     query += """
         ORDER BY 
-            u.ativo DESC,  -- ativos primeiro
-            u.grau_atual DESC,  -- grau mais alto primeiro
+            u.ativo DESC,
+            u.grau_atual DESC,
             u.nome_completo ASC
     """
     
@@ -2545,40 +2535,27 @@ def listar_obreiros():
     obreiros_list = []
     for row in obreiros:
         obreiro = dict(row)
-        
-        # Obter nível do grau
         grau_nivel = obreiro.get('grau_atual', 0)
         
-        # Adicionar campos de grau usando as funções auxiliares
         obreiro['grau_principal'] = get_grau_principal(grau_nivel)
         obreiro['grau_detalhado'] = get_grau_detalhado(grau_nivel)
         obreiro['grau_badge_class'] = get_grau_badge_class(grau_nivel)
         obreiro['grau_icon'] = get_grau_icon(grau_nivel)
-        obreiro['grau_descricao'] = get_grau_descricao(grau_nivel)  # compatibilidade
         
-        # Calcular percentual de presença
         if obreiro.get('presencas_ano', 0) > 0:
             percentual = (obreiro.get('presencas_confirmadas_ano', 0) / obreiro.get('presencas_ano', 1)) * 100
             obreiro['percentual_presenca'] = round(percentual, 1)
         else:
             obreiro['percentual_presenca'] = 0
         
-        # Adicionar classe CSS para status
         obreiro['status_class'] = 'table-success' if obreiro['ativo'] == 1 else 'table-secondary'
         obreiro['status_badge'] = 'success' if obreiro['ativo'] == 1 else 'secondary'
         obreiro['status_text'] = 'Ativo' if obreiro['ativo'] == 1 else 'Inativo'
         
         obreiros_list.append(obreiro)
     
-    # Buscar dados para os filtros (dropdowns)
-    
-    # Lista de graus disponíveis (usando as funções auxiliares)
-    cursor.execute("""
-        SELECT DISTINCT grau_atual as grau
-        FROM usuarios 
-        WHERE grau_atual IS NOT NULL
-        ORDER BY grau_atual
-    """)
+    # Buscar dados para os filtros
+    cursor.execute("SELECT DISTINCT grau_atual as grau FROM usuarios WHERE grau_atual IS NOT NULL ORDER BY grau_atual")
     graus_raw = cursor.fetchall()
     
     graus_disponiveis = []
@@ -2590,71 +2567,31 @@ def listar_obreiros():
             'nome_detalhado': get_grau_detalhado(grau_nivel)
         })
     
-    # Lista de cargos ativos
-    cursor.execute("""
-        SELECT id, nome, sigla 
-        FROM cargos 
-        WHERE ativo = 1 
-        ORDER BY ordem, nome
-    """)
+    cursor.execute("SELECT id, nome, sigla FROM cargos WHERE ativo = 1 ORDER BY ordem, nome")
     cargos_disponiveis = cursor.fetchall()
     
-    # Lista de lojas com obreiros
-    cursor.execute("""
-        SELECT DISTINCT loja_nome as nome 
-        FROM usuarios 
-        WHERE loja_nome IS NOT NULL AND loja_nome != ''
-        ORDER BY loja_nome
-    """)
+    cursor.execute("SELECT DISTINCT loja_nome as nome FROM usuarios WHERE loja_nome IS NOT NULL AND loja_nome != '' ORDER BY loja_nome")
     lojas_disponiveis = cursor.fetchall()
     
-    # Estatísticas gerais (considerando permissões)
-    if session.get('tipo') == 'admin':
-        cursor.execute("SELECT COUNT(*) as total FROM usuarios WHERE ativo = 1")
-        total_ativos = cursor.fetchone()['total']
-        
-        cursor.execute("SELECT COUNT(*) as total FROM usuarios WHERE ativo = 0")
-        total_inativos = cursor.fetchone()['total']
-        
-        cursor.execute("SELECT COUNT(*) as total FROM usuarios WHERE tipo = 'admin'")
-        total_admins = cursor.fetchone()['total']
-        
-        cursor.execute("SELECT COUNT(*) as total FROM usuarios WHERE tipo = 'sindicante' AND ativo = 1 AND grau_atual >= 3")
-        total_sindicantes = cursor.fetchone()['total']
-        
-        # Estatísticas por grau
-        cursor.execute("""
-            SELECT 
-                grau_atual,
-                COUNT(*) as total
-            FROM usuarios 
-            WHERE ativo = 1
-            GROUP BY grau_atual
-            ORDER BY grau_atual
-        """)
-        estatisticas_graus_raw = cursor.fetchall()
-    else:
-        # Usuário comum só vê estatísticas do seu grau e inferiores
-        usuario_grau = session.get('grau_atual', 0)
-        cursor.execute("SELECT COUNT(*) as total FROM usuarios WHERE ativo = 1 AND grau_atual <= %s", (usuario_grau,))
-        total_ativos = cursor.fetchone()['total']
-        
-        cursor.execute("SELECT COUNT(*) as total FROM usuarios WHERE ativo = 0 AND grau_atual <= %s", (usuario_grau,))
-        total_inativos = cursor.fetchone()['total']
-        
-        total_admins = 0
-        total_sindicantes = 0
-        
-        cursor.execute("""
-            SELECT 
-                grau_atual,
-                COUNT(*) as total
-            FROM usuarios 
-            WHERE ativo = 1 AND grau_atual <= %s
-            GROUP BY grau_atual
-            ORDER BY grau_atual
-        """, (usuario_grau,))
-        estatisticas_graus_raw = cursor.fetchall()
+    # Estatísticas gerais
+    cursor.execute("SELECT COUNT(*) as total FROM usuarios WHERE ativo = 1")
+    total_ativos = cursor.fetchone()['total']
+    
+    cursor.execute("SELECT COUNT(*) as total FROM usuarios WHERE ativo = 0")
+    total_inativos = cursor.fetchone()['total']
+    
+    cursor.execute("SELECT COUNT(*) as total FROM usuarios WHERE tipo = 'admin'")
+    total_admins = cursor.fetchone()['total']
+    
+    cursor.execute("SELECT COUNT(*) as total FROM usuarios WHERE tipo = 'sindicante' AND ativo = 1 AND grau_atual >= 3")
+    total_sindicantes = cursor.fetchone()['total']
+    
+    cursor.execute("""
+        SELECT grau_atual, COUNT(*) as total
+        FROM usuarios WHERE ativo = 1
+        GROUP BY grau_atual ORDER BY grau_atual
+    """)
+    estatisticas_graus_raw = cursor.fetchall()
     
     estatisticas_graus = []
     for eg in estatisticas_graus_raw:
@@ -2667,16 +2604,8 @@ def listar_obreiros():
     
     return_connection(conn)
     
-    # Montar dicionário de filtros para o template
-    filtros = {
-        'nome': nome,
-        'grau': grau,
-        'cargo': cargo,
-        'loja': loja,
-        'status': status
-    }
+    filtros = {'nome': nome, 'grau': grau, 'cargo': cargo, 'loja': loja, 'status': status}
     
-    # Estatísticas para o template
     estatisticas = {
         'total_ativos': total_ativos,
         'total_inativos': total_inativos,
@@ -2697,45 +2626,6 @@ def listar_obreiros():
         estatisticas=estatisticas,
         now=datetime.now()
     )
-
-@app.route("/obreiros/<int:id>/reativar")
-@login_required
-@permissao_required('obreiro.edit')
-def reativar_obreiro(id):
-    """Reativa um obreiro que estava inativo"""
-    cursor, conn = get_db()
-    
-    try:
-        # Buscar dados do obreiro
-        cursor.execute("SELECT id, nome_completo, usuario, ativo FROM usuarios WHERE id = %s", (id,))
-        obreiro = cursor.fetchone()
-        
-        if not obreiro:
-            flash("Obreiro não encontrado!", "danger")
-            return_connection(conn)
-            return redirect("/obreiros")
-        
-        # Verificar se já está ativo
-        if obreiro['ativo'] == 1:
-            flash(f"Obreiro {obreiro['nome_completo']} já está ativo!", "warning")
-            return_connection(conn)
-            return redirect(f"/obreiros/{id}")
-        
-        # Reativar obreiro
-        cursor.execute("UPDATE usuarios SET ativo = 1 WHERE id = %s", (id,))
-        conn.commit()
-        
-        registrar_log("reativar", "obreiro", id, dados_novos={"nome": obreiro['nome_completo'], "status": "ativo"})
-        
-        flash(f"✅ Obreiro {obreiro['nome_completo']} reativado com sucesso!", "success")
-        
-    except Exception as e:
-        print(f"Erro ao reativar obreiro: {e}")
-        conn.rollback()
-        flash(f"Erro ao reativar obreiro: {str(e)}", "danger")
-    
-    return_connection(conn)
-    return redirect("/obreiros")
     
 
 @app.route("/obreiros/<int:id>/excluir")
@@ -3068,14 +2958,19 @@ def visualizar_obreiro(id):
             WHERE u.id = %s
         """, (id,))
         obreiro = cursor.fetchone()
+        
         if not obreiro:
             flash("Obreiro não encontrado", "danger")
             return_connection(conn)
             return redirect("/obreiros")
-        if session["tipo"] != "admin" and session["user_id"] != id:
-            flash("Você não tem permissão para visualizar este obreiro", "danger")
-            return_connection(conn)
-            return redirect("/obreiros")
+        
+        # ============================================
+        # VERIFICAÇÃO DE PERMISSÃO: Todos os obreiros podem visualizar
+        # ============================================
+        # Qualquer usuário logado pode visualizar a ficha de qualquer obreiro
+        # (Não há restrição de visualização)
+        
+        # Buscar cargos do obreiro
         cursor.execute("""
             SELECT oc.*, c.nome as cargo_nome, c.sigla
             FROM ocupacao_cargos oc
@@ -3084,6 +2979,8 @@ def visualizar_obreiro(id):
             ORDER BY oc.data_inicio DESC
         """, (id,))
         cargos = cursor.fetchall()
+        
+        # Buscar histórico de graus
         cursor.execute("""
             SELECT h.*, g.nome as grau_nome
             FROM historico_graus h
@@ -3092,21 +2989,37 @@ def visualizar_obreiro(id):
             ORDER BY h.data DESC
         """, (id,))
         historico_graus = cursor.fetchall()
+        
+        # Buscar nome do grau atual
         cursor.execute("SELECT nome FROM graus WHERE nivel = %s", (obreiro['grau_atual'],))
         grau_atual_info = cursor.fetchone()
         nome_grau_atual = grau_atual_info['nome'] if grau_atual_info else None
+        
+        # Contar familiares
         cursor.execute("SELECT COUNT(*) as total FROM familiares WHERE obreiro_id = %s", (id,))
         familiares_count = cursor.fetchone()["total"]
+        
+        # Contar condecorações
         cursor.execute("SELECT COUNT(*) as total FROM condecoracoes_obreiro WHERE obreiro_id = %s", (id,))
         condecoracoes_count = cursor.fetchone()["total"]
+        
+        # Contar comunicados
+        cursor.execute("SELECT COUNT(*) as total FROM comunicados_obreiro WHERE obreiro_id = %s AND ativo = 1", (id,))
+        comunicados_count = cursor.fetchone()["total"]
+        
+        # Cargos disponíveis para adicionar (apenas admin pode adicionar)
         cargos_disponiveis = []
         if session["tipo"] == "admin":
             cursor.execute("SELECT * FROM cargos WHERE ativo = 1 ORDER BY ordem")
             cargos_disponiveis = cursor.fetchall()
+        
+        # Graus disponíveis para registrar (apenas admin pode registrar)
         graus_disponiveis = []
         if session["tipo"] == "admin":
             cursor.execute("SELECT * FROM graus WHERE ativo = 1 ORDER BY nivel, ordem")
             graus_disponiveis = cursor.fetchall()
+        
+        # Últimas condecorações
         cursor.execute("""
             SELECT c.*, t.nome as tipo_nome, t.cor, t.icone
             FROM condecoracoes_obreiro c
@@ -3116,20 +3029,127 @@ def visualizar_obreiro(id):
             LIMIT 5
         """, (id,))
         ultimas_condecoracoes = cursor.fetchall()
+        
         return_connection(conn)
+        
+        # Verificar se pode editar (admin ou próprio perfil)
+        pode_editar = (session["tipo"] == "admin" or session["user_id"] == id)
+        
         return render_template("obreiros/visualizar.html",
-                              obreiro=obreiro, cargos=cargos, historico_graus=historico_graus,
-                              cargos_disponiveis=cargos_disponiveis, graus_disponiveis=graus_disponiveis,
-                              familiares_count=familiares_count, condecoracoes_count=condecoracoes_count,
-                              ultimas_condecoracoes=ultimas_condecoracoes, nome_grau_atual=nome_grau_atual,
-                              pode_editar=(session["tipo"] == "admin" or session["user_id"] == id))
+                              obreiro=obreiro, 
+                              cargos=cargos, 
+                              historico_graus=historico_graus,
+                              cargos_disponiveis=cargos_disponiveis, 
+                              graus_disponiveis=graus_disponiveis,
+                              familiares_count=familiares_count, 
+                              condecoracoes_count=condecoracoes_count,
+                              comunicados_count=comunicados_count,
+                              ultimas_condecoracoes=ultimas_condecoracoes, 
+                              nome_grau_atual=nome_grau_atual,
+                              pode_editar=pode_editar)
+        
     except Exception as e:
         print(f"Erro ao visualizar obreiro: {e}")
         if conn:
             return_connection(conn)
         flash(f"Erro ao carregar dados do obreiro: {str(e)}", "danger")
         return redirect("/obreiros")
-
+        
+        # ============================================
+        # VERIFICAÇÃO DE PERMISSÃO: Admin, Mestre (grau >= 3) ou o próprio obreiro
+        # ============================================
+        usuario_tipo = session.get('tipo', '')
+        usuario_grau = session.get('grau_atual', 0)
+        
+        if usuario_tipo != 'admin' and usuario_grau < 3 and session["user_id"] != id:
+            flash("Você não tem permissão para visualizar este obreiro", "danger")
+            return_connection(conn)
+            return redirect("/obreiros")
+        
+        # Buscar cargos do obreiro
+        cursor.execute("""
+            SELECT oc.*, c.nome as cargo_nome, c.sigla
+            FROM ocupacao_cargos oc
+            JOIN cargos c ON oc.cargo_id = c.id
+            WHERE oc.obreiro_id = %s AND oc.ativo = 1
+            ORDER BY oc.data_inicio DESC
+        """, (id,))
+        cargos = cursor.fetchall()
+        
+        # Buscar histórico de graus
+        cursor.execute("""
+            SELECT h.*, g.nome as grau_nome
+            FROM historico_graus h
+            LEFT JOIN graus g ON h.grau_id = g.id
+            WHERE h.obreiro_id = %s
+            ORDER BY h.data DESC
+        """, (id,))
+        historico_graus = cursor.fetchall()
+        
+        # Buscar nome do grau atual
+        cursor.execute("SELECT nome FROM graus WHERE nivel = %s", (obreiro['grau_atual'],))
+        grau_atual_info = cursor.fetchone()
+        nome_grau_atual = grau_atual_info['nome'] if grau_atual_info else None
+        
+        # Contar familiares
+        cursor.execute("SELECT COUNT(*) as total FROM familiares WHERE obreiro_id = %s", (id,))
+        familiares_count = cursor.fetchone()["total"]
+        
+        # Contar condecorações
+        cursor.execute("SELECT COUNT(*) as total FROM condecoracoes_obreiro WHERE obreiro_id = %s", (id,))
+        condecoracoes_count = cursor.fetchone()["total"]
+        
+        # Contar comunicados
+        cursor.execute("SELECT COUNT(*) as total FROM comunicados_obreiro WHERE obreiro_id = %s AND ativo = 1", (id,))
+        comunicados_count = cursor.fetchone()["total"]
+        
+        # Cargos disponíveis para adicionar (apenas admin pode adicionar)
+        cargos_disponiveis = []
+        if session["tipo"] == "admin":
+            cursor.execute("SELECT * FROM cargos WHERE ativo = 1 ORDER BY ordem")
+            cargos_disponiveis = cursor.fetchall()
+        
+        # Graus disponíveis para registrar (apenas admin pode registrar)
+        graus_disponiveis = []
+        if session["tipo"] == "admin":
+            cursor.execute("SELECT * FROM graus WHERE ativo = 1 ORDER BY nivel, ordem")
+            graus_disponiveis = cursor.fetchall()
+        
+        # Últimas condecorações
+        cursor.execute("""
+            SELECT c.*, t.nome as tipo_nome, t.cor, t.icone
+            FROM condecoracoes_obreiro c
+            JOIN tipos_condecoracoes t ON c.tipo_id = t.id
+            WHERE c.obreiro_id = %s
+            ORDER BY c.data_concessao DESC
+            LIMIT 5
+        """, (id,))
+        ultimas_condecoracoes = cursor.fetchall()
+        
+        return_connection(conn)
+        
+        # Verificar se pode editar (admin ou próprio perfil)
+        pode_editar = (session["tipo"] == "admin" or session["user_id"] == id)
+        
+        return render_template("obreiros/visualizar.html",
+                              obreiro=obreiro, 
+                              cargos=cargos, 
+                              historico_graus=historico_graus,
+                              cargos_disponiveis=cargos_disponiveis, 
+                              graus_disponiveis=graus_disponiveis,
+                              familiares_count=familiares_count, 
+                              condecoracoes_count=condecoracoes_count,
+                              comunicados_count=comunicados_count,
+                              ultimas_condecoracoes=ultimas_condecoracoes, 
+                              nome_grau_atual=nome_grau_atual,
+                              pode_editar=pode_editar)
+        
+    except Exception as e:
+        print(f"Erro ao visualizar obreiro: {e}")
+        if conn:
+            return_connection(conn)
+        flash(f"Erro ao carregar dados do obreiro: {str(e)}", "danger")
+        return redirect("/obreiros")
         
     
         # ============================================
@@ -6341,6 +6361,331 @@ def editar_modelo(id):
     modelo = cursor.fetchone()
     return_connection(conn)
     return render_template("atas/modelo_editar.html", modelo=modelo)
+
+# =============================
+# ROTAS DE COMUNICADOS/OCORRÊNCIAS
+# =============================
+
+@app.route("/obreiros/<int:obreiro_id>/comunicados")
+@login_required
+def listar_comunicados_obreiro(obreiro_id):
+    """Lista todos os comunicados/ocorrências do obreiro"""
+    cursor, conn = get_db()
+    
+    # Verificar permissão
+    if session.get('tipo') != 'admin' and session['user_id'] != obreiro_id:
+        flash("Permissão negada!", "danger")
+        return redirect(f"/obreiros/{obreiro_id}")
+    
+    # Buscar obreiro
+    cursor.execute("SELECT id, nome_completo, usuario FROM usuarios WHERE id = %s", (obreiro_id,))
+    obreiro = cursor.fetchone()
+    
+    if not obreiro:
+        flash("Obreiro não encontrado!", "danger")
+        return redirect("/obreiros")
+    
+    # Buscar comunicados
+    cursor.execute("""
+        SELECT c.*, t.nome as tipo_nome, t.cor as tipo_cor, t.icone as tipo_icone,
+               u.nome_completo as registrado_por_nome,
+               a.nome_completo as aprovado_por_nome
+        FROM comunicados_obreiro c
+        LEFT JOIN tipos_ocorrencia t ON c.tipo_ocorrencia_id = t.id
+        LEFT JOIN usuarios u ON c.registrado_por = u.id
+        LEFT JOIN usuarios a ON c.aprovado_por = a.id
+        WHERE c.obreiro_id = %s AND c.ativo = 1
+        ORDER BY c.data_ocorrencia DESC, c.data_registro DESC
+    """, (obreiro_id,))
+    
+    comunicados = cursor.fetchall()
+    
+    # Buscar tipos de ocorrência para o formulário
+    cursor.execute("SELECT * FROM tipos_ocorrencia WHERE ativo = 1 ORDER BY ordem")
+    tipos_ocorrencia = cursor.fetchall()
+    
+    return_connection(conn)
+    
+    return render_template("obreiros/comunicados.html", 
+                          obreiro=obreiro, 
+                          comunicados=comunicados,
+                          tipos_ocorrencia=tipos_ocorrencia)
+
+
+@app.route("/obreiros/<int:obreiro_id>/comunicados/novo", methods=["GET", "POST"])
+@login_required
+def novo_comunicado_obreiro(obreiro_id):
+    """Criar novo comunicado/ocorrência"""
+    cursor, conn = get_db()
+    
+    # Verificar permissão (apenas admin ou mestres)
+    if session.get('tipo') != 'admin' and session.get('grau_atual', 0) < 3:
+        flash("Apenas Mestres e Administradores podem criar comunicados!", "danger")
+        return redirect(f"/obreiros/{obreiro_id}")
+    
+    # Buscar obreiro
+    cursor.execute("SELECT id, nome_completo, usuario, ativo FROM usuarios WHERE id = %s", (obreiro_id,))
+    obreiro = cursor.fetchone()
+    
+    if not obreiro:
+        flash("Obreiro não encontrado!", "danger")
+        return redirect("/obreiros")
+    
+    if request.method == "POST":
+        tipo_ocorrencia_id = request.form.get("tipo_ocorrencia_id")
+        titulo = request.form.get("titulo")
+        descricao = request.form.get("descricao")
+        data_ocorrencia = request.form.get("data_ocorrencia")
+        motivo = request.form.get("motivo")
+        detalhes = request.form.get("detalhes")
+        data_inicio_licenca = request.form.get("data_inicio_licenca")
+        data_fim_licenca = request.form.get("data_fim_licenca")
+        data_desligamento = request.form.get("data_desligamento")
+        motivo_desligamento = request.form.get("motivo_desligamento")
+        
+        # Validações
+        if not tipo_ocorrencia_id or not titulo or not descricao or not data_ocorrencia:
+            flash("Preencha todos os campos obrigatórios!", "danger")
+            return redirect(f"/obreiros/{obreiro_id}/comunicados/novo")
+        
+        try:
+            # Buscar tipo de ocorrência
+            cursor.execute("SELECT * FROM tipos_ocorrencia WHERE id = %s", (tipo_ocorrencia_id,))
+            tipo = cursor.fetchone()
+            
+            # Definir status inicial
+            status = 'aprovado' if session.get('tipo') == 'admin' else 'pendente'
+            
+            cursor.execute("""
+                INSERT INTO comunicados_obreiro 
+                (obreiro_id, tipo_ocorrencia_id, titulo, descricao, data_ocorrencia,
+                 status, motivo, detalhes, data_inicio_licenca, data_fim_licenca,
+                 data_desligamento, motivo_desligamento, registrado_por,
+                 aprovado_por, data_aprovacao)
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                RETURNING id
+            """, (obreiro_id, tipo_ocorrencia_id, titulo, descricao, data_ocorrencia,
+                  status, motivo, detalhes, data_inicio_licenca, data_fim_licenca,
+                  data_desligamento, motivo_desligamento, session['user_id'],
+                  session['user_id'] if status == 'aprovado' else None,
+                  CURRENT_TIMESTAMP if status == 'aprovado' else None))
+            
+            comunicado_id = cursor.fetchone()['id']
+            
+            # Registrar histórico
+            cursor.execute("""
+                INSERT INTO historico_comunicados 
+                (ocorrencia_id, acao, status_novo, realizado_por, observacao)
+                VALUES (%s, %s, %s, %s, %s)
+            """, (comunicado_id, 'criar', status, session['user_id'], 'Comunicado criado'))
+            conn.commit()
+            
+            # Se for desligamento, atualizar status do obreiro
+            if tipo['nome'] in ['Desligamento Voluntário', 'Desligamento por Frequência', 
+                                'Desligamento por Inadimplência', 'Exclusão']:
+                cursor.execute("UPDATE usuarios SET ativo = 0 WHERE id = %s", (obreiro_id,))
+                conn.commit()
+                flash(f"⚠️ Obreiro {obreiro['nome_completo']} foi desativado!", "warning")
+            
+            registrar_log("criar_comunicado", "comunicado_obreiro", comunicado_id,
+                         dados_novos={"obreiro_id": obreiro_id, "tipo": tipo['nome'], "titulo": titulo})
+            
+            flash(f"Comunicado '{titulo}' criado com sucesso!", "success")
+            
+            # Se precisar de aprovação
+            if status == 'pendente':
+                flash("O comunicado foi enviado para aprovação da diretoria.", "info")
+            
+            return redirect(f"/obreiros/{obreiro_id}/comunicados")
+            
+        except Exception as e:
+            print(f"Erro ao criar comunicado: {e}")
+            conn.rollback()
+            flash(f"Erro ao criar comunicado: {str(e)}", "danger")
+    
+    # GET - Carregar formulário
+    cursor.execute("SELECT * FROM tipos_ocorrencia WHERE ativo = 1 ORDER BY ordem")
+    tipos_ocorrencia = cursor.fetchall()
+    
+    return_connection(conn)
+    
+    return render_template("obreiros/comunicado_form.html", 
+                          obreiro=obreiro, 
+                          tipos_ocorrencia=tipos_ocorrencia,
+                          hoje=datetime.now().strftime('%Y-%m-%d'))
+
+
+@app.route("/comunicados/<int:id>/aprovar", methods=["POST"])
+@login_required
+def aprovar_comunicado(id):
+    """Aprovar um comunicado pendente"""
+    cursor, conn = get_db()
+    
+    # Verificar permissão (apenas admin ou mestres)
+    if session.get('tipo') != 'admin' and session.get('grau_atual', 0) < 3:
+        flash("Apenas Mestres e Administradores podem aprovar comunicados!", "danger")
+        return redirect(request.referrer or "/dashboard")
+    
+    observacao = request.form.get("observacao", "")
+    
+    try:
+        # Buscar comunicado
+        cursor.execute("""
+            SELECT c.*, t.nome as tipo_nome, u.nome_completo as obreiro_nome
+            FROM comunicados_obreiro c
+            LEFT JOIN tipos_ocorrencia t ON c.tipo_ocorrencia_id = t.id
+            LEFT JOIN usuarios u ON c.obreiro_id = u.id
+            WHERE c.id = %s
+        """, (id,))
+        
+        comunicado = cursor.fetchone()
+        
+        if not comunicado:
+            flash("Comunicado não encontrado!", "danger")
+            return redirect("/dashboard")
+        
+        if comunicado['status'] != 'pendente':
+            flash("Este comunicado já foi processado!", "warning")
+            return redirect(request.referrer or "/dashboard")
+        
+        # Atualizar status
+        cursor.execute("""
+            UPDATE comunicados_obreiro 
+            SET status = 'aprovado', 
+                aprovado_por = %s, 
+                data_aprovacao = CURRENT_TIMESTAMP,
+                observacao_aprovacao = %s
+            WHERE id = %s
+        """, (session['user_id'], observacao, id))
+        
+        # Registrar histórico
+        cursor.execute("""
+            INSERT INTO historico_comunicados 
+            (ocorrencia_id, acao, status_anterior, status_novo, realizado_por, observacao)
+            VALUES (%s, %s, %s, %s, %s, %s)
+        """, (id, 'aprovar', 'pendente', 'aprovado', session['user_id'], observacao))
+        
+        conn.commit()
+        
+        registrar_log("aprovar_comunicado", "comunicado_obreiro", id,
+                     dados_novos={"status": "aprovado", "aprovado_por": session['user_id']})
+        
+        flash(f"Comunicado '{comunicado['titulo']}' aprovado com sucesso!", "success")
+        
+    except Exception as e:
+        print(f"Erro ao aprovar comunicado: {e}")
+        conn.rollback()
+        flash(f"Erro ao aprovar comunicado: {str(e)}", "danger")
+    
+    return_connection(conn)
+    return redirect(request.referrer or "/dashboard")
+
+
+@app.route("/comunicados/<int:id>/rejeitar", methods=["POST"])
+@login_required
+def rejeitar_comunicado(id):
+    """Rejeitar um comunicado pendente"""
+    cursor, conn = get_db()
+    
+    # Verificar permissão
+    if session.get('tipo') != 'admin' and session.get('grau_atual', 0) < 3:
+        flash("Apenas Mestres e Administradores podem rejeitar comunicados!", "danger")
+        return redirect(request.referrer or "/dashboard")
+    
+    motivo = request.form.get("motivo", "")
+    
+    try:
+        cursor.execute("""
+            UPDATE comunicados_obreiro 
+            SET status = 'rejeitado', 
+                observacao_aprovacao = %s
+            WHERE id = %s
+        """, (motivo, id))
+        
+        # Registrar histórico
+        cursor.execute("""
+            INSERT INTO historico_comunicados 
+            (ocorrencia_id, acao, status_anterior, status_novo, realizado_por, observacao)
+            VALUES (%s, %s, %s, %s, %s, %s)
+        """, (id, 'rejeitar', 'pendente', 'rejeitado', session['user_id'], motivo))
+        
+        conn.commit()
+        
+        flash(f"Comunicado rejeitado.", "warning")
+        
+    except Exception as e:
+        print(f"Erro ao rejeitar comunicado: {e}")
+        conn.rollback()
+        flash(f"Erro ao rejeitar comunicado: {str(e)}", "danger")
+    
+    return_connection(conn)
+    return redirect(request.referrer or "/dashboard")
+
+
+@app.route("/comunicados/<int:id>/documentos/upload", methods=["POST"])
+@login_required
+def upload_documento_comunicado(id):
+    """Upload de documento anexo ao comunicado"""
+    cursor, conn = get_db()
+    
+    # Verificar permissão
+    if session.get('tipo') != 'admin' and session.get('grau_atual', 0) < 3:
+        flash("Permissão negada!", "danger")
+        return redirect(request.referrer or "/dashboard")
+    
+    if 'arquivo' not in request.files:
+        flash("Nenhum arquivo selecionado!", "danger")
+        return redirect(request.referrer or "/dashboard")
+    
+    arquivo = request.files['arquivo']
+    titulo = request.form.get('titulo')
+    descricao = request.form.get('descricao')
+    
+    if not titulo:
+        titulo = arquivo.filename
+    
+    if arquivo.filename == '':
+        flash("Nenhum arquivo selecionado!", "danger")
+        return redirect(request.referrer or "/dashboard")
+    
+    try:
+        import cloudinary.uploader
+        from werkzeug.utils import secure_filename
+        
+        nome_arquivo = secure_filename(arquivo.filename)
+        extensao = nome_arquivo.split('.')[-1].lower()
+        
+        # Upload para Cloudinary
+        upload_result = cloudinary.uploader.upload(
+            arquivo,
+            folder=f"comunicados/{id}",
+            resource_type="auto",
+            use_filename=True,
+            unique_filename=True
+        )
+        
+        url_arquivo = upload_result.get('secure_url')
+        public_id = upload_result.get('public_id')
+        tamanho = upload_result.get('bytes', 0)
+        
+        # Salvar no banco
+        cursor.execute("""
+            INSERT INTO documentos_ocorrencia 
+            (ocorrencia_id, titulo, descricao, nome_arquivo, caminho_arquivo, tipo_arquivo, tamanho, uploaded_by)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+            RETURNING id
+        """, (id, titulo, descricao, public_id, url_arquivo, extensao, tamanho, session['user_id']))
+        
+        conn.commit()
+        
+        flash(f"Documento '{titulo}' anexado com sucesso!", "success")
+        
+    except Exception as e:
+        print(f"Erro no upload: {e}")
+        flash(f"Erro ao enviar documento: {str(e)}", "danger")
+    
+    return_connection(conn)
+    return redirect(request.referrer or f"/comunicados/{id}/detalhes")
     
 # =============================
 # ROTAS DE AVISOS/COMUNICADOS

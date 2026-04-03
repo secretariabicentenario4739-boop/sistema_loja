@@ -1,0 +1,223 @@
+{% extends "base.html" %}
+
+{% block title %}Novo Comunicado - {{ obreiro.nome_completo }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="container">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h2>
+                <i class="bi bi-envelope-paper"></i> 
+                Novo Comunicado / Ocorrência
+                <small class="text-muted">{{ obreiro.nome_completo }}</small>
+            </h2>
+            <div>
+                <a href="/obreiros/{{ obreiro.id }}/comunicados" class="btn btn-outline-secondary">
+                    <i class="bi bi-arrow-left"></i> Voltar
+                </a>
+            </div>
+        </div>
+
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+                        {{ message | safe }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
+        <div class="card shadow">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0">
+                    <i class="bi bi-info-circle"></i> 
+                    Registrar Comunicado
+                </h5>
+            </div>
+            <div class="card-body">
+                <form method="POST" id="formComunicado">
+                    <!-- Tipo de Ocorrência -->
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Tipo de Ocorrência *</label>
+                        <select class="form-select" name="tipo_ocorrencia_id" id="tipoOcorrencia" required>
+                            <option value="">Selecione o tipo...</option>
+                            {% for tipo in tipos_ocorrencia %}
+                            <option value="{{ tipo.id }}" 
+                                    data-requer-doc="{{ tipo.requer_documento }}"
+                                    data-requer-aprovacao="{{ tipo.requer_aprovacao }}"
+                                    data-cor="{{ tipo.cor }}">
+                                <i class="bi {{ tipo.icone }}"></i>
+                                {{ tipo.nome }} - {{ tipo.descricao }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <!-- Título -->
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Título *</label>
+                        <input type="text" class="form-control" name="titulo" required placeholder="Ex: Licença de João Silva">
+                    </div>
+
+                    <!-- Descrição -->
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Descrição *</label>
+                        <textarea class="form-control" name="descricao" rows="4" required placeholder="Descreva detalhadamente a ocorrência..."></textarea>
+                    </div>
+
+                    <!-- Data da Ocorrência -->
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Data da Ocorrência *</label>
+                        <input type="date" class="form-control" name="data_ocorrencia" value="{{ hoje }}" required>
+                    </div>
+
+                    <!-- Motivo (campo simples) -->
+                    <div class="mb-3" id="divMotivo" style="display: none;">
+                        <label class="form-label fw-bold">Motivo</label>
+                        <input type="text" class="form-control" name="motivo" placeholder="Ex: Problemas de saúde, mudança de cidade">
+                    </div>
+
+                    <!-- Detalhes Adicionais -->
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Detalhes Adicionais</label>
+                        <textarea class="form-control" name="detalhes" rows="3" placeholder="Informações complementares..."></textarea>
+                    </div>
+
+                    <!-- Período de Licença (visível apenas para Licença) -->
+                    <div class="row" id="divLicenca" style="display: none;">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label fw-bold">Data Início da Licença</label>
+                            <input type="date" class="form-control" name="data_inicio_licenca">
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label fw-bold">Data Fim da Licença</label>
+                            <input type="date" class="form-control" name="data_fim_licenca">
+                        </div>
+                    </div>
+
+                    <!-- Desligamento (visível apenas para desligamentos) -->
+                    <div class="row" id="divDesligamento" style="display: none;">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label fw-bold">Data do Desligamento</label>
+                            <input type="date" class="form-control" name="data_desligamento">
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label fw-bold">Motivo do Desligamento</label>
+                            <textarea class="form-control" name="motivo_desligamento" rows="2" placeholder="Descreva o motivo do desligamento..."></textarea>
+                        </div>
+                    </div>
+
+                    <!-- Anexar Documento -->
+                    <div class="mb-3" id="divDocumento" style="display: none;">
+                        <label class="form-label fw-bold">Documento Comprobatório</label>
+                        <input type="file" class="form-control" name="documento" accept=".pdf,.jpg,.jpeg,.png,.doc,.docx">
+                        <small class="text-muted">PDF, imagens ou Word (max 10MB)</small>
+                    </div>
+
+                    <!-- Informações sobre aprovação -->
+                    <div class="alert alert-info" id="infoAprovacao">
+                        <i class="bi bi-info-circle"></i>
+                        {% if session.tipo == 'admin' %}
+                        <strong>Comunicado será aprovado automaticamente.</strong> (Você é administrador)
+                        {% else %}
+                        <strong>Este comunicado precisará de aprovação da diretoria.</strong> 
+                        Após enviado, aguarde a aprovação.
+                        {% endif %}
+                    </div>
+
+                    <div class="text-center mt-4">
+                        <button type="submit" class="btn btn-primary btn-lg px-5">
+                            <i class="bi bi-save"></i> Registrar Comunicado
+                        </button>
+                        <a href="/obreiros/{{ obreiro.id }}/comunicados" class="btn btn-secondary btn-lg px-5 ms-2">
+                            <i class="bi bi-x-circle"></i> Cancelar
+                        </a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const tipoSelect = document.getElementById('tipoOcorrencia');
+    const divLicenca = document.getElementById('divLicenca');
+    const divDesligamento = document.getElementById('divDesligamento');
+    const divDocumento = document.getElementById('divDocumento');
+    const divMotivo = document.getElementById('divMotivo');
+    const infoAprovacao = document.getElementById('infoAprovacao');
+    
+    // Lista de tipos que são desligamentos
+    const desligamentos = ['Desligamento Voluntário', 'Desligamento por Frequência', 
+                          'Desligamento por Inadimplência', 'Exclusão'];
+    
+    // Lista de tipos que são licenças
+    const licencas = ['Licença'];
+    
+    tipoSelect.addEventListener('change', function() {
+        const selectedOption = this.options[this.selectedIndex];
+        const tipoNome = selectedOption.text.split(' - ')[0];
+        const requerDocumento = selectedOption.dataset.requerDoc == '1';
+        const requerAprovacao = selectedOption.dataset.requerAprovacao == '1';
+        
+        // Mostrar/esconder campos específicos
+        if (licencas.includes(tipoNome)) {
+            divLicenca.style.display = 'flex';
+        } else {
+            divLicenca.style.display = 'none';
+            document.querySelector('input[name="data_inicio_licenca"]').value = '';
+            document.querySelector('input[name="data_fim_licenca"]').value = '';
+        }
+        
+        if (desligamentos.includes(tipoNome)) {
+            divDesligamento.style.display = 'flex';
+        } else {
+            divDesligamento.style.display = 'none';
+            document.querySelector('input[name="data_desligamento"]').value = '';
+            document.querySelector('textarea[name="motivo_desligamento"]').value = '';
+        }
+        
+        // Mostrar/esconder campo motivo (para alguns tipos)
+        if (tipoNome === 'Advertência' || tipoNome === 'Licença') {
+            divMotivo.style.display = 'block';
+        } else {
+            divMotivo.style.display = 'none';
+        }
+        
+        // Mostrar/esconder campo de documento
+        if (requerDocumento) {
+            divDocumento.style.display = 'block';
+        } else {
+            divDocumento.style.display = 'none';
+        }
+        
+        // Atualizar mensagem de aprovação
+        if ({{ session.tipo == 'admin'|tojson }}) {
+            infoAprovacao.innerHTML = '<i class="bi bi-info-circle"></i> <strong>Comunicado será aprovado automaticamente.</strong> (Você é administrador)';
+        } else if (requerAprovacao) {
+            infoAprovacao.innerHTML = '<i class="bi bi-info-circle"></i> <strong>Este comunicado precisará de aprovação da diretoria.</strong> Após enviado, aguarde a aprovação.';
+        } else {
+            infoAprovacao.innerHTML = '<i class="bi bi-info-circle"></i> <strong>Este comunicado não requer aprovação.</strong> Será registrado automaticamente.';
+        }
+    });
+});
+</script>
+
+<style>
+    .card {
+        border-radius: 10px;
+        overflow: hidden;
+    }
+    .card-header {
+        font-weight: 600;
+    }
+    .form-control:focus, .form-select:focus {
+        border-color: #0d6efd;
+        box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.25);
+    }
+</style>
+
+{% endblock %}

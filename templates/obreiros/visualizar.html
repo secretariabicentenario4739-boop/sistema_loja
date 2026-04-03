@@ -266,244 +266,160 @@
             </div>
         </div>
 
-        <!-- SEÇÃO: FAMILIARES E CONDECORAÇÕES (ACIMA DE CARGOS) -->
-        <div class="row mb-4">
-            <div class="col-md-6">
-                <div class="card shadow h-100">
-                    <div class="card-header bg-info text-white">
-                        <h5 class="mb-0"><i class="bi bi-people"></i> Familiares</h5>
-                    </div>
-                    <div class="card-body text-center py-4">
-                        <i class="bi bi-people fs-1 text-info"></i>
-                        <h3 class="mt-2">{{ familiares_count }}</h3>
-                        <p class="text-muted">familiares cadastrados</p>
-                        <a href="/obreiros/{{ obreiro.id }}/familiares" class="btn btn-outline-info">
-                            <i class="bi bi-eye"></i> Gerenciar Familiares
-                        </a>
-                    </div>
-                </div>
+        <!-- Familiares e Condecorações e Comunicados -->
+<div class="row mb-4">
+    <div class="col-md-4">
+        <div class="card shadow h-100">
+            <div class="card-header bg-info text-white">
+                <h5 class="mb-0"><i class="bi bi-people"></i> Familiares</h5>
             </div>
-            <div class="col-md-6">
-                <div class="card shadow h-100">
-                    <div class="card-header bg-warning text-dark">
-                        <h5 class="mb-0"><i class="bi bi-award"></i> Condecorações</h5>
+            <div class="card-body text-center py-4">
+                <i class="bi bi-people fs-1 text-info"></i>
+                <h3 class="mt-2">{{ familiares_count }}</h3>
+                <p class="text-muted">familiares cadastrados</p>
+                <a href="/obreiros/{{ obreiro.id }}/familiares" class="btn btn-outline-info">
+                    <i class="bi bi-eye"></i> Gerenciar
+                </a>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card shadow h-100">
+            <div class="card-header bg-warning text-dark">
+                <h5 class="mb-0"><i class="bi bi-award"></i> Condecorações</h5>
+            </div>
+            <div class="card-body text-center py-4">
+                <i class="bi bi-award fs-1 text-warning"></i>
+                <h3 class="mt-2">{{ condecoracoes_count }}</h3>
+                <p class="text-muted">condecorações recebidas</p>
+                <a href="/obreiros/{{ obreiro.id }}/condecoracoes" class="btn btn-outline-warning">
+                    <i class="bi bi-eye"></i> Gerenciar
+                </a>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card shadow h-100">
+            <div class="card-header bg-danger text-white">
+                <h5 class="mb-0"><i class="bi bi-envelope-paper"></i> Comunicados</h5>
+            </div>
+            <div class="card-body text-center py-4">
+                <i class="bi bi-envelope-paper fs-1 text-danger"></i>
+                <h3 class="mt-2">{{ comunicados_count|default(0) }}</h3>
+                <p class="text-muted">comunicados registrados</p>
+                <a href="/obreiros/{{ obreiro.id }}/comunicados" class="btn btn-outline-danger">
+                    <i class="bi bi-eye"></i> Ver Histórico
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+        <!-- SEÇÃO: CARGOS OCUPADOS E DOCUMENTOS DO OBREIRO -->
+<div class="row mb-4">
+    <div class="col-md-6">
+        <div class="card shadow h-100">
+            <div class="card-header bg-secondary text-white">
+                <h5 class="mb-0"><i class="bi bi-journal"></i> Cargos Ocupados</h5>
+            </div>
+            <div class="card-body">
+                {% if cargos and cargos|length > 0 %}
+                    <div class="table-responsive">
+                        <table class="table table-sm">
+                            <thead>
+                                <tr>
+                                    <th>Cargo</th>
+                                    <th>Início</th>
+                                    <th>Fim</th>
+                                    {% if session.tipo == 'admin' %}<th></th>{% endif %}
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for cargo in cargos %}
+                                <tr>
+                                    <td>
+                                        <strong>{{ cargo.cargo_nome }}</strong><br>
+                                        <small class="text-muted">{{ cargo.sigla }}</small>
+                                    </td>
+                                    <td class="text-nowrap">{{ cargo.data_inicio.strftime('%d/%m/%Y') if cargo.data_inicio else '-' }}</td>
+                                    <td class="text-nowrap">
+                                        {% if cargo.data_fim %}
+                                            {{ cargo.data_fim.strftime('%d/%m/%Y') }}
+                                        {% else %}
+                                            <span class="badge bg-success">Atual</span>
+                                        {% endif %}
+                                    </td>
+                                    {% if session.tipo == 'admin' %}
+                                    <td class="text-end">
+                                        <a href="/obreiros/cargo/{{ cargo.id }}/remover" class="btn btn-sm btn-outline-danger" onclick="return confirm('Remover este cargo?')">
+                                            <i class="bi bi-trash"></i>
+                                        </a>
+                                    </td>
+                                    {% endif %}
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
                     </div>
-                    <div class="card-body text-center py-4">
-                        <i class="bi bi-award fs-1 text-warning"></i>
-                        <h3 class="mt-2">{{ condecoracoes_count }}</h3>
-                        <p class="text-muted">condecorações recebidas</p>
-                        <a href="/obreiros/{{ obreiro.id }}/condecoracoes" class="btn btn-outline-warning">
-                            <i class="bi bi-eye"></i> Gerenciar Condecorações
-                        </a>
+                {% else %}
+                    <div class="text-center text-muted py-3">
+                        <i class="bi bi-journal-x fs-1"></i>
+                        <p class="mb-0">Nenhum cargo ocupado</p>
                     </div>
-                    {% if ultimas_condecoracoes %}
-                    <div class="card-footer bg-white">
-                        <small class="text-muted">Últimas:</small>
-                        <div class="mt-1">
-                            {% for c in ultimas_condecoracoes[:2] %}
-                            <div class="d-inline-block me-2">
-                                <i class="bi {{ c.icone }}" style="color: {{ c.cor }}"></i>
-                                <small>{{ c.tipo_nome }}</small>
-                            </div>
+                {% endif %}
+
+                {% if session.tipo == 'admin' and cargos_disponiveis %}
+                <hr>
+                <form method="POST" action="/obreiros/{{ obreiro.id }}/cargo" class="row g-2">
+                    <div class="col-6">
+                        <select name="cargo_id" class="form-select form-select-sm" required>
+                            <option value="">Adicionar cargo...</option>
+                            {% for cargo in cargos_disponiveis %}
+                            <option value="{{ cargo.id }}">{{ cargo.nome }}</option>
                             {% endfor %}
-                        </div>
+                        </select>
                     </div>
-                    {% endif %}
-                </div>
+                    <div class="col-3">
+                        <input type="date" name="data_inicio" class="form-control form-control-sm" required>
+                    </div>
+                    <div class="col-3">
+                        <button type="submit" class="btn btn-success btn-sm w-100">
+                            <i class="bi bi-plus"></i> Adicionar
+                        </button>
+                    </div>
+                </form>
+                {% endif %}
             </div>
         </div>
+    </div>
 
-        <!-- SEÇÃO: CARGOS OCUPADOS E HISTÓRICO DE GRAUS -->
-        <div class="row mb-4">
-            <div class="col-md-6">
-                <div class="card shadow h-100">
-                    <div class="card-header bg-secondary text-white">
-                        <h5 class="mb-0"><i class="bi bi-journal"></i> Cargos Ocupados</h5>
-                    </div>
-                    <div class="card-body">
-                        {% if cargos and cargos|length > 0 %}
-                            <div class="table-responsive">
-                                <table class="table table-sm">
-                                    <thead>
-                                        <tr>
-                                            <th>Cargo</th>
-                                            <th>Início</th>
-                                            <th>Fim</th>
-                                            {% if session.tipo == 'admin' %}<th></th>{% endif %}
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        {% for cargo in cargos %}
-                                        <tr>
-                                            <td>
-                                                <strong>{{ cargo.cargo_nome }}</strong><br>
-                                                <small class="text-muted">{{ cargo.sigla }}</small>
-                                            </td>
-                                            <td class="text-nowrap">{{ cargo.data_inicio.strftime('%d/%m/%Y') if cargo.data_inicio else '-' }}</td>
-                                            <td class="text-nowrap">
-                                                {% if cargo.data_fim %}
-                                                    {{ cargo.data_fim.strftime('%d/%m/%Y') }}
-                                                {% else %}
-                                                    <span class="badge bg-success">Atual</span>
-                                                {% endif %}
-                                            </td>
-                                            {% if session.tipo == 'admin' %}
-                                            <td class="text-end">
-                                                <a href="/obreiros/cargo/{{ cargo.id }}/remover" class="btn btn-sm btn-outline-danger" onclick="return confirm('Remover este cargo?')">
-                                                    <i class="bi bi-trash"></i>
-                                                </a>
-                                            </td>
-                                            {% endif %}
-                                        </tr>
-                                        {% endfor %}
-                                    </tbody>
-                                </table>
-                            </div>
-                        {% else %}
-                            <div class="text-center text-muted py-3">
-                                <i class="bi bi-journal-x fs-1"></i>
-                                <p class="mb-0">Nenhum cargo ocupado</p>
-                            </div>
-                        {% endif %}
-
-                        {% if session.tipo == 'admin' and cargos_disponiveis %}
-                        <hr>
-                        <form method="POST" action="/obreiros/{{ obreiro.id }}/cargo" class="row g-2">
-                            <div class="col-6">
-                                <select name="cargo_id" class="form-select form-select-sm" required>
-                                    <option value="">Adicionar cargo...</option>
-                                    {% for cargo in cargos_disponiveis %}
-                                    <option value="{{ cargo.id }}">{{ cargo.nome }}</option>
-                                    {% endfor %}
-                                </select>
-                            </div>
-                            <div class="col-3">
-                                <input type="date" name="data_inicio" class="form-control form-control-sm" required>
-                            </div>
-                            <div class="col-3">
-                                <button type="submit" class="btn btn-success btn-sm w-100">
-                                    <i class="bi bi-plus"></i> Adicionar
-                                </button>
-                            </div>
-                        </form>
-                        {% endif %}
+    <div class="col-md-6">
+        <div class="card shadow h-100">
+            <div class="card-header bg-info text-white">
+                <h5 class="mb-0">
+                    <i class="bi bi-cloud-arrow-up"></i> Documentos do Obreiro
+                    <span class="badge bg-light text-dark ms-2" id="totalDocumentosVis">0</span>
+                </h5>
+            </div>
+            <div class="card-body">
+                <div id="listaDocumentosVis">
+                    <div class="text-center text-muted py-4" id="semDocumentosVis">
+                        <i class="bi bi-cloud-slash fs-1"></i>
+                        <p class="mb-0 mt-2">Nenhum documento enviado</p>
                     </div>
                 </div>
             </div>
-
-            <div class="col-md-6">
-                <div class="card shadow h-100">
-                    <div class="card-header bg-warning text-dark">
-                        <h5 class="mb-0"><i class="bi bi-graph-up"></i> Histórico de Graus</h5>
-                    </div>
-                    <div class="card-body">
-                        {% if historico_graus and historico_graus|length > 0 %}
-                            <div style="max-height: 300px; overflow-y: auto;">
-                                <table class="table table-sm">
-                                    <tbody>
-                                        {% for grau in historico_graus %}
-                                        <tr>
-                                            <td class="ps-0">
-                                                <i class="bi bi-star-fill text-warning"></i> 
-                                                <strong>
-                                                    {% if grau.grau_id and grau.grau_nome %}
-                                                        {{ grau.grau_nome }}
-                                                    {% else %}
-                                                        {% if grau.grau == 3 %}Mestre
-                                                        {% elif grau.grau == 2 %}Companheiro
-                                                        {% elif grau.grau == 1 %}Aprendiz
-                                                        {% elif grau.grau >= 4 %}
-                                                            {% if grau.grau == 4 %}Mestre Instalado
-                                                            {% elif grau.grau == 5 %}Arquiteto Real
-                                                            {% elif grau.grau == 6 %}Soberano Grande Inspetor Geral
-                                                            {% elif grau.grau == 7 %}Mestre Perfeito
-                                                            {% elif grau.grau == 8 %}Eleito dos Nove
-                                                            {% elif grau.grau == 9 %}Mestre da Maçonaria Real
-                                                            {% elif grau.grau == 10 %}Cavaleiro Rosa-Cruz
-                                                            {% elif grau.grau == 11 %}Cavaleiro Kadosch
-                                                            {% elif grau.grau == 12 %}Grande Escocês
-                                                            {% else %}Grau Superior {{ grau.grau }}
-                                                            {% endif %}
-                                                        {% else %}Grau {{ grau.grau }}
-                                                        {% endif %}
-                                                    {% endif %}
-                                                </strong>
-                                                {% if grau.observacao %}
-                                                <br><small class="text-muted">{{ grau.observacao }}</small>
-                                                {% endif %}
-                                            </td>
-                                            <td class="text-end text-nowrap">
-                                                {{ grau.data.strftime('%d/%m/%Y') if grau.data else '-' }}
-                                            </td>
-                                        </tr>
-                                        {% endfor %}
-                                    </tbody>
-                                </table>
-                            </div>
-                        {% else %}
-                            <div class="text-center text-muted py-3">
-                                <i class="bi bi-clock-history fs-1"></i>
-                                <p class="mb-0">Nenhum histórico registrado</p>
-                            </div>
-                        {% endif %}
-
-                        {% if session.tipo == 'admin' %}
-                        <hr>
-                        <form method="POST" action="/obreiros/{{ obreiro.id }}/grau" class="row g-2">
-                            <div class="col-5">
-                                <select name="grau_id" class="form-select form-select-sm" required>
-                                    <option value="">Registrar grau...</option>
-                                    {% for grau in graus_disponiveis %}
-                                    <option value="{{ grau.id }}">{{ grau.nome }}</option>
-                                    {% endfor %}
-                                </select>
-                            </div>
-                            <div class="col-4">
-                                <input type="date" name="data" class="form-control form-control-sm" required>
-                            </div>
-                            <div class="col-3">
-                                <button type="submit" class="btn btn-primary btn-sm w-100">
-                                    <i class="bi bi-save"></i>
-                                </button>
-                            </div>
-                            <div class="col-12 mt-1">
-                                <input type="text" name="observacao" class="form-control form-control-sm" placeholder="Observação">
-                            </div>
-                        </form>
-                        {% endif %}
-                    </div>
-                </div>
+            {% if session.tipo == 'admin' or session.user_id == obreiro.id %}
+            <div class="card-footer bg-white">
+                <a href="/obreiros/{{ obreiro.id }}/editar#documentos" class="btn btn-sm btn-info">
+                    <i class="bi bi-cloud-upload"></i> Gerenciar Documentos
+                </a>
             </div>
+            {% endif %}
         </div>
+    </div>
+</div>
 
-        <!-- SEÇÃO: DOCUMENTOS DO OBREIRO (ÚLTIMO CARD) -->
-        <div class="row mb-4">
-            <div class="col-12">
-                <div class="card shadow">
-                    <div class="card-header bg-info text-white">
-                        <h5 class="mb-0">
-                            <i class="bi bi-cloud-arrow-up"></i> Documentos do Obreiro
-                            <span class="badge bg-light text-dark ms-2" id="totalDocumentosVis">0</span>
-                        </h5>
-                    </div>
-                    <div class="card-body">
-                        <div id="listaDocumentosVis">
-                            <div class="text-center text-muted py-4" id="semDocumentosVis">
-                                <i class="bi bi-cloud-slash fs-1"></i>
-                                <p class="mb-0 mt-2">Nenhum documento enviado</p>
-                            </div>
-                        </div>
-                    </div>
-                    {% if session.tipo == 'admin' or session.user_id == obreiro.id %}
-                    <div class="card-footer bg-white">
-                        <a href="/obreiros/{{ obreiro.id }}/editar#documentos" class="btn btn-sm btn-info">
-                            <i class="bi bi-cloud-upload"></i> Gerenciar Documentos
-                        </a>
-                    </div>
-                    {% endif %}
-                </div>
-            </div>
-        </div>
 
         <div class="mt-4 text-center">
             <a href="/obreiros" class="btn btn-outline-secondary">
