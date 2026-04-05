@@ -2060,6 +2060,50 @@ def download_material(material_id):
 def dashboard():
     try:
         cursor, conn = get_db()
+        
+        # ========== MEU CARGO ATUAL ==========
+        usuario_id = session['user_id']
+        cursor.execute("""
+            SELECT c.nome as cargo_nome, oc.data_inicio
+            FROM ocupacao_cargos oc
+            JOIN cargos c ON oc.cargo_id = c.id
+            WHERE oc.obreiro_id = %s AND oc.ativo = 1
+            ORDER BY oc.data_inicio DESC
+            LIMIT 1
+        """, (usuario_id,))
+        meu_cargo_row = cursor.fetchone()
+        meu_cargo = meu_cargo_row['cargo_nome'] if meu_cargo_row else None
+        meu_cargo_data_inicio = meu_cargo_row['data_inicio'] if meu_cargo_row else None
+        
+        # ========== CARGOS OCUPADOS (LISTA GERAL) ==========
+        cursor.execute("""
+            SELECT oc.*, c.nome as cargo_nome, u.nome_completo as obreiro_nome, u.id as obreiro_id
+            FROM ocupacao_cargos oc
+            JOIN cargos c ON oc.cargo_id = c.id
+            JOIN usuarios u ON oc.obreiro_id = u.id
+            WHERE oc.ativo = 1
+            ORDER BY oc.data_inicio DESC
+            LIMIT 10
+        """)
+        cargos_ocupados = cursor.fetchall()
+        
+        # ========== FAMILIARES E CONDECORAÇÕES ==========
+        cursor.execute("SELECT COUNT(*) as total FROM familiares")
+        total_familiares = cursor.fetchone()["total"]
+        
+        cursor.execute("SELECT COUNT(*) as total FROM condecoracoes_obreiro")
+        total_condecoracoes = cursor.fetchone()["total"]
+        
+        # ========== DOCUMENTOS RECENTES ==========
+        cursor.execute("""
+            SELECT d.*, u.nome_completo as obreiro_nome, u.usuario as obreiro_usuario
+            FROM documentos_obreiro d
+            JOIN usuarios u ON d.obreiro_id = u.id
+            ORDER BY d.data_upload DESC
+            LIMIT 10
+        """)
+        documentos_recentes = cursor.fetchall()
+        
         cursor.execute("SELECT * FROM candidatos ORDER BY data_criacao DESC")
         candidatos = cursor.fetchall()
         cursor.execute("""
@@ -2235,6 +2279,12 @@ def dashboard():
             sindicantes=sindicantes,
             pareceres_conclusivos=pareceres_conclusivos,
             ultimos_avisos=ultimos_avisos,
+            meu_cargo=meu_cargo,
+            meu_cargo_data_inicio=meu_cargo_data_inicio,
+            cargos_ocupados=cargos_ocupados,
+            total_familiares=total_familiares,
+            total_condecoracoes=total_condecoracoes,
+            documentos_recentes=documentos_recentes,
             now=datetime.now()
         )
     except Exception as e:

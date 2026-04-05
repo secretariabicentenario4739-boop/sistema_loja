@@ -607,98 +607,68 @@
         <!-- ============================================ -->
         <!-- SEÇÃO: CARGOS OCUPADOS E PRÓXIMAS REUNIÕES -->
         <!-- ============================================ -->
-        <div class="row g-4 mb-4">
-            <div class="col-md-6">
-                <div class="card border-0 shadow-lg rounded-4 h-100">
-                    <div class="card-header bg-secondary text-white py-3 border-0">
-                        <h5 class="mb-0 fw-bold">
-                            <i class="bi bi-briefcase me-2"></i>
-                            Cargos Ocupados
-                        </h5>
-                    </div>
-                    <div class="card-body">
-                        {% if cargos_ocupados and cargos_ocupados|length > 0 %}
-                            <div class="list-group list-group-flush">
-                                {% for cargo in cargos_ocupados[:5] %}
-                                <div class="list-group-item border-0 px-0 py-3">
-                                    <div class="d-flex justify-content-between align-items-center">
-                                        <div>
-                                            <h6 class="mb-1 fw-bold">{{ cargo.cargo_nome }}</h6>
-                                            <small class="text-muted">
-                                                <i class="bi bi-person-circle me-1"></i> {{ cargo.obreiro_nome }}
-                                            </small>
-                                        </div>
-                                        <span class="badge bg-success rounded-pill">Atual</span>
-                                    </div>
-                                </div>
-                                {% endfor %}
-                            </div>
-                        {% else %}
-                            <div class="text-center py-5">
-                                <i class="bi bi-briefcase fs-1 text-muted"></i>
-                                <p class="mt-2 text-muted mb-0">Nenhum cargo ocupado no momento</p>
-                            </div>
-                        {% endif %}
-                    </div>
-                </div>
+  <!-- Seção 5: Cargos Ocupados e Próximas Reuniões -->
+<div class="row g-4 mb-4">
+    <div class="col-md-6">
+        <div class="card shadow h-100">
+            <div class="card-header bg-secondary text-white">
+                <h5 class="mb-0">
+                    <i class="bi bi-briefcase"></i> Cargos Ocupados
+                    <span class="badge bg-light text-dark ms-2">{{ cargos_ocupados|length if cargos_ocupados else 0 }}</span>
+                </h5>
             </div>
-            <div class="col-md-6">
-                <div class="card border-0 shadow-lg rounded-4 h-100">
-                    <div class="card-header bg-primary text-white py-3 border-0">
-                        <h5 class="mb-0 fw-bold">
-                            <i class="bi bi-calendar-week me-2"></i>
-                            Próximas Reuniões
-                        </h5>
+            <div class="card-body">
+                {% if cargos_ocupados and cargos_ocupados|length > 0 %}
+                    <div class="list-group list-group-flush">
+                        {% for cargo in cargos_ocupados %}
+                        <div class="list-group-item border-0 px-0 py-3">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <h6 class="mb-1 fw-bold">{{ cargo.cargo_nome }}</h6>
+                                    <small class="text-muted">
+                                        <i class="bi bi-person-circle me-1"></i> 
+                                        <a href="/obreiros/{{ cargo.obreiro_id }}" class="text-decoration-none">
+                                            {{ cargo.obreiro_nome }}
+                                        </a>
+                                    </small>
+                                    <br>
+                                    <small class="text-muted">
+                                        <i class="bi bi-calendar me-1"></i> 
+                                        Desde: {{ cargo.data_inicio.strftime('%d/%m/%Y') if cargo.data_inicio else '-' }}
+                                    </small>
+                                </div>
+                                <span class="badge bg-success rounded-pill">Atual</span>
+                            </div>
+                        </div>
+                        {% endfor %}
                     </div>
-                    <div class="card-body">
-                        {% if proximas_reunioes %}
-                            <div class="list-group list-group-flush">
-                                {% for r in proximas_reunioes[:5] %}
-                                <a href="/reunioes/{{ r.id }}" class="list-group-item list-group-item-action border-0 px-0 py-3">
-                                    <div class="d-flex justify-content-between align-items-start">
-                                        <div>
-                                            <h6 class="mb-1 fw-bold">{{ r.titulo }}</h6>
-                                            <small class="text-muted">
-                                                <i class="bi bi-calendar me-1"></i> {{ r.data.strftime('%d/%m/%Y') if r.data else '-' }}
-                                                <i class="bi bi-clock ms-2 me-1"></i> {{ r.hora_inicio.strftime('%H:%M') if r.hora_inicio else '-' }}
-                                            </small>
-                                            {% if r.local %}
-                                            <br><small class="text-muted">
-                                                <i class="bi bi-geo-alt me-1"></i> {{ r.local }}
-                                            </small>
-                                            {% endif %}
-                                        </div>
-                                        <i class="bi bi-chevron-right text-muted"></i>
-                                    </div>
-                                </a>
-                                {% endfor %}
-                            </div>
-                            {% if proxima_reuniao %}
-                            <div class="mt-3 alert alert-info rounded-4 mb-0">
-                                <i class="bi bi-bell-fill me-2"></i>
-                                <strong>Próxima reunião:</strong> {{ proxima_reuniao.data.strftime('%d/%m/%Y') if proxima_reuniao.data else '-' }}
-                            </div>
-                            {% endif %}
-                        {% else %}
-                            <div class="text-center py-5">
-                                <i class="bi bi-calendar-x fs-1 text-muted"></i>
-                                <p class="mt-2 text-muted mb-0">Nenhuma reunião agendada</p>
-                                {% if session.tipo == 'admin' %}
-                                <a href="/reunioes/nova" class="btn btn-primary btn-sm mt-3 rounded-pill">
-                                    <i class="bi bi-plus-circle"></i> Agendar Reunião
-                                </a>
-                                {% endif %}
-                            </div>
-                        {% endif %}
+                {% else %}
+                    <div class="text-center py-5">
+                        <i class="bi bi-briefcase fs-1 text-muted"></i>
+                        <p class="mt-2 text-muted mb-0">Nenhum cargo ocupado no momento</p>
                     </div>
-                </div>
+                {% endif %}
             </div>
         </div>
+    </div>
+    <div class="col-md-6">
+        <div class="card shadow h-100">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0"><i class="bi bi-calendar-week"></i> Próximas Reuniões</h5>
+            </div>
+            <div class="card-body">
+                <!-- conteúdo das próximas reuniões -->
+            </div>
+        </div>
+    </div>
+</div>
 
-        <!-- ============================================ -->
-        <!-- SEÇÃO: DOCUMENTOS RECENTES -->
-        <!-- ============================================ -->
-        <div class="card border-0 shadow-lg rounded-4 overflow-hidden">
+<!-- ============================================ -->
+<!-- SEÇÃO: DOCUMENTOS RECENTES -->
+<!-- ============================================ -->
+<div class="row">
+    <div class="col-12">
+        <div class="card border-0 shadow-lg rounded-4 overflow-hidden mb-4">
             <div class="card-header bg-info text-white py-3 border-0">
                 <div class="d-flex justify-content-between align-items-center">
                     <div>
@@ -753,7 +723,6 @@
                 {% endif %}
             </div>
         </div>
-
     </div>
 </div>
 
