@@ -4046,25 +4046,49 @@ def serve_foto(filename):
 @admin_required
 def atribuir_cargo(id):
     cursor, conn = get_db()
+    
     cargo_id = request.form.get("cargo_id")
     data_inicio = request.form.get("data_inicio")
     gestao = request.form.get("gestao")
+    
     if not cargo_id or not data_inicio:
         flash("Cargo e data de início são obrigatórios", "danger")
         return_connection(conn)
         return redirect(f"/obreiros/{id}")
+    
     try:
+        # Buscar dados do obreiro e cargo
+        cursor.execute("SELECT id, nome_completo FROM usuarios WHERE id = %s", (id,))
+        obreiro = cursor.fetchone()
+        
+        cursor.execute("SELECT id, nome FROM cargos WHERE id = %s AND ativo = 1", (cargo_id,))
+        cargo = cursor.fetchone()
+        
+        if not cargo:
+            flash("Cargo não encontrado ou inativo!", "danger")
+            return_connection(conn)
+            return redirect(f"/obreiros/{id}")
+        
         cursor.execute("""
             INSERT INTO ocupacao_cargos (obreiro_id, cargo_id, data_inicio, gestao, ativo)
             VALUES (%s, %s, %s, %s, 1)
+            RETURNING id
         """, (id, cargo_id, data_inicio, gestao))
+        
+        novo_id = cursor.fetchone()['id']
         conn.commit()
-        registrar_log("atribuir_cargo", "cargo", cargo_id, dados_novos={"obreiro_id": id, "cargo_id": cargo_id})
-        flash("Cargo atribuído com sucesso!", "success")
+        
+        registrar_log("atribuir_cargo", "cargo", cargo_id, 
+                     dados_novos={"ocupacao_id": novo_id, "obreiro_id": id, "obreiro_nome": obreiro['nome_completo'], 
+                                  "cargo_id": cargo_id, "cargo_nome": cargo['nome'], "data_inicio": data_inicio, "gestao": gestao})
+        
+        flash(f"Cargo '{cargo['nome']}' atribuído com sucesso!", "success")
+        
     except Exception as e:
         print(f"Erro ao atribuir cargo: {e}")
         conn.rollback()
         flash(f"Erro ao atribuir cargo: {str(e)}", "danger")
+    
     return_connection(conn)
     return redirect(f"/obreiros/{id}")
 
@@ -4073,22 +4097,37 @@ def atribuir_cargo(id):
 def remover_cargo(id):
     cursor, conn = get_db()
     try:
-        cursor.execute("SELECT obreiro_id, cargo_id FROM ocupacao_cargos WHERE id = %s", (id,))
+        # Buscar dados do cargo antes de remover
+        cursor.execute("""
+            SELECT oc.*, c.nome as cargo_nome, u.nome_completo as obreiro_nome
+            FROM ocupacao_cargos oc
+            JOIN cargos c ON oc.cargo_id = c.id
+            JOIN usuarios u ON oc.obreiro_id = u.id
+            WHERE oc.id = %s
+        """, (id,))
         cargo = cursor.fetchone()
+        
         if not cargo:
             flash("Cargo não encontrado", "danger")
             return_connection(conn)
             return redirect("/obreiros")
+        
         obreiro_id = cargo["obreiro_id"]
-        cargo_id = cargo["cargo_id"]
+        
         cursor.execute("UPDATE ocupacao_cargos SET ativo = 0 WHERE id = %s", (id,))
         conn.commit()
-        registrar_log("remover_cargo", "cargo", cargo_id, dados_anteriores={"obreiro_id": obreiro_id})
+        
+        registrar_log("remover_cargo", "cargo", cargo["cargo_id"], 
+                     dados_anteriores={"obreiro_id": obreiro_id, "obreiro_nome": cargo['obreiro_nome'], 
+                                      "cargo_nome": cargo['cargo_nome'], "data_inicio": str(cargo['data_inicio'])})
+        
         flash("Cargo removido com sucesso!", "success")
+        
     except Exception as e:
         print(f"Erro ao remover cargo: {e}")
         conn.rollback()
         flash(f"Erro ao remover cargo: {str(e)}", "danger")
+    
     return_connection(conn)
     return redirect(f"/obreiros/{obreiro_id}")
 
@@ -4099,29 +4138,45 @@ def registrar_grau(id):
     grau_id = request.form.get("grau_id")
     data = request.form.get("data")
     observacao = request.form.get("observacao")
+    
     if not grau_id or not data:
         flash("Grau e data são obrigatórios", "danger")
         return_connection(conn)
         return redirect(f"/obreiros/{id}")
+    
     try:
+        # Buscar dados antigos do obreiro
+        cursor.execute("SELECT id, nome_completo, usuario, grau_atual FROM usuarios WHERE id = %s", (id,))
+        obreiro_antigo = cursor.fetchone()
+        
         cursor.execute("SELECT id, nome, nivel FROM graus WHERE id = %s", (grau_id,))
         grau = cursor.fetchone()
+        
         if not grau:
             flash("Grau não encontrado", "danger")
             return_connection(conn)
             return redirect(f"/obreiros/{id}")
+        
         cursor.execute("""
             INSERT INTO historico_graus (obreiro_id, grau, grau_id, data, observacao)
             VALUES (%s, %s, %s, %s, %s)
         """, (id, grau['nivel'], grau_id, data, observacao))
+        
         cursor.execute("UPDATE usuarios SET grau_atual = %s WHERE id = %s", (grau['nivel'], id))
         conn.commit()
-        registrar_log("registrar_grau", "obreiro", id, dados_novos={"grau": grau['nome'], "data": data})
+        
+        # Registrar log com detalhes da alteração
+        registrar_log("registrar_grau", "obreiro", id, 
+                     dados_anteriores={"grau_anterior": obreiro_antigo['grau_atual'], "nome": obreiro_antigo['nome_completo']},
+                     dados_novos={"grau_novo": grau['nivel'], "grau_nome": grau['nome'], "data": data, "observacao": observacao})
+        
         flash(f"Grau '{grau['nome']}' registrado com sucesso!", "success")
+        
     except Exception as e:
         print(f"Erro ao registrar grau: {e}")
         conn.rollback()
         flash(f"Erro ao registrar grau: {str(e)}", "danger")
+    
     return_connection(conn)
     return redirect(f"/obreiros/{id}")
 
@@ -5484,28 +5539,38 @@ def alterar_status_reuniao(id):
     try:
         cursor, conn = get_db()
         novo_status = request.form.get("status")
+        
         if not novo_status:
             flash("Status não informado", "danger")
             return_connection(conn)
             return redirect(f"/reunioes/{id}")
+        
         status_validos = ['agendada', 'realizada', 'cancelada']
         if novo_status not in status_validos:
             flash("Status inválido", "danger")
             return_connection(conn)
             return redirect(f"/reunioes/{id}")
-        cursor.execute("SELECT * FROM reunioes WHERE id = %s", (id,))
+        
+        # Buscar dados antigos
+        cursor.execute("SELECT id, titulo, status FROM reunioes WHERE id = %s", (id,))
         reuniao_antiga = cursor.fetchone()
+        
         if not reuniao_antiga:
             flash("Reunião não encontrada", "danger")
             return_connection(conn)
             return redirect("/reunioes")
+        
         cursor.execute("UPDATE reunioes SET status = %s WHERE id = %s", (novo_status, id))
         conn.commit()
-        registrar_log("alterar_status", "reuniao", id, dados_anteriores={"status": reuniao_antiga["status"]},
-                     dados_novos={"status": novo_status})
+        
+        registrar_log("alterar_status", "reuniao", id, 
+                     dados_anteriores={"status": reuniao_antiga["status"], "titulo": reuniao_antiga["titulo"]},
+                     dados_novos={"status": novo_status, "titulo": reuniao_antiga["titulo"]})
+        
         flash(f"Status da reunião alterado para: {novo_status}", "success")
         return_connection(conn)
         return redirect(f"/reunioes/{id}")
+        
     except Exception as e:
         print(f"ERRO ao alterar status: {e}")
         if conn:
