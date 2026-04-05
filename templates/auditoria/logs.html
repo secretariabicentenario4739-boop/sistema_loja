@@ -126,12 +126,11 @@
                                     <small class="text-muted">{{ log.ip or '-' }}</small>
                                 </td>
                                 <td>
-                                    <button type="button" class="btn btn-sm btn-outline-info" 
-                                            data-bs-toggle="modal" 
-                                            data-bs-target="#modalLog{{ log.id }}"
-                                            title="Ver detalhes">
-                                        <i class="bi bi-eye"></i> Detalhes
-                                    </button>
+                                    <td>
+    <a href="/auditoria/{{ log.id }}" class="btn btn-sm btn-outline-info" title="Ver detalhes">
+        <i class="bi bi-eye"></i> Detalhes
+    </a>
+</td>
                                 </td>
                             </tr>
                             {% else %}

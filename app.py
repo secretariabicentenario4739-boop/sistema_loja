@@ -725,34 +725,77 @@ def allowed_file(filename):
 def allowed_foto(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS_FOTOS
 
+from datetime import datetime
+
+# =============================
+# FUNÇÃO DE LOG DE AUDITORIA
+# =============================
+import json
+
 def registrar_log(acao, entidade=None, entidade_id=None, dados_anteriores=None, dados_novos=None):
-    if "user_id" not in session:
-        return
+    """Registra qualquer ação no log de auditoria"""
+    cursor, conn = None, None
     try:
+        print(f"🔍 [LOG] Iniciando registro: acao={acao}, entidade={entidade}, id={entidade_id}")
+        
         cursor, conn = get_db()
-        if dados_anteriores and isinstance(dados_anteriores, dict):
-            dados_anteriores = json.dumps(dados_anteriores, ensure_ascii=False, default=str)
-        if dados_novos and isinstance(dados_novos, dict):
-            dados_novos = json.dumps(dados_novos, ensure_ascii=False, default=str)
+        
+        # Pega usuário da sessão
+        usuario_id = session.get('user_id')
+        usuario_nome = session.get('nome_completo') or session.get('usuario') or 'Sistema'
+        
+        # 🔥 CORREÇÃO: Converter dict para JSON sem escapes
+        dados_ant = None
+        dados_nov = None
+        
+        if dados_anteriores:
+            if isinstance(dados_anteriores, dict):
+                # Usa json.dumps com ensure_ascii=False e sem escapes
+                dados_ant = json.dumps(dados_anteriores, ensure_ascii=False, indent=2)
+            else:
+                dados_ant = str(dados_anteriores)
+                
+        if dados_novos:
+            if isinstance(dados_novos, dict):
+                # Usa json.dumps com ensure_ascii=False e sem escapes
+                dados_nov = json.dumps(dados_novos, ensure_ascii=False, indent=2)
+            else:
+                dados_nov = str(dados_novos)
+        
+        print(f"🔍 [LOG] Dados novos (JSON): {dados_nov}")
+        
         cursor.execute("""
             INSERT INTO logs_auditoria 
-            (usuario_id, usuario_nome, acao, entidade, entidade_id, dados_anteriores, dados_novos, ip, user_agent)
-            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
+            (usuario_id, usuario_nome, acao, entidade, entidade_id, 
+             dados_anteriores, dados_novos, ip, data_hora)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, CURRENT_TIMESTAMP)
+            RETURNING id
         """, (
-            session["user_id"],
-            session.get("nome_completo", session["usuario"]),
+            usuario_id,
+            usuario_nome,
             acao,
             entidade,
             entidade_id,
-            dados_anteriores,
-            dados_novos,
-            request.remote_addr,
-            request.headers.get('User-Agent', '')[:500]
+            dados_ant,
+            dados_nov,
+            request.remote_addr
         ))
+        
+        log_id = cursor.fetchone()['id']
         conn.commit()
-        return_connection(conn)
+        print(f"✅ [LOG] SUCESSO! ID={log_id}")
+        return True
+        
     except Exception as e:
-        print(f"Erro ao registrar log: {e}")
+        print(f"❌ [LOG] ERRO COMPLETO: {type(e).__name__}: {e}")
+        import traceback
+        traceback.print_exc()
+        if conn:
+            conn.rollback()
+        return False
+    finally:
+        if conn:
+            return_connection(conn)
 
 def redimensionar_foto(caminho_origem, tamanho=(300, 300)):
     try:
@@ -7903,6 +7946,440 @@ def baixar_parecer_conclusivo(id):
         return redirect("/dashboard")
 
 # =============================
+# ROTAS DE DOCUMENTOS DO CANDIDATO
+# =============================
+
+@app.route("/candidatos/<int:candidato_id>/documentos")
+@login_required
+def listar_documentos_candidato(candidato_id):
+    """Lista documentos do candidato e tipos obrigatórios"""
+    cursor, conn = get_db()
+    
+    # Verificar permissão (admin ou sindicante)
+    if session.get('tipo') not in ['admin', 'sindicante']:
+        flash("Permissão negada!", "danger")
+        return redirect("/candidatos")
+    
+    # Buscar candidato
+    cursor.execute("SELECT id, nome FROM candidatos WHERE id = %s", (candidato_id,))
+    candidato = cursor.fetchone()
+    
+    if not candidato:
+        flash("Candidato não encontrado!", "danger")
+        return_connection(conn)
+        return redirect("/candidatos")
+    
+    # Buscar tipos de documentos obrigatórios
+    cursor.execute("""
+        SELECT * FROM tipos_documentos_candidato 
+        WHERE ativo = 1 
+        ORDER BY ordem
+    """)
+    tipos_documentos = cursor.fetchall()
+    
+    # Buscar documentos já enviados
+    cursor.execute("""
+        SELECT d.*, t.nome as tipo_nome, u.nome_completo as enviado_por_nome,
+               a.nome_completo as aprovado_por_nome
+        FROM documentos_candidato d
+        JOIN tipos_documentos_candidato t ON d.tipo_documento_id = t.id
+        LEFT JOIN usuarios u ON d.enviado_por = u.id
+        LEFT JOIN usuarios a ON d.aprovado_por = a.id
+        WHERE d.candidato_id = %s
+        ORDER BY d.data_envio DESC
+    """, (candidato_id,))
+    documentos = cursor.fetchall()
+    
+    # Mapear documentos enviados por tipo
+    documentos_map = {d['tipo_documento_id']: d for d in documentos}
+    
+    # Calcular progresso
+    total_obrigatorios = sum(1 for t in tipos_documentos if t['obrigatorio'] == 1)
+    total_enviados = sum(1 for d in documentos if d['status'] == 'aprovado' and 
+                        any(t['id'] == d['tipo_documento_id'] and t['obrigatorio'] == 1 
+                            for t in tipos_documentos))
+    
+    percentual = int((total_enviados / total_obrigatorios * 100)) if total_obrigatorios > 0 else 0
+    
+    return_connection(conn)
+    
+    return render_template("candidatos/documentos.html",
+                          candidato=candidato,
+                          tipos_documentos=tipos_documentos,
+                          documentos_map=documentos_map,
+                          total_obrigatorios=total_obrigatorios,
+                          total_enviados=total_enviados,
+                          percentual=percentual)
+
+
+@app.route("/candidatos/<int:candidato_id>/documentos/upload/<int:tipo_id>", methods=["POST"])
+@login_required
+def upload_documento_candidato(candidato_id, tipo_id):
+    """Upload de documento do candidato"""
+    cursor, conn = get_db()
+    
+    # Verificar permissão
+    if session.get('tipo') not in ['admin', 'sindicante']:
+        flash("Permissão negada!", "danger")
+        return redirect(f"/candidatos/{candidato_id}/documentos")
+    
+    if 'arquivo' not in request.files:
+        flash("Nenhum arquivo selecionado!", "danger")
+        return redirect(f"/candidatos/{candidato_id}/documentos")
+    
+    arquivo = request.files['arquivo']
+    
+    if arquivo.filename == '':
+        flash("Nenhum arquivo selecionado!", "danger")
+        return redirect(f"/candidatos/{candidato_id}/documentos")
+    
+    # Validar tipo de arquivo
+    extensao = arquivo.filename.rsplit('.', 1)[1].lower() if '.' in arquivo.filename else ''
+    allowed_extensions = ['pdf', 'jpg', 'jpeg', 'png']
+    
+    if extensao not in allowed_extensions:
+        flash(f"Tipo de arquivo não permitido. Use: {', '.join(allowed_extensions)}", "danger")
+        return redirect(f"/candidatos/{candidato_id}/documentos")
+    
+    try:
+        import cloudinary.uploader
+        from werkzeug.utils import secure_filename
+        
+        # Buscar tipo do documento
+        cursor.execute("SELECT nome FROM tipos_documentos_candidato WHERE id = %s", (tipo_id,))
+        tipo_doc = cursor.fetchone()
+        
+        if not tipo_doc:
+            flash("Tipo de documento inválido!", "danger")
+            return redirect(f"/candidatos/{candidato_id}/documentos")
+        
+        # Upload para Cloudinary
+        nome_arquivo = secure_filename(arquivo.filename)
+        upload_result = cloudinary.uploader.upload(
+            arquivo,
+            folder=f"candidatos/{candidato_id}/documentos",
+            resource_type="auto",
+            use_filename=True,
+            unique_filename=True
+        )
+        
+        url_arquivo = upload_result.get('secure_url')
+        public_id = upload_result.get('public_id')
+        tamanho = upload_result.get('bytes', 0)
+        
+        # Verificar se já existe documento deste tipo
+        cursor.execute("""
+            SELECT id FROM documentos_candidato 
+            WHERE candidato_id = %s AND tipo_documento_id = %s
+        """, (candidato_id, tipo_id))
+        
+        existing = cursor.fetchone()
+        
+        if existing:
+            # Atualizar documento existente
+            cursor.execute("""
+                UPDATE documentos_candidato SET
+                    nome_arquivo = %s,
+                    caminho_arquivo = %s,
+                    tipo_arquivo = %s,
+                    tamanho = %s,
+                    status = 'pendente',
+                    data_envio = CURRENT_TIMESTAMP,
+                    enviado_por = %s,
+                    observacao = NULL,
+                    data_aprovacao = NULL,
+                    aprovado_por = NULL
+                WHERE id = %s
+            """, (public_id, url_arquivo, extensao, tamanho, session['user_id'], existing['id']))
+            
+            flash(f"Documento '{tipo_doc['nome']}' atualizado com sucesso!", "success")
+        else:
+            # Inserir novo documento
+            cursor.execute("""
+                INSERT INTO documentos_candidato 
+                (candidato_id, tipo_documento_id, nome_arquivo, caminho_arquivo, 
+                 tipo_arquivo, tamanho, enviado_por)
+                VALUES (%s, %s, %s, %s, %s, %s, %s)
+            """, (candidato_id, tipo_id, public_id, url_arquivo, extensao, tamanho, session['user_id']))
+            
+            flash(f"Documento '{tipo_doc['nome']}' enviado com sucesso!", "success")
+        
+        conn.commit()
+        
+        # Registrar log
+        registrar_log("upload_documento", "documentos_candidato", candidato_id,
+                     dados_novos={"tipo_documento": tipo_doc['nome'], "candidato_id": candidato_id})
+        
+    except Exception as e:
+        print(f"Erro no upload: {e}")
+        flash(f"Erro ao enviar documento: {str(e)}", "danger")
+        if conn:
+            conn.rollback()
+    
+    return_connection(conn)
+    return redirect(f"/candidatos/{candidato_id}/documentos")
+
+
+@app.route("/api/documentos-candidato/<int:doc_id>/aprovar", methods=["POST"])
+@login_required
+def aprovar_documento_candidato(doc_id):
+    """Aprovar ou rejeitar documento do candidato"""
+    cursor, conn = get_db()
+    
+    if session.get('tipo') not in ['admin', 'sindicante']:
+        return jsonify({'success': False, 'error': 'Permissão negada'}), 403
+    
+    data = request.get_json()
+    status = data.get('status')  # 'aprovado' ou 'rejeitado'
+    observacao = data.get('observacao', '')
+    
+    try:
+        cursor.execute("""
+            UPDATE documentos_candidato SET
+                status = %s,
+                observacao = %s,
+                data_aprovacao = CURRENT_TIMESTAMP,
+                aprovado_por = %s
+            WHERE id = %s
+        """, (status, observacao, session['user_id'], doc_id))
+        
+        conn.commit()
+        
+        return jsonify({'success': True, 'message': f'Documento {status} com sucesso!'})
+        
+    except Exception as e:
+        print(f"Erro ao aprovar documento: {e}")
+        return jsonify({'success': False, 'error': str(e)}), 500
+    finally:
+        return_connection(conn)
+
+
+@app.route("/api/documentos-candidato/<int:doc_id>/excluir", methods=["DELETE"])
+@login_required
+def excluir_documento_candidato(doc_id):
+    """Excluir documento do candidato"""
+    cursor, conn = get_db()
+    
+    if session.get('tipo') not in ['admin', 'sindicante']:
+        return jsonify({'success': False, 'error': 'Permissão negada'}), 403
+    
+    try:
+        # Buscar documento
+        cursor.execute("""
+            SELECT caminho_arquivo, nome_arquivo FROM documentos_candidato WHERE id = %s
+        """, (doc_id,))
+        doc = cursor.fetchone()
+        
+        if doc:
+            # Excluir do Cloudinary
+            import cloudinary.uploader
+            cloudinary.uploader.destroy(doc['nome_arquivo'])
+        
+        cursor.execute("DELETE FROM documentos_candidato WHERE id = %s", (doc_id,))
+        conn.commit()
+        
+        return jsonify({'success': True, 'message': 'Documento excluído com sucesso!'})
+        
+    except Exception as e:
+        print(f"Erro ao excluir documento: {e}")
+        return jsonify({'success': False, 'error': str(e)}), 500
+    finally:
+        return_connection(conn)
+
+# =============================
+# ROTAS DE CHECKLIST DIGITAL
+# =============================
+
+@app.route("/candidatos/<int:candidato_id>/checklist")
+@login_required
+def checklist_candidato(candidato_id):
+    """Visualiza o checklist do candidato"""
+    cursor, conn = get_db()
+    
+    # Verificar permissão (admin, sindicante ou mestre)
+    usuario_tipo = session.get('tipo', '')
+    usuario_grau = session.get('grau_atual', 0)
+    
+    if usuario_tipo not in ['admin', 'sindicante'] and usuario_grau < 3:
+        flash("Permissão negada!", "danger")
+        return redirect("/candidatos")
+    
+    # Buscar candidato
+    cursor.execute("SELECT id, nome, status FROM candidatos WHERE id = %s", (candidato_id,))
+    candidato = cursor.fetchone()
+    
+    if not candidato:
+        flash("Candidato não encontrado!", "danger")
+        return_connection(conn)
+        return redirect("/candidatos")
+    
+    # Buscar categorias do checklist
+    cursor.execute("""
+        SELECT * FROM categorias_checklist 
+        WHERE ativo = 1 
+        ORDER BY ordem
+    """)
+    categorias = cursor.fetchall()
+    
+    # Buscar itens do checklist por categoria
+    checklist = {}
+    for cat in categorias:
+        cursor.execute("""
+            SELECT i.*, 
+                   COALESCE(p.status, 'pendente') as status,
+                   p.observacao as progresso_obs,
+                   p.concluido_por,
+                   p.data_conclusao,
+                   u.nome_completo as concluido_por_nome,
+                   p.data_limite
+            FROM itens_checklist i
+            LEFT JOIN progresso_checklist p ON i.id = p.item_id AND p.candidato_id = %s
+            LEFT JOIN usuarios u ON p.concluido_por = u.id
+            WHERE i.categoria_id = %s AND i.ativo = 1
+            ORDER BY i.ordem
+        """, (candidato_id, cat['id']))
+        itens = cursor.fetchall()
+        checklist[cat['id']] = {
+            'categoria': cat,
+            'itens': itens
+        }
+    
+    # Calcular progresso total (considerando TODOS os itens obrigatórios)
+    cursor.execute("""
+        SELECT 
+            COUNT(*) as total,
+            SUM(CASE WHEN COALESCE(p.status, 'pendente') = 'concluido' THEN 1 ELSE 0 END) as concluidos
+        FROM itens_checklist i
+        LEFT JOIN progresso_checklist p ON i.id = p.item_id AND p.candidato_id = %s
+        WHERE i.obrigatorio = 1 AND i.ativo = 1
+    """, (candidato_id,))
+    
+    progresso = cursor.fetchone()
+    total_obrigatorios = progresso['total'] if progresso['total'] else 0
+    concluidos = progresso['concluidos'] if progresso['concluidos'] else 0
+    percentual = int((concluidos / total_obrigatorios * 100)) if total_obrigatorios > 0 else 0
+    
+    return_connection(conn)
+    
+    return render_template("candidatos/checklist.html",
+                          candidato=candidato,
+                          checklist=checklist,
+                          total_obrigatorios=total_obrigatorios,
+                          concluidos=concluidos,
+                          percentual=percentual)
+
+
+@app.route("/api/checklist/<int:candidato_id>/item/<int:item_id>/atualizar", methods=["POST"])
+@login_required
+def atualizar_item_checklist(candidato_id, item_id):
+    """Atualiza o status de um item do checklist"""
+    cursor, conn = get_db()
+    
+    # Verificar permissão
+    usuario_tipo = session.get('tipo', '')
+    usuario_grau = session.get('grau_atual', 0)
+    
+    if usuario_tipo not in ['admin', 'sindicante'] and usuario_grau < 3:
+        return jsonify({'success': False, 'error': 'Permissão negada'}), 403
+    
+    data = request.get_json()
+    status = data.get('status')
+    observacao = data.get('observacao', '')
+    
+    try:
+        # Verificar se já existe registro
+        cursor.execute("""
+            SELECT id FROM progresso_checklist 
+            WHERE candidato_id = %s AND item_id = %s
+        """, (candidato_id, item_id))
+        
+        existing = cursor.fetchone()
+        
+        if existing:
+            if status:  # Se veio status, atualiza
+                cursor.execute("""
+                    UPDATE progresso_checklist SET
+                        status = %s,
+                        observacao = COALESCE(NULLIF(%s, ''), observacao),
+                        concluido_por = CASE WHEN %s = 'concluido' THEN %s ELSE NULL END,
+                        data_conclusao = CASE WHEN %s = 'concluido' THEN CURRENT_TIMESTAMP ELSE NULL END
+                    WHERE candidato_id = %s AND item_id = %s
+                """, (status, observacao, status, session['user_id'], status, candidato_id, item_id))
+            else:
+                # Apenas atualizar observação
+                cursor.execute("""
+                    UPDATE progresso_checklist SET
+                        observacao = %s
+                    WHERE candidato_id = %s AND item_id = %s
+                """, (observacao, candidato_id, item_id))
+        else:
+            cursor.execute("""
+                INSERT INTO progresso_checklist (candidato_id, item_id, status, observacao, concluido_por)
+                VALUES (%s, %s, %s, %s, %s)
+            """, (candidato_id, item_id, status or 'pendente', observacao, 
+                  session['user_id'] if status == 'concluido' else None))
+        
+        conn.commit()
+        
+        # Calcular novo progresso
+        cursor.execute("""
+            SELECT 
+                COUNT(*) as total,
+                SUM(CASE WHEN COALESCE(p.status, 'pendente') = 'concluido' THEN 1 ELSE 0 END) as concluidos
+            FROM itens_checklist i
+            LEFT JOIN progresso_checklist p ON i.id = p.item_id AND p.candidato_id = %s
+            WHERE i.obrigatorio = 1 AND i.ativo = 1
+        """, (candidato_id,))
+        
+        progresso = cursor.fetchone()
+        total = progresso['total'] if progresso['total'] else 0
+        concluidos = progresso['concluidos'] if progresso['concluidos'] else 0
+        percentual = int((concluidos / total * 100)) if total > 0 else 0
+        
+        registrar_log("atualizar_checklist", "checklist", candidato_id,
+                     dados_novos={"item_id": item_id, "status": status})
+        
+        return jsonify({
+            'success': True, 
+            'message': 'Checklist atualizado!',
+            'progresso': {
+                'total': total,
+                'concluidos': concluidos,
+                'percentual': percentual
+            }
+        })
+        
+    except Exception as e:
+        print(f"Erro ao atualizar checklist: {e}")
+        return jsonify({'success': False, 'error': str(e)}), 500
+    finally:
+        return_connection(conn)
+
+
+@app.route("/api/checklist/<int:candidato_id>/resetar", methods=["POST"])
+@login_required
+def resetar_checklist(candidato_id):
+    """Reseta todo o checklist do candidato (apenas admin)"""
+    cursor, conn = get_db()
+    
+    if session.get('tipo') != 'admin':
+        return jsonify({'success': False, 'error': 'Apenas administradores podem resetar o checklist'}), 403
+    
+    try:
+        cursor.execute("""
+            DELETE FROM progresso_checklist WHERE candidato_id = %s
+        """, (candidato_id,))
+        conn.commit()
+        
+        return jsonify({'success': True, 'message': 'Checklist resetado com sucesso!'})
+        
+    except Exception as e:
+        print(f"Erro ao resetar checklist: {e}")
+        return jsonify({'success': False, 'error': str(e)}), 500
+    finally:
+        return_connection(conn)        
+
+# =============================
 # ROTAS DE SINDICANTES
 # =============================
 @app.route("/sindicantes", methods=["GET", "POST"])
@@ -9089,7 +9566,7 @@ def listar_logs():
                           filtros={'data_ini': data_ini, 'data_fim': data_fim, 'acao': acao, 'entidade': entidade, 'usuario': usuario})
 
 @app.route("/auditoria/<int:id>")
-@admin_required
+@login_required
 def detalhes_log(id):
     cursor, conn = get_db()
     cursor.execute("""
@@ -9100,10 +9577,13 @@ def detalhes_log(id):
     """, (id,))
     log = cursor.fetchone()
     return_connection(conn)
+    
     if not log:
         flash("Registro não encontrado", "danger")
         return redirect("/auditoria")
-    return render_template("auditoria/detalhes.html", log=log)
+    
+    # Corrigir o caminho do template
+    return render_template("auditoria/detalhes_log.html", log=log)
 
 @app.route("/auditoria/exportar")
 @admin_required

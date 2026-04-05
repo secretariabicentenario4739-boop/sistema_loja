@@ -1,0 +1,375 @@
+{% extends "base.html" %}
+
+{% block title %}Checklist de Iniciação - {{ candidato.nome }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="container">
+        <!-- Cabeçalho -->
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <div>
+                <h2>
+                    <i class="bi bi-check2-square"></i> 
+                    Checklist de Iniciação
+                </h2>
+                <p class="text-muted mb-0">{{ candidato.nome }}</p>
+                <p class="text-muted small">
+                    Status: 
+                    {% if candidato.status == 'Aprovado' %}
+                        <span class="badge bg-success">Aprovado</span>
+                    {% elif candidato.status == 'Reprovado' %}
+                        <span class="badge bg-danger">Reprovado</span>
+                    {% else %}
+                        <span class="badge bg-warning">Em análise</span>
+                    {% endif %}
+                </p>
+            </div>
+            <div>
+                <a href="/candidatos" class="btn btn-outline-secondary">
+                    <i class="bi bi-arrow-left"></i> Voltar
+                </a>
+                {% if session.tipo == 'admin' %}
+                <button type="button" class="btn btn-danger ms-2" onclick="resetarChecklist()">
+                    <i class="bi bi-arrow-repeat"></i> Resetar Checklist
+                </button>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Barra de Progresso -->
+        <div class="card shadow mb-4">
+            <div class="card-body">
+                <h6 class="mb-2">
+                    <i class="bi bi-graph-up"></i> 
+                    Progresso da Iniciação
+                    <span class="badge bg-primary ms-2" id="progressoBadge">{{ concluidos }}/{{ total_obrigatorios }}</span>
+                </h6>
+                <div class="progress" style="height: 25px;">
+                    <div class="progress-bar bg-success" role="progressbar" 
+                         id="progressoBarra" style="width: {{ percentual }}%">
+                        {{ percentual }}%
+                    </div>
+                </div>
+                <small class="text-muted mt-2 d-block" id="progressoMensagem">
+                    {% if percentual == 100 %}
+                        <i class="bi bi-check-circle-fill text-success"></i> 
+                        Todos os itens obrigatórios foram concluídos! O candidato está pronto para a iniciação.
+                    {% elif percentual > 0 %}
+                        <i class="bi bi-hourglass-split"></i> 
+                        Faltam {{ total_obrigatorios - concluidos }} item(ns) para concluir a preparação.
+                    {% else %}
+                        <i class="bi bi-info-circle"></i> 
+                        Nenhum item concluído ainda.
+                    {% endif %}
+                </small>
+            </div>
+        </div>
+
+        <!-- Checklist por Categoria -->
+        <div class="row">
+            {% for cat_id, cat_data in checklist.items() %}
+            <div class="col-md-6 mb-4">
+                <div class="card shadow h-100">
+                    <div class="card-header bg-primary text-white">
+                        <h5 class="mb-0">
+                            <i class="bi bi-folder"></i> 
+                            {{ cat_data.categoria.nome }}
+                        </h5>
+                        <small class="text-white-50">{{ cat_data.categoria.descricao or '' }}</small>
+                    </div>
+                    <div class="card-body">
+                        <div class="list-group list-group-flush">
+                            {% for item in cat_data.itens %}
+                            <div class="list-group-item" id="item-{{ item.id }}">
+                                <div class="d-flex justify-content-between align-items-start">
+                                    <div class="flex-grow-1">
+                                        <div class="d-flex align-items-center mb-1">
+                                            <span class="status-icon me-2" id="status-icon-{{ item.id }}">
+                                                {% if item.status == 'concluido' %}
+                                                    <i class="bi bi-check-circle-fill text-success fs-5"></i>
+                                                {% elif item.status == 'em_andamento' %}
+                                                    <i class="bi bi-play-circle-fill text-warning fs-5"></i>
+                                                {% else %}
+                                                    <i class="bi bi-circle text-secondary fs-5"></i>
+                                                {% endif %}
+                                            </span>
+                                            <div>
+                                                <strong class="{% if item.obrigatorio == 1 %}text-dark{% else %}text-muted{% endif %}">
+                                                    {{ item.nome }}
+                                                    {% if item.obrigatorio == 1 %}
+                                                        <span class="badge bg-danger ms-1">Obrigatório</span>
+                                                    {% else %}
+                                                        <span class="badge bg-secondary ms-1">Opcional</span>
+                                                    {% endif %}
+                                                </strong>
+                                                {% if item.descricao %}
+                                                    <br><small class="text-muted">{{ item.descricao }}</small>
+                                                {% endif %}
+                                                {% if item.responsavel %}
+                                                    <br><small class="text-info">
+                                                        <i class="bi bi-person-badge"></i> Responsável: {{ item.responsavel }}
+                                                    </small>
+                                                {% endif %}
+                                                {% if item.prazo_antecedencia %}
+                                                    <br><small class="text-warning">
+                                                        <i class="bi bi-clock"></i> Prazo: {{ item.prazo_antecedencia }} dias antes
+                                                    </small>
+                                                {% endif %}
+                                                {% if item.instrucoes %}
+                                                    <br><small class="text-muted">
+                                                        <i class="bi bi-info-circle"></i> {{ item.instrucoes }}
+                                                    </small>
+                                                {% endif %}
+                                                {% if item.progresso_obs %}
+                                                    <br><small class="text-muted">
+                                                        <i class="bi bi-chat-text"></i> Obs: {{ item.progresso_obs }}
+                                                    </small>
+                                                {% endif %}
+                                                {% if item.data_conclusao %}
+                                                    <br><small class="text-success">
+                                                        <i class="bi bi-calendar-check"></i> Concluído em: {{ item.data_conclusao.strftime('%d/%m/%Y %H:%M') }}
+                                                        {% if item.concluido_por_nome %}
+                                                            por {{ item.concluido_por_nome }}
+                                                        {% endif %}
+                                                    </small>
+                                                {% endif %}
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="dropdown">
+                                        <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" 
+                                                data-bs-toggle="dropdown" aria-expanded="false">
+                                            <i class="bi bi-gear"></i>
+                                        </button>
+                                        <ul class="dropdown-menu dropdown-menu-end">
+                                            <li>
+                                                <button class="dropdown-item" onclick="atualizarStatus({{ item.id }}, 'pendente')">
+                                                    <i class="bi bi-circle text-secondary"></i> Pendente
+                                                </button>
+                                            </li>
+                                            <li>
+                                                <button class="dropdown-item" onclick="atualizarStatus({{ item.id }}, 'em_andamento')">
+                                                    <i class="bi bi-play-circle-fill text-warning"></i> Em Andamento
+                                                </button>
+                                            </li>
+                                            <li>
+                                                <button class="dropdown-item" onclick="atualizarStatus({{ item.id }}, 'concluido')">
+                                                    <i class="bi bi-check-circle-fill text-success"></i> Concluído
+                                                </button>
+                                            </li>
+                                            <li><hr class="dropdown-divider"></li>
+                                            <li>
+                                                <button class="dropdown-item" onclick="abrirModalObservacao({{ item.id }}, '{{ item.nome }}', '{{ item.progresso_obs or '' }}')">
+                                                    <i class="bi bi-chat-text"></i> Adicionar Observação
+                                                </button>
+                                            </li>
+                                        </ul>
+                                    </div>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+
+<!-- Modal de Observação (ÚNICO MODAL REUTILIZÁVEL) -->
+<div class="modal fade" id="modalObservacao" tabindex="-1" data-bs-backdrop="static">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="modalObservacaoTitulo">Adicionar Observação</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="observacaoItemId">
+                <textarea id="observacaoTexto" class="form-control" rows="4" 
+                          placeholder="Digite uma observação sobre este item..."></textarea>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn btn-primary" onclick="salvarObservacao()">
+                    Salvar Observação
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Variável global para o modal
+let modalObservacao;
+
+// Inicializar quando a página carregar
+document.addEventListener('DOMContentLoaded', function() {
+    modalObservacao = new bootstrap.Modal(document.getElementById('modalObservacao'));
+});
+
+// Abrir modal de observação
+function abrirModalObservacao(itemId, itemNome, observacaoAtual) {
+    document.getElementById('observacaoItemId').value = itemId;
+    document.getElementById('observacaoTexto').value = observacaoAtual || '';
+    document.getElementById('modalObservacaoTitulo').innerHTML = `<i class="bi bi-chat-text"></i> ${itemNome} - Observação`;
+    modalObservacao.show();
+}
+
+// Salvar observação
+function salvarObservacao() {
+    const candidatoId = {{ candidato.id }};
+    const itemId = document.getElementById('observacaoItemId').value;
+    const observacao = document.getElementById('observacaoTexto').value;
+    
+    fetch(`/api/checklist/${candidatoId}/item/${itemId}/atualizar`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+            status: null,
+            observacao: observacao
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            modalObservacao.hide();
+            alert('Observação salva com sucesso!');
+            location.reload();
+        } else {
+            alert('Erro: ' + (data.error || 'Erro desconhecido'));
+        }
+    })
+    .catch(error => {
+        console.error('Erro:', error);
+        alert('Erro ao salvar observação');
+    });
+}
+
+// Atualizar status do item
+function atualizarStatus(itemId, status) {
+    const candidatoId = {{ candidato.id }};
+    
+    fetch(`/api/checklist/${candidatoId}/item/${itemId}/atualizar`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+            status: status,
+            observacao: ''
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Atualizar a barra de progresso
+            if (data.progresso) {
+                const percentual = data.progresso.percentual;
+                const concluidos = data.progresso.concluidos;
+                const total = data.progresso.total;
+                
+                const progressoBarra = document.getElementById('progressoBarra');
+                const progressoBadge = document.getElementById('progressoBadge');
+                const progressoMensagem = document.getElementById('progressoMensagem');
+                
+                if (progressoBarra) {
+                    progressoBarra.style.width = percentual + '%';
+                    progressoBarra.textContent = percentual + '%';
+                }
+                
+                if (progressoBadge) {
+                    progressoBadge.textContent = `${concluidos}/${total}`;
+                }
+                
+                if (progressoMensagem) {
+                    if (percentual === 100) {
+                        progressoMensagem.innerHTML = '<i class="bi bi-check-circle-fill text-success"></i> Todos os itens obrigatórios foram concluídos! O candidato está pronto para a iniciação.';
+                    } else if (percentual > 0) {
+                        progressoMensagem.innerHTML = `<i class="bi bi-hourglass-split"></i> Faltam ${total - concluidos} item(ns) para concluir a preparação.`;
+                    } else {
+                        progressoMensagem.innerHTML = '<i class="bi bi-info-circle"></i> Nenhum item concluído ainda.';
+                    }
+                }
+            }
+            
+            // Atualizar o ícone do status
+            const statusIcon = document.getElementById(`status-icon-${itemId}`);
+            if (statusIcon) {
+                if (status === 'concluido') {
+                    statusIcon.innerHTML = '<i class="bi bi-check-circle-fill text-success fs-5"></i>';
+                } else if (status === 'em_andamento') {
+                    statusIcon.innerHTML = '<i class="bi bi-play-circle-fill text-warning fs-5"></i>';
+                } else {
+                    statusIcon.innerHTML = '<i class="bi bi-circle text-secondary fs-5"></i>';
+                }
+            }
+            
+            alert('Status atualizado com sucesso!');
+        } else {
+            alert('Erro: ' + (data.error || 'Erro desconhecido'));
+        }
+    })
+    .catch(error => {
+        console.error('Erro:', error);
+        alert('Erro ao atualizar status');
+    });
+}
+
+// Resetar checklist
+function resetarChecklist() {
+    if (!confirm('⚠️ ATENÇÃO: Isso irá resetar TODO o checklist deste candidato.\n\nTodas as marcações serão perdidas.\n\nDeseja continuar?')) {
+        return;
+    }
+    
+    const candidatoId = {{ candidato.id }};
+    
+    fetch(`/api/checklist/${candidatoId}/resetar`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            location.reload();
+        } else {
+            alert('Erro: ' + (data.error || 'Erro desconhecido'));
+        }
+    })
+    .catch(error => {
+        console.error('Erro:', error);
+        alert('Erro ao resetar checklist');
+    });
+}
+</script>
+
+<style>
+    .list-group-item {
+        transition: background-color 0.2s;
+    }
+    .list-group-item:hover {
+        background-color: #f8f9fa;
+    }
+    .progress {
+        border-radius: 10px;
+        overflow: hidden;
+    }
+    .progress-bar {
+        transition: width 0.3s ease;
+    }
+    .status-icon {
+        width: 24px;
+        text-align: center;
+    }
+    .dropdown-item i {
+        width: 20px;
+        margin-right: 8px;
+    }
+</style>
+
+{% endblock %}

@@ -1,0 +1,173 @@
+{% extends "base.html" %}
+
+{% block title %}Detalhes do Log #{{ log.id }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="container">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h2>
+                <i class="bi bi-journal"></i> 
+                Detalhes do Log #{{ log.id }}
+            </h2>
+            <div>
+                <a href="/auditoria" class="btn btn-outline-secondary">
+                    <i class="bi bi-arrow-left"></i> Voltar
+                </a>
+            </div>
+        </div>
+
+        <div class="card shadow">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0"><i class="bi bi-info-circle"></i> Informações do Registro</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <p><strong>ID:</strong> {{ log.id }}</p>
+                        <p><strong>Data/Hora:</strong> 
+                            {% if log.data_hora %}
+                                {% if log.data_hora is string %}
+                                    {{ log.data_hora }}
+                                {% else %}
+                                    {{ log.data_hora.strftime('%d/%m/%Y %H:%M:%S') }}
+                                {% endif %}
+                            {% else %}
+                                <span class="text-danger">⚠️ Não registrado</span>
+                            {% endif %}
+                        </p>
+                        <p><strong>Usuário:</strong> 
+                            {% if log.usuario_nome and log.usuario_nome != 'None' %}
+                                <strong>{{ log.usuario_nome }}</strong>
+                                {% if log.usuario %}
+                                    <br><small class="text-muted">Login: {{ log.usuario }}</small>
+                                {% endif %}
+                            {% else %}
+                                <span class="text-danger">⚠️ Usuário não identificado</span>
+                            {% endif %}
+                        </p>
+                        <p><strong>Ação:</strong> 
+                            <span class="badge bg-primary">{{ (log.acao or 'desconhecida')|upper }}</span>
+                        </p>
+                    </div>
+                    
+                    <div class="col-md-6">
+                        <p><strong>Entidade:</strong> {{ log.entidade or '-' }}</p>
+                        <p><strong>ID da Entidade:</strong> {{ log.entidade_id or '-' }}</p>
+                        <p><strong>IP do Cliente:</strong> 
+                            {% if log.ip %}
+                                <code>{{ log.ip }}</code>
+                            {% else %}
+                                <span class="text-muted">Não registrado</span>
+                            {% endif %}
+                        </p>
+                    </div>
+                </div>
+
+                {% if log.dados_anteriores or log.dados_novos %}
+                <hr>
+                <h6><i class="bi bi-arrow-left-right"></i> Alterações Registradas</h6>
+                <div class="row mt-3">
+                    {% if log.dados_anteriores and log.dados_anteriores != 'null' and log.dados_anteriores != '' %}
+                    <div class="col-md-6">
+                        <div class="card border-warning h-100">
+                            <div class="card-header bg-warning">
+                                <strong><i class="bi bi-database"></i> Dados Anteriores</strong>
+                            </div>
+                            <div class="card-body">
+                                <pre class="json-data" style="max-height: 400px; overflow-y: auto;">{{ log.dados_anteriores }}</pre>
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+                    
+                    {% if log.dados_novos and log.dados_novos != 'null' and log.dados_novos != '' %}
+                    <div class="col-md-6">
+                        <div class="card border-success h-100">
+                            <div class="card-header bg-success text-white">
+                                <strong><i class="bi bi-database-fill"></i> Dados Novos</strong>
+                            </div>
+                            <div class="card-body">
+                                <pre class="json-data" style="max-height: 400px; overflow-y: auto;">{{ log.dados_novos }}</pre>
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .card {
+        border-radius: 10px;
+        overflow: hidden;
+    }
+    .card-header {
+        font-weight: 600;
+    }
+    pre {
+        background-color: #f8f9fa;
+        padding: 10px;
+        border-radius: 5px;
+        font-size: 12px;
+        margin: 0;
+        white-space: pre-wrap;
+        word-wrap: break-word;
+        font-family: monospace;
+    }
+    .badge {
+        font-size: 0.85em;
+        padding: 5px 10px;
+    }
+    .h-100 {
+        height: 100%;
+    }
+</style>
+
+<script>
+// Corrige JSON duplamente escapado
+function formatJsonString(str) {
+    if (!str) return '';
+    
+    // Remove aspas do início e fim se existirem
+    let cleaned = str;
+    if (cleaned.startsWith('"') && cleaned.endsWith('"')) {
+        cleaned = cleaned.slice(1, -1);
+    }
+    
+    // Remove escapes das aspas
+    cleaned = cleaned.replace(/\\"/g, '"');
+    cleaned = cleaned.replace(/\\n/g, '\n');
+    cleaned = cleaned.replace(/\\t/g, '\t');
+    
+    try {
+        // Tenta fazer parse do JSON
+        let parsed = JSON.parse(cleaned);
+        // Formata bonito
+        return JSON.stringify(parsed, null, 2);
+    } catch(e) {
+        // Se não conseguir, tenta mais uma vez
+        try {
+            let parsed = JSON.parse(str);
+            return JSON.stringify(parsed, null, 2);
+        } catch(e2) {
+            console.log('Erro ao parsear JSON:', e2);
+            return str;
+        }
+    }
+}
+
+// Aplicar a formatação em todos os elementos com classe json-data
+document.addEventListener('DOMContentLoaded', function() {
+    document.querySelectorAll('.json-data').forEach(function(element) {
+        let originalText = element.textContent;
+        let formatted = formatJsonString(originalText);
+        element.textContent = formatted;
+    });
+});
+</script>
+
+{% endblock %}
