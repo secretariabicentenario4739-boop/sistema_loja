@@ -13,6 +13,8 @@
                     </h4>
                 </div>
                 <div class="card-body p-4">
+                    <!-- REMOVA ESTE BLOCO DE MENSAGENS -->
+                    <!--
                     {% with messages = get_flashed_messages(with_categories=true) %}
                         {% if messages %}
                             {% for category, message in messages %}
@@ -23,6 +25,7 @@
                             {% endfor %}
                         {% endif %}
                     {% endwith %}
+                    -->
                     
                     <form method="POST">
                         <div class="mb-3">
@@ -46,7 +49,6 @@
                     
                     <hr class="my-4">
                     
-                    <!-- Link para recuperação de senha -->
                     <div class="text-center mb-3">
                         <a href="/recuperar-senha" class="text-decoration-none small">
                             <i class="bi bi-key"></i> Esqueceu sua senha?

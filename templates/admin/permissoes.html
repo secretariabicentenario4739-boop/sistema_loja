@@ -131,17 +131,7 @@
             </a>
         </div>
 
-        {% with messages = get_flashed_messages(with_categories=true) %}
-            {% if messages %}
-                {% for category, message in messages %}
-                    <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
-                        {{ message }}
-                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-                    </div>
-                {% endfor %}
-            {% endif %}
-        {% endwith %}
-
+        
         <ul class="nav nav-tabs mb-4" id="permissoesTab" role="tablist">
             <li class="nav-item" role="presentation">
                 <button class="nav-link active" id="graus-tab" data-bs-toggle="tab" data-bs-target="#graus" type="button" role="tab">
