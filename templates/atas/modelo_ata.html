@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <title>Ata da Reunião - {{ reuniao.titulo }}</title>
+    <style>
+        @page {
+            size: A4;
+            margin: 2.5cm;
+        }
+        
+        body {
+            font-family: 'Times New Roman', Times, serif;
+            line-height: 1.5;
+            color: #333;
+            font-size: 12pt;
+        }
+        
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+            border-bottom: 2px solid #c9a03d;
+            padding-bottom: 20px;
+        }
+        
+        .logo {
+            max-width: 100px;
+            max-height: 100px;
+            margin-bottom: 10px;
+        }
+        
+        .loja-nome {
+            font-size: 18pt;
+            font-weight: bold;
+            color: #1a2c3e;
+            margin: 5px 0;
+        }
+        
+        .loja-info {
+            font-size: 10pt;
+            color: #666;
+            margin: 0;
+        }
+        
+        .titulo-ata {
+            font-size: 16pt;
+            font-weight: bold;
+            text-align: center;
+            margin: 20px 0;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+        
+        .numero-ata {
+            text-align: center;
+            font-size: 12pt;
+            margin-bottom: 20px;
+        }
+        
+        .dados-reuniao {
+            border: 1px solid #c9a03d;
+            padding: 15px;
+            margin: 20px 0;
+            background: #f9f9f9;
+        }
+        
+        .dados-reuniao table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        
+        .dados-reuniao td {
+            padding: 5px;
+            vertical-align: top;
+        }
+        
+        .dados-reuniao td:first-child {
+            width: 120px;
+            font-weight: bold;
+        }
+        
+        .conteudo-ata {
+            text-align: justify;
+            margin: 20px 0;
+        }
+        
+        .conteudo-ata h1, .conteudo-ata h2, .conteudo-ata h3 {
+            color: #1a2c3e;
+            margin-top: 20px;
+        }
+        
+        .assinaturas {
+            margin-top: 50px;
+            page-break-inside: avoid;
+        }
+        
+        .assinaturas table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        
+        .assinaturas td {
+            width: 50%;
+            text-align: center;
+            padding-top: 40px;
+        }
+        
+        .linha-assinatura {
+            border-top: 1px solid #333;
+            width: 80%;
+            margin: 0 auto;
+            padding-top: 10px;
+        }
+        
+        .footer {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            text-align: center;
+            font-size: 8pt;
+            color: #999;
+            border-top: 1px solid #ddd;
+            padding-top: 10px;
+        }
+        
+        .page-break {
+            page-break-before: always;
+        }
+        
+        .destaque {
+            font-weight: bold;
+            color: #1a2c3e;
+        }
+        
+        .margem-assinatura {
+            margin-top: 40px;
+        }
+        
+        @media print {
+            body {
+                margin: 0;
+                padding: 0;
+            }
+            .no-print {
+                display: none;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        {% if logo_url %}
+        <img src="{{ logo_url }}" alt="Logo da Loja" class="logo">
+        {% endif %}
+        <div class="loja-nome">ARLS BICENTENÁRIO Nº 4739</div>
+        <div class="loja-info">ORIENTE DE CEILÂNDIA - DISTRITO FEDERAL</div>
+        <div class="loja-info">Fundada em 16 de julho de 2022</div>
+        <div class="loja-info">Sob os auspícios do Grande Oriente do Brasil</div>
+    </div>
+    
+    <div class="titulo-ata">
+        ATA DA {{ reuniao.tipo|upper }} 
+        {% if reuniao.grau %}
+        - {{ reuniao.grau }}º GRAU
+        {% endif %}
+    </div>
+    
+    <div class="numero-ata">
+        Nº {{ numero_ata }}/{{ ano_ata }}
+    </div>
+    
+    <div class="dados-reuniao">
+        <table>
+            <tr>
+                <td>DATA:</td>
+                <td colspan="3">{{ reuniao.data.strftime('%d de %B de %Y') }}</td>
+            </tr>
+            <tr>
+                <td>HORÁRIO:</td>
+                <td colspan="3">{{ reuniao.hora_inicio.strftime('%H:%M') if reuniao.hora_inicio else '-' }}h</td>
+            </tr>
+            <tr>
+                <td>LOCAL:</td>
+                <td colspan="3">{{ reuniao.local or 'Templo Maçônico - ARLS Bicentenário' }}</td>
+            </tr>
+            <tr>
+                <td>PRESIDENTE:</td>
+                <td colspan="3">{{ veneravel_mestre or 'Venerável Mestre' }}</td>
+            </tr>
+            <tr>
+                <td>SECRETÁRIO:</td>
+                <td colspan="3">{{ secretario or 'Secretário' }}</td>
+            </tr>
+        </table>
+    </div>
+    
+    <div class="conteudo-ata">
+        <p>Aos {{ reuniao.data.strftime('%d') }} dias do mês de {{ reuniao.data.strftime('%B') }} do ano de {{ reuniao.data.strftime('%Y') }}, no {{ reuniao.local or 'Templo Maçônico da ARLS Bicentenário' }}, situado no Oriente de Ceilândia, Distrito Federal, sob os auspícios do Grande Oriente do Brasil, reuniu-se a ARLS BICENTENÁRIO Nº 4739, em Sessão {{ reuniao.tipo|lower }}, às {{ reuniao.hora_inicio.strftime('%H:%M') if reuniao.hora_inicio else '-' }} horas, com a presença dos obreiros abaixo assinados.</p>
+        
+        <p><strong>PRESENÇAS:</strong></p>
+        <p>Estiveram presentes os seguintes obreiros:</p>
+        <ul>
+            {% for p in presentes %}
+            <li>{{ p.nome_completo }} - {% if p.cargo %} {{ p.cargo }} {% endif %}</li>
+            {% endfor %}
+        </ul>
+        
+        {% if ausentes %}
+        <p><strong>AUSÊNCIAS JUSTIFICADAS:</strong></p>
+        <ul>
+            {% for a in ausentes %}
+            <li>{{ a.nome_completo }} - {{ a.justificativa or 'Ausência justificada' }}</li>
+            {% endfor %}
+        </ul>
+        {% endif %}
+        
+        <p><strong>ABERTURA DOS TRABALHOS:</strong></p>
+        <p>O Venerável Mestre {{ veneravel_mestre or 'da Loja' }}, verificando o quórum regimental, declarou abertos os trabalhos, convidando os obreiros a participarem das atividades da presente sessão.</p>
+        
+        <p><strong>LEITURA DA ATA ANTERIOR:</strong></p>
+        <p>A ata da sessão anterior foi lida pelo Secretário e, após discussão, foi aprovada por unanimidade.</p>
+        
+        <p><strong>EXPEDIENTE:</strong></p>
+        <p>Foram lidos e aprovados os seguintes expedientes:</p>
+        <ul>
+            <li>Correspondências recebidas e encaminhadas;</li>
+            <li>Convites para eventos maçônicos;</li>
+            <li>Comunicações da Secretaria e Tesouraria.</li>
+        </ul>
+        
+        <p><strong>ORDEM DO DIA:</strong></p>
+        {{ reuniao.pauta|safe if reuniao.pauta else '<p>Não houve pauta registrada para esta reunião.</p>' }}
+        
+        {% if reuniao.observacoes %}
+        <p><strong>OBSERVAÇÕES:</strong></p>
+        <p>{{ reuniao.observacoes|safe }}</p>
+        {% endif %}
+        
+        <p><strong>ENCERRAMENTO:</strong></p>
+        <p>Nada mais havendo a tratar, o Venerável Mestre declarou encerrados os trabalhos, agradecendo a presença de todos e desejando uma boa noite.</p>
+        
+        <p>E, por estar fielmente redigida, a presente ata vai assinada pelo Venerável Mestre e pelo Secretário.</p>
+    </div>
+    
+    <div class="assinaturas">
+        <table>
+            <tr>
+                <td>
+                    <div class="linha-assinatura"></div>
+                    <strong>{{ veneravel_mestre or 'Venerável Mestre' }}</strong><br>
+                    Venerável Mestre
+                </td>
+                <td>
+                    <div class="linha-assinatura"></div>
+                    <strong>{{ secretario or 'Secretário' }}</strong><br>
+                    Secretário
+                </td>
+            </tr>
+        </table>
+        
+        <div class="margem-assinatura">
+            <table>
+                <tr>
+                    <td style="width: 33%">
+                        <div class="linha-assinatura"></div>
+                        <small>1º Vigilante</small>
+                    </td>
+                    <td style="width: 33%">
+                        <div class="linha-assinatura"></div>
+                        <small>2º Vigilante</small>
+                    </td>
+                    <td style="width: 33%">
+                        <div class="linha-assinatura"></div>
+                        <small>Orador</small>
+                    </td>
+                </tr>
+            </table>
+        </div>
+    </div>
+    
+    <div class="footer">
+        ARLS BICENTENÁRIO Nº 4739 - Oriente de Ceilândia - DF<br>
+        "Liberdade, Igualdade, Fraternidade"
+    </div>
+</body>
+</html>

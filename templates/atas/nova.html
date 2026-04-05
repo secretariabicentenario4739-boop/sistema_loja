@@ -21,7 +21,7 @@
             {% if messages %}
                 {% for category, message in messages %}
                     <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
-                        {{ message }}
+                        {{ message | safe }}
                         <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
                     </div>
                 {% endfor %}
@@ -162,8 +162,11 @@
                             <button class="btn btn-sm btn-outline-primary" onclick="inserirEstrutura()">
                                 <i class="bi bi-file-text"></i> Inserir Estrutura Básica
                             </button>
-                            <button class="btn btn-sm btn-outline-secondary" onclick="inserirModeloOficial()">
+                            <button class="btn btn-sm btn-outline-danger" onclick="inserirModeloOficial()">
                                 <i class="bi bi-journal"></i> Inserir Modelo Oficial
+                            </button>
+                            <button class="btn btn-sm btn-outline-success" onclick="inserirModeloCompleto()">
+                                <i class="bi bi-book"></i> Inserir Modelo Completo
                             </button>
                         </div>
                     </div>
@@ -314,65 +317,166 @@ Nada mais havendo a tratar, a reunião foi encerrada às ${horaTermino}.
         document.getElementById('conteudoAta').value = estruturaBasica;
     }
     
-    // Inserir modelo oficial completo
+    // Inserir modelo oficial completo (versão oficial maçônica)
     function inserirModeloOficial() {
         const data = "{{ reuniao.data.strftime('%d/%m/%Y') if reuniao.data else '' }}";
+        const dataExtenso = "{{ reuniao.data.strftime('%d') if reuniao.data else '' }} de {{ reuniao.data.strftime('%B') if reuniao.data else '' }} de {{ reuniao.data.strftime('%Y') if reuniao.data else '' }}";
         const horaInicio = "{{ reuniao.hora_inicio.strftime('%H:%M') if reuniao.hora_inicio else '' }}";
         const horaTermino = "{{ reuniao.hora_termino.strftime('%H:%M') if reuniao.hora_termino else '' }}";
-        const local = "{{ reuniao.local or 'Templo Maçônico' }}";
+        const local = "{{ reuniao.local or 'Templo Maçônico - ARLS Bicentenário' }}";
         
-        const modeloOficial = `## ATA DA REUNIÃO {{ reuniao.tipo|upper }} - {{ reuniao.titulo }}
+        const modeloOficial = `## ATA DA SESSÃO {{ reuniao.tipo|upper }} DA ARLS BICENTENÁRIO Nº 4739
 
-### DADOS DA REUNIÃO
+### DADOS DA SESSÃO
 - **Data:** ${data}
 - **Horário:** ${horaInicio} às ${horaTermino}
 - **Local:** ${local}
-- **Tipo:** {{ reuniao.tipo }}
+- **Tipo de Sessão:** {{ reuniao.tipo }}
 
 ---
 
 ### 1. ABERTURA
-Aos ${data} às ${horaInicio}, no ${local}, sob os auspícios do Grande Oriente do Brasil, foi aberta a sessão ${reuniao.tipo.lower()} com a presença do Venerável Mestre, demais dignidades e obreiros presentes.
+Aos ${dataExtenso}, às ${horaInicio} horas, reunida a ARLS BICENTENÁRIO Nº 4739 em seu Templo, situado no Oriente de Ceilândia, Distrito Federal, sob os auspícios do Grande Oriente do Brasil, foi aberta a Sessão {{ reuniao.tipo.lower() }} com a presença do Venerável Mestre, demais Dignidades e Irmãos presentes.
 
 ### 2. VERIFICAÇÃO DE QUÓRUM
-O Irmão Secretário procedeu à leitura da lista de presença, verificando-se a presença de ___ obreiros, número suficiente para deliberação.
+O Irmão Secretário procedeu à leitura da lista de presença, verificando-se a presença de ___ Irmãos, número suficiente para deliberação, conforme o Regimento Interno.
 
-### 3. LEITURA DA ATA ANTERIOR
-O Irmão Secretário procedeu à leitura da ata da reunião anterior. Após discussão, a ata foi aprovada por unanimidade.
+### 3. LEITURA E APROVAÇÃO DA ATA ANTERIOR
+Foi procedida à leitura da ata da sessão anterior. Após análise e discussão, a ata foi aprovada por unanimidade, com ___ abstenções.
 
-### 4. ORDEM DO DIA
-#### 4.1. Comunicações
+### 4. EXPEDIENTE
+- Leitura e apreciação de expedientes recebidos;
+- Comunicações da Secretaria;
+- Informes da Tesouraria;
+- Convites e correspondências.
+
+### 5. ORDEM DO DIA
+
+#### 5.1. Assuntos em discussão
 - 
 
-#### 4.2. Propostas
+#### 5.2. Propostas e deliberações
 - 
 
-#### 4.3. Votações
+#### 5.3. Votações realizadas
 - 
 
-### 5. PALAVRA LIVRE
-O Venerável Mestre concedeu a palavra aos Irmãos que desejaram se manifestar.
+### 6. PALAVRA LIVRE
+O Venerável Mestre concedeu a palavra aos Irmãos que desejaram se manifestar sobre assunto de interesse da Ordem.
 
-### 6. ENCERRAMENTO
-Nada mais havendo a tratar, o Venerável Mestre declarou encerrada a sessão às ${horaTermino}, dando por findos os trabalhos.
+### 7. ENCERRAMENTO
+Nada mais havendo a tratar, o Venerável Mestre declarou encerrada a sessão às ${horaTermino} horas, dando por findos os trabalhos, agradecendo a presença de todos e desejando uma boa noite.
 
 ---
 
 **A presente ata foi lavrada pelo Irmão Secretário, que a subscreve juntamente com o Venerável Mestre e demais Irmãos que desejarem assinar.**
 
-**__________________________________**
-**Venerável Mestre**
+---
 
-**__________________________________**
-**1º Vigilante**
+### ASSINATURAS
 
-**__________________________________**
-**2º Vigilante**
+| Venerável Mestre | 1º Vigilante | 2º Vigilante |
+|-----------------|--------------|---------------|
+| ________________ | _____________ | _____________ |
 
-**__________________________________**
-**Secretário(a)`;
+| Secretário | Orador | Tesoureiro |
+|------------|--------|-------------|
+| _____________ | ___________ | ______________ |
+
+---
+
+**Data da lavratura:** ${data}
+
+**Secretário(a):** __________________________________
+
+**Visto:** __________________________________ (Venerável Mestre)`;
 
         document.getElementById('conteudoAta').value = modeloOficial;
+    }
+    
+    // Inserir modelo completo com cabeçalho da loja
+    function inserirModeloCompleto() {
+        const data = "{{ reuniao.data.strftime('%d/%m/%Y') if reuniao.data else '' }}";
+        const horaInicio = "{{ reuniao.hora_inicio.strftime('%H:%M') if reuniao.hora_inicio else '' }}";
+        const horaTermino = "{{ reuniao.hora_termino.strftime('%H:%M') if reuniao.hora_termino else '' }}";
+        const local = "{{ reuniao.local or 'Templo Maçônico - ARLS Bicentenário' }}";
+        
+        const modeloCompleto = `# ATA DA REUNIÃO {{ reuniao.tipo|upper }}
+
+## CABEÇALHO
+**ARLS BICENTENÁRIO Nº 4739**
+**ORIENTE DE CEILÂNDIA - DF**
+
+---
+
+## DADOS DA REUNIÃO
+- **Data:** ${data}
+- **Horário de Início:** ${horaInicio}
+- **Horário de Término:** ${horaTermino}
+- **Local:** ${local}
+- **Tipo:** {{ reuniao.tipo }}
+
+---
+
+## PRESENÇAS
+1. 
+2. 
+3. 
+
+---
+
+## AUSÊNCIAS JUSTIFICADAS
+1. 
+2. 
+
+---
+
+## PAUTA
+
+### 1. Abertura
+
+### 2. Leitura da Ata Anterior
+
+### 3. Expediente
+
+### 4. Ordem do Dia
+
+### 5. Palavra Livre
+
+### 6. Encerramento
+
+---
+
+## DELIBERAÇÕES
+
+| Item | Descrição | Situação |
+|------|-----------|----------|
+| 1    |           | Aprovado  |
+| 2    |           | Aprovado  |
+| 3    |           | Rejeitado |
+
+---
+
+## PRÓXIMA REUNIÃO
+- **Data:** __/__/____
+- **Horário:** __:__
+- **Local:** ${local}
+
+---
+
+## OBSERVAÇÕES GERAIS
+
+---
+
+## ASSINATURAS
+
+__________________________________
+**Venerável Mestre**
+
+__________________________________
+**Secretário(a)`
+
+        document.getElementById('conteudoAta').value = modeloCompleto;
     }
     
     // Visualizar ata formatada
@@ -386,12 +490,14 @@ Nada mais havendo a tratar, o Venerável Mestre declarou encerrada a sessão às
                 .replace(/\n/g, '<br>')
                 .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
                 .replace(/\*(.*?)\*/g, '<em>$1</em>')
+                .replace(/^# (.*)$/gm, '<h3 class="mt-3 text-primary">$1</h3>')
                 .replace(/^## (.*)$/gm, '<h4 class="mt-3">$1</h4>')
                 .replace(/^### (.*)$/gm, '<h5 class="mt-2">$1</h5>')
                 .replace(/^- (.*)$/gm, '<li>$1</li>')
                 .replace(/<li>(.*?)<\/li>/g, '<ul class="mb-2"><li>$1</li></ul>')
                 .replace(/<\/ul><ul>/g, '')
-                .replace(/---/g, '<hr>');
+                .replace(/---/g, '<hr>')
+                .replace(/\|/g, '</td><td>');
             
             modalBody.innerHTML = `<div class="p-3 bg-light rounded">${html}</div>`;
         } else {
@@ -450,22 +556,24 @@ Nada mais havendo a tratar, o Venerável Mestre declarou encerrada a sessão às
     
     // Auto-salvar rascunho (opcional)
     let autoSaveTimeout;
-    document.getElementById('conteudoAta').addEventListener('input', function() {
-        clearTimeout(autoSaveTimeout);
-        autoSaveTimeout = setTimeout(() => {
-            const conteudo = this.value;
-            if (conteudo.length > 100) {
-                localStorage.setItem('rascunho_ata_{{ reuniao.id }}', conteudo);
-                console.log('Rascunho salvo automaticamente');
-            }
-        }, 3000);
-    });
+    const textarea = document.getElementById('conteudoAta');
+    if (textarea) {
+        textarea.addEventListener('input', function() {
+            clearTimeout(autoSaveTimeout);
+            autoSaveTimeout = setTimeout(() => {
+                const conteudo = this.value;
+                if (conteudo.length > 100) {
+                    localStorage.setItem('rascunho_ata_{{ reuniao.id }}', conteudo);
+                    console.log('Rascunho salvo automaticamente');
+                }
+            }, 3000);
+        });
+    }
     
     // Carregar rascunho salvo
     window.addEventListener('load', function() {
         const rascunhoSalvo = localStorage.getItem('rascunho_ata_{{ reuniao.id }}');
-        const textarea = document.getElementById('conteudoAta');
-        if (rascunhoSalvo && !textarea.value) {
+        if (rascunhoSalvo && textarea && !textarea.value) {
             if (confirm('Há um rascunho salvo anteriormente. Deseja carregá-lo?')) {
                 textarea.value = rascunhoSalvo;
             }

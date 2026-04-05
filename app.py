@@ -6073,7 +6073,94 @@ def gerar_alertas():
 # =============================
 # ROTAS DE ATAS (CORRIGIDAS)
 # =============================
-
+@app.route("/atas/<int:id>/pdf-oficial")
+@login_required
+def gerar_pdf_ata_oficial(id):
+    """Gera PDF oficial da ata com cabeçalho da loja"""
+    from flask import render_template, url_for
+    import pdfkit
+    from io import BytesIO
+    
+    cursor, conn = get_db()
+    
+    # Buscar dados da ata e reunião
+    cursor.execute("""
+        SELECT a.*, r.*, 
+               l.nome as loja_nome,
+               l.veneravel_mestre,
+               l.secretario
+        FROM atas a
+        JOIN reunioes r ON a.reuniao_id = r.id
+        LEFT JOIN lojas l ON r.loja_id = l.id
+        WHERE a.id = %s
+    """, (id,))
+    
+    ata = cursor.fetchone()
+    
+    if not ata:
+        flash("Ata não encontrada!", "danger")
+        return redirect("/atas")
+    
+    # Buscar presentes
+    cursor.execute("""
+        SELECT u.nome_completo, c.nome as cargo
+        FROM presenca p
+        JOIN usuarios u ON p.obreiro_id = u.id
+        LEFT JOIN ocupacao_cargos oc ON u.id = oc.obreiro_id AND oc.ativo = 1
+        LEFT JOIN cargos c ON oc.cargo_id = c.id
+        WHERE p.reuniao_id = %s AND p.presente = 1
+        ORDER BY u.grau_atual DESC
+    """, (ata['reuniao_id'],))
+    presentes = cursor.fetchall()
+    
+    # Buscar ausentes justificados
+    cursor.execute("""
+        SELECT u.nome_completo, p.justificativa
+        FROM presenca p
+        JOIN usuarios u ON p.obreiro_id = u.id
+        WHERE p.reuniao_id = %s AND p.presente = 0 AND p.justificativa IS NOT NULL
+    """, (ata['reuniao_id'],))
+    ausentes = cursor.fetchall()
+    
+    return_connection(conn)
+    
+    # Gerar HTML para PDF
+    html = render_template("atas/modelo_ata.html",
+                          reuniao=ata,
+                          ata=ata,
+                          numero_ata=ata['numero_ata'],
+                          ano_ata=ata['ano_ata'],
+                          presentes=presentes,
+                          ausentes=ausentes,
+                          veneravel_mestre=ata.get('veneravel_mestre', ''),
+                          secretario=ata.get('secretario', ''),
+                          logo_url=url_for('static', filename='images/logo_loja.png', _external=True))
+    
+    # Configurar PDF
+    options = {
+        'page-size': 'A4',
+        'margin-top': '25mm',
+        'margin-bottom': '25mm',
+        'margin-left': '20mm',
+        'margin-right': '20mm',
+        'encoding': 'UTF-8',
+        'no-outline': None
+    }
+    
+    # Gerar PDF (usando pdfkit ou wkhtmltopdf)
+    try:
+        # Se tiver wkhtmltopdf instalado
+        pdf = pdfkit.from_string(html, False, options=options)
+        
+        # Criar resposta
+        response = Response(pdf, content_type='application/pdf')
+        response.headers['Content-Disposition'] = f'inline; filename=ata_{ata["numero_ata"]}_{ata["ano_ata"]}.pdf'
+        return response
+        
+    except Exception as e:
+        print(f"Erro ao gerar PDF: {e}")
+        # Fallback: mostrar HTML
+        return html
 @app.route("/atas/<int:id>")
 @login_required
 @permissao_required('ata.view_one')
