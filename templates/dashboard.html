@@ -20,9 +20,11 @@
                                     Olá, {{ session.nome_completo or session.usuario }}
                                 </h1>
                                 <p class="mb-0 mt-2 opacity-75">
-                                    <i class="bi bi-calendar3 me-1"></i> 
-                                    {{ now.strftime('%A, %d de %B de %Y') }}
-                                </p>
+    <i class="bi bi-calendar3 me-1"></i> 
+    {% set dias_semana = {'Monday': 'Segunda-feira', 'Tuesday': 'Terça-feira', 'Wednesday': 'Quarta-feira', 'Thursday': 'Quinta-feira', 'Friday': 'Sexta-feira', 'Saturday': 'Sábado', 'Sunday': 'Domingo'} %}
+    {% set meses = {'January': 'Janeiro', 'February': 'Fevereiro', 'March': 'Março', 'April': 'Abril', 'May': 'Maio', 'June': 'Junho', 'July': 'Julho', 'August': 'Agosto', 'September': 'Setembro', 'October': 'Outubro', 'November': 'Novembro', 'December': 'Dezembro'} %}
+    {{ dias_semana[now.strftime('%A')] }}, {{ now.strftime('%d') }} de {{ meses[now.strftime('%B')] }} de {{ now.strftime('%Y') }}
+</p>
                             </div>
                             <div class="text-end">
                                 <div class="bg-white bg-opacity-25 rounded-circle p-3 d-inline-block">

@@ -733,69 +733,42 @@ from datetime import datetime
 import json
 
 def registrar_log(acao, entidade=None, entidade_id=None, dados_anteriores=None, dados_novos=None):
-    """Registra qualquer ação no log de auditoria"""
-    cursor, conn = None, None
+    """Registra log de auditoria com detalhes completos"""
+    if "user_id" not in session:
+        return
     try:
-        print(f"🔍 [LOG] Iniciando registro: acao={acao}, entidade={entidade}, id={entidade_id}")
-        
         cursor, conn = get_db()
         
-        # Pega usuário da sessão
-        usuario_id = session.get('user_id')
-        usuario_nome = session.get('nome_completo') or session.get('usuario') or 'Sistema'
+        # Converter dicionários para JSON string
+        if dados_anteriores and isinstance(dados_anteriores, dict):
+            dados_anteriores = json.dumps(dados_anteriores, ensure_ascii=False, default=str)
+        if dados_novos and isinstance(dados_novos, dict):
+            dados_novos = json.dumps(dados_novos, ensure_ascii=False, default=str)
         
-        # 🔥 CORREÇÃO: Converter dict para JSON sem escapes
-        dados_ant = None
-        dados_nov = None
-        
-        if dados_anteriores:
-            if isinstance(dados_anteriores, dict):
-                # Usa json.dumps com ensure_ascii=False e sem escapes
-                dados_ant = json.dumps(dados_anteriores, ensure_ascii=False, indent=2)
-            else:
-                dados_ant = str(dados_anteriores)
-                
-        if dados_novos:
-            if isinstance(dados_novos, dict):
-                # Usa json.dumps com ensure_ascii=False e sem escapes
-                dados_nov = json.dumps(dados_novos, ensure_ascii=False, indent=2)
-            else:
-                dados_nov = str(dados_novos)
-        
-        print(f"🔍 [LOG] Dados novos (JSON): {dados_nov}")
+        # Buscar nome completo do usuário
+        cursor.execute("SELECT nome_completo FROM usuarios WHERE id = %s", (session["user_id"],))
+        usuario = cursor.fetchone()
+        nome_completo = usuario['nome_completo'] if usuario else session.get("usuario", "Desconhecido")
         
         cursor.execute("""
             INSERT INTO logs_auditoria 
-            (usuario_id, usuario_nome, acao, entidade, entidade_id, 
-             dados_anteriores, dados_novos, ip, data_hora)
-            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, CURRENT_TIMESTAMP)
-            RETURNING id
+            (usuario_id, usuario_nome, acao, entidade, entidade_id, dados_anteriores, dados_novos, ip, user_agent)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
         """, (
-            usuario_id,
-            usuario_nome,
+            session["user_id"],
+            nome_completo,
             acao,
             entidade,
             entidade_id,
-            dados_ant,
-            dados_nov,
-            request.remote_addr
+            dados_anteriores,
+            dados_novos,
+            request.remote_addr,
+            request.headers.get('User-Agent', '')[:500]
         ))
-        
-        log_id = cursor.fetchone()['id']
         conn.commit()
-        print(f"✅ [LOG] SUCESSO! ID={log_id}")
-        return True
-        
+        return_connection(conn)
     except Exception as e:
-        print(f"❌ [LOG] ERRO COMPLETO: {type(e).__name__}: {e}")
-        import traceback
-        traceback.print_exc()
-        if conn:
-            conn.rollback()
-        return False
-    finally:
-        if conn:
-            return_connection(conn)
+        print(f"Erro ao registrar log: {e}")
 
 def redimensionar_foto(caminho_origem, tamanho=(300, 300)):
     try:

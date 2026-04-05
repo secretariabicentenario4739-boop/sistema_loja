@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}Detalhes do Log #{{ log.id }}{% endblock %}
+{% block title %}Detalhes do Log - Auditoria{% endblock %}
 
 {% block content %}
 <div class="container-fluid py-4">
@@ -8,167 +8,156 @@
         <div class="d-flex justify-content-between align-items-center mb-4">
             <h2>
                 <i class="bi bi-journal"></i> 
-                Detalhes do Log #{{ log.id }}
+                Detalhes do Log de Auditoria
             </h2>
-            <div>
-                <a href="/auditoria" class="btn btn-outline-secondary">
-                    <i class="bi bi-arrow-left"></i> Voltar
-                </a>
-            </div>
+            <a href="/auditoria" class="btn btn-outline-secondary">
+                <i class="bi bi-arrow-left"></i> Voltar
+            </a>
         </div>
 
         <div class="card shadow">
             <div class="card-header bg-primary text-white">
-                <h5 class="mb-0"><i class="bi bi-info-circle"></i> Informações do Registro</h5>
+                <h5 class="mb-0">
+                    <i class="bi bi-info-circle"></i> 
+                    Informações do Registro
+                </h5>
             </div>
             <div class="card-body">
                 <div class="row">
                     <div class="col-md-6">
                         <p><strong>ID:</strong> {{ log.id }}</p>
-                        <p><strong>Data/Hora:</strong> 
-                            {% if log.data_hora %}
-                                {{ log.data_hora.strftime('%d/%m/%Y %H:%M:%S') if log.data_hora is not string else log.data_hora }}
-                            {% else %}
-                                <span class="text-danger">⚠️ Não registrado</span>
-                            {% endif %}
-                        </p>
-                        <p><strong>Usuário:</strong> 
-                            {{ log.usuario_nome or 'Sistema' }}
-                            {% if log.usuario %}
-                                <br><small class="text-muted">Login: {{ log.usuario }}</small>
-                            {% endif %}
-                        </p>
-                        <p><strong>Ação:</strong> 
-                            <span class="badge 
-                                {% if log.acao == 'criar' %}bg-success
-                                {% elif log.acao == 'editar' %}bg-warning
-                                {% elif log.acao == 'excluir' %}bg-danger
-                                {% else %}bg-primary{% endif %}">
-                                {{ (log.acao or 'desconhecida')|upper }}
-                            </span>
-                        </p>
+                        <p><strong>Data/Hora:</strong> {{ log.data_hora.strftime('%d/%m/%Y %H:%M:%S') if log.data_hora else '-' }}</p>
+                        <p><strong>Usuário:</strong> {{ log.usuario_nome or log.usuario or '-' }}</p>
+                        <p><strong>Ação:</strong> {{ log.acao }}</p>
                     </div>
                     <div class="col-md-6">
                         <p><strong>Entidade:</strong> {{ log.entidade or '-' }}</p>
-                        <p><strong>ID da Entidade:</strong> {{ log.entidade_id or '-' }}</p>
-                        <p><strong>IP do Cliente:</strong> 
-                            {% if log.ip %}
-                                <code>{{ log.ip }}</code>
-                            {% else %}
-                                <span class="text-muted">Não registrado</span>
-                            {% endif %}
-                        </p>
+                        <p><strong>ID Entidade:</strong> {{ log.entidade_id or '-' }}</p>
+                        <p><strong>IP:</strong> {{ log.ip or '-' }}</p>
                     </div>
                 </div>
 
+                <hr>
+
+                <h6 class="mb-3"><i class="bi bi-arrow-left-right"></i> Dados Alterados</h6>
+                
                 {% if log.dados_anteriores or log.dados_novos %}
-                <hr>
-                <h6><i class="bi bi-arrow-left-right"></i> Alterações Registradas</h6>
-                <div class="row mt-3">
-                    {% if log.dados_anteriores and log.dados_anteriores != 'null' %}
-                    <div class="col-md-6">
-                        <div class="card border-warning h-100">
-                            <div class="card-header bg-warning">
-                                <strong><i class="bi bi-database"></i> Dados Anteriores</strong>
-                            </div>
-                            <div class="card-body">
-                                <pre class="json-data" style="max-height: 400px; overflow-y: auto;">{{ log.dados_anteriores }}</pre>
-                            </div>
-                        </div>
-                    </div>
-                    {% endif %}
+                    {% set dados_antigos = log.dados_anteriores|tojson|safe %}
+                    {% set dados_novos = log.dados_novos|tojson|safe %}
                     
-                    {% if log.dados_novos and log.dados_novos != 'null' %}
-                    <div class="col-md-6">
-                        <div class="card border-success h-100">
-                            <div class="card-header bg-success text-white">
-                                <strong><i class="bi bi-database-fill"></i> Dados Novos</strong>
-                            </div>
-                            <div class="card-body">
-                                <pre class="json-data" style="max-height: 400px; overflow-y: auto;">{{ log.dados_novos }}</pre>
-                            </div>
+                    {% if log.dados_anteriores and log.dados_novos %}
+                        {% set antigos = log.dados_anteriores|tojson|safe %}
+                        {% set novos = log.dados_novos|tojson|safe %}
+                        
+                        <!-- Tabela de alterações -->
+                        <div class="table-responsive">
+                            <table class="table table-bordered">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th style="width: 30%">Campo</th>
+                                        <th style="width: 35%">Valor Anterior</th>
+                                        <th style="width: 35%">Valor Novo</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% if log.dados_anteriores and log.dados_novos %}
+                                        {% set antigos_dict = log.dados_anteriores|tojson|safe %}
+                                        {% set novos_dict = log.dados_novos|tojson|safe %}
+                                        
+                                        {# Tente extrair as alterações #}
+                                        <tr>
+                                            <td>Dados Completos</td>
+                                            <td>
+                                                <pre class="small mb-0">{{ log.dados_anteriores | tojson(indent=2) }}</pre>
+                                            </td>
+                                            <td>
+                                                <pre class="small mb-0">{{ log.dados_novos | tojson(indent=2) }}</pre>
+                                            </td>
+                                        </tr>
+                                    {% else %}
+                                        <tr>
+                                            <td colspan="3" class="text-center text-muted">
+                                                Nenhuma alteração detalhada registrada
+                                            </td>
+                                        </tr>
+                                    {% endif %}
+                                </tbody>
+                            </table>
                         </div>
-                    </div>
+                        
+                    {% else %}
+                        <div class="alert alert-info">
+                            <i class="bi bi-info-circle"></i>
+                            {% if log.dados_anteriores %}
+                                <strong>Dados Anteriores:</strong>
+                                <pre class="small mb-0 mt-2">{{ log.dados_anteriores | tojson(indent=2) }}</pre>
+                            {% endif %}
+                            {% if log.dados_novos %}
+                                <strong class="mt-3 d-block">Dados Novos:</strong>
+                                <pre class="small mb-0 mt-2">{{ log.dados_novos | tojson(indent=2) }}</pre>
+                            {% endif %}
+                        </div>
                     {% endif %}
-                </div>
                 {% else %}
-                <hr>
-                <div class="alert alert-info">
-                    <i class="bi bi-info-circle"></i> Esta ação não possui registro de alteração de dados.
-                </div>
+                    <div class="alert alert-secondary">
+                        <i class="bi bi-info-circle"></i>
+                        Nenhum dado detalhado registrado para esta ação.
+                    </div>
                 {% endif %}
 
-                {% if log.user_agent %}
+                <!-- Exibir alterações de forma legível se possível -->
                 <hr>
-                <h6><i class="bi bi-browser-chrome"></i> Navegador/Dispositivo</h6>
-                <div class="card bg-light">
-                    <div class="card-body">
-                        <code class="small">{{ log.user_agent }}</code>
+                <h6 class="mb-3"><i class="bi bi-file-text"></i> Dados Brutos</h6>
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="card bg-light">
+                            <div class="card-header">
+                                <strong>Dados Anteriores (JSON)</strong>
+                            </div>
+                            <div class="card-body">
+                                <pre class="small mb-0" style="white-space: pre-wrap;">{{ log.dados_anteriores or '{}' | tojson(indent=2) }}</pre>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="card bg-light">
+                            <div class="card-header">
+                                <strong>Dados Novos (JSON)</strong>
+                            </div>
+                            <div class="card-body">
+                                <pre class="small mb-0" style="white-space: pre-wrap;">{{ log.dados_novos or '{}' | tojson(indent=2) }}</pre>
+                            </div>
+                        </div>
                     </div>
                 </div>
-                {% endif %}
+
+                <div class="mt-4">
+                    <a href="/auditoria" class="btn btn-secondary">
+                        <i class="bi bi-arrow-left"></i> Voltar
+                    </a>
+                    <button onclick="window.print()" class="btn btn-primary">
+                        <i class="bi bi-printer"></i> Imprimir
+                    </button>
+                </div>
             </div>
         </div>
     </div>
 </div>
 
 <style>
-    .card {
-        border-radius: 10px;
-        overflow: hidden;
-    }
-    .card-header {
-        font-weight: 600;
-    }
     pre {
         background-color: #f8f9fa;
         padding: 10px;
         border-radius: 5px;
         font-size: 12px;
+        max-height: 300px;
+        overflow-y: auto;
+    }
+    .table pre {
+        background-color: transparent;
+        padding: 0;
         margin: 0;
-        white-space: pre-wrap;
-        word-wrap: break-word;
-        font-family: monospace;
-    }
-    .badge {
-        font-size: 0.85em;
-        padding: 5px 10px;
-    }
-    .h-100 {
-        height: 100%;
     }
 </style>
 
-<script>
-// Formatar JSON para exibição legível
-function formatJsonString(str) {
-    if (!str) return '';
-    if (str === 'null') return '';
-    
-    let cleaned = str;
-    // Remove aspas do início e fim se existirem
-    if (cleaned.startsWith('"') && cleaned.endsWith('"')) {
-        cleaned = cleaned.slice(1, -1);
-    }
-    // Remove escapes das aspas
-    cleaned = cleaned.replace(/\\"/g, '"');
-    
-    try {
-        let parsed = JSON.parse(cleaned);
-        return JSON.stringify(parsed, null, 2);
-    } catch(e) {
-        // Se não for JSON, retorna o texto original
-        return str;
-    }
-}
-
-// Aplicar formatação a todos os elementos com classe json-data
-document.addEventListener('DOMContentLoaded', function() {
-    document.querySelectorAll('.json-data').forEach(function(element) {
-        let originalText = element.textContent;
-        let formatted = formatJsonString(originalText);
-        element.textContent = formatted;
-    });
-});
-</script>
 {% endblock %}
