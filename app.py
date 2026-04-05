@@ -4757,40 +4757,65 @@ def restaurar_backup_sistema_arquivo(backup_path, emergency_backup):
 @app.route("/obreiros/<int:obreiro_id>/familiares")
 @login_required
 def listar_familiares(obreiro_id):
-    if session["tipo"] != "admin" and session["user_id"] != obreiro_id:
+    """Lista familiares do obreiro"""
+    cursor, conn = get_db()
+    
+    # Verificar permissão: admin, mestre (grau >= 3) ou o próprio obreiro
+    usuario_tipo = session.get('tipo', '')
+    usuario_grau = session.get('grau_atual', 0)
+    
+    if usuario_tipo != 'admin' and usuario_grau < 3 and session["user_id"] != obreiro_id:
         flash("Você não tem permissão para acessar esta página", "danger")
         return redirect(f"/obreiros/{obreiro_id}")
-    cursor, conn = get_db()
+    
     try:
         cursor.execute("SELECT id, nome_completo FROM usuarios WHERE id = %s", (obreiro_id,))
         obreiro = cursor.fetchone()
+        
         if not obreiro:
             flash("Obreiro não encontrado", "danger")
             return_connection(conn)
             return redirect("/obreiros")
+        
         cursor.execute("SELECT * FROM familiares WHERE obreiro_id = %s", (obreiro_id,))
         familiares = cursor.fetchall()
         familiares_list = [dict(f) for f in familiares]
+        
     except Exception as e:
         print(f"ERRO: {e}")
         familiares_list = []
         flash(f"Erro ao carregar familiares: {str(e)}", "danger")
+    
     return_connection(conn)
-    return render_template("obreiros/familiares.html", obreiro=obreiro, familiares=familiares_list, obreiro_id=obreiro_id)
+    
+    # Verificar se pode editar (apenas admin ou o próprio obreiro)
+    pode_editar = (session["tipo"] == "admin" or session["user_id"] == obreiro_id)
+    
+    return render_template("obreiros/familiares.html", 
+                          obreiro=obreiro, 
+                          familiares=familiares_list, 
+                          obreiro_id=obreiro_id,
+                          pode_editar=pode_editar)
 
 @app.route("/obreiros/<int:obreiro_id>/familiares/novo", methods=["GET", "POST"])
 @login_required
 def novo_familiar(obreiro_id):
-    if session["tipo"] != "admin" and session["user_id"] != obreiro_id:
-        flash("Você não tem permissão para acessar esta página", "danger")
-        return redirect(f"/obreiros/{obreiro_id}")
+    """Cria um novo familiar (apenas admin ou o próprio obreiro)"""
     cursor, conn = get_db()
+    
+    # Verificar permissão: apenas admin ou o próprio obreiro
+    if session["tipo"] != 'admin' and session["user_id"] != obreiro_id:
+        flash("Você não tem permissão para adicionar familiares", "danger")
+        return redirect(f"/obreiros/{obreiro_id}")
+    
     cursor.execute("SELECT nome_completo FROM usuarios WHERE id = %s", (obreiro_id,))
     obreiro = cursor.fetchone()
+    
     if not obreiro:
         flash("Obreiro não encontrado", "danger")
         return_connection(conn)
         return redirect("/obreiros")
+    
     if request.method == "POST":
         nome = request.form.get("nome")
         parentesco = request.form.get("parentesco")
@@ -4799,6 +4824,7 @@ def novo_familiar(obreiro_id):
         email = request.form.get("email")
         observacoes = request.form.get("observacoes")
         receber_notificacoes = 1 if request.form.get("receber_notificacoes") else 0
+        
         if not nome or not parentesco:
             flash("Nome e parentesco são obrigatórios", "danger")
         else:
@@ -4819,13 +4845,21 @@ def novo_familiar(obreiro_id):
             except Exception as e:
                 flash(f"Erro ao adicionar familiar: {str(e)}", "danger")
                 conn.rollback()
+    
     return_connection(conn)
     return render_template("obreiros/familiar_form.html", obreiro=obreiro, obreiro_id=obreiro_id, familiar=None)
 
 @app.route("/obreiros/familiares/editar/<int:id>", methods=["GET", "POST"])
 @login_required
 def editar_familiar(id):
+    """Edita um familiar (apenas admin)"""
     cursor, conn = get_db()
+    
+    # Apenas admin pode editar
+    if session["tipo"] != 'admin':
+        flash("Apenas administradores podem editar familiares", "danger")
+        return redirect("/obreiros")
+    
     cursor.execute("""
         SELECT f.*, u.id as obreiro_id, u.nome_completo as obreiro_nome
         FROM familiares f
@@ -4833,14 +4867,12 @@ def editar_familiar(id):
         WHERE f.id = %s
     """, (id,))
     familiar = cursor.fetchone()
+    
     if not familiar:
         flash("Familiar não encontrado", "danger")
         return_connection(conn)
         return redirect("/obreiros")
-    if session["tipo"] != "admin" and session["user_id"] != familiar["obreiro_id"]:
-        flash("Você não tem permissão para editar este familiar", "danger")
-        return_connection(conn)
-        return redirect(f"/obreiros/{familiar['obreiro_id']}/familiares")
+    
     if request.method == "POST":
         nome = request.form.get("nome")
         parentesco = request.form.get("parentesco")
@@ -4849,6 +4881,7 @@ def editar_familiar(id):
         email = request.form.get("email")
         observacoes = request.form.get("observacoes")
         receber_notificacoes = 1 if request.form.get("receber_notificacoes") else 0
+        
         if not nome or not parentesco:
             flash("Nome e parentesco são obrigatórios", "danger")
         else:
@@ -4872,6 +4905,7 @@ def editar_familiar(id):
             except Exception as e:
                 flash(f"Erro ao atualizar familiar: {str(e)}", "danger")
                 conn.rollback()
+    
     return_connection(conn)
     return render_template("obreiros/familiar_form.html", obreiro={"nome_completo": familiar["obreiro_nome"]},
                           obreiro_id=familiar["obreiro_id"], familiar=familiar)
@@ -6782,11 +6816,14 @@ def editar_modelo(id):
 @app.route("/obreiros/<int:obreiro_id>/comunicados")
 @login_required
 def listar_comunicados_obreiro(obreiro_id):
-    """Lista todos os comunicados/ocorrências do obreiro"""
+    """Lista comunicados/ocorrências do obreiro"""
     cursor, conn = get_db()
     
-    # Verificar permissão
-    if session.get('tipo') != 'admin' and session['user_id'] != obreiro_id:
+    # Verificar permissão: admin, mestre (grau >= 3) ou o próprio obreiro
+    usuario_tipo = session.get('tipo', '')
+    usuario_grau = session.get('grau_atual', 0)
+    
+    if usuario_tipo != 'admin' and usuario_grau < 3 and session['user_id'] != obreiro_id:
         flash("Permissão negada!", "danger")
         return redirect(f"/obreiros/{obreiro_id}")
     
@@ -6796,6 +6833,7 @@ def listar_comunicados_obreiro(obreiro_id):
     
     if not obreiro:
         flash("Obreiro não encontrado!", "danger")
+        return_connection(conn)
         return redirect("/obreiros")
     
     # Buscar comunicados
@@ -6813,26 +6851,34 @@ def listar_comunicados_obreiro(obreiro_id):
     
     comunicados = cursor.fetchall()
     
-    # Buscar tipos de ocorrência para o formulário
-    cursor.execute("SELECT * FROM tipos_ocorrencia WHERE ativo = 1 ORDER BY ordem")
-    tipos_ocorrencia = cursor.fetchall()
+    # Buscar tipos de ocorrência (apenas admin pode criar)
+    tipos_ocorrencia = []
+    if session["tipo"] == "admin" or usuario_grau >= 3:
+        cursor.execute("SELECT * FROM tipos_ocorrencia WHERE ativo = 1 ORDER BY ordem")
+        tipos_ocorrencia = cursor.fetchall()
     
     return_connection(conn)
+    
+    # Verificar se pode criar/editar (apenas admin ou mestre)
+    pode_editar = (session["tipo"] == "admin" or usuario_grau >= 3)
     
     return render_template("obreiros/comunicados.html", 
                           obreiro=obreiro, 
                           comunicados=comunicados,
-                          tipos_ocorrencia=tipos_ocorrencia)
-
+                          tipos_ocorrencia=tipos_ocorrencia,
+                          pode_editar=pode_editar)
 
 @app.route("/obreiros/<int:obreiro_id>/comunicados/novo", methods=["GET", "POST"])
 @login_required
 def novo_comunicado_obreiro(obreiro_id):
-    """Criar novo comunicado/ocorrência"""
+    """Criar novo comunicado (apenas admin ou mestre)"""
     cursor, conn = get_db()
     
-    # Verificar permissão (apenas admin ou mestres)
-    if session.get('tipo') != 'admin' and session.get('grau_atual', 0) < 3:
+    usuario_tipo = session.get('tipo', '')
+    usuario_grau = session.get('grau_atual', 0)
+    
+    # Verificar permissão: apenas admin ou mestre (grau >= 3)
+    if usuario_tipo != 'admin' and usuario_grau < 3:
         flash("Apenas Mestres e Administradores podem criar comunicados!", "danger")
         return redirect(f"/obreiros/{obreiro_id}")
     
@@ -9484,16 +9530,25 @@ def excluir_tipo_ausencia(id):
 @app.route("/obreiros/<int:obreiro_id>/condecoracoes")
 @login_required
 def listar_condecoracoes(obreiro_id):
-    if session["tipo"] != "admin" and session["user_id"] != obreiro_id:
+    """Lista condecorações do obreiro"""
+    cursor, conn = get_db()
+    
+    # Verificar permissão: admin, mestre (grau >= 3) ou o próprio obreiro
+    usuario_tipo = session.get('tipo', '')
+    usuario_grau = session.get('grau_atual', 0)
+    
+    if usuario_tipo != 'admin' and usuario_grau < 3 and session["user_id"] != obreiro_id:
         flash("Você não tem permissão para acessar esta página", "danger")
         return redirect(f"/obreiros/{obreiro_id}")
-    cursor, conn = get_db()
+    
     cursor.execute("SELECT id, nome_completo FROM usuarios WHERE id = %s", (obreiro_id,))
     obreiro = cursor.fetchone()
+    
     if not obreiro:
         flash("Obreiro não encontrado", "danger")
         return_connection(conn)
         return redirect("/obreiros")
+    
     cursor.execute("""
         SELECT c.*, t.nome as tipo_nome, t.descricao as tipo_descricao, 
                t.cor, t.icone, t.nivel,
@@ -9505,30 +9560,43 @@ def listar_condecoracoes(obreiro_id):
         ORDER BY t.nivel DESC, c.data_concessao DESC
     """, (obreiro_id,))
     condecoracoes = cursor.fetchall()
-    cursor.execute("""
-        SELECT * FROM tipos_condecoracoes 
-        WHERE ativo = 1 
-        ORDER BY nivel DESC, ordem
-    """)
-    tipos_condecoracoes = cursor.fetchall()
+    
+    # Tipos de condecorações disponíveis (apenas admin pode adicionar)
+    tipos_condecoracoes = []
+    if session["tipo"] == "admin":
+        cursor.execute("SELECT * FROM tipos_condecoracoes WHERE ativo = 1 ORDER BY nivel DESC, ordem")
+        tipos_condecoracoes = cursor.fetchall()
+    
     return_connection(conn)
-    return render_template("obreiros/condecoracoes.html", obreiro=obreiro, condecoracoes=condecoracoes,
-                          tipos_condecoracoes=tipos_condecoracoes, obreiro_id=obreiro_id)
+    
+    # Verificar se pode editar (apenas admin)
+    pode_editar = (session["tipo"] == "admin")
+    
+    return render_template("obreiros/condecoracoes.html", 
+                          obreiro=obreiro, 
+                          condecoracoes=condecoracoes,
+                          tipos_condecoracoes=tipos_condecoracoes, 
+                          obreiro_id=obreiro_id,
+                          pode_editar=pode_editar)
 
 @app.route("/obreiros/<int:obreiro_id>/condecoracoes/nova", methods=["POST"])
 @admin_required
 def nova_condecoracao(obreiro_id):
+    """Concede nova condecoração (apenas admin)"""
     cursor, conn = get_db()
+    
     tipo_id = request.form.get("tipo_id")
     data_concessao = request.form.get("data_concessao")
     data_validade = request.form.get("data_validade")
     motivo = request.form.get("motivo")
     numero_registro = request.form.get("numero_registro")
     observacoes = request.form.get("observacoes")
+    
     if not tipo_id or not data_concessao:
         flash("Tipo de condecoração e data são obrigatórios", "danger")
         return_connection(conn)
         return redirect(f"/obreiros/{obreiro_id}/condecoracoes")
+    
     try:
         data_validade = data_validade if data_validade and data_validade.strip() else None
         cursor.execute("""
@@ -9539,22 +9607,29 @@ def nova_condecoracao(obreiro_id):
         """, (obreiro_id, tipo_id, data_concessao, data_validade, session["user_id"],
               motivo, numero_registro, observacoes))
         conn.commit()
-        registrar_log("conceder_condecoracao", "condecoracao", cursor.lastrowid, dados_novos={"obreiro_id": obreiro_id, "tipo_id": tipo_id})
+        
+        registrar_log("conceder_condecoracao", "condecoracao", cursor.lastrowid, 
+                     dados_novos={"obreiro_id": obreiro_id, "tipo_id": tipo_id})
         flash("Condecoração concedida com sucesso!", "success")
+        
     except Exception as e:
         print(f"Erro ao conceder condecoração: {e}")
         conn.rollback()
         flash(f"Erro ao conceder condecoração: {str(e)}", "danger")
+    
     return_connection(conn)
     return redirect(f"/obreiros/{obreiro_id}/condecoracoes")
 
 @app.route("/obreiros/condecoracoes/excluir/<int:id>")
 @admin_required
 def excluir_condecoracao(id):
+    """Exclui uma condecoração (apenas admin)"""
     cursor, conn = get_db()
+    
     try:
         cursor.execute("SELECT obreiro_id FROM condecoracoes_obreiro WHERE id = %s", (id,))
         condecoracao = cursor.fetchone()
+        
         if condecoracao:
             obreiro_id = condecoracao["obreiro_id"]
             cursor.execute("DELETE FROM condecoracoes_obreiro WHERE id = %s", (id,))
@@ -9563,10 +9638,12 @@ def excluir_condecoracao(id):
             flash("Condecoração excluída com sucesso!", "success")
         else:
             flash("Condecoração não encontrada", "danger")
+            
     except Exception as e:
         print(f"Erro ao excluir condecoração: {e}")
         conn.rollback()
         flash(f"Erro ao excluir condecoração: {str(e)}", "danger")
+    
     return_connection(conn)
     return redirect(f"/obreiros/{condecoracao['obreiro_id']}/condecoracoes" if condecoracao else "/obreiros")
 
