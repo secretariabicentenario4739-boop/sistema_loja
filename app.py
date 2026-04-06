@@ -1651,6 +1651,7 @@ def inject_permissions():
     return {'tem_permissao': tem_permissao}
 
 @app.template_filter('markdown')
+
 def render_markdown(text):
     if not text:
         return ''
@@ -6539,24 +6540,29 @@ def gerar_alertas():
     flash(f"Alertas gerados! ({len(alertas_ausencias)} por ausencias + alertas de presenca)", "success")
     return redirect("/presenca/alertas")
 # =============================
-# ROTAS DE ATAS (CORRIGIDAS)
+# ROTAS DE ATAS 
 # =============================
 @app.route("/atas/<int:id>/pdf-oficial")
 @login_required
 def gerar_pdf_ata_oficial(id):
     """Gera PDF oficial da ata com cabeçalho da loja"""
-    from flask import render_template, url_for
-    import pdfkit
+    from flask import render_template, url_for, Response
     from io import BytesIO
+    import pdfkit
+    import os
     
     cursor, conn = get_db()
     
     # Buscar dados da ata e reunião
     cursor.execute("""
-        SELECT a.*, r.*, 
-               l.nome as loja_nome,
-               l.veneravel_mestre,
-               l.secretario
+        SELECT a.*, a.id as ata_id, a.numero_ata, a.ano_ata, a.conteudo as ata_conteudo,
+               r.id as reuniao_id, r.titulo as reuniao_titulo, r.tipo as reuniao_tipo,
+               r.grau as reuniao_grau, r.data as reuniao_data,
+               r.hora_inicio as reuniao_hora_inicio, r.hora_termino as reuniao_hora_termino,
+               r.local as reuniao_local, r.pauta as reuniao_pauta, r.observacoes as reuniao_observacoes,
+               l.nome as loja_nome, l.numero as loja_numero, l.oriente as loja_oriente,
+               l.veneravel_mestre, l.secretario, l.tesoureiro, l.orador,
+               l.telefone as loja_telefone, l.email as loja_email
         FROM atas a
         JOIN reunioes r ON a.reuniao_id = r.id
         LEFT JOIN lojas l ON r.loja_id = l.id
@@ -6567,67 +6573,105 @@ def gerar_pdf_ata_oficial(id):
     
     if not ata:
         flash("Ata não encontrada!", "danger")
+        return_connection(conn)
         return redirect("/atas")
     
     # Buscar presentes
     cursor.execute("""
-        SELECT u.nome_completo, c.nome as cargo
+        SELECT u.id, u.nome_completo, u.grau_atual, c.nome as cargo,
+               CASE WHEN oc.cargo_id IS NOT NULL THEN 'Sim' ELSE 'Não' END as tem_cargo
         FROM presenca p
         JOIN usuarios u ON p.obreiro_id = u.id
         LEFT JOIN ocupacao_cargos oc ON u.id = oc.obreiro_id AND oc.ativo = 1
         LEFT JOIN cargos c ON oc.cargo_id = c.id
         WHERE p.reuniao_id = %s AND p.presente = 1
-        ORDER BY u.grau_atual DESC
+        ORDER BY u.grau_atual DESC, u.nome_completo
     """, (ata['reuniao_id'],))
     presentes = cursor.fetchall()
     
     # Buscar ausentes justificados
     cursor.execute("""
-        SELECT u.nome_completo, p.justificativa
+        SELECT u.id, u.nome_completo, u.grau_atual, p.justificativa, p.tipo_ausencia
         FROM presenca p
         JOIN usuarios u ON p.obreiro_id = u.id
         WHERE p.reuniao_id = %s AND p.presente = 0 AND p.justificativa IS NOT NULL
+        ORDER BY u.nome_completo
     """, (ata['reuniao_id'],))
     ausentes = cursor.fetchall()
     
+    # Buscar total de obreiros
+    cursor.execute("SELECT COUNT(*) as total FROM usuarios u WHERE u.ativo = 1")
+    total_obreiros = cursor.fetchone()['total']
+    
     return_connection(conn)
     
+    # Preparar dados para o template
+    reuniao = {
+        'id': ata['reuniao_id'],
+        'titulo': ata['reuniao_titulo'],
+        'tipo': ata['reuniao_tipo'],
+        'grau': ata['reuniao_grau'],
+        'data': ata['reuniao_data'],
+        'hora_inicio': ata['reuniao_hora_inicio'],
+        'hora_termino': ata['reuniao_hora_termino'],
+        'local': ata['reuniao_local'] or 'Templo Maçônico - ARLS Bicentenário',
+        'pauta': ata['reuniao_pauta'],
+        'observacoes': ata['reuniao_observacoes']
+    }
+    
     # Gerar HTML para PDF
+    logo_url = url_for('static', filename='images/logo_loja_ata.png', _external=True)
+    
     html = render_template("atas/modelo_ata.html",
-                          reuniao=ata,
+                          reuniao=reuniao,
                           ata=ata,
                           numero_ata=ata['numero_ata'],
                           ano_ata=ata['ano_ata'],
                           presentes=presentes,
                           ausentes=ausentes,
-                          veneravel_mestre=ata.get('veneravel_mestre', ''),
-                          secretario=ata.get('secretario', ''),
-                          logo_url=url_for('static', filename='images/logo_loja.png', _external=True))
+                          total_obreiros=total_obreiros,
+                          veneravel_mestre=ata.get('veneravel_mestre', 'Venerável Mestre'),
+                          secretario=ata.get('secretario', 'Secretário'),
+                          tesoureiro=ata.get('tesoureiro', 'Tesoureiro'),
+                          orador=ata.get('orador', 'Orador'),
+                          loja_nome=ata.get('loja_nome', 'ARLS Bicentenário'),
+                          loja_numero=ata.get('loja_numero', '4739'),
+                          loja_oriente=ata.get('loja_oriente', 'Ceilândia - DF'),
+                          logo_url=logo_url,
+                          now=datetime.now())
     
-    # Configurar PDF
+    # Configurar opções do PDF
     options = {
         'page-size': 'A4',
-        'margin-top': '25mm',
-        'margin-bottom': '25mm',
-        'margin-left': '20mm',
-        'margin-right': '20mm',
+        'margin-top': '20mm',
+        'margin-bottom': '20mm',
+        'margin-left': '15mm',
+        'margin-right': '15mm',
         'encoding': 'UTF-8',
-        'no-outline': None
+        'no-outline': None,
+        'enable-local-file-access': None
     }
     
-    # Gerar PDF (usando pdfkit ou wkhtmltopdf)
+    # Tentar gerar PDF com pdfkit
     try:
-        # Se tiver wkhtmltopdf instalado
-        pdf = pdfkit.from_string(html, False, options=options)
+        config = None
+        if os.name == 'nt':  # Windows
+            wkhtmltopdf_path = r'C:\Program Files\wkhtmltopdf\bin\wkhtmltopdf.exe'
+            if os.path.exists(wkhtmltopdf_path):
+                config = pdfkit.configuration(wkhtmltopdf=wkhtmltopdf_path)
         
-        # Criar resposta
+        if config:
+            pdf = pdfkit.from_string(html, False, options=options, configuration=config)
+        else:
+            pdf = pdfkit.from_string(html, False, options=options)
+        
         response = Response(pdf, content_type='application/pdf')
         response.headers['Content-Disposition'] = f'inline; filename=ata_{ata["numero_ata"]}_{ata["ano_ata"]}.pdf'
         return response
         
     except Exception as e:
         print(f"Erro ao gerar PDF: {e}")
-        # Fallback: mostrar HTML
+        # Fallback: retornar HTML formatado para impressão
         return html
 @app.route("/atas/<int:id>")
 @login_required
@@ -6750,6 +6794,7 @@ def ver_ata_por_id(id):
         flash(f"Erro ao carregar ata: {str(e)}", "danger")
         return redirect("/atas")
 
+    
 @app.route("/atas")
 @login_required
 def listar_atas():
@@ -6757,20 +6802,22 @@ def listar_atas():
     try:
         cursor, conn = get_db()
         
-        # Buscar atas com informações da reunião e total de assinaturas
         cursor.execute("""
             SELECT 
                 a.id,
                 a.reuniao_id,
-                a.numero_ata as numero,
+                a.numero_ata,
+                a.ano_ata,
                 a.data_criacao as data,
                 a.conteudo,
                 a.aprovada,
                 a.aprovada_em,
                 a.redator_id as criado_por,
                 a.data_criacao as created_at,
+                a.tipo_ata,
                 r.titulo as reuniao_titulo,
                 r.data as reuniao_data,
+                r.local as reuniao_local,
                 u.nome_completo as criado_por_nome,
                 (SELECT COUNT(*) FROM assinaturas_ata WHERE ata_id = a.id) as total_assinaturas
             FROM atas a
@@ -6782,9 +6829,7 @@ def listar_atas():
         atas = cursor.fetchall()
         return_connection(conn)
         
-        filtros = {}
-        
-        return render_template("atas/lista.html", atas=atas, filtros=filtros)
+        return render_template("atas/lista.html", atas=atas, filtros={})
         
     except Exception as e:
         print(f"❌ Erro ao listar atas: {e}")
@@ -8071,6 +8116,7 @@ def api_marcar_aviso_visto(id):
 @permissao_required('candidato.view')
 def gerenciar_candidatos():
     cursor, conn = get_db()
+    
     if request.method == "POST":
         nome = request.form["nome"].strip()
         if nome:
@@ -8083,6 +8129,7 @@ def gerenciar_candidatos():
         else:
             flash("Nome do candidato não pode estar vazio", "danger")
     
+    # Buscar candidatos com informações de votos
     cursor.execute("""
         SELECT c.*,
                (SELECT COUNT(*) FROM sindicancias WHERE candidato_id = c.id) as total_votos,
@@ -8092,6 +8139,34 @@ def gerenciar_candidatos():
         ORDER BY c.data_criacao DESC
     """)
     candidatos = cursor.fetchall()
+    
+    # ============================================
+    # BUSCAR STATUS DOS DOCUMENTOS POR CANDIDATO
+    # ============================================
+    # Verificar se a tabela documentos_candidato existe
+    cursor.execute("""
+        SELECT EXISTS (
+            SELECT FROM information_schema.tables 
+            WHERE table_name = 'documentos_candidato'
+        )
+    """)
+    tabela_documentos_existe = cursor.fetchone()['exists']
+    
+    documentos_status = {}
+    
+    if tabela_documentos_existe:
+        cursor.execute("""
+            SELECT 
+                c.id as candidato_id,
+                COUNT(d.id) as total,
+                SUM(CASE WHEN d.status = 'pendente' OR d.status IS NULL THEN 1 ELSE 0 END) as pendentes,
+                SUM(CASE WHEN d.status = 'aprovado' THEN 1 ELSE 0 END) as aprovados
+            FROM candidatos c
+            LEFT JOIN documentos_candidato d ON c.id = d.candidato_id
+            GROUP BY c.id
+        """)
+        documentos_status_rows = cursor.fetchall()
+        documentos_status = {row['candidato_id']: row for row in documentos_status_rows}
     
     # Buscar sindicantes
     cursor.execute("""
@@ -8105,7 +8180,12 @@ def gerenciar_candidatos():
     sindicantes = cursor.fetchall()
     
     return_connection(conn)
-    return render_template("candidatos.html", candidatos=candidatos, sindicantes=sindicantes, tipo=session["tipo"])
+    
+    return render_template("candidatos.html", 
+                          candidatos=candidatos, 
+                          sindicantes=sindicantes, 
+                          documentos_status=documentos_status,
+                          tipo=session["tipo"])
 
 @app.route("/candidatos/excluir/<int:id>", methods=["POST"])
 def excluir_candidato(id):

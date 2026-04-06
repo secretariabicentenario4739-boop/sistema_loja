@@ -81,136 +81,152 @@
                 </div>
             </div>
 
-            <!-- Lista de Candidatos -->
-            <div class="col-md-8">
-                <div class="card shadow">
-                    <div class="card-header bg-info text-white">
-                        <h5 class="mb-0"><i class="bi bi-list-ul"></i> Candidatos em Sindicância</h5>
-                    </div>
-                    <div class="card-body">
-                        {% if candidatos %}
-                        <div class="table-responsive">
-                            <table class="table table-hover">
-                                <thead class="table-light">
-                                    <tr>
-                                        <th>Nome</th>
-                                        <th>Data Cadastro</th>
-                                        <th>Status</th>
-                                        <th>Votos</th>
-                                        <th>Formulário</th>
-                                        <th>Docs</th>
-                                        <th>Ações</th>
-                                    </thead>
-                                <tbody>
-                                    {% for c in candidatos %}
-                                    <tr class="{% if c.fechado == 1 %}table-secondary{% endif %}">
-                                        <td>
-                                            <strong>{{ c.nome }}</strong>
-                                            {% if c.fechado == 1 %}
-                                            <br><small class="text-muted">Encerrada em: {{ c.data_fechamento.strftime('%d/%m/%Y') if c.data_fechamento else '-' }}</small>
-                                            {% endif %}
-                                            {% if c.cpf %}
-                                            <br><small class="text-muted">CPF: {{ c.cpf }}</small>
-                                            {% endif %}
-                                            {% if c.celular %}
-                                            <br><small class="text-muted"><i class="bi bi-whatsapp"></i> {{ c.celular }}</small>
-                                            {% endif %}
-                                        </td>
-                                        <td>{{ c.data_criacao.strftime('%d/%m/%Y') if c.data_criacao else '-' }}</td>
-                                        <td>
-                                            {% if c.fechado == 1 %}
-                                                {% if c.status == 'Aprovado' %}
-                                                    <span class="badge bg-success">Aprovado</span>
-                                                {% else %}
-                                                    <span class="badge bg-danger">Reprovado</span>
-                                                {% endif %}
-                                            {% else %}
-                                                <span class="badge bg-warning">Em análise</span>
-                                            {% endif %}
-                                         </td>
-                                        <td>
-                                            {% if c.total_votos %}
-                                                <div class="progress" style="height: 20px;">
-                                                    {% set percentual = (c.votos_positivos / c.total_votos * 100) if c.total_votos > 0 else 0 %}
-                                                    <div class="progress-bar bg-success" style="width: {{ percentual }}%">
-                                                        {{ "%.0f"|format(percentual) }}%
-                                                    </div>
-                                                </div>
-                                                <small class="text-muted">
-                                                    {{ c.votos_positivos }} positivos / {{ c.votos_negativos }} negativos
-                                                </small>
-                                            {% else %}
-                                                -
-                                            {% endif %}
-                                         </td>
-                                        <td class="text-center">
-                                            {% if c.cpf or c.rg or c.endereco_residencial %}
-                                                <span class="badge bg-success">
-                                                    <i class="bi bi-check-circle"></i> Preenchido
-                                                </span>
-                                            {% else %}
-                                                <span class="badge bg-secondary">
-                                                    <i class="bi bi-clock"></i> Pendente
-                                                </span>
-                                            {% endif %}
-                                            <br>
-                                            <a href="/candidato/formulario/{{ c.id }}" class="btn btn-sm btn-outline-info mt-1" title="Preencher Formulário">
-                                                <i class="bi bi-file-text"></i>
-                                            </a>
-                                         </td>
-                                        <td class="text-center">
-                                            <a href="/candidatos/{{ c.id }}/documentos" class="btn btn-sm btn-outline-success" title="Gerenciar Documentos">
-                                                <i class="bi bi-file-earmark-text"></i>
-                                            </a>
-                                         </td>
-										 <td class="text-center">
-											<div class="btn-group btn-group-sm">
-												<!-- Botão Checklist -->
-												<a href="/candidatos/{{ c.id }}/checklist" class="btn btn-success" title="Checklist de Iniciação">
-													<i class="bi bi-check2-square"></i>
-												</a>
-										</td>
-                                        <td>
-                                            {% if session.tipo == 'admin' or session.tipo == 'sindicante' %}
-                                            <div class="btn-group btn-group-sm">
-                                                <!-- Visualizar Sindicância -->
-                                                <a href="/sindicancia/{{ c.id }}" class="btn btn-info" title="Visualizar Sindicância">
-                                                    <i class="bi bi-eye"></i>
-                                                </a>
-                                                
-                                                <!-- Encerrar Sindicância -->
-                                                {% if not c.fechado %}
-                                                <a href="/fechar_sindicancia/{{ c.id }}" class="btn btn-warning" 
-                                                   onclick="return confirm('Encerrar sindicância deste candidato?')" title="Encerrar Sindicância">
-                                                    <i class="bi bi-check2-circle"></i>
-                                                </a>
-                                                {% endif %}
-                                                
-                                                <!-- Excluir Candidato -->
-                                                <form action="/candidatos/excluir/{{ c.id }}" method="POST" style="display:inline;">
-                                                    <button type="submit" class="btn btn-danger" 
-                                                            onclick="return confirm('Excluir este candidato?')" title="Excluir Candidato">
-                                                        <i class="bi bi-trash"></i>
-                                                    </button>
-                                                </form>
-                                            </div>
-                                            {% endif %}
-                                         </td>
-                                    </tr>
-                                    {% endfor %}
-                                </tbody>
-                            </table>
-                        </div>
-                        {% else %}
-                        <div class="text-center text-muted py-4">
-                            <i class="bi bi-inbox fs-1"></i>
-                            <p class="mt-2">Nenhum candidato cadastrado</p>
-                        </div>
-                        {% endif %}
-                    </div>
-                </div>
-            </div>
+           <!-- Lista de Candidatos -->
+<div class="col-md-8">
+    <div class="card shadow">
+        <div class="card-header bg-info text-white">
+            <h5 class="mb-0"><i class="bi bi-list-ul"></i> Candidatos em Sindicância</h5>
         </div>
+        <div class="card-body">
+            {% if candidatos %}
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Nome</th>
+                            <th>Data Cadastro</th>
+                            <th>Status</th>
+                            <th>Votos</th>
+                            <th>Formulário</th>
+                            <th>Docs</th>
+                            <th>Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for c in candidatos %}
+                        <tr class="{% if c.fechado == 1 %}table-secondary{% endif %}">
+                            <td class="align-middle">
+                                <strong>{{ c.nome }}</strong>
+                                {% if c.fechado == 1 %}
+                                <br><small class="text-muted">Encerrada em: {{ c.data_fechamento.strftime('%d/%m/%Y') if c.data_fechamento else '-' }}</small>
+                                {% endif %}
+                                {% if c.cpf %}
+                                <br><small class="text-muted">CPF: {{ c.cpf }}</small>
+                                {% endif %}
+                                {% if c.celular %}
+                                <br><small class="text-muted"><i class="bi bi-whatsapp"></i> {{ c.celular }}</small>
+                                {% endif %}
+                            </td>
+                            <td class="align-middle">{{ c.data_criacao.strftime('%d/%m/%Y') if c.data_criacao else '-' }}</td>
+                            <td class="align-middle">
+                                {% if c.fechado == 1 %}
+                                    {% if c.status == 'Aprovado' %}
+                                        <span class="badge bg-success">Aprovado</span>
+                                    {% else %}
+                                        <span class="badge bg-danger">Reprovado</span>
+                                    {% endif %}
+                                {% else %}
+                                    <span class="badge bg-warning">Em análise</span>
+                                {% endif %}
+                            </td>
+                            <td class="align-middle">
+                                {% if c.total_votos %}
+                                    <div class="progress" style="height: 20px;">
+                                        {% set percentual = (c.votos_positivos / c.total_votos * 100) if c.total_votos > 0 else 0 %}
+                                        <div class="progress-bar bg-success" style="width: {{ percentual }}%">
+                                            {{ "%.0f"|format(percentual) }}%
+                                        </div>
+                                    </div>
+                                    <small class="text-muted">
+                                        {{ c.votos_positivos }} positivos / {{ c.votos_negativos }} negativos
+                                    </small>
+                                {% else %}
+                                    -
+                                {% endif %}
+                            </td>
+                            <td class="text-center align-middle">
+                                {% if c.cpf or c.rg or c.endereco_residencial %}
+                                    <span class="badge bg-success">
+                                        <i class="bi bi-check-circle"></i> Preenchido
+                                    </span>
+                                {% else %}
+                                    <span class="badge bg-danger">
+                                        <i class="bi bi-exclamation-triangle"></i> Pendente
+                                    </span>
+                                {% endif %}
+                                <br>
+                                <a href="/candidato/formulario/{{ c.id }}" class="btn btn-sm btn-outline-info mt-1" title="Preencher Formulário">
+                                    <i class="bi bi-file-text"></i>
+                                </a>
+                            </td>
+                            <td class="text-center align-middle">
+                                {% set doc_status = documentos_status.get(c.id) if documentos_status else None %}
+                                {% if doc_status and doc_status.total > 0 %}
+                                    {% if doc_status.pendentes == 0 %}
+                                        <span class="badge bg-success">
+                                            <i class="bi bi-check-circle"></i> Em dia
+                                        </span>
+                                    {% else %}
+                                        <span class="badge bg-warning">
+                                            <i class="bi bi-clock"></i> {{ doc_status.pendentes }} pendente(s)
+                                        </span>
+                                    {% endif %}
+                                {% else %}
+                                    <span class="badge bg-danger">
+                                        <i class="bi bi-exclamation-triangle"></i> Pendente
+                                    </span>
+                                {% endif %}
+                                <br>
+                                <a href="/candidatos/{{ c.id }}/documentos" class="btn btn-sm btn-outline-success mt-1" title="Gerenciar Documentos">
+                                    <i class="bi bi-file-earmark-text"></i>
+                                </a>
+                            </td>
+                            <td class="text-center align-middle">
+                                <div class="btn-group btn-group-sm">
+                                    <!-- Botão Checklist -->
+                                    <a href="/candidatos/{{ c.id }}/checklist" class="btn btn-success" title="Checklist de Iniciação">
+                                        <i class="bi bi-check2-square"></i>
+                                    </a>
+                                </div>
+                                <div class="btn-group btn-group-sm mt-1">
+                                    {% if session.tipo == 'admin' or session.tipo == 'sindicante' %}
+                                    <!-- Visualizar Sindicância -->
+                                    <a href="/sindicancia/{{ c.id }}" class="btn btn-info" title="Visualizar Sindicância">
+                                        <i class="bi bi-eye"></i>
+                                    </a>
+                                    
+                                    <!-- Encerrar Sindicância -->
+                                    {% if not c.fechado %}
+                                    <a href="/fechar_sindicancia/{{ c.id }}" class="btn btn-warning" 
+                                       onclick="return confirm('Encerrar sindicância deste candidato?')" title="Encerrar Sindicância">
+                                        <i class="bi bi-check2-circle"></i>
+                                    </a>
+                                    {% endif %}
+                                    
+                                    <!-- Excluir Candidato -->
+                                    <form action="/candidatos/excluir/{{ c.id }}" method="POST" style="display:inline;">
+                                        <button type="submit" class="btn btn-danger" 
+                                                onclick="return confirm('Excluir este candidato?')" title="Excluir Candidato">
+                                            <i class="bi bi-trash"></i>
+                                        </button>
+                                    </form>
+                                    {% endif %}
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="text-center text-muted py-4">
+                <i class="bi bi-inbox fs-1"></i>
+                <p class="mt-2">Nenhum candidato cadastrado</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
 
         <!-- Sindicantes Ativos - APENAS ADMIN -->
         {% if session.tipo == 'admin' %}

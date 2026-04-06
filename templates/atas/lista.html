@@ -19,7 +19,6 @@
             </div>
         </div>
 
-        
         <!-- Filtros -->
         <div class="card shadow mb-4">
             <div class="card-header bg-light">
@@ -63,7 +62,7 @@
                 <div class="table-responsive">
                     <table class="table table-hover" id="tabelaAtas">
                         <thead class="table-light">
-                            酯
+                            <tr>
                                 <th style="width: 10%">Nº Ata</th>
                                 <th style="width: 30%">Reunião</th>
                                 <th style="width: 12%">Data da Ata</th>
@@ -79,7 +78,6 @@
                             <tr class="{% if ata.aprovada == 1 %}table-success{% endif %}">
                                 <td class="align-middle">
                                     <div class="d-flex flex-column">
-                                        {# GERAÇÃO DO NÚMERO DA ATA COM ANO CORRETO #}
                                         {% set numero_ata = ata.numero_ata if ata.numero_ata else loop.index %}
                                         {% set ano_ata = ata.ano_ata if ata.ano_ata else (ata.reuniao_data.strftime('%Y') if ata.reuniao_data else (ata.data.strftime('%Y') if ata.data else '2026')) %}
                                         
@@ -92,7 +90,6 @@
                                                 <i class="bi bi-clock"></i> Pendente
                                             </small>
                                         {% endif %}
-                                        {# Debug: mostra a origem do ano #}
                                         {% if not ata.ano_ata %}
                                             <small class="text-muted" style="font-size: 0.7rem;">
                                                 <i class="bi bi-info-circle"></i> Ano: {{ ano_ata }}
@@ -179,8 +176,9 @@
                                             <i class="bi bi-pencil"></i>
                                         </a>
                                         {% endif %}
-                                        <a href="/atas/{{ ata.id }}/pdf" class="btn btn-secondary" title="Baixar PDF">
-                                            <i class="bi bi-file-pdf"></i>
+                                        <!-- PDF Oficial com Cabeçalho -->
+                                        <a href="/atas/{{ ata.id }}/pdf-oficial" class="btn btn-primary" title="Baixar PDF Oficial com Cabeçalho">
+                                            <i class="bi bi-file-pdf-fill"></i>
                                         </a>
                                         {% if session.tipo == 'admin' and not ata.aprovada %}
                                         <form method="POST" action="/atas/{{ ata.id }}/aprovar" style="display: inline;">
