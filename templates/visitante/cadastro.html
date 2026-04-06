@@ -1,0 +1,89 @@
+{% extends "base_public.html" %}
+
+{% block title %}Cadastro de Visitante{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <div class="card shadow">
+                <div class="card-header bg-primary text-white text-center">
+                    <h4 class="mb-0"><i class="bi bi-person-plus"></i> Cadastro de Visitante</h4>
+                </div>
+                <div class="card-body">
+                    {% with messages = get_flashed_messages(with_categories=true) %}
+                        {% if messages %}
+                            {% for category, message in messages %}
+                                <div class="alert alert-{{ category }}">{{ message }}</div>
+                            {% endfor %}
+                        {% endif %}
+                    {% endwith %}
+                    
+                    <form method="POST">
+                        <div class="mb-3">
+                            <label class="form-label">Nome Completo *</label>
+                            <input type="text" class="form-control" name="nome" required>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label class="form-label">E-mail</label>
+                            <input type="email" class="form-control" name="email">
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label class="form-label">Telefone</label>
+                            <input type="tel" class="form-control" name="telefone">
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label class="form-label">Loja de Origem</label>
+                            <input type="text" class="form-control" name="loja_origem">
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label class="form-label">Grau</label>
+                            <select class="form-select" name="grau">
+                                <option value="Aprendiz">Aprendiz</option>
+                                <option value="Companheiro">Companheiro</option>
+                                <option value="Mestre">Mestre</option>
+                                <option value="Outro">Outro</option>
+                            </select>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label class="form-label">Reunião *</label>
+                            <select class="form-select" name="reuniao_id" required>
+                                <option value="">Selecione uma reunião...</option>
+                                {% for r in reunioes %}
+                                <option value="{{ r.id }}">
+                                    {{ r.titulo }} - {{ r.data.strftime('%d/%m/%Y') }} às {{ r.hora_inicio.strftime('%H:%M') }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label class="form-label">Data da Visita *</label>
+                            <input type="date" class="form-control" name="data_visita" required>
+                        </div>
+						<div class="mb-3 form-check">
+    <input type="checkbox" class="form-check-input" name="enviar_email" id="enviar_email" checked>
+    <label class="form-check-label" for="enviar_email">
+        <i class="bi bi-envelope"></i> Enviar certificado por e-mail
+    </label>
+    <small class="d-block text-muted">Você receberá o certificado em PDF no seu e-mail</small>
+</div>
+                        
+                        <button type="submit" class="btn btn-primary w-100">Cadastrar</button>
+                    </form>
+                    
+                    <hr>
+                    <div class="text-center">
+                        <a href="/visitante" class="small">Voltar</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

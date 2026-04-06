@@ -19,6 +19,7 @@ from io import BytesIO, StringIO
 from datetime import datetime, timedelta
 from functools import wraps
 from urllib.parse import quote
+from reportlab.lib.units import cm
 
 from flask import (
     Blueprint, Flask, render_template, request, redirect, url_for, session, flash,
@@ -648,10 +649,21 @@ else:
         DATABASE_URL = DATABASE_URL.replace('postgres://', 'postgresql://', 1)
     print(f"✅ Usando conexão RENDER (PostgreSQL)")
 
+# =============================
+# FUNÇÕES DE BANCO DE DADOS
+# =============================
+
 def get_db():
     """Retorna cursor e conexão do banco"""
     try:
-        conn = psycopg2.connect(DATABASE_URL)
+        # Conexão local
+        conn = psycopg2.connect(
+            host='localhost',
+            port=5432,
+            dbname='sistema_maconico',
+            user='postgres',
+            password='postgres'
+        )
         cursor = conn.cursor(cursor_factory=RealDictCursor)
         return cursor, conn
     except Exception as e:
@@ -676,14 +688,14 @@ def test_connection():
         print(f"❌ Falha na conexão: {e}")
         return False
 
-# ✅ Testar conexão APENAS se não estiver em ambiente de teste
+# =============================
+# IMPORTANTE: Chamar test_connection() DEPOIS de definir as funções
+# =============================
+
+# Verificar conexão (opcional)
 if __name__ != '__main__':
-    # Em produção, apenas loga que configurou
-    print(f"🔧 Banco configurado: {'RENDER' if os.getenv('DATABASE_URL') else 'LOCAL'}")
-    
-    # Opcional: testar conexão (mas não falhar se não conectar no primeiro momento)
-    if os.getenv('DATABASE_URL'):
-        test_connection()
+    print(f"🔧 Banco configurado: LOCAL (localhost:5432/sistema_maconico)")
+    test_connection()
 
 # =============================
 # FUNÇÕES AUXILIARES
@@ -958,8 +970,199 @@ def usar_token_recuperacao(token):
     return_connection(conn)
 
 # =============================
-# FUNÇÕES DE NOTIFICAÇÕES (NOVAS)
+# FUNÇÕES DE NOTIFICAÇÕES
 # =============================
+
+from reportlab.lib.pagesizes import A4
+from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle
+from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+from reportlab.lib.units import cm
+from io import BytesIO
+import unicodedata
+
+def remover_acentos(texto):
+    """Remove acentos de um texto"""
+    if not texto:
+        return ""
+    # Substituir caracteres acentuados manualmente
+    mapa = {
+        'á': 'a', 'à': 'a', 'ã': 'a', 'â': 'a', 'ä': 'a',
+        'é': 'e', 'è': 'e', 'ê': 'e', 'ë': 'e',
+        'í': 'i', 'ì': 'i', 'î': 'i', 'ï': 'i',
+        'ó': 'o', 'ò': 'o', 'õ': 'o', 'ô': 'o', 'ö': 'o',
+        'ú': 'u', 'ù': 'u', 'û': 'u', 'ü': 'u',
+        'ç': 'c', 'ñ': 'n',
+        'Á': 'A', 'À': 'A', 'Ã': 'A', 'Â': 'A', 'Ä': 'A',
+        'É': 'E', 'È': 'E', 'Ê': 'E', 'Ë': 'E',
+        'Í': 'I', 'Ì': 'I', 'Î': 'I', 'Ï': 'I',
+        'Ó': 'O', 'Ò': 'O', 'Õ': 'O', 'Ô': 'O', 'Ö': 'O',
+        'Ú': 'U', 'Ù': 'U', 'Û': 'U', 'Ü': 'U',
+        'Ç': 'C', 'Ñ': 'N'
+    }
+    for acentuado, sem_acento in mapa.items():
+        texto = texto.replace(acentuado, sem_acento)
+    return texto
+
+def gerar_pdf_certificado(visitante):
+    """Gera PDF do certificado de visita - Versão estável"""
+    buffer = BytesIO()
+    doc = SimpleDocTemplate(buffer, pagesize=A4,
+                           topMargin=2*cm, bottomMargin=2*cm,
+                           leftMargin=2*cm, rightMargin=2*cm)
+    
+    styles = getSampleStyleSheet()
+    story = []
+    
+    # Remover acentos
+    nome = remover_acentos(visitante['nome'])
+    data = visitante['reuniao_data'].strftime('%d/%m/%Y')
+    hora = visitante['hora_inicio'].strftime('%H:%M')
+    codigo = visitante['codigo_verificacao']
+    loja_origem = remover_acentos(visitante.get('loja_origem', ''))
+    loja_nome = "ARLS Bicentenário"
+    cidade = "Brasilia - DF"
+    
+    # Estilos
+    titulo_style = ParagraphStyle(
+        'TituloStyle',
+        parent=styles['Normal'],
+        fontSize=22,
+        alignment=1,
+        spaceAfter=30,
+        fontName='Helvetica-Bold'
+    )
+    
+    texto_style = ParagraphStyle(
+        'TextoStyle',
+        parent=styles['Normal'],
+        fontSize=14,
+        alignment=1,
+        spaceAfter=12,
+        fontName='Helvetica'
+    )
+    
+    nome_style = ParagraphStyle(
+        'NomeStyle',
+        parent=styles['Normal'],
+        fontSize=18,
+        alignment=1,
+        spaceAfter=15,
+        fontName='Helvetica-Bold'
+    )
+    
+    small_style = ParagraphStyle(
+        'SmallStyle',
+        parent=styles['Normal'],
+        fontSize=9,
+        alignment=1,
+        fontName='Helvetica'
+    )
+    
+    # Conteúdo
+    story.append(Paragraph("CERTIFICADO DE VISITA", titulo_style))
+    story.append(Spacer(1, 0.5*cm))
+    
+    story.append(Paragraph("Certificamos que", texto_style))
+    story.append(Paragraph(nome, nome_style))
+    story.append(Spacer(1, 0.3*cm))
+    
+    story.append(Paragraph("visitou a Loja Maconica", texto_style))
+    story.append(Paragraph(loja_nome, texto_style))
+    story.append(Spacer(1, 0.3*cm))
+    
+    story.append(Paragraph(f"na reuniao realizada em {data}", texto_style))
+    story.append(Paragraph(f"as {hora}", texto_style))
+    story.append(Paragraph(f"na cidade de {cidade}", texto_style))
+    story.append(Spacer(1, 0.3*cm))
+    
+    if loja_origem:
+        story.append(Paragraph(f"Sendo integrante da Loja {loja_origem}", texto_style))
+        story.append(Spacer(1, 0.5*cm))
+    
+    story.append(Spacer(1, 0.8*cm))
+    story.append(Paragraph("_________________________________", texto_style))
+    story.append(Paragraph("Veneravel Mestre", texto_style))
+    story.append(Paragraph("ARLS Bicentenário", texto_style))
+    story.append(Spacer(1, 0.5*cm))
+    
+    story.append(Paragraph(f"Codigo de verificacao: {codigo}", small_style))
+    
+    # Gerar PDF
+    doc.build(story)
+    buffer.seek(0)
+    return buffer
+def enviar_certificado_email(visitante):
+    """Envia o certificado de visita por e-mail"""
+    if not visitante.get('email'):
+        return {'success': False, 'message': 'Visitante não tem e-mail cadastrado'}
+    
+    # Gerar PDF
+    pdf_buffer = gerar_pdf_certificado(visitante)
+    
+    assunto = f"Certificado de Visita - ARLS Bicentenário"
+    
+    conteudo_html = f"""
+    <html>
+    <body style="font-family: Arial, sans-serif;">
+        <div style="max-width: 600px; margin: 0 auto; padding: 20px;">
+            <div style="background: linear-gradient(135deg, #1a472a, #0a2a1a); color: #ffd700; padding: 30px; text-align: center; border-radius: 10px;">
+                <h1>📜 Certificado de Visita</h1>
+            </div>
+            <div style="background: white; padding: 30px; border-radius: 10px; margin-top: 20px;">
+                <h2>Olá {visitante['nome']},</h2>
+                <p>É com grande satisfação que lhe enviamos o certificado de sua visita à <strong>ARLS Bicentenário</strong>.</p>
+                
+                <div style="background: #f8f9fa; padding: 20px; border-radius: 8px; margin: 20px 0;">
+                    <p><strong>📅 Reunião:</strong> {visitante['reuniao_titulo']}</p>
+                    <p><strong>📆 Data:</strong> {visitante['reuniao_data'].strftime('%d/%m/%Y')}</p>
+                    <p><strong>⏰ Horário:</strong> {visitante['hora_inicio'].strftime('%H:%M')}</p>
+                    <p><strong>📍 Local:</strong> {visitante.get('local', 'Brasília - DF')}</p>
+                    <p><strong>🔑 Código de verificação:</strong> {visitante['codigo_verificacao']}</p>
+                </div>
+                
+                <p>Em anexo, segue seu certificado de visita.</p>
+                <p>Este certificado pode ser validado a qualquer momento através do nosso site.</p>
+                
+                <hr>
+                <p style="font-size: 12px; color: #666;">
+                    Certificado emitido pelo Sistema Maçônico da ARLS Bicentenário
+                </p>
+            </div>
+        </div>
+    </body>
+    </html>
+    """
+    
+    try:
+        if RESEND_API_KEY:
+            import resend
+            params = {
+                "from": f"Sistema Maçônico <{EMAIL_FROM_DEFAULT}>",
+                "to": [visitante['email']],
+                "subject": assunto,
+                "html": conteudo_html,
+                "attachments": [
+                    {
+                        "filename": f"certificado_{visitante['codigo_verificacao']}.pdf",
+                        "content": pdf_buffer.getvalue(),
+                        "content_type": "application/pdf"
+                    }
+                ]
+            }
+            email = resend.Emails.send(params)
+            return {'success': True, 'message': 'E-mail enviado com certificado!'}
+        else:
+            # Fallback: salvar PDF em arquivo
+            filename = f"certificado_{visitante['codigo_verificacao']}.pdf"
+            with open(filename, "wb") as f:
+                f.write(pdf_buffer.getvalue())
+            print(f"📧 Certificado salvo: {filename}")
+            print(f"📧 E-mail seria enviado para: {visitante['email']}")
+            return {'success': True, 'message': 'Certificado gerado (modo debug)'}
+            
+    except Exception as e:
+        print(f"Erro ao enviar e-mail: {e}")
+        return {'success': False, 'message': str(e)}
 
 def registrar_notificacao_sistema(usuario_id, titulo, mensagem, tipo='sistema', link=None):
     """Registra notificação no sistema"""
@@ -2531,6 +2734,252 @@ def api_excluir_documento_obreiro(doc_id):
         return jsonify({'success': False, 'error': str(e)}), 500
     finally:
         return_connection(conn)
+
+
+# =============================
+# ROTAS DE VISITANTES
+# =============================
+
+@app.route("/visitante")
+def pagina_visitante():
+    """Página inicial do visitante"""
+    return render_template("visitante/index.html")
+
+@app.route("/visitante/cadastro", methods=["GET", "POST"])
+def cadastro_visitante():
+    """Cadastro de visitante para reunião específica"""
+    cursor, conn = get_db()
+    
+    if request.method == "POST":
+        nome = request.form.get("nome")
+        email = request.form.get("email")
+        telefone = request.form.get("telefone")
+        loja_origem = request.form.get("loja_origem")
+        grau = request.form.get("grau")
+        reuniao_id = request.form.get("reuniao_id")
+        enviar_email = request.form.get("enviar_email") == 'on'
+        
+        if not nome or not reuniao_id:
+            flash("Nome e Reunião são obrigatórios!", "danger")
+            return_connection(conn)
+            return redirect("/visitante/cadastro")
+        
+        # Verificar se a reunião existe
+        cursor.execute("""
+            SELECT id, titulo, data, hora_inicio, local 
+            FROM reunioes 
+            WHERE id = %s AND status = 'agendada' AND data >= CURRENT_DATE
+        """, (reuniao_id,))
+        reuniao = cursor.fetchone()
+        
+        if not reuniao:
+            flash("Reunião não encontrada ou já realizada!", "danger")
+            return_connection(conn)
+            return redirect("/visitante/cadastro")
+        
+        import uuid
+        codigo_verificacao = str(uuid.uuid4())[:8].upper()
+        
+        try:
+            cursor.execute("""
+                INSERT INTO visitantes 
+                (nome, email, telefone, loja_origem, grau, reuniao_id, data_visita, codigo_verificacao)
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+                RETURNING id
+            """, (nome, email, telefone, loja_origem, grau, reuniao_id, reuniao['data'], codigo_verificacao))
+            
+            visitante_id = cursor.fetchone()['id']
+            conn.commit()
+            
+            # Buscar dados completos do visitante
+            cursor.execute("""
+                SELECT v.*, r.titulo as reuniao_titulo, r.data as reuniao_data, r.hora_inicio, r.local
+                FROM visitantes v
+                JOIN reunioes r ON v.reuniao_id = r.id
+                WHERE v.id = %s
+            """, (visitante_id,))
+            visitante_completo = cursor.fetchone()
+            
+            session['visitante_id'] = visitante_id
+            session['visitante_nome'] = nome
+            
+            # Enviar e-mail com certificado
+            email_enviado = False
+            if enviar_email and email:
+                resultado = enviar_certificado_email(visitante_completo)
+                if resultado['success']:
+                    email_enviado = True
+                    flash(f"✅ Cadastro realizado! Certificado enviado para {email}.", "success")
+                else:
+                    flash(f"✅ Cadastro realizado! Mas não foi possível enviar o e-mail: {resultado['message']}", "warning")
+            else:
+                flash(f"✅ Cadastro realizado com sucesso, {nome}!", "success")
+            
+            return_connection(conn)
+            return redirect(f"/visitante/certificado/{visitante_id}")
+            
+        except Exception as e:
+            print(f"Erro ao cadastrar visitante: {e}")
+            conn.rollback()
+            flash(f"Erro ao cadastrar: {str(e)}", "danger")
+            return_connection(conn)
+            return redirect("/visitante/cadastro")
+    
+    # GET - Buscar próximas reuniões
+    try:
+        cursor.execute("""
+            SELECT id, titulo, data, hora_inicio, local 
+            FROM reunioes 
+            WHERE status = 'agendada' AND data >= CURRENT_DATE
+            ORDER BY data ASC
+            LIMIT 10
+        """)
+        reunioes = cursor.fetchall()
+        
+        return_connection(conn)
+        return render_template("visitante/cadastro.html", reunioes=reunioes)
+        
+    except Exception as e:
+        print(f"Erro ao carregar reuniões: {e}")
+        return_connection(conn)
+        flash(f"Erro ao carregar reuniões: {str(e)}", "danger")
+        return redirect("/visitante")
+
+@app.route("/visitante/reenviar/<int:visitante_id>")
+def reenviar_certificado(visitante_id):
+    """Reenviar certificado por e-mail"""
+    cursor, conn = get_db()
+    
+    cursor.execute("""
+        SELECT v.*, r.titulo as reuniao_titulo, r.data as reuniao_data, r.hora_inicio, r.local
+        FROM visitantes v
+        JOIN reunioes r ON v.reuniao_id = r.id
+        WHERE v.id = %s
+    """, (visitante_id,))
+    visitante = cursor.fetchone()
+    
+    if not visitante:
+        flash("Visitante não encontrado!", "danger")
+        return redirect("/visitante")
+    
+    if not visitante.get('email'):
+        flash("Visitante não possui e-mail cadastrado!", "warning")
+        return redirect(f"/visitante/certificado/{visitante_id}")
+    
+    resultado = enviar_certificado_email(visitante)
+    
+    if resultado['success']:
+        flash(f"✅ Certificado reenviado para {visitante['email']}!", "success")
+    else:
+        flash(f"❌ Erro ao reenviar: {resultado['message']}", "danger")
+    
+    return redirect(f"/visitante/certificado/{visitante_id}")        
+
+@app.route("/admin/visitantes")
+@login_required
+@admin_required
+def admin_visitantes():
+    """Lista todos os visitantes"""
+    cursor, conn = get_db()
+    
+    cursor.execute("""
+        SELECT v.*, r.titulo as reuniao_titulo, r.data as reuniao_data
+        FROM visitantes v
+        JOIN reunioes r ON v.reuniao_id = r.id
+        ORDER BY v.created_at DESC
+    """)
+    visitantes = cursor.fetchall()
+    
+    return_connection(conn)
+    return render_template("admin/visitantes.html", visitantes=visitantes)
+    
+    # GET - Buscar próximas reuniões
+    cursor.execute("""
+        SELECT id, titulo, data, hora_inicio, local 
+        FROM reunioes 
+        WHERE status = 'agendada' AND data >= CURRENT_DATE
+        ORDER BY data ASC
+        LIMIT 10
+    """)
+    reunioes = cursor.fetchall()
+    
+    return_connection(conn)
+    return render_template("visitante/cadastro.html", reunioes=reunioes)
+    
+# =============================
+# ROTAS DE OBREIROS
+# =============================    
+
+@app.route("/visitante/certificado/<int:visitante_id>")
+def certificado_visitante(visitante_id):
+    """Gerar certificado de visita"""
+    cursor, conn = get_db()
+    
+    cursor.execute("""
+        SELECT v.*, r.titulo as reuniao_titulo, r.data as reuniao_data, 
+               r.hora_inicio, r.local, l.nome as loja_nome
+        FROM visitantes v
+        JOIN reunioes r ON v.reuniao_id = r.id
+        LEFT JOIN lojas l ON r.loja_id = l.id
+        WHERE v.id = %s
+    """, (visitante_id,))
+    
+    visitante = cursor.fetchone()
+    
+    if not visitante:
+        flash("Visitante não encontrado!", "danger")
+        return redirect("/visitante")
+    
+    # Marcar certificado como gerado
+    if not visitante['certificado_gerado']:
+        cursor.execute("UPDATE visitantes SET certificado_gerado = TRUE WHERE id = %s", (visitante_id,))
+        conn.commit()
+    
+    return_connection(conn)
+    
+    return render_template("visitante/certificado.html", visitante=visitante)
+
+@app.route("/visitante/presenca/<int:reuniao_id>")
+def marcar_presenca(reuniao_id):
+    """Página para marcar presença na reunião"""
+    cursor, conn = get_db()
+    
+    cursor.execute("SELECT * FROM reunioes WHERE id = %s AND status = 'agendada'", (reuniao_id,))
+    reuniao = cursor.fetchone()
+    
+    if not reuniao:
+        flash("Reunião não encontrada ou já realizada!", "danger")
+        return redirect("/visitante")
+    
+    return_connection(conn)
+    return render_template("visitante/presenca.html", reuniao=reuniao)
+
+@app.route("/api/visitante/verificar/<codigo>")
+def verificar_visitante(codigo):
+    """API para verificar código de visitante (para validar certificado)"""
+    cursor, conn = get_db()
+    
+    cursor.execute("""
+        SELECT v.*, r.titulo as reuniao_titulo, r.data as reuniao_data
+        FROM visitantes v
+        JOIN reunioes r ON v.reuniao_id = r.id
+        WHERE v.codigo_verificacao = %s
+    """, (codigo,))
+    
+    visitante = cursor.fetchone()
+    return_connection(conn)
+    
+    if visitante:
+        return jsonify({
+            'success': True,
+            'nome': visitante['nome'],
+            'reuniao': visitante['reuniao_titulo'],
+            'data': visitante['reuniao_data'].strftime('%d/%m/%Y'),
+            'certificado': visitante['certificado_gerado']
+        })
+    else:
+        return jsonify({'success': False, 'message': 'Código inválido'})
+
 # =============================
 # ROTAS DE OBREIROS
 # =============================

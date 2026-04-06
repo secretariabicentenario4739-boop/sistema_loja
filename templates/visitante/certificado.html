@@ -1,0 +1,72 @@
+{% extends "base_public.html" %}
+
+{% block title %}Certificado de Visita{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card shadow" id="certificado">
+                <div class="card-body text-center p-5">
+                    <div class="border border-warning p-4">
+                        <h2 class="text-primary mb-4">ARLS Bicentenário</h2>
+                        <h1 class="display-5 mb-4">CERTIFICADO DE VISITA</h1>
+                        
+                        <p class="lead">Certificamos que</p>
+                        <h3 class="mb-4">{{ visitante.nome }}</h3>
+                        
+                        <p>visitou a Loja Maçônica <strong>ARLS Bicentenário</strong></p>
+                        <p>na reunião realizada em</p>
+                        <h4 class="mb-4">{{ visitante.reuniao_data.strftime('%d/%m/%Y') }}</h4>
+                        <p>às <strong>{{ visitante.hora_inicio.strftime('%H:%M') }}</strong></p>
+                        <p>na cidade de <strong>Brasília - DF</strong></p>
+                        
+                        {% if visitante.loja_origem %}
+                        <p>Sendo integrante da Loja <strong>{{ visitante.loja_origem }}</strong></p>
+                        {% endif %}
+                        
+                        <div class="mt-5">
+                            <p>_________________________________</p>
+                            <p><strong>Venerável Mestre</strong></p>
+                            <p>ARLS Bicentenário</p>
+                        </div>
+                        
+                        <div class="mt-4">
+                            <p><small>Código de verificação: <strong>{{ visitante.codigo_verificacao }}</strong></small></p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="text-center mt-4">
+                <button class="btn btn-success" onclick="window.print()">
+                    <i class="bi bi-printer"></i> Imprimir Certificado
+                </button>
+                <a href="/visitante" class="btn btn-secondary">
+                    <i class="bi bi-house"></i> Voltar
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    #certificado {
+        background: #fef3c7;
+        border: 2px solid #d4af37;
+    }
+    @media print {
+        .btn, .navbar, .footer, .alert {
+            display: none !important;
+        }
+        #certificado {
+            margin: 0;
+            padding: 0;
+            box-shadow: none;
+        }
+        .container {
+            padding: 0;
+        }
+    }
+</style>
+{% endblock %}

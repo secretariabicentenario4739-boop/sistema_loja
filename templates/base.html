@@ -235,12 +235,6 @@
             .sidebar-overlay.active {
                 display: block;
             }
-			/* Esconder em dispositivos móveis */
-			@media (max-width: 768px) {
-				.desktop-only {
-					display: none !important;
-				}
-			}
             
             .main-content {
                 margin-left: 0 !important;
@@ -690,6 +684,11 @@
                 <i class="bi bi-building"></i> <span>Lojas</span>
             </a>
             {% endif %}
+            
+            <!-- Link para Visitantes -->
+            <a class="nav-link" href="/visitante">
+                <i class="bi bi-person-badge"></i> <span>Visitantes</span>
+            </a>
                        
             {% if tem_permissao('sugestoes.view') %}
             <a class="nav-link" href="/sugestoes">
@@ -788,12 +787,12 @@
     
     <div class="main-content" id="mainContent">
         <div class="top-bar d-flex justify-content-between align-items-center">
-    <div class="desktop-only">
-        <button class="toggle-sidebar" id="toggleSidebar">
-            <i class="bi bi-grid-3x3-gap-fill"></i>
-            <span>Menu</span>
-        </button>
-    </div>
+            <div class="desktop-only">
+                <button class="toggle-sidebar" id="toggleSidebar">
+                    <i class="bi bi-grid-3x3-gap-fill"></i>
+                    <span>Menu</span>
+                </button>
+            </div>
             <div class="d-flex align-items-center">
                 <div class="user-info">
                     <span class="badge-user">
@@ -815,28 +814,28 @@
                 </div>
                 
                 <div class="notificacoes-dropdown">
-    <button class="btn-notificacoes" id="btnNotificacoes" type="button">
-        <i class="bi bi-bell fs-5"></i>
-        <span class="notificacao-badge" id="notificacoesBadge" style="display: none;">0</span>
-    </button>
-    
-    <div class="dropdown-menu-notificacoes" id="dropdownNotificacoes" style="display: none;">
-        <div class="dropdown-header-notificacoes d-flex justify-content-between align-items-center">
-            <span><i class="bi bi-megaphone-fill"></i> Últimos Avisos</span>
-            <a href="/avisos" class="btn btn-sm btn-light">
-                Ver todos <i class="bi bi-arrow-right"></i>
-            </a>
-        </div>
-        <div id="listaNotificacoes">
-            <div class="text-center py-4">
-                <div class="spinner-border spinner-border-sm text-primary" role="status">
-                    <span class="visually-hidden">Carregando...</span>
+                    <button class="btn-notificacoes" id="btnNotificacoes" type="button">
+                        <i class="bi bi-bell fs-5"></i>
+                        <span class="notificacao-badge" id="notificacoesBadge" style="display: none;">0</span>
+                    </button>
+                    
+                    <div class="dropdown-menu-notificacoes" id="dropdownNotificacoes" style="display: none;">
+                        <div class="dropdown-header-notificacoes d-flex justify-content-between align-items-center">
+                            <span><i class="bi bi-megaphone-fill"></i> Últimos Avisos</span>
+                            <a href="/avisos" class="btn btn-sm btn-light">
+                                Ver todos <i class="bi bi-arrow-right"></i>
+                            </a>
+                        </div>
+                        <div id="listaNotificacoes">
+                            <div class="text-center py-4">
+                                <div class="spinner-border spinner-border-sm text-primary" role="status">
+                                    <span class="visually-hidden">Carregando...</span>
+                                </div>
+                                <p class="mt-2 text-muted small">Carregando avisos...</p>
+                            </div>
+                        </div>
+                    </div>
                 </div>
-                <p class="mt-2 text-muted small">Carregando avisos...</p>
-            </div>
-        </div>
-    </div>
-</div>
             </div>
         </div>
         
@@ -867,6 +866,7 @@
     
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/fullcalendar@5.11.3/main.min.css"></script>
     <script src="https://cdn.jsdelivr.net/npm/fullcalendar@5.11.3/main.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/fullcalendar@5.11.3/locales-all.min.js"></script>
     
@@ -975,174 +975,174 @@
             }
         });
         
-// ========== AVISOS NO SININHO ==========
-class AvisosManager {
-    constructor() {
-        this.avisos = [];
-        this.naoLidos = 0;
-        this.init();
-    }
-    
-    init() {
-        this.carregarAvisos();
-        this.setupEventListeners();
-    }
-    
-    async carregarAvisos() {
-        try {
-            const response = await fetch('/api/avisos/ultimos');
-            const data = await response.json();
-            if (data.success) {
-                this.avisos = data.avisos || [];
-                this.naoLidos = data.nao_lidos || 0;
-                this.atualizarBadge();
-                this.renderizarLista();
+        // ========== AVISOS NO SININHO ==========
+        class AvisosManager {
+            constructor() {
+                this.avisos = [];
+                this.naoLidos = 0;
+                this.init();
             }
-        } catch (error) {
-            console.error('Erro ao carregar avisos:', error);
-        }
-    }
-    
-    atualizarBadge() {
-        const badge = document.getElementById('notificacoesBadge');
-        if (this.naoLidos > 0) {
-            badge.textContent = this.naoLidos > 99 ? '99+' : this.naoLidos;
-            badge.style.display = 'inline-block';
-        } else {
-            badge.style.display = 'none';
-        }
-    }
-    
-    renderizarLista() {
-        const container = document.getElementById('listaNotificacoes');
-        if (!container) return;
-        
-        if (this.avisos.length === 0) {
-            container.innerHTML = `
-                <div class="text-center py-4">
-                    <i class="bi bi-megaphone-slash fs-1 text-muted"></i>
-                    <p class="mt-2 text-muted">Nenhum aviso recente</p>
-                </div>
-            `;
-            return;
-        }
-        
-        let html = '';
-        for (const aviso of this.avisos) {
-            html += this.criarItemAviso(aviso);
-        }
-        container.innerHTML = html;
-    }
-    
-    criarItemAviso(aviso) {
-        const data = new Date(aviso.created_at);
-        const dataFormatada = data.toLocaleDateString('pt-BR') + ' ' + data.toLocaleTimeString('pt-BR', {hour: '2-digit', minute:'2-digit'});
-        
-        let iconePrioridade = '';
-        if (aviso.prioridade === 'urgente') {
-            iconePrioridade = '🔴';
-        } else if (aviso.prioridade === 'importante') {
-            iconePrioridade = '🟡';
-        } else {
-            iconePrioridade = '🔵';
-        }
-        
-        const naoLidoClass = aviso.ja_visto === 0 ? 'nao-lida' : '';
-        
-        return `
-            <div class="notificacao-item ${naoLidoClass}" data-id="${aviso.id}" data-link="/avisos">
-                <div class="d-flex">
-                    <div class="me-2">${iconePrioridade}</div>
-                    <div class="flex-grow-1">
-                        <div class="notificacao-titulo">
-                            ${aviso.titulo}
-                            ${aviso.ja_visto === 0 ? '<span class="badge bg-primary ms-1">Novo</span>' : ''}
-                            ${aviso.prioridade === 'urgente' ? '<span class="badge bg-danger ms-1">Urgente</span>' : ''}
+            
+            init() {
+                this.carregarAvisos();
+                this.setupEventListeners();
+            }
+            
+            async carregarAvisos() {
+                try {
+                    const response = await fetch('/api/avisos/ultimos');
+                    const data = await response.json();
+                    if (data.success) {
+                        this.avisos = data.avisos || [];
+                        this.naoLidos = data.nao_lidos || 0;
+                        this.atualizarBadge();
+                        this.renderizarLista();
+                    }
+                } catch (error) {
+                    console.error('Erro ao carregar avisos:', error);
+                }
+            }
+            
+            atualizarBadge() {
+                const badge = document.getElementById('notificacoesBadge');
+                if (this.naoLidos > 0) {
+                    badge.textContent = this.naoLidos > 99 ? '99+' : this.naoLidos;
+                    badge.style.display = 'inline-block';
+                } else {
+                    badge.style.display = 'none';
+                }
+            }
+            
+            renderizarLista() {
+                const container = document.getElementById('listaNotificacoes');
+                if (!container) return;
+                
+                if (this.avisos.length === 0) {
+                    container.innerHTML = `
+                        <div class="text-center py-4">
+                            <i class="bi bi-megaphone-slash fs-1 text-muted"></i>
+                            <p class="mt-2 text-muted">Nenhum aviso recente</p>
                         </div>
-                        <div class="notificacao-mensagem">${aviso.conteudo.substring(0, 80)}${aviso.conteudo.length > 80 ? '...' : ''}</div>
-                        <div class="notificacao-data">
-                            <i class="bi bi-clock"></i> ${dataFormatada}
-                            <i class="bi bi-person-circle ms-2"></i> ${aviso.autor_nome || 'Sistema'}
+                    `;
+                    return;
+                }
+                
+                let html = '';
+                for (const aviso of this.avisos) {
+                    html += this.criarItemAviso(aviso);
+                }
+                container.innerHTML = html;
+            }
+            
+            criarItemAviso(aviso) {
+                const data = new Date(aviso.created_at);
+                const dataFormatada = data.toLocaleDateString('pt-BR') + ' ' + data.toLocaleTimeString('pt-BR', {hour: '2-digit', minute:'2-digit'});
+                
+                let iconePrioridade = '';
+                if (aviso.prioridade === 'urgente') {
+                    iconePrioridade = '🔴';
+                } else if (aviso.prioridade === 'importante') {
+                    iconePrioridade = '🟡';
+                } else {
+                    iconePrioridade = '🔵';
+                }
+                
+                const naoLidoClass = aviso.ja_visto === 0 ? 'nao-lida' : '';
+                
+                return `
+                    <div class="notificacao-item ${naoLidoClass}" data-id="${aviso.id}" data-link="/avisos">
+                        <div class="d-flex">
+                            <div class="me-2">${iconePrioridade}</div>
+                            <div class="flex-grow-1">
+                                <div class="notificacao-titulo">
+                                    ${aviso.titulo}
+                                    ${aviso.ja_visto === 0 ? '<span class="badge bg-primary ms-1">Novo</span>' : ''}
+                                    ${aviso.prioridade === 'urgente' ? '<span class="badge bg-danger ms-1">Urgente</span>' : ''}
+                                </div>
+                                <div class="notificacao-mensagem">${aviso.conteudo.substring(0, 80)}${aviso.conteudo.length > 80 ? '...' : ''}</div>
+                                <div class="notificacao-data">
+                                    <i class="bi bi-clock"></i> ${dataFormatada}
+                                    <i class="bi bi-person-circle ms-2"></i> ${aviso.autor_nome || 'Sistema'}
+                                </div>
+                            </div>
                         </div>
                     </div>
-                </div>
-            </div>
-        `;
-    }
-    
-    setupEventListeners() {
-        const btn = document.getElementById('btnNotificacoes');
-        const dropdown = document.getElementById('dropdownNotificacoes');
-        
-        if (btn && dropdown) {
-            btn.addEventListener('click', (e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                const isVisible = dropdown.style.display === 'block';
+                `;
+            }
+            
+            setupEventListeners() {
+                const btn = document.getElementById('btnNotificacoes');
+                const dropdown = document.getElementById('dropdownNotificacoes');
                 
-                if (isVisible) {
-                    dropdown.style.display = 'none';
-                } else {
-                    dropdown.style.display = 'block';
-                    this.carregarAvisos();
+                if (btn && dropdown) {
+                    btn.addEventListener('click', (e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        const isVisible = dropdown.style.display === 'block';
+                        
+                        if (isVisible) {
+                            dropdown.style.display = 'none';
+                        } else {
+                            dropdown.style.display = 'block';
+                            this.carregarAvisos();
+                        }
+                    });
                 }
-            });
+                
+                document.addEventListener('click', (e) => {
+                    if (!btn?.contains(e.target) && !dropdown?.contains(e.target)) {
+                        if (dropdown) dropdown.style.display = 'none';
+                    }
+                });
+                
+                document.getElementById('listaNotificacoes')?.addEventListener('click', async (e) => {
+                    const item = e.target.closest('.notificacao-item');
+                    if (item) {
+                        const id = item.dataset.id;
+                        const link = item.dataset.link;
+                        await this.marcarComoLido(id);
+                        if (link) window.location.href = link;
+                    }
+                });
+            }
+            
+            async marcarComoLido(id) {
+                try {
+                    await fetch(`/api/avisos/marcar-visto/${id}`, {method: 'POST'});
+                    const item = document.querySelector(`.notificacao-item[data-id="${id}"]`);
+                    if (item) {
+                        item.classList.remove('nao-lida');
+                        const badge = item.querySelector('.badge');
+                        if (badge && badge.innerText === 'Novo') badge.remove();
+                        this.naoLidos = Math.max(0, this.naoLidos - 1);
+                        this.atualizarBadge();
+                    }
+                } catch (error) {
+                    console.error('Erro:', error);
+                }
+            }
         }
         
-        document.addEventListener('click', (e) => {
-            if (!btn?.contains(e.target) && !dropdown?.contains(e.target)) {
-                if (dropdown) dropdown.style.display = 'none';
+        document.addEventListener('DOMContentLoaded', () => {
+            // Inicializar avisos no sininho
+            if (document.getElementById('btnNotificacoes')) {
+                window.avisosManager = new AvisosManager();
             }
-        });
-        
-        document.getElementById('listaNotificacoes')?.addEventListener('click', async (e) => {
-            const item = e.target.closest('.notificacao-item');
-            if (item) {
-                const id = item.dataset.id;
-                const link = item.dataset.link;
-                await this.marcarComoLido(id);
-                if (link) window.location.href = link;
-            }
-        });
-    }
-    
-    async marcarComoLido(id) {
-        try {
-            await fetch(`/api/avisos/marcar-visto/${id}`, {method: 'POST'});
-            const item = document.querySelector(`.notificacao-item[data-id="${id}"]`);
-            if (item) {
-                item.classList.remove('nao-lida');
-                const badge = item.querySelector('.badge');
-                if (badge && badge.innerText === 'Novo') badge.remove();
-                this.naoLidos = Math.max(0, this.naoLidos - 1);
-                this.atualizarBadge();
-            }
-        } catch (error) {
-            console.error('Erro:', error);
-        }
-    }
-}
-
-document.addEventListener('DOMContentLoaded', () => {
-    // Inicializar avisos no sininho
-    if (document.getElementById('btnNotificacoes')) {
-        window.avisosManager = new AvisosManager();
-    }
-    
-    // Auto-fade out de alerts
-    setTimeout(() => {
-        document.querySelectorAll('.alert:not(.alert-custom)').forEach(alert => {
+            
+            // Auto-fade out de alerts
             setTimeout(() => {
-                const bsAlert = bootstrap.Alert.getInstance(alert);
-                if (bsAlert) bsAlert.close();
-            }, 5000);
+                document.querySelectorAll('.alert:not(.alert-custom)').forEach(alert => {
+                    setTimeout(() => {
+                        const bsAlert = bootstrap.Alert.getInstance(alert);
+                        if (bsAlert) bsAlert.close();
+                    }, 5000);
+                });
+            }, 1000);
+            
+            // Tooltips
+            var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+            tooltipTriggerList.map(tooltipTriggerEl => new bootstrap.Tooltip(tooltipTriggerEl));
         });
-    }, 1000);
-    
-    // Tooltips
-    var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
-    tooltipTriggerList.map(tooltipTriggerEl => new bootstrap.Tooltip(tooltipTriggerEl));
-});
     </script>
     
     {% block scripts %}{% endblock %}

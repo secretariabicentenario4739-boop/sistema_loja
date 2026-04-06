@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+
+{% block title %}Visitantes{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="container">
+        <h2><i class="bi bi-people"></i> Visitantes</h2>
+        
+        <div class="card shadow mt-4">
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Nome</th>
+                                <th>Loja Origem</th>
+                                <th>Grau</th>
+                                <th>Reunião</th>
+                                <th>Data Visita</th>
+                                <th>Código</th>
+                                <th>Certificado</th>
+                            </thead>
+                        <tbody>
+                            {% for v in visitantes %}
+                            <tr>
+                                <td>{{ v.nome }}</td>
+                                <td>{{ v.loja_origem or '-' }}</td>
+                                <td>{{ v.grau or '-' }}</td>
+                                <td>{{ v.reuniao_titulo }}</td>
+                                <td>{{ v.data_visita.strftime('%d/%m/%Y') }}</td>
+                                <td><code>{{ v.codigo_verificacao }}</code></td>
+                                <td>
+                                    {% if v.certificado_gerado %}
+                                        <span class="badge bg-success">Gerado</span>
+                                    {% else %}
+                                        <span class="badge bg-warning">Pendente</span>
+                                    {% endif %}
+                                 </td>
+                             </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
