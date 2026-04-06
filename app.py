@@ -653,29 +653,36 @@ else:
 # FUNÇÕES DE BANCO DE DADOS
 # =============================
 
+import os
+import psycopg2
+from psycopg2.extras import RealDictCursor
+
 def get_db():
-    """Retorna cursor e conexão do banco"""
+    """Retorna cursor e conexão do banco (funciona local e no Render)"""
     try:
-        # Verificar se está no Render (DATABASE_URL existe)
-        DATABASE_URL = os.getenv('DATABASE_URL', '')
+        # Tentar obter a URL do banco do ambiente (Render)
+        DATABASE_URL = os.getenv('DATABASE_URL')
         
         if DATABASE_URL:
-            # Render: usar URL
+            # Está no Render - usar URL
+            print(f"🔧 Conectando ao banco do Render")
             conn = psycopg2.connect(DATABASE_URL)
         else:
-            # Local: conexão direta
+            # Está localmente - usar parâmetros diretos
+            print(f"🔧 Conectando ao banco local")
             conn = psycopg2.connect(
-                host='localhost',
-                port=5432,
-                dbname='sistema_maconico',
-                user='postgres',
-                password='postgres'
+                host=os.getenv('DB_HOST', 'localhost'),
+                port=os.getenv('DB_PORT', '5432'),
+                dbname=os.getenv('DB_NAME', 'sistema_maconico'),
+                user=os.getenv('DB_USER', 'postgres'),
+                password=os.getenv('DB_PASSWORD', 'postgres')
             )
         
         cursor = conn.cursor(cursor_factory=RealDictCursor)
         return cursor, conn
+        
     except Exception as e:
-        print(f"❌ Erro ao conectar: {e}")
+        print(f"❌ Erro ao conectar ao banco: {e}")
         raise
 
 # =============================
