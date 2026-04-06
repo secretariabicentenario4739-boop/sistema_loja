@@ -270,14 +270,23 @@
         }
     });
     
-    // Inserir estrutura básica
+    // ============================================
+    // MODELO 1: ESTRUTURA BÁSICA COM LOGO
+    // ============================================
     function inserirEstrutura() {
         const data = "{{ reuniao.data.strftime('%d/%m/%Y') if reuniao.data else '' }}";
         const horaInicio = "{{ reuniao.hora_inicio.strftime('%H:%M') if reuniao.hora_inicio else '' }}";
         const horaTermino = "{{ reuniao.hora_termino.strftime('%H:%M') if reuniao.hora_termino else '' }}";
         const local = "{{ reuniao.local or 'Templo Maçônico' }}";
         
-        const estruturaBasica = `## ATA DA REUNIÃO - {{ reuniao.titulo }}
+        const estruturaBasica = `# ARLS BICENTENÁRIO Nº 4739
+## ORIENTE DE CEILÂNDIA - DF
+
+![Logo da Loja](/static/images/logo_loja.png)
+
+---
+
+## ATA DA REUNIÃO - {{ reuniao.titulo }}
 
 ### DADOS DA REUNIÃO
 - **Data:** ${data}
@@ -317,7 +326,9 @@ Nada mais havendo a tratar, a reunião foi encerrada às ${horaTermino}.
         document.getElementById('conteudoAta').value = estruturaBasica;
     }
     
-    // Inserir modelo oficial completo (versão oficial maçônica)
+    // ============================================
+    // MODELO 2: MODELO OFICIAL COM LOGO
+    // ============================================
     function inserirModeloOficial() {
         const data = "{{ reuniao.data.strftime('%d/%m/%Y') if reuniao.data else '' }}";
         const dataExtenso = "{{ reuniao.data.strftime('%d') if reuniao.data else '' }} de {{ reuniao.data.strftime('%B') if reuniao.data else '' }} de {{ reuniao.data.strftime('%Y') if reuniao.data else '' }}";
@@ -325,7 +336,14 @@ Nada mais havendo a tratar, a reunião foi encerrada às ${horaTermino}.
         const horaTermino = "{{ reuniao.hora_termino.strftime('%H:%M') if reuniao.hora_termino else '' }}";
         const local = "{{ reuniao.local or 'Templo Maçônico - ARLS Bicentenário' }}";
         
-        const modeloOficial = `## ATA DA SESSÃO {{ reuniao.tipo|upper }} DA ARLS BICENTENÁRIO Nº 4739
+        const modeloOficial = `# ARLS BICENTENÁRIO Nº 4739
+## ORIENTE DE CEILÂNDIA - DF
+
+![Logo da Loja](/static/images/logo_loja.png)
+
+---
+
+## ATA DA SESSÃO {{ reuniao.tipo|upper }}
 
 ### DADOS DA SESSÃO
 - **Data:** ${data}
@@ -394,14 +412,23 @@ Nada mais havendo a tratar, o Venerável Mestre declarou encerrada a sessão às
         document.getElementById('conteudoAta').value = modeloOficial;
     }
     
-    // Inserir modelo completo com cabeçalho da loja
+    // ============================================
+    // MODELO 3: MODELO COMPLETO COM LOGO
+    // ============================================
     function inserirModeloCompleto() {
         const data = "{{ reuniao.data.strftime('%d/%m/%Y') if reuniao.data else '' }}";
         const horaInicio = "{{ reuniao.hora_inicio.strftime('%H:%M') if reuniao.hora_inicio else '' }}";
         const horaTermino = "{{ reuniao.hora_termino.strftime('%H:%M') if reuniao.hora_termino else '' }}";
         const local = "{{ reuniao.local or 'Templo Maçônico - ARLS Bicentenário' }}";
         
-        const modeloCompleto = `# ATA DA REUNIÃO {{ reuniao.tipo|upper }}
+        const modeloCompleto = `# ARLS BICENTENÁRIO Nº 4739
+## ORIENTE DE CEILÂNDIA - DF
+
+![Logo da Loja](/static/images/logo_loja.png)
+
+---
+
+## ATA DA REUNIÃO {{ reuniao.tipo|upper }}
 
 ## CABEÇALHO
 **ARLS BICENTENÁRIO Nº 4739**
@@ -479,33 +506,86 @@ __________________________________
         document.getElementById('conteudoAta').value = modeloCompleto;
     }
     
-    // Visualizar ata formatada
-    function visualizarAta() {
-        const conteudo = document.getElementById('conteudoAta').value;
-        const modalBody = document.getElementById('visualizarAtaContent');
+// Visualizar ata formatada (corrigido para renderizar HTML)
+function visualizarAta() {
+    const conteudo = document.getElementById('conteudoAta').value;
+    const modalBody = document.getElementById('visualizarAtaContent');
+    
+    if (conteudo.trim()) {
+        // Criar um iframe para renderizar o HTML corretamente
+        const htmlContent = `
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <meta charset="UTF-8">
+            <style>
+                body {
+                    font-family: 'Times New Roman', Times, serif;
+                    line-height: 1.5;
+                    padding: 20px;
+                    max-width: 900px;
+                    margin: 0 auto;
+                    background: white;
+                }
+                img {
+                    max-width: 120px;
+                    display: block;
+                    margin: 0 auto 20px auto;
+                }
+                h1 { color: #1a2c3e; font-size: 1.8em; text-align: center; margin-top: 20px; }
+                h2 { color: #1a2c3e; font-size: 1.4em; margin-top: 20px; }
+                h3 { color: #1a2c3e; font-size: 1.2em; margin-top: 15px; }
+                h4 { color: #1a2c3e; font-size: 1.1em; }
+                table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+                td, th { border: 1px solid #ddd; padding: 8px; text-align: left; }
+                hr { border: 1px solid #c9a03d; margin: 20px 0; }
+                ul, ol { margin-bottom: 15px; }
+                li { margin-bottom: 5px; }
+                .logo {
+                    text-align: center;
+                    margin-bottom: 20px;
+                }
+                .logo img {
+                    max-width: 120px;
+                }
+                .header {
+                    text-align: center;
+                    margin-bottom: 30px;
+                    border-bottom: 2px solid #c9a03d;
+                    padding-bottom: 20px;
+                }
+                .assinaturas {
+                    margin-top: 50px;
+                }
+                .assinaturas table {
+                    width: 100%;
+                }
+                .assinaturas td {
+                    text-align: center;
+                    padding-top: 40px;
+                    border: none;
+                }
+                .linha-assinatura {
+                    border-top: 1px solid #333;
+                    width: 80%;
+                    margin: 0 auto;
+                }
+            </style>
+        </head>
+        <body>
+            ${conteudo}
+        </body>
+        </html>
+        `;
         
-        if (conteudo.trim()) {
-            // Converter markdown básico para HTML
-            let html = conteudo
-                .replace(/\n/g, '<br>')
-                .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
-                .replace(/\*(.*?)\*/g, '<em>$1</em>')
-                .replace(/^# (.*)$/gm, '<h3 class="mt-3 text-primary">$1</h3>')
-                .replace(/^## (.*)$/gm, '<h4 class="mt-3">$1</h4>')
-                .replace(/^### (.*)$/gm, '<h5 class="mt-2">$1</h5>')
-                .replace(/^- (.*)$/gm, '<li>$1</li>')
-                .replace(/<li>(.*?)<\/li>/g, '<ul class="mb-2"><li>$1</li></ul>')
-                .replace(/<\/ul><ul>/g, '')
-                .replace(/---/g, '<hr>')
-                .replace(/\|/g, '</td><td>');
-            
-            modalBody.innerHTML = `<div class="p-3 bg-light rounded">${html}</div>`;
-        } else {
-            modalBody.innerHTML = '<p class="text-muted">Nenhum conteúdo para visualizar.</p>';
-        }
-        
-        new bootstrap.Modal(document.getElementById('modalVisualizarAta')).show();
+        // Usar iframe para renderizar
+        modalBody.innerHTML = `<iframe srcdoc="${htmlContent.replace(/"/g, '&quot;').replace(/'/g, '&#39;')}" style="width: 100%; height: 70vh; border: none; background: white;"></iframe>`;
+    } else {
+        modalBody.innerHTML = '<p class="text-muted">Nenhum conteúdo para visualizar.</p>';
     }
+    
+    new bootstrap.Modal(document.getElementById('modalVisualizarAta')).show();
+}
     
     // Copiar conteúdo
     function copiarConteudo() {
