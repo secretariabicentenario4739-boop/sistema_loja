@@ -657,6 +657,15 @@ import os
 import psycopg2
 from psycopg2.extras import RealDictCursor
 
+def return_connection(conn):
+    """Fecha a conexão com o banco de dados"""
+    try:
+        if conn and not conn.closed:
+            conn.close()
+    except Exception as e:
+        print(f"Erro ao fechar conexão: {e}")
+
+
 def get_db():
     """Retorna cursor e conexão do banco (funciona local e no Render)"""
     try:
@@ -685,6 +694,26 @@ def get_db():
         print(f"❌ Erro ao conectar ao banco: {e}")
         raise
 
+# =============================
+# IMPORTANTE: Chamar test_connection() DEPOIS de definir as funções
+# =============================
+def test_connection():
+    """Testa a conexão com o banco de dados"""
+    try:
+        cursor, conn = get_db()
+        cursor.execute("SELECT 1")
+        result = cursor.fetchone()
+        return_connection(conn)
+        print("✅ Conexão com o banco de dados estabelecida com sucesso!")
+        return True
+    except Exception as e:
+        print(f"❌ Erro na conexão com o banco: {e}")
+        return False
+        
+# Verificar conexão (opcional)
+#if __name__ != '__main__':
+ #   print(f"🔧 Banco configurado: LOCAL (localhost:5432/sistema_maconico)")
+  #  test_connection()
 
 
 # =============================
@@ -1593,14 +1622,6 @@ def permissao_required(permissao_chave):
                 return redirect(url_for('dashboard'))
         return decorated_function
     return decorator
-# =============================
-# IMPORTANTE: Chamar test_connection() DEPOIS de definir as funções
-# =============================
-
-# Verificar conexão (opcional)
-if __name__ != '__main__':
-    print(f"🔧 Banco configurado: LOCAL (localhost:5432/sistema_maconico)")
-    test_connection()
 
 # =============================
 # CONTEXTO GLOBAL
@@ -12488,4 +12509,8 @@ def api_backup_logs():
 if __name__ == "__main__":
     debug_mode = os.getenv('FLASK_ENV', 'production') == 'development'
     port = int(os.environ.get('PORT', 5000))
+    
+    # Testar conexão antes de iniciar
+    test_connection()
+    
     app.run(debug=debug_mode, host='0.0.0.0', port=port)
