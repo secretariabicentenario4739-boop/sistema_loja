@@ -20,11 +20,11 @@
                                     Olá, {{ session.nome_completo or session.usuario }}
                                 </h1>
                                 <p class="mb-0 mt-2 opacity-75">
-    <i class="bi bi-calendar3 me-1"></i> 
-    {% set dias_semana = {'Monday': 'Segunda-feira', 'Tuesday': 'Terça-feira', 'Wednesday': 'Quarta-feira', 'Thursday': 'Quinta-feira', 'Friday': 'Sexta-feira', 'Saturday': 'Sábado', 'Sunday': 'Domingo'} %}
-    {% set meses = {'January': 'Janeiro', 'February': 'Fevereiro', 'March': 'Março', 'April': 'Abril', 'May': 'Maio', 'June': 'Junho', 'July': 'Julho', 'August': 'Agosto', 'September': 'Setembro', 'October': 'Outubro', 'November': 'Novembro', 'December': 'Dezembro'} %}
-    {{ dias_semana[now.strftime('%A')] }}, {{ now.strftime('%d') }} de {{ meses[now.strftime('%B')] }} de {{ now.strftime('%Y') }}
-</p>
+                                    <i class="bi bi-calendar3 me-1"></i> 
+                                    {% set dias_semana = {'Monday': 'Segunda-feira', 'Tuesday': 'Terça-feira', 'Wednesday': 'Quarta-feira', 'Thursday': 'Quinta-feira', 'Friday': 'Sexta-feira', 'Saturday': 'Sábado', 'Sunday': 'Domingo'} %}
+                                    {% set meses = {'January': 'Janeiro', 'February': 'Fevereiro', 'March': 'Março', 'April': 'Abril', 'May': 'Maio', 'June': 'Junho', 'July': 'Julho', 'August': 'Agosto', 'September': 'Setembro', 'October': 'Outubro', 'November': 'Novembro', 'December': 'Dezembro'} %}
+                                    {{ dias_semana[now.strftime('%A')] }}, {{ now.strftime('%d') }} de {{ meses[now.strftime('%B')] }} de {{ now.strftime('%Y') }} - {{ now.strftime('%H:%M') }}h
+                                </p>
                             </div>
                             <div class="text-end">
                                 <div class="bg-white bg-opacity-25 rounded-circle p-3 d-inline-block">
@@ -37,7 +37,6 @@
             </div>
         </div>
 
-       
         <!-- ============================================ -->
         <!-- CARDS DE ESTATÍSTICAS PRINCIPAIS -->
         <!-- ============================================ -->
@@ -250,7 +249,7 @@
                 </div>
             </div>
             <div class="card-body p-4">
-                <!-- Estatísticas da Sindicância (Cards melhorados) -->
+                <!-- Estatísticas da Sindicância -->
                 <div class="row g-3 mb-4">
                     <div class="col-md-3 col-sm-6">
                         <div class="card border-0 bg-warning bg-opacity-10 rounded-4 h-100">
@@ -320,91 +319,91 @@
                     </div>
                 </div>
 
-               <!-- Pendências e Prazo Vencido -->
-<div class="row g-4 mb-4">
-    {% if pendentes %}
-    <div class="col-md-6">
-        <div class="card border-warning shadow-sm">
-            <div class="card-header bg-warning bg-opacity-10 border-warning">
-                <h6 class="mb-0 fw-bold text-warning">
-                    <i class="bi bi-exclamation-triangle-fill me-2"></i>
-                    Pendências de Sindicância
-                    <span class="badge bg-warning ms-2">{{ pendentes|length }}</span>
-                </h6>
-            </div>
-            <div class="card-body">
-                <div class="list-group list-group-flush">
-                    {% for p in pendentes %}
-                    <div class="list-group-item px-0">
-                        <div class="d-flex justify-content-between align-items-start">
-                            <div class="flex-grow-1">
-                                <h6 class="mb-1 fw-bold">{{ p.candidato.nome }}</h6>
-                                <small class="text-muted d-block">
-                                    <i class="bi bi-person-badge"></i> 
-                                    Faltam: {{ p.faltam|join(', ') }}
+                <!-- Pendências e Prazo Vencido -->
+                <div class="row g-4 mb-4">
+                    {% if pendentes %}
+                    <div class="col-md-6">
+                        <div class="card border-warning shadow-sm">
+                            <div class="card-header bg-warning bg-opacity-10 border-warning">
+                                <h6 class="mb-0 fw-bold text-warning">
+                                    <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                                    Pendências de Sindicância
+                                    <span class="badge bg-warning ms-2">{{ pendentes|length }}</span>
+                                </h6>
+                            </div>
+                            <div class="card-body">
+                                <div class="list-group list-group-flush">
+                                    {% for p in pendentes %}
+                                    <div class="list-group-item px-0">
+                                        <div class="d-flex justify-content-between align-items-start">
+                                            <div class="flex-grow-1">
+                                                <h6 class="mb-1 fw-bold">{{ p.candidato.nome }}</h6>
+                                                <small class="text-muted d-block">
+                                                    <i class="bi bi-person-badge"></i> 
+                                                    Faltam: {{ p.faltam|join(', ') }}
+                                                </small>
+                                            </div>
+                                            <a href="/sindicancia/{{ p.candidato.id }}" class="btn btn-sm btn-warning ms-2">
+                                                <i class="bi bi-eye"></i> Ver
+                                            </a>
+                                        </div>
+                                    </div>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                            <div class="card-footer bg-light border-top">
+                                <small class="text-muted">
+                                    <i class="bi bi-info-circle"></i> 
+                                    Total de pendências: {{ pendentes|length }}
                                 </small>
                             </div>
-                            <a href="/sindicancia/{{ p.candidato.id }}" class="btn btn-sm btn-warning ms-2">
-                                <i class="bi bi-eye"></i> Ver
-                            </a>
                         </div>
                     </div>
-                    {% endfor %}
-                </div>
-            </div>
-            <div class="card-footer bg-light border-top">
-                <small class="text-muted">
-                    <i class="bi bi-info-circle"></i> 
-                    Total de pendências: {{ pendentes|length }}
-                </small>
-            </div>
-        </div>
-    </div>
-    {% endif %}
+                    {% endif %}
 
-    {% if prazo_vencido %}
-    <div class="col-md-6">
-        <div class="card border-danger shadow-sm">
-            <div class="card-header bg-danger bg-opacity-10 border-danger">
-                <h6 class="mb-0 fw-bold text-danger">
-                    <i class="bi bi-clock-history me-2"></i>
-                    Sindicâncias com Prazo Vencido
-                    <span class="badge bg-danger ms-2">{{ prazo_vencido|length }}</span>
-                </h6>
-            </div>
-            <div class="card-body">
-                <div class="list-group list-group-flush">
-                    {% for c in prazo_vencido %}
-                    <div class="list-group-item px-0">
-                        <div class="d-flex justify-content-between align-items-start">
-                            <div class="flex-grow-1">
-                                <h6 class="mb-1 fw-bold">{{ c.nome }}</h6>
-                                <small class="text-muted d-block">
-                                    <i class="bi bi-calendar-x"></i> 
-                                    {% set data_criacao = c.data_criacao %}
-                                    {% if data_criacao %}
-                                        {{ ((now - data_criacao).days) }} dias em análise
-                                    {% endif %}
+                    {% if prazo_vencido %}
+                    <div class="col-md-6">
+                        <div class="card border-danger shadow-sm">
+                            <div class="card-header bg-danger bg-opacity-10 border-danger">
+                                <h6 class="mb-0 fw-bold text-danger">
+                                    <i class="bi bi-clock-history me-2"></i>
+                                    Sindicâncias com Prazo Vencido
+                                    <span class="badge bg-danger ms-2">{{ prazo_vencido|length }}</span>
+                                </h6>
+                            </div>
+                            <div class="card-body">
+                                <div class="list-group list-group-flush">
+                                    {% for c in prazo_vencido %}
+                                    <div class="list-group-item px-0">
+                                        <div class="d-flex justify-content-between align-items-start">
+                                            <div class="flex-grow-1">
+                                                <h6 class="mb-1 fw-bold">{{ c.nome }}</h6>
+                                                <small class="text-muted d-block">
+                                                    <i class="bi bi-calendar-x"></i> 
+                                                    {% set data_criacao = c.data_criacao %}
+                                                    {% if data_criacao %}
+                                                        {{ ((now - data_criacao).days) }} dias em análise
+                                                    {% endif %}
+                                                </small>
+                                            </div>
+                                            <a href="/sindicancia/{{ c.id }}" class="btn btn-sm btn-danger ms-2">
+                                                <i class="bi bi-eye"></i> Ver
+                                            </a>
+                                        </div>
+                                    </div>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                            <div class="card-footer bg-light border-top">
+                                <small class="text-muted">
+                                    <i class="bi bi-info-circle"></i> 
+                                    Total de sindicâncias vencidas: {{ prazo_vencido|length }}
                                 </small>
                             </div>
-                            <a href="/sindicancia/{{ c.id }}" class="btn btn-sm btn-danger ms-2">
-                                <i class="bi bi-eye"></i> Ver
-                            </a>
                         </div>
                     </div>
-                    {% endfor %}
+                    {% endif %}
                 </div>
-            </div>
-            <div class="card-footer bg-light border-top">
-                <small class="text-muted">
-                    <i class="bi bi-info-circle"></i> 
-                    Total de sindicâncias vencidas: {{ prazo_vencido|length }}
-                </small>
-            </div>
-        </div>
-    </div>
-    {% endif %}
-</div>
 
                 <!-- Pareceres Conclusivos Recentes -->
                 {% if pareceres_conclusivos %}
@@ -443,9 +442,7 @@
                 </div>
                 {% endif %}
 
-                <!-- ============================================ -->
-                <!-- SINDICANTES ATIVOS (DENTRO DA ÁREA DE SINDICÂNCIA) -->
-                <!-- ============================================ -->
+                <!-- Sindicantes Ativos (dentro da área de sindicância) -->
                 {% if session.tipo == 'admin' %}
                 <div class="mt-4 pt-3 border-top">
                     <div class="d-flex justify-content-between align-items-center mb-3">
@@ -497,7 +494,7 @@
         </div>
 
         <!-- ============================================ -->
-        <!-- SEÇÃO: AVISOS RECENTES (MESMO LAYOUT DO LISTA.HTML) -->
+        <!-- SEÇÃO: AVISOS RECENTES -->
         <!-- ============================================ -->
         <div class="row mb-4">
             <div class="col-12">
@@ -562,245 +559,216 @@
         </div>
 
         <!-- ============================================ -->
-        <!-- SEÇÃO: FAMILIARES E CONDECORAÇÕES -->
+        <!-- SEÇÃO: MÉTRICAS INTEGRADAS (Familiares, Condecorações, Cargos, Reuniões, Documentos) -->
         <!-- ============================================ -->
-        <div class="row g-4 mb-4">
-            <div class="col-md-6">
-                <div class="card border-0 shadow-lg rounded-4 h-100">
-                    <div class="card-header bg-info text-white py-3 border-0">
-                        <h5 class="mb-0 fw-bold">
-                            <i class="bi bi-people me-2"></i>
-                            Familiares Cadastrados
-                        </h5>
+        <div class="card border-0 shadow-lg rounded-4 mb-4 overflow-hidden">
+            <div class="card-header bg-dark text-white py-3 border-0">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h4 class="mb-0 fw-bold">
+                            <i class="bi bi-bar-chart-steps me-2"></i>
+                            Métricas e Atividades
+                        </h4>
+                        <p class="mb-0 mt-1 opacity-75">Visão geral da loja</p>
                     </div>
-                    <div class="card-body text-center py-5">
-                        <div class="bg-info bg-opacity-10 rounded-circle d-flex align-items-center justify-content-center mx-auto mb-3" style="width: 100px; height: 100px;">
-                            <i class="bi bi-people fs-1 text-info"></i>
-                        </div>
-                        <h2 class="fw-bold mb-2">{{ total_familiares if total_familiares is defined else 0 }}</h2>
-                        <p class="text-muted">familiares cadastrados no sistema</p>
-                        <a href="/obreiros" class="btn btn-outline-info rounded-pill px-4">
-                            <i class="bi bi-eye"></i> Ver detalhes
-                        </a>
+                    <div class="bg-white bg-opacity-25 rounded-circle p-2 px-3">
+                        <i class="bi bi-graph-up fs-4"></i>
                     </div>
                 </div>
             </div>
-            <div class="col-md-6">
-                <div class="card border-0 shadow-lg rounded-4 h-100">
-                    <div class="card-header bg-warning text-dark py-3 border-0">
-                        <h5 class="mb-0 fw-bold">
-                            <i class="bi bi-award me-2"></i>
-                            Condecorações
-                        </h5>
-                    </div>
-                    <div class="card-body text-center py-5">
-                        <div class="bg-warning bg-opacity-10 rounded-circle d-flex align-items-center justify-content-center mx-auto mb-3" style="width: 100px; height: 100px;">
-                            <i class="bi bi-award fs-1 text-warning"></i>
-                        </div>
-                        <h2 class="fw-bold mb-2">{{ total_condecoracoes if total_condecoracoes is defined else 0 }}</h2>
-                        <p class="text-muted">condecorações concedidas</p>
-                        <a href="/obreiros" class="btn btn-outline-warning rounded-pill px-4">
-                            <i class="bi bi-eye"></i> Ver detalhes
-                        </a>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-<!-- ============================================ -->
-<!-- SEÇÃO: CARGOS OCUPADOS E PRÓXIMAS REUNIÕES -->
-<!-- ============================================ -->
-<div class="row g-4 mb-4">
-    
-    <!-- Cargos Ocupados -->
-    <div class="col-md-6">
-        <div class="card shadow h-100">
-            <div class="card-header bg-secondary text-white">
-                <h5 class="mb-0">
-                    <i class="bi bi-briefcase"></i> Cargos Ocupados
-                    <span class="badge bg-light text-dark ms-2">{{ cargos_ocupados|length if cargos_ocupados else 0 }}</span>
-                </h5>
-            </div>
-            <div class="card-body">
-                {% if cargos_ocupados and cargos_ocupados|length > 0 %}
-                    <div class="list-group list-group-flush">
-                        {% for cargo in cargos_ocupados %}
-                        <div class="list-group-item border-0 px-0 py-3">
-                            <div class="d-flex justify-content-between align-items-center">
-                                <div>
-                                    <h6 class="mb-1 fw-bold">{{ cargo.cargo_nome }}</h6>
-                                    <small class="text-muted">
-                                        <i class="bi bi-person-circle me-1"></i> 
-                                        <a href="/obreiros/{{ cargo.obreiro_id }}" class="text-decoration-none">
-                                            {{ cargo.obreiro_nome }}
-                                        </a>
-                                    </small>
-                                    <br>
-                                    <small class="text-muted">
-                                        <i class="bi bi-calendar me-1"></i> 
-                                        Desde: {{ cargo.data_inicio.strftime('%d/%m/%Y') if cargo.data_inicio else '-' }}
-                                    </small>
-                                </div>
-                                <span class="badge bg-success rounded-pill">Atual</span>
+            <div class="card-body p-4">
+                <!-- Row 1: Familiares e Condecorações -->
+                <div class="row g-4 mb-4">
+                    <div class="col-md-3 col-sm-6">
+                        <div class="card border-0 bg-info bg-opacity-10 rounded-4 h-100">
+                            <div class="card-body text-center">
+                                <i class="bi bi-people fs-2 text-info"></i>
+                                <h3 class="fw-bold text-info mb-0 mt-2">{{ total_familiares if total_familiares is defined else 0 }}</h3>
+                                <p class="text-muted mb-0">Familiares</p>
+                                <small class="text-muted">cadastrados</small>
                             </div>
                         </div>
-                        {% endfor %}
                     </div>
-                {% else %}
-                    <div class="text-center py-5">
-                        <i class="bi bi-briefcase fs-1 text-muted"></i>
-                        <p class="mt-2 text-muted mb-0">Nenhum cargo ocupado no momento</p>
+                    <div class="col-md-3 col-sm-6">
+                        <div class="card border-0 bg-warning bg-opacity-10 rounded-4 h-100">
+                            <div class="card-body text-center">
+                                <i class="bi bi-award fs-2 text-warning"></i>
+                                <h3 class="fw-bold text-warning mb-0 mt-2">{{ total_condecoracoes if total_condecoracoes is defined else 0 }}</h3>
+                                <p class="text-muted mb-0">Condecorações</p>
+                                <small class="text-muted">concedidas</small>
+                            </div>
+                        </div>
                     </div>
-                {% endif %}
-            </div>
-        </div>
-    </div>
+                    <div class="col-md-3 col-sm-6">
+                        <div class="card border-0 bg-secondary bg-opacity-10 rounded-4 h-100">
+                            <div class="card-body text-center">
+                                <i class="bi bi-briefcase fs-2 text-secondary"></i>
+                                <h3 class="fw-bold text-secondary mb-0 mt-2">{{ cargos_ocupados|length if cargos_ocupados else 0 }}</h3>
+                                <p class="text-muted mb-0">Cargos Ocupados</p>
+                                <small class="text-muted">ativamente</small>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3 col-sm-6">
+                        <div class="card border-0 bg-primary bg-opacity-10 rounded-4 h-100">
+                            <div class="card-body text-center">
+                                <i class="bi bi-calendar-week fs-2 text-primary"></i>
+                                <h3 class="fw-bold text-primary mb-0 mt-2">{{ proximas_reunioes|length if proximas_reunioes else 0 }}</h3>
+                                <p class="text-muted mb-0">Próximas Reuniões</p>
+                                <small class="text-muted">agendadas</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
 
-    <!-- Próximas Reuniões -->
-    <div class="col-md-6">
-        <div class="card shadow h-100">
-            <div class="card-header bg-primary text-white">
-                <h5 class="mb-0">
-                    <i class="bi bi-calendar-week"></i> 
-                    Próximas Reuniões
-                    <span class="badge bg-light text-dark ms-2">{{ proximas_reunioes|length if proximas_reunioes else 0 }}</span>
-                </h5>
-            </div>
-            <div class="card-body">
-                {% if proximas_reunioes and proximas_reunioes|length > 0 %}
-                    <div class="list-group list-group-flush">
-                        {% for r in proximas_reunioes %}
-                        <a href="/reunioes/{{ r.id }}" class="list-group-item list-group-item-action border-0 px-0 py-3">
-                            <div class="d-flex justify-content-between align-items-start">
-                                <div class="flex-grow-1">
-                                    <h6 class="mb-1 fw-bold">{{ r.titulo }}</h6>
-                                    <div class="d-flex flex-wrap gap-2 mb-1">
-                                        <small class="text-muted">
-                                            <i class="bi bi-calendar me-1"></i> 
-                                            {{ r.data.strftime('%d/%m/%Y') if r.data else '-' }}
-                                        </small>
-                                        <small class="text-muted">
-                                            <i class="bi bi-clock me-1"></i> 
-                                            {{ r.hora_inicio.strftime('%H:%M') if r.hora_inicio else '-' }}
-                                        </small>
-                                        {% if r.grau %}
-                                        <small class="text-muted">
-                                            <i class="bi bi-star me-1"></i> 
-                                            {% if r.grau == 1 %}
-                                                Aprendiz
-                                            {% elif r.grau == 2 %}
-                                                Companheiro
-                                            {% elif r.grau == 3 %}
-                                                Mestre
-                                            {% else %}
-                                                Grau {{ r.grau }}
-                                            {% endif %}
-                                        </small>
-                                        {% endif %}
+                <!-- Row 2: Listas de Cargos e Próximas Reuniões (detalhado) -->
+                <div class="row g-4">
+                    <div class="col-md-6">
+                        <div class="card border-0 shadow-sm h-100">
+                            <div class="card-header bg-secondary bg-opacity-10 border-0">
+                                <h6 class="mb-0 fw-bold">
+                                    <i class="bi bi-briefcase me-2"></i>
+                                    Cargos Ocupados
+                                    <span class="badge bg-secondary ms-2">{{ cargos_ocupados|length if cargos_ocupados else 0 }}</span>
+                                </h6>
+                            </div>
+                            <div class="card-body">
+                                {% if cargos_ocupados and cargos_ocupados|length > 0 %}
+                                    <div class="list-group list-group-flush">
+                                        {% for cargo in cargos_ocupados[:3] %}
+                                        <div class="list-group-item border-0 px-0 py-2">
+                                            <div class="d-flex justify-content-between align-items-center">
+                                                <div>
+                                                    <span class="fw-bold">{{ cargo.cargo_nome }}</span>
+                                                    <br>
+                                                    <small class="text-muted">
+                                                        <i class="bi bi-person-circle"></i> 
+                                                        <a href="/obreiros/{{ cargo.obreiro_id }}">{{ cargo.obreiro_nome }}</a>
+                                                    </small>
+                                                </div>
+                                                <span class="badge bg-success rounded-pill">Atual</span>
+                                            </div>
+                                        </div>
+                                        {% endfor %}
                                     </div>
-                                    {% if r.local %}
-                                    <small class="text-muted d-block">
-                                        <i class="bi bi-geo-alt me-1"></i> {{ r.local }}
-                                    </small>
+                                    {% if cargos_ocupados|length > 3 %}
+                                    <div class="text-center mt-2">
+                                        <small class="text-muted">+ {{ cargos_ocupados|length - 3 }} outro(s) cargo(s)</small>
+                                    </div>
                                     {% endif %}
-                                </div>
-                                <i class="bi bi-chevron-right text-muted fs-5"></i>
-                            </div>
-                        </a>
-                        {% endfor %}
-                    </div>
-                    
-                    {% if proxima_reuniao %}
-                    <div class="mt-3 alert alert-info rounded-3 mb-0">
-                        <div class="d-flex align-items-center">
-                            <i class="bi bi-bell-fill me-2 fs-5"></i>
-                            <div>
-                                <strong>Próxima reunião:</strong> 
-                                {{ proxima_reuniao.data.strftime('%d/%m/%Y') if proxima_reuniao.data else '-' }}
-                                {% if proxima_reuniao.hora_inicio %}
-                                às {{ proxima_reuniao.hora_inicio.strftime('%H:%M') }}
+                                {% else %}
+                                    <div class="text-center py-3">
+                                        <i class="bi bi-briefcase fs-2 text-muted"></i>
+                                        <p class="mt-2 text-muted mb-0">Nenhum cargo ocupado</p>
+                                    </div>
                                 {% endif %}
                             </div>
                         </div>
                     </div>
-                    {% endif %}
-                    
-                {% else %}
-                    <div class="text-center py-5">
-                        <i class="bi bi-calendar-x fs-1 text-muted"></i>
-                        <p class="mt-2 text-muted mb-0">Nenhuma reunião agendada</p>
-                        <p class="text-muted small">para o seu grau</p>
-                        {% if session.tipo == 'admin' %}
-                        <a href="/reunioes/nova" class="btn btn-primary btn-sm mt-3 rounded-pill">
-                            <i class="bi bi-plus-circle"></i> Agendar Reunião
-                        </a>
-                        {% endif %}
+                    <div class="col-md-6">
+                        <div class="card border-0 shadow-sm h-100">
+                            <div class="card-header bg-primary bg-opacity-10 border-0">
+                                <h6 class="mb-0 fw-bold">
+                                    <i class="bi bi-calendar-week me-2"></i>
+                                    Próximas Reuniões
+                                    <span class="badge bg-primary ms-2">{{ proximas_reunioes|length if proximas_reunioes else 0 }}</span>
+                                </h6>
+                            </div>
+                            <div class="card-body">
+                                {% if proximas_reunioes and proximas_reunioes|length > 0 %}
+                                    <div class="list-group list-group-flush">
+                                        {% for r in proximas_reunioes[:3] %}
+                                        <a href="/reunioes/{{ r.id }}" class="list-group-item list-group-item-action border-0 px-0 py-2">
+                                            <div class="d-flex justify-content-between align-items-start">
+                                                <div>
+                                                    <span class="fw-bold">{{ r.titulo }}</span>
+                                                    <br>
+                                                    <small class="text-muted">
+                                                        <i class="bi bi-calendar"></i> {{ r.data.strftime('%d/%m/%Y') if r.data else '-' }}
+                                                        <i class="bi bi-clock ms-1"></i> {{ r.hora_inicio.strftime('%H:%M') if r.hora_inicio else '-' }}
+                                                    </small>
+                                                </div>
+                                                <i class="bi bi-chevron-right text-muted"></i>
+                                            </div>
+                                        </a>
+                                        {% endfor %}
+                                    </div>
+                                    {% if proximas_reunioes|length > 3 %}
+                                    <div class="text-center mt-2">
+                                        <small class="text-muted">+ {{ proximas_reunioes|length - 3 }} outra(s) reunião(ões)</small>
+                                    </div>
+                                    {% endif %}
+                                {% else %}
+                                    <div class="text-center py-3">
+                                        <i class="bi bi-calendar-x fs-2 text-muted"></i>
+                                        <p class="mt-2 text-muted mb-0">Nenhuma reunião agendada</p>
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
                     </div>
-                {% endif %}
-            </div>
-        </div>
-    </div>
-</div>
-<!-- ============================================ -->
-<!-- SEÇÃO: DOCUMENTOS RECENTES -->
-<!-- ============================================ -->
-<div class="row">
-    <div class="col-12">
-        <div class="card border-0 shadow-lg rounded-4 overflow-hidden mb-4">
-            <div class="card-header bg-info text-white py-3 border-0">
-                <div class="d-flex justify-content-between align-items-center">
-                    <div>
-                        <h4 class="mb-0 fw-bold">
-                            <i class="bi bi-cloud-arrow-up me-2"></i>
-                            Documentos Recentes
-                        </h4>
-                        <p class="mb-0 mt-1 opacity-75">Últimos documentos enviados</p>
+                </div>
+
+                <!-- Row 3: Documentos Recentes (compacto) -->
+                <div class="row mt-4">
+                    <div class="col-12">
+                        <div class="card border-0 shadow-sm">
+                            <div class="card-header bg-info bg-opacity-10 border-0">
+                                <h6 class="mb-0 fw-bold">
+                                    <i class="bi bi-cloud-arrow-up me-2"></i>
+                                    Documentos Recentes
+                                    <span class="badge bg-info ms-2">{{ documentos_recentes|length if documentos_recentes else 0 }}</span>
+                                </h6>
+                            </div>
+                            <div class="card-body">
+                                {% if documentos_recentes and documentos_recentes|length > 0 %}
+                                    <div class="table-responsive">
+                                        <table class="table table-sm table-hover mb-0">
+                                            <thead>
+                                                <tr>
+                                                    <th>Documento</th>
+                                                    <th>Obreiro</th>
+                                                    <th>Data</th>
+                                                    <th>Ação</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                {% for doc in documentos_recentes[:5] %}
+                                                <tr>
+                                                    <td>
+                                                        <i class="bi bi-file-earmark-text text-info me-1"></i>
+                                                        <strong>{{ doc.titulo|truncate(30) }}</strong>
+                                                    </td>
+                                                    <td>{{ doc.obreiro_nome or doc.obreiro_usuario }}</td>
+                                                    <td>{{ doc.data_upload.strftime('%d/%m/%Y') if doc.data_upload else '-' }}</td>
+                                                    <td>
+                                                        <a href="{{ doc.url }}" target="_blank" class="btn btn-sm btn-outline-primary rounded-pill">
+                                                            <i class="bi bi-eye"></i> Ver
+                                                        </a>
+                                                    </td>
+                                                </tr>
+                                                {% endfor %}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                    {% if documentos_recentes|length > 5 %}
+                                    <div class="text-center mt-2">
+                                        <small class="text-muted">+ {{ documentos_recentes|length - 5 }} outro(s) documento(s)</small>
+                                    </div>
+                                    {% endif %}
+                                {% else %}
+                                    <div class="text-center py-3">
+                                        <i class="bi bi-cloud-slash fs-2 text-muted"></i>
+                                        <p class="mt-2 text-muted mb-0">Nenhum documento enviado</p>
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
-            <div class="card-body p-0">
-                {% if documentos_recentes and documentos_recentes|length > 0 %}
-                    <div class="table-responsive">
-                        <table class="table table-hover mb-0">
-                            <thead class="table-light">
-                                <tr>
-                                    <th class="ps-4">Documento</th>
-                                    <th>Obreiro</th>
-                                    <th>Categoria</th>
-                                    <th>Data Upload</th>
-                                    <th class="pe-4">Ações</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {% for doc in documentos_recentes[:10] %}
-                                <tr>
-                                    <td class="ps-4">
-                                        <i class="bi bi-file-earmark-text me-2 text-info"></i>
-                                        <strong>{{ doc.titulo }}</strong>
-                                    </td>
-                                    <td>{{ doc.obreiro_nome or doc.obreiro_usuario }}</td>
-                                    <td>
-                                        <span class="badge bg-secondary rounded-pill">{{ doc.categoria }}</span>
-                                    </td>
-                                    <td>{{ doc.data_upload.strftime('%d/%m/%Y') if doc.data_upload else '-' }}</td>
-                                    <td class="pe-4">
-                                        <a href="{{ doc.url }}" target="_blank" class="btn btn-sm btn-outline-primary rounded-pill">
-                                            <i class="bi bi-eye"></i> Ver
-                                        </a>
-                                    </td>
-                                </tr>
-                                {% endfor %}
-                            </tbody>
-                        </table>
-                    </div>
-                {% else %}
-                    <div class="text-center py-5">
-                        <i class="bi bi-cloud-slash fs-1 text-muted"></i>
-                        <p class="mt-2 text-muted mb-0">Nenhum documento enviado recentemente</p>
-                    </div>
-                {% endif %}
-            </div>
         </div>
+
     </div>
 </div>
 
@@ -822,6 +790,12 @@
     }
     .bg-info.bg-opacity-10 {
         background-color: rgba(13, 202, 240, 0.15);
+    }
+    .bg-secondary.bg-opacity-10 {
+        background-color: rgba(108, 117, 125, 0.15);
+    }
+    .bg-primary.bg-opacity-10 {
+        background-color: rgba(13, 110, 253, 0.15);
     }
     .rounded-4 {
         border-radius: 1rem !important;
@@ -850,7 +824,8 @@
             font-size: 1.1rem;
         }
     }
-	/* Garantir bordas dos cards */
+    
+    /* Garantir bordas dos cards */
     .card {
         border-radius: 10px !important;
         overflow: hidden !important;
