@@ -656,37 +656,27 @@ else:
 def get_db():
     """Retorna cursor e conexão do banco"""
     try:
-        # Conexão local
-        conn = psycopg2.connect(
-            host='localhost',
-            port=5432,
-            dbname='sistema_maconico',
-            user='postgres',
-            password='postgres'
-        )
+        # Verificar se está no Render (DATABASE_URL existe)
+        DATABASE_URL = os.getenv('DATABASE_URL', '')
+        
+        if DATABASE_URL:
+            # Render: usar URL
+            conn = psycopg2.connect(DATABASE_URL)
+        else:
+            # Local: conexão direta
+            conn = psycopg2.connect(
+                host='localhost',
+                port=5432,
+                dbname='sistema_maconico',
+                user='postgres',
+                password='postgres'
+            )
+        
         cursor = conn.cursor(cursor_factory=RealDictCursor)
         return cursor, conn
     except Exception as e:
         print(f"❌ Erro ao conectar: {e}")
         raise
-
-def return_connection(conn):
-    """Fecha conexão"""
-    if conn:
-        conn.close()
-
-def test_connection():
-    """Testa conexão com banco (apenas diagnóstico)"""
-    try:
-        cursor, conn = get_db()
-        cursor.execute("SELECT version()")
-        version = cursor.fetchone()
-        print(f"✅ PostgreSQL conectado: {version['version'][:50]}...")
-        return_connection(conn)
-        return True
-    except Exception as e:
-        print(f"❌ Falha na conexão: {e}")
-        return False
 
 # =============================
 # IMPORTANTE: Chamar test_connection() DEPOIS de definir as funções
