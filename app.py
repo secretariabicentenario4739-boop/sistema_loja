@@ -685,14 +685,7 @@ def get_db():
         print(f"❌ Erro ao conectar ao banco: {e}")
         raise
 
-# =============================
-# IMPORTANTE: Chamar test_connection() DEPOIS de definir as funções
-# =============================
 
-# Verificar conexão (opcional)
-if __name__ != '__main__':
-    print(f"🔧 Banco configurado: LOCAL (localhost:5432/sistema_maconico)")
-    test_connection()
 
 # =============================
 # FUNÇÕES AUXILIARES
@@ -1600,6 +1593,14 @@ def permissao_required(permissao_chave):
                 return redirect(url_for('dashboard'))
         return decorated_function
     return decorator
+# =============================
+# IMPORTANTE: Chamar test_connection() DEPOIS de definir as funções
+# =============================
+
+# Verificar conexão (opcional)
+if __name__ != '__main__':
+    print(f"🔧 Banco configurado: LOCAL (localhost:5432/sistema_maconico)")
+    test_connection()
 
 # =============================
 # CONTEXTO GLOBAL
