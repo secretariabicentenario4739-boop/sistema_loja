@@ -493,71 +493,7 @@
             </div>
         </div>
 
-        <!-- ============================================ -->
-        <!-- SEÇÃO: AVISOS RECENTES -->
-        <!-- ============================================ -->
-        <div class="row mb-4">
-            <div class="col-12">
-                <div class="card shadow">
-                    <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
-                        <h5 class="mb-0">
-                            <i class="bi bi-megaphone-fill"></i> 
-                            Últimos Avisos
-                        </h5>
-                        <a href="/avisos" class="btn btn-sm btn-light">
-                            Ver todos <i class="bi bi-arrow-right"></i>
-                        </a>
-                    </div>
-                    <div class="card-body">
-                        {% if ultimos_avisos %}
-                            <div class="list-group">
-                                {% for aviso in ultimos_avisos %}
-                                <div class="list-group-item {% if not aviso.ja_visto %}list-group-item-primary{% endif %}">
-                                    <div class="d-flex justify-content-between align-items-center">
-                                        <div class="flex-grow-1">
-                                            <div class="mb-1">
-                                                <strong>{{ aviso.titulo }}</strong>
-                                                {% if aviso.prioridade == 'urgente' %}
-                                                    <span class="badge bg-danger ms-2">🔴 URGENTE</span>
-                                                {% elif aviso.prioridade == 'importante' %}
-                                                    <span class="badge bg-warning text-dark ms-2">🟡 IMPORTANTE</span>
-                                                {% endif %}
-                                                {% if not aviso.ja_visto %}
-                                                    <span class="badge bg-primary ms-2">🆕 NOVO</span>
-                                                {% endif %}
-                                            </div>
-                                            <small class="text-muted">
-                                                <i class="bi bi-clock"></i> {{ aviso.created_at.strftime('%d/%m/%Y %H:%M') if aviso.created_at else '-' }}
-                                                <i class="bi bi-person-circle ms-2"></i> {{ aviso.autor_nome or 'Sistema' }}
-                                                <i class="bi bi-eye ms-2"></i> {{ aviso.visualizacoes or 0 }} visualizações
-                                            </small>
-                                            <p class="mb-0 mt-1 small">{{ aviso.conteudo[:100] }}{% if aviso.conteudo|length > 100 %}...{% endif %}</p>
-                                        </div>
-                                        <div class="ms-3">
-                                            <a href="/avisos" class="btn btn-sm btn-outline-primary">
-                                                Ver <i class="bi bi-chevron-right"></i>
-                                            </a>
-                                        </div>
-                                    </div>
-                                </div>
-                                {% endfor %}
-                            </div>
-                        {% else %}
-                            <div class="text-center py-4">
-                                <i class="bi bi-megaphone-slash fs-1 text-muted"></i>
-                                <p class="mt-2 text-muted mb-0">Nenhum aviso recente</p>
-                                {% if session.grau_atual >= 3 or session.tipo == 'admin' %}
-                                <a href="/avisos/novo" class="btn btn-sm btn-primary mt-2">
-                                    <i class="bi bi-plus-circle"></i> Criar Primeiro Aviso
-                                </a>
-                                {% endif %}
-                            </div>
-                        {% endif %}
-                    </div>
-                </div>
-            </div>
-        </div>
-
+        
         <!-- ============================================ -->
         <!-- SEÇÃO: MÉTRICAS INTEGRADAS (Familiares, Condecorações, Cargos, Reuniões, Documentos) -->
         <!-- ============================================ -->
@@ -708,64 +644,7 @@
                         </div>
                     </div>
                 </div>
-
-                <!-- Row 3: Documentos Recentes (compacto) -->
-                <div class="row mt-4">
-                    <div class="col-12">
-                        <div class="card border-0 shadow-sm">
-                            <div class="card-header bg-info bg-opacity-10 border-0">
-                                <h6 class="mb-0 fw-bold">
-                                    <i class="bi bi-cloud-arrow-up me-2"></i>
-                                    Documentos Recentes
-                                    <span class="badge bg-info ms-2">{{ documentos_recentes|length if documentos_recentes else 0 }}</span>
-                                </h6>
-                            </div>
-                            <div class="card-body">
-                                {% if documentos_recentes and documentos_recentes|length > 0 %}
-                                    <div class="table-responsive">
-                                        <table class="table table-sm table-hover mb-0">
-                                            <thead>
-                                                <tr>
-                                                    <th>Documento</th>
-                                                    <th>Obreiro</th>
-                                                    <th>Data</th>
-                                                    <th>Ação</th>
-                                                </tr>
-                                            </thead>
-                                            <tbody>
-                                                {% for doc in documentos_recentes[:5] %}
-                                                <tr>
-                                                    <td>
-                                                        <i class="bi bi-file-earmark-text text-info me-1"></i>
-                                                        <strong>{{ doc.titulo|truncate(30) }}</strong>
-                                                    </td>
-                                                    <td>{{ doc.obreiro_nome or doc.obreiro_usuario }}</td>
-                                                    <td>{{ doc.data_upload.strftime('%d/%m/%Y') if doc.data_upload else '-' }}</td>
-                                                    <td>
-                                                        <a href="{{ doc.url }}" target="_blank" class="btn btn-sm btn-outline-primary rounded-pill">
-                                                            <i class="bi bi-eye"></i> Ver
-                                                        </a>
-                                                    </td>
-                                                </tr>
-                                                {% endfor %}
-                                            </tbody>
-                                        </table>
-                                    </div>
-                                    {% if documentos_recentes|length > 5 %}
-                                    <div class="text-center mt-2">
-                                        <small class="text-muted">+ {{ documentos_recentes|length - 5 }} outro(s) documento(s)</small>
-                                    </div>
-                                    {% endif %}
-                                {% else %}
-                                    <div class="text-center py-3">
-                                        <i class="bi bi-cloud-slash fs-2 text-muted"></i>
-                                        <p class="mt-2 text-muted mb-0">Nenhum documento enviado</p>
-                                    </div>
-                                {% endif %}
-                            </div>
-                        </div>
-                    </div>
-                </div>
+                 
             </div>
         </div>
 

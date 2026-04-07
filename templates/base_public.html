@@ -7,102 +7,144 @@
     
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     
     <style>
         :root {
-            --azul-bicentenario: #1a2c3e;
-            --dourado: #c9a03d;
+            --azul-bicentenario: #0a1a2f;
+            --dourado: #d4af37;
+            --dourado-escuro: #b8960c;
             --azul-claro: #3498db;
             --cinza-texto: #2c3e50;
             --light: #f8f9fa;
+            --gradiente-dourado: linear-gradient(135deg, var(--dourado) 0%, #ffd700 100%);
+            --gradiente-azul: linear-gradient(135deg, var(--azul-bicentenario) 0%, #1a3650 100%);
         }
         
         body {
             font-family: 'Inter', sans-serif;
             color: var(--cinza-texto);
             overflow-x: hidden;
+            background: #fafafa;
         }
         
-        /* Navbar estilo KnightOne */
+        /* Navbar moderna */
         .navbar {
-            background: transparent;
-            padding: 20px 0;
+            background: var(--azul-bicentenario);
+            padding: 1rem 0;
             transition: all 0.3s ease;
             position: fixed;
             top: 0;
             width: 100%;
             z-index: 1000;
-        }
-        
-        .navbar.scrolled {
-            background: var(--azul-bicentenario);
-            padding: 12px 0;
             box-shadow: 0 2px 20px rgba(0,0,0,0.1);
         }
         
         .navbar-brand {
-            font-weight: 700;
+            font-weight: 800;
             font-size: 1.5rem;
             color: white !important;
+            letter-spacing: -0.5px;
         }
         
         .navbar-brand img {
-            height: 40px;
-            margin-right: 10px;
+            height: 45px;
+            margin-right: 12px;
+            filter: brightness(0) invert(1);
         }
         
+        /* Links sempre visíveis e estilizados */
         .nav-link {
-            color: white !important;
-            font-weight: 500;
-            transition: color 0.3s;
-            margin: 0 10px;
+            color: rgba(255,255,255,0.9) !important;
+            font-weight: 600;
+            transition: all 0.3s;
+            margin: 0 8px;
+            padding: 8px 16px !important;
+            border-radius: 8px;
+            position: relative;
         }
         
         .nav-link:hover {
             color: var(--dourado) !important;
+            background: rgba(212, 175, 55, 0.1);
+            transform: translateY(-2px);
         }
         
-        .btn-outline-primary {
-            border-color: var(--dourado);
-            color: var(--dourado);
-            border-radius: 50px;
-            padding: 8px 25px;
-        }
-        
-        .btn-outline-primary:hover {
+        .nav-link::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 50%;
+            width: 0;
+            height: 2px;
             background: var(--dourado);
-            border-color: var(--dourado);
-            color: var(--azul-bicentenario);
+            transition: all 0.3s;
+            transform: translateX(-50%);
         }
         
+        .nav-link:hover::after {
+            width: 70%;
+        }
+        
+        /* Botão área restrita */
+        .btn-area-restrita {
+            background: var(--dourado);
+            color: var(--azul-bicentenario) !important;
+            border-radius: 50px;
+            padding: 8px 24px !important;
+            font-weight: 700;
+            margin-left: 16px;
+            transition: all 0.3s;
+        }
+        
+        .btn-area-restrita:hover {
+            background: var(--dourado-escuro);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(212, 175, 55, 0.3);
+        }
+        
+        .btn-area-restrita::after {
+            display: none;
+        }
+        
+        /* Footer moderno */
         .footer {
-            background: var(--azul-bicentenario);
+            background: var(--gradiente-azul);
             color: white;
             padding: 60px 0 30px;
+            margin-top: 60px;
+        }
+        
+        .footer h5 {
+            color: var(--dourado);
+            font-weight: 700;
+            margin-bottom: 20px;
         }
         
         .footer a {
-            color: rgba(255,255,255,0.7);
+            color: rgba(255,255,255,0.8);
             text-decoration: none;
-            transition: color 0.3s;
+            transition: all 0.3s;
         }
         
         .footer a:hover {
             color: var(--dourado);
+            transform: translateX(5px);
+            display: inline-block;
         }
         
         .social-icons a {
-            display: inline-block;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
             width: 40px;
             height: 40px;
             background: rgba(255,255,255,0.1);
             border-radius: 50%;
-            text-align: center;
-            line-height: 40px;
             margin: 0 5px;
             transition: all 0.3s;
             color: white;
+            font-size: 1.2rem;
         }
         
         .social-icons a:hover {
@@ -111,67 +153,55 @@
             color: var(--azul-bicentenario);
         }
         
-        .section-title {
-            font-size: 2.5rem;
-            font-weight: 700;
-            position: relative;
-            display: inline-block;
-            margin-bottom: 30px;
+        /* Cards modernos */
+        .card {
+            border-radius: 20px;
+            overflow: hidden;
+            border: none;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.08);
+            transition: all 0.3s;
         }
         
-        .section-title:after {
-            content: '';
-            position: absolute;
-            bottom: -10px;
-            left: 0;
-            width: 60px;
-            height: 3px;
-            background: var(--dourado);
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 20px 40px rgba(0,0,0,0.12);
         }
         
+        /* Botões */
         .btn-primary {
-            background: var(--dourado);
+            background: var(--gradiente-dourado);
             border: none;
             color: var(--azul-bicentenario);
-            font-weight: 600;
+            font-weight: 700;
             border-radius: 50px;
             padding: 12px 30px;
+            transition: all 0.3s;
         }
         
         .btn-primary:hover {
-            background: #b58c2a;
             transform: translateY(-2px);
-        }
-        
-        /* Card de formulário */
-        .card {
-            border-radius: 15px;
-            overflow: hidden;
-            border: none;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
-        }
-        
-        .card-header {
-            border-bottom: none;
+            box-shadow: 0 8px 20px rgba(212, 175, 55, 0.3);
         }
         
         /* Alertas */
         .alert {
-            border-radius: 10px;
+            border-radius: 12px;
+            border: none;
         }
         
         @media (max-width: 768px) {
             .navbar {
-                background: var(--azul-bicentenario);
-                padding: 12px 0;
+                padding: 0.75rem 0;
             }
             
-            .navbar-brand {
-                font-size: 1.2rem;
+            .nav-link {
+                margin: 5px 0;
             }
             
-            .section-title {
-                font-size: 1.8rem;
+            .btn-area-restrita {
+                margin-left: 0;
+                margin-top: 10px;
+                text-align: center;
             }
         }
     </style>
@@ -183,7 +213,7 @@
         <div class="container">
             <a class="navbar-brand" href="/">
                 <img src="/static/images/logo_loja.png" alt="Logo" onerror="this.style.display='none'">
-                <span>ARLS Bicentenário</span>
+                <span>⚜️ ARLS Bicentenário</span>
             </a>
             <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
                 <span class="navbar-toggler-icon"></span>
@@ -191,32 +221,46 @@
             <div class="collapse navbar-collapse" id="navbarNav">
                 <ul class="navbar-nav ms-auto">
                     <li class="nav-item">
-                        <a class="nav-link" href="/">Início</a>
+                        <a class="nav-link" href="/">
+                            <i class="bi bi-house-door"></i> Início
+                        </a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" href="/sobre">Sobre</a>
+                        <a class="nav-link" href="/sobre">
+                            <i class="bi bi-info-circle"></i> Sobre
+                        </a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" href="/calendario">Calendário</a>
+                        <a class="nav-link" href="/calendario">
+                            <i class="bi bi-calendar3"></i> Calendário
+                        </a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" href="/noticias">Notícias</a>
+                        <a class="nav-link" href="/noticias">
+                            <i class="bi bi-newspaper"></i> Notícias
+                        </a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" href="/galeria">Galeria</a>
+                        <a class="nav-link" href="/galeria">
+                            <i class="bi bi-images"></i> Galeria
+                        </a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" href="/contato">Contato</a>
+                        <a class="nav-link" href="/contato">
+                            <i class="bi bi-envelope"></i> Contato
+                        </a>
                     </li>
-                    <li class="nav-item ms-lg-3">
-                        <a class="btn btn-outline-primary" href="/login">Área Restrita</a>
+                    <li class="nav-item">
+                        <a class="nav-link btn-area-restrita" href="/login">
+                            <i class="bi bi-box-arrow-in-right"></i> Área Restrita
+                        </a>
                     </li>
                 </ul>
             </div>
         </div>
     </nav>
     
-    <main>
+    <main style="margin-top: 80px;">
         {% block content %}{% endblock %}
     </main>
     
@@ -225,28 +269,42 @@
             <div class="row">
                 <div class="col-md-4 mb-4">
                     <h5><i class="bi bi-compass-fill"></i> ARLS Bicentenário</h5>
-                    <p class="text-muted">Loja Maçônica fundada em 16 de julho de 2022, sob os auspícios do Grande Oriente do Brasil.</p>
+                    <p class="text-white-50">Loja Maçônica fundada em 16 de julho de 2022, sob os auspícios do Grande Oriente do Brasil.</p>
+                    <div class="mt-3">
+                        <span class="badge bg-dourado">⚜️ Regular</span>
+                        <span class="badge bg-dourado ms-2">📜 Reconhecida</span>
+                    </div>
                 </div>
                 <div class="col-md-4 mb-4">
-                    <h5>Contato</h5>
-                    <p><i class="bi bi-geo-alt"></i> EQNM 36/38 área especial 08<br>St. M-Norte, Brasília - DF, 72145-510</p>
-                    <p><i class="bi bi-envelope"></i> secretaria.bicentenario4739@gmail.com</p>
-                    <p><i class="bi bi-telephone"></i> (61) 99368-1248</p>
+                    <h5><i class="bi bi-geo-alt"></i> Localização</h5>
+                    <p class="text-white-50">
+                        EQNM 36/38 área especial 08<br>
+                        St. M-Norte, Brasília - DF<br>
+                        CEP: 72145-510
+                    </p>
+                    <p class="text-white-50">
+                        <i class="bi bi-envelope"></i> secretaria.bicentenario4739@gmail.com<br>
+                        <i class="bi bi-telephone"></i> (61) 99368-1248
+                    </p>
                 </div>
                 <div class="col-md-4 mb-4">
-                    <h5>Redes Sociais</h5>
+                    <h5><i class="bi bi-share"></i> Redes Sociais</h5>
                     <div class="social-icons">
                         <a href="#"><i class="bi bi-facebook"></i></a>
                         <a href="#"><i class="bi bi-instagram"></i></a>
                         <a href="#"><i class="bi bi-youtube"></i></a>
                     </div>
                     <div class="mt-4">
-                        <a href="/login" class="btn btn-outline-light btn-sm">Área Restrita</a>
+                        <h5><i class="bi bi-clock"></i> Horário de Funcionamento</h5>
+                        <p class="text-white-50 small">
+                            Segunda a Sexta: 9h às 18h<br>
+                            Sábado: 9h às 12h
+                        </p>
                     </div>
                 </div>
             </div>
-            <hr class="bg-secondary">
-            <div class="text-center text-muted small">
+            <hr class="bg-secondary opacity-25">
+            <div class="text-center text-white-50 small">
                 &copy; 2024 ARLS Bicentenário - Todos os direitos reservados
             </div>
         </div>
@@ -254,13 +312,14 @@
     
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
     <script>
-        // Navbar transparente que fica sólida ao rolar
+        // Navbar scroll effect
         window.addEventListener('scroll', function() {
             const navbar = document.getElementById('navbar');
             if (window.scrollY > 50) {
-                navbar.classList.add('scrolled');
+                navbar.style.background = '#0a1a2f';
+                navbar.style.boxShadow = '0 4px 20px rgba(0,0,0,0.15)';
             } else {
-                navbar.classList.remove('scrolled');
+                navbar.style.background = '#0a1a2f';
             }
         });
         
@@ -275,6 +334,15 @@
                 }, 5000);
             });
         }, 1000);
+        
+        // Adicionar classe active ao link atual
+        const currentPath = window.location.pathname;
+        document.querySelectorAll('.nav-link').forEach(link => {
+            if (link.getAttribute('href') === currentPath) {
+                link.style.color = '#d4af37 !important';
+                link.style.fontWeight = '700';
+            }
+        });
     </script>
     {% block scripts %}{% endblock %}
 </body>
