@@ -3592,7 +3592,7 @@ def novo_obreiro():
                      data_iniciacao, data_elevacao, data_exaltacao, data_instalacao,
                      telefone, email, endereco,
                      loja_nome, loja_numero, loja_orient, loja_cidade, loja_uf,
-                     cadastro_numero, status_maconico, distincao_maconica, 
+                     status_maconico, distincao_maconica, 
                      isento, artigo_27, recolhe, loja_iniciacao,
                      data_nascimento, cpf, tipo_sanguineo, rg, orgao_emissor,
                      grau_instrucao, titulo_eleitor, naturalidade, estado_civil,
@@ -3610,7 +3610,7 @@ def novo_obreiro():
                       data_iniciacao, data_elevacao, data_exaltacao, data_instalacao,
                       telefone, email, endereco,
                       loja_nome, loja_numero, loja_orient, loja_cidade, loja_uf,
-                      cadastro_numero, status_maconico, distincao_maconica,
+                       status_maconico, distincao_maconica,
                       isento, artigo_27, recolhe, loja_iniciacao,
                       data_nascimento, cpf, tipo_sanguineo, rg, orgao_emissor,
                       grau_instrucao, titulo_eleitor, naturalidade, estado_civil,
@@ -3658,9 +3658,7 @@ def novo_obreiro():
                     flash("Erro: CIM já cadastrado para outro obreiro!", "danger")
                 elif "usuarios_cpf_key" in str(e):
                     flash("Erro: CPF já cadastrado para outro obreiro!", "danger")
-                elif "usuarios_cadastro_numero_key" in str(e):
-                    flash("Erro: Número de cadastro já existe!", "danger")
-                else:
+               
                     flash(f"Erro ao criar obreiro: {str(e)}", "danger")
                 conn.rollback()
     
@@ -4440,7 +4438,6 @@ def editar_obreiro(id):
                     grau_atual = %s,
                     tipo = %s,
                     ativo = %s,
-                    cadastro_numero = %s,
                     status_maconico = %s,
                     distincao_maconica = %s,
                     isento = %s,
@@ -4480,7 +4477,7 @@ def editar_obreiro(id):
             """, (
                 nome_completo, nome_maconico, cim_numero, telefone, email, endereco,
                 loja_nome, loja_numero, loja_orient, grau_atual, tipo, ativo,
-                cadastro_numero, status_maconico, distincao_maconica, isento, artigo_27, recolhe,
+                 status_maconico, distincao_maconica, isento, artigo_27, recolhe,
                 loja_iniciacao, data_iniciacao, data_elevacao, data_exaltacao, data_instalacao,
                 data_nascimento, cpf, tipo_sanguineo, rg, orgao_emissor,
                 grau_instrucao, titulo_eleitor, naturalidade, estado_civil,
