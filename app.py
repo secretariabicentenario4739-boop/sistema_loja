@@ -1772,18 +1772,22 @@ def login():
     if request.method == "POST":
         usuario = request.form.get("usuario")
         senha = request.form.get("senha")
-
+        
+        # Validar campos vazios
+        if not usuario or not senha:
+            flash('❌ Preencha usuário e senha!', 'danger')
+            return render_template("login.html")
+        
         cursor, conn = get_db()
         cursor.execute("""
-                       SELECT id, usuario, senha_hash, tipo, grau_atual, nome_completo
-                       FROM usuarios
-                       WHERE usuario = %s
-                         AND ativo = 1
-                       """, (usuario,))
+            SELECT id, usuario, senha_hash, tipo, grau_atual, nome_completo
+            FROM usuarios
+            WHERE usuario = %s AND ativo = 1
+        """, (usuario,))
         user = cursor.fetchone()
         return_connection(conn)
-
-        # APENAS Werkzeug - simples e seguro
+        
+        # Verificar senha
         if user and check_password_hash(user['senha_hash'], senha):
             session['usuario_id'] = user['id']
             session['usuario'] = user['usuario']
@@ -1791,14 +1795,16 @@ def login():
             session['grau_atual'] = user['grau_atual']
             session['nome_completo'] = user['nome_completo']
             session['user_id'] = user['id']
-
-            flash('Login realizado com sucesso!', 'success')
+            
+            flash(f'✅ Bem-vindo, {user["nome_completo"]}!', 'success')
             return redirect(url_for('dashboard'))
         else:
-            flash('Usuário ou senha inválidos', 'danger')
-
+            # Mensagem de erro clara
+            flash('❌ Usuário ou senha incorretos! Tente novamente.', 'danger')
+            return render_template("login.html")
+    
     return render_template("login.html")
-
+    
 @app.route("/logout")
 @login_required
 def logout():
