@@ -40,59 +40,6 @@ from openpyxl.utils import get_column_letter
 # =============================
 biblioteca_bp = Blueprint('biblioteca', __name__, url_prefix='/biblioteca')
 
-# ============================================
-# CONFIGURAÇÕES INICIAIS DO WHATSAPP
-# ============================================
-
-def init_whatsapp_tables():
-    """Inicializa todas as tabelas relacionadas ao WhatsApp"""
-    try:
-        cursor, conn = get_db()
-        
-        # Criar tabela de grupos
-        cursor.execute("""
-            CREATE TABLE IF NOT EXISTS grupos_whatsapp (
-                id SERIAL PRIMARY KEY,
-                grupo_id VARCHAR(255) UNIQUE NOT NULL,
-                nome_grupo VARCHAR(255),
-                ultimo_envio TIMESTAMP,
-                criado_por INTEGER,
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-            )
-        """)
-        
-        # Criar tabela de mensagens agendadas
-        cursor.execute("""
-            CREATE TABLE IF NOT EXISTS mensagens_agendadas (
-                id SERIAL PRIMARY KEY,
-                grupo_id VARCHAR(255) NOT NULL,
-                mensagem TEXT NOT NULL,
-                nome_grupo VARCHAR(255),
-                data_envio TIMESTAMP NOT NULL,
-                recorrencia VARCHAR(50),
-                criado_por INTEGER,
-                status VARCHAR(50) DEFAULT 'agendado',
-                enviado_em TIMESTAMP,
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-            )
-        """)
-        
-        # Criar índices
-        cursor.execute("CREATE INDEX IF NOT EXISTS idx_grupos_grupo_id ON grupos_whatsapp(grupo_id)")
-        cursor.execute("CREATE INDEX IF NOT EXISTS idx_mensagens_data_envio ON mensagens_agendadas(data_envio)")
-        cursor.execute("CREATE INDEX IF NOT EXISTS idx_mensagens_status ON mensagens_agendadas(status)")
-        
-        return_connection(conn)
-        print("✅ Tabelas do WhatsApp inicializadas com sucesso!")
-        return True
-        
-    except Exception as e:
-        print(f"❌ Erro ao inicializar tabelas do WhatsApp: {e}")
-        return False
-
-# Chamar a função imediatamente ao iniciar o app
-init_whatsapp_tables()
 
 # =============================
 # FUNÇÕES DA BIBLIOTECA
@@ -747,6 +694,60 @@ def get_db():
     except Exception as e:
         print(f"❌ Erro ao conectar ao banco: {e}")
         raise
+
+# ============================================
+# CONFIGURAÇÕES INICIAIS DO WHATSAPP
+# ============================================
+
+def init_whatsapp_tables():
+    """Inicializa todas as tabelas relacionadas ao WhatsApp"""
+    try:
+        cursor, conn = get_db()
+        
+        # Criar tabela de grupos
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS grupos_whatsapp (
+                id SERIAL PRIMARY KEY,
+                grupo_id VARCHAR(255) UNIQUE NOT NULL,
+                nome_grupo VARCHAR(255),
+                ultimo_envio TIMESTAMP,
+                criado_por INTEGER,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        """)
+        
+        # Criar tabela de mensagens agendadas
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS mensagens_agendadas (
+                id SERIAL PRIMARY KEY,
+                grupo_id VARCHAR(255) NOT NULL,
+                mensagem TEXT NOT NULL,
+                nome_grupo VARCHAR(255),
+                data_envio TIMESTAMP NOT NULL,
+                recorrencia VARCHAR(50),
+                criado_por INTEGER,
+                status VARCHAR(50) DEFAULT 'agendado',
+                enviado_em TIMESTAMP,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        """)
+        
+        # Criar índices
+        cursor.execute("CREATE INDEX IF NOT EXISTS idx_grupos_grupo_id ON grupos_whatsapp(grupo_id)")
+        cursor.execute("CREATE INDEX IF NOT EXISTS idx_mensagens_data_envio ON mensagens_agendadas(data_envio)")
+        cursor.execute("CREATE INDEX IF NOT EXISTS idx_mensagens_status ON mensagens_agendadas(status)")
+        
+        return_connection(conn)
+        print("✅ Tabelas do WhatsApp inicializadas com sucesso!")
+        return True
+        
+    except Exception as e:
+        print(f"❌ Erro ao inicializar tabelas do WhatsApp: {e}")
+        return False
+
+# Chamar a função imediatamente ao iniciar o app
+init_whatsapp_tables()
 
 # =============================
 # IMPORTANTE: Chamar test_connection() DEPOIS de definir as funções
