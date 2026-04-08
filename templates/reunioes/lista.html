@@ -10,7 +10,10 @@
             <h2>
                 <i class="bi bi-calendar-week"></i> 
                 Reuniões
-                <span class="badge bg-primary">{{ reunioes|length }}</span>
+                <span class="badge bg-primary">{{ estatisticas.total_reunioes }}</span>
+                {% if estatisticas.reunioes_atrasadas > 0 %}
+                <small class="text-muted fs-6">({{ estatisticas.reunioes_atrasadas }} atrasadas)</small>
+                {% endif %}
             </h2>
             <div>
                 {% if session.tipo == 'admin' %}
@@ -24,7 +27,118 @@
             </div>
         </div>
 
-       
+        <!-- Cards de Estatísticas -->
+        <div class="row mb-4">
+            <div class="col-md-3">
+                <div class="card bg-primary text-white shadow">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <h6 class="card-title mb-0">Total de Reuniões</h6>
+                                <h2 class="mb-0">{{ estatisticas.total_reunioes }}</h2>
+                            </div>
+                            <i class="bi bi-calendar-week fs-1"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card bg-success text-white shadow">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <h6 class="card-title mb-0">Realizadas</h6>
+                                <h2 class="mb-0">{{ estatisticas.realizadas }}</h2>
+                            </div>
+                            <i class="bi bi-check-circle-fill fs-1"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card bg-warning text-dark shadow">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <h6 class="card-title mb-0">Agendadas</h6>
+                                <h2 class="mb-0">{{ estatisticas.agendadas }}</h2>
+                            </div>
+                            <i class="bi bi-calendar-check fs-1"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card bg-danger text-white shadow">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <h6 class="card-title mb-0">Canceladas</h6>
+                                <h2 class="mb-0">{{ estatisticas.canceladas }}</h2>
+                            </div>
+                            <i class="bi bi-x-circle-fill fs-1"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Segunda linha de cards -->
+        <div class="row mb-4">
+            <div class="col-md-3">
+                <div class="card bg-info text-white shadow">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <h6 class="card-title mb-0">Este Mês</h6>
+                                <h2 class="mb-0">{{ estatisticas.reunioes_mes }}</h2>
+                            </div>
+                            <i class="bi bi-calendar-month fs-1"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card bg-secondary text-white shadow">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <h6 class="card-title mb-0">Próximas</h6>
+                                <h2 class="mb-0">{{ estatisticas.proximas }}</h2>
+                            </div>
+                            <i class="bi bi-clock-history fs-1"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card bg-dark text-white shadow">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <h6 class="card-title mb-0">Exibidas</h6>
+                                <h2 class="mb-0">{{ estatisticas.exibidas }}</h2>
+                            </div>
+                            <i class="bi bi-funnel-fill fs-1"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card shadow" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white;">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <h6 class="card-title mb-0">Total Presentes</h6>
+                                <h2 class="mb-0">{{ estatisticas.total_presentes }}</h2>
+                            </div>
+                            <i class="bi bi-people-fill fs-1"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <!-- Filtros -->
         <div class="card shadow mb-4">
             <div class="card-header bg-light">
@@ -55,19 +169,15 @@
                         <label class="form-label">Status</label>
                         <select class="form-select" name="status">
                             <option value="">Todos</option>
-                            {% for s in status_list %}
-                            <option value="{{ s.status }}" {% if filtros.status == s.status %}selected{% endif %}>
-                                {% if s.status == 'realizada' %}
-                                    Realizada
-                                {% elif s.status == 'agendada' %}
-                                    Agendada
-                                {% elif s.status == 'cancelada' %}
-                                    Cancelada
-                                {% else %}
-                                    {{ s.status }}
-                                {% endif %}
+                            <option value="realizada" {% if filtros.status == 'realizada' %}selected{% endif %}>
+                                <i class="bi bi-check-circle"></i> Realizada
                             </option>
-                            {% endfor %}
+                            <option value="agendada" {% if filtros.status == 'agendada' %}selected{% endif %}>
+                                <i class="bi bi-calendar-check"></i> Agendada
+                            </option>
+                            <option value="cancelada" {% if filtros.status == 'cancelada' %}selected{% endif %}>
+                                <i class="bi bi-x-circle"></i> Cancelada
+                            </option>
                         </select>
                     </div>
                     <div class="col-md-2">
@@ -77,13 +187,13 @@
                             {% for g in graus %}
                             <option value="{{ g.grau }}" {% if filtros.grau == g.grau|string %}selected{% endif %}>
                                 {% if g.grau == 3 %}
-                                    Mestre
+                                    <i class="bi bi-star-fill text-warning"></i> Mestre
                                 {% elif g.grau == 2 %}
-                                    Companheiro
+                                    <i class="bi bi-star text-primary"></i> Companheiro
                                 {% elif g.grau == 1 %}
-                                    Aprendiz
+                                    <i class="bi bi-star text-secondary"></i> Aprendiz
                                 {% else %}
-                                    {{ g.grau }}
+                                    Grau {{ g.grau }}
                                 {% endif %}
                             </option>
                             {% endfor %}
@@ -112,7 +222,7 @@
                 <div class="table-responsive">
                     <table class="table table-hover" id="tabelaReunioes">
                         <thead class="table-light">
-                              <thead>
+                            <tr>
                                 <th>Título</th>
                                 <th>Data</th>
                                 <th>Horário</th>
@@ -121,7 +231,7 @@
                                 <th>Status</th>
                                 <th>Presença</th>
                                 <th>Ações</th>
-                              </thead>
+                            </tr>
                         </thead>
                         <tbody>
                             {% for reuniao in reunioes %}
@@ -140,8 +250,8 @@
                                         {% endif %}
                                     </small>
                                     {% endif %}
-                                 </td>
-                                 <td>
+                                </td>
+                                <td>
                                     <i class="bi bi-calendar"></i> 
                                     {{ reuniao.data.strftime('%d/%m/%Y') if reuniao.data else '-' }}
                                     {% if reuniao.data and reuniao.data < now.date() %}
@@ -149,8 +259,8 @@
                                     {% elif reuniao.data and reuniao.data == now.date() %}
                                     <br><span class="badge bg-warning">Hoje</span>
                                     {% endif %}
-                                 </td>
-                                 <td>
+                                </td>
+                                <td>
                                     {% if reuniao.hora_inicio %}
                                         <i class="bi bi-clock"></i> 
                                         {{ reuniao.hora_inicio.strftime('%H:%M') if reuniao.hora_inicio else '-' }}
@@ -160,20 +270,20 @@
                                     {% else %}
                                         -
                                     {% endif %}
-                                 </td>
-                                 <td>
+                                </td>
+                                <td>
                                     <span class="badge" style="background-color: {{ reuniao.cor or '#6c757d' }}; color: white;">
                                         {{ reuniao.tipo }}
                                     </span>
-                                 </td>
-                                 <td>
+                                </td>
+                                <td>
                                     <i class="bi bi-geo-alt"></i> 
                                     {{ reuniao.local or '-' }}
                                     {% if reuniao.loja_nome %}
                                     <br><small class="text-muted">{{ reuniao.loja_nome }}</small>
                                     {% endif %}
-                                 </td>
-                                 <td>
+                                </td>
+                                <td>
                                     {% if reuniao.status == 'realizada' %}
                                         <span class="badge bg-success">
                                             <i class="bi bi-check-circle"></i> Realizada
@@ -189,8 +299,8 @@
                                     {% else %}
                                         <span class="badge bg-secondary">{{ reuniao.status }}</span>
                                     {% endif %}
-                                 </td>
-                                 <td class="text-center">
+                                </td>
+                                <td class="text-center" style="min-width: 100px;">
                                     {% if reuniao.presentes_confirmados is defined %}
                                         <div class="progress" style="height: 20px;">
                                             {% set percentual = (reuniao.presentes_confirmados / reuniao.total_presentes * 100) if reuniao.total_presentes and reuniao.total_presentes > 0 else 0 %}
@@ -206,8 +316,8 @@
                                     {% else %}
                                         -
                                     {% endif %}
-                                 </td>
-                                 <td>
+                                </td>
+                                <td>
                                     <div class="btn-group btn-group-sm" role="group">
                                         <a href="/reunioes/{{ reuniao.id }}" class="btn btn-info" title="Visualizar">
                                             <i class="bi bi-eye"></i>
@@ -227,7 +337,6 @@
                                         {% endif %}
                                         
                                         {% if reuniao.status == 'realizada' %}
-                                            <!-- Botão Cancelar para reuniões realizadas -->
                                             <form method="POST" action="/reunioes/{{ reuniao.id }}/cancelar" style="display: inline;">
                                                 <button type="submit" class="btn btn-secondary" 
                                                         onclick="return confirm('⚠️ ATENÇÃO!\n\nDeseja CANCELAR esta reunião realizada?\n\nA reunião será marcada como CANCELADA.\n\nEsta ação pode ser desfeita.\n\nDeseja continuar?')" 
@@ -253,10 +362,10 @@
                                         </form>
                                         {% endif %}
                                     </div>
-                                 </td>
-                             </tr>
+                                </td>
+                            </tr>
                             {% else %}
-                             <tr>
+                            <tr>
                                 <td colspan="8" class="text-center text-muted py-5">
                                     <i class="bi bi-inbox fs-1"></i><br>
                                     Nenhuma reunião encontrada
@@ -266,8 +375,8 @@
                                         <i class="bi bi-plus-circle"></i> Criar primeira reunião
                                     </a>
                                     {% endif %}
-                                 </td>
-                             </tr>
+                                </td>
+                            </tr>
                             {% endfor %}
                         </tbody>
                     </table>
@@ -283,18 +392,24 @@
             <div class="card-body">
                 <div class="row">
                     <div class="col-md-3">
-                        <span class="badge bg-success">Verde</span> = Realizada
-                    </div>
-                    <div class="col-md-3">
-                        <span class="badge bg-warning">Amarelo</span> = Agendada
-                    </div>
-                    <div class="col-md-3">
+                        <span class="badge bg-success">Verde</span> = Realizada<br>
+                        <span class="badge bg-warning">Amarelo</span> = Agendada<br>
                         <span class="badge bg-danger">Vermelho</span> = Cancelada / Atrasada
                     </div>
                     <div class="col-md-3">
-                        <i class="bi bi-star-fill text-warning"></i> = Mestre
-                        <i class="bi bi-star text-primary"></i> = Companheiro
+                        <i class="bi bi-star-fill text-warning"></i> = Mestre<br>
+                        <i class="bi bi-star text-primary"></i> = Companheiro<br>
                         <i class="bi bi-star text-secondary"></i> = Aprendiz
+                    </div>
+                    <div class="col-md-3">
+                        <i class="bi bi-check-circle text-success"></i> = Realizada<br>
+                        <i class="bi bi-calendar-check text-warning"></i> = Agendada<br>
+                        <i class="bi bi-x-circle text-danger"></i> = Cancelada
+                    </div>
+                    <div class="col-md-3">
+                        <i class="bi bi-eye"></i> = Visualizar<br>
+                        <i class="bi bi-pencil"></i> = Editar<br>
+                        <i class="bi bi-file-text"></i> = Criar Ata
                     </div>
                 </div>
                 <hr>
@@ -316,6 +431,10 @@
     .card {
         border-radius: 10px;
         overflow: hidden;
+        transition: transform 0.2s ease;
+    }
+    .card:hover {
+        transform: translateY(-4px);
     }
     .card-header {
         font-weight: 600;
@@ -350,6 +469,13 @@
         }
         .table-responsive {
             font-size: 0.85rem;
+        }
+        .progress {
+            height: 15px;
+        }
+        .progress-bar {
+            font-size: 8px;
+            line-height: 15px;
         }
     }
 </style>

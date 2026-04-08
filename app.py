@@ -5431,33 +5431,37 @@ def listar_reunioes():
     usuario_grau = session.get('grau_atual', 1)
     usuario_tipo = session.get('tipo', 'obreiro')
     
+    # ============================================
+    # CONSTRUIR FILTRO DE GRAU
+    # ============================================
+    if usuario_tipo != 'admin':
+        if usuario_grau == 1:
+            grau_filter = "(r.grau = 1 OR r.grau IS NULL)"
+        elif usuario_grau == 2:
+            grau_filter = "(r.grau IN (1, 2) OR r.grau IS NULL)"
+        elif usuario_grau >= 3:
+            grau_filter = "(r.grau <= 3 OR r.grau IS NULL OR r.grau > 3)"
+    else:
+        grau_filter = "1=1"
+    
+    # ============================================
+    # QUERY PRINCIPAL COM FILTROS
+    # ============================================
     query = """
         SELECT r.id, r.titulo, r.tipo, r.grau, r.data, r.hora_inicio, 
                r.hora_termino, r.local, r.loja_id, r.pauta, r.observacoes, 
                r.status, r.criado_por,
                l.nome as loja_nome, t.cor,
-               COUNT(p.id) as total_presentes,
+               COUNT(DISTINCT p.id) as total_presentes,
                SUM(CASE WHEN p.presente = 1 THEN 1 ELSE 0 END) as presentes_confirmados
         FROM reunioes r
         LEFT JOIN lojas l ON r.loja_id = l.id
         LEFT JOIN tipos_reuniao t ON r.tipo = t.nome
         LEFT JOIN presenca p ON r.id = p.reuniao_id
-        WHERE 1=1
-    """
-    params = []
+        WHERE {grau_filter}
+    """.format(grau_filter=grau_filter)
     
-    # ============================================
-    # FILTRO POR GRAU DO USUÁRIO
-    # ============================================
-    # Se não for admin, só vê reuniões do seu grau ou inferiores
-    if usuario_tipo != 'admin':
-        if usuario_grau == 1:
-            query += " AND (r.grau = 1 OR r.grau IS NULL)"
-        elif usuario_grau == 2:
-            query += " AND (r.grau IN (1, 2) OR r.grau IS NULL)"
-        elif usuario_grau >= 3:
-            # Mestres veem todas as reuniões (grau 1, 2, 3 e superiores)
-            query += " AND (r.grau <= 3 OR r.grau IS NULL OR r.grau > 3)"
+    params = []
     
     # Filtros adicionais
     if data_ini:
@@ -5476,7 +5480,7 @@ def listar_reunioes():
         query += " AND r.grau = %s"
         params.append(grau)
     if local:
-        query += " AND r.local LIKE %s"
+        query += " AND r.local ILIKE %s"  # PostgreSQL usa ILIKE para case insensitive
         params.append(f"%{local}%")
     
     query += """ 
@@ -5489,25 +5493,174 @@ def listar_reunioes():
     cursor.execute(query, params)
     reunioes = cursor.fetchall()
     
-    # Buscar tipos e status para filtros
-    cursor.execute("SELECT DISTINCT tipo FROM reunioes ORDER BY tipo")
+    # ============================================
+    # ESTATÍSTICAS PARA OS CARDS (POSTGRESQL)
+    # ============================================
+    
+    stats_query = """
+        SELECT 
+            COUNT(*) as total_reunioes,
+            SUM(CASE WHEN r.status = 'realizada' THEN 1 ELSE 0 END) as realizadas,
+            SUM(CASE WHEN r.status = 'agendada' THEN 1 ELSE 0 END) as agendadas,
+            SUM(CASE WHEN r.status = 'cancelada' THEN 1 ELSE 0 END) as canceladas,
+            SUM(CASE WHEN r.status = 'agendada' AND r.data >= CURRENT_DATE THEN 1 ELSE 0 END) as proximas,
+            SUM(CASE WHEN r.status = 'realizada' AND EXTRACT(MONTH FROM r.data) = EXTRACT(MONTH FROM CURRENT_DATE)
+                      AND EXTRACT(YEAR FROM r.data) = EXTRACT(YEAR FROM CURRENT_DATE) THEN 1 ELSE 0 END) as reunioes_mes,
+            SUM(CASE WHEN r.data < CURRENT_DATE AND r.status = 'agendada' THEN 1 ELSE 0 END) as reunioes_atrasadas,
+            COALESCE(SUM(CASE WHEN r.status = 'realizada' THEN p.presentes_confirmados ELSE 0 END), 0) as total_presentes
+        FROM reunioes r
+        LEFT JOIN (
+            SELECT reuniao_id, COUNT(CASE WHEN presente = 1 THEN 1 END) as presentes_confirmados
+            FROM presenca
+            GROUP BY reuniao_id
+        ) p ON r.id = p.reuniao_id
+        WHERE {grau_filter}
+    """.format(grau_filter=grau_filter)
+    
+    # Aplicar os mesmos filtros de data às estatísticas
+    stats_params = []
+    stats_filter = ""
+    
+    if data_ini:
+        stats_filter += " AND r.data >= %s"
+        stats_params.append(data_ini)
+    if data_fim:
+        stats_filter += " AND r.data <= %s"
+        stats_params.append(data_fim)
+    if tipo:
+        stats_filter += " AND r.tipo = %s"
+        stats_params.append(tipo)
+    if local:
+        stats_filter += " AND r.local ILIKE %s"
+        stats_params.append(f"%{local}%")
+    
+    stats_query += stats_filter
+    
+    cursor.execute(stats_query, stats_params)
+    stats = cursor.fetchone()
+    
+    # ============================================
+    # BUSCAR DADOS PARA FILTROS
+    # ============================================
+    
+    # Buscar tipos únicos para filtro
+    tipos_query = """
+        SELECT DISTINCT tipo FROM reunioes 
+        WHERE tipo IS NOT NULL 
+        ORDER BY tipo
+    """
+    cursor.execute(tipos_query)
     tipos = cursor.fetchall()
-    cursor.execute("SELECT DISTINCT status FROM reunioes ORDER BY status")
+    
+    # Buscar status únicos para filtro
+    status_query = """
+        SELECT DISTINCT status FROM reunioes 
+        ORDER BY status
+    """
+    cursor.execute(status_query)
     status_list = cursor.fetchall()
-    cursor.execute("SELECT DISTINCT grau FROM reunioes WHERE grau IS NOT NULL ORDER BY grau")
+    
+    # Buscar graus únicos para filtro
+    graus_query = """
+        SELECT DISTINCT grau FROM reunioes 
+        WHERE grau IS NOT NULL 
+        ORDER BY grau
+    """
+    cursor.execute(graus_query)
     graus = cursor.fetchall()
+    
+    # Buscar tipos de reunião com cores
+    tipos_cores_query = """
+        SELECT nome, cor FROM tipos_reuniao 
+        ORDER BY nome
+    """
+    try:
+        cursor.execute(tipos_cores_query)
+        tipos_cores = cursor.fetchall()
+    except:
+        tipos_cores = []
+    
+    # ============================================
+    # MONTAR DICIONÁRIO DE ESTATÍSTICAS
+    # ============================================
+    estatisticas = {
+        'total_reunioes': stats['total_reunioes'] or 0,
+        'realizadas': stats['realizadas'] or 0,
+        'agendadas': stats['agendadas'] or 0,
+        'canceladas': stats['canceladas'] or 0,
+        'proximas': stats['proximas'] or 0,
+        'reunioes_mes': stats['reunioes_mes'] or 0,
+        'reunioes_atrasadas': stats['reunioes_atrasadas'] or 0,
+        'total_presentes': stats['total_presentes'] or 0,
+        'exibidas': len(reunioes)
+    }
+    
+    # ============================================
+    # DADOS PARA GRÁFICOS (OPCIONAL)
+    # ============================================
+    
+    # Reuniões por mês (últimos 6 meses) - PostgreSQL
+    meses_query = """
+        SELECT 
+            TO_CHAR(r.data, 'YYYY-MM') as mes,
+            COUNT(*) as total,
+            SUM(CASE WHEN r.status = 'realizada' THEN 1 ELSE 0 END) as realizadas
+        FROM reunioes r
+        WHERE {grau_filter}
+            AND r.data >= (CURRENT_DATE - INTERVAL '6 months')
+        GROUP BY TO_CHAR(r.data, 'YYYY-MM')
+        ORDER BY mes DESC
+    """.format(grau_filter=grau_filter)
+    
+    try:
+        cursor.execute(meses_query)
+        reunioes_por_mes = cursor.fetchall()
+    except:
+        reunioes_por_mes = []
+    
+    # Reuniões por tipo
+    tipo_query = """
+        SELECT 
+            r.tipo,
+            COUNT(*) as total,
+            t.cor
+        FROM reunioes r
+        LEFT JOIN tipos_reuniao t ON r.tipo = t.nome
+        WHERE {grau_filter}
+            AND r.tipo IS NOT NULL
+        GROUP BY r.tipo, t.cor
+        ORDER BY total DESC
+        LIMIT 5
+    """.format(grau_filter=grau_filter)
+    
+    try:
+        cursor.execute(tipo_query)
+        reunioes_por_tipo = cursor.fetchall()
+    except:
+        reunioes_por_tipo = []
     
     return_connection(conn)
     
     return render_template("reunioes/lista.html", 
-                          reunioes=reunioes, 
-                          tipos=tipos, 
+                          reunioes=reunioes,
+                          estatisticas=estatisticas,
+                          tipos=tipos,
                           status_list=status_list,
-                          graus=graus, 
-                          filtros={'data_ini': data_ini, 'data_fim': data_fim,
-                                  'tipo': tipo, 'status': status, 'grau': grau, 'local': local},
+                          graus=graus,
+                          tipos_cores=tipos_cores,
+                          reunioes_por_mes=reunioes_por_mes,
+                          reunioes_por_tipo=reunioes_por_tipo,
+                          filtros={
+                              'data_ini': data_ini,
+                              'data_fim': data_fim,
+                              'tipo': tipo,
+                              'status': status,
+                              'grau': grau,
+                              'local': local
+                          },
                           usuario_grau=usuario_grau,
-                          usuario_tipo=usuario_tipo)
+                          usuario_tipo=usuario_tipo,
+                          now=datetime.now())
 
 @app.route("/reunioes/calendario")
 @login_required
@@ -6794,54 +6947,175 @@ def ver_ata_por_id(id):
         flash(f"Erro ao carregar ata: {str(e)}", "danger")
         return redirect("/atas")
 
-    
 @app.route("/atas")
 @login_required
 def listar_atas():
-    """Lista todas as atas"""
-    try:
-        cursor, conn = get_db()
-        
-        cursor.execute("""
-            SELECT 
-                a.id,
-                a.reuniao_id,
-                a.numero_ata,
-                a.ano_ata,
-                a.data_criacao as data,
-                a.conteudo,
-                a.aprovada,
-                a.aprovada_em,
-                a.redator_id as criado_por,
-                a.data_criacao as created_at,
-                a.tipo_ata,
-                r.titulo as reuniao_titulo,
-                r.data as reuniao_data,
-                r.local as reuniao_local,
-                u.nome_completo as criado_por_nome,
-                (SELECT COUNT(*) FROM assinaturas_ata WHERE ata_id = a.id) as total_assinaturas
-            FROM atas a
-            LEFT JOIN reunioes r ON a.reuniao_id = r.id
-            LEFT JOIN usuarios u ON a.redator_id = u.id
-            ORDER BY a.data_criacao DESC, a.numero_ata DESC
-        """)
-        
-        atas = cursor.fetchall()
-        return_connection(conn)
-        
-        return render_template("atas/lista.html", atas=atas, filtros={})
-        
-    except Exception as e:
-        print(f"❌ Erro ao listar atas: {e}")
-        import traceback
-        traceback.print_exc()
-        
-        if 'conn' in locals():
-            return_connection(conn)
-        
-        flash(f"Erro ao carregar atas: {str(e)}", "danger")
-        return redirect("/dashboard")
-
+    cursor, conn = get_db()
+    
+    # Pegar filtros da request
+    data_ini = request.args.get('data_ini', '')
+    data_fim = request.args.get('data_fim', '')
+    aprovada = request.args.get('aprovada', '')
+    reuniao_titulo = request.args.get('reuniao_titulo', '')
+    
+    # ============================================
+    # PERMISSÃO POR GRAU
+    # ============================================
+    usuario_grau = session.get('grau_atual', 1)
+    usuario_tipo = session.get('tipo', 'obreiro')
+    
+    # ============================================
+    # QUERY PRINCIPAL CORRIGIDA - BUSCANDO REDATOR PELO ID
+    # ============================================
+    query = """
+        SELECT 
+            a.id,
+            a.numero_ata,
+            a.ano_ata,
+            a.data_criacao as data,
+            a.aprovada,
+            a.aprovada_em,
+            a.tipo_ata,
+            a.conteudo,
+            a.redator_id,
+            a.redator_nome,
+            a.secretario_id,
+            a.titulo as reuniao_titulo,
+            r.id as reuniao_id,
+            r.titulo as reuniao_titulo_original,
+            r.data as reuniao_data,
+            r.local as reuniao_local,
+            r.tipo as reuniao_tipo,
+            -- Buscar nome do redator da tabela usuarios se redator_nome estiver vazio
+            COALESCE(
+                a.redator_nome, 
+                redator_user.nome_completo,
+                'Redator não informado'
+            ) as redator_nome_completo,
+            -- Buscar nome do secretario da tabela usuarios
+            secretario_user.nome_completo as secretario_nome,
+            COUNT(DISTINCT ass.id) as total_assinaturas
+        FROM atas a
+        LEFT JOIN reunioes r ON a.reuniao_id = r.id
+        LEFT JOIN usuarios redator_user ON a.redator_id = redator_user.id
+        LEFT JOIN usuarios secretario_user ON a.secretario_id = secretario_user.id
+        LEFT JOIN assinaturas_ata ass ON a.id = ass.ata_id
+        WHERE 1=1
+    """
+    
+    params = []
+    
+    # Filtro por grau do usuário (se não for admin)
+    if usuario_tipo != 'admin':
+        if usuario_grau == 1:
+            query += " AND (r.grau = 1 OR r.grau IS NULL)"
+        elif usuario_grau == 2:
+            query += " AND (r.grau IN (1, 2) OR r.grau IS NULL)"
+        elif usuario_grau >= 3:
+            query += " AND (r.grau <= 3 OR r.grau IS NULL OR r.grau > 3)"
+    
+    if data_ini:
+        query += " AND a.data_criacao >= %s"
+        params.append(data_ini)
+    if data_fim:
+        query += " AND a.data_criacao <= %s"
+        params.append(data_fim)
+    if aprovada != '':
+        query += " AND a.aprovada = %s"
+        params.append(1 if aprovada == '1' else 0)
+    if reuniao_titulo:
+        query += " AND (r.titulo ILIKE %s OR a.titulo ILIKE %s)"
+        params.append(f"%{reuniao_titulo}%")
+        params.append(f"%{reuniao_titulo}%")
+    
+    query += """
+        GROUP BY 
+            a.id, a.numero_ata, a.ano_ata, a.data_criacao, a.aprovada, a.aprovada_em,
+            a.tipo_ata, a.conteudo, a.redator_id, a.redator_nome, a.secretario_id,
+            a.titulo, r.id, r.titulo, r.data, r.local, r.tipo,
+            redator_user.nome_completo, secretario_user.nome_completo
+        ORDER BY a.data_criacao DESC, a.numero_ata DESC
+    """
+    
+    cursor.execute(query, params)
+    atas = cursor.fetchall()
+    
+    # ============================================
+    # ESTATÍSTICAS PARA OS CARDS
+    # ============================================
+    
+    # Construir filtro para estatísticas
+    stats_filter = ""
+    stats_params = []
+    
+    if usuario_tipo != 'admin':
+        if usuario_grau == 1:
+            stats_filter += " AND (r.grau = 1 OR r.grau IS NULL)"
+        elif usuario_grau == 2:
+            stats_filter += " AND (r.grau IN (1, 2) OR r.grau IS NULL)"
+        elif usuario_grau >= 3:
+            stats_filter += " AND (r.grau <= 3 OR r.grau IS NULL OR r.grau > 3)"
+    
+    if data_ini:
+        stats_filter += " AND a.data_criacao >= %s"
+        stats_params.append(data_ini)
+    if data_fim:
+        stats_filter += " AND a.data_criacao <= %s"
+        stats_params.append(data_fim)
+    if reuniao_titulo:
+        stats_filter += " AND (r.titulo ILIKE %s OR a.titulo ILIKE %s)"
+        stats_params.append(f"%{reuniao_titulo}%")
+        stats_params.append(f"%{reuniao_titulo}%")
+    
+    stats_query = f"""
+        SELECT 
+            COUNT(DISTINCT a.id) as total_atas,
+            SUM(CASE WHEN a.aprovada = 1 THEN 1 ELSE 0 END) as aprovadas,
+            SUM(CASE WHEN a.aprovada = 0 THEN 1 ELSE 0 END) as pendentes,
+            SUM(CASE WHEN EXTRACT(MONTH FROM a.data_criacao) = EXTRACT(MONTH FROM CURRENT_DATE)
+                      AND EXTRACT(YEAR FROM a.data_criacao) = EXTRACT(YEAR FROM CURRENT_DATE) THEN 1 ELSE 0 END) as atas_mes,
+            COALESCE(SUM(ass.total_assinaturas), 0) as total_assinaturas,
+            COALESCE(AVG(ass.total_assinaturas), 0) as media_assinaturas
+        FROM atas a
+        LEFT JOIN reunioes r ON a.reuniao_id = r.id
+        LEFT JOIN (
+            SELECT ata_id, COUNT(*) as total_assinaturas
+            FROM assinaturas_ata
+            GROUP BY ata_id
+        ) ass ON a.id = ass.ata_id
+        WHERE 1=1 {stats_filter}
+    """
+    
+    cursor.execute(stats_query, stats_params)
+    stats = cursor.fetchone()
+    
+    # Calcular taxa de aprovação
+    total_atas = stats['total_atas'] or 0
+    aprovadas = stats['aprovadas'] or 0
+    taxa_aprovacao = (aprovadas / total_atas * 100) if total_atas > 0 else 0
+    
+    estatisticas = {
+        'total_atas': total_atas,
+        'aprovadas': aprovadas,
+        'pendentes': stats['pendentes'] or 0,
+        'atas_mes': stats['atas_mes'] or 0,
+        'total_assinaturas': stats['total_assinaturas'] or 0,
+        'media_assinaturas': float(stats['media_assinaturas'] or 0),
+        'taxa_aprovacao': taxa_aprovacao,
+        'exibidas': len(atas)
+    }
+    
+    return_connection(conn)
+    
+    return render_template("atas/lista.html", 
+                          atas=atas,
+                          estatisticas=estatisticas,
+                          filtros={
+                              'data_ini': data_ini,
+                              'data_fim': data_fim,
+                              'aprovada': aprovada,
+                              'reuniao_titulo': reuniao_titulo
+                          })
 
 @app.route("/atas/<int:id>/visualizar_simples")
 @login_required
