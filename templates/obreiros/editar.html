@@ -26,7 +26,7 @@
             </div>
         </div>
 
-               <div class="row">
+        <div class="row">
             <div class="col-md-8">
                 <div class="card shadow">
                     <div class="card-header bg-primary text-white">
@@ -101,23 +101,154 @@
                                 </div>
                             </div>
 
+                            <div class="row">
+                                <div class="col-md-4 mb-3">
+                                    <label class="form-label">Data Nascimento</label>
+                                    <input type="date" class="form-control" name="data_nascimento" value="{{ obreiro.data_nascimento or '' }}">
+                                </div>
+                                <div class="col-md-4 mb-3">
+                                    <label class="form-label">CPF</label>
+                                    <input type="text" class="form-control" name="cpf" id="cpf" value="{{ obreiro.cpf or '' }}" placeholder="000.000.000-00">
+                                </div>
+                                <div class="col-md-4 mb-3">
+                                    <label class="form-label">Tipo Sanguíneo</label>
+                                    <select class="form-select" name="tipo_sanguineo">
+                                        <option value="">Selecione</option>
+                                        <option value="A+" {% if obreiro.tipo_sanguineo == 'A+' %}selected{% endif %}>A+</option>
+                                        <option value="A-" {% if obreiro.tipo_sanguineo == 'A-' %}selected{% endif %}>A-</option>
+                                        <option value="B+" {% if obreiro.tipo_sanguineo == 'B+' %}selected{% endif %}>B+</option>
+                                        <option value="B-" {% if obreiro.tipo_sanguineo == 'B-' %}selected{% endif %}>B-</option>
+                                        <option value="AB+" {% if obreiro.tipo_sanguineo == 'AB+' %}selected{% endif %}>AB+</option>
+                                        <option value="AB-" {% if obreiro.tipo_sanguineo == 'AB-' %}selected{% endif %}>AB-</option>
+                                        <option value="O+" {% if obreiro.tipo_sanguineo == 'O+' %}selected{% endif %}>O+</option>
+                                        <option value="O-" {% if obreiro.tipo_sanguineo == 'O-' %}selected{% endif %}>O-</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div class="row">
+                                <div class="col-md-4 mb-3">
+                                    <label class="form-label">RG</label>
+                                    <input type="text" class="form-control" name="rg" value="{{ obreiro.rg or '' }}">
+                                </div>
+                                <div class="col-md-4 mb-3">
+                                    <label class="form-label">Órgão Emissor</label>
+                                    <input type="text" class="form-control" name="orgao_emissor" value="{{ obreiro.orgao_emissor or '' }}" placeholder="SSP-DF">
+                                </div>
+                                <div class="col-md-4 mb-3">
+                                    <label class="form-label">Naturalidade</label>
+                                    <input type="text" class="form-control" name="naturalidade" value="{{ obreiro.naturalidade or '' }}" placeholder="BRASÍLIA-DF">
+                                </div>
+                            </div>
+
+                            <div class="row">
+                                <div class="col-md-4 mb-3">
+                                    <label class="form-label">Grau de Instrução</label>
+                                    <select class="form-select" name="grau_instrucao">
+                                        <option value="">Selecione</option>
+                                        <option value="1º GRAU" {% if obreiro.grau_instrucao == '1º GRAU' %}selected{% endif %}>1º Grau (Fundamental)</option>
+                                        <option value="2º GRAU" {% if obreiro.grau_instrucao == '2º GRAU' %}selected{% endif %}>2º Grau (Médio)</option>
+                                        <option value="3º GRAU COMPLETO" {% if obreiro.grau_instrucao == '3º GRAU COMPLETO' %}selected{% endif %}>3º Grau Completo (Superior)</option>
+                                        <option value="3º GRAU INCOMPLETO" {% if obreiro.grau_instrucao == '3º GRAU INCOMPLETO' %}selected{% endif %}>3º Grau Incompleto</option>
+                                        <option value="PÓS-GRADUAÇÃO" {% if obreiro.grau_instrucao == 'PÓS-GRADUAÇÃO' %}selected{% endif %}>Pós-Graduação</option>
+                                        <option value="MESTRADO" {% if obreiro.grau_instrucao == 'MESTRADO' %}selected{% endif %}>Mestrado</option>
+                                        <option value="DOUTORADO" {% if obreiro.grau_instrucao == 'DOUTORADO' %}selected{% endif %}>Doutorado</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-4 mb-3">
+                                    <label class="form-label">Título de Eleitor</label>
+                                    <input type="text" class="form-control" name="titulo_eleitor" value="{{ obreiro.titulo_eleitor or '' }}">
+                                </div>
+                                <div class="col-md-4 mb-3">
+                                    <label class="form-label">Estado Civil</label>
+                                    <select class="form-select" name="estado_civil">
+                                        <option value="Solteiro" {% if obreiro.estado_civil == 'Solteiro' %}selected{% endif %}>Solteiro</option>
+                                        <option value="Casado" {% if obreiro.estado_civil == 'Casado' %}selected{% endif %}>Casado</option>
+                                        <option value="Divorciado" {% if obreiro.estado_civil == 'Divorciado' %}selected{% endif %}>Divorciado</option>
+                                        <option value="Viúvo" {% if obreiro.estado_civil == 'Viúvo' %}selected{% endif %}>Viúvo</option>
+                                        <option value="União Estável" {% if obreiro.estado_civil == 'União Estável' %}selected{% endif %}>União Estável</option>
+                                    </select>
+                                </div>
+                            </div>
+
                             <hr>
                             <h6>🏛️ Dados Maçônicos</h6>
 
                             <div class="row">
-                                <div class="col-md-6 mb-3">
+                                
+                                <div class="col-md-4 mb-3">
                                     <label class="form-label">CIM</label>
                                     <input type="text" class="form-control" name="cim_numero" value="{{ obreiro.cim_numero or '' }}">
                                 </div>
+                                <div class="col-md-4 mb-3">
+                                    <label class="form-label">Status Maçônico</label>
+                                    <select class="form-select" name="status_maconico">
+                                        <option value="Regular" {% if obreiro.status_maconico == 'Regular' %}selected{% endif %}>Regular</option>
+                                        <option value="Irregular" {% if obreiro.status_maconico == 'Irregular' %}selected{% endif %}>Irregular</option>
+                                        <option value="Suspenso" {% if obreiro.status_maconico == 'Suspenso' %}selected{% endif %}>Suspenso</option>
+                                        <option value="Excluído" {% if obreiro.status_maconico == 'Excluído' %}selected{% endif %}>Excluído</option>
+                                    </select>
+                                </div>
+                            </div>
 
+                            <div class="row">
+                                <div class="col-md-4 mb-3">
+                                    <label class="form-label">Data de Iniciação</label>
+                                    <input type="date" class="form-control" name="data_iniciacao" value="{{ obreiro.data_iniciacao or '' }}">
+                                </div>
+                                <div class="col-md-4 mb-3">
+                                    <label class="form-label">Data de Elevação</label>
+                                    <input type="date" class="form-control" name="data_elevacao" value="{{ obreiro.data_elevacao or '' }}">
+                                </div>
+                                <div class="col-md-4 mb-3">
+                                    <label class="form-label">Data de Exaltação</label>
+                                    <input type="date" class="form-control" name="data_exaltacao" value="{{ obreiro.data_exaltacao or '' }}">
+                                </div>
+                            </div>
+
+                            <div class="row">
+                                <div class="col-md-4 mb-3">
+                                    <label class="form-label">Data de Instalação</label>
+                                    <input type="date" class="form-control" name="data_instalacao" value="{{ obreiro.data_instalacao or '' }}">
+                                </div>
+                                <div class="col-md-4 mb-3">
+                                    <label class="form-label">Distinção Maçônica</label>
+                                    <input type="text" class="form-control" name="distincao_maconica" value="{{ obreiro.distincao_maconica or '' }}" placeholder="Ex: Benemérito">
+                                </div>
+                                <div class="col-md-2 mb-3">
+                                    <label class="form-label">Isento</label>
+                                    <select class="form-select" name="isento">
+                                        <option value="NÃO" {% if obreiro.isento == 'NÃO' %}selected{% endif %}>Não</option>
+                                        <option value="SIM" {% if obreiro.isento == 'SIM' %}selected{% endif %}>Sim</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-2 mb-3">
+                                    <label class="form-label">Artigo 27</label>
+                                    <select class="form-select" name="artigo_27">
+                                        <option value="NÃO" {% if obreiro.artigo_27 == 'NÃO' %}selected{% endif %}>Não</option>
+                                        <option value="SIM" {% if obreiro.artigo_27 == 'SIM' %}selected{% endif %}>Sim</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div class="row">
                                 <div class="col-md-6 mb-3">
-                                    <label class="form-label">Loja</label>
+                                    <label class="form-label">Loja de Iniciação</label>
+                                    <input type="text" class="form-control" name="loja_iniciacao" value="{{ obreiro.loja_iniciacao or '' }}" placeholder="Ex: Loja Maçônica XYZ - Nº 123">
+                                    <small class="text-muted">Loja onde foi iniciado (digite livremente)</small>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label">Loja Atual</label>
                                     <select class="form-select" name="loja_nome" id="lojaSelect">
                                         <option value="">Selecione a Loja</option>
                                         {% for l in lojas %}
                                             <option value="{{ l.nome }}"
+                                                data-numero="{{ l.numero }}"
+                                                data-oriente="{{ l.oriente }}"
+                                                data-cidade="{{ l.cidade or 'BRASÍLIA' }}"
+                                                data-uf="{{ l.uf or 'DF' }}"
                                                 {% if l.nome == obreiro.loja_nome %}selected{% endif %}>
-                                                {{ l.nome }}
+                                                {{ l.nome }} - Nº {{ l.numero }}
                                             </option>
                                         {% endfor %}
                                     </select>
@@ -125,15 +256,113 @@
                             </div>
 
                             <div class="row">
-                                <div class="col-md-6 mb-3">
+                                <div class="col-md-4 mb-3">
                                     <label class="form-label">Número da Loja</label>
-                                    <input type="text" class="form-control" name="loja_numero" value="{{ obreiro.loja_numero or '' }}">
+                                    <input type="text" class="form-control" name="loja_numero" id="lojaNumero" value="{{ obreiro.loja_numero or '' }}">
                                 </div>
-
-                                <div class="col-md-6 mb-3">
+                                <div class="col-md-4 mb-3">
                                     <label class="form-label">Oriente</label>
-                                    <input type="text" class="form-control" name="loja_orient" value="{{ obreiro.loja_orient or '' }}">
+                                    <input type="text" class="form-control" name="loja_orient" id="lojaOriente" value="{{ obreiro.loja_orient or '' }}">
                                 </div>
+                                <div class="col-md-2 mb-3">
+                                    <label class="form-label">Cidade da Loja</label>
+                                    <input type="text" class="form-control" name="loja_cidade" id="lojaCidade" value="{{ obreiro.loja_cidade or '' }}">
+                                </div>
+                                <div class="col-md-2 mb-3">
+                                    <label class="form-label">UF</label>
+                                    <input type="text" class="form-control" name="loja_uf" id="lojaUf" value="{{ obreiro.loja_uf or '' }}" maxlength="2">
+                                </div>
+                            </div>
+
+                            <div class="row">
+                                <div class="col-md-3 mb-3">
+                                    <label class="form-label">Recolhe</label>
+                                    <select class="form-select" name="recolhe">
+                                        <option value="Sim" {% if obreiro.recolhe == 'Sim' %}selected{% endif %}>Sim</option>
+                                        <option value="Não" {% if obreiro.recolhe == 'Não' %}selected{% endif %}>Não</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <hr>
+                            <h6>📍 Endereço</h6>
+
+                            <div class="row">
+                                <div class="col-md-3 mb-3">
+                                    <label class="form-label">CEP</label>
+                                    <input type="text" class="form-control" name="cep" id="cep" value="{{ obreiro.cep or '' }}" placeholder="00000-000">
+                                </div>
+                                <div class="col-md-3 mb-3">
+                                    <label class="form-label">Cidade</label>
+                                    <input type="text" class="form-control" name="cidade" value="{{ obreiro.cidade or '' }}">
+                                </div>
+                                <div class="col-md-2 mb-3">
+                                    <label class="form-label">UF</label>
+                                    <input type="text" class="form-control" name="uf" value="{{ obreiro.uf or '' }}" maxlength="2">
+                                </div>
+                                <div class="col-md-4 mb-3">
+                                    <label class="form-label">Bairro</label>
+                                    <input type="text" class="form-control" name="bairro" value="{{ obreiro.bairro or '' }}">
+                                </div>
+                            </div>
+
+                            <div class="row">
+                                <div class="col-md-8 mb-3">
+                                    <label class="form-label">Endereço</label>
+                                    <input type="text" class="form-control" name="endereco" value="{{ obreiro.endereco or '' }}" placeholder="Rua, Av., etc.">
+                                </div>
+                                <div class="col-md-2 mb-3">
+                                    <label class="form-label">Número</label>
+                                    <input type="text" class="form-control" name="numero" value="{{ obreiro.numero or '' }}">
+                                </div>
+                                <div class="col-md-2 mb-3">
+                                    <label class="form-label">Complemento</label>
+                                    <input type="text" class="form-control" name="complemento" value="{{ obreiro.complemento or '' }}">
+                                </div>
+                            </div>
+
+                            <hr>
+                            <h6>👨‍👩‍👧‍👦 Filiação</h6>
+
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label">Nome do Pai</label>
+                                    <input type="text" class="form-control" name="nome_pai" value="{{ obreiro.nome_pai or '' }}">
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label">Nome da Mãe</label>
+                                    <input type="text" class="form-control" name="nome_mae" value="{{ obreiro.nome_mae or '' }}">
+                                </div>
+                            </div>
+
+                            <hr>
+                            <h6>💼 Dados Profissionais</h6>
+
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label">Profissão</label>
+                                    <input type="text" class="form-control" name="profissao" value="{{ obreiro.profissao or '' }}">
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label">Empresa</label>
+                                    <input type="text" class="form-control" name="empresa" value="{{ obreiro.empresa or '' }}">
+                                </div>
+                            </div>
+
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label">E-mail Profissional</label>
+                                    <input type="email" class="form-control" name="email_profissional" value="{{ obreiro.email_profissional or '' }}">
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label">Telefone Profissional</label>
+                                    <input type="text" class="form-control" name="telefone_profissional" id="telefoneProfissional" value="{{ obreiro.telefone_profissional or '' }}">
+                                </div>
+                            </div>
+
+                            <div class="mb-3">
+                                <label class="form-label">Endereço Profissional</label>
+                                <input type="text" class="form-control" name="endereco_profissional" value="{{ obreiro.endereco_profissional or '' }}">
                             </div>
 
                             <hr>
@@ -144,20 +373,13 @@
                                     <label class="form-label">Telefone</label>
                                     <input type="text" class="form-control" name="telefone" id="telefone" value="{{ obreiro.telefone or '' }}">
                                 </div>
-
                                 <div class="col-md-6 mb-3">
-                                    <label class="form-label">Email</label>
+                                    <label class="form-label">E-mail</label>
                                     <input type="email" class="form-control" name="email" value="{{ obreiro.email or '' }}">
                                 </div>
                             </div>
 
-                            <div class="mb-3">
-                                <label class="form-label">Endereço</label>
-                                <textarea class="form-control" name="endereco" rows="2">{{ obreiro.endereco or '' }}</textarea>
-                            </div>
-
                             {% if is_admin %}
-
                             <hr>
                             <h6>⚙️ Administração</h6>
 
@@ -177,7 +399,7 @@
                                     <select class="form-select" name="grau_superior" id="grauSuperiorSelect">
                                         <option value="">Nenhum (Mestre)</option>
                                         {% for g in graus_superiores %}
-                                        <option value="{{ g.nivel }}" {% if g.nivel == obreiro.grau_atual %}selected{% endif %}>
+                                        <option value="{{ g.nivel }}" {% if g.nivel == obreiro.grau_atual and obreiro.grau_atual > 3 %}selected{% endif %}>
                                             {{ g.nivel }} - {{ g.nome }}
                                         </option>
                                         {% endfor %}
@@ -366,11 +588,10 @@
 </div>
 
 <script>
-// Máscara de telefone
-var telefoneInput = document.getElementById('telefone');
-if (telefoneInput) {
-    telefoneInput.addEventListener('input', function(e) {
-        var value = e.target.value.replace(/\D/g, '');
+// Máscaras
+function aplicarMascaraTelefone(input) {
+    input.addEventListener('input', function(e) {
+        let value = e.target.value.replace(/\D/g, '');
         if (value.length <= 10) {
             value = value.replace(/^(\d{2})(\d{4})(\d{4})/, '($1) $2-$3');
         } else {
@@ -380,6 +601,56 @@ if (telefoneInput) {
     });
 }
 
+function aplicarMascaraCPF(input) {
+    input.addEventListener('input', function(e) {
+        let value = e.target.value.replace(/\D/g, '');
+        if (value.length <= 11) {
+            value = value.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, '$1.$2.$3-$4');
+            e.target.value = value.substring(0, 14);
+        }
+    });
+}
+
+function aplicarMascaraCEP(input) {
+    input.addEventListener('input', function(e) {
+        let value = e.target.value.replace(/\D/g, '');
+        if (value.length <= 8) {
+            value = value.replace(/^(\d{5})(\d{3})/, '$1-$2');
+            e.target.value = value.substring(0, 9);
+        }
+    });
+}
+
+// Aplicar máscaras
+document.addEventListener('DOMContentLoaded', function() {
+    const telefone = document.getElementById('telefone');
+    const telefoneProf = document.getElementById('telefoneProfissional');
+    const cpf = document.getElementById('cpf');
+    const cep = document.getElementById('cep');
+    
+    if (telefone) aplicarMascaraTelefone(telefone);
+    if (telefoneProf) aplicarMascaraTelefone(telefoneProf);
+    if (cpf) aplicarMascaraCPF(cpf);
+    if (cep) aplicarMascaraCEP(cep);
+    
+    // Auto-preenchimento da loja
+    const lojaSelect = document.getElementById('lojaSelect');
+    if (lojaSelect) {
+        lojaSelect.addEventListener('change', function() {
+            const selected = this.options[this.selectedIndex];
+            const numeroInput = document.getElementById('lojaNumero');
+            const orienteInput = document.getElementById('lojaOriente');
+            const cidadeInput = document.getElementById('lojaCidade');
+            const ufInput = document.getElementById('lojaUf');
+            
+            if (numeroInput) numeroInput.value = selected.dataset.numero || '';
+            if (orienteInput) orienteInput.value = selected.dataset.oriente || '';
+            if (cidadeInput) cidadeInput.value = selected.dataset.cidade || '';
+            if (ufInput) ufInput.value = selected.dataset.uf || '';
+        });
+    }
+});
+
 // =====================
 // VALIDAÇÃO DE SENHA
 // =====================
@@ -388,12 +659,10 @@ function validarSenha() {
     const senha = document.getElementById('senha');
     const confirmar = document.getElementById('confirmar_senha');
     
-    // Se não está tentando alterar senha
     if ((!senha || senha.value === '') && (!confirmar || confirmar.value === '')) {
         return true;
     }
     
-    // Se está tentando alterar senha mas não colocou a senha atual
     if (senhaAtual && senhaAtual.value === '') {
         alert('Digite sua senha atual para alterar a senha!');
         return false;
@@ -442,7 +711,7 @@ if (btnSalvar) {
 }
 
 // =====================
-// CARREGAR DOCUMENTOS - EDITAR
+// CARREGAR DOCUMENTOS
 // =====================
 function carregarDocumentos() {
     const obreiroId = {{ obreiro.id }};
@@ -450,26 +719,12 @@ function carregarDocumentos() {
     const totalSpan = document.getElementById('totalDocumentos');
     const semMsg = document.getElementById('semDocumentosMsg');
     
-    console.log('🔍 Carregando documentos para obreiro:', obreiroId);
-    
-    if (!container) {
-        console.error('❌ Container listaDocumentos não encontrado!');
-        return;
-    }
+    if (!container) return;
     
     fetch(`/api/obreiros/${obreiroId}/documentos`)
-        .then(response => {
-            console.log('📡 Resposta da API:', response.status);
-            if (!response.ok) {
-                throw new Error(`HTTP ${response.status}`);
-            }
-            return response.json();
-        })
+        .then(response => response.json())
         .then(data => {
-            console.log('📦 Dados recebidos da API:', data);
-            
             if (data.success && data.documentos && data.documentos.length > 0) {
-                console.log('✅ Documentos encontrados:', data.documentos.length);
                 if (semMsg) semMsg.style.display = 'none';
                 if (totalSpan) totalSpan.textContent = data.documentos.length;
                 
@@ -512,16 +767,13 @@ function carregarDocumentos() {
                 html += '</div>';
                 container.innerHTML = html;
             } else {
-                console.log('⚠️ Nenhum documento encontrado');
                 if (semMsg) semMsg.style.display = 'block';
                 if (totalSpan) totalSpan.textContent = '0';
                 container.innerHTML = '<div id="semDocumentosMsg" class="text-center text-muted py-3"><i class="bi bi-cloud-slash fs-1"></i><p class="mb-0">Nenhum documento enviado</p></div>';
             }
         })
         .catch(error => {
-            console.error('❌ Erro ao carregar documentos:', error);
-            if (semMsg) semMsg.style.display = 'block';
-            if (totalSpan) totalSpan.textContent = '0';
+            console.error('Erro:', error);
         });
 }
 
@@ -549,28 +801,17 @@ function excluirDocumento(docId) {
     
     fetch(`/api/documentos/${docId}/excluir`, {
         method: 'DELETE',
-        headers: {
-            'Content-Type': 'application/json'
-        }
+        headers: { 'Content-Type': 'application/json' }
     })
     .then(response => response.json())
     .then(data => {
         if (data.success) {
             const docElement = document.getElementById(`doc-${docId}`);
             if (docElement) docElement.remove();
-            
-            const remainingDocs = document.querySelectorAll('#listaDocumentos .list-group-item').length;
-            const totalSpan = document.getElementById('totalDocumentos');
-            if (totalSpan) totalSpan.textContent = remainingDocs;
-            
-            if (remainingDocs === 0) {
-                const container = document.getElementById('listaDocumentos');
-                container.innerHTML = '<div id="semDocumentosMsg" class="text-center text-muted py-3"><i class="bi bi-cloud-slash fs-1"></i><p class="mb-0">Nenhum documento enviado</p></div>';
-            }
-            
+            carregarDocumentos();
             alert('Documento excluído com sucesso!');
         } else {
-            alert('Erro ao excluir documento: ' + (data.error || 'Erro desconhecido'));
+            alert('Erro ao excluir documento');
         }
     })
     .catch(error => {
@@ -584,29 +825,17 @@ function excluirDocumento(docId) {
 // =====================
 
 document.addEventListener('DOMContentLoaded', function() {
-    
-    console.log('=== CONTROLE DE GRAUS INICIADO ===');
-    
-    // Carregar documentos
     carregarDocumentos();
     
-    // Pegar os elementos de grau
     const grauPrincipal = document.getElementById('grauPrincipalSelect');
     const divSuperior = document.getElementById('divGrauSuperior');
     const grauSuperior = document.getElementById('grauSuperiorSelect');
     const grauFinal = document.getElementById('grauAtualHidden');
     
-    // Se não for admin, os elementos não existem
-    if (!grauPrincipal) {
-        console.log('Usuário não é admin - controles de grau não disponíveis');
-        return;
-    }
-    
-    console.log('Grau atual do obreiro (hidden):', grauFinal ? grauFinal.value : 'N/A');
+    if (!grauPrincipal) return;
     
     function atualizarVisibilidade() {
         if (!grauPrincipal || !divSuperior) return;
-        
         const valor = grauPrincipal.value;
         
         if (valor === '3') {
@@ -615,26 +844,19 @@ document.addEventListener('DOMContentLoaded', function() {
             divSuperior.style.display = 'none';
             if (grauSuperior) grauSuperior.value = '';
         }
-        
         atualizarGrauFinal();
     }
     
     function atualizarGrauFinal() {
         if (!grauFinal || !grauPrincipal) return;
-        
         const principal = parseInt(grauPrincipal.value);
         const superior = grauSuperior ? grauSuperior.value : '';
         
-        let final;
+        let final = principal;
         if (principal === 3 && superior && superior !== '') {
             final = parseInt(superior);
-        } else {
-            final = principal;
         }
-        
         grauFinal.value = final;
-        
-        // Atualizar feedback de sindicante
         atualizarFeedbackSindicante(final);
     }
     
@@ -646,11 +868,7 @@ document.addEventListener('DOMContentLoaded', function() {
         
         for (let i = 0; i < tipoSelect.options.length; i++) {
             if (tipoSelect.options[i].value === 'sindicante') {
-                if (grauAtualVal >= 3) {
-                    tipoSelect.options[i].disabled = false;
-                } else {
-                    tipoSelect.options[i].disabled = true;
-                }
+                tipoSelect.options[i].disabled = grauAtualVal < 3;
             }
         }
         
@@ -668,20 +886,10 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
     
-    if (grauPrincipal) {
-        grauPrincipal.addEventListener('change', function() {
-            atualizarVisibilidade();
-        });
-    }
-    
-    if (grauSuperior) {
-        grauSuperior.addEventListener('change', function() {
-            atualizarGrauFinal();
-        });
-    }
+    grauPrincipal.addEventListener('change', atualizarVisibilidade);
+    if (grauSuperior) grauSuperior.addEventListener('change', atualizarGrauFinal);
     
     atualizarVisibilidade();
-    
 });
 </script>
 

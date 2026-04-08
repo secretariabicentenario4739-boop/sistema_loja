@@ -17,153 +17,416 @@
             </div>
         </div>
 
-        
-
         <div class="card shadow">
             <div class="card-header bg-primary text-white">
                 <h5 class="mb-0"><i class="bi bi-person-badge"></i> Dados do Obreiro</h5>
             </div>
             <div class="card-body">
-                <form method="POST">
-                    <!-- Dados de Login -->
-                    <div class="row">
-                        <div class="col-md-6 mb-3">
-                            <label class="form-label">Usuário *</label>
-                            <input type="text" class="form-control" name="usuario" required>
-                            <small class="text-muted">Nome de usuário para login</small>
+                <form method="POST" id="formObreiro">
+
+ <!-- ===================== -->
+                    <!-- DADOS PESSOAIS -->
+                    <!-- ===================== -->
+                    <div class="bg-light p-3 rounded mb-4">
+                        <h6 class="mb-3 text-primary">
+                            <i class="bi bi-person-circle"></i> Dados Pessoais
+                        </h6>
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Nome Completo *</label>
+                                <input type="text" class="form-control" name="nome_completo" required>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Nome Maçônico</label>
+                                <input type="text" class="form-control" name="nome_maconico">
+                            </div>
                         </div>
-                        <div class="col-md-6 mb-3">
-                            <label class="form-label">Senha *</label>
-                            <input type="password" class="form-control" name="senha" id="senha" required>
-                            <small class="text-muted">Mínimo 6 caracteres</small>
+
+                        <div class="row">
+                            <div class="col-md-3 mb-3">
+                                <label class="form-label">Data Nascimento *</label>
+                                <input type="date" class="form-control" name="data_nascimento" required>
+                            </div>
+                            <div class="col-md-3 mb-3">
+                                <label class="form-label">CPF</label>
+                                <input type="text" class="form-control" name="cpf" id="cpf" placeholder="000.000.000-00">
+                            </div>
+                            <div class="col-md-2 mb-3">
+                                <label class="form-label">Tipo Sanguíneo</label>
+                                <select class="form-select" name="tipo_sanguineo">
+                                    <option value="">Selecione</option>
+                                    <option value="A+">A+</option>
+                                    <option value="A-">A-</option>
+                                    <option value="B+">B+</option>
+                                    <option value="B-">B-</option>
+                                    <option value="AB+">AB+</option>
+                                    <option value="AB-">AB-</option>
+                                    <option value="O+">O+</option>
+                                    <option value="O-">O-</option>
+                                </select>
+                            </div>
+                            <div class="col-md-2 mb-3">
+                                <label class="form-label">RG</label>
+                                <input type="text" class="form-control" name="rg">
+                            </div>
+                            <div class="col-md-2 mb-3">
+                                <label class="form-label">Órgão Emissor</label>
+                                <input type="text" class="form-control" name="orgao_emissor" placeholder="SSP-DF">
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-4 mb-3">
+                                <label class="form-label">Grau de Instrução</label>
+                                <select class="form-select" name="grau_instrucao">
+                                    <option value="">Selecione</option>
+                                    <option value="1º GRAU">1º Grau (Fundamental)</option>
+                                    <option value="2º GRAU">2º Grau (Médio)</option>
+                                    <option value="3º GRAU COMPLETO">3º Grau Completo (Superior)</option>
+                                    <option value="3º GRAU INCOMPLETO">3º Grau Incompleto</option>
+                                    <option value="PÓS-GRADUAÇÃO">Pós-Graduação</option>
+                                    <option value="MESTRADO">Mestrado</option>
+                                    <option value="DOUTORADO">Doutorado</option>
+                                </select>
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <label class="form-label">Título de Eleitor</label>
+                                <input type="text" class="form-control" name="titulo_eleitor">
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <label class="form-label">Naturalidade</label>
+                                <input type="text" class="form-control" name="naturalidade" placeholder="BRASÍLIA-DF">
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-4 mb-3">
+                                <label class="form-label">Estado Civil</label>
+                                <select class="form-select" name="estado_civil">
+                                    <option value="Solteiro">Solteiro</option>
+                                    <option value="Casado">Casado</option>
+                                    <option value="Divorciado">Divorciado</option>
+                                    <option value="Viúvo">Viúvo</option>
+                                    <option value="União Estável">União Estável</option>
+                                </select>
+                            </div>
                         </div>
                     </div>
+				
+                    <!-- ===================== -->
+                    <!-- DADOS MACÔNICOS -->
+                    <!-- ===================== -->
+                    <div class="bg-light p-3 rounded mb-4">
+                        <h6 class="mb-3 text-primary">
+                            <i class="bi bi-compass"></i> Dados Maçônicos
+                        </h6>
+                        <div class="row">
+                            <div class="col-md-4 mb-3">
+                                <label class="form-label">CIM *</label>
+                                <input type="text" class="form-control" name="cim_numero" id="cimNumero" required placeholder="Ex: 339652 ou 339.652">
+                                <small class="text-muted">Número de identificação do obreiro (pode conter pontos)</small>
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <label class="form-label">Data de Iniciação *</label>
+                                <input type="date" class="form-control" name="data_iniciacao" id="dataIniciacao" required>
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <label class="form-label">Loja de Iniciação *</label>
+                                <input type="text" class="form-control" name="loja_iniciacao" id="lojaIniciacao" required placeholder="Ex: Loja Maçônica XYZ - Nº 123">
+                                <small class="text-muted">Digite o nome e número da loja onde foi iniciado</small>
+                            </div>
+                        </div>
 
-                    <hr>
-                    <h6 class="mb-3">📋 Dados Pessoais</h6>
-                    
-                    <div class="row">
-                        <div class="col-md-6 mb-3">
-                            <label class="form-label">Nome Completo *</label>
-                            <input type="text" class="form-control" name="nome_completo" required>
+                        <div class="row">
+                            <div class="col-md-4 mb-3">
+                                <label class="form-label">Data de Elevação</label>
+                                <input type="date" class="form-control" name="data_elevacao" id="dataElevacao">
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <label class="form-label">Data de Exaltação</label>
+                                <input type="date" class="form-control" name="data_exaltacao" id="dataExaltacao">
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <label class="form-label">Data de Instalação</label>
+                                <input type="date" class="form-control" name="data_instalacao" id="dataInstalacao">
+                            </div>
                         </div>
-                        <div class="col-md-6 mb-3">
-                            <label class="form-label">Nome Maçônico</label>
-                            <input type="text" class="form-control" name="nome_maconico">
-                        </div>
-                    </div>
 
-                    <div class="row">
-                        <div class="col-md-4 mb-3">
-                            <label class="form-label">CIM Nº</label>
-                            <input type="text" class="form-control" name="cim_numero">
-                        </div>
-                        <div class="col-md-4 mb-3">
-                            <label class="form-label">Tipo de Usuário</label>
-                            <select class="form-select" name="tipo">
-                                <option value="obreiro">Obreiro</option>
-                                <option value="sindicante">Sindicante</option>
-                                <option value="admin">Administrador</option>
-                            </select>
-                        </div>
-                        <div class="col-md-4 mb-3">
-                            <label class="form-label">Status</label>
-                            <select class="form-select" name="ativo">
-                                <option value="1">Ativo</option>
-                                <option value="0">Inativo</option>
-                            </select>
+                        <div class="row">
+                            <div class="col-md-3 mb-3">
+                                <label class="form-label">Status Maçônico</label>
+                                <select class="form-select" name="status_maconico">
+                                    <option value="Regular">Regular</option>
+                                    <option value="Irregular">Irregular</option>
+                                    <option value="Suspenso">Suspenso</option>
+                                    <option value="Excluído">Excluído</option>
+                                </select>
+                            </div>
+                            <div class="col-md-3 mb-3">
+                                <label class="form-label">Distinção Maçônica</label>
+                                <input type="text" class="form-control" name="distincao_maconica" placeholder="Ex: Benemérito">
+                            </div>
+                            <div class="col-md-3 mb-3">
+                                <label class="form-label">Isento</label>
+                                <select class="form-select" name="isento">
+                                    <option value="NÃO">Não</option>
+                                    <option value="SIM">Sim</option>
+                                </select>
+                            </div>
+                            <div class="col-md-3 mb-3">
+                                <label class="form-label">Artigo 27</label>
+                                <select class="form-select" name="artigo_27">
+                                    <option value="NÃO">Não</option>
+                                    <option value="SIM">Sim</option>
+                                </select>
+                            </div>
                         </div>
                     </div>
 
                     <!-- ===================== -->
-                    <!-- GRAUS: PRINCIPAL + SUPERIOR -->
+                    <!-- LOJA ATUAL (Pertence) -->
                     <!-- ===================== -->
-                    <div class="row">
-                        <div class="col-md-6 mb-3">
-                            <label class="form-label">Grau Principal *</label>
-                            <select class="form-select" name="grau_principal" id="grauPrincipalSelect" required>
-                                <option value="1">1 - Aprendiz</option>
-                                <option value="2">2 - Companheiro</option>
-                                <option value="3">3 - Mestre</option>
-                            </select>
-                            <small class="text-muted">Grau principal na Maçonaria Simbólica</small>
-                        </div>
-
-                        <div class="col-md-6 mb-3" id="divGrauSuperior" style="display: none;">
-                            <label class="form-label">Grau Superior (Opcional)</label>
-                            <select class="form-select" name="grau_superior" id="grauSuperiorSelect">
-                                <option value="">Nenhum (Mestre)</option>
-                                {% for g in graus_superiores %}
-                                <option value="{{ g.nivel }}">{{ g.nivel }} - {{ g.nome }}</option>
-                                {% endfor %}
-                            </select>
-                            <small class="text-muted">
-                                <i class="bi bi-info-circle"></i> 
-                                Graus superiores são aperfeiçoamentos dentro do grau de Mestre
-                            </small>
-                        </div>
-                    </div>
-
-                    <input type="hidden" name="grau_atual" id="grauAtualHidden" value="1">
-
-                    <div class="row">
-                        <div class="col-md-4 mb-3">
-                            <label class="form-label">Data de Iniciação</label>
-                            <input type="date" class="form-control" name="data_iniciacao">
-                        </div>
-                        <div class="col-md-4 mb-3">
-                            <label class="form-label">Data de Elevação</label>
-                            <input type="date" class="form-control" name="data_elevacao">
-                        </div>
-                        <div class="col-md-4 mb-3">
-                            <label class="form-label">Data de Exaltação</label>
-                            <input type="date" class="form-control" name="data_exaltacao">
+                    <div class="bg-light p-3 rounded mb-4">
+                        <h6 class="mb-3 text-primary">
+                            <i class="bi bi-building"></i> Loja Atual
+                        </h6>
+                        <div class="row">
+                            <div class="col-md-5 mb-3">
+                                <label class="form-label">Loja</label>
+                                <select class="form-select" name="loja_nome" id="lojaSelect">
+                                    <option value="">Selecione uma loja...</option>
+                                    {% for loja in lojas %}
+                                    <option value="{{ loja.nome }}" 
+                                            data-numero="{{ loja.numero }}"
+                                            data-oriente="{{ loja.oriente }}">
+                                        {{ loja.nome }} - Nº {{ loja.numero }}
+                                    </option>
+                                    {% endfor %}
+                                </select>
+                                <small class="text-muted">Loja que o obreiro pertence atualmente</small>
+                            </div>
+                            <div class="col-md-3 mb-3">
+                                <label class="form-label">Cidade</label>
+                                <input type="text" class="form-control" name="loja_cidade" id="lojaCidade" placeholder="BRASÍLIA">
+                            </div>
+                            <div class="col-md-2 mb-3">
+                                <label class="form-label">UF</label>
+                                <input type="text" class="form-control" name="loja_uf" id="lojaUf" placeholder="DF" maxlength="2">
+                            </div>
+                            <div class="col-md-2 mb-3">
+                                <label class="form-label">Recolhe</label>
+                                <select class="form-select" name="recolhe">
+                                    <option value="Sim">Sim</option>
+                                    <option value="Não">Não</option>
+                                </select>
+                            </div>
                         </div>
                     </div>
 
-                    <hr>
-                    <h6 class="mb-3">📞 Contato</h6>
-
-                    <div class="row">
-                        <div class="col-md-6 mb-3">
-                            <label class="form-label">Telefone</label>
-                            <input type="text" class="form-control" name="telefone" id="telefone" placeholder="(11) 99999-9999">
+                    <!-- ===================== -->
+                    <!-- GRAUS -->
+                    <!-- ===================== -->
+                    <div class="bg-light p-3 rounded mb-4">
+                        <h6 class="mb-3 text-primary">
+                            <i class="bi bi-star"></i> Graus
+                        </h6>
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Grau Principal *</label>
+                                <select class="form-select" name="grau_principal" id="grauPrincipalSelect" required>
+                                    <option value="1">1 - Aprendiz</option>
+                                    <option value="2">2 - Companheiro</option>
+                                    <option value="3">3 - Mestre</option>
+                                </select>
+                            </div>
+                            <div class="col-md-6 mb-3" id="divGrauSuperior" style="display: none;">
+                                <label class="form-label">Grau Superior (Opcional)</label>
+                                <select class="form-select" name="grau_superior" id="grauSuperiorSelect">
+                                    <option value="">Nenhum</option>
+                                    {% for g in graus_superiores %}
+                                    <option value="{{ g.nivel }}">{{ g.nivel }} - {{ g.nome }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
                         </div>
-                        <div class="col-md-6 mb-3">
-                            <label class="form-label">E-mail</label>
-                            <input type="email" class="form-control" name="email">
+                        <input type="hidden" name="grau_atual" id="grauAtualHidden" value="1">
+                    </div>
+
+                   
+
+                    <!-- ===================== -->
+                    <!-- ENDEREÇO -->
+                    <!-- ===================== -->
+                    <div class="bg-light p-3 rounded mb-4">
+                        <h6 class="mb-3 text-primary">
+                            <i class="bi bi-geo-alt"></i> Endereço
+                        </h6>
+                        <div class="row">
+                            <div class="col-md-3 mb-3">
+                                <label class="form-label">CEP</label>
+                                <input type="text" class="form-control" name="cep" id="cep" placeholder="00000-000">
+                            </div>
+                            <div class="col-md-3 mb-3">
+                                <label class="form-label">Cidade</label>
+                                <input type="text" class="form-control" name="cidade">
+                            </div>
+                            <div class="col-md-2 mb-3">
+                                <label class="form-label">UF</label>
+                                <input type="text" class="form-control" name="uf" maxlength="2">
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <label class="form-label">Bairro</label>
+                                <input type="text" class="form-control" name="bairro">
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-8 mb-3">
+                                <label class="form-label">Endereço</label>
+                                <input type="text" class="form-control" name="endereco" placeholder="Rua, Av., etc.">
+                            </div>
+                            <div class="col-md-2 mb-3">
+                                <label class="form-label">Número</label>
+                                <input type="text" class="form-control" name="numero">
+                            </div>
+                            <div class="col-md-2 mb-3">
+                                <label class="form-label">Complemento</label>
+                                <input type="text" class="form-control" name="complemento">
+                            </div>
                         </div>
                     </div>
 
-                    <div class="mb-3">
-                        <label class="form-label">Endereço</label>
-                        <textarea class="form-control" name="endereco" rows="2" placeholder="Rua, número, bairro, cidade - UF"></textarea>
+                    <!-- ===================== -->
+                    <!-- FILIAÇÃO -->
+                    <!-- ===================== -->
+                    <div class="bg-light p-3 rounded mb-4">
+                        <h6 class="mb-3 text-primary">
+                            <i class="bi bi-people"></i> Filiação
+                        </h6>
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Nome do Pai</label>
+                                <input type="text" class="form-control" name="nome_pai">
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Nome da Mãe</label>
+                                <input type="text" class="form-control" name="nome_mae">
+                            </div>
+                        </div>
                     </div>
 
-                    <hr>
-                    <h6 class="mb-3">🏛️ Loja</h6>
+                    <!-- ===================== -->
+                    <!-- DADOS PROFISSIONAIS -->
+                    <!-- ===================== -->
+                    <div class="bg-light p-3 rounded mb-4">
+                        <h6 class="mb-3 text-primary">
+                            <i class="bi bi-briefcase"></i> Dados Profissionais
+                        </h6>
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Profissão</label>
+                                <input type="text" class="form-control" name="profissao">
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Empresa</label>
+                                <input type="text" class="form-control" name="empresa">
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">E-mail Profissional</label>
+                                <input type="email" class="form-control" name="email_profissional">
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Telefone Profissional</label>
+                                <input type="text" class="form-control" name="telefone_profissional" id="telefoneProfissional">
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-12 mb-3">
+                                <label class="form-label">Endereço Profissional</label>
+                                <input type="text" class="form-control" name="endereco_profissional">
+                            </div>
+                        </div>
+                    </div>
 
-                    <div class="row">
-                        <div class="col-md-5 mb-3">
-                            <label class="form-label">Nome da Loja</label>
-                            <select class="form-select" name="loja_nome" id="lojaSelect">
-                                <option value="">Selecione uma loja...</option>
-                                {% for loja in lojas %}
-                                <option value="{{ loja.nome }}" 
-                                        data-numero="{{ loja.numero }}"
-                                        data-oriente="{{ loja.oriente }}">
-                                    {{ loja.nome }} - Nº {{ loja.numero }}
-                                </option>
-                                {% endfor %}
-                            </select>
+                    <!-- ===================== -->
+                    <!-- CONTATO -->
+                    <!-- ===================== -->
+                    <div class="bg-light p-3 rounded mb-4">
+                        <h6 class="mb-3 text-primary">
+                            <i class="bi bi-envelope"></i> Contato
+                        </h6>
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Telefone</label>
+                                <input type="text" class="form-control" name="telefone" id="telefone" placeholder="(61) 99999-9999">
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">E-mail</label>
+                                <input type="email" class="form-control" name="email">
+                            </div>
                         </div>
-                        <div class="col-md-3 mb-3">
-                            <label class="form-label">Nº da Loja</label>
-                            <input type="text" class="form-control" name="loja_numero" id="lojaNumero" readonly>
+                    </div>
+
+                    <!-- ===================== -->
+                    <!-- DEPENDENTES -->
+                    <!-- ===================== -->
+                    <div class="bg-light p-3 rounded mb-4">
+                        <h6 class="mb-3 text-primary">
+                            <i class="bi bi-people-fill"></i> Dependentes
+                        </h6>
+                        <div id="dependentes-container">
+                            <div class="row dependente-item mb-2">
+                                <div class="col-md-5">
+                                    <input type="text" class="form-control" name="dependente_nome[]" placeholder="Nome do dependente">
+                                </div>
+                                <div class="col-md-4">
+                                    <input type="text" class="form-control" name="dependente_parentesco[]" placeholder="Parentesco">
+                                </div>
+                                <div class="col-md-3">
+                                    <input type="date" class="form-control" name="dependente_nascimento[]" placeholder="Data Nascimento">
+                                </div>
+                            </div>
                         </div>
-                        <div class="col-md-4 mb-3">
-                            <label class="form-label">Oriente</label>
-                            <input type="text" class="form-control" name="loja_orient" id="lojaOriente" readonly>
+                        <button type="button" class="btn btn-sm btn-outline-primary mt-2" onclick="adicionarDependente()">
+                            <i class="bi bi-plus-circle"></i> Adicionar Dependente
+                        </button>
+                    </div>
+
+                    <!-- ===================== -->
+                    <!-- DADOS DE LOGIN -->
+                    <!-- ===================== -->
+                    <div class="bg-light p-3 rounded mb-4">
+                        <h6 class="mb-3 text-primary">
+                            <i class="bi bi-key"></i> Dados de Acesso
+                        </h6>
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Usuário *</label>
+                                <input type="text" class="form-control" name="usuario" required>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Senha *</label>
+                                <input type="password" class="form-control" name="senha" id="senha" required>
+                                <small class="text-muted">Mínimo 6 caracteres</small>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Tipo de Usuário</label>
+                                <select class="form-select" name="tipo">
+                                    <option value="obreiro">Obreiro</option>
+                                    <option value="sindicante">Sindicante</option>
+                                    <option value="admin">Administrador</option>
+                                </select>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Status</label>
+                                <select class="form-select" name="ativo">
+                                    <option value="1">Ativo</option>
+                                    <option value="0">Inativo</option>
+                                </select>
+                            </div>
                         </div>
                     </div>
 
@@ -172,8 +435,8 @@
                         <strong>Informações:</strong>
                         <ul class="mb-0 mt-2">
                             <li>Os campos marcados com * são obrigatórios</li>
-                            <li>O grau atual determina as permissões iniciais do obreiro</li>
-                            <li>Graus superiores (Mestre Instalado, etc.) podem ser adicionados posteriormente no histórico de graus</li>
+                            <li>O número de cadastro é único e identifica o obreiro no sistema</li>
+                            <li>Dependentes podem ser adicionados após o cadastro também</li>
                         </ul>
                     </div>
 
@@ -192,69 +455,9 @@
 </div>
 
 <script>
-    // =====================
-    // CONTROLE DE GRAUS
-    // =====================
-    
-    document.addEventListener('DOMContentLoaded', function() {
-        // Pegar os elementos
-        const grauPrincipal = document.getElementById('grauPrincipalSelect');
-        const divSuperior = document.getElementById('divGrauSuperior');
-        const grauSuperior = document.getElementById('grauSuperiorSelect');
-        const grauFinal = document.getElementById('grauAtualHidden');
-        
-        // Função para mostrar/esconder grau superior baseado no grau principal selecionado
-        function atualizarVisibilidade() {
-            const valor = grauPrincipal.value;
-            
-            if (valor === '3') {
-                divSuperior.style.display = 'block';
-            } else {
-                divSuperior.style.display = 'none';
-                if (grauSuperior) grauSuperior.value = '';
-            }
-            
-            atualizarGrauFinal();
-        }
-        
-        // Função para atualizar o grau final (o que vai salvar no banco)
-        function atualizarGrauFinal() {
-            const principal = parseInt(grauPrincipal.value);
-            const superior = grauSuperior ? grauSuperior.value : '';
-            
-            let final;
-            if (principal === 3 && superior && superior !== '') {
-                final = parseInt(superior);
-            } else {
-                final = principal;
-            }
-            
-            grauFinal.value = final;
-        }
-        
-        // Adicionar eventos
-        if (grauPrincipal) {
-            grauPrincipal.addEventListener('change', function() {
-                atualizarVisibilidade();
-            });
-        }
-        
-        if (grauSuperior) {
-            grauSuperior.addEventListener('change', function() {
-                atualizarGrauFinal();
-            });
-        }
-        
-        // Executar configuração inicial
-        atualizarVisibilidade();
-    });
-    
-    // =====================
-    // MÁSCARA DE TELEFONE
-    // =====================
-    const telefoneInput = document.getElementById('telefone');
-    if (telefoneInput) {
-        telefoneInput.addEventListener('input', function(e) {
+    // Máscaras
+    function aplicarMascaraTelefone(input) {
+        input.addEventListener('input', function(e) {
             let value = e.target.value.replace(/\D/g, '');
             if (value.length <= 10) {
                 value = value.replace(/^(\d{2})(\d{4})(\d{4})/, '($1) $2-$3');
@@ -264,37 +467,112 @@
             e.target.value = value;
         });
     }
-    
-    // =====================
-    // AUTOPREENCHIMENTO DA LOJA
-    // =====================
-    const lojaSelect = document.getElementById('lojaSelect');
-    if (lojaSelect) {
-        lojaSelect.addEventListener('change', function() {
-            const selected = this.options[this.selectedIndex];
-            const numeroInput = document.getElementById('lojaNumero');
-            const orienteInput = document.getElementById('lojaOriente');
-            
-            if (numeroInput) numeroInput.value = selected.dataset.numero || '';
-            if (orienteInput) orienteInput.value = selected.dataset.oriente || '';
-        });
-    }
-    
-    // =====================
-    // VALIDAÇÃO DE SENHA
-    // =====================
-    const btnSalvar = document.getElementById('btnSalvar');
-    const senhaInput = document.getElementById('senha');
-    
-    if (btnSalvar && senhaInput) {
-        btnSalvar.addEventListener('click', function(e) {
-            if (senhaInput.value.length < 6) {
-                e.preventDefault();
-                alert('A senha deve ter no mínimo 6 caracteres!');
-                return false;
+
+    function aplicarMascaraCPF(input) {
+        input.addEventListener('input', function(e) {
+            let value = e.target.value.replace(/\D/g, '');
+            if (value.length <= 11) {
+                value = value.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, '$1.$2.$3-$4');
+                e.target.value = value.substring(0, 14);
             }
         });
     }
+
+    function aplicarMascaraCEP(input) {
+        input.addEventListener('input', function(e) {
+            let value = e.target.value.replace(/\D/g, '');
+            if (value.length <= 8) {
+                value = value.replace(/^(\d{5})(\d{3})/, '$1-$2');
+                e.target.value = value.substring(0, 9);
+            }
+        });
+    }
+
+    // Dependentes
+    function adicionarDependente() {
+        const container = document.getElementById('dependentes-container');
+        const div = document.createElement('div');
+        div.className = 'row dependente-item mb-2';
+        div.innerHTML = `
+            <div class="col-md-5">
+                <input type="text" class="form-control" name="dependente_nome[]" placeholder="Nome do dependente">
+            </div>
+            <div class="col-md-4">
+                <input type="text" class="form-control" name="dependente_parentesco[]" placeholder="Parentesco">
+            </div>
+            <div class="col-md-2">
+                <input type="date" class="form-control" name="dependente_nascimento[]" placeholder="Data Nascimento">
+            </div>
+            <div class="col-md-1">
+                <button type="button" class="btn btn-danger btn-sm" onclick="this.parentElement.parentElement.remove()">
+                    <i class="bi bi-trash"></i>
+                </button>
+            </div>
+        `;
+        container.appendChild(div);
+    }
+
+    // Controle de graus
+    document.addEventListener('DOMContentLoaded', function() {
+        // Máscaras
+        const telefone = document.getElementById('telefone');
+        const telefoneProf = document.getElementById('telefoneProfissional');
+        const cpf = document.getElementById('cpf');
+        const cep = document.getElementById('cep');
+        
+        if (telefone) aplicarMascaraTelefone(telefone);
+        if (telefoneProf) aplicarMascaraTelefone(telefoneProf);
+        if (cpf) aplicarMascaraCPF(cpf);
+        if (cep) aplicarMascaraCEP(cep);
+        
+        // Graus
+        const grauPrincipal = document.getElementById('grauPrincipalSelect');
+        const divSuperior = document.getElementById('divGrauSuperior');
+        const grauSuperior = document.getElementById('grauSuperiorSelect');
+        const grauFinal = document.getElementById('grauAtualHidden');
+        
+        function atualizarVisibilidade() {
+            const valor = grauPrincipal.value;
+            if (valor === '3') {
+                divSuperior.style.display = 'block';
+            } else {
+                divSuperior.style.display = 'none';
+                if (grauSuperior) grauSuperior.value = '';
+            }
+            atualizarGrauFinal();
+        }
+        
+        function atualizarGrauFinal() {
+            const principal = parseInt(grauPrincipal.value);
+            const superior = grauSuperior ? grauSuperior.value : '';
+            let final = principal;
+            if (principal === 3 && superior && superior !== '') {
+                final = parseInt(superior);
+            }
+            grauFinal.value = final;
+        }
+        
+        if (grauPrincipal) {
+            grauPrincipal.addEventListener('change', atualizarVisibilidade);
+        }
+        if (grauSuperior) {
+            grauSuperior.addEventListener('change', atualizarGrauFinal);
+        }
+        
+        atualizarVisibilidade();
+        
+        // Loja - auto preenchimento cidade/UF
+        const lojaSelect = document.getElementById('lojaSelect');
+        if (lojaSelect) {
+            lojaSelect.addEventListener('change', function() {
+                const selected = this.options[this.selectedIndex];
+                const cidadeInput = document.getElementById('lojaCidade');
+                const ufInput = document.getElementById('lojaUf');
+                if (cidadeInput && selected.dataset.cidade) cidadeInput.value = selected.dataset.cidade;
+                if (ufInput && selected.dataset.uf) ufInput.value = selected.dataset.uf;
+            });
+        }
+    });
 </script>
 
 <style>
@@ -309,6 +587,11 @@
         border-color: #0d6efd;
         box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.25);
     }
+    .bg-light {
+        background-color: #f8f9fa !important;
+    }
+    .rounded {
+        border-radius: 10px !important;
+    }
 </style>
-
 {% endblock %}
