@@ -21,6 +21,7 @@
             <ul class="mb-0 mt-2">
                 <li>Estar logado no <strong>WhatsApp Web</strong> no navegador</li>
                 <li>Os números devem estar no formato: <strong>5511999999999</strong> (código país + DDD + número)</li>
+                <li>Para grupos, você precisa do <strong>ID do grupo</strong> (formato: 5511999999999-123456@g.us)</li>
                 <li>O WhatsApp Web precisa estar aberto em uma aba</li>
                 <li>O primeiro envio pode demorar alguns segundos</li>
             </ul>
@@ -69,7 +70,7 @@
             <div class="col-md-6">
                 <div class="card shadow">
                     <div class="card-header bg-primary text-white">
-                        <h5 class="mb-0">Testar Envio</h5>
+                        <h5 class="mb-0">Testar Envio para Número</h5>
                     </div>
                     <div class="card-body">
                         <form method="POST" action="/testar_whatsapp">
@@ -93,6 +94,176 @@ Esta é uma mensagem de teste enviada pelo sistema.</textarea>
             </div>
         </div>
 
+        <!-- NOVO CARD: Envio para Grupo -->
+        <div class="row mt-4">
+            <div class="col-md-12">
+                <div class="card shadow">
+                    <div class="card-header bg-warning text-dark">
+                        <h5 class="mb-0">
+                            <i class="bi bi-people-fill"></i> 
+                            Enviar Mensagem para Grupo do WhatsApp
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <form method="POST" action="/enviar_para_grupo">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label class="form-label">
+                                            <i class="bi bi-link-45deg"></i> ID do Grupo
+                                        </label>
+                                        <input type="text" class="form-control" name="grupo_id" 
+                                               placeholder="5511999999999-123456@g.us" required>
+                                        <small class="text-muted">
+                                            Como obter o ID do grupo:
+                                            <ul class="mt-1 mb-0">
+                                                <li>Abra o WhatsApp Web</li>
+                                                <li>Entre no grupo desejado</li>
+                                                <li>O ID aparece na URL ou use extensões como "WhatsApp Group ID"</li>
+                                                <li>Formato: <code>5511999999999-1234567890@g.us</code></li>
+                                            </ul>
+                                        </small>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label class="form-label">
+                                            <i class="bi bi-tag"></i> Nome do Grupo (opcional)
+                                        </label>
+                                        <input type="text" class="form-control" name="nome_grupo" 
+                                               placeholder="Ex: Obreiros da ARLS Bicentenário">
+                                        <small class="text-muted">Apenas para identificação visual</small>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">
+                                    <i class="bi bi-chat-text"></i> Mensagem
+                                </label>
+                                <textarea class="form-control" name="mensagem" rows="5" required 
+                                          placeholder="Digite sua mensagem aqui...">📢 COMUNICADO IMPORTANTE
+
+Prezados Irmãos,
+
+Esta é uma mensagem enviada através do Sistema Maçônico.
+
+Atenciosamente,
+Secretaria</textarea>
+                                <small class="text-muted">
+                                    <i class="bi bi-info-circle"></i> 
+                                    Dicas: Use emojis, quebras de linha e mantenha a mensagem clara
+                                </small>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">
+                                    <i class="bi bi-clock-history"></i> Agendar Envio (opcional)
+                                </label>
+                                <div class="row">
+                                    <div class="col-md-4">
+                                        <input type="date" class="form-control" name="data_agendamento" 
+                                               placeholder="Data">
+                                    </div>
+                                    <div class="col-md-4">
+                                        <input type="time" class="form-control" name="hora_agendamento" 
+                                               placeholder="Hora">
+                                    </div>
+                                    <div class="col-md-4">
+                                        <select class="form-select" name="recorrencia">
+                                            <option value="">Sem recorrência</option>
+                                            <option value="diario">Diário</option>
+                                            <option value="semanal">Semanal</option>
+                                            <option value="mensal">Mensal</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <small class="text-muted">Deixe em branco para enviar imediatamente</small>
+                            </div>
+                            <div class="alert alert-info">
+                                <i class="bi bi-lightbulb"></i>
+                                <strong>Dicas importantes:</strong>
+                                <ul class="mb-0 mt-2">
+                                    <li>O WhatsApp Web precisa estar aberto e conectado</li>
+                                    <li>Você precisa ser membro do grupo para enviar mensagens</li>
+                                    <li>Teste primeiro com seu próprio número para verificar o formato</li>
+                                    <li>Mensagens agendadas serão processadas em lote</li>
+                                </ul>
+                            </div>
+                            <div class="d-flex gap-2">
+                                <button type="submit" class="btn btn-warning flex-grow-1">
+                                    <i class="bi bi-send"></i> Enviar para Grupo Agora
+                                </button>
+                                <button type="submit" name="agendar" value="1" class="btn btn-info flex-grow-1">
+                                    <i class="bi bi-calendar-check"></i> Agendar Envio
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Card: Grupos Salvos -->
+        <div class="card shadow mt-4">
+            <div class="card-header bg-secondary text-white">
+                <h5 class="mb-0">
+                    <i class="bi bi-bookmark-star"></i> 
+                    Grupos Salvos
+                </h5>
+            </div>
+            <div class="card-body">
+                {% if grupos_salvos %}
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Nome do Grupo</th>
+                                <th>ID do Grupo</th>
+                                <th>Último Envio</th>
+                                <th>Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for grupo in grupos_salvos %}
+                            <tr>
+                                <td>
+                                    <i class="bi bi-people-fill"></i>
+                                    <strong>{{ grupo.nome_grupo or 'Sem nome' }}</strong>
+                                </td>
+                                <td>
+                                    <code>{{ grupo.grupo_id[:30] }}...</code>
+                                </td>
+                                <td>
+                                    {% if grupo.ultimo_envio %}
+                                    {{ grupo.ultimo_envio.strftime('%d/%m/%Y %H:%M') }}
+                                    {% else %}
+                                    Nunca
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <button class="btn btn-sm btn-primary" 
+                                            onclick="usarGrupo('{{ grupo.grupo_id }}', '{{ grupo.nome_grupo }}')">
+                                        <i class="bi bi-send"></i> Usar
+                                    </button>
+                                    <button class="btn btn-sm btn-danger" 
+                                            onclick="excluirGrupo('{{ grupo.id }}')">
+                                        <i class="bi bi-trash"></i>
+                                    </button>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="text-center text-muted py-4">
+                    <i class="bi bi-inbox fs-1"></i>
+                    <p class="mt-2">Nenhum grupo salvo ainda</p>
+                    <small>Após enviar mensagens para grupos, eles aparecerão aqui</small>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
         <div class="card shadow mt-4">
             <div class="card-header bg-info text-white">
                 <h5 class="mb-0">Dicas para funcionamento</h5>
@@ -102,6 +273,7 @@ Esta é uma mensagem de teste enviada pelo sistema.</textarea>
                     <li>Mantenha o WhatsApp Web aberto em uma aba do navegador</li>
                     <li>Certifique-se de que os obreiros tenham o número de telefone cadastrado no sistema</li>
                     <li>O formato do número deve ser: <code>5511999999999</code> (55 para Brasil, 11 para São Paulo, 999999999 para o número)</li>
+                    <li><strong>Para grupos:</strong> Use o formato <code>5511999999999-1234567890@g.us</code></li>
                     <li>Para testar, use seu próprio número primeiro</li>
                     <li>O sistema envia as mensagens em segundo plano para não travar a página</li>
                 </ul>
@@ -109,4 +281,66 @@ Esta é uma mensagem de teste enviada pelo sistema.</textarea>
         </div>
     </div>
 </div>
+
+<script>
+function usarGrupo(grupoId, nomeGrupo) {
+    document.querySelector('input[name="grupo_id"]').value = grupoId;
+    document.querySelector('input[name="nome_grupo"]').value = nomeGrupo;
+    document.querySelector('textarea[name="mensagem"]').focus();
+    
+    // Scroll para o formulário
+    document.querySelector('.card-header.bg-warning').scrollIntoView({ 
+        behavior: 'smooth' 
+    });
+    
+    // Destacar o campo
+    const campoGrupo = document.querySelector('input[name="grupo_id"]');
+    campoGrupo.style.border = '2px solid #ffc107';
+    setTimeout(() => {
+        campoGrupo.style.border = '';
+    }, 2000);
+}
+
+function excluirGrupo(grupoId) {
+    if (confirm('Deseja excluir este grupo da lista de salvos?')) {
+        fetch(`/excluir_grupo_whatsapp/${grupoId}`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                location.reload();
+            } else {
+                alert('Erro ao excluir grupo');
+            }
+        });
+    }
+}
+</script>
+
+<style>
+    .card {
+        border-radius: 10px;
+        overflow: hidden;
+    }
+    .card-header {
+        font-weight: 600;
+    }
+    code {
+        background: #f4f4f4;
+        padding: 2px 5px;
+        border-radius: 4px;
+        font-size: 0.85rem;
+    }
+    .btn-group {
+        gap: 5px;
+    }
+    textarea {
+        font-family: monospace;
+        resize: vertical;
+    }
+</style>
 {% endblock %}

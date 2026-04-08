@@ -40,6 +40,60 @@ from openpyxl.utils import get_column_letter
 # =============================
 biblioteca_bp = Blueprint('biblioteca', __name__, url_prefix='/biblioteca')
 
+# ============================================
+# CONFIGURAÇÕES INICIAIS DO WHATSAPP
+# ============================================
+
+def init_whatsapp_tables():
+    """Inicializa todas as tabelas relacionadas ao WhatsApp"""
+    try:
+        cursor, conn = get_db()
+        
+        # Criar tabela de grupos
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS grupos_whatsapp (
+                id SERIAL PRIMARY KEY,
+                grupo_id VARCHAR(255) UNIQUE NOT NULL,
+                nome_grupo VARCHAR(255),
+                ultimo_envio TIMESTAMP,
+                criado_por INTEGER,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        """)
+        
+        # Criar tabela de mensagens agendadas
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS mensagens_agendadas (
+                id SERIAL PRIMARY KEY,
+                grupo_id VARCHAR(255) NOT NULL,
+                mensagem TEXT NOT NULL,
+                nome_grupo VARCHAR(255),
+                data_envio TIMESTAMP NOT NULL,
+                recorrencia VARCHAR(50),
+                criado_por INTEGER,
+                status VARCHAR(50) DEFAULT 'agendado',
+                enviado_em TIMESTAMP,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        """)
+        
+        # Criar índices
+        cursor.execute("CREATE INDEX IF NOT EXISTS idx_grupos_grupo_id ON grupos_whatsapp(grupo_id)")
+        cursor.execute("CREATE INDEX IF NOT EXISTS idx_mensagens_data_envio ON mensagens_agendadas(data_envio)")
+        cursor.execute("CREATE INDEX IF NOT EXISTS idx_mensagens_status ON mensagens_agendadas(status)")
+        
+        return_connection(conn)
+        print("✅ Tabelas do WhatsApp inicializadas com sucesso!")
+        return True
+        
+    except Exception as e:
+        print(f"❌ Erro ao inicializar tabelas do WhatsApp: {e}")
+        return False
+
+# Chamar a função imediatamente ao iniciar o app
+init_whatsapp_tables()
+
 # =============================
 # FUNÇÕES DA BIBLIOTECA
 # =============================
@@ -11314,6 +11368,103 @@ def testar_email_reuniao_completo():
 # =============================
 # ROTAS DE WHATSAPP
 # =============================
+
+@app.route("/enviar_para_grupo", methods=["POST"])
+@login_required
+def enviar_para_grupo():
+    """Envia mensagem para um grupo do WhatsApp"""
+    try:
+        grupo_id = request.form.get('grupo_id')
+        mensagem = request.form.get('mensagem')
+        nome_grupo = request.form.get('nome_grupo', '')
+        data_agendamento = request.form.get('data_agendamento')
+        hora_agendamento = request.form.get('hora_agendamento')
+        recorrencia = request.form.get('recorrencia', '')
+        agendar = request.form.get('agendar')
+        
+        if not grupo_id or not mensagem:
+            flash('Preencha o ID do grupo e a mensagem', 'danger')
+            return redirect('/whatsapp_config')
+        
+        # Se for agendamento
+        if agendar and data_agendamento and hora_agendamento:
+            data_hora = f"{data_agendamento} {hora_agendamento}"
+            
+            cursor, conn = get_db()
+            cursor.execute("""
+                INSERT INTO mensagens_agendadas 
+                (grupo_id, mensagem, nome_grupo, data_envio, recorrencia, criado_por, status)
+                VALUES (%s, %s, %s, %s, %s, %s, 'agendado')
+            """, (grupo_id, mensagem, nome_grupo, data_hora, recorrencia, session['user_id']))
+            return_connection(conn)
+            
+            flash(f'Mensagem agendada para {data_agendamento} às {hora_agendamento}', 'success')
+            return redirect('/whatsapp_config')
+        
+        # Envio imediato
+        # Usar a biblioteca whatsapp-web.js ou selenium para enviar
+        resultado = enviar_mensagem_grupo(grupo_id, mensagem)
+        
+        if resultado['success']:
+            # Salvar grupo na lista de grupos salvos
+            cursor, conn = get_db()
+            cursor.execute("""
+                INSERT INTO grupos_whatsapp (grupo_id, nome_grupo, ultimo_envio, criado_por)
+                VALUES (%s, %s, NOW(), %s)
+                ON CONFLICT (grupo_id) DO UPDATE SET 
+                    nome_grupo = EXCLUDED.nome_grupo,
+                    ultimo_envio = NOW()
+            """, (grupo_id, nome_grupo, session['user_id']))
+            return_connection(conn)
+            
+            flash('✅ Mensagem enviada para o grupo com sucesso!', 'success')
+        else:
+            flash(f'❌ Erro ao enviar: {resultado["error"]}', 'danger')
+            
+    except Exception as e:
+        flash(f'Erro ao enviar mensagem: {str(e)}', 'danger')
+    
+    return redirect('/whatsapp_config')
+
+def enviar_mensagem_grupo(grupo_id, mensagem):
+    """Função para enviar mensagem para grupo via WhatsApp Web"""
+    # Aqui você implementa a lógica com selenium ou whatsapp-web.js
+    # Exemplo com selenium:
+    try:
+        from selenium import webdriver
+        from selenium.webdriver.common.by import By
+        from selenium.webdriver.common.keys import Keys
+        import time
+        
+        # Configurar driver (use o caminho correto do seu chromedriver)
+        driver = webdriver.Chrome()
+        driver.get('https://web.whatsapp.com')
+        
+        # Aguardar QR Code escanear
+        time.sleep(10)
+        
+        # Buscar grupo pelo ID
+        search_box = driver.find_element(By.XPATH, '//div[@contenteditable="true"][@data-tab="3"]')
+        search_box.send_keys(grupo_id)
+        time.sleep(2)
+        
+        # Clicar no grupo
+        grupo = driver.find_element(By.XPATH, f'//span[@title="{grupo_id}"]')
+        grupo.click()
+        time.sleep(2)
+        
+        # Digitar mensagem
+        message_box = driver.find_element(By.XPATH, '//div[@contenteditable="true"][@data-tab="10"]')
+        message_box.send_keys(mensagem)
+        message_box.send_keys(Keys.ENTER)
+        
+        time.sleep(2)
+        driver.quit()
+        
+        return {'success': True}
+    except Exception as e:
+        return {'success': False, 'error': str(e)}
+
 @app.route("/config/whatsapp", methods=["GET", "POST"])
 @admin_required
 def config_whatsapp():
