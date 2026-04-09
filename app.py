@@ -10331,6 +10331,7 @@ def nova_condecoracao(obreiro_id):
             
             data_validade = data_validade if data_validade and data_validade.strip() else None
             
+            # CORREÇÃO: Removemos o campo 'id' da inserção e usamos RETURNING
             cursor.execute("""
                 INSERT INTO condecoracoes_obreiro 
                 (obreiro_id, tipo_id, data_concessao, data_validade, concedido_por, 
@@ -10340,7 +10341,13 @@ def nova_condecoracao(obreiro_id):
             """, (obreiro_id, tipo_id, data_concessao, data_validade, session.get('user_id'),
                   motivo, numero_registro, observacoes))
             
-            condecoracao_id = cursor.fetchone()['id']
+            resultado = cursor.fetchone()
+            if resultado:
+                condecoracao_id = resultado['id']
+            else:
+                flash("Erro ao obter ID da condecoração", "danger")
+                return redirect(f"/obreiros/{obreiro_id}/condecoracoes/nova")
+            
             conn.commit()
             
             registrar_log(
@@ -10356,10 +10363,11 @@ def nova_condecoracao(obreiro_id):
             return redirect(f"/obreiros/{obreiro_id}/condecoracoes")
         
         # GET - Buscar tipos de condecoração disponíveis
+        # CORREÇÃO: Usar TRUE em vez de 1
         cursor.execute("""
             SELECT id, nome, nivel, cor, icone, descricao 
             FROM tipos_condecoracoes 
-            WHERE ativo = 1 
+            WHERE ativo = true
             ORDER BY nivel, nome
         """)
         tipos = cursor.fetchall()
@@ -10372,6 +10380,8 @@ def nova_condecoracao(obreiro_id):
                               
     except Exception as e:
         print(f"❌ Erro ao criar condecoração: {e}")
+        import traceback
+        traceback.print_exc()
         if conn:
             conn.rollback()
             return_connection(conn)
