@@ -3625,10 +3625,13 @@ def get_nome_grau(grau):
 @app.route("/obreiros/<int:id>")
 @login_required
 def visualizar_obreiro(id):
+    """Visualizar detalhes de um obreiro específico"""
     cursor, conn = get_db()
+    
     try:
+        # Buscar dados do obreiro
         cursor.execute("""
-            SELECT u.*, l.nome as loja_nome_completo
+            SELECT u.*, l.nome as loja_nome_completo, l.cidade as loja_cidade, l.uf as loja_uf
             FROM usuarios u
             LEFT JOIN lojas l ON u.loja_nome = l.nome
             WHERE u.id = %s
@@ -3641,10 +3644,9 @@ def visualizar_obreiro(id):
             return redirect("/obreiros")
         
         # ============================================
-        # TODOS OS OBREIROS PODEM VISUALIZAR
-        # (Sem restrição de grau ou tipo)
+        # PERMISSÃO DE VISUALIZAÇÃO
         # ============================================
-        # Qualquer usuário logado pode visualizar qualquer obreiro
+        # Todos os usuários logados podem visualizar qualquer obreiro
         
         # Buscar cargo atual
         cursor.execute("""
@@ -3663,422 +3665,86 @@ def visualizar_obreiro(id):
             SELECT oc.*, c.nome as cargo_nome, c.sigla
             FROM ocupacao_cargos oc
             JOIN cargos c ON oc.cargo_id = c.id
-            WHERE oc.obreiro_id = %s AND oc.ativo = 1
+            WHERE oc.obreiro_id = %s
             ORDER BY oc.data_inicio DESC
         """, (id,))
         cargos = cursor.fetchall()
         
         # Buscar histórico de graus
         cursor.execute("""
-            SELECT h.*, g.nome as grau_nome
+            SELECT h.*, 
+                   CASE 
+                       WHEN h.grau = 1 THEN 'Aprendiz'
+                       WHEN h.grau = 2 THEN 'Companheiro'
+                       WHEN h.grau = 3 THEN 'Mestre'
+                       WHEN h.grau = 4 THEN 'Mestre Instalado'
+                       WHEN h.grau = 5 THEN 'Arquiteto Real'
+                       WHEN h.grau = 6 THEN 'Soberano Grande Inspetor Geral'
+                       ELSE CONCAT('Grau ', h.grau)
+                   END as nome_grau
             FROM historico_graus h
-            LEFT JOIN graus g ON h.grau_id = g.id
             WHERE h.obreiro_id = %s
             ORDER BY h.data DESC
         """, (id,))
         historico_graus = cursor.fetchall()
         
-        # Buscar nome do grau atual
-        cursor.execute("SELECT nome FROM graus WHERE nivel = %s", (obreiro['grau_atual'],))
-        grau_atual_info = cursor.fetchone()
-        nome_grau_atual = grau_atual_info['nome'] if grau_atual_info else None
-        
         # Contar familiares
-        cursor.execute("SELECT COUNT(*) as total FROM familiares WHERE obreiro_id = %s", (id,))
+        cursor.execute("SELECT COUNT(*) as total FROM dependentes WHERE obreiro_id = %s", (id,))
         familiares_count = cursor.fetchone()["total"]
         
-        # Contar condecorações
-        cursor.execute("SELECT COUNT(*) as total FROM condecoracoes_obreiro WHERE obreiro_id = %s", (id,))
-        condecoracoes_count = cursor.fetchone()["total"]
+        # Contar condecorações (se a tabela existir)
+        try:
+            cursor.execute("SELECT COUNT(*) as total FROM condecoracoes_obreiro WHERE obreiro_id = %s", (id,))
+            condecoracoes_count = cursor.fetchone()["total"]
+        except:
+            condecoracoes_count = 0
         
-        # Contar comunicados
-        cursor.execute("SELECT COUNT(*) as total FROM comunicados_obreiro WHERE obreiro_id = %s AND ativo = 1", (id,))
-        comunicados_count = cursor.fetchone()["total"]
+        # Contar comunicados (se a tabela existir)
+        try:
+            cursor.execute("SELECT COUNT(*) as total FROM comunicados_obreiro WHERE obreiro_id = %s AND ativo = 1", (id,))
+            comunicados_count = cursor.fetchone()["total"]
+        except:
+            comunicados_count = 0
         
         # Cargos disponíveis para adicionar (apenas admin)
         cargos_disponiveis = []
-        if session["tipo"] == "admin":
-            cursor.execute("SELECT * FROM cargos WHERE ativo = 1 ORDER BY ordem")
+        if session.get("tipo") == "admin":
+            cursor.execute("SELECT id, nome, sigla FROM cargos WHERE ativo = 1 ORDER BY ordem, nome")
             cargos_disponiveis = cursor.fetchall()
         
         # Graus disponíveis para registrar (apenas admin)
         graus_disponiveis = []
-        if session["tipo"] == "admin":
-            cursor.execute("SELECT * FROM graus WHERE ativo = 1 ORDER BY nivel, ordem")
+        if session.get("tipo") == "admin":
+            cursor.execute("SELECT nivel, nome FROM graus WHERE ativo = 1 ORDER BY nivel")
             graus_disponiveis = cursor.fetchall()
-        
-        # Últimas condecorações
-        cursor.execute("""
-            SELECT c.*, t.nome as tipo_nome, t.cor, t.icone
-            FROM condecoracoes_obreiro c
-            JOIN tipos_condecoracoes t ON c.tipo_id = t.id
-            WHERE c.obreiro_id = %s
-            ORDER BY c.data_concessao DESC
-            LIMIT 5
-        """, (id,))
-        ultimas_condecoracoes = cursor.fetchall()
         
         return_connection(conn)
         
-        # Apenas admin ou o próprio obreiro pode editar
-        pode_editar = (session["tipo"] == "admin" or session["user_id"] == id)
+        # Verificar se pode editar (admin ou próprio perfil)
+        pode_editar = (session.get("tipo") == "admin" or session.get("user_id") == id)
         
         return render_template("obreiros/visualizar.html",
-                              obreiro=obreiro, 
-                              cargos=cargos, 
+                              obreiro=obreiro,
                               cargo_atual=cargo_atual,
+                              cargos=cargos,
                               historico_graus=historico_graus,
-                              cargos_disponiveis=cargos_disponiveis, 
+                              cargos_disponiveis=cargos_disponiveis,
                               graus_disponiveis=graus_disponiveis,
-                              familiares_count=familiares_count, 
+                              familiares_count=familiares_count,
                               condecoracoes_count=condecoracoes_count,
                               comunicados_count=comunicados_count,
-                              ultimas_condecoracoes=ultimas_condecoracoes, 
-                              nome_grau_atual=nome_grau_atual,
                               pode_editar=pode_editar)
         
     except Exception as e:
-        print(f"Erro ao visualizar obreiro: {e}")
+        print(f"❌ Erro ao visualizar obreiro {id}: {e}")
+        import traceback
+        traceback.print_exc()
         if conn:
             return_connection(conn)
         flash(f"Erro ao carregar dados do obreiro: {str(e)}", "danger")
         return redirect("/obreiros")
         
-        # ============================================
-        # VERIFICAÇÃO DE PERMISSÃO: Todos os obreiros podem visualizar
-        # ============================================
-        # Qualquer usuário logado pode visualizar a ficha de qualquer obreiro
-        # (Não há restrição de visualização)
         
-        # Buscar cargos do obreiro
-        cursor.execute("""
-            SELECT oc.*, c.nome as cargo_nome, c.sigla
-            FROM ocupacao_cargos oc
-            JOIN cargos c ON oc.cargo_id = c.id
-            WHERE oc.obreiro_id = %s AND oc.ativo = 1
-            ORDER BY oc.data_inicio DESC
-        """, (id,))
-        cargos = cursor.fetchall()
-        
-        # Buscar histórico de graus
-        cursor.execute("""
-            SELECT h.*, g.nome as grau_nome
-            FROM historico_graus h
-            LEFT JOIN graus g ON h.grau_id = g.id
-            WHERE h.obreiro_id = %s
-            ORDER BY h.data DESC
-        """, (id,))
-        historico_graus = cursor.fetchall()
-        
-        # Buscar nome do grau atual
-        cursor.execute("SELECT nome FROM graus WHERE nivel = %s", (obreiro['grau_atual'],))
-        grau_atual_info = cursor.fetchone()
-        nome_grau_atual = grau_atual_info['nome'] if grau_atual_info else None
-        
-        # Contar familiares
-        cursor.execute("SELECT COUNT(*) as total FROM familiares WHERE obreiro_id = %s", (id,))
-        familiares_count = cursor.fetchone()["total"]
-        
-        # Contar condecorações
-        cursor.execute("SELECT COUNT(*) as total FROM condecoracoes_obreiro WHERE obreiro_id = %s", (id,))
-        condecoracoes_count = cursor.fetchone()["total"]
-        
-        # Contar comunicados
-        cursor.execute("SELECT COUNT(*) as total FROM comunicados_obreiro WHERE obreiro_id = %s AND ativo = 1", (id,))
-        comunicados_count = cursor.fetchone()["total"]
-        
-        # Cargos disponíveis para adicionar (apenas admin pode adicionar)
-        cargos_disponiveis = []
-        if session["tipo"] == "admin":
-            cursor.execute("SELECT * FROM cargos WHERE ativo = 1 ORDER BY ordem")
-            cargos_disponiveis = cursor.fetchall()
-        
-        # Graus disponíveis para registrar (apenas admin pode registrar)
-        graus_disponiveis = []
-        if session["tipo"] == "admin":
-            cursor.execute("SELECT * FROM graus WHERE ativo = 1 ORDER BY nivel, ordem")
-            graus_disponiveis = cursor.fetchall()
-        
-        # Últimas condecorações
-        cursor.execute("""
-            SELECT c.*, t.nome as tipo_nome, t.cor, t.icone
-            FROM condecoracoes_obreiro c
-            JOIN tipos_condecoracoes t ON c.tipo_id = t.id
-            WHERE c.obreiro_id = %s
-            ORDER BY c.data_concessao DESC
-            LIMIT 5
-        """, (id,))
-        ultimas_condecoracoes = cursor.fetchall()
-        
-        return_connection(conn)
-        
-        # Verificar se pode editar (admin ou próprio perfil)
-        pode_editar = (session["tipo"] == "admin" or session["user_id"] == id)
-        
-        return render_template("obreiros/visualizar.html",
-                              obreiro=obreiro, 
-                              cargos=cargos, 
-                              historico_graus=historico_graus,
-                              cargos_disponiveis=cargos_disponiveis, 
-                              graus_disponiveis=graus_disponiveis,
-                              familiares_count=familiares_count, 
-                              condecoracoes_count=condecoracoes_count,
-                              comunicados_count=comunicados_count,
-                              ultimas_condecoracoes=ultimas_condecoracoes, 
-                              nome_grau_atual=nome_grau_atual,
-                              pode_editar=pode_editar)
-        
-    except Exception as e:
-        print(f"Erro ao visualizar obreiro: {e}")
-        if conn:
-            return_connection(conn)
-        flash(f"Erro ao carregar dados do obreiro: {str(e)}", "danger")
-        return redirect("/obreiros")
-        
-        # ============================================
-        # VERIFICAÇÃO DE PERMISSÃO: Admin, Mestre (grau >= 3) ou o próprio obreiro
-        # ============================================
-        usuario_tipo = session.get('tipo', '')
-        usuario_grau = session.get('grau_atual', 0)
-        
-        if usuario_tipo != 'admin' and usuario_grau < 3 and session["user_id"] != id:
-            flash("Você não tem permissão para visualizar este obreiro", "danger")
-            return_connection(conn)
-            return redirect("/obreiros")
-        
-        # Buscar cargos do obreiro
-        cursor.execute("""
-            SELECT oc.*, c.nome as cargo_nome, c.sigla
-            FROM ocupacao_cargos oc
-            JOIN cargos c ON oc.cargo_id = c.id
-            WHERE oc.obreiro_id = %s AND oc.ativo = 1
-            ORDER BY oc.data_inicio DESC
-        """, (id,))
-        cargos = cursor.fetchall()
-        
-        # Buscar histórico de graus
-        cursor.execute("""
-            SELECT h.*, g.nome as grau_nome
-            FROM historico_graus h
-            LEFT JOIN graus g ON h.grau_id = g.id
-            WHERE h.obreiro_id = %s
-            ORDER BY h.data DESC
-        """, (id,))
-        historico_graus = cursor.fetchall()
-        
-        # Buscar nome do grau atual
-        cursor.execute("SELECT nome FROM graus WHERE nivel = %s", (obreiro['grau_atual'],))
-        grau_atual_info = cursor.fetchone()
-        nome_grau_atual = grau_atual_info['nome'] if grau_atual_info else None
-        
-        # Contar familiares
-        cursor.execute("SELECT COUNT(*) as total FROM familiares WHERE obreiro_id = %s", (id,))
-        familiares_count = cursor.fetchone()["total"]
-        
-        # Contar condecorações
-        cursor.execute("SELECT COUNT(*) as total FROM condecoracoes_obreiro WHERE obreiro_id = %s", (id,))
-        condecoracoes_count = cursor.fetchone()["total"]
-        
-        # Contar comunicados
-        cursor.execute("SELECT COUNT(*) as total FROM comunicados_obreiro WHERE obreiro_id = %s AND ativo = 1", (id,))
-        comunicados_count = cursor.fetchone()["total"]
-        
-        # Cargos disponíveis para adicionar (apenas admin pode adicionar)
-        cargos_disponiveis = []
-        if session["tipo"] == "admin":
-            cursor.execute("SELECT * FROM cargos WHERE ativo = 1 ORDER BY ordem")
-            cargos_disponiveis = cursor.fetchall()
-        
-        # Graus disponíveis para registrar (apenas admin pode registrar)
-        graus_disponiveis = []
-        if session["tipo"] == "admin":
-            cursor.execute("SELECT * FROM graus WHERE ativo = 1 ORDER BY nivel, ordem")
-            graus_disponiveis = cursor.fetchall()
-        
-        # Últimas condecorações
-        cursor.execute("""
-            SELECT c.*, t.nome as tipo_nome, t.cor, t.icone
-            FROM condecoracoes_obreiro c
-            JOIN tipos_condecoracoes t ON c.tipo_id = t.id
-            WHERE c.obreiro_id = %s
-            ORDER BY c.data_concessao DESC
-            LIMIT 5
-        """, (id,))
-        ultimas_condecoracoes = cursor.fetchall()
-        
-        return_connection(conn)
-        
-        # Verificar se pode editar (admin ou próprio perfil)
-        pode_editar = (session["tipo"] == "admin" or session["user_id"] == id)
-        
-        return render_template("obreiros/visualizar.html",
-                              obreiro=obreiro, 
-                              cargos=cargos, 
-                              historico_graus=historico_graus,
-                              cargos_disponiveis=cargos_disponiveis, 
-                              graus_disponiveis=graus_disponiveis,
-                              familiares_count=familiares_count, 
-                              condecoracoes_count=condecoracoes_count,
-                              comunicados_count=comunicados_count,
-                              ultimas_condecoracoes=ultimas_condecoracoes, 
-                              nome_grau_atual=nome_grau_atual,
-                              pode_editar=pode_editar)
-        
-    except Exception as e:
-        print(f"Erro ao visualizar obreiro: {e}")
-        if conn:
-            return_connection(conn)
-        flash(f"Erro ao carregar dados do obreiro: {str(e)}", "danger")
-        return redirect("/obreiros")
-        
-    
-        # ============================================
-        # PROCESSAR UPLOAD DA FOTO
-        # ============================================
-        foto_path = None
-        
-        if 'foto' in request.files:
-            arquivo_foto = request.files['foto']
-            if arquivo_foto and arquivo_foto.filename:
-                # Salvar nova foto
-                from werkzeug.utils import secure_filename
-                from datetime import datetime
-                import os
-                
-                # Criar diretório se não existir
-                UPLOAD_FOLDER = 'uploads/obreiros'
-                os.makedirs(UPLOAD_FOLDER, exist_ok=True)
-                
-                # Verificar extensão
-                ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif', 'webp'}
-                ext = arquivo_foto.filename.rsplit('.', 1)[1].lower() if '.' in arquivo_foto.filename else ''
-                
-                if ext in ALLOWED_EXTENSIONS:
-                    # Gerar nome único
-                    timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
-                    nome_seguro = secure_filename(arquivo_foto.filename)
-                    nome_arquivo = f"{timestamp}_{nome_seguro}"
-                    caminho_arquivo = os.path.join(UPLOAD_FOLDER, nome_arquivo)
-                    
-                    # Salvar arquivo
-                    arquivo_foto.save(caminho_arquivo)
-                    foto_path = f"uploads/obreiros/{nome_arquivo}"
-                    print(f"✅ Foto salva: {foto_path}")
-                else:
-                    flash("Formato de imagem não permitido. Use: PNG, JPG, JPEG, GIF ou WEBP", "warning")
-        
-        if session["tipo"] == "admin":
-            tipo = request.form.get("tipo", "obreiro")
-            grau_atual = request.form.get("grau_atual", 1)
-            ativo = 1 if request.form.get("ativo") else 0
-            data_iniciacao = request.form.get("data_iniciacao", "")
-            data_elevacao = request.form.get("data_elevacao", "")
-            data_exaltacao = request.form.get("data_exaltacao", "")
-            
-            data_iniciacao = data_iniciacao if data_iniciacao and data_iniciacao.strip() else None
-            data_elevacao = data_elevacao if data_elevacao and data_elevacao.strip() else None
-            data_exaltacao = data_exaltacao if data_exaltacao and data_exaltacao.strip() else None
-            
-            try:
-                grau_atual = int(grau_atual)
-            except ValueError:
-                grau_atual = 1
-            
-            # Construir query com ou sem foto
-            if foto_path:
-                cursor.execute("""
-                    UPDATE usuarios 
-                    SET nome_completo = %s, nome_maconico = %s, cim_numero = %s, tipo = %s,
-                        grau_atual = %s, data_iniciacao = %s, data_elevacao = %s, data_exaltacao = %s,
-                        telefone = %s, email = %s, endereco = %s,
-                        loja_nome = %s, loja_numero = %s, loja_orient = %s, ativo = %s,
-                        foto = %s
-                    WHERE id = %s
-                """, (nome_completo, nome_maconico, cim_numero, tipo,
-                      grau_atual, data_iniciacao, data_elevacao, data_exaltacao,
-                      telefone, email, endereco,
-                      loja_nome, loja_numero, loja_orient, ativo, foto_path, id))
-            else:
-                cursor.execute("""
-                    UPDATE usuarios 
-                    SET nome_completo = %s, nome_maconico = %s, cim_numero = %s, tipo = %s,
-                        grau_atual = %s, data_iniciacao = %s, data_elevacao = %s, data_exaltacao = %s,
-                        telefone = %s, email = %s, endereco = %s,
-                        loja_nome = %s, loja_numero = %s, loja_orient = %s, ativo = %s
-                    WHERE id = %s
-                """, (nome_completo, nome_maconico, cim_numero, tipo,
-                      grau_atual, data_iniciacao, data_elevacao, data_exaltacao,
-                      telefone, email, endereco,
-                      loja_nome, loja_numero, loja_orient, ativo, id))
-            
-            if grau_atual != grau_antigo:
-                cursor.execute("SELECT nome FROM graus WHERE nivel = %s", (grau_atual,))
-                grau_info = cursor.fetchone()
-                nome_grau = grau_info['nome'] if grau_info else f"Grau {grau_atual}"
-                cursor.execute("""
-                    INSERT INTO historico_graus (obreiro_id, grau, data, observacao)
-                    VALUES (%s, %s, %s, %s)
-                """, (id, grau_atual, datetime.now().date(), f"Atualização de grau para {nome_grau}"))
-                flash(f"Grau alterado. Registro adicionado ao histórico!", "info")
-        else:
-            # Não admin - atualizar sem campos admin
-            if foto_path:
-                cursor.execute("""
-                    UPDATE usuarios 
-                    SET nome_completo = %s, nome_maconico = %s, cim_numero = %s,
-                        telefone = %s, email = %s, endereco = %s,
-                        loja_nome = %s, loja_numero = %s, loja_orient = %s,
-                        foto = %s
-                    WHERE id = %s
-                """, (nome_completo, nome_maconico, cim_numero,
-                      telefone, email, endereco,
-                      loja_nome, loja_numero, loja_orient, foto_path, id))
-            else:
-                cursor.execute("""
-                    UPDATE usuarios 
-                    SET nome_completo = %s, nome_maconico = %s, cim_numero = %s,
-                        telefone = %s, email = %s, endereco = %s,
-                        loja_nome = %s, loja_numero = %s, loja_orient = %s
-                    WHERE id = %s
-                """, (nome_completo, nome_maconico, cim_numero,
-                      telefone, email, endereco,
-                      loja_nome, loja_numero, loja_orient, id))
-        
-        conn.commit()
-        
-        # Atualizar sessão se for o próprio perfil
-        if session["user_id"] == id:
-            session["nome_completo"] = nome_completo
-            session["cim_numero"] = cim_numero
-            session["loja_nome"] = loja_nome
-            session["loja_numero"] = loja_numero
-            session["loja_orient"] = loja_orient
-        
-        registrar_log("editar", "obreiro", id, dados_anteriores=dados_antigos, dados_novos={"nome": nome_completo})
-        flash("Perfil atualizado com sucesso!", "success")
-        return_connection(conn)
-        return redirect(f"/obreiros/{id}")
-    
-    # GET - Carregar dados
-    cursor.execute("SELECT * FROM usuarios WHERE id = %s", (id,))
-    obreiro = cursor.fetchone()
-    cursor.execute("SELECT * FROM lojas ORDER BY nome")
-    lojas = cursor.fetchall()
-    cursor.execute("SELECT * FROM graus WHERE ativo = 1 ORDER BY nivel, ordem")
-    graus = cursor.fetchall()
-    cursor.execute("SELECT nome FROM graus WHERE nivel = %s", (obreiro['grau_atual'],))
-    grau_atual_info = cursor.fetchone()
-    nome_grau_atual = grau_atual_info['nome'] if grau_atual_info else None
-    
-    return_connection(conn)
-    
-    return render_template("obreiros/editar.html", 
-                          obreiro=obreiro, 
-                          lojas=lojas, 
-                          graus=graus,
-                          nome_grau_atual=nome_grau_atual, 
-                          is_admin=(session["tipo"] == "admin"),
-                          is_own_profile=(session["user_id"] == id))
 from datetime import datetime
 @app.route("/recuperar-senha", methods=["GET", "POST"])
 def recuperar_senha():
