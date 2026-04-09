@@ -1,0 +1,99 @@
+<!-- templates/obreiros/importar.html -->
+{% extends "base.html" %}
+
+{% block title %}Importar Obreiros{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="container">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h2>
+                <i class="bi bi-file-earmark-spreadsheet"></i> 
+                Importar Obreiros em Lote
+            </h2>
+            <div>
+                <a href="/obreiros" class="btn btn-outline-secondary">
+                    <i class="bi bi-arrow-left"></i> Voltar
+                </a>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col-md-6">
+                <div class="card shadow">
+                    <div class="card-header bg-primary text-white">
+                        <h5 class="mb-0"><i class="bi bi-upload"></i> Importar Arquivo</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="alert alert-info">
+                            <i class="bi bi-info-circle"></i>
+                            <strong>Formatos aceitos:</strong> CSV, XLS, XLSX
+                        </div>
+                        
+                        <form method="POST" enctype="multipart/form-data" id="formImportar">
+                            <div class="mb-3">
+                                <label class="form-label">Arquivo de Obreiros</label>
+                                <input type="file" class="form-control" name="arquivo" accept=".csv,.xls,.xlsx" required>
+                                <small class="text-muted">
+                                    O arquivo deve conter as colunas: nome_completo, usuario, senha, cim_numero, 
+                                    data_iniciacao, loja_iniciacao, telefone, email, etc.
+                                </small>
+                            </div>
+                            <button type="submit" class="btn btn-primary w-100">
+                                <i class="bi bi-cloud-upload"></i> Importar Obreiros
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-md-6">
+                <div class="card shadow">
+                    <div class="card-header bg-success text-white">
+                        <h5 class="mb-0"><i class="bi bi-download"></i> Template</h5>
+                    </div>
+                    <div class="card-body">
+                        <p>Baixe o modelo de planilha para preencher os dados dos obreiros:</p>
+                        <ul>
+                            <li><i class="bi bi-check-circle text-success"></i> Colunas obrigatórias: nome_completo, usuario, senha, cim_numero, data_iniciacao</li>
+                            <li><i class="bi bi-info-circle text-info"></i> As demais colunas são opcionais</li>
+                            <li><i class="bi bi-file-excel"></i> Formatos suportados: CSV, Excel</li>
+                        </ul>
+                        <a href="/obreiros/template/download" class="btn btn-success w-100">
+                            <i class="bi bi-download"></i> Baixar Template CSV
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Resultado da importação -->
+        {% if resultados %}
+        <div class="card shadow mt-4">
+            <div class="card-header bg-info text-white">
+                <h5 class="mb-0"><i class="bi bi-bar-chart"></i> Resultado da Importação</h5>
+            </div>
+            <div class="card-body">
+                <div class="alert alert-success">
+                    <strong>✅ Importados com sucesso:</strong> {{ resultados.sucesso }}
+                </div>
+                <div class="alert alert-danger">
+                    <strong>❌ Erros:</strong> {{ resultados.erros|length }}
+                </div>
+                
+                {% if resultados.erros %}
+                <h6>Detalhes dos erros:</h6>
+                <ul class="list-group">
+                    {% for erro in resultados.erros %}
+                    <li class="list-group-item list-group-item-danger">
+                        <strong>Linha {{ erro.linha }}:</strong> {{ erro.mensagem }}
+                    </li>
+                    {% endfor %}
+                </ul>
+                {% endif %}
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

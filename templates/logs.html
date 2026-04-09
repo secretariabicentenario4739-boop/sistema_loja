@@ -1,0 +1,129 @@
+{% extends "base.html" %}
+
+{% block title %}Logs de Auditoria{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="container">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h2>
+                <i class="bi bi-journal-bookmark-fill"></i> 
+                Logs de Auditoria
+            </h2>
+            <a href="/dashboard" class="btn btn-outline-secondary">
+                <i class="bi bi-arrow-left"></i> Voltar
+            </a>
+        </div>
+
+        <div class="card shadow">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0"><i class="bi bi-funnel"></i> Filtros</h5>
+            </div>
+            <div class="card-body">
+                <form method="GET" class="row g-3">
+                    <div class="col-md-3">
+                        <label class="form-label">Entidade</label>
+                        <select class="form-select" name="entidade">
+                            <option value="">Todas</option>
+                            {% for e in entidades %}
+                            <option value="{{ e }}" {% if filtros.entidade == e %}selected{% endif %}>{{ e }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">Ação</label>
+                        <select class="form-select" name="acao">
+                            <option value="">Todas</option>
+                            {% for a in acoes %}
+                            <option value="{{ a }}" {% if filtros.acao == a %}selected{% endif %}>{{ a }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label">Data Início</label>
+                        <input type="date" class="form-control" name="data_ini" value="{{ filtros.data_ini }}">
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label">Data Fim</label>
+                        <input type="date" class="form-control" name="data_fim" value="{{ filtros.data_fim }}">
+                    </div>
+                    <div class="col-md-2 d-flex align-items-end">
+                        <button type="submit" class="btn btn-primary w-100">
+                            <i class="bi bi-search"></i> Filtrar
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <div class="card shadow mt-4">
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Data/Hora</th>
+                                <th>Usuário</th>
+                                <th>Ação</th>
+                                <th>Entidade</th>
+                                <th>ID Registro</th>
+                                <th>Dados</th>
+                                <th>IP</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for log in logs %}
+                            <tr>
+                                <td>{{ log.data_hora.strftime('%d/%m/%Y %H:%M:%S') if log.data_hora else '-' }}</td>
+                                <td>{{ log.usuario_nome or 'Sistema' }}</td>
+                                <td>
+                                    <span class="badge {% if log.acao == 'criar' %}bg-success{% elif log.acao == 'editar' %}bg-warning{% elif log.acao == 'excluir' %}bg-danger{% else %}bg-secondary{% endif %}">
+                                        {{ log.acao }}
+                                    </span>
+                                </td>
+                                <td>{{ log.tabela }}</td>
+                                <td>{{ log.registro_id or '-' }}</td>
+                                <td>
+                                    {% if log.dados_novos %}
+                                    <button type="button" class="btn btn-sm btn-outline-info" 
+                                            onclick="verDados('{{ log.dados_novos|escapejs }}', 'Novos Dados')">
+                                        <i class="bi bi-eye"></i> Ver
+                                    </button>
+                                    {% endif %}
+                                    {% if log.dados_antigos %}
+                                    <button type="button" class="btn btn-sm btn-outline-secondary" 
+                                            onclick="verDados('{{ log.dados_antigos|escapejs }}', 'Dados Antigos')">
+                                        <i class="bi bi-history"></i> Ver
+                                    </button>
+                                    {% endif %}
+                                </td>
+                                <td>{{ log.ip or '-' }}</td>
+                            </tr>
+                            {% else %}
+                            <tr>
+                                <td colspan="7" class="text-center text-muted py-5">
+                                    <i class="bi bi-inbox fs-1"></i><br>
+                                    Nenhum log encontrado
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function verDados(dados, titulo) {
+    try {
+        const obj = JSON.parse(dados);
+        const formatted = JSON.stringify(obj, null, 2);
+        alert(titulo + ":\n\n" + formatted);
+    } catch(e) {
+        alert(titulo + ":\n\n" + dados);
+    }
+}
+</script>
+{% endblock %}
