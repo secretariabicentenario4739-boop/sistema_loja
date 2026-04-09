@@ -24,7 +24,7 @@
             <div class="card-body">
                 <form method="POST" id="formObreiro">
 
- <!-- ===================== -->
+                    <!-- ===================== -->
                     <!-- DADOS PESSOAIS -->
                     <!-- ===================== -->
                     <div class="bg-light p-3 rounded mb-4">
@@ -112,7 +112,7 @@
                             </div>
                         </div>
                     </div>
-				
+
                     <!-- ===================== -->
                     <!-- DADOS MACÔNICOS -->
                     <!-- ===================== -->
@@ -198,7 +198,9 @@
                                     {% for loja in lojas %}
                                     <option value="{{ loja.nome }}" 
                                             data-numero="{{ loja.numero }}"
-                                            data-oriente="{{ loja.oriente }}">
+                                            data-oriente="{{ loja.oriente }}"
+                                            data-cidade="{{ loja.cidade or 'BRASÍLIA' }}"
+                                            data-uf="{{ loja.uf or 'DF' }}">
                                         {{ loja.nome }} - Nº {{ loja.numero }}
                                     </option>
                                     {% endfor %}
@@ -206,12 +208,12 @@
                                 <small class="text-muted">Loja que o obreiro pertence atualmente</small>
                             </div>
                             <div class="col-md-3 mb-3">
-                                <label class="form-label">Cidade</label>
-                                <input type="text" class="form-control" name="loja_cidade" id="lojaCidade" placeholder="BRASÍLIA">
+                                <label class="form-label">Número da Loja</label>
+                                <input type="text" class="form-control" name="loja_numero" id="lojaNumero" readonly>
                             </div>
                             <div class="col-md-2 mb-3">
-                                <label class="form-label">UF</label>
-                                <input type="text" class="form-control" name="loja_uf" id="lojaUf" placeholder="DF" maxlength="2">
+                                <label class="form-label">Oriente</label>
+                                <input type="text" class="form-control" name="loja_orient" id="lojaOriente" readonly>
                             </div>
                             <div class="col-md-2 mb-3">
                                 <label class="form-label">Recolhe</label>
@@ -219,6 +221,16 @@
                                     <option value="Sim">Sim</option>
                                     <option value="Não">Não</option>
                                 </select>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-4 mb-3">
+                                <label class="form-label">Cidade da Loja</label>
+                                <input type="text" class="form-control" name="loja_cidade" id="lojaCidade" placeholder="BRASÍLIA">
+                            </div>
+                            <div class="col-md-2 mb-3">
+                                <label class="form-label">UF da Loja</label>
+                                <input type="text" class="form-control" name="loja_uf" id="lojaUf" placeholder="DF" maxlength="2">
                             </div>
                         </div>
                     </div>
@@ -251,8 +263,6 @@
                         </div>
                         <input type="hidden" name="grau_atual" id="grauAtualHidden" value="1">
                     </div>
-
-                   
 
                     <!-- ===================== -->
                     <!-- ENDEREÇO -->
@@ -435,7 +445,7 @@
                         <strong>Informações:</strong>
                         <ul class="mb-0 mt-2">
                             <li>Os campos marcados com * são obrigatórios</li>
-                            <li>O número de cadastro é único e identifica o obreiro no sistema</li>
+                            <li>O CIM é único e identifica o obreiro no sistema</li>
                             <li>Dependentes podem ser adicionados após o cadastro também</li>
                         </ul>
                     </div>
@@ -512,7 +522,7 @@
         container.appendChild(div);
     }
 
-    // Controle de graus
+    // Controle de graus e auto-preenchimento da loja
     document.addEventListener('DOMContentLoaded', function() {
         // Máscaras
         const telefone = document.getElementById('telefone');
@@ -561,15 +571,46 @@
         
         atualizarVisibilidade();
         
-        // Loja - auto preenchimento cidade/UF
+        // ============================================
+        // AUTO-PREENCHIMENTO DA LOJA ATUAL
+        // ============================================
         const lojaSelect = document.getElementById('lojaSelect');
+        const lojaNumero = document.getElementById('lojaNumero');
+        const lojaOriente = document.getElementById('lojaOriente');
+        const lojaCidade = document.getElementById('lojaCidade');
+        const lojaUf = document.getElementById('lojaUf');
+        
         if (lojaSelect) {
             lojaSelect.addEventListener('change', function() {
-                const selected = this.options[this.selectedIndex];
-                const cidadeInput = document.getElementById('lojaCidade');
-                const ufInput = document.getElementById('lojaUf');
-                if (cidadeInput && selected.dataset.cidade) cidadeInput.value = selected.dataset.cidade;
-                if (ufInput && selected.dataset.uf) ufInput.value = selected.dataset.uf;
+                const selectedOption = this.options[this.selectedIndex];
+                
+                // Preencher número da loja
+                if (lojaNumero && selectedOption.dataset.numero) {
+                    lojaNumero.value = selectedOption.dataset.numero;
+                } else if (lojaNumero) {
+                    lojaNumero.value = '';
+                }
+                
+                // Preencher oriente
+                if (lojaOriente && selectedOption.dataset.oriente) {
+                    lojaOriente.value = selectedOption.dataset.oriente;
+                } else if (lojaOriente) {
+                    lojaOriente.value = '';
+                }
+                
+                // Preencher cidade da loja
+                if (lojaCidade && selectedOption.dataset.cidade) {
+                    lojaCidade.value = selectedOption.dataset.cidade;
+                } else if (lojaCidade) {
+                    lojaCidade.value = '';
+                }
+                
+                // Preencher UF da loja
+                if (lojaUf && selectedOption.dataset.uf) {
+                    lojaUf.value = selectedOption.dataset.uf;
+                } else if (lojaUf) {
+                    lojaUf.value = '';
+                }
             });
         }
     });
@@ -592,6 +633,10 @@
     }
     .rounded {
         border-radius: 10px !important;
+    }
+    input[readonly] {
+        background-color: #e9ecef;
+        cursor: not-allowed;
     }
 </style>
 {% endblock %}
