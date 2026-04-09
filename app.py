@@ -3111,8 +3111,6 @@ def listar_obreiros():
     # ============================================
     # PERMISSÃO: Todos os obreiros podem visualizar a lista
     # ============================================
-    # Qualquer usuário logado pode ver a lista de obreiros
-    # (Não há restrição por grau ou tipo)
     
     # Obter parâmetros de filtro
     nome = request.args.get('nome', '').strip()
@@ -3151,7 +3149,7 @@ def listar_obreiros():
                 AND p.presente = 1) as presencas_confirmadas_ano
         FROM usuarios u
         LEFT JOIN lojas l ON u.loja_nome = l.nome
-        WHERE 1=1
+        WHERE u.tipo IN ('obreiro', 'admin', 'sindicante')
     """
     params = []
     
@@ -3195,11 +3193,9 @@ def listar_obreiros():
     else:
         query += " AND u.ativo = 1"
     
-    # Ordenação
+    # Ordenação (alfabética por nome completo)
     query += """
         ORDER BY 
-            u.ativo DESC,
-            u.grau_atual DESC,
             u.nome_completo ASC
     """
     
@@ -3230,6 +3226,36 @@ def listar_obreiros():
         
         obreiros_list.append(obreiro)
     
+    # ============================================
+    # ESTATÍSTICAS GERAIS
+    # ============================================
+    
+    # Total de obreiros (considerando todos os tipos)
+    cursor.execute("SELECT COUNT(*) as total FROM usuarios WHERE tipo IN ('obreiro', 'admin', 'sindicante')")
+    total_obreiros = cursor.fetchone()['total']
+    
+    # Total de ativos
+    cursor.execute("SELECT COUNT(*) as total FROM usuarios WHERE tipo IN ('obreiro', 'admin', 'sindicante') AND ativo = 1")
+    total_ativos = cursor.fetchone()['total']
+    
+    # Total de inativos
+    total_inativos = total_obreiros - total_ativos
+    
+    # Mestres (grau >= 3)
+    cursor.execute("SELECT COUNT(*) as total FROM usuarios WHERE tipo IN ('obreiro', 'admin', 'sindicante') AND ativo = 1 AND grau_atual >= 3")
+    mestres = cursor.fetchone()['total']
+    
+    # Companheiros (grau = 2)
+    cursor.execute("SELECT COUNT(*) as total FROM usuarios WHERE tipo IN ('obreiro', 'admin', 'sindicante') AND ativo = 1 AND grau_atual = 2")
+    companheiros = cursor.fetchone()['total']
+    
+    # Aprendizes (grau = 1)
+    cursor.execute("SELECT COUNT(*) as total FROM usuarios WHERE tipo IN ('obreiro', 'admin', 'sindicante') AND ativo = 1 AND grau_atual = 1")
+    aprendizes = cursor.fetchone()['total']
+    
+    # Taxa de ativos
+    taxa_ativos = (total_ativos / total_obreiros * 100) if total_obreiros > 0 else 0
+    
     # Buscar dados para os filtros (dropdowns)
     cursor.execute("SELECT DISTINCT grau_atual as grau FROM usuarios WHERE grau_atual IS NOT NULL ORDER BY grau_atual")
     graus_raw = cursor.fetchall()
@@ -3249,47 +3275,21 @@ def listar_obreiros():
     cursor.execute("SELECT DISTINCT loja_nome as nome FROM usuarios WHERE loja_nome IS NOT NULL AND loja_nome != '' ORDER BY loja_nome")
     lojas_disponiveis = cursor.fetchall()
     
-    # Estatísticas gerais (todos os obreiros)
-    cursor.execute("SELECT COUNT(*) as total FROM usuarios WHERE ativo = 1")
-    total_ativos = cursor.fetchone()['total']
-    
-    cursor.execute("SELECT COUNT(*) as total FROM usuarios WHERE ativo = 0")
-    total_inativos = cursor.fetchone()['total']
-    
-    cursor.execute("SELECT COUNT(*) as total FROM usuarios WHERE tipo = 'admin'")
-    total_admins = cursor.fetchone()['total']
-    
-    cursor.execute("SELECT COUNT(*) as total FROM usuarios WHERE tipo = 'sindicante' AND ativo = 1 AND grau_atual >= 3")
-    total_sindicantes = cursor.fetchone()['total']
-    
-    cursor.execute("""
-        SELECT grau_atual, COUNT(*) as total
-        FROM usuarios WHERE ativo = 1
-        GROUP BY grau_atual ORDER BY grau_atual
-    """)
-    estatisticas_graus_raw = cursor.fetchall()
-    
-    estatisticas_graus = []
-    for eg in estatisticas_graus_raw:
-        estatisticas_graus.append({
-            'grau_atual': eg['grau_atual'],
-            'grau_nome': get_grau_principal(eg['grau_atual']),
-            'grau_detalhado': get_grau_detalhado(eg['grau_atual']),
-            'total': eg['total']
-        })
-    
     return_connection(conn)
     
     filtros = {'nome': nome, 'grau': grau, 'cargo': cargo, 'loja': loja, 'status': status}
     
+    # Estatísticas completas para o template
     estatisticas = {
+        'total_obreiros': total_obreiros,
         'total_ativos': total_ativos,
         'total_inativos': total_inativos,
-        'total_obreiros': total_ativos + total_inativos,
-        'total_admins': total_admins,
-        'total_sindicantes': total_sindicantes,
-        'por_grau': estatisticas_graus,
-        'exibidos': len(obreiros_list)
+        'exibidos': len(obreiros_list),
+        'mestres': mestres,
+        'companheiros': companheiros,
+        'aprendizes': aprendizes,
+        'taxa_ativos': taxa_ativos,
+        'media_presenca': 0  # Pode ser calculado se necessário
     }
     
     return render_template(

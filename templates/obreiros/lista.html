@@ -27,7 +27,7 @@
             </div>
         </div>
 
-             <!-- Cards de Estatísticas -->
+        <!-- Cards de Estatísticas -->
         <div class="row mb-4">
             <div class="col-md-3">
                 <div class="card bg-primary text-white shadow">
@@ -77,6 +77,62 @@
                                 <h2 class="mb-0">{{ estatisticas.exibidos }}</h2>
                             </div>
                             <i class="bi bi-funnel-fill fs-1"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Segunda linha de cards -->
+        <div class="row mb-4">
+            <div class="col-md-3">
+                <div class="card bg-dark text-white shadow">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <h6 class="card-title mb-0">Mestres</h6>
+                                <h2 class="mb-0">{{ estatisticas.mestres }}</h2>
+                            </div>
+                            <i class="bi bi-star-fill fs-1"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card bg-warning text-dark shadow">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <h6 class="card-title mb-0">Companheiros</h6>
+                                <h2 class="mb-0">{{ estatisticas.companheiros }}</h2>
+                            </div>
+                            <i class="bi bi-star fs-1"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card bg-light text-dark shadow">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <h6 class="card-title mb-0">Aprendizes</h6>
+                                <h2 class="mb-0">{{ estatisticas.aprendizes }}</h2>
+                            </div>
+                            <i class="bi bi-star-half fs-1"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card shadow" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white;">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <h6 class="card-title mb-0">Taxa Ativos</h6>
+                                <h2 class="mb-0">{{ "%.0f"|format(estatisticas.taxa_ativos) }}%</h2>
+                            </div>
+                            <i class="bi bi-graph-up fs-1"></i>
                         </div>
                     </div>
                 </div>
@@ -167,16 +223,16 @@
                             <tr>
                                 <th style="width: 5%">Foto</th>
                                 <th style="width: 25%">Nome</th>
-                                <th style="width: 12%">Grau</th>
+                                <th style="width: 10%">Grau</th>
                                 <th style="width: 15%">Cargos</th>
                                 <th style="width: 15%">Loja</th>
                                 <th style="width: 12%">Presença</th>
                                 <th style="width: 8%">Status</th>
-                                <th style="width: 8%">Ações</th>
+                                <th style="width: 10%">Ações</th>
                             </tr>
                         </thead>
                         <tbody>
-                            {% for obreiro in obreiros %}
+                            {% for obreiro in obreiros|sort(attribute='nome_completo') %}
                             <tr class="{% if obreiro.ativo == 1 %}table-active{% else %}table-secondary{% endif %}">
                                 <td class="text-center">
                                     {% if obreiro.foto %}
@@ -385,7 +441,7 @@
     </div>
 </div>
 
-<!-- Modal de Confirmação para Exclusão Definitiva -->
+<!-- Modal de Confirmação para Exclusão Definitiva (mantido igual) -->
 <div class="modal fade" id="modalConfirmExclusaoDefinitiva" tabindex="-1">
     <div class="modal-dialog">
         <div class="modal-content">
@@ -433,6 +489,7 @@
 </div>
 
 <script>
+// Mantido o mesmo JavaScript do original
 let modalExclusaoDefinitiva;
 
 document.addEventListener('DOMContentLoaded', function() {
@@ -539,6 +596,10 @@ function criarContainerAlerta() {
     .card {
         border-radius: 10px;
         overflow: hidden;
+        transition: transform 0.2s ease;
+    }
+    .card:hover {
+        transform: translateY(-4px);
     }
     .card-header {
         font-weight: 600;
