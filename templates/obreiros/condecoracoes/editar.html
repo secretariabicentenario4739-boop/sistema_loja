@@ -1,0 +1,213 @@
+{% extends "base.html" %}
+
+{% block title %}Editar Condecoração - {{ condecoracao.tipo_nome }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="container">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h2>
+                <i class="bi bi-award"></i> 
+                Editar Condecoração
+            </h2>
+            <div>
+                <a href="/obreiros/{{ obreiro.id }}/condecoracoes" class="btn btn-outline-secondary">
+                    <i class="bi bi-arrow-left"></i> Voltar
+                </a>
+            </div>
+        </div>
+
+        <div class="card shadow">
+            <div class="card-header bg-warning text-dark">
+                <h5 class="mb-0">
+                    <i class="bi bi-pencil-square"></i> 
+                    Editando: {{ condecoracao.tipo_nome }}
+                </h5>
+            </div>
+            <div class="card-body">
+                <form method="POST">
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Tipo de Condecoração *</label>
+                            <select class="form-select" name="tipo_id" required>
+                                <option value="">Selecione...</option>
+                                {% for tipo in tipos %}
+                                <option value="{{ tipo.id }}" 
+                                        {% if tipo.id == condecoracao.tipo_id %}selected{% endif %}
+                                        data-nivel="{{ tipo.nivel }}"
+                                        data-cor="{{ tipo.cor }}"
+                                        data-icone="{{ tipo.icone }}">
+                                    {{ tipo.nome }} 
+                                    {% if tipo.nivel %} - Nível {{ tipo.nivel }}{% endif %}
+                                </option>
+                                {% endfor %}
+                            </select>
+                            <small class="text-muted">Selecione o tipo de condecoração</small>
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <label class="form-label">Data da Concessão *</label>
+                            <input type="date" class="form-control" name="data_concessao" 
+                                   value="{{ condecoracao.data_concessao.strftime('%Y-%m-%d') if condecoracao.data_concessao else '' }}" required>
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <label class="form-label">Data de Validade</label>
+                            <input type="date" class="form-control" name="data_validade" 
+                                   value="{{ condecoracao.data_validade.strftime('%Y-%m-%d') if condecoracao.data_validade else '' }}">
+                            <small class="text-muted">Deixe em branco se for vitalícia</small>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Número de Registro</label>
+                            <input type="text" class="form-control" name="numero_registro" 
+                                   value="{{ condecoracao.numero_registro or '' }}"
+                                   placeholder="Ex: 001/2024">
+                            <small class="text-muted">Número de registro oficial da condecoração</small>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Motivo da Concessão</label>
+                            <input type="text" class="form-control" name="motivo" 
+                                   value="{{ condecoracao.motivo or '' }}"
+                                   placeholder="Ex: Serviços prestados à Loja">
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Observações</label>
+                        <textarea class="form-control" name="observacoes" rows="4" 
+                                  placeholder="Informações adicionais sobre a condecoração...">{{ condecoracao.observacoes or '' }}</textarea>
+                    </div>
+
+                    <!-- Preview da Condecoração -->
+                    <div class="alert alert-info mt-3">
+                        <div class="d-flex align-items-center">
+                            <div class="me-3">
+                                <i class="bi {{ condecoracao.icone or 'bi-award' }} fs-1" 
+                                   id="previewIcone" style="color: {{ condecoracao.cor or '#ffc107' }};"></i>
+                            </div>
+                            <div>
+                                <h5 class="mb-0" id="previewNome">{{ condecoracao.tipo_nome }}</h5>
+                                <small class="text-muted" id="previewNivel">
+                                    {% if condecoracao.nivel == 1 %}Nível 1 - Mérito Básico
+                                    {% elif condecoracao.nivel == 2 %}Nível 2 - Mérito Médio
+                                    {% elif condecoracao.nivel == 3 %}Nível 3 - Alto Mérito
+                                    {% elif condecoracao.nivel >= 4 %}Nível {{ condecoracao.nivel }} - Máxima Honraria
+                                    {% else %}Nível {{ condecoracao.nivel }}{% endif %}
+                                </small>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="alert alert-warning mt-3">
+                        <i class="bi bi-exclamation-triangle"></i>
+                        <strong>Atenção:</strong>
+                        <ul class="mb-0 mt-2">
+                            <li>Ao alterar o tipo de condecoração, os dados anteriores serão substituídos</li>
+                            <li>Esta ação será registrada no log de auditoria</li>
+                            <li>Os campos marcados com <strong class="text-danger">*</strong> são obrigatórios</li>
+                        </ul>
+                    </div>
+
+                    <div class="text-end mt-4">
+                        <a href="/obreiros/{{ obreiro.id }}/condecoracoes" class="btn btn-secondary me-2">
+                            <i class="bi bi-x-circle"></i> Cancelar
+                        </a>
+                        <button type="submit" class="btn btn-warning">
+                            <i class="bi bi-save"></i> Salvar Alterações
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Informações Adicionais -->
+        <div class="card shadow mt-4">
+            <div class="card-header bg-light">
+                <h5 class="mb-0"><i class="bi bi-info-circle"></i> Informações do Registro</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <table class="table table-sm table-borderless">
+                            <tr>
+                                <td class="text-muted" style="width: 150px;">Concedido por:</td>
+                                <td>{{ concedente.nome_completo if concedente else 'Sistema' }}</td>
+                            </tr>
+                            <tr>
+                                <td class="text-muted">Data de criação:</td>
+                                <td>{{ condecoracao.created_at.strftime('%d/%m/%Y %H:%M') if condecoracao.created_at else '-' }}</td>
+                            </tr>
+                            <tr>
+                                <td class="text-muted">Última alteração:</td>
+                                <td>{{ condecoracao.updated_at.strftime('%d/%m/%Y %H:%M') if condecoracao.updated_at else '-' }}</td>
+                            </tr>
+                        </table>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="alert alert-info mb-0">
+                            <i class="bi bi-clock-history"></i>
+                            <strong>Histórico:</strong>
+                            <p class="mb-0 small mt-1">Esta condecoração foi concedida em 
+                            {{ condecoracao.data_concessao.strftime('%d/%m/%Y') if condecoracao.data_concessao else '-' }}
+                            {% if condecoracao.data_validade %}
+                                e tem validade até {{ condecoracao.data_validade.strftime('%d/%m/%Y') }}
+                            {% else %}
+                                e é vitalícia
+                            {% endif %}
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Preview do tipo selecionado
+    const tipoSelect = document.querySelector('select[name="tipo_id"]');
+    const previewIcone = document.getElementById('previewIcone');
+    const previewNome = document.getElementById('previewNome');
+    const previewNivel = document.getElementById('previewNivel');
+    
+    if (tipoSelect) {
+        tipoSelect.addEventListener('change', function() {
+            const selectedOption = this.options[this.selectedIndex];
+            const nome = selectedOption.textContent.split(' - ')[0];
+            const nivel = selectedOption.dataset.nivel;
+            const cor = selectedOption.dataset.cor;
+            const icone = selectedOption.dataset.icone;
+            
+            if (nome && nome !== 'Selecione...') {
+                previewNome.textContent = nome;
+                if (icone) previewIcone.className = `bi ${icone} fs-1`;
+                if (cor) previewIcone.style.color = cor;
+                
+                if (nivel == 1) previewNivel.textContent = 'Nível 1 - Mérito Básico';
+                else if (nivel == 2) previewNivel.textContent = 'Nível 2 - Mérito Médio';
+                else if (nivel == 3) previewNivel.textContent = 'Nível 3 - Alto Mérito';
+                else if (nivel >= 4) previewNivel.textContent = `Nível ${nivel} - Máxima Honraria`;
+                else previewNivel.textContent = `Nível ${nivel}`;
+            }
+        });
+    }
+</script>
+
+<style>
+    .card {
+        border-radius: 10px;
+        overflow: hidden;
+    }
+    .card-header {
+        font-weight: 600;
+    }
+    #previewIcone {
+        transition: all 0.3s ease;
+    }
+    .form-control:focus, .form-select:focus {
+        border-color: #ffc107;
+        box-shadow: 0 0 0 0.2rem rgba(255, 193, 7, 0.25);
+    }
+</style>
+{% endblock %}

@@ -1,0 +1,236 @@
+{% extends "base.html" %}
+
+{% block title %}Detalhes da Condecoração - {{ condecoracao.nome }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="container">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h2>
+                <i class="bi bi-award"></i> 
+                Detalhes da Condecoração
+            </h2>
+            <div>
+                <a href="/obreiros/{{ obreiro.id }}/condecoracoes" class="btn btn-outline-secondary">
+                    <i class="bi bi-arrow-left"></i> Voltar
+                </a>
+                {% if session.tipo == 'admin' %}
+                <a href="/obreiros/{{ obreiro.id }}/condecoracoes/{{ condecoracao.id }}/editar" class="btn btn-warning ms-2">
+                    <i class="bi bi-pencil"></i> Editar
+                </a>
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col-md-4">
+                <!-- Card da Condecoração -->
+                <div class="card shadow mb-4">
+                    <div class="card-header" style="background-color: {{ condecoracao.cor or '#ffc107' }}; color: {% if condecoracao.nivel >= 3 %}white{% else %}dark{% endif %};">
+                        <h5 class="mb-0 text-center">
+                            <i class="bi {{ condecoracao.icone or 'bi-award' }} fs-1"></i>
+                        </h5>
+                    </div>
+                    <div class="card-body text-center">
+                        <h3>{{ condecoracao.nome }}</h3>
+                        <p class="text-muted">
+                            {% if condecoracao.nivel == 1 %}
+                                <span class="badge bg-info">Nível 1 - Mérito Básico</span>
+                            {% elif condecoracao.nivel == 2 %}
+                                <span class="badge bg-success">Nível 2 - Mérito Médio</span>
+                            {% elif condecoracao.nivel == 3 %}
+                                <span class="badge bg-warning">Nível 3 - Alto Mérito</span>
+                            {% elif condecoracao.nivel >= 4 %}
+                                <span class="badge bg-danger">Nível {{ condecoracao.nivel }} - Máxima Honraria</span>
+                            {% else %}
+                                <span class="badge bg-secondary">Nível {{ condecoracao.nivel }}</span>
+                            {% endif %}
+                        </p>
+                        {% if condecoracao.numero_registro %}
+                        <p>
+                            <strong><i class="bi bi-hash"></i> Número de Registro:</strong><br>
+                            <code>{{ condecoracao.numero_registro }}</code>
+                        </p>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <!-- Card de Datas -->
+                <div class="card shadow">
+                    <div class="card-header bg-primary text-white">
+                        <h5 class="mb-0"><i class="bi bi-calendar"></i> Datas</h5>
+                    </div>
+                    <div class="card-body">
+                        <table class="table table-sm table-borderless">
+                            <tr>
+                                <td class="text-muted">Data Concessão:</td>
+                                <td class="text-end fw-bold">{{ condecoracao.data_concessao.strftime('%d/%m/%Y') if condecoracao.data_concessao else '-' }}</td>
+                            </tr>
+                            {% if condecoracao.data_validade %}
+                            <tr>
+                                <td class="text-muted">Data Validade:</td>
+                                <td class="text-end">
+                                    {% if condecoracao.data_validade >= now.date() %}
+                                        <span class="badge bg-success">{{ condecoracao.data_validade.strftime('%d/%m/%Y') }}</span>
+                                    {% else %}
+                                        <span class="badge bg-danger">{{ condecoracao.data_validade.strftime('%d/%m/%Y') }}</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% endif %}
+                            <tr>
+                                <td class="text-muted">Status:</td>
+                                <td class="text-end">
+                                    {% if condecoracao.data_validade %}
+                                        {% if condecoracao.data_validade >= now.date() %}
+                                            <span class="badge bg-success"><i class="bi bi-check-circle"></i> Válida</span>
+                                        {% else %}
+                                            <span class="badge bg-danger"><i class="bi bi-x-circle"></i> Expirada</span>
+                                        {% endif %}
+                                    {% else %}
+                                        <span class="badge bg-success"><i class="bi bi-infinity"></i> Vitalícia</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-8">
+                <!-- Card do Obreiro -->
+                <div class="card shadow mb-4">
+                    <div class="card-header bg-success text-white">
+                        <h5 class="mb-0"><i class="bi bi-person"></i> Condecorado</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="d-flex align-items-center">
+                            {% if obreiro.foto %}
+                            <img src="{{ obreiro.foto }}" 
+                                 class="rounded-circle me-3"
+                                 style="width: 80px; height: 80px; object-fit: cover;">
+                            {% else %}
+                            <div class="bg-light rounded-circle d-flex align-items-center justify-content-center me-3"
+                                 style="width: 80px; height: 80px;">
+                                <i class="bi bi-person fs-1 text-secondary"></i>
+                            </div>
+                            {% endif %}
+                            <div>
+                                <h4>{{ obreiro.nome_completo }}</h4>
+                                <p class="mb-0 text-muted">
+                                    <i class="bi bi-person-badge"></i> {{ obreiro.usuario }}
+                                    {% if obreiro.cim_numero %}
+                                    • <i class="bi bi-card-text"></i> CIM: {{ obreiro.cim_numero }}
+                                    {% endif %}
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Card de Motivo e Observações -->
+                <div class="card shadow mb-4">
+                    <div class="card-header bg-info text-white">
+                        <h5 class="mb-0"><i class="bi bi-info-circle"></i> Informações da Concessão</h5>
+                    </div>
+                    <div class="card-body">
+                        {% if condecoracao.motivo %}
+                        <div class="mb-3">
+                            <label class="fw-bold">Motivo da Concessão:</label>
+                            <div class="p-3 bg-light rounded mt-1">
+                                {{ condecoracao.motivo }}
+                            </div>
+                        </div>
+                        {% endif %}
+
+                        {% if condecoracao.observacoes %}
+                        <div>
+                            <label class="fw-bold">Observações:</label>
+                            <div class="p-3 bg-light rounded mt-1">
+                                {{ condecoracao.observacoes }}
+                            </div>
+                        </div>
+                        {% endif %}
+
+                        {% if not condecoracao.motivo and not condecoracao.observacoes %}
+                        <div class="text-center text-muted py-3">
+                            <i class="bi bi-chat-dots"></i>
+                            <p class="mb-0">Nenhuma informação adicional registrada</p>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <!-- Card de Concedente -->
+                <div class="card shadow">
+                    <div class="card-header bg-secondary text-white">
+                        <h5 class="mb-0"><i class="bi bi-person-check"></i> Concedido por</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="d-flex align-items-center">
+                            {% if concedente and concedente.foto %}
+                            <img src="{{ concedente.foto }}" 
+                                 class="rounded-circle me-3"
+                                 style="width: 60px; height: 60px; object-fit: cover;">
+                            {% else %}
+                            <div class="bg-light rounded-circle d-flex align-items-center justify-content-center me-3"
+                                 style="width: 60px; height: 60px;">
+                                <i class="bi bi-person fs-2 text-secondary"></i>
+                            </div>
+                            {% endif %}
+                            <div>
+                                <h5 class="mb-0">{{ concedente.nome_completo if concedente else 'Sistema' }}</h5>
+                                <p class="mb-0 text-muted small">
+                                    <i class="bi bi-person-badge"></i> {{ concedente.usuario if concedente else 'Administrador' }}
+                                </p>
+                            </div>
+                        </div>
+                        {% if condecoracao.created_at %}
+                        <hr>
+                        <small class="text-muted">
+                            <i class="bi bi-clock"></i> Registrado em: {{ condecoracao.created_at.strftime('%d/%m/%Y %H:%M') if condecoracao.created_at else '-' }}
+                        </small>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <!-- Certificado (opcional) -->
+                {% if condecoracao.arquivo_certificado %}
+                <div class="card shadow mt-4">
+                    <div class="card-header bg-primary text-white">
+                        <h5 class="mb-0"><i class="bi bi-file-pdf"></i> Certificado</h5>
+                    </div>
+                    <div class="card-body text-center">
+                        <a href="{{ condecoracao.arquivo_certificado }}" target="_blank" class="btn btn-primary">
+                            <i class="bi bi-file-pdf-fill"></i> Visualizar Certificado
+                        </a>
+                        <a href="{{ condecoracao.arquivo_certificado }}" download class="btn btn-secondary ms-2">
+                            <i class="bi bi-download"></i> Baixar
+                        </a>
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .card {
+        border-radius: 10px;
+        overflow: hidden;
+    }
+    .card-header {
+        font-weight: 600;
+    }
+    code {
+        background: #f4f4f4;
+        padding: 2px 8px;
+        border-radius: 5px;
+        font-size: 0.9rem;
+    }
+    .bg-light {
+        background-color: #f8f9fa !important;
+    }
+</style>
+{% endblock %}

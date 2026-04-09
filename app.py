@@ -3473,6 +3473,8 @@ def excluir_obreiro_definitivo(id):
         if conn:
             return_connection(conn)        
     
+
+    
 @app.route("/obreiros/novo", methods=["GET", "POST"])
 @login_required
 @permissao_required('obreiro.create')
@@ -3884,6 +3886,9 @@ def redefinir_senha():
                     return_connection(conn)
     
     return render_template("redefinir_senha.html", token=token)
+
+
+    
 
 @app.route("/obreiros/<int:id>/editar", methods=["GET", "POST"])
 @login_required
@@ -10159,166 +10164,379 @@ def excluir_tipo_ausencia(id):
     return_connection(conn)
     return redirect("/tipos_ausencia")
 
-# =============================
-# ROTAS DE CONDECORAÇÕES
-# =============================
+# ============================================
+# ROTAS PARA CONDECORAÇÕES
+# ============================================
+
 @app.route("/obreiros/<int:obreiro_id>/condecoracoes")
 @login_required
 def listar_condecoracoes(obreiro_id):
-    """Lista condecorações do obreiro"""
+    """Lista todas as condecorações de um obreiro"""
     cursor, conn = get_db()
-    
-    # Verificar permissão: admin, mestre (grau >= 3) ou o próprio obreiro
-    usuario_tipo = session.get('tipo', '')
-    usuario_grau = session.get('grau_atual', 0)
-    
-    if usuario_tipo != 'admin' and usuario_grau < 3 and session["user_id"] != obreiro_id:
-        flash("Você não tem permissão para acessar esta página", "danger")
-        return redirect(f"/obreiros/{obreiro_id}")
-    
-    cursor.execute("SELECT id, nome_completo FROM usuarios WHERE id = %s", (obreiro_id,))
-    obreiro = cursor.fetchone()
-    
-    if not obreiro:
-        flash("Obreiro não encontrado", "danger")
-        return_connection(conn)
-        return redirect("/obreiros")
-    
-    cursor.execute("""
-        SELECT c.*, t.nome as tipo_nome, t.descricao as tipo_descricao, 
-               t.cor, t.icone, t.nivel,
-               u.nome_completo as concedido_por_nome
-        FROM condecoracoes_obreiro c
-        JOIN tipos_condecoracoes t ON c.tipo_id = t.id
-        LEFT JOIN usuarios u ON c.concedido_por = u.id
-        WHERE c.obreiro_id = %s
-        ORDER BY t.nivel DESC, c.data_concessao DESC
-    """, (obreiro_id,))
-    condecoracoes = cursor.fetchall()
-    
-    # Tipos de condecorações disponíveis (apenas admin pode adicionar)
-    tipos_condecoracoes = []
-    if session["tipo"] == "admin":
-        cursor.execute("SELECT * FROM tipos_condecoracoes WHERE ativo = 1 ORDER BY nivel DESC, ordem")
-        tipos_condecoracoes = cursor.fetchall()
-    
-    return_connection(conn)
-    
-    # Verificar se pode editar (apenas admin)
-    pode_editar = (session["tipo"] == "admin")
-    
-    return render_template("obreiros/condecoracoes.html", 
-                          obreiro=obreiro, 
-                          condecoracoes=condecoracoes,
-                          tipos_condecoracoes=tipos_condecoracoes, 
-                          obreiro_id=obreiro_id,
-                          pode_editar=pode_editar)
-
-@app.route("/obreiros/<int:obreiro_id>/condecoracoes/nova", methods=["POST"])
-@admin_required
-def nova_condecoracao(obreiro_id):
-    """Concede nova condecoração (apenas admin)"""
-    cursor, conn = get_db()
-    
-    tipo_id = request.form.get("tipo_id")
-    data_concessao = request.form.get("data_concessao")
-    data_validade = request.form.get("data_validade")
-    motivo = request.form.get("motivo")
-    numero_registro = request.form.get("numero_registro")
-    observacoes = request.form.get("observacoes")
-    
-    if not tipo_id or not data_concessao:
-        flash("Tipo de condecoração e data são obrigatórios", "danger")
-        return_connection(conn)
-        return redirect(f"/obreiros/{obreiro_id}/condecoracoes")
     
     try:
-        data_validade = data_validade if data_validade and data_validade.strip() else None
+        # Buscar dados do obreiro
         cursor.execute("""
-            INSERT INTO condecoracoes_obreiro 
-            (obreiro_id, tipo_id, data_concessao, data_validade, concedido_por, 
-             motivo, numero_registro, observacoes)
-            VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
-        """, (obreiro_id, tipo_id, data_concessao, data_validade, session["user_id"],
-              motivo, numero_registro, observacoes))
-        conn.commit()
+            SELECT id, nome_completo, foto, usuario, cim_numero 
+            FROM usuarios WHERE id = %s
+        """, (obreiro_id,))
+        obreiro = cursor.fetchone()
         
-        registrar_log("conceder_condecoracao", "condecoracao", cursor.lastrowid, 
-                     dados_novos={"obreiro_id": obreiro_id, "tipo_id": tipo_id})
-        flash("Condecoração concedida com sucesso!", "success")
+        if not obreiro:
+            flash("Obreiro não encontrado", "danger")
+            return_connection(conn)
+            return redirect("/obreiros")
         
+        # Buscar todas as condecorações do obreiro
+        cursor.execute("""
+            SELECT c.*, 
+                   t.nome as tipo_nome, 
+                   t.nivel, 
+                   t.cor, 
+                   t.icone,
+                   t.descricao as tipo_descricao
+            FROM condecoracoes_obreiro c
+            JOIN tipos_condecoracoes t ON c.tipo_id = t.id
+            WHERE c.obreiro_id = %s
+            ORDER BY t.nivel DESC, c.data_concessao DESC
+        """, (obreiro_id,))
+        
+        condecoracoes = cursor.fetchall()
+        
+        # Para cada condecoração, formatar os dados
+        for c in condecoracoes:
+            if 'nome' not in c:
+                c['nome'] = c.get('tipo_nome', 'Condecoração')
+            if 'nivel' not in c:
+                c['nivel'] = 1
+            if 'cor' not in c:
+                c['cor'] = '#ffc107'
+            if 'icone' not in c:
+                c['icone'] = 'bi-award'
+        
+        return_connection(conn)
+        
+        return render_template("obreiros/condecoracoes/lista.html", 
+                              obreiro=obreiro,
+                              condecoracoes=condecoracoes,
+                              now=datetime.now())
+                              
     except Exception as e:
-        print(f"Erro ao conceder condecoração: {e}")
-        conn.rollback()
-        flash(f"Erro ao conceder condecoração: {str(e)}", "danger")
-    
-    return_connection(conn)
-    return redirect(f"/obreiros/{obreiro_id}/condecoracoes")
+        print(f"❌ Erro ao listar condecorações: {e}")
+        import traceback
+        traceback.print_exc()
+        if conn:
+            return_connection(conn)
+        flash(f"Erro ao carregar condecorações: {str(e)}", "danger")
+        return redirect(f"/obreiros/{obreiro_id}")
 
-@app.route("/obreiros/condecoracoes/excluir/<int:id>")
-@admin_required
-def excluir_condecoracao(id):
-    """Exclui uma condecoração (apenas admin)"""
+
+@app.route("/obreiros/<int:obreiro_id>/condecoracoes/<int:condecoracao_id>")
+@login_required
+def detalhes_condecoracao(obreiro_id, condecoracao_id):
+    """Visualiza os detalhes de uma condecoração específica"""
     cursor, conn = get_db()
     
     try:
-        cursor.execute("SELECT obreiro_id FROM condecoracoes_obreiro WHERE id = %s", (id,))
+        # Buscar dados do obreiro
+        cursor.execute("""
+            SELECT id, nome_completo, foto, usuario, cim_numero 
+            FROM usuarios WHERE id = %s
+        """, (obreiro_id,))
+        obreiro = cursor.fetchone()
+        
+        if not obreiro:
+            flash("Obreiro não encontrado", "danger")
+            return_connection(conn)
+            return redirect("/obreiros")
+        
+        # Buscar a condecoração específica
+        cursor.execute("""
+            SELECT c.*, 
+                   t.nome as tipo_nome, 
+                   t.nivel, 
+                   t.cor, 
+                   t.icone,
+                   t.descricao as tipo_descricao
+            FROM condecoracoes_obreiro c
+            JOIN tipos_condecoracoes t ON c.tipo_id = t.id
+            WHERE c.id = %s AND c.obreiro_id = %s
+        """, (condecoracao_id, obreiro_id))
+        
         condecoracao = cursor.fetchone()
         
-        if condecoracao:
-            obreiro_id = condecoracao["obreiro_id"]
-            cursor.execute("DELETE FROM condecoracoes_obreiro WHERE id = %s", (id,))
-            conn.commit()
-            registrar_log("excluir_condecoracao", "condecoracao", id)
-            flash("Condecoração excluída com sucesso!", "success")
-        else:
+        if not condecoracao:
             flash("Condecoração não encontrada", "danger")
-            
-    except Exception as e:
-        print(f"Erro ao excluir condecoração: {e}")
-        conn.rollback()
-        flash(f"Erro ao excluir condecoração: {str(e)}", "danger")
-    
-    return_connection(conn)
-    return redirect(f"/obreiros/{condecoracao['obreiro_id']}/condecoracoes" if condecoracao else "/obreiros")
-
-@app.route("/tipos_condecoracoes")
-@admin_required
-def listar_tipos_condecoracoes():
-    cursor, conn = get_db()
-    cursor.execute("SELECT * FROM tipos_condecoracoes ORDER BY nivel DESC, ordem")
-    tipos = cursor.fetchall()
-    return_connection(conn)
-    return render_template("admin/tipos_condecoracoes.html", tipos=tipos)
-
-@app.route("/tipos_condecoracoes/novo", methods=["GET", "POST"])
-@admin_required
-def novo_tipo_condecoracao():
-    if request.method == "POST":
-        nome = request.form.get("nome")
-        descricao = request.form.get("descricao")
-        nivel = request.form.get("nivel", 1)
-        cor = request.form.get("cor", "#ffc107")
-        icone = request.form.get("icone", "bi-award")
-        ordem = request.form.get("ordem", 0)
-        if not nome:
-            flash("Nome da condecoração é obrigatório", "danger")
-        else:
-            cursor, conn = get_db()
-            try:
-                cursor.execute("""
-                    INSERT INTO tipos_condecoracoes (nome, descricao, nivel, cor, icone, ordem, ativo)
-                    VALUES (%s, %s, %s, %s, %s, %s, 1)
-                """, (nome, descricao, nivel, cor, icone, ordem))
-                conn.commit()
-                flash(f"Tipo de condecoração '{nome}' adicionado com sucesso!", "success")
-                return_connection(conn)
-                return redirect("/tipos_condecoracoes")
-            except Exception as e:
-                flash(f"Erro ao adicionar: {str(e)}", "danger")
-                conn.rollback()
             return_connection(conn)
-    return render_template("admin/tipo_condecoracao_form.html")
+            return redirect(f"/obreiros/{obreiro_id}/condecoracoes")
+        
+        # Buscar quem concedeu
+        concedente = None
+        if condecoracao.get('concedido_por'):
+            cursor.execute("""
+                SELECT id, nome_completo, usuario, foto 
+                FROM usuarios WHERE id = %s
+            """, (condecoracao['concedido_por'],))
+            concedente = cursor.fetchone()
+        
+        return_connection(conn)
+        
+        return render_template("obreiros/condecoracoes/detalhes.html", 
+                              obreiro=obreiro,
+                              condecoracao=condecoracao,
+                              concedente=concedente,
+                              now=datetime.now())
+                              
+    except Exception as e:
+        print(f"❌ Erro ao visualizar condecoração: {e}")
+        import traceback
+        traceback.print_exc()
+        if conn:
+            return_connection(conn)
+        flash(f"Erro ao carregar detalhes: {str(e)}", "danger")
+        return redirect(f"/obreiros/{obreiro_id}/condecoracoes")
+
+
+@app.route("/obreiros/<int:obreiro_id>/condecoracoes/nova", methods=["GET", "POST"])
+@login_required
+def nova_condecoracao(obreiro_id):
+    """Adiciona uma nova condecoração para um obreiro"""
+    if session.get('tipo') != 'admin':
+        flash("Apenas administradores podem adicionar condecorações", "danger")
+        return redirect(f"/obreiros/{obreiro_id}")
+    
+    cursor, conn = get_db()
+    
+    try:
+        # Buscar dados do obreiro
+        cursor.execute("SELECT id, nome_completo FROM usuarios WHERE id = %s", (obreiro_id,))
+        obreiro = cursor.fetchone()
+        
+        if not obreiro:
+            flash("Obreiro não encontrado", "danger")
+            return_connection(conn)
+            return redirect("/obreiros")
+        
+        if request.method == "POST":
+            tipo_id = request.form.get("tipo_id")
+            data_concessao = request.form.get("data_concessao")
+            data_validade = request.form.get("data_validade")
+            motivo = request.form.get("motivo")
+            numero_registro = request.form.get("numero_registro")
+            observacoes = request.form.get("observacoes")
+            
+            if not tipo_id or not data_concessao:
+                flash("Tipo de condecoração e data são obrigatórios", "danger")
+                return redirect(f"/obreiros/{obreiro_id}/condecoracoes/nova")
+            
+            data_validade = data_validade if data_validade and data_validade.strip() else None
+            
+            cursor.execute("""
+                INSERT INTO condecoracoes_obreiro 
+                (obreiro_id, tipo_id, data_concessao, data_validade, concedido_por, 
+                 motivo, numero_registro, observacoes)
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+                RETURNING id
+            """, (obreiro_id, tipo_id, data_concessao, data_validade, session.get('user_id'),
+                  motivo, numero_registro, observacoes))
+            
+            condecoracao_id = cursor.fetchone()['id']
+            conn.commit()
+            
+            registrar_log(
+                acao="criar",
+                entidade="condecoracao",
+                entidade_id=condecoracao_id,
+                dados_anteriores=None,
+                dados_novos={"obreiro_id": obreiro_id, "tipo_id": tipo_id}
+            )
+            
+            flash(f"Condecoração concedida com sucesso para {obreiro['nome_completo']}!", "success")
+            return_connection(conn)
+            return redirect(f"/obreiros/{obreiro_id}/condecoracoes")
+        
+        # GET - Buscar tipos de condecoração disponíveis
+        cursor.execute("""
+            SELECT id, nome, nivel, cor, icone, descricao 
+            FROM tipos_condecoracoes 
+            WHERE ativo = 1 
+            ORDER BY nivel, nome
+        """)
+        tipos = cursor.fetchall()
+        
+        return_connection(conn)
+        
+        return render_template("obreiros/condecoracoes/nova.html", 
+                              obreiro=obreiro,
+                              tipos=tipos)
+                              
+    except Exception as e:
+        print(f"❌ Erro ao criar condecoração: {e}")
+        if conn:
+            conn.rollback()
+            return_connection(conn)
+        flash(f"Erro ao criar condecoração: {str(e)}", "danger")
+        return redirect(f"/obreiros/{obreiro_id}/condecoracoes")
+
+
+@app.route("/obreiros/<int:obreiro_id>/condecoracoes/<int:condecoracao_id>/editar", methods=["GET", "POST"])
+@login_required
+def editar_condecoracao(obreiro_id, condecoracao_id):
+    """Edita uma condecoração existente"""
+    if session.get('tipo') != 'admin':
+        flash("Apenas administradores podem editar condecorações", "danger")
+        return redirect(f"/obreiros/{obreiro_id}/condecoracoes")
+    
+    cursor, conn = get_db()
+    
+    try:
+        # Buscar dados do obreiro
+        cursor.execute("SELECT id, nome_completo FROM usuarios WHERE id = %s", (obreiro_id,))
+        obreiro = cursor.fetchone()
+        
+        if not obreiro:
+            flash("Obreiro não encontrado", "danger")
+            return_connection(conn)
+            return redirect("/obreiros")
+        
+        # Buscar a condecoração
+        cursor.execute("""
+            SELECT c.*, t.nome as tipo_nome, t.nivel, t.cor, t.icone
+            FROM condecoracoes_obreiro c
+            JOIN tipos_condecoracoes t ON c.tipo_id = t.id
+            WHERE c.id = %s AND c.obreiro_id = %s
+        """, (condecoracao_id, obreiro_id))
+        
+        condecoracao = cursor.fetchone()
+        
+        if not condecoracao:
+            flash("Condecoração não encontrada", "danger")
+            return_connection(conn)
+            return redirect(f"/obreiros/{obreiro_id}/condecoracoes")
+        
+        if request.method == "POST":
+            tipo_id = request.form.get("tipo_id")
+            data_concessao = request.form.get("data_concessao")
+            data_validade = request.form.get("data_validade")
+            motivo = request.form.get("motivo")
+            numero_registro = request.form.get("numero_registro")
+            observacoes = request.form.get("observacoes")
+            
+            if not tipo_id or not data_concessao:
+                flash("Tipo de condecoração e data são obrigatórios", "danger")
+                return redirect(f"/obreiros/{obreiro_id}/condecoracoes/{condecoracao_id}/editar")
+            
+            data_validade = data_validade if data_validade and data_validade.strip() else None
+            
+            # Salvar dados antigos para o log
+            dados_antigos = dict(condecoracao)
+            
+            cursor.execute("""
+                UPDATE condecoracoes_obreiro 
+                SET tipo_id = %s,
+                    data_concessao = %s,
+                    data_validade = %s,
+                    motivo = %s,
+                    numero_registro = %s,
+                    observacoes = %s
+                WHERE id = %s
+            """, (tipo_id, data_concessao, data_validade, motivo, numero_registro, observacoes, condecoracao_id))
+            
+            conn.commit()
+            
+            registrar_log(
+                acao="editar",
+                entidade="condecoracao",
+                entidade_id=condecoracao_id,
+                dados_anteriores=dados_antigos,
+                dados_novos={"tipo_id": tipo_id, "data_concessao": data_concessao}
+            )
+            
+            flash("Condecoração atualizada com sucesso!", "success")
+            return_connection(conn)
+            return redirect(f"/obreiros/{obreiro_id}/condecoracoes")
+        
+        # Buscar tipos de condecoração disponíveis
+        cursor.execute("""
+            SELECT id, nome, nivel, cor, icone, descricao 
+            FROM tipos_condecoracoes 
+            WHERE ativo = 1 
+            ORDER BY nivel, nome
+        """)
+        tipos = cursor.fetchall()
+        
+        # Buscar quem concedeu
+        concedente = None
+        if condecoracao.get('concedido_por'):
+            cursor.execute("""
+                SELECT id, nome_completo, usuario 
+                FROM usuarios WHERE id = %s
+            """, (condecoracao['concedido_por'],))
+            concedente = cursor.fetchone()
+        
+        return_connection(conn)
+        
+        return render_template("obreiros/condecoracoes/editar.html", 
+                              obreiro=obreiro,
+                              condecoracao=condecoracao,
+                              tipos=tipos,
+                              concedente=concedente)
+                              
+    except Exception as e:
+        print(f"❌ Erro ao editar condecoração: {e}")
+        import traceback
+        traceback.print_exc()
+        if conn:
+            conn.rollback()
+            return_connection(conn)
+        flash(f"Erro ao editar condecoração: {str(e)}", "danger")
+        return redirect(f"/obreiros/{obreiro_id}/condecoracoes")
+
+
+@app.route("/api/condecoracoes/<int:condecoracao_id>/excluir", methods=["DELETE"])
+@login_required
+def excluir_condecoracao(condecoracao_id):
+    """Exclui uma condecoração (apenas admin)"""
+    if session.get('tipo') != 'admin':
+        return jsonify({"success": False, "error": "Acesso negado"}), 403
+    
+    cursor, conn = get_db()
+    
+    try:
+        # Buscar dados para o log
+        cursor.execute("""
+            SELECT c.*, t.nome as tipo_nome 
+            FROM condecoracoes_obreiro c
+            JOIN tipos_condecoracoes t ON c.tipo_id = t.id
+            WHERE c.id = %s
+        """, (condecoracao_id,))
+        condecoracao = cursor.fetchone()
+        
+        if not condecoracao:
+            return jsonify({"success": False, "error": "Condecoração não encontrada"}), 404
+        
+        # Excluir
+        cursor.execute("DELETE FROM condecoracoes_obreiro WHERE id = %s", (condecoracao_id,))
+        conn.commit()
+        
+        # Registrar log
+        registrar_log(
+            acao="excluir",
+            entidade="condecoracao",
+            entidade_id=condecoracao_id,
+            dados_anteriores={"tipo": condecoracao['tipo_nome'], "data": condecoracao['data_concessao']},
+            dados_novos=None
+        )
+        
+        return_connection(conn)
+        return jsonify({"success": True, "message": "Condecoração excluída com sucesso"})
+        
+    except Exception as e:
+        conn.rollback()
+        return_connection(conn)
+        return jsonify({"success": False, "error": str(e)}), 500
+
+        
 
 # =============================
 # ROTAS DE AUDITORIA

@@ -1,0 +1,92 @@
+{% extends "base.html" %}
+
+{% block title %}Nova Condecoração - {{ obreiro.nome_completo }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="container">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h2>
+                <i class="bi bi-award"></i> 
+                Nova Condecoração para {{ obreiro.nome_completo }}
+            </h2>
+            <div>
+                <a href="/obreiros/{{ obreiro.id }}/condecoracoes" class="btn btn-outline-secondary">
+                    <i class="bi bi-arrow-left"></i> Voltar
+                </a>
+            </div>
+        </div>
+
+        <div class="card shadow">
+            <div class="card-header bg-warning text-dark">
+                <h5 class="mb-0"><i class="bi bi-plus-circle"></i> Conceder Nova Condecoração</h5>
+            </div>
+            <div class="card-body">
+                <form method="POST">
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Tipo de Condecoração *</label>
+                            <select class="form-select" name="tipo_id" required>
+                                <option value="">Selecione...</option>
+                                {% for tipo in tipos %}
+                                <option value="{{ tipo.id }}">
+                                    {{ tipo.nome }} 
+                                    {% if tipo.nivel %} - Nível {{ tipo.nivel }}{% endif %}
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <label class="form-label">Data Concessão *</label>
+                            <input type="date" class="form-control" name="data_concessao" required>
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <label class="form-label">Data Validade</label>
+                            <input type="date" class="form-control" name="data_validade">
+                            <small class="text-muted">Deixe em branco se for vitalícia</small>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Número de Registro</label>
+                            <input type="text" class="form-control" name="numero_registro" 
+                                   placeholder="Ex: 001/2024">
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Motivo da Concessão</label>
+                            <input type="text" class="form-control" name="motivo" 
+                                   placeholder="Ex: Serviços prestados à Loja">
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Observações</label>
+                        <textarea class="form-control" name="observacoes" rows="4" 
+                                  placeholder="Informações adicionais sobre a condecoração..."></textarea>
+                    </div>
+
+                    <div class="alert alert-info">
+                        <i class="bi bi-info-circle"></i>
+                        <strong>Informações:</strong>
+                        <ul class="mb-0 mt-2">
+                            <li>Os campos marcados com * são obrigatórios</li>
+                            <li>A condecoração será registrada no histórico do obreiro</li>
+                            <li>O administrador que está concedendo será registrado automaticamente</li>
+                        </ul>
+                    </div>
+
+                    <div class="text-end mt-4">
+                        <a href="/obreiros/{{ obreiro.id }}/condecoracoes" class="btn btn-secondary me-2">
+                            <i class="bi bi-x-circle"></i> Cancelar
+                        </a>
+                        <button type="submit" class="btn btn-warning">
+                            <i class="bi bi-save"></i> Conceder Condecoração
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

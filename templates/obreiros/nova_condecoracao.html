@@ -1,0 +1,159 @@
+{% extends "base.html" %}
+
+{% block title %}Nova Condecoração{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="container">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h2>
+                <i class="bi bi-award"></i> 
+                Nova Condecoração
+            </h2>
+            <div>
+                <a href="/obreiros/{{ obreiro_id }}/condecoracoes" class="btn btn-outline-secondary">
+                    <i class="bi bi-arrow-left"></i> Voltar
+                </a>
+            </div>
+        </div>
+
+        <div class="card shadow">
+            <div class="card-header bg-warning text-dark">
+                <h5 class="mb-0">
+                    <i class="bi bi-award"></i> 
+                    Conceder Condecoração para {{ obreiro.nome_completo }}
+                </h5>
+            </div>
+            <div class="card-body">
+                <form method="POST" action="/obreiros/{{ obreiro_id }}/condecoracoes/nova">
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Tipo de Condecoração *</label>
+                            <select class="form-select" name="tipo_id" required>
+                                <option value="">Selecione o tipo...</option>
+                                {% for tipo in tipos_condecoracoes %}
+                                <option value="{{ tipo.id }}">
+                                    {{ tipo.nome }}
+                                    {% if tipo.nivel %} - Nível {{ tipo.nivel }}{% endif %}
+                                </option>
+                                {% endfor %}
+                            </select>
+                            <small class="text-muted">Selecione o tipo de condecoração que será concedida</small>
+                        </div>
+                        
+                        <div class="col-md-3 mb-3">
+                            <label class="form-label">Data da Concessão *</label>
+                            <input type="date" class="form-control" name="data_concessao" required>
+                            <small class="text-muted">Data em que a condecoração foi concedida</small>
+                        </div>
+                        
+                        <div class="col-md-3 mb-3">
+                            <label class="form-label">Data de Validade</label>
+                            <input type="date" class="form-control" name="data_validade">
+                            <small class="text-muted">Opcional. Deixe em branco se for vitalícia</small>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Número de Registro</label>
+                            <input type="text" class="form-control" name="numero_registro" 
+                                   placeholder="Ex: 001/2024 ou 001/2024-GOB">
+                            <small class="text-muted">Número de registro oficial da condecoração</small>
+                        </div>
+                        
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Motivo da Concessão</label>
+                            <input type="text" class="form-control" name="motivo" 
+                                   placeholder="Ex: Serviços prestados à Loja">
+                            <small class="text-muted">Motivo pelo qual a condecoração foi concedida</small>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Observações</label>
+                        <textarea class="form-control" name="observacoes" rows="4" 
+                                  placeholder="Informações adicionais sobre a condecoração..."></textarea>
+                        <small class="text-muted">Detalhes adicionais, como evento, homenageados, etc.</small>
+                    </div>
+
+                    <div class="alert alert-info">
+                        <i class="bi bi-info-circle"></i>
+                        <strong>Informações importantes:</strong>
+                        <ul class="mb-0 mt-2">
+                            <li>Os campos marcados com <strong class="text-danger">*</strong> são obrigatórios</li>
+                            <li>A condecoração será registrada no histórico do obreiro</li>
+                            <li>O administrador que está concedendo será registrado automaticamente</li>
+                            <li>Após salvar, a condecoração aparecerá na lista do obreiro</li>
+                        </ul>
+                    </div>
+
+                    <div class="text-end mt-4">
+                        <a href="/obreiros/{{ obreiro_id }}/condecoracoes" class="btn btn-secondary me-2">
+                            <i class="bi bi-x-circle"></i> Cancelar
+                        </a>
+                        <button type="submit" class="btn btn-warning">
+                            <i class="bi bi-save"></i> Conceder Condecoração
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Tipos de Condecoração Disponíveis -->
+        <div class="card shadow mt-4">
+            <div class="card-header bg-light">
+                <h5 class="mb-0"><i class="bi bi-info-circle"></i> Tipos de Condecoração Disponíveis</h5>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-sm table-hover">
+                        <thead>
+                            <tr>
+                                <th>Condecoração</th>
+                                <th>Descrição</th>
+                                <th>Nível</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for tipo in tipos_condecoracoes %}
+                            <tr>
+                                <td>
+                                    <i class="bi bi-award text-warning"></i>
+                                    <strong>{{ tipo.nome }}</strong>
+                                </td>
+                                <td>{{ tipo.descricao or '-' }}</td>
+                                <td>
+                                    {% if tipo.nivel == 1 %}
+                                        <span class="badge bg-secondary">Básico</span>
+                                    {% elif tipo.nivel == 2 %}
+                                        <span class="badge bg-info">Médio</span>
+                                    {% elif tipo.nivel == 3 %}
+                                        <span class="badge bg-warning">Superior</span>
+                                    {% elif tipo.nivel == 4 %}
+                                        <span class="badge bg-danger">Especial</span>
+                                    {% else %}
+                                        <span class="badge bg-secondary">Nível {{ tipo.nivel }}</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% else %}
+                            <tr>
+                                <td colspan="3" class="text-center text-muted py-3">
+                                    <i class="bi bi-inbox"></i>
+                                    Nenhum tipo de condecoração cadastrado.
+                                    <br>
+                                    <a href="/admin/tipos-condecoracoes/novo" class="btn btn-sm btn-primary mt-2">
+                                        <i class="bi bi-plus-circle"></i> Cadastrar Tipo
+                                    </a>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
