@@ -10466,11 +10466,12 @@ def editar_condecoracao(obreiro_id, condecoracao_id):
             return_connection(conn)
             return redirect(f"/obreiros/{obreiro_id}/condecoracoes")
         
-        # Buscar tipos de condecoração disponíveis
+        # GET - Buscar tipos de condecoração disponíveis
+        # CORREÇÃO: Usar TRUE em vez de 1
         cursor.execute("""
             SELECT id, nome, nivel, cor, icone, descricao 
             FROM tipos_condecoracoes 
-            WHERE ativo = 1 
+            WHERE ativo = true
             ORDER BY nivel, nome
         """)
         tipos = cursor.fetchall()
