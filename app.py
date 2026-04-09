@@ -5211,21 +5211,21 @@ def listar_reunioes():
         query += " AND r.grau = %s"
         params.append(grau)
     if local:
-        query += " AND r.local ILIKE %s"  # PostgreSQL usa ILIKE para case insensitive
+        query += " AND r.local ILIKE %s"
         params.append(f"%{local}%")
     
     query += """ 
         GROUP BY r.id, r.titulo, r.tipo, r.grau, r.data, r.hora_inicio, 
                  r.hora_termino, r.local, r.loja_id, r.pauta, r.observacoes, 
                  r.status, r.criado_por, l.nome, t.cor
-        ORDER BY r.data DESC, r.hora_inicio DESC
+        ORDER BY r.data ASC, r.hora_inicio ASC
     """
     
     cursor.execute(query, params)
     reunioes = cursor.fetchall()
     
     # ============================================
-    # ESTATÍSTICAS PARA OS CARDS (POSTGRESQL)
+    # ESTATÍSTICAS PARA OS CARDS
     # ============================================
     
     stats_query = """
@@ -5300,17 +5300,6 @@ def listar_reunioes():
     cursor.execute(graus_query)
     graus = cursor.fetchall()
     
-    # Buscar tipos de reunião com cores
-    tipos_cores_query = """
-        SELECT nome, cor FROM tipos_reuniao 
-        ORDER BY nome
-    """
-    try:
-        cursor.execute(tipos_cores_query)
-        tipos_cores = cursor.fetchall()
-    except:
-        tipos_cores = []
-    
     # ============================================
     # MONTAR DICIONÁRIO DE ESTATÍSTICAS
     # ============================================
@@ -5326,50 +5315,6 @@ def listar_reunioes():
         'exibidas': len(reunioes)
     }
     
-    # ============================================
-    # DADOS PARA GRÁFICOS (OPCIONAL)
-    # ============================================
-    
-    # Reuniões por mês (últimos 6 meses) - PostgreSQL
-    meses_query = """
-        SELECT 
-            TO_CHAR(r.data, 'YYYY-MM') as mes,
-            COUNT(*) as total,
-            SUM(CASE WHEN r.status = 'realizada' THEN 1 ELSE 0 END) as realizadas
-        FROM reunioes r
-        WHERE {grau_filter}
-            AND r.data >= (CURRENT_DATE - INTERVAL '6 months')
-        GROUP BY TO_CHAR(r.data, 'YYYY-MM')
-        ORDER BY mes DESC
-    """.format(grau_filter=grau_filter)
-    
-    try:
-        cursor.execute(meses_query)
-        reunioes_por_mes = cursor.fetchall()
-    except:
-        reunioes_por_mes = []
-    
-    # Reuniões por tipo
-    tipo_query = """
-        SELECT 
-            r.tipo,
-            COUNT(*) as total,
-            t.cor
-        FROM reunioes r
-        LEFT JOIN tipos_reuniao t ON r.tipo = t.nome
-        WHERE {grau_filter}
-            AND r.tipo IS NOT NULL
-        GROUP BY r.tipo, t.cor
-        ORDER BY total DESC
-        LIMIT 5
-    """.format(grau_filter=grau_filter)
-    
-    try:
-        cursor.execute(tipo_query)
-        reunioes_por_tipo = cursor.fetchall()
-    except:
-        reunioes_por_tipo = []
-    
     return_connection(conn)
     
     return render_template("reunioes/lista.html", 
@@ -5378,9 +5323,6 @@ def listar_reunioes():
                           tipos=tipos,
                           status_list=status_list,
                           graus=graus,
-                          tipos_cores=tipos_cores,
-                          reunioes_por_mes=reunioes_por_mes,
-                          reunioes_por_tipo=reunioes_por_tipo,
                           filtros={
                               'data_ini': data_ini,
                               'data_fim': data_fim,
@@ -5389,8 +5331,6 @@ def listar_reunioes():
                               'grau': grau,
                               'local': local
                           },
-                          usuario_grau=usuario_grau,
-                          usuario_tipo=usuario_tipo,
                           now=datetime.now())
 
 @app.route("/reunioes/calendario")
