@@ -3519,102 +3519,198 @@ def novo_obreiro():
             from werkzeug.security import generate_password_hash
             senha_hash = generate_password_hash(senha)
             
-            # ========== CAMPOS OPCIONAIS ==========
-            
-            # Dados pessoais
-            nome_maconico = request.form.get("nome_maconico") or None
-            data_nascimento = request.form.get("data_nascimento") or None
-            cpf = request.form.get("cpf") or None
-            tipo_sanguineo = request.form.get("tipo_sanguineo") or None
-            rg = request.form.get("rg") or None
-            orgao_emissor = request.form.get("orgao_emissor") or None
-            grau_instrucao = request.form.get("grau_instrucao") or None
-            titulo_eleitor = request.form.get("titulo_eleitor") or None
-            naturalidade = request.form.get("naturalidade") or None
-            estado_civil = request.form.get("estado_civil") or "Solteiro"
-            
-            # Contato
-            telefone = request.form.get("telefone") or None
-            email = request.form.get("email") or None
-            
-            # Endereço
-            endereco = request.form.get("endereco") or None
-            cep = request.form.get("cep") or None
-            cidade = request.form.get("cidade") or None
-            uf = request.form.get("uf") or None
-            bairro = request.form.get("bairro") or None
-            numero = request.form.get("numero") or None
-            complemento = request.form.get("complemento") or None
-            
-            # Dados maçônicos
-            cim_numero = request.form.get("cim_numero") or None
-            data_iniciacao = request.form.get("data_iniciacao") or None
-            data_elevacao = request.form.get("data_elevacao") or None
-            data_exaltacao = request.form.get("data_exaltacao") or None
-            data_instalacao = request.form.get("data_instalacao") or None
-            status_maconico = request.form.get("status_maconico") or "Regular"
-            distincao_maconica = request.form.get("distincao_maconica") or None
-            isento = request.form.get("isento") or "NÃO"
-            artigo_27 = request.form.get("artigo_27") or "NÃO"
-            recolhe = request.form.get("recolhe") or "Sim"
-            loja_iniciacao = request.form.get("loja_iniciacao") or None
-            
-            # Loja atual
-            loja_nome = request.form.get("loja_nome") or None
-            loja_numero = request.form.get("loja_numero") or None
-            loja_orient = request.form.get("loja_orient") or None
-            loja_cidade = request.form.get("loja_cidade") or None
-            loja_uf = request.form.get("loja_uf") or None
-            
-            # Filiação
-            nome_pai = request.form.get("nome_pai") or None
-            nome_mae = request.form.get("nome_mae") or None
-            
-            # Dados profissionais
-            profissao = request.form.get("profissao") or None
-            empresa = request.form.get("empresa") or None
-            email_profissional = request.form.get("email_profissional") or None
-            telefone_profissional = request.form.get("telefone_profissional") or None
-            endereco_profissional = request.form.get("endereco_profissional") or None
-            
-            # INSERT com todos os campos
+            # ========== INSERT com campos obrigatórios APENAS ==========
             cursor.execute("""
                 INSERT INTO usuarios 
-                (usuario, senha_hash, tipo, data_cadastro, ativo, 
-                 nome_completo, nome_maconico, cim_numero, grau_atual,
-                 data_iniciacao, data_elevacao, data_exaltacao, data_instalacao,
-                 telefone, email, endereco,
-                 loja_nome, loja_numero, loja_orient, loja_cidade, loja_uf,
-                 status_maconico, distincao_maconica, 
-                 isento, artigo_27, recolhe, loja_iniciacao,
-                 data_nascimento, cpf, tipo_sanguineo, rg, orgao_emissor,
-                 grau_instrucao, titulo_eleitor, naturalidade, estado_civil,
-                 cep, cidade, uf, bairro, numero, complemento,
-                 nome_pai, nome_mae, profissao, empresa, 
-                 email_profissional, telefone_profissional, endereco_profissional,
-                 grau_superior) 
-                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, 
-                        %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, 
-                        %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, 
-                        %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                (usuario, senha_hash, tipo, data_cadastro, ativo, nome_completo, grau_atual)
+                VALUES (%s, %s, %s, %s, %s, %s, %s)
                 RETURNING id
-            """, (
-                usuario, senha_hash, tipo, datetime.now(), ativo,
-                nome_completo, nome_maconico, cim_numero, grau_atual,
-                data_iniciacao, data_elevacao, data_exaltacao, data_instalacao,
-                telefone, email, endereco,
-                loja_nome, loja_numero, loja_orient, loja_cidade, loja_uf,
-                status_maconico, distincao_maconica,
-                isento, artigo_27, recolhe, loja_iniciacao,
-                data_nascimento, cpf, tipo_sanguineo, rg, orgao_emissor,
-                grau_instrucao, titulo_eleitor, naturalidade, estado_civil,
-                cep, cidade, uf, bairro, numero, complemento,
-                nome_pai, nome_mae, profissao, empresa,
-                email_profissional, telefone_profissional, endereco_profissional,
-                grau_superior if grau_superior else None
-            ))
+            """, (usuario, senha_hash, tipo, datetime.now(), ativo, nome_completo, grau_atual))
             
             obreiro_id = cursor.fetchone()['id']
+            conn.commit()
+            
+            # ========== CAMPOS OPCIONAIS (UPDATE gradual) ==========
+            
+            # Dados pessoais
+            nome_maconico = request.form.get("nome_maconico")
+            if nome_maconico:
+                cursor.execute("UPDATE usuarios SET nome_maconico = %s WHERE id = %s", (nome_maconico, obreiro_id))
+            
+            data_nascimento = request.form.get("data_nascimento")
+            if data_nascimento:
+                cursor.execute("UPDATE usuarios SET data_nascimento = %s WHERE id = %s", (data_nascimento, obreiro_id))
+            
+            cpf = request.form.get("cpf")
+            if cpf:
+                cursor.execute("UPDATE usuarios SET cpf = %s WHERE id = %s", (cpf, obreiro_id))
+            
+            tipo_sanguineo = request.form.get("tipo_sanguineo")
+            if tipo_sanguineo:
+                cursor.execute("UPDATE usuarios SET tipo_sanguineo = %s WHERE id = %s", (tipo_sanguineo, obreiro_id))
+            
+            rg = request.form.get("rg")
+            if rg:
+                cursor.execute("UPDATE usuarios SET rg = %s WHERE id = %s", (rg, obreiro_id))
+            
+            orgao_emissor = request.form.get("orgao_emissor")
+            if orgao_emissor:
+                cursor.execute("UPDATE usuarios SET orgao_emissor = %s WHERE id = %s", (orgao_emissor, obreiro_id))
+            
+            grau_instrucao = request.form.get("grau_instrucao")
+            if grau_instrucao:
+                cursor.execute("UPDATE usuarios SET grau_instrucao = %s WHERE id = %s", (grau_instrucao, obreiro_id))
+            
+            titulo_eleitor = request.form.get("titulo_eleitor")
+            if titulo_eleitor:
+                cursor.execute("UPDATE usuarios SET titulo_eleitor = %s WHERE id = %s", (titulo_eleitor, obreiro_id))
+            
+            naturalidade = request.form.get("naturalidade")
+            if naturalidade:
+                cursor.execute("UPDATE usuarios SET naturalidade = %s WHERE id = %s", (naturalidade, obreiro_id))
+            
+            estado_civil = request.form.get("estado_civil")
+            if estado_civil and estado_civil != "Solteiro":
+                cursor.execute("UPDATE usuarios SET estado_civil = %s WHERE id = %s", (estado_civil, obreiro_id))
+            
+            # Contato
+            telefone = request.form.get("telefone")
+            if telefone:
+                cursor.execute("UPDATE usuarios SET telefone = %s WHERE id = %s", (telefone, obreiro_id))
+            
+            email = request.form.get("email")
+            if email:
+                cursor.execute("UPDATE usuarios SET email = %s WHERE id = %s", (email, obreiro_id))
+            
+            # Endereço
+            endereco = request.form.get("endereco")
+            if endereco:
+                cursor.execute("UPDATE usuarios SET endereco = %s WHERE id = %s", (endereco, obreiro_id))
+            
+            cep = request.form.get("cep")
+            if cep:
+                cursor.execute("UPDATE usuarios SET cep = %s WHERE id = %s", (cep, obreiro_id))
+            
+            cidade = request.form.get("cidade")
+            if cidade:
+                cursor.execute("UPDATE usuarios SET cidade = %s WHERE id = %s", (cidade, obreiro_id))
+            
+            uf = request.form.get("uf")
+            if uf:
+                cursor.execute("UPDATE usuarios SET uf = %s WHERE id = %s", (uf, obreiro_id))
+            
+            bairro = request.form.get("bairro")
+            if bairro:
+                cursor.execute("UPDATE usuarios SET bairro = %s WHERE id = %s", (bairro, obreiro_id))
+            
+            numero = request.form.get("numero")
+            if numero:
+                cursor.execute("UPDATE usuarios SET numero = %s WHERE id = %s", (numero, obreiro_id))
+            
+            complemento = request.form.get("complemento")
+            if complemento:
+                cursor.execute("UPDATE usuarios SET complemento = %s WHERE id = %s", (complemento, obreiro_id))
+            
+            # Dados maçônicos
+            cim_numero = request.form.get("cim_numero")
+            if cim_numero:
+                cursor.execute("UPDATE usuarios SET cim_numero = %s WHERE id = %s", (cim_numero, obreiro_id))
+            
+            data_iniciacao = request.form.get("data_iniciacao")
+            if data_iniciacao:
+                cursor.execute("UPDATE usuarios SET data_iniciacao = %s WHERE id = %s", (data_iniciacao, obreiro_id))
+            
+            data_elevacao = request.form.get("data_elevacao")
+            if data_elevacao:
+                cursor.execute("UPDATE usuarios SET data_elevacao = %s WHERE id = %s", (data_elevacao, obreiro_id))
+            
+            data_exaltacao = request.form.get("data_exaltacao")
+            if data_exaltacao:
+                cursor.execute("UPDATE usuarios SET data_exaltacao = %s WHERE id = %s", (data_exaltacao, obreiro_id))
+            
+            data_instalacao = request.form.get("data_instalacao")
+            if data_instalacao:
+                cursor.execute("UPDATE usuarios SET data_instalacao = %s WHERE id = %s", (data_instalacao, obreiro_id))
+            
+            status_maconico = request.form.get("status_maconico")
+            if status_maconico and status_maconico != "Regular":
+                cursor.execute("UPDATE usuarios SET status_maconico = %s WHERE id = %s", (status_maconico, obreiro_id))
+            
+            distincao_maconica = request.form.get("distincao_maconica")
+            if distincao_maconica:
+                cursor.execute("UPDATE usuarios SET distincao_maconica = %s WHERE id = %s", (distincao_maconica, obreiro_id))
+            
+            isento = request.form.get("isento")
+            if isento and isento != "NÃO":
+                cursor.execute("UPDATE usuarios SET isento = %s WHERE id = %s", (isento, obreiro_id))
+            
+            artigo_27 = request.form.get("artigo_27")
+            if artigo_27 and artigo_27 != "NÃO":
+                cursor.execute("UPDATE usuarios SET artigo_27 = %s WHERE id = %s", (artigo_27, obreiro_id))
+            
+            recolhe = request.form.get("recolhe")
+            if recolhe and recolhe != "Sim":
+                cursor.execute("UPDATE usuarios SET recolhe = %s WHERE id = %s", (recolhe, obreiro_id))
+            
+            loja_iniciacao = request.form.get("loja_iniciacao")
+            if loja_iniciacao:
+                cursor.execute("UPDATE usuarios SET loja_iniciacao = %s WHERE id = %s", (loja_iniciacao, obreiro_id))
+            
+            # Loja atual
+            loja_nome = request.form.get("loja_nome")
+            if loja_nome:
+                cursor.execute("UPDATE usuarios SET loja_nome = %s WHERE id = %s", (loja_nome, obreiro_id))
+            
+            loja_numero = request.form.get("loja_numero")
+            if loja_numero:
+                cursor.execute("UPDATE usuarios SET loja_numero = %s WHERE id = %s", (loja_numero, obreiro_id))
+            
+            loja_orient = request.form.get("loja_orient")
+            if loja_orient:
+                cursor.execute("UPDATE usuarios SET loja_orient = %s WHERE id = %s", (loja_orient, obreiro_id))
+            
+            loja_cidade = request.form.get("loja_cidade")
+            if loja_cidade:
+                cursor.execute("UPDATE usuarios SET loja_cidade = %s WHERE id = %s", (loja_cidade, obreiro_id))
+            
+            loja_uf = request.form.get("loja_uf")
+            if loja_uf:
+                cursor.execute("UPDATE usuarios SET loja_uf = %s WHERE id = %s", (loja_uf, obreiro_id))
+            
+            # Filiação
+            nome_pai = request.form.get("nome_pai")
+            if nome_pai:
+                cursor.execute("UPDATE usuarios SET nome_pai = %s WHERE id = %s", (nome_pai, obreiro_id))
+            
+            nome_mae = request.form.get("nome_mae")
+            if nome_mae:
+                cursor.execute("UPDATE usuarios SET nome_mae = %s WHERE id = %s", (nome_mae, obreiro_id))
+            
+            # Dados profissionais
+            profissao = request.form.get("profissao")
+            if profissao:
+                cursor.execute("UPDATE usuarios SET profissao = %s WHERE id = %s", (profissao, obreiro_id))
+            
+            empresa = request.form.get("empresa")
+            if empresa:
+                cursor.execute("UPDATE usuarios SET empresa = %s WHERE id = %s", (empresa, obreiro_id))
+            
+            email_profissional = request.form.get("email_profissional")
+            if email_profissional:
+                cursor.execute("UPDATE usuarios SET email_profissional = %s WHERE id = %s", (email_profissional, obreiro_id))
+            
+            telefone_profissional = request.form.get("telefone_profissional")
+            if telefone_profissional:
+                cursor.execute("UPDATE usuarios SET telefone_profissional = %s WHERE id = %s", (telefone_profissional, obreiro_id))
+            
+            endereco_profissional = request.form.get("endereco_profissional")
+            if endereco_profissional:
+                cursor.execute("UPDATE usuarios SET endereco_profissional = %s WHERE id = %s", (endereco_profissional, obreiro_id))
+            
+            # Grau superior
+            if grau_superior:
+                cursor.execute("UPDATE usuarios SET grau_superior = %s WHERE id = %s", (grau_superior, obreiro_id))
+            
             conn.commit()
             
             # Registrar histórico de grau inicial
