@@ -3915,62 +3915,123 @@ def editar_obreiro(id):
             return_connection(conn)
             return redirect("/obreiros")
 
+        # =============================
+        # 📥 POST (SALVAR ALTERAÇÕES)
+        # =============================
         if request.method == "POST":
+            
+            # Dados básicos
             nome_completo = request.form.get("nome_completo")
             nome_maconico = request.form.get("nome_maconico")
             cim_numero = request.form.get("cim_numero")
+            
+            # Contato
             telefone = request.form.get("telefone")
             email = request.form.get("email")
+            
+            # Endereço
             endereco = request.form.get("endereco")
+            cep = request.form.get("cep")
+            cidade = request.form.get("cidade")
+            uf = request.form.get("uf")
+            bairro = request.form.get("bairro")
+            numero = request.form.get("numero")
+            complemento = request.form.get("complemento")
+            
+            # Loja atual
             loja_nome = request.form.get("loja_nome")
             loja_numero = request.form.get("loja_numero")
             loja_orient = request.form.get("loja_orient")
+            loja_cidade = request.form.get("loja_cidade")
+            loja_uf = request.form.get("loja_uf")
+            
+            # Dados pessoais
+            data_nascimento = request.form.get("data_nascimento") or None
+            cpf = request.form.get("cpf") or None
+            tipo_sanguineo = request.form.get("tipo_sanguineo") or None
+            rg = request.form.get("rg") or None
+            orgao_emissor = request.form.get("orgao_emissor") or None
+            grau_instrucao = request.form.get("grau_instrucao") or None
+            titulo_eleitor = request.form.get("titulo_eleitor") or None
+            naturalidade = request.form.get("naturalidade") or None
+            estado_civil = request.form.get("estado_civil") or "Solteiro"
+            
+            # Dados maçônicos
+            data_iniciacao = request.form.get("data_iniciacao") or None
+            data_elevacao = request.form.get("data_elevacao") or None
+            data_exaltacao = request.form.get("data_exaltacao") or None
+            data_instalacao = request.form.get("data_instalacao") or None
+            status_maconico = request.form.get("status_maconico") or "Regular"
+            distincao_maconica = request.form.get("distincao_maconica") or None
+            isento = request.form.get("isento") or "NÃO"
+            artigo_27 = request.form.get("artigo_27") or "NÃO"
+            recolhe = request.form.get("recolhe") or "Sim"
+            loja_iniciacao = request.form.get("loja_iniciacao") or None
+            
+            # Filiação
+            nome_pai = request.form.get("nome_pai") or None
+            nome_mae = request.form.get("nome_mae") or None
+            
+            # Dados profissionais
+            profissao = request.form.get("profissao") or None
+            empresa = request.form.get("empresa") or None
+            email_profissional = request.form.get("email_profissional") or None
+            telefone_profissional = request.form.get("telefone_profissional") or None
+            endereco_profissional = request.form.get("endereco_profissional") or None
+            
+            # Senha
             senha = request.form.get("senha", "")
             senha_atual = request.form.get("senha_atual", "")
-
+            
+            # Campos de admin
             if is_admin:
                 tipo = request.form.get("tipo", obreiro["tipo"])
-                # Pegar o grau final do campo hidden
-                grau_atual = request.form.get("grau_atual", obreiro["grau_atual"])
-                ativo = 1 if request.form.get("ativo") else obreiro["ativo"]
-                try:
-                    grau_atual = int(grau_atual)
-                except:
-                    grau_atual = obreiro["grau_atual"]
+                ativo = 1 if request.form.get("ativo") == '1' else 0
+                grau_principal = request.form.get("grau_principal", 1)
+                grau_superior = request.form.get("grau_superior", "")
+                
+                # Calcular grau atual
+                if int(grau_principal) == 3 and grau_superior and grau_superior != '':
+                    grau_atual = int(grau_superior)
+                else:
+                    grau_atual = int(grau_principal)
             else:
                 tipo = obreiro["tipo"]
-                grau_atual = obreiro["grau_atual"]
                 ativo = obreiro["ativo"]
-
-            # Validar senha atual se for alterar a senha
+                grau_atual = obreiro["grau_atual"]
+                grau_superior = obreiro.get("grau_superior")
+            
+            grau_antigo = obreiro["grau_atual"]
+            
+            # Validar senha
             if senha:
                 if not senha_atual:
                     flash("Digite sua senha atual para alterar a senha!", "danger")
-                    return_connection(conn)
                     return redirect(f"/obreiros/{id}/editar")
                 
-                # Verificar senha atual
                 cursor.execute("SELECT senha_hash FROM usuarios WHERE id = %s", (id,))
                 user_data = cursor.fetchone()
                 
                 from werkzeug.security import check_password_hash
                 if not check_password_hash(user_data['senha_hash'], senha_atual):
                     flash("Senha atual incorreta!", "danger")
-                    return_connection(conn)
                     return redirect(f"/obreiros/{id}/editar")
                 
                 if len(senha) < 6:
                     flash("A nova senha deve ter no mínimo 6 caracteres!", "danger")
-                    return_connection(conn)
                     return redirect(f"/obreiros/{id}/editar")
                 
-                # Atualizar senha com Werkzeug
                 from werkzeug.security import generate_password_hash
                 nova_senha_hash = generate_password_hash(senha)
                 cursor.execute("UPDATE usuarios SET senha_hash = %s WHERE id = %s", (nova_senha_hash, id))
                 flash("Senha alterada com sucesso!", "success")
-
-            # Atualizar outros campos
+            
+            # Validar sindicante
+            if tipo == 'sindicante' and grau_atual < 3:
+                flash("⚠️ Apenas obreiros com grau de Mestre (3) ou superior podem ser Sindicantes!", "danger")
+                return redirect(f"/obreiros/{id}/editar")
+            
+            # UPDATE completo
             cursor.execute("""
                 UPDATE usuarios SET
                     nome_completo = %s,
@@ -3979,56 +4040,111 @@ def editar_obreiro(id):
                     telefone = %s,
                     email = %s,
                     endereco = %s,
+                    cep = %s,
+                    cidade = %s,
+                    uf = %s,
+                    bairro = %s,
+                    numero = %s,
+                    complemento = %s,
                     loja_nome = %s,
                     loja_numero = %s,
                     loja_orient = %s,
-                    grau_atual = %s,
+                    loja_cidade = %s,
+                    loja_uf = %s,
                     tipo = %s,
-                    ativo = %s
+                    ativo = %s,
+                    grau_atual = %s,
+                    data_nascimento = %s,
+                    cpf = %s,
+                    tipo_sanguineo = %s,
+                    rg = %s,
+                    orgao_emissor = %s,
+                    grau_instrucao = %s,
+                    titulo_eleitor = %s,
+                    naturalidade = %s,
+                    estado_civil = %s,
+                    data_iniciacao = %s,
+                    data_elevacao = %s,
+                    data_exaltacao = %s,
+                    data_instalacao = %s,
+                    status_maconico = %s,
+                    distincao_maconica = %s,
+                    isento = %s,
+                    artigo_27 = %s,
+                    recolhe = %s,
+                    loja_iniciacao = %s,
+                    nome_pai = %s,
+                    nome_mae = %s,
+                    profissao = %s,
+                    empresa = %s,
+                    email_profissional = %s,
+                    telefone_profissional = %s,
+                    endereco_profissional = %s,
+                    grau_superior = %s
                 WHERE id = %s
-            """, (nome_completo, nome_maconico, cim_numero, telefone, email, endereco,
-                  loja_nome, loja_numero, loja_orient, grau_atual, tipo, ativo, id))
-
+            """, (
+                nome_completo, nome_maconico, cim_numero, telefone, email,
+                endereco, cep, cidade, uf, bairro, numero, complemento,
+                loja_nome, loja_numero, loja_orient, loja_cidade, loja_uf,
+                tipo, ativo, grau_atual,
+                data_nascimento, cpf, tipo_sanguineo, rg, orgao_emissor,
+                grau_instrucao, titulo_eleitor, naturalidade, estado_civil,
+                data_iniciacao, data_elevacao, data_exaltacao, data_instalacao,
+                status_maconico, distincao_maconica, isento, artigo_27, recolhe,
+                loja_iniciacao, nome_pai, nome_mae, profissao, empresa,
+                email_profissional, telefone_profissional, endereco_profissional,
+                grau_superior if grau_superior else None,
+                id
+            ))
+            
             conn.commit()
             
-            # Atualizar sessão se for o próprio perfil
+            # Registrar histórico de grau
+            if is_admin and grau_atual != grau_antigo and grau_atual > 0:
+                try:
+                    nome_grau = get_nome_grau(grau_atual)
+                    cursor.execute("""
+                        INSERT INTO historico_graus (obreiro_id, grau, data, observacao)
+                        VALUES (%s, %s, CURRENT_DATE, %s)
+                    """, (id, grau_atual, f"Alteração de grau de {grau_antigo} para {grau_atual} - {nome_grau}"))
+                    conn.commit()
+                except Exception as e:
+                    print(f"⚠️ Erro ao registrar histórico: {e}")
+            
+            # Atualizar sessão
             if is_own_profile:
                 session['nome_completo'] = nome_completo
                 session['grau_atual'] = grau_atual
                 session['tipo'] = tipo
-
+            
             registrar_log("editar", "obreiro", id, dados_novos={"nome": nome_completo})
             flash("Obreiro atualizado com sucesso!", "success")
             return_connection(conn)
             return redirect(f"/obreiros/{id}")
 
-        # ===================== GET - Carregar dados para o formulário =====================
-        
+        # =============================
+        # 📊 GET (CARREGAR TELA)
+        # =============================
         cursor.execute("SELECT * FROM usuarios WHERE id = %s", (id,))
         obreiro = cursor.fetchone()
-        
-        cursor.execute("SELECT id, nome, numero, oriente FROM lojas WHERE ativo = 1 ORDER BY nome")
+
+        cursor.execute("SELECT id, nome, numero, oriente, cidade, uf FROM lojas WHERE ativo = 1 ORDER BY nome")
         lojas = cursor.fetchall()
-        
-        cursor.execute("SELECT nivel, nome FROM graus ORDER BY nivel")
+
+        cursor.execute("SELECT nivel, nome FROM graus WHERE nivel IN (1, 2, 3) AND ativo = 1 ORDER BY nivel")
         graus = cursor.fetchall()
         
-        # ✅ CORREÇÃO: Buscar graus superiores (nível >= 4)
         cursor.execute("SELECT nivel, nome FROM graus WHERE nivel >= 4 AND ativo = 1 ORDER BY nivel")
         graus_superiores = cursor.fetchall()
-        
-        print(f"DEBUG: {len(graus_superiores)} graus superiores encontrados")  # Verificar no terminal
-        for g in graus_superiores:
-            print(f"  - Nível {g['nivel']}: {g['nome']}")
 
         return_connection(conn)
-        
+
         return render_template(
             "obreiros/editar.html",
             obreiro=obreiro,
             lojas=lojas,
             graus=graus,
-            graus_superiores=graus_superiores,  # ✅ Enviar para o template
+            graus_superiores=graus_superiores,
             is_admin=is_admin,
             is_own_profile=is_own_profile
         )
@@ -4042,178 +4158,6 @@ def editar_obreiro(id):
         flash(f"Erro ao atualizar: {str(e)}", "danger")
         return_connection(conn)
         return redirect(f"/obreiros/{id}")
-
-
-        # =============================
-        # 📥 POST (SALVAR ALTERAÇÕES)
-        # =============================
-        if request.method == "POST":
-
-            # 🧾 Campos do formulário
-            nome_completo = request.form.get("nome_completo")
-            nome_maconico = request.form.get("nome_maconico")
-            cim_numero = request.form.get("cim_numero")
-            telefone = request.form.get("telefone")
-            email = request.form.get("email")
-            endereco = request.form.get("endereco")
-            loja_nome = request.form.get("loja_nome")
-            loja_numero = request.form.get("loja_numero")
-            loja_orient = request.form.get("loja_orient")
-            senha = request.form.get("senha", "")
-
-            # 🔥 CAMPO TIPO (apenas admin pode alterar tipo)
-            if is_admin:
-                tipo = request.form.get("tipo", obreiro["tipo"])
-            else:
-                tipo = obreiro["tipo"]
-
-            # =============================
-            # 🎯 GRAU (capturar do campo hidden)
-            # =============================
-            grau_antigo = obreiro["grau_atual"]
-            
-            # Capturar o grau do campo hidden
-            grau_form = request.form.get("grau_atual")
-            
-            if grau_form and str(grau_form).strip().isdigit():
-                grau_atual = int(grau_form)
-            else:
-                grau_atual = grau_antigo
-
-            # =============================
-            # 🔒 STATUS (somente admin)
-            # =============================
-            if is_admin:
-                ativo = request.form.get("ativo", obreiro["ativo"])
-                if ativo:
-                    ativo = int(ativo)
-                else:
-                    ativo = obreiro["ativo"]
-            else:
-                ativo = obreiro["ativo"]
-
-            # =============================
-            # ✅ VALIDAÇÃO DE SINDICANTE
-            # =============================
-            if tipo == 'sindicante' and grau_atual < 3:
-                flash("⚠️ Apenas obreiros com grau de Mestre (3) ou superior podem ser Sindicantes!", "danger")
-                return_connection(conn)
-                return redirect(f"/obreiros/{id}/editar")
-
-            # =============================
-            # 💾 UPDATE COMPLETO
-            # =============================
-            cursor.execute("""
-                UPDATE usuarios SET
-                    nome_completo = %s,
-                    nome_maconico = %s,
-                    cim_numero = %s,
-                    telefone = %s,
-                    email = %s,
-                    endereco = %s,
-                    loja_nome = %s,
-                    loja_numero = %s,
-                    loja_orient = %s,
-                    grau_atual = %s,
-                    ativo = %s,
-                    tipo = %s
-                WHERE id = %s
-            """, (
-                nome_completo,
-                nome_maconico,
-                cim_numero,
-                telefone,
-                email,
-                endereco,
-                loja_nome,
-                loja_numero,
-                loja_orient,
-                grau_atual,
-                ativo,
-                tipo,
-                id
-            ))
-
-            # =============================
-            # 🔐 ATUALIZAR SENHA SE FORNECIDA
-            # =============================
-            if senha and len(senha) >= 6:
-                import hashlib
-                senha_hash = hashlib.sha256(senha.encode()).hexdigest()
-                cursor.execute("UPDATE usuarios SET senha_hash = %s WHERE id = %s", (senha_hash, id))
-
-            # =============================
-            # 📜 HISTÓRICO DE GRAU (apenas admin)
-            # =============================
-            if is_admin and grau_atual != grau_antigo and grau_atual > 0:
-                try:
-                    # Buscar nome do grau
-                    cursor.execute("SELECT nome FROM graus WHERE nivel = %s", (grau_atual,))
-                    grau_info = cursor.fetchone()
-                    grau_nome = grau_info['nome'] if grau_info else f"Grau {grau_atual}"
-                    
-                    cursor.execute("""
-                        INSERT INTO historico_graus 
-                        (obreiro_id, grau, data, observacao)
-                        VALUES (%s, %s, CURRENT_DATE, %s)
-                    """, (
-                        id,
-                        grau_atual,
-                        f"Alteração de grau de {grau_antigo} para {grau_atual} - {grau_nome}"
-                    ))
-                except Exception as e:
-                    print(f"⚠️ Erro ao registrar histórico: {e}")
-
-            conn.commit()
-            
-            # ✅ ATUALIZAR SESSÃO SE FOR O PRÓPRIO USUÁRIO
-            if is_own_profile:
-                session['nome_completo'] = nome_completo
-                session['grau_atual'] = grau_atual
-                session['tipo'] = tipo
-            
-            registrar_log("editar", "obreiro", id, dados_novos={"nome": nome_completo})
-            flash("Obreiro atualizado com sucesso!", "success")
-            return_connection(conn)
-            return redirect(f"/obreiros/{id}")
-
-    except Exception as e:
-        print(f"❌ Erro ao editar obreiro: {e}")
-        import traceback
-        traceback.print_exc()
-        if conn:
-            conn.rollback()
-        flash(f"Erro ao atualizar: {str(e)}", "danger")
-        return_connection(conn)
-        return redirect(f"/obreiros/{id}")
-
-    # =============================
-    # 📊 GET (CARREGAR TELA)
-    # =============================
-    cursor.execute("SELECT * FROM usuarios WHERE id = %s", (id,))
-    obreiro = cursor.fetchone()
-
-    cursor.execute("SELECT id, nome, numero, oriente FROM lojas WHERE ativo = 1 ORDER BY nome")
-    lojas = cursor.fetchall()
-
-    cursor.execute("SELECT nivel, nome FROM graus ORDER BY nivel")
-    graus = cursor.fetchall()
-    
-    # Buscar graus superiores (nivel >= 4)
-    cursor.execute("SELECT nivel, nome FROM graus WHERE nivel >= 4 ORDER BY nivel")
-    graus_superiores = cursor.fetchall()
-
-    return_connection(conn)
-
-    return render_template(
-        "obreiros/editar.html",
-        obreiro=obreiro,
-        lojas=lojas,
-        graus=graus,
-        graus_superiores=graus_superiores,
-        is_admin=is_admin,
-        is_own_profile=is_own_profile
-    )
 
 
     
