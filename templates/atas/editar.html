@@ -4,6 +4,8 @@
 
 {% block styles %}
 {{ super() }}
+<!-- TinyMCE CDN -->
+<script src="https://cdn.tiny.cloud/1/demo/tinymce/6/tinymce.min.js" referrerpolicy="origin"></script>
 <style>
     .tox-tinymce {
         border-radius: 10px !important;
@@ -35,7 +37,7 @@
         <div class="d-flex justify-content-between align-items-center mb-4">
             <h2>
                 <i class="bi bi-file-text"></i> 
-                Editar Ata - {{ ata.titulo or ata.reuniao_titulo }}
+                Editar Ata - {{ ata.reuniao_titulo }}
             </h2>
             <div>
                 <a href="/atas/{{ ata.id }}" class="btn btn-outline-info me-2">
@@ -100,8 +102,18 @@
                         <textarea name="conteudo" id="editor" class="form-control" rows="15">{{ ata.conteudo | safe }}</textarea>
                         <small class="text-muted">
                             <i class="bi bi-info-circle"></i> 
-                            Use a barra de ferramentas acima para formatar o texto.
+                            Use a barra de ferramentas para formatar o texto.
                         </small>
+                    </div>
+
+                    <div class="alert alert-info mt-3">
+                        <i class="bi bi-info-circle"></i>
+                        <strong>Informações:</strong>
+                        <ul class="mb-0 mt-2">
+                            <li>A ata será salva com formatação HTML</li>
+                            <li>Após aprovação, os responsáveis poderão assinar digitalmente</li>
+                            <li>As assinaturas são registradas com data e hora</li>
+                        </ul>
                     </div>
 
                     <div class="text-center mt-4">
@@ -119,7 +131,7 @@
         <!-- Pré-visualização -->
         <div class="card shadow mt-4">
             <div class="card-header bg-info text-white">
-                <h5 class="mb-0"><i class="bi bi-eye"></i> Pré-visualização</h5>
+                <h5 class="mb-0"><i class="bi bi-eye"></i> Pré-visualização da Ata</h5>
             </div>
             <div class="card-body">
                 <div id="preview" class="toolbar-preview">
@@ -130,25 +142,14 @@
     </div>
 </div>
 
-<!-- TinyMCE - Versão gratuita (sem API Key) -->
-<script src="https://cdn.jsdelivr.net/npm/tinymce@6.8.3/tinymce.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/tinymce@6.8.3/themes/silver/theme.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/tinymce@6.8.3/plugins/advlist/plugin.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/tinymce@6.8.3/plugins/lists/plugin.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/tinymce@6.8.3/plugins/link/plugin.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/tinymce@6.8.3/plugins/image/plugin.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/tinymce@6.8.3/plugins/table/plugin.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/tinymce@6.8.3/plugins/align/plugin.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/tinymce@6.8.3/plugins/code/plugin.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/tinymce@6.8.3/plugins/emoticons/plugin.min.js"></script>
-
 <script>
+    // Inicializar TinyMCE
     tinymce.init({
         selector: '#editor',
         language: 'pt_BR',
         height: 500,
         menubar: true,
-        plugins: 'advlist lists link image table align code emoticons',
+        plugins: 'advlist lists link image table align code',
         toolbar: 'undo redo | blocks | bold italic underline | alignleft aligncenter alignright alignjustify | bullist numlist | link image table | removeformat | code',
         toolbar_mode: 'wrap',
         content_style: 'body { font-family: Arial, sans-serif; font-size: 14px; line-height: 1.6; }',
@@ -159,7 +160,7 @@
         }
     });
     
-    // Modelos
+    // Carregar modelos
     document.getElementById('modeloSelect').addEventListener('change', function() {
         const modelo = this.value;
         let conteudo = '';
@@ -168,16 +169,36 @@
             case 'padrao':
                 conteudo = `<h2 style="text-align: center;">ATA DA REUNIÃO</h2>
 <p>&nbsp;</p>
-<p style="text-align: justify;">Aos <strong>[DATA]</strong> dias do mês de <strong>[MÊS]</strong> de <strong>[ANO]</strong>, reuniu-se a Loja Maçônica...</p>`;
+<p style="text-align: justify;">Aos <strong>[DATA]</strong> dias do mês de <strong>[MÊS]</strong> de <strong>[ANO]</strong>, reuniu-se a Loja Maçônica <strong>[NOME DA LOJA]</strong>, sob a presidência do Venerável Mestre <strong>[NOME]</strong>, com a presença dos seguintes obreiros...</p>
+<p>&nbsp;</p>
+<p style="text-align: justify;">Nada mais havendo a tratar, o Venerável Mestre encerrou os trabalhos.</p>
+<p>&nbsp;</p>
+<p style="text-align: center;">Eu, <strong>[NOME]</strong>, Secretário, lavrei a presente ata.</p>`;
                 break;
             case 'formal':
                 conteudo = `<h1 style="text-align: center;">ATA DA REUNIÃO ORDINÁRIA</h1>
-<p style="text-align: justify;">Aos <strong>[DATA]</strong> dias do mês de <strong>[MÊS]</strong> do ano de <strong>[ANO]</strong>, sob os auspícios do Grande Oriente do Brasil...</p>`;
+<p style="text-align: center;">&nbsp;</p>
+<p style="text-align: justify;">Aos <strong>[DATA]</strong> dias do mês de <strong>[MÊS]</strong> do ano de <strong>[ANO]</strong>, sob os auspícios do Grande Oriente do Brasil, reuniu-se em seu templo a Loja Maçônica <strong>[NOME DA LOJA]</strong>, sob a presidência do Venerável Mestre <strong>[NOME]</strong>, assistido pelos demais oficiais da loja.</p>
+<p style="text-align: justify;">&nbsp;</p>
+<p style="text-align: justify;">Aberta a sessão, foi feita a leitura da ata anterior, que foi aprovada por unanimidade...</p>
+<p style="text-align: justify;">&nbsp;</p>
+<p style="text-align: justify;">Nada mais havendo a tratar, o Venerável Mestre declarou encerrados os trabalhos, lavrando a presente ata que vai assinada.</p>
+<p style="text-align: justify;">&nbsp;</p>
+<p style="text-align: center;"><strong>[NOME]</strong><br>Secretário</p>`;
                 break;
             case 'simples':
                 conteudo = `<h3>ATA DA REUNIÃO</h3>
 <p><strong>Data:</strong> [DATA]</p>
-<p><strong>Local:</strong> [LOCAL]</p>`;
+<p><strong>Local:</strong> [LOCAL]</p>
+<p><strong>Presentes:</strong> [LISTA DE PRESENTES]</p>
+<h4>Assuntos tratados:</h4>
+<ul>
+<li>Item 1</li>
+<li>Item 2</li>
+<li>Item 3</li>
+</ul>
+<p><strong>Próxima reunião:</strong> [DATA]</p>
+<p><strong>Secretário:</strong> [NOME]</p>`;
                 break;
             default:
                 return;
@@ -199,4 +220,31 @@
         }
     }, 1000);
 </script>
+
+<style>
+    .card {
+        border-radius: 10px;
+        overflow: hidden;
+    }
+    .card-header {
+        font-weight: 600;
+    }
+    .toolbar-preview {
+        background: #f8f9fa;
+        border: 1px solid #dee2e6;
+        border-radius: 5px;
+        padding: 20px;
+        min-height: 200px;
+        max-height: 500px;
+        overflow-y: auto;
+    }
+    .toolbar-preview h1, .toolbar-preview h2, .toolbar-preview h3 {
+        margin-top: 20px;
+        margin-bottom: 10px;
+    }
+    .toolbar-preview p {
+        margin-bottom: 10px;
+        line-height: 1.6;
+    }
+</style>
 {% endblock %}

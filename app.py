@@ -773,6 +773,14 @@ init_whatsapp_tables()
 # =============================
 # FUNÇÕES AUXILIARES
 # =============================
+import unicodedata
+
+def remover_acentos(texto):
+    """Remove acentos de uma string"""
+    if not texto:
+        return texto
+    texto = unicodedata.normalize('NFKD', texto).encode('ASCII', 'ignore').decode('ASCII')
+    return texto.lower()
 
 def tratar_valor_nulo(valor, tipo='string'):
     if valor is None:
@@ -4119,11 +4127,10 @@ def editar_obreiro(id):
 @app.route("/obreiros/<int:id>")
 @login_required
 def visualizar_obreiro(id):
-    """Visualizar detalhes de um obreiro específico"""
     cursor, conn = get_db()
     
     try:
-        # Buscar dados do obreiro com informações da loja
+        # Buscar dados do obreiro
         cursor.execute("""
             SELECT u.*, l.nome as loja_nome_completo, l.cidade as loja_cidade, l.uf as loja_uf
             FROM usuarios u
@@ -4138,13 +4145,10 @@ def visualizar_obreiro(id):
             return redirect("/obreiros")
         
         # ============================================
-        # PERMISSÃO DE VISUALIZAÇÃO
+        # BUSCAR CARGO ATUAL DO OBREIRO (ativo)
         # ============================================
-        # Todos os usuários logados podem visualizar qualquer obreiro
-        
-        # Buscar cargo atual
         cursor.execute("""
-            SELECT c.nome as cargo_nome, c.sigla, oc.data_inicio
+            SELECT c.nome as cargo_nome, c.sigla, oc.data_inicio, oc.id as ocupacao_id
             FROM ocupacao_cargos oc
             JOIN cargos c ON oc.cargo_id = c.id
             WHERE oc.obreiro_id = %s AND oc.ativo = 1
@@ -4154,17 +4158,21 @@ def visualizar_obreiro(id):
         cargo_atual_row = cursor.fetchone()
         cargo_atual = cargo_atual_row['cargo_nome'] if cargo_atual_row else None
         
-        # Buscar todos os cargos do obreiro
+        # ============================================
+        # BUSCAR TODOS OS CARGOS DO OBREIRO (apenas ativos)
+        # ============================================
         cursor.execute("""
             SELECT oc.*, c.nome as cargo_nome, c.sigla
             FROM ocupacao_cargos oc
             JOIN cargos c ON oc.cargo_id = c.id
-            WHERE oc.obreiro_id = %s
+            WHERE oc.obreiro_id = %s AND oc.ativo = 1
             ORDER BY oc.data_inicio DESC
         """, (id,))
         cargos = cursor.fetchall()
         
-        # Buscar histórico de graus
+        # ============================================
+        # BUSCAR HISTÓRICO DE GRAUS
+        # ============================================
         cursor.execute("""
             SELECT h.*, 
                    CASE 
@@ -4183,37 +4191,40 @@ def visualizar_obreiro(id):
         historico_graus = cursor.fetchall()
         
         # ============================================
-        # CONTAR FAMILIARES (tabela 'familiares')
+        # CONTAR FAMILIARES (dependentes)
         # ============================================
-        try:
-            cursor.execute("SELECT COUNT(*) as total FROM familiares WHERE obreiro_id = %s", (id,))
-            familiares_count = cursor.fetchone()["total"]
-            print(f"✅ Familiares encontrados para obreiro {id}: {familiares_count}")
-        except Exception as e:
-            print(f"❌ Erro ao contar familiares: {e}")
-            familiares_count = 0
+        cursor.execute("SELECT COUNT(*) as total FROM dependentes WHERE obreiro_id = %s", (id,))
+        familiares_count = cursor.fetchone()["total"]
         
-        # Contar condecorações
+        # ============================================
+        # CONTAR CONDECORAÇÕES
+        # ============================================
         try:
             cursor.execute("SELECT COUNT(*) as total FROM condecoracoes_obreiro WHERE obreiro_id = %s", (id,))
             condecoracoes_count = cursor.fetchone()["total"]
         except:
             condecoracoes_count = 0
         
-        # Contar comunicados (se a tabela existir)
+        # ============================================
+        # CONTAR COMUNICADOS
+        # ============================================
         try:
             cursor.execute("SELECT COUNT(*) as total FROM comunicados_obreiro WHERE obreiro_id = %s AND ativo = 1", (id,))
             comunicados_count = cursor.fetchone()["total"]
         except:
             comunicados_count = 0
         
-        # Cargos disponíveis para adicionar (apenas admin)
+        # ============================================
+        # CARGOS DISPONÍVEIS PARA ADICIONAR (apenas admin)
+        # ============================================
         cargos_disponiveis = []
         if session.get("tipo") == "admin":
             cursor.execute("SELECT id, nome, sigla FROM cargos WHERE ativo = 1 ORDER BY ordem, nome")
             cargos_disponiveis = cursor.fetchall()
         
-        # Graus disponíveis para registrar (apenas admin)
+        # ============================================
+        # GRAUS DISPONÍVEIS (apenas admin)
+        # ============================================
         graus_disponiveis = []
         if session.get("tipo") == "admin":
             cursor.execute("SELECT nivel, nome FROM graus WHERE ativo = 1 ORDER BY nivel")
@@ -4221,7 +4232,6 @@ def visualizar_obreiro(id):
         
         return_connection(conn)
         
-        # Verificar se pode editar (admin ou próprio perfil)
         pode_editar = (session.get("tipo") == "admin" or session.get("user_id") == id)
         
         return render_template("obreiros/visualizar.html",
@@ -4244,6 +4254,8 @@ def visualizar_obreiro(id):
             return_connection(conn)
         flash(f"Erro ao carregar dados do obreiro: {str(e)}", "danger")
         return redirect("/obreiros")
+
+
     
 @app.route("/obreiros/<int:id>/foto", methods=["POST"])
 @login_required
@@ -6445,9 +6457,11 @@ def gerar_alertas():
     return_connection(conn)
     flash(f"Alertas gerados! ({len(alertas_ausencias)} por ausencias + alertas de presenca)", "success")
     return redirect("/presenca/alertas")
+    
 # =============================
 # ROTAS DE ATAS 
 # =============================
+
 @app.route("/atas/<int:id>/pdf-oficial")
 @login_required
 def gerar_pdf_ata_oficial(id):
@@ -6577,13 +6591,14 @@ def gerar_pdf_ata_oficial(id):
         
     except Exception as e:
         print(f"Erro ao gerar PDF: {e}")
-        # Fallback: retornar HTML formatado para impressão
         return html
+
+
 @app.route("/atas/<int:id>")
 @login_required
 @permissao_required('ata.view_one')
 def ver_ata_por_id(id):
-    """Visualizar ata pelo ID"""
+    """Visualizar ata pelo ID com sistema de assinaturas por cargo"""
     try:
         cursor, conn = get_db()
         
@@ -6622,14 +6637,13 @@ def ver_ata_por_id(id):
             usuario_grau = session.get('grau_atual', 0)
             reuniao_grau = ata.get('reuniao_grau', 0)
             
-            # Se a reunião é de grau superior, verificar permissão especial
             if reuniao_grau and reuniao_grau > usuario_grau:
                 if not verificar_permissao(session['user_id'], 'ata.view_superior'):
                     flash("Você não tem permissão para visualizar esta ata.", "danger")
                     return_connection(conn)
                     return redirect("/atas")
         
-        # Buscar lista de presença da reunião (apenas para usuários com permissão)
+        # Buscar lista de presença da reunião
         presenca = []
         if verificar_permissao(session['user_id'], 'reuniao.view_one') or is_admin:
             cursor.execute("""
@@ -6648,46 +6662,112 @@ def ver_ata_por_id(id):
             """, (ata["reuniao_id"],))
             presenca = cursor.fetchall()
         
-        # Buscar assinaturas da ata (apenas para usuários com permissão)
-        assinaturas = []
-        if verificar_permissao(session['user_id'], 'ata.view_one') or is_admin:
-            cursor.execute("""
-                SELECT 
-                    s.id,
-                    s.data_assinatura,
-                    s.ip_assinatura,
-                    s.validada,
-                    u.nome_completo,
-                    u.grau_atual,
-                    c.nome as cargo_nome
-                FROM assinaturas_ata s
-                LEFT JOIN usuarios u ON s.obreiro_id = u.id
-                LEFT JOIN cargos c ON s.cargo_id = c.id
-                WHERE s.ata_id = %s
-                ORDER BY s.data_assinatura DESC
-            """, (id,))
-            assinaturas = cursor.fetchall()
+        # ============================================
+        # SISTEMA DE ASSINATURAS POR CARGO
+        # ============================================
         
-        # Verificar se o usuário pode assinar a ata
-        pode_assinar = False
-        if not is_admin:
-            usuario_grau = session.get('grau_atual', 0)
-            reuniao_grau = ata.get('reuniao_grau', 0)
+        ata_aprovada = ata.get('aprovada', 0) == 1
+        
+        # Buscar cargo atual do usuário (TAMBÉM PARA ADMIN)
+        usuario_id = session.get('user_id')
+        cargo_usuario = None
+        
+        # REMOVEMOS a condição "if not is_admin" para que admin também possa ter cargo
+        cursor.execute("""
+            SELECT c.nome as cargo_nome, c.id as cargo_id
+            FROM ocupacao_cargos oc
+            JOIN cargos c ON oc.cargo_id = c.id
+            WHERE oc.obreiro_id = %s AND oc.ativo = 1
+            ORDER BY oc.data_inicio DESC
+            LIMIT 1
+        """, (usuario_id,))
+        cargo = cursor.fetchone()
+        
+        if cargo:
+            cargo_nome_lower = cargo['cargo_nome'].lower()
+            print(f"🔍 Cargo do usuário {usuario_id}: '{cargo['cargo_nome']}' -> lower: '{cargo_nome_lower}'")
             
-            if reuniao_grau and reuniao_grau <= usuario_grau:
-                pode_assinar = verificar_permissao(session['user_id'], 'ata.sign')
-            elif reuniao_grau and reuniao_grau > usuario_grau:
-                pode_assinar = verificar_permissao(session['user_id'], 'ata.sign_superior')
+            if 'venerável' in cargo_nome_lower or 'veneravel' in cargo_nome_lower:
+                cargo_usuario = 'veneravel'
+            elif 'orador' in cargo_nome_lower:
+                cargo_usuario = 'orador'
+            elif 'secretário' in cargo_nome_lower or 'secretario' in cargo_nome_lower:
+                cargo_usuario = 'secretario'
+            
+            print(f"🔍 cargo_usuario definido como: '{cargo_usuario}'")
         else:
-            pode_assinar = True
+            print(f"⚠️ Nenhum cargo ativo encontrado para o usuário {usuario_id}")
+        
+        # Verificar status das assinaturas na ata
+        assinatura_veneravel = ata.get('assinatura_veneravel', False)
+        assinatura_orador = ata.get('assinatura_orador', False)
+        assinatura_secretario = ata.get('assinatura_secretario', False)
+        
+        # Calcular progresso das assinaturas
+        total_assinaturas = 3
+        assinadas = sum([1 for x in [assinatura_veneravel, assinatura_orador, assinatura_secretario] if x])
+        percentual_assinaturas = int((assinadas / total_assinaturas * 100)) if total_assinaturas > 0 else 0
+        
+        # Verificar se o usuário já assinou
+        ja_assinou = False
+        if cargo_usuario == 'veneravel' and assinatura_veneravel:
+            ja_assinou = True
+        elif cargo_usuario == 'orador' and assinatura_orador:
+            ja_assinou = True
+        elif cargo_usuario == 'secretario' and assinatura_secretario:
+            ja_assinou = True
+        
+        # Verificar se pode assinar (ata aprovada, tem cargo correto, não assinou ainda)
+        # Admin também pode assinar se tiver o cargo correto
+        pode_assinar = ata_aprovada and cargo_usuario is not None and not ja_assinou
+        
+        print(f"🔍 DEBUG FINAL:")
+        print(f"   - ata_aprovada: {ata_aprovada}")
+        print(f"   - cargo_usuario: {cargo_usuario}")
+        print(f"   - ja_assinou: {ja_assinou}")
+        print(f"   - pode_assinar: {pode_assinar}")
+        
+        # Buscar assinaturas existentes (para admin visualizar)
+        assinaturas_lista = []
+        if assinatura_veneravel:
+            assinaturas_lista.append({
+                'cargo': 'Venerável Mestre',
+                'assinado': True,
+                'data_assinatura': ata.get('data_assinatura_veneravel'),
+                'nome': ata.get('veneravel_mestre_nome', 'Venerável Mestre')
+            })
+        if assinatura_orador:
+            assinaturas_lista.append({
+                'cargo': 'Orador',
+                'assinado': True,
+                'data_assinatura': ata.get('data_assinatura_orador'),
+                'nome': ata.get('orador_nome', 'Orador')
+            })
+        if assinatura_secretario:
+            assinaturas_lista.append({
+                'cargo': 'Secretário',
+                'assinado': True,
+                'data_assinatura': ata.get('data_assinatura_secretario'),
+                'nome': ata.get('secretario_nome', 'Secretário')
+            })
         
         return_connection(conn)
         
         return render_template("atas/visualizar.html", 
                               ata=ata, 
                               presenca=presenca, 
-                              assinaturas=assinaturas,
-                              pode_assinar=pode_assinar)
+                              assinaturas=assinaturas_lista,
+                              pode_assinar=pode_assinar,
+                              ata_aprovada=ata_aprovada,
+                              cargo_usuario=cargo_usuario,
+                              ja_assinou=ja_assinou,
+                              assinatura_veneravel=assinatura_veneravel,
+                              assinatura_orador=assinatura_orador,
+                              assinatura_secretario=assinatura_secretario,
+                              percentual_assinaturas=percentual_assinaturas,
+                              assinadas=assinadas,
+                              total_assinaturas=total_assinaturas,
+                              is_admin=is_admin)
         
     except Exception as e:
         print(f"❌ Erro ao ver ata {id}: {e}")
@@ -6699,6 +6779,134 @@ def ver_ata_por_id(id):
         
         flash(f"Erro ao carregar ata: {str(e)}", "danger")
         return redirect("/atas")
+
+
+# ============================================
+# ROTAS DE ASSINATURA POR CARGO
+# ============================================
+
+@app.route("/atas/<int:id>/assinar/veneravel", methods=["POST"])
+@login_required
+def assinar_ata_veneravel(id):
+    """Assina a ata como Venerável Mestre"""
+    return assinar_ata_por_cargo(id, 'veneravel', 'assinatura_veneravel', 'data_assinatura_veneravel', 'Venerável Mestre')
+
+
+@app.route("/atas/<int:id>/assinar/orador", methods=["POST"])
+@login_required
+def assinar_ata_orador(id):
+    """Assina a ata como Orador"""
+    return assinar_ata_por_cargo(id, 'orador', 'assinatura_orador', 'data_assinatura_orador', 'Orador')
+
+
+@app.route("/atas/<int:id>/assinar/secretario", methods=["POST"])
+@login_required
+def assinar_ata_secretario(id):
+    """Assina a ata como Secretário"""
+    return assinar_ata_por_cargo(id, 'secretario', 'assinatura_secretario', 'data_assinatura_secretario', 'Secretário')
+
+
+def assinar_ata_por_cargo(id, cargo, coluna_assinatura, coluna_data, nome_cargo):
+    """Função genérica para assinar ata por cargo"""
+    cursor, conn = get_db()
+    
+    try:
+        # Verificar se a ata existe e está aprovada
+        cursor.execute(f"""
+            SELECT aprovada, {coluna_assinatura} 
+            FROM atas 
+            WHERE id = %s
+        """, (id,))
+        resultado = cursor.fetchone()
+        
+        if not resultado:
+            flash("Ata não encontrada", "danger")
+            return_connection(conn)
+            return redirect("/atas")
+        
+        if resultado['aprovada'] != 1:
+            flash("A ata precisa ser aprovada antes de ser assinada", "warning")
+            return_connection(conn)
+            return redirect(f"/atas/{id}")
+        
+        if resultado[coluna_assinatura]:
+            flash(f"A ata já foi assinada pelo {nome_cargo}", "warning")
+            return_connection(conn)
+            return redirect(f"/atas/{id}")
+        
+        # Verificar cargo do usuário
+        usuario_id = session.get('user_id')
+        cursor.execute("""
+            SELECT c.nome as cargo_nome
+            FROM ocupacao_cargos oc
+            JOIN cargos c ON oc.cargo_id = c.id
+            WHERE oc.obreiro_id = %s AND oc.ativo = 1
+            ORDER BY oc.data_inicio DESC
+            LIMIT 1
+        """, (usuario_id,))
+        cargo_usuario = cursor.fetchone()
+        
+        if not cargo_usuario:
+            flash("Você não possui cargo para assinar esta ata", "danger")
+            return_connection(conn)
+            return redirect(f"/atas/{id}")
+        
+        # Normalizar para comparação (minúsculo e sem acentos)
+        import unicodedata
+        def normalizar(texto):
+            if not texto:
+                return ""
+            texto = unicodedata.normalize('NFKD', texto).encode('ASCII', 'ignore').decode('ASCII')
+            return texto.lower().strip()
+        
+        cargo_normalizado = normalizar(cargo_usuario['cargo_nome'])
+        cargo_esperado_normalizado = normalizar(cargo)
+        
+        print(f"🔍 Cargo do usuário: '{cargo_usuario['cargo_nome']}' -> normalizado: '{cargo_normalizado}'")
+        print(f"🔍 Cargo esperado: '{cargo}' -> normalizado: '{cargo_esperado_normalizado}'")
+        
+        cargo_valido = False
+        
+        if cargo == 'veneravel':
+            if cargo_normalizado in ['veneravel', 'venerável']:
+                cargo_valido = True
+                cursor.execute("UPDATE atas SET veneravel_mestre_nome = %s WHERE id = %s", (cargo_usuario['cargo_nome'], id))
+        elif cargo == 'orador':
+            if cargo_normalizado in ['orador', 'oradora']:
+                cargo_valido = True
+                cursor.execute("UPDATE atas SET orador_nome = %s WHERE id = %s", (cargo_usuario['cargo_nome'], id))
+        elif cargo == 'secretario':
+            # Aceita várias variações
+            if cargo_normalizado in ['secretario', 'secretário', 'secretaria', 'secretária']:
+                cargo_valido = True
+                cursor.execute("UPDATE atas SET secretario_nome = %s WHERE id = %s", (cargo_usuario['cargo_nome'], id))
+        
+        if not cargo_valido:
+            flash(f"Você não é {nome_cargo} para assinar esta ata. Seu cargo: {cargo_usuario['cargo_nome']}", "danger")
+            return_connection(conn)
+            return redirect(f"/atas/{id}")
+        
+        # Registrar assinatura
+        cursor.execute(f"""
+            UPDATE atas 
+            SET {coluna_assinatura} = TRUE, {coluna_data} = NOW()
+            WHERE id = %s
+        """, (id,))
+        
+        conn.commit()
+        
+        registrar_log("assinar", "ata", id, dados_novos={"cargo": nome_cargo, "data": datetime.now()})
+        flash(f"✅ Ata assinada com sucesso como {nome_cargo}!", "success")
+        
+    except Exception as e:
+        print(f"Erro ao assinar ata: {e}")
+        import traceback
+        traceback.print_exc()
+        conn.rollback()
+        flash(f"Erro ao assinar ata: {str(e)}", "danger")
+    
+    return_connection(conn)
+    return redirect(f"/atas/{id}")
 
 @app.route("/atas")
 @login_required
@@ -6718,7 +6926,7 @@ def listar_atas():
     usuario_tipo = session.get('tipo', 'obreiro')
     
     # ============================================
-    # QUERY PRINCIPAL CORRIGIDA - BUSCANDO REDATOR PELO ID
+    # QUERY PRINCIPAL - ADICIONAR total_assinaturas
     # ============================================
     query = """
         SELECT 
@@ -6739,20 +6947,32 @@ def listar_atas():
             r.data as reuniao_data,
             r.local as reuniao_local,
             r.tipo as reuniao_tipo,
-            -- Buscar nome do redator da tabela usuarios se redator_nome estiver vazio
+            -- Status das assinaturas
+            a.assinatura_veneravel,
+            a.assinatura_orador,
+            a.assinatura_secretario,
+            -- CALCULAR total_assinaturas
+            (CASE WHEN a.assinatura_veneravel = true THEN 1 ELSE 0 END +
+             CASE WHEN a.assinatura_orador = true THEN 1 ELSE 0 END +
+             CASE WHEN a.assinatura_secretario = true THEN 1 ELSE 0 END) as total_assinaturas,
+            -- Nomes dos assinantes
+            a.veneravel_mestre_nome,
+            a.orador_nome,
+            a.secretario_nome,
+            a.versao,
+            a.arquivo_pdf,
+            a.data_impressao,
+            a.hash_documento,
             COALESCE(
                 a.redator_nome, 
                 redator_user.nome_completo,
                 'Redator não informado'
             ) as redator_nome_completo,
-            -- Buscar nome do secretario da tabela usuarios
-            secretario_user.nome_completo as secretario_nome,
-            COUNT(DISTINCT ass.id) as total_assinaturas
+            secretario_user.nome_completo as secretario_nome
         FROM atas a
         LEFT JOIN reunioes r ON a.reuniao_id = r.id
         LEFT JOIN usuarios redator_user ON a.redator_id = redator_user.id
         LEFT JOIN usuarios secretario_user ON a.secretario_id = secretario_user.id
-        LEFT JOIN assinaturas_ata ass ON a.id = ass.ata_id
         WHERE 1=1
     """
     
@@ -6782,11 +7002,6 @@ def listar_atas():
         params.append(f"%{reuniao_titulo}%")
     
     query += """
-        GROUP BY 
-            a.id, a.numero_ata, a.ano_ata, a.data_criacao, a.aprovada, a.aprovada_em,
-            a.tipo_ata, a.conteudo, a.redator_id, a.redator_nome, a.secretario_id,
-            a.titulo, r.id, r.titulo, r.data, r.local, r.tipo,
-            redator_user.nome_completo, secretario_user.nome_completo
         ORDER BY a.data_criacao DESC, a.numero_ata DESC
     """
     
@@ -6797,7 +7012,6 @@ def listar_atas():
     # ESTATÍSTICAS PARA OS CARDS
     # ============================================
     
-    # Construir filtro para estatísticas
     stats_filter = ""
     stats_params = []
     
@@ -6827,22 +7041,17 @@ def listar_atas():
             SUM(CASE WHEN a.aprovada = 0 THEN 1 ELSE 0 END) as pendentes,
             SUM(CASE WHEN EXTRACT(MONTH FROM a.data_criacao) = EXTRACT(MONTH FROM CURRENT_DATE)
                       AND EXTRACT(YEAR FROM a.data_criacao) = EXTRACT(YEAR FROM CURRENT_DATE) THEN 1 ELSE 0 END) as atas_mes,
-            COALESCE(SUM(ass.total_assinaturas), 0) as total_assinaturas,
-            COALESCE(AVG(ass.total_assinaturas), 0) as media_assinaturas
+            SUM(CASE WHEN a.assinatura_veneravel = true THEN 1 ELSE 0 END) as assinaturas_veneravel,
+            SUM(CASE WHEN a.assinatura_orador = true THEN 1 ELSE 0 END) as assinaturas_orador,
+            SUM(CASE WHEN a.assinatura_secretario = true THEN 1 ELSE 0 END) as assinaturas_secretario
         FROM atas a
         LEFT JOIN reunioes r ON a.reuniao_id = r.id
-        LEFT JOIN (
-            SELECT ata_id, COUNT(*) as total_assinaturas
-            FROM assinaturas_ata
-            GROUP BY ata_id
-        ) ass ON a.id = ass.ata_id
         WHERE 1=1 {stats_filter}
     """
     
     cursor.execute(stats_query, stats_params)
     stats = cursor.fetchone()
     
-    # Calcular taxa de aprovação
     total_atas = stats['total_atas'] or 0
     aprovadas = stats['aprovadas'] or 0
     taxa_aprovacao = (aprovadas / total_atas * 100) if total_atas > 0 else 0
@@ -6852,8 +7061,8 @@ def listar_atas():
         'aprovadas': aprovadas,
         'pendentes': stats['pendentes'] or 0,
         'atas_mes': stats['atas_mes'] or 0,
-        'total_assinaturas': stats['total_assinaturas'] or 0,
-        'media_assinaturas': float(stats['media_assinaturas'] or 0),
+        'total_assinaturas': (stats['assinaturas_veneravel'] or 0) + (stats['assinaturas_orador'] or 0) + (stats['assinaturas_secretario'] or 0),
+        'media_assinaturas': ((stats['assinaturas_veneravel'] or 0) + (stats['assinaturas_orador'] or 0) + (stats['assinaturas_secretario'] or 0)) / total_atas if total_atas > 0 else 0,
         'taxa_aprovacao': taxa_aprovacao,
         'exibidas': len(atas)
     }
@@ -6869,6 +7078,7 @@ def listar_atas():
                               'aprovada': aprovada,
                               'reuniao_titulo': reuniao_titulo
                           })
+
 
 @app.route("/atas/<int:id>/visualizar_simples")
 @login_required
@@ -6938,7 +7148,16 @@ def visualizar_ata_completa(id):
                 r.pauta,
                 r.grau as reuniao_grau,
                 u.nome_completo as redator_nome,
-                u2.nome_completo as aprovado_por_nome
+                u2.nome_completo as aprovado_por_nome,
+                a.assinatura_veneravel,
+                a.assinatura_orador,
+                a.assinatura_secretario,
+                a.data_assinatura_veneravel,
+                a.data_assinatura_orador,
+                a.data_assinatura_secretario,
+                a.veneravel_mestre_nome,
+                a.orador_nome,
+                a.secretario_nome
             FROM atas a
             JOIN reunioes r ON a.reuniao_id = r.id
             LEFT JOIN usuarios u ON a.redator_id = u.id
@@ -6971,31 +7190,9 @@ def visualizar_ata_completa(id):
         
         presenca = cursor.fetchall()
         
-        # Buscar assinaturas da ata
-        cursor.execute("""
-            SELECT 
-                s.id,
-                s.ata_id,
-                s.obreiro_id,
-                s.cargo_id,
-                s.data_assinatura,
-                s.ip_assinatura,
-                s.validada,
-                u.nome_completo,
-                u.grau_atual,
-                c.nome as cargo_nome
-            FROM assinaturas_ata s
-            LEFT JOIN usuarios u ON s.obreiro_id = u.id
-            LEFT JOIN cargos c ON s.cargo_id = c.id
-            WHERE s.ata_id = %s
-            ORDER BY s.data_assinatura DESC
-        """, (id,))
-        
-        assinaturas = cursor.fetchall()
-        
         return_connection(conn)
         
-        return render_template("atas/visualizar.html", ata=ata, presenca=presenca, assinaturas=assinaturas)
+        return render_template("atas/visualizar.html", ata=ata, presenca=presenca)
         
     except Exception as e:
         print(f"❌ Erro ao visualizar ata completa {id}: {e}")
@@ -7016,7 +7213,6 @@ def nova_ata(reuniao_id):
     """Cria uma nova ata para uma reunião"""
     cursor, conn = get_db()
     
-    # Buscar reunião
     cursor.execute("""
         SELECT r.*, 
                (SELECT COUNT(*) FROM presenca WHERE reuniao_id = r.id AND presente = 1) as presentes
@@ -7031,7 +7227,6 @@ def nova_ata(reuniao_id):
         return redirect("/reunioes")
     
     # Verificar permissão específica para criar ata nesta reunião
-    # Apenas se o usuário tiver acesso à reunião (grau >= grau da reunião)
     if session.get('tipo') != 'admin':
         usuario_grau = session.get('grau_atual', 0)
         reuniao_grau = reuniao.get('grau', 0)
@@ -7045,20 +7240,17 @@ def nova_ata(reuniao_id):
         conteudo = request.form.get("conteudo")
         modelo_id = request.form.get("modelo_id")
         
-        # Validar conteúdo
         if not conteudo or not conteudo.strip():
             flash("O conteúdo da ata é obrigatório!", "danger")
             return_connection(conn)
             return redirect(f"/atas/nova/{reuniao_id}")
         
         try:
-            # Obter número da ata para o ano atual
             ano_atual = datetime.now().year
             cursor.execute("SELECT COUNT(*) as total FROM atas WHERE ano_ata = %s", (ano_atual,))
             total = cursor.fetchone()["total"]
             numero_ata = total + 1
             
-            # Inserir ata
             cursor.execute("""
                 INSERT INTO atas (
                     reuniao_id, conteudo, redator_id, numero_ata, 
@@ -7073,23 +7265,6 @@ def nova_ata(reuniao_id):
             
             registrar_log("criar", "ata", ata_id, dados_novos={"reuniao_id": reuniao_id, "numero": numero_ata, "ano": ano_atual})
             
-            # Notificar participantes sobre a nova ata (opcional)
-            try:
-                # Buscar participantes da reunião
-                cursor.execute("""
-                    SELECT u.id, u.nome_completo, u.email 
-                    FROM usuarios u
-                    JOIN presenca p ON u.id = p.obreiro_id
-                    WHERE p.reuniao_id = %s AND u.ativo = 1 AND u.email IS NOT NULL
-                """, (reuniao_id,))
-                participantes = cursor.fetchall()
-                
-                if participantes and 'enviar_notificacao_ata' in globals():
-                    for participante in participantes:
-                        enviar_notificacao_ata(participante, reuniao, numero_ata, ano_atual)
-            except Exception as e:
-                print(f"Erro ao notificar participantes: {e}")
-            
             flash(f"Ata nº {numero_ata}/{ano_atual} criada com sucesso!", "success")
             
             return_connection(conn)
@@ -7102,7 +7277,7 @@ def nova_ata(reuniao_id):
             return_connection(conn)
             return redirect(f"/reunioes/{reuniao_id}")
     
-    # GET - Carregar modelos (apenas se tiver permissão)
+    # GET - Carregar modelos
     modelos = []
     if verificar_permissao(session['user_id'], 'ata.use_template'):
         cursor.execute("SELECT * FROM modelos_ata WHERE ativo = 1")
@@ -7118,7 +7293,6 @@ def nova_ata(reuniao_id):
 def editar_ata(id):
     cursor, conn = get_db()
     
-    # Buscar ata com informações da reunião
     cursor.execute("""
         SELECT a.*, r.titulo as reuniao_titulo, r.status as reuniao_status, r.data as reuniao_data
         FROM atas a
@@ -7132,7 +7306,6 @@ def editar_ata(id):
         return_connection(conn)
         return redirect("/atas")
     
-    # Verificar se já está aprovada
     if ata["aprovada"] == 1:
         flash("Ata já aprovada, não pode ser editada!", "warning")
         return_connection(conn)
@@ -7144,7 +7317,6 @@ def editar_ata(id):
         tipo_ata = request.form.get("tipo_ata")
         numero_ata = request.form.get("numero_ata")
         ano_ata = request.form.get("ano_ata")
-        modelo_ata = request.form.get("modelo_ata")
         
         if not conteudo:
             flash("Conteúdo da ata é obrigatório", "danger")
@@ -7160,10 +7332,9 @@ def editar_ata(id):
                         tipo_ata = %s,
                         numero_ata = %s,
                         ano_ata = %s,
-                        modelo_ata = %s,
                         versao = %s
                     WHERE id = %s
-                """, (titulo, conteudo, tipo_ata, numero_ata, ano_ata, modelo_ata, nova_versao, id))
+                """, (titulo, conteudo, tipo_ata, numero_ata, ano_ata, nova_versao, id))
                 
                 conn.commit()
                 registrar_log("editar", "ata", id, dados_novos={"versao": nova_versao, "titulo": titulo})
@@ -7193,123 +7364,9 @@ def aprovar_ata(id):
     """, (session["user_id"], id))
     conn.commit()
     registrar_log("aprovar", "ata", id, dados_novos={"aprovada": 1})
-    flash("Ata aprovada com sucesso!", "success")
+    flash("Ata aprovada com sucesso! Agora os responsáveis podem assinar.", "success")
     return_connection(conn)
-    return redirect(f"/atas/{id}/visualizar")
-
-
-@app.route("/atas/<int:id>/assinar", methods=["POST"])
-@login_required
-@permissao_required('ata.sign')
-def assinar_ata(id):
-    """Assina uma ata"""
-    cursor, conn = get_db()
-    
-    try:
-        # Verificar se a ata existe e obter informações da reunião
-        cursor.execute("""
-            SELECT a.id, a.aprovada, r.grau as reuniao_grau, r.id as reuniao_id
-            FROM atas a
-            JOIN reunioes r ON a.reuniao_id = r.id
-            WHERE a.id = %s
-        """, (id,))
-        ata = cursor.fetchone()
-        
-        if not ata:
-            flash("Ata não encontrada!", "danger")
-            return_connection(conn)
-            return redirect("/atas")
-        
-        # Verificar se a ata já foi aprovada
-        if ata['aprovada'] == 1:
-            flash("Esta ata já foi aprovada e não pode mais ser assinada!", "warning")
-            return_connection(conn)
-            return redirect(f"/atas/{id}/visualizar")
-        
-        # Verificar permissão de assinatura por grau
-        is_admin = session.get("tipo") == "admin"
-        usuario_grau = session.get('grau_atual', 0)
-        reuniao_grau = ata.get('reuniao_grau', 0)
-        
-        if not is_admin:
-            # Verificar se o usuário tem grau suficiente para assinar
-            if reuniao_grau and reuniao_grau > usuario_grau:
-                if not verificar_permissao(session['user_id'], 'ata.sign_superior'):
-                    flash("Você não tem permissão para assinar esta ata (grau superior).", "danger")
-                    return_connection(conn)
-                    return redirect(f"/atas/{id}/visualizar")
-        
-        # Verificar se o usuário participou da reunião (opcional)
-        cursor.execute("""
-            SELECT id FROM presenca 
-            WHERE reuniao_id = %s AND obreiro_id = %s AND presente = 1
-        """, (ata['reuniao_id'], session["user_id"]))
-        
-        if not cursor.fetchone() and not is_admin:
-            # Se não participou, verificar se tem permissão especial para assinar
-            if not verificar_permissao(session['user_id'], 'ata.sign_without_presence'):
-                flash("Apenas obreiros presentes na reunião podem assinar a ata!", "warning")
-                return_connection(conn)
-                return redirect(f"/atas/{id}/visualizar")
-        
-        # Verificar se já existe assinatura
-        cursor.execute("""
-            SELECT id FROM assinaturas_ata 
-            WHERE ata_id = %s AND obreiro_id = %s
-        """, (id, session["user_id"]))
-        
-        if cursor.fetchone():
-            flash("Você já assinou esta ata", "warning")
-        else:
-            # Buscar cargo atual do obreiro
-            cursor.execute("""
-                SELECT cargo_id FROM ocupacao_cargos 
-                WHERE obreiro_id = %s AND ativo = 1
-                ORDER BY data_inicio DESC LIMIT 1
-            """, (session["user_id"],))
-            cargo = cursor.fetchone()
-            cargo_id = cargo["cargo_id"] if cargo else None
-            
-            # Inserir assinatura
-            cursor.execute("""
-                INSERT INTO assinaturas_ata (ata_id, obreiro_id, cargo_id, ip_assinatura, data_assinatura, validada)
-                VALUES (%s, %s, %s, %s, CURRENT_TIMESTAMP, 1)
-                RETURNING id
-            """, (id, session["user_id"], cargo_id, request.remote_addr))
-            
-            assinatura_id = cursor.fetchone()['id']
-            conn.commit()
-            
-            # Registrar log
-            registrar_log("assinar", "ata", id, dados_novos={
-                "assinatura_id": assinatura_id,
-                "obreiro_id": session["user_id"],
-                "ip": request.remote_addr
-            })
-            
-            # Verificar total de assinaturas vs participantes
-            cursor.execute("""
-                SELECT COUNT(*) as total_assinaturas FROM assinaturas_ata WHERE ata_id = %s
-            """, (id,))
-            total_assinaturas = cursor.fetchone()['total_assinaturas']
-            
-            cursor.execute("""
-                SELECT COUNT(*) as total_participantes FROM presenca 
-                WHERE reuniao_id = %s AND presente = 1
-            """, (ata['reuniao_id'],))
-            total_participantes = cursor.fetchone()['total_participantes']
-            
-            flash(f"Ata assinada com sucesso! ({total_assinaturas}/{total_participantes} assinaturas)", "success")
-            
-    except Exception as e:
-        print(f"Erro ao assinar ata: {e}")
-        import traceback
-        traceback.print_exc()
-        conn.rollback()
-        flash(f"Erro ao assinar ata: {str(e)}", "danger")
-    
-    return_connection(conn)
-    return redirect(f"/atas/{id}/visualizar")
+    return redirect(f"/atas/{id}")
 
 
 @app.route("/atas/<int:id>/excluir", methods=["POST"])
@@ -7320,7 +7377,6 @@ def excluir_ata(id):
     cursor, conn = get_db()
     
     try:
-        # Buscar dados da ata
         cursor.execute("""
             SELECT a.id, a.numero_ata, a.ano_ata, a.aprovada, r.titulo as reuniao_titulo
             FROM atas a
@@ -7334,34 +7390,17 @@ def excluir_ata(id):
             return_connection(conn)
             return redirect("/atas")
         
-        # Verificar se a ata está aprovada
         if ata['aprovada'] == 1 and session.get('tipo') != 'admin':
             flash("Não é possível excluir uma ata já aprovada!", "danger")
             return_connection(conn)
             return redirect(f"/atas/{id}")
         
-        # Verificar se tem assinaturas
-        cursor.execute("SELECT COUNT(*) as total FROM assinaturas_ata WHERE ata_id = %s", (id,))
-        assinaturas = cursor.fetchone()['total']
-        
-        if assinaturas > 0:
-            # Se tiver assinaturas, perguntar se quer excluir mesmo assim
-            if session.get('tipo') != 'admin':
-                flash(f"Não é possível excluir a ata pois existem {assinaturas} assinaturas vinculadas!", "danger")
-                return_connection(conn)
-                return redirect(f"/atas/{id}")
-        
-        # Registrar log
         registrar_log("excluir", "ata", id, dados_anteriores={
             "numero": ata['numero_ata'],
             "ano": ata['ano_ata'],
             "reuniao": ata['reuniao_titulo']
         })
         
-        # Excluir assinaturas primeiro
-        cursor.execute("DELETE FROM assinaturas_ata WHERE ata_id = %s", (id,))
-        
-        # Excluir a ata
         cursor.execute("DELETE FROM atas WHERE id = %s", (id,))
         conn.commit()
         

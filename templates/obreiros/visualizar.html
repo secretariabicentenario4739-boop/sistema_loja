@@ -251,75 +251,113 @@
             </div>
         </div>
 
-        <!-- Cargos e Documentos -->
-        <div class="row mb-4">
-            <div class="col-md-6">
-                <div class="card shadow h-100">
-                    <div class="card-header bg-secondary text-white">
-                        <h5 class="mb-0"><i class="bi bi-journal"></i> Cargos Ocupados</h5>
-                    </div>
-                    <div class="card-body">
-                        {% if cargos and cargos|length > 0 %}
-                            <div class="table-responsive">
-                                <table class="table table-hover">
-                                    <thead>
-                                        <tr>
-                                            <th>Cargo</th>
-                                            <th>Início</th>
-                                            <th>Fim</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        {% for cargo in cargos %}
-                                        <tr>
-                                            <td>
-                                                <strong>{{ cargo.cargo_nome }}</strong>
-                                                {% if cargo.sigla %}
-                                                <br><small class="text-muted">{{ cargo.sigla }}</small>
-                                                {% endif %}
-                                            </td>
-                                            <td>{{ cargo.data_inicio.strftime('%d/%m/%Y') if cargo.data_inicio else '-' }}</td>
-                                            <td>
-                                                {% if cargo.data_fim %}
-                                                    {{ cargo.data_fim.strftime('%d/%m/%Y') }}
-                                                {% else %}
-                                                    <span class="badge bg-success">Atual</span>
-                                                {% endif %}
-                                            </td>
-                                        </tr>
-                                        {% endfor %}
-                                    </tbody>
-                                </table>
-                            </div>
-                        {% else %}
-                            <div class="text-center text-muted py-4">
-                                <i class="bi bi-journal-x fs-1"></i>
-                                <p class="mb-0">Nenhum cargo ocupado</p>
-                            </div>
-                        {% endif %}
-                    </div>
-                </div>
+      <!-- Cargos e Documentos -->
+<div class="row mb-4">
+    <div class="col-md-6">
+        <div class="card shadow h-100">
+            <div class="card-header bg-secondary text-white">
+                <h5 class="mb-0"><i class="bi bi-journal"></i> Cargos Ocupados</h5>
             </div>
-
-            <div class="col-md-6">
-                <div class="card shadow h-100">
-                    <div class="card-header bg-info text-white">
-                        <h5 class="mb-0">
-                            <i class="bi bi-cloud-arrow-up"></i> Documentos
-                            <span class="badge bg-light text-dark ms-2" id="totalDocumentosVis">0</span>
-                        </h5>
+            <div class="card-body">
+                {% if cargos and cargos|length > 0 %}
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Cargo</th>
+                                    <th>Início</th>
+                                    <th>Gestão</th>
+                                    <th>Ações</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for cargo in cargos %}
+                                <tr>
+                                    <td>
+                                        <strong>{{ cargo.cargo_nome }}</strong>
+                                        {% if cargo.sigla %}
+                                        <br><small class="text-muted">{{ cargo.sigla }}</small>
+                                        {% endif %}
+                                    </td>
+                                    <td class="text-nowrap">{{ cargo.data_inicio.strftime('%d/%m/%Y') if cargo.data_inicio else '-' }}</td>
+                                    <td>{{ cargo.gestao or '-' }}</td>
+                                    <td>
+                                        {% if session.tipo == 'admin' %}
+                                        <a href="/obreiros/cargo/{{ cargo.id }}/remover" 
+                                           class="btn btn-sm btn-outline-danger"
+                                           onclick="return confirm('Remover este cargo?')"
+                                           title="Remover Cargo">
+                                            <i class="bi bi-trash"></i>
+                                        </a>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
                     </div>
-                    <div class="card-body" style="max-height: 400px; overflow-y: auto;">
-                        <div id="listaDocumentosVis">
-                            <div class="text-center text-muted py-4" id="semDocumentosVis">
-                                <i class="bi bi-cloud-slash fs-1"></i>
-                                <p class="mb-0 mt-2">Nenhum documento enviado</p>
-                            </div>
-                        </div>
+                {% else %}
+                    <div class="text-center text-muted py-4">
+                        <i class="bi bi-journal-x fs-1"></i>
+                        <p class="mb-0">Nenhum cargo ocupado</p>
+                    </div>
+                {% endif %}
+
+                <!-- Formulário para adicionar novo cargo (apenas admin) -->
+                {% if session.tipo == 'admin' and cargos_disponiveis %}
+                <hr>
+                <h6 class="mb-3"><i class="bi bi-plus-circle"></i> Adicionar Novo Cargo</h6>
+                <form method="POST" action="/obreiros/{{ obreiro.id }}/cargo" class="row g-2">
+                    <div class="col-md-5">
+                        <select name="cargo_id" class="form-select form-select-sm" required>
+                            <option value="">Selecione o cargo...</option>
+                            {% for cargo in cargos_disponiveis %}
+                            <option value="{{ cargo.id }}">{{ cargo.nome }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <input type="date" name="data_inicio" class="form-control form-control-sm" 
+                               value="{{ now.strftime('%Y-%m-%d') }}" required>
+                    </div>
+                    <div class="col-md-3">
+                        <input type="text" name="gestao" class="form-control form-control-sm" 
+                               placeholder="Gestão (ex: 2024-2026)">
+                    </div>
+                    <div class="col-md-1">
+                        <button type="submit" class="btn btn-success btn-sm w-100">
+                            <i class="bi bi-plus"></i>
+                        </button>
+                    </div>
+                </form>
+                <small class="text-muted mt-2 d-block">
+                    <i class="bi bi-info-circle"></i> 
+                    Ao adicionar um novo cargo, o cargo anterior será mantido no histórico.
+                </small>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-6">
+        <div class="card shadow h-100">
+            <div class="card-header bg-info text-white">
+                <h5 class="mb-0">
+                    <i class="bi bi-cloud-arrow-up"></i> Documentos
+                    <span class="badge bg-light text-dark ms-2" id="totalDocumentosVis">0</span>
+                </h5>
+            </div>
+            <div class="card-body" style="max-height: 400px; overflow-y: auto;">
+                <div id="listaDocumentosVis">
+                    <div class="text-center text-muted py-4" id="semDocumentosVis">
+                        <i class="bi bi-cloud-slash fs-1"></i>
+                        <p class="mb-0 mt-2">Nenhum documento enviado</p>
                     </div>
                 </div>
             </div>
         </div>
+    </div>
+</div>
 
         <!-- Familiares, Condecorações e Comunicados -->
         <div class="row mb-4">
@@ -490,7 +528,6 @@
 </div>
 
 <script>
-// Mantenha os scripts existentes...
 let modalExclusaoDefinitiva;
 
 document.addEventListener('DOMContentLoaded', function() {
@@ -513,7 +550,153 @@ document.addEventListener('DOMContentLoaded', function() {
     carregarDocumentosVisualizacao();
 });
 
-// ... resto dos scripts existentes (confirmarExclusaoDefinitiva, executarExclusaoDefinitiva, mostrarAlerta, criarContainerAlerta, carregarDocumentosVisualizacao, getIconePorTipo, escapeHtml)
+function confirmarExclusaoDefinitiva(obreiroId, obreiroNome) {
+    document.getElementById('obreiroIdExcluir').value = obreiroId;
+    document.getElementById('obreiroNomeExcluir').textContent = obreiroNome;
+    document.getElementById('confirmExclusaoText').value = '';
+    document.getElementById('btnConfirmExclusao').disabled = true;
+    modalExclusaoDefinitiva.show();
+}
+
+function executarExclusaoDefinitiva() {
+    const obreiroId = document.getElementById('obreiroIdExcluir').value;
+    if (!obreiroId) return;
+
+    const btn = document.getElementById('btnConfirmExclusao');
+    const originalText = btn.innerHTML;
+    btn.innerHTML = '<i class="bi bi-hourglass-split"></i> Excluindo...';
+    btn.disabled = true;
+
+    fetch(`/obreiros/${obreiroId}/excluir_definitivo`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' }
+    })
+    .then(response => response.json())
+    .then(data => {
+        modalExclusaoDefinitiva.hide();
+        
+        if (data.success) {
+            mostrarAlerta('success', data.message || 'Obreiro excluído permanentemente!', 4000);
+            setTimeout(() => {
+                window.location.href = '/obreiros';
+            }, 1500);
+        } else {
+            mostrarAlerta('danger', data.error || 'Erro ao excluir obreiro', 5000);
+        }
+    })
+    .catch(error => {
+        modalExclusaoDefinitiva.hide();
+        mostrarAlerta('danger', 'Erro na requisição', 5000);
+    })
+    .finally(() => {
+        btn.innerHTML = originalText;
+        btn.disabled = false;
+    });
+}
+
+function mostrarAlerta(tipo, mensagem, timeout) {
+    const alertContainer = document.getElementById('alert-container') || criarContainerAlerta();
+    const alertId = 'alert-' + Date.now();
+    const alertHtml = `
+        <div id="${alertId}" class="alert alert-${tipo} alert-dismissible fade show" role="alert">
+            ${mensagem}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    `;
+    alertContainer.insertAdjacentHTML('beforeend', alertHtml);
+    setTimeout(() => {
+        const el = document.getElementById(alertId);
+        if (el) el.remove();
+    }, timeout);
+}
+
+function criarContainerAlerta() {
+    const container = document.createElement('div');
+    container.id = 'alert-container';
+    container.style.position = 'fixed';
+    container.style.top = '20px';
+    container.style.right = '20px';
+    container.style.zIndex = '9999';
+    container.style.maxWidth = '500px';
+    document.body.appendChild(container);
+    return container;
+}
+
+function carregarDocumentosVisualizacao() {
+    const obreiroId = {{ obreiro.id }};
+    const container = document.getElementById('listaDocumentosVis');
+    const totalSpan = document.getElementById('totalDocumentosVis');
+    const semMsg = document.getElementById('semDocumentosVis');
+    
+    fetch(`/api/obreiros/${obreiroId}/documentos`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.success && data.documentos && data.documentos.length > 0) {
+                if (semMsg) semMsg.style.display = 'none';
+                if (totalSpan) totalSpan.textContent = data.documentos.length;
+                
+                let html = '<div class="list-group list-group-flush">';
+                data.documentos.forEach(doc => {
+                    const dataUpload = new Date(doc.data_upload).toLocaleDateString('pt-BR');
+                    const icone = getIconePorTipo(doc.tipo_arquivo);
+                    
+                    html += `
+                        <div class="list-group-item">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div class="flex-grow-1">
+                                    <div class="d-flex align-items-center">
+                                        <i class="bi ${icone} fs-3 me-3 text-info"></i>
+                                        <div>
+                                            <strong>${escapeHtml(doc.titulo)}</strong>
+                                            <br>
+                                            <small class="text-muted">
+                                                <i class="bi bi-folder"></i> ${doc.categoria}
+                                                <i class="bi bi-calendar ms-2"></i> ${dataUpload}
+                                            </small>
+                                            ${doc.descricao ? `<br><small class="text-muted">${escapeHtml(doc.descricao)}</small>` : ''}
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="btn-group">
+                                    <a href="${doc.url}" target="_blank" class="btn btn-sm btn-outline-primary">
+                                        <i class="bi bi-eye"></i>
+                                    </a>
+                                    <a href="${doc.url}" download class="btn btn-sm btn-outline-success">
+                                        <i class="bi bi-download"></i>
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                });
+                html += '</div>';
+                container.innerHTML = html;
+            } else {
+                if (semMsg) semMsg.style.display = 'block';
+                if (totalSpan) totalSpan.textContent = '0';
+            }
+        })
+        .catch(error => console.error('Erro:', error));
+}
+
+function getIconePorTipo(tipo) {
+    const tipos = {
+        'pdf': 'bi-file-pdf',
+        'jpg': 'bi-file-image',
+        'jpeg': 'bi-file-image',
+        'png': 'bi-file-image',
+        'doc': 'bi-file-word',
+        'docx': 'bi-file-word'
+    };
+    return tipos[tipo] || 'bi-file-earmark';
+}
+
+function escapeHtml(text) {
+    if (!text) return '';
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+}
 </script>
 
 <style>

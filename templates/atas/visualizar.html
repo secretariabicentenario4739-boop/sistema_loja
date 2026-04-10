@@ -30,6 +30,96 @@
             {% endif %}
         {% endwith %}
 
+        <!-- Status das Assinaturas (apenas para atas aprovadas) -->
+        {% if ata_aprovada %}
+        <div class="card shadow mb-4">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0"><i class="bi bi-pen"></i> Status das Assinaturas</h5>
+            </div>
+            <div class="card-body">
+                <div class="row text-center">
+                    <div class="col-md-4">
+                        <div class="border rounded p-3 {% if assinatura_veneravel %}bg-success text-white{% else %}bg-light{% endif %}">
+                            <i class="bi bi-crown fs-1"></i>
+                            <h6 class="mt-2">Venerável Mestre</h6>
+                            {% if assinatura_veneravel %}
+                                <span class="badge bg-white text-success">✓ Assinado</span>
+                                <br>
+                                <small>{{ ata.data_assinatura_veneravel.strftime('%d/%m/%Y %H:%M') if ata.data_assinatura_veneravel else '' }}</small>
+                                {% if ata.veneravel_mestre_nome %}
+                                <br>
+                                <small class="text-white-50">{{ ata.veneravel_mestre_nome }}</small>
+                                {% endif %}
+                            {% else %}
+                                <span class="badge bg-secondary">Aguardando</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="border rounded p-3 {% if assinatura_orador %}bg-success text-white{% else %}bg-light{% endif %}">
+                            <i class="bi bi-mic fs-1"></i>
+                            <h6 class="mt-2">Orador</h6>
+                            {% if assinatura_orador %}
+                                <span class="badge bg-white text-success">✓ Assinado</span>
+                                <br>
+                                <small>{{ ata.data_assinatura_orador.strftime('%d/%m/%Y %H:%M') if ata.data_assinatura_orador else '' }}</small>
+                                {% if ata.orador_nome %}
+                                <br>
+                                <small class="text-white-50">{{ ata.orador_nome }}</small>
+                                {% endif %}
+                            {% else %}
+                                <span class="badge bg-secondary">Aguardando</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="border rounded p-3 {% if assinatura_secretario %}bg-success text-white{% else %}bg-light{% endif %}">
+                            <i class="bi bi-journal fs-1"></i>
+                            <h6 class="mt-2">Secretário</h6>
+                            {% if assinatura_secretario %}
+                                <span class="badge bg-white text-success">✓ Assinado</span>
+                                <br>
+                                <small>{{ ata.data_assinatura_secretario.strftime('%d/%m/%Y %H:%M') if ata.data_assinatura_secretario else '' }}</small>
+                                {% if ata.secretario_nome %}
+                                <br>
+                                <small class="text-white-50">{{ ata.secretario_nome }}</small>
+                                {% endif %}
+                            {% else %}
+                                <span class="badge bg-secondary">Aguardando</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Barra de progresso das assinaturas -->
+                {% set assinadas = [assinatura_veneravel, assinatura_orador, assinatura_secretario]|select('eq', true)|list|length %}
+                {% set percentual = (assinadas / 3 * 100)|int %}
+                <div class="mt-4">
+                    <div class="d-flex justify-content-between mb-1">
+                        <small>Progresso das Assinaturas</small>
+                        <small>{{ assinadas }}/3 ({{ percentual }}%)</small>
+                    </div>
+                    <div class="progress">
+                        <div class="progress-bar bg-success" role="progressbar" 
+                             style="width: {{ percentual }}%" 
+                             aria-valuenow="{{ percentual }}" aria-valuemin="0" aria-valuemax="100">
+                            {{ percentual }}%
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Mensagem quando todas as assinaturas forem concluídas -->
+                {% if assinatura_veneravel and assinatura_orador and assinatura_secretario %}
+                <div class="alert alert-success text-center mt-4">
+                    <i class="bi bi-trophy fs-3"></i>
+                    <h5 class="mt-2">Ata totalmente assinada!</h5>
+                    <p class="mb-0">Todos os responsáveis já assinaram esta ata.</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+        {% endif %}
+
         <div class="row">
             <div class="col-md-8">
                 <!-- Conteúdo da Ata -->
@@ -39,56 +129,62 @@
                     </div>
                     <div class="card-body">
                         <div class="ata-conteudo">
-    {{ ata.conteudo|markdown|safe }}
-</div>
+                            {{ ata.conteudo|markdown|safe }}
+                        </div>
                     </div>
                 </div>
 
-                <!-- Assinaturas -->
+                <!-- Lista de Presença -->
+                {% if presenca %}
                 <div class="card shadow">
-                    <div class="card-header bg-secondary text-white">
-                        <h5 class="mb-0"><i class="bi bi-pen"></i> Assinaturas</h5>
+                    <div class="card-header bg-info text-white">
+                        <h5 class="mb-0"><i class="bi bi-people"></i> Lista de Presença</h5>
                     </div>
                     <div class="card-body">
-                        {% if assinaturas %}
                         <div class="table-responsive">
-                            <table class="table table-sm">
+                            <table class="table table-sm table-hover">
                                 <thead>
                                     <tr>
                                         <th>Obreiro</th>
                                         <th>Grau</th>
-                                        <th>Data da Assinatura</th>
-                                        <th>IP</th>
+                                        <th>Cargo</th>
+                                        <th>Status</th>
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    {% for ass in assinaturas %}
+                                    {% for p in presenca %}
                                     <tr>
-                                        <td>{{ ass.nome_completo }}</td>
+                                        <td>{{ p.nome_completo }}</td>
                                         <td>
-                                            {% if ass.grau_atual == 3 %}
+                                            {% if p.grau_atual >= 3 %}
                                                 <span class="badge bg-success">Mestre</span>
-                                            {% elif ass.grau_atual == 2 %}
+                                            {% elif p.grau_atual == 2 %}
                                                 <span class="badge bg-primary">Companheiro</span>
                                             {% else %}
                                                 <span class="badge bg-secondary">Aprendiz</span>
                                             {% endif %}
                                         </td>
-                                        <td>{{ ass.data_assinatura.strftime('%d/%m/%Y %H:%M') if ass.data_assinatura else '-' }}</td>
-                                        <td>{{ ass.ip_assinatura or '-' }}</td>
+                                        <td>{{ p.cargo_nome or '-' }}</td>
+                                        <td>
+                                            {% if p.presente == 1 %}
+                                                <span class="badge bg-success">Presente</span>
+                                            {% else %}
+                                                <span class="badge bg-danger">
+                                                    Ausente
+                                                    {% if p.tipo_ausencia %}
+                                                        ({{ p.tipo_ausencia }})
+                                                    {% endif %}
+                                                </span>
+                                            {% endif %}
+                                        </td>
                                     </tr>
                                     {% endfor %}
                                 </tbody>
                             </table>
                         </div>
-                        {% else %}
-                        <div class="text-center text-muted py-4">
-                            <i class="bi bi-pen fs-1"></i>
-                            <p class="mt-2">Nenhuma assinatura registrada</p>
-                        </div>
-                        {% endif %}
                     </div>
                 </div>
+                {% endif %}
             </div>
 
             <div class="col-md-4">
@@ -170,10 +266,46 @@
                         
                         <hr>
                         
-                        <!-- Botão para assinar (se aplicável) -->
-                        {% if not ata.aprovada and session.tipo != 'admin' %}
-                        <form method="POST" action="/atas/{{ ata.id }}/assinar">
-                            <button type="submit" class="btn btn-outline-success w-100">
+                        <!-- Botões de Assinatura por Cargo (aparecem apenas para atas aprovadas e cargos corretos) -->
+                        {% if ata_aprovada %}
+                            {% if cargo_usuario == 'veneravel' and not assinatura_veneravel %}
+                            <form method="POST" action="/atas/{{ ata.id }}/assinar/veneravel" class="mt-2">
+                                <button type="submit" class="btn btn-outline-success w-100" 
+                                        onclick="return confirm('Assinar esta ata como Venerável Mestre?')">
+                                    <i class="bi bi-crown"></i> Assinar como Venerável Mestre
+                                </button>
+                            </form>
+                            {% endif %}
+                            
+                            {% if cargo_usuario == 'orador' and not assinatura_orador %}
+                            <form method="POST" action="/atas/{{ ata.id }}/assinar/orador" class="mt-2">
+                                <button type="submit" class="btn btn-outline-success w-100" 
+                                        onclick="return confirm('Assinar esta ata como Orador?')">
+                                    <i class="bi bi-mic"></i> Assinar como Orador
+                                </button>
+                            </form>
+                            {% endif %}
+                            
+                            {% if cargo_usuario == 'secretario' and not assinatura_secretario %}
+                            <form method="POST" action="/atas/{{ ata.id }}/assinar/secretario" class="mt-2">
+                                <button type="submit" class="btn btn-outline-success w-100" 
+                                        onclick="return confirm('Assinar esta ata como Secretário?')">
+                                    <i class="bi bi-journal"></i> Assinar como Secretário
+                                </button>
+                            </form>
+                            {% endif %}
+                            
+                            {% if ja_assinou %}
+                            <div class="alert alert-success mt-2 text-center mb-0">
+                                <i class="bi bi-check-circle"></i> Você já assinou esta ata.
+                            </div>
+                            {% endif %}
+                        {% endif %}
+                        
+                        <!-- Botão de assinatura genérico (fallback) -->
+                        {% if not ata_aprovada and session.tipo != 'admin' and not cargo_usuario %}
+                        <form method="POST" action="/atas/{{ ata.id }}/assinar" class="mt-2">
+                            <button type="submit" class="btn btn-outline-secondary w-100">
                                 <i class="bi bi-pen"></i> Assinar Ata
                             </button>
                         </form>
@@ -185,17 +317,16 @@
     </div>
 </div>
 
-   <style>
+<style>
     .ata-conteudo {
         line-height: 1.6;
         font-size: 14px;
-        max-height: 500px;      /* Altura máxima */
-        overflow-y: auto;       /* Barra de rolagem vertical */
-        overflow-x: auto;       /* Barra de rolagem horizontal */
-        padding-right: 15px;    /* Espaço para a barra de rolagem */
+        max-height: 500px;
+        overflow-y: auto;
+        overflow-x: auto;
+        padding-right: 15px;
     }
     
-    /* Estilizar a barra de rolagem (opcional) */
     .ata-conteudo::-webkit-scrollbar {
         width: 8px;
         height: 8px;
@@ -215,13 +346,19 @@
         background: #b58c2a;
     }
     
-    /* Restante do seu CSS */
     .card {
         border-radius: 10px;
         overflow: hidden;
     }
     .card-header {
         font-weight: 600;
+    }
+    .progress {
+        border-radius: 10px;
+        height: 10px;
+    }
+    .progress-bar {
+        transition: width 0.3s ease;
     }
     @media print {
         .btn, .btn-group, .no-print {
@@ -236,6 +373,5 @@
             overflow: visible !important;
         }
     }
-</style>
 </style>
 {% endblock %}
