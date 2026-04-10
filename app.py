@@ -4182,9 +4182,16 @@ def visualizar_obreiro(id):
         """, (id,))
         historico_graus = cursor.fetchall()
         
-        # Contar familiares (dependentes)
-        cursor.execute("SELECT COUNT(*) as total FROM dependentes WHERE obreiro_id = %s", (id,))
-        familiares_count = cursor.fetchone()["total"]
+        # ============================================
+        # CONTAR FAMILIARES (tabela 'familiares')
+        # ============================================
+        try:
+            cursor.execute("SELECT COUNT(*) as total FROM familiares WHERE obreiro_id = %s", (id,))
+            familiares_count = cursor.fetchone()["total"]
+            print(f"✅ Familiares encontrados para obreiro {id}: {familiares_count}")
+        except Exception as e:
+            print(f"❌ Erro ao contar familiares: {e}")
+            familiares_count = 0
         
         # Contar condecorações
         try:
