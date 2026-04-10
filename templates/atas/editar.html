@@ -1,14 +1,41 @@
 {% extends "base.html" %}
 
-{% block title %}Editar Ata {{ ata.numero_ata }}/{{ ata.ano_ata }}{% endblock %}
+{% block title %}Editar Ata{% endblock %}
+
+{% block styles %}
+{{ super() }}
+<style>
+    .tox-tinymce {
+        border-radius: 10px !important;
+        min-height: 500px;
+    }
+    .toolbar-preview {
+        background: #f8f9fa;
+        border: 1px solid #dee2e6;
+        border-radius: 5px;
+        padding: 20px;
+        min-height: 200px;
+        max-height: 500px;
+        overflow-y: auto;
+    }
+    kbd {
+        background-color: #f8f9fa;
+        border: 1px solid #ccc;
+        border-radius: 3px;
+        padding: 2px 6px;
+        font-size: 0.8rem;
+        font-family: monospace;
+    }
+</style>
+{% endblock %}
 
 {% block content %}
 <div class="container-fluid py-4">
     <div class="container">
         <div class="d-flex justify-content-between align-items-center mb-4">
             <h2>
-                <i class="bi bi-pencil-square"></i> 
-                Editar Ata {{ ata.numero_ata }}/{{ ata.ano_ata }}
+                <i class="bi bi-file-text"></i> 
+                Editar Ata - {{ ata.titulo or ata.reuniao_titulo }}
             </h2>
             <div>
                 <a href="/atas/{{ ata.id }}" class="btn btn-outline-info me-2">
@@ -20,39 +47,156 @@
             </div>
         </div>
 
-       
-        <div class="alert alert-info">
-            <i class="bi bi-info-circle"></i>
-            Versão atual: <strong>{{ ata.versao }}</strong>. Cada edição aumentará a versão em 1.
-        </div>
-
         <div class="card shadow">
-            <div class="card-header bg-warning">
-                <h5 class="mb-0">Editar Conteúdo da Ata</h5>
+            <div class="card-header bg-warning text-dark">
+                <h5 class="mb-0">
+                    <i class="bi bi-pencil-square"></i> 
+                    Editando Ata da Reunião: {{ ata.reuniao_titulo }}
+                </h5>
             </div>
             <div class="card-body">
-                <form method="POST">
-                    <div class="mb-3">
-                        <label class="form-label">Conteúdo da Ata</label>
-                        <textarea class="form-control" name="conteudo" id="conteudo" rows="25" required>{{ ata.conteudo }}</textarea>
+                <form method="POST" id="formEditarAta">
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Título da Ata</label>
+                            <input type="text" class="form-control" name="titulo" 
+                                   value="{{ ata.titulo or ata.reuniao_titulo }}" required>
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <label class="form-label">Número da Ata</label>
+                            <input type="number" class="form-control" name="numero_ata" 
+                                   value="{{ ata.numero_ata or '' }}">
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <label class="form-label">Ano</label>
+                            <input type="number" class="form-control" name="ano_ata" 
+                                   value="{{ ata.ano_ata or '' }}">
+                        </div>
                     </div>
 
-                    <div class="text-center">
-                        <button type="submit" class="btn btn-warning btn-lg px-5">
-                            <i class="bi bi-save"></i> Atualizar Ata
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Tipo de Ata</label>
+                            <select class="form-select" name="tipo_ata">
+                                <option value="Ordinária" {% if ata.tipo_ata == 'Ordinária' %}selected{% endif %}>Ordinária</option>
+                                <option value="Extraordinária" {% if ata.tipo_ata == 'Extraordinária' %}selected{% endif %}>Extraordinária</option>
+                                <option value="Solenidade" {% if ata.tipo_ata == 'Solenidade' %}selected{% endif %}>Solenidade</option>
+                                <option value="Administrativa" {% if ata.tipo_ata == 'Administrativa' %}selected{% endif %}>Administrativa</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Modelo Rápido</label>
+                            <select class="form-select" id="modeloSelect">
+                                <option value="">Selecione um modelo...</option>
+                                <option value="padrao">📄 Modelo Padrão</option>
+                                <option value="formal">📜 Modelo Formal</option>
+                                <option value="simples">📝 Modelo Simples</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Conteúdo da Ata</label>
+                        <textarea name="conteudo" id="editor" class="form-control" rows="15">{{ ata.conteudo | safe }}</textarea>
+                        <small class="text-muted">
+                            <i class="bi bi-info-circle"></i> 
+                            Use a barra de ferramentas acima para formatar o texto.
+                        </small>
+                    </div>
+
+                    <div class="text-center mt-4">
+                        <a href="/atas" class="btn btn-secondary me-2">
+                            <i class="bi bi-x-circle"></i> Cancelar
+                        </a>
+                        <button type="submit" class="btn btn-warning">
+                            <i class="bi bi-save"></i> Salvar Alterações
                         </button>
                     </div>
                 </form>
             </div>
         </div>
+
+        <!-- Pré-visualização -->
+        <div class="card shadow mt-4">
+            <div class="card-header bg-info text-white">
+                <h5 class="mb-0"><i class="bi bi-eye"></i> Pré-visualização</h5>
+            </div>
+            <div class="card-body">
+                <div id="preview" class="toolbar-preview">
+                    <em>Digite ou cole o conteúdo acima para ver a pré-visualização...</em>
+                </div>
+            </div>
+        </div>
     </div>
 </div>
 
+<!-- TinyMCE - Versão gratuita (sem API Key) -->
+<script src="https://cdn.jsdelivr.net/npm/tinymce@6.8.3/tinymce.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/tinymce@6.8.3/themes/silver/theme.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/tinymce@6.8.3/plugins/advlist/plugin.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/tinymce@6.8.3/plugins/lists/plugin.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/tinymce@6.8.3/plugins/link/plugin.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/tinymce@6.8.3/plugins/image/plugin.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/tinymce@6.8.3/plugins/table/plugin.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/tinymce@6.8.3/plugins/align/plugin.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/tinymce@6.8.3/plugins/code/plugin.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/tinymce@6.8.3/plugins/emoticons/plugin.min.js"></script>
+
 <script>
-    // Auto-resize do textarea
-    document.getElementById('conteudo').addEventListener('input', function() {
-        this.style.height = 'auto';
-        this.style.height = (this.scrollHeight) + 'px';
+    tinymce.init({
+        selector: '#editor',
+        language: 'pt_BR',
+        height: 500,
+        menubar: true,
+        plugins: 'advlist lists link image table align code emoticons',
+        toolbar: 'undo redo | blocks | bold italic underline | alignleft aligncenter alignright alignjustify | bullist numlist | link image table | removeformat | code',
+        toolbar_mode: 'wrap',
+        content_style: 'body { font-family: Arial, sans-serif; font-size: 14px; line-height: 1.6; }',
+        setup: function(editor) {
+            editor.on('change', function() {
+                document.getElementById('preview').innerHTML = editor.getContent();
+            });
+        }
     });
+    
+    // Modelos
+    document.getElementById('modeloSelect').addEventListener('change', function() {
+        const modelo = this.value;
+        let conteudo = '';
+        
+        switch(modelo) {
+            case 'padrao':
+                conteudo = `<h2 style="text-align: center;">ATA DA REUNIÃO</h2>
+<p>&nbsp;</p>
+<p style="text-align: justify;">Aos <strong>[DATA]</strong> dias do mês de <strong>[MÊS]</strong> de <strong>[ANO]</strong>, reuniu-se a Loja Maçônica...</p>`;
+                break;
+            case 'formal':
+                conteudo = `<h1 style="text-align: center;">ATA DA REUNIÃO ORDINÁRIA</h1>
+<p style="text-align: justify;">Aos <strong>[DATA]</strong> dias do mês de <strong>[MÊS]</strong> do ano de <strong>[ANO]</strong>, sob os auspícios do Grande Oriente do Brasil...</p>`;
+                break;
+            case 'simples':
+                conteudo = `<h3>ATA DA REUNIÃO</h3>
+<p><strong>Data:</strong> [DATA]</p>
+<p><strong>Local:</strong> [LOCAL]</p>`;
+                break;
+            default:
+                return;
+        }
+        
+        if (conteudo && tinymce.get('editor')) {
+            tinymce.get('editor').setContent(conteudo);
+            document.getElementById('preview').innerHTML = conteudo;
+        }
+    });
+    
+    // Inicializar preview
+    setTimeout(() => {
+        if (tinymce.get('editor')) {
+            const conteudo = tinymce.get('editor').getContent();
+            if (conteudo && conteudo !== '<p><br data-mce-bogus="1"></p>') {
+                document.getElementById('preview').innerHTML = conteudo;
+            }
+        }
+    }, 1000);
 </script>
 {% endblock %}

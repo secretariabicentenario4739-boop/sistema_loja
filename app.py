@@ -7120,7 +7120,7 @@ def editar_ata(id):
     
     # Buscar ata com informações da reunião
     cursor.execute("""
-        SELECT a.*, r.titulo as reuniao_titulo, r.status as reuniao_status
+        SELECT a.*, r.titulo as reuniao_titulo, r.status as reuniao_status, r.data as reuniao_data
         FROM atas a
         JOIN reunioes r ON a.reuniao_id = r.id
         WHERE a.id = %s
@@ -7136,30 +7136,40 @@ def editar_ata(id):
     if ata["aprovada"] == 1:
         flash("Ata já aprovada, não pode ser editada!", "warning")
         return_connection(conn)
-        return redirect(f"/atas/{id}/visualizar")
+        return redirect(f"/atas/{id}")
     
     if request.method == "POST":
+        titulo = request.form.get("titulo")
         conteudo = request.form.get("conteudo")
+        tipo_ata = request.form.get("tipo_ata")
+        numero_ata = request.form.get("numero_ata")
+        ano_ata = request.form.get("ano_ata")
+        modelo_ata = request.form.get("modelo_ata")
         
         if not conteudo:
             flash("Conteúdo da ata é obrigatório", "danger")
         else:
             try:
-                # Obter versão atual
                 versao_atual = ata.get('versao') or 0
                 nova_versao = versao_atual + 1
                 
                 cursor.execute("""
                     UPDATE atas 
-                    SET conteudo = %s, versao = %s
+                    SET titulo = %s,
+                        conteudo = %s,
+                        tipo_ata = %s,
+                        numero_ata = %s,
+                        ano_ata = %s,
+                        modelo_ata = %s,
+                        versao = %s
                     WHERE id = %s
-                """, (conteudo, nova_versao, id))
+                """, (titulo, conteudo, tipo_ata, numero_ata, ano_ata, modelo_ata, nova_versao, id))
                 
                 conn.commit()
-                registrar_log("editar", "ata", id, dados_novos={"versao": nova_versao})
+                registrar_log("editar", "ata", id, dados_novos={"versao": nova_versao, "titulo": titulo})
                 flash("Ata atualizada com sucesso!", "success")
                 return_connection(conn)
-                return redirect(f"/atas/{id}/visualizar")
+                return redirect(f"/atas/{id}")
                 
             except Exception as e:
                 print(f"Erro ao atualizar ata: {e}")
