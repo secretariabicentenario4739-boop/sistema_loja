@@ -3855,6 +3855,28 @@ def editar_obreiro(id):
         # =============================
         if request.method == "POST":
             
+            # ========== ALTERAR USUÁRIO (apenas admin) ==========
+            if is_admin:
+                novo_usuario = request.form.get("usuario")
+                usuario_atual = obreiro["usuario"]
+                
+                if novo_usuario and novo_usuario != usuario_atual:
+                    # Verificar se o novo usuário já existe
+                    cursor.execute("SELECT id FROM usuarios WHERE usuario = %s AND id != %s", (novo_usuario, id))
+                    if cursor.fetchone():
+                        flash("Nome de usuário já existe! Escolha outro.", "danger")
+                        return redirect(f"/obreiros/{id}/editar")
+                    
+                    cursor.execute("UPDATE usuarios SET usuario = %s WHERE id = %s", (novo_usuario, id))
+                    registrar_log("alterar_usuario", "obreiro", id, 
+                                 dados_anteriores={"usuario": usuario_atual},
+                                 dados_novos={"usuario": novo_usuario})
+                    flash("Nome de usuário alterado com sucesso!", "success")
+                    
+                    # Atualizar sessão se for o próprio perfil
+                    if is_own_profile:
+                        session['usuario'] = novo_usuario
+            
             # Dados básicos
             nome_completo = request.form.get("nome_completo")
             nome_maconico = request.form.get("nome_maconico")

@@ -50,8 +50,16 @@
                             <div class="row">
                                 <div class="col-md-6 mb-3">
                                     <label class="form-label">Usuário</label>
-                                    <input type="text" class="form-control" value="{{ obreiro.usuario }}" readonly>
-                                    <small class="text-muted">O nome de usuário não pode ser alterado</small>
+                                    {% if is_admin %}
+                                        <input type="text" class="form-control" name="usuario" value="{{ obreiro.usuario }}" required>
+                                        <small class="text-warning">
+                                            <i class="bi bi-exclamation-triangle"></i> 
+                                            Alterar o nome de usuário pode afetar logs. Use com cuidado.
+                                        </small>
+                                    {% else %}
+                                        <input type="text" class="form-control" value="{{ obreiro.usuario }}" readonly disabled>
+                                        <small class="text-muted">Para alterar o usuário, contate o administrador.</small>
+                                    {% endif %}
                                 </div>
 
                                 {% if is_admin %}
