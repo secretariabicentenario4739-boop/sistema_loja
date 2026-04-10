@@ -3302,7 +3302,10 @@ def listar_obreiros():
         estatisticas=estatisticas,
         now=datetime.now()
     )
-    
+   
+# ============================================
+    # ROTAS DE OBREIROS
+# ============================================   
 
 @app.route("/obreiros/<int:id>/excluir")
 @login_required
@@ -3683,63 +3686,6 @@ def novo_obreiro():
                           graus=graus,
                           graus_superiores=graus_superiores)
     
-@app.route("/redefinir-senha", methods=["GET", "POST"])
-def redefinir_senha():
-    """Redefine a senha usando token de recuperação"""
-    
-    # Buscar token da URL (GET) ou do formulário (POST)
-    token = request.args.get("token") or request.form.get("token")
-    
-    if not token:
-        flash("Token inválido!", "danger")
-        return redirect("/login")
-    
-    # Verificar token
-    usuario_id = verificar_token_recuperacao(token)
-    
-    if not usuario_id:
-        flash("Link inválido ou expirado! Solicite uma nova recuperação.", "danger")
-        return redirect("/recuperar-senha")
-    
-    if request.method == "POST":
-        nova_senha = request.form.get("nova_senha")
-        confirmar_senha = request.form.get("confirmar_senha")
-        
-        # Validações
-        if not nova_senha or len(nova_senha) < 6:
-            flash("A senha deve ter no mínimo 6 caracteres!", "danger")
-        elif nova_senha != confirmar_senha:
-            flash("As senhas não coincidem!", "danger")
-        else:
-            try:
-                from werkzeug.security import generate_password_hash
-                
-                # Gerar novo hash
-                senha_hash = generate_password_hash(nova_senha)
-                
-                cursor, conn = get_db()
-                cursor.execute("UPDATE usuarios SET senha_hash = %s WHERE id = %s", (senha_hash, usuario_id))
-                conn.commit()
-                
-                # Marcar token como usado
-                usar_token_recuperacao(token)
-                return_connection(conn)
-                
-                registrar_log("redefinir_senha", "usuario", usuario_id)
-                flash("✅ Senha redefinida com sucesso! Faça login com sua nova senha.", "success")
-                return redirect("/login")
-                
-            except Exception as e:
-                print(f"Erro ao redefinir senha: {e}")
-                flash(f"Erro ao redefinir senha: {str(e)}", "danger")
-                if conn:
-                    return_connection(conn)
-    
-    return render_template("redefinir_senha.html", token=token)
-
-
-    
-
 @app.route("/obreiros/<int:id>/editar", methods=["GET", "POST"])
 @login_required
 def editar_obreiro(id):
@@ -4009,7 +3955,127 @@ def editar_obreiro(id):
         return_connection(conn)
         return redirect(f"/obreiros/{id}")
 
-
+@app.route("/obreiros/<int:id>")
+@login_required
+def visualizar_obreiro(id):
+    """Visualizar detalhes de um obreiro específico"""
+    cursor, conn = get_db()
+    
+    try:
+        # Buscar dados do obreiro com informações da loja
+        cursor.execute("""
+            SELECT u.*, l.nome as loja_nome_completo, l.cidade as loja_cidade, l.uf as loja_uf
+            FROM usuarios u
+            LEFT JOIN lojas l ON u.loja_nome = l.nome
+            WHERE u.id = %s
+        """, (id,))
+        obreiro = cursor.fetchone()
+        
+        if not obreiro:
+            flash("Obreiro não encontrado", "danger")
+            return_connection(conn)
+            return redirect("/obreiros")
+        
+        # ============================================
+        # PERMISSÃO DE VISUALIZAÇÃO
+        # ============================================
+        # Todos os usuários logados podem visualizar qualquer obreiro
+        
+        # Buscar cargo atual
+        cursor.execute("""
+            SELECT c.nome as cargo_nome, c.sigla, oc.data_inicio
+            FROM ocupacao_cargos oc
+            JOIN cargos c ON oc.cargo_id = c.id
+            WHERE oc.obreiro_id = %s AND oc.ativo = 1
+            ORDER BY oc.data_inicio DESC
+            LIMIT 1
+        """, (id,))
+        cargo_atual_row = cursor.fetchone()
+        cargo_atual = cargo_atual_row['cargo_nome'] if cargo_atual_row else None
+        
+        # Buscar todos os cargos do obreiro
+        cursor.execute("""
+            SELECT oc.*, c.nome as cargo_nome, c.sigla
+            FROM ocupacao_cargos oc
+            JOIN cargos c ON oc.cargo_id = c.id
+            WHERE oc.obreiro_id = %s
+            ORDER BY oc.data_inicio DESC
+        """, (id,))
+        cargos = cursor.fetchall()
+        
+        # Buscar histórico de graus
+        cursor.execute("""
+            SELECT h.*, 
+                   CASE 
+                       WHEN h.grau = 1 THEN 'Aprendiz'
+                       WHEN h.grau = 2 THEN 'Companheiro'
+                       WHEN h.grau = 3 THEN 'Mestre'
+                       WHEN h.grau = 4 THEN 'Mestre Instalado'
+                       WHEN h.grau = 5 THEN 'Arquiteto Real'
+                       WHEN h.grau = 6 THEN 'Soberano Grande Inspetor Geral'
+                       ELSE CONCAT('Grau ', h.grau)
+                   END as nome_grau
+            FROM historico_graus h
+            WHERE h.obreiro_id = %s
+            ORDER BY h.data DESC
+        """, (id,))
+        historico_graus = cursor.fetchall()
+        
+        # Contar familiares (dependentes)
+        cursor.execute("SELECT COUNT(*) as total FROM dependentes WHERE obreiro_id = %s", (id,))
+        familiares_count = cursor.fetchone()["total"]
+        
+        # Contar condecorações
+        try:
+            cursor.execute("SELECT COUNT(*) as total FROM condecoracoes_obreiro WHERE obreiro_id = %s", (id,))
+            condecoracoes_count = cursor.fetchone()["total"]
+        except:
+            condecoracoes_count = 0
+        
+        # Contar comunicados (se a tabela existir)
+        try:
+            cursor.execute("SELECT COUNT(*) as total FROM comunicados_obreiro WHERE obreiro_id = %s AND ativo = 1", (id,))
+            comunicados_count = cursor.fetchone()["total"]
+        except:
+            comunicados_count = 0
+        
+        # Cargos disponíveis para adicionar (apenas admin)
+        cargos_disponiveis = []
+        if session.get("tipo") == "admin":
+            cursor.execute("SELECT id, nome, sigla FROM cargos WHERE ativo = 1 ORDER BY ordem, nome")
+            cargos_disponiveis = cursor.fetchall()
+        
+        # Graus disponíveis para registrar (apenas admin)
+        graus_disponiveis = []
+        if session.get("tipo") == "admin":
+            cursor.execute("SELECT nivel, nome FROM graus WHERE ativo = 1 ORDER BY nivel")
+            graus_disponiveis = cursor.fetchall()
+        
+        return_connection(conn)
+        
+        # Verificar se pode editar (admin ou próprio perfil)
+        pode_editar = (session.get("tipo") == "admin" or session.get("user_id") == id)
+        
+        return render_template("obreiros/visualizar.html",
+                              obreiro=obreiro,
+                              cargo_atual=cargo_atual,
+                              cargos=cargos,
+                              historico_graus=historico_graus,
+                              cargos_disponiveis=cargos_disponiveis,
+                              graus_disponiveis=graus_disponiveis,
+                              familiares_count=familiares_count,
+                              condecoracoes_count=condecoracoes_count,
+                              comunicados_count=comunicados_count,
+                              pode_editar=pode_editar)
+        
+    except Exception as e:
+        print(f"❌ Erro ao visualizar obreiro {id}: {e}")
+        import traceback
+        traceback.print_exc()
+        if conn:
+            return_connection(conn)
+        flash(f"Erro ao carregar dados do obreiro: {str(e)}", "danger")
+        return redirect("/obreiros")
     
 @app.route("/obreiros/<int:id>/foto", methods=["POST"])
 @login_required
@@ -4324,6 +4390,8 @@ def upload_documento(id):
         flash(f"Erro ao enviar arquivo: {str(e)}", "danger")
 
     return redirect(f"/obreiros/{id}/documentos")
+    
+    
 @app.route("/documentos/<int:id>/baixar")
 @login_required
 def baixar_documento(id):
@@ -4382,7 +4450,59 @@ def excluir_documento(id):
     return_connection(conn)
     return redirect(f"/obreiros/{doc['obreiro_id']}/documentos")
 
-
+@app.route("/redefinir-senha", methods=["GET", "POST"])
+def redefinir_senha():
+    """Redefine a senha usando token de recuperação"""
+    
+    # Buscar token da URL (GET) ou do formulário (POST)
+    token = request.args.get("token") or request.form.get("token")
+    
+    if not token:
+        flash("Token inválido!", "danger")
+        return redirect("/login")
+    
+    # Verificar token
+    usuario_id = verificar_token_recuperacao(token)
+    
+    if not usuario_id:
+        flash("Link inválido ou expirado! Solicite uma nova recuperação.", "danger")
+        return redirect("/recuperar-senha")
+    
+    if request.method == "POST":
+        nova_senha = request.form.get("nova_senha")
+        confirmar_senha = request.form.get("confirmar_senha")
+        
+        # Validações
+        if not nova_senha or len(nova_senha) < 6:
+            flash("A senha deve ter no mínimo 6 caracteres!", "danger")
+        elif nova_senha != confirmar_senha:
+            flash("As senhas não coincidem!", "danger")
+        else:
+            try:
+                from werkzeug.security import generate_password_hash
+                
+                # Gerar novo hash
+                senha_hash = generate_password_hash(nova_senha)
+                
+                cursor, conn = get_db()
+                cursor.execute("UPDATE usuarios SET senha_hash = %s WHERE id = %s", (senha_hash, usuario_id))
+                conn.commit()
+                
+                # Marcar token como usado
+                usar_token_recuperacao(token)
+                return_connection(conn)
+                
+                registrar_log("redefinir_senha", "usuario", usuario_id)
+                flash("✅ Senha redefinida com sucesso! Faça login com sua nova senha.", "success")
+                return redirect("/login")
+                
+            except Exception as e:
+                print(f"Erro ao redefinir senha: {e}")
+                flash(f"Erro ao redefinir senha: {str(e)}", "danger")
+                if conn:
+                    return_connection(conn)
+    
+    return render_template("redefinir_senha.html", token=token)
 
 @app.route("/admin/verificar-tabelas", methods=["GET"])
 @admin_required
