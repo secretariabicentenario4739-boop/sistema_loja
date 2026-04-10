@@ -3483,355 +3483,205 @@ def novo_obreiro():
     cursor, conn = get_db()
     
     if request.method == "POST":
-        usuario = request.form.get("usuario")
-        senha = request.form.get("senha")
-        nome_completo = request.form.get("nome_completo")
-        nome_maconico = request.form.get("nome_maconico")
-        cim_numero = request.form.get("cim_numero")
-        tipo = request.form.get("tipo", "obreiro")
-        
-        # ✅ CORREÇÃO: Receber os campos de grau do formulário
-        grau_principal = request.form.get("grau_principal", 1)
-        grau_superior = request.form.get("grau_superior", "")
-        
-        # Calcular o grau final
-        if int(grau_principal) == 3 and grau_superior and grau_superior != '':
-            grau_atual = int(grau_superior)
-        else:
-            grau_atual = int(grau_principal)
-        
-        data_iniciacao = request.form.get("data_iniciacao")
-        data_elevacao = request.form.get("data_elevacao")
-        data_exaltacao = request.form.get("data_exaltacao")
-        telefone = request.form.get("telefone")
-        email = request.form.get("email")
-        endereco = request.form.get("endereco")
-        loja_nome = request.form.get("loja_nome")
-        loja_numero = request.form.get("loja_numero")
-        loja_orient = request.form.get("loja_orient")
-        ativo = 1 if request.form.get("ativo") else 1  # Padrão ativo
-        
-        # Tratar datas vazias
-        data_iniciacao = data_iniciacao if data_iniciacao and data_iniciacao.strip() else None
-        data_elevacao = data_elevacao if data_elevacao and data_elevacao.strip() else None
-        data_exaltacao = data_exaltacao if data_exaltacao and data_exaltacao.strip() else None
-        
-        # Validações básicas
-        if not usuario or not senha or not nome_completo:
-            flash("Preencha os campos obrigatórios", "danger")
-        elif len(senha) < 6:
-            flash("A senha deve ter no mínimo 6 caracteres", "danger")
-        else:
-            # Verificar se o usuário tem permissão para criar sindicante
-            if tipo == 'sindicante' and not verificar_permissao(session['user_id'], 'obreiro.promote'):
-                flash("Você não tem permissão para criar sindicantes", "danger")
-                return_connection(conn)
-                return redirect("/obreiros")
+        try:
+            # ========== CAMPOS OBRIGATÓRIOS ==========
+            usuario = request.form.get("usuario")
+            senha = request.form.get("senha")
+            nome_completo = request.form.get("nome_completo")
+            tipo = request.form.get("tipo", "obreiro")
+            ativo = 1 if request.form.get("ativo") == '1' else 1
+            grau_principal = request.form.get("grau_principal", 1)
             
-            # Verificar se o usuário tem permissão para criar admin
-            if tipo == 'admin' and session.get('tipo') != 'admin':
-                flash("Apenas administradores podem criar outros administradores", "danger")
-                return_connection(conn)
-                return redirect("/obreiros")
+            # Calcular grau atual
+            grau_superior = request.form.get("grau_superior", "")
+            if int(grau_principal) == 3 and grau_superior and grau_superior != '':
+                grau_atual = int(grau_superior)
+            else:
+                grau_atual = int(grau_principal)
             
-            # Verificar se sindicante tem grau suficiente (>= 3)
-            if tipo == 'sindicante' and grau_atual < 3:
-                flash("Apenas Mestres (grau 3) e superiores podem ser Sindicantes!", "danger")
-                return_connection(conn)
+            # Validações
+            if not usuario or not senha or not nome_completo:
+                flash("Preencha os campos obrigatórios", "danger")
                 return redirect("/obreiros/novo")
             
-            try:
-                from werkzeug.security import generate_password_hash
-                senha_hash = generate_password_hash(senha)
-                
-                cursor.execute("""
-                    INSERT INTO usuarios 
-                    (usuario, senha_hash, tipo, data_cadastro, ativo, 
-                     nome_completo, nome_maconico, cim_numero, grau_atual,
-                     data_iniciacao, data_elevacao, data_exaltacao,
-                     telefone, email, endereco,
-                     loja_nome, loja_numero, loja_orient) 
-                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
-                    RETURNING id
-                """, (usuario, senha_hash, tipo, datetime.now(), ativo,
-                      nome_completo, nome_maconico, cim_numero, grau_atual,
-                      data_iniciacao, data_elevacao, data_exaltacao,
-                      telefone, email, endereco,
-                      loja_nome, loja_numero, loja_orient))
-                
-                obreiro_id = cursor.fetchone()['id']
-                conn.commit()
-                
-                # Registrar histórico de grau inicial
-                if data_iniciacao:
+            if len(senha) < 6:
+                flash("A senha deve ter no mínimo 6 caracteres", "danger")
+                return redirect("/obreiros/novo")
+            
+            # Verificar permissões
+            if tipo == 'sindicante' and grau_atual < 3:
+                flash("Apenas Mestres (grau 3) e superiores podem ser Sindicantes!", "danger")
+                return redirect("/obreiros/novo")
+            
+            from werkzeug.security import generate_password_hash
+            senha_hash = generate_password_hash(senha)
+            
+            # ========== CAMPOS OPCIONAIS ==========
+            
+            # Dados pessoais
+            nome_maconico = request.form.get("nome_maconico") or None
+            data_nascimento = request.form.get("data_nascimento") or None
+            cpf = request.form.get("cpf") or None
+            tipo_sanguineo = request.form.get("tipo_sanguineo") or None
+            rg = request.form.get("rg") or None
+            orgao_emissor = request.form.get("orgao_emissor") or None
+            grau_instrucao = request.form.get("grau_instrucao") or None
+            titulo_eleitor = request.form.get("titulo_eleitor") or None
+            naturalidade = request.form.get("naturalidade") or None
+            estado_civil = request.form.get("estado_civil") or "Solteiro"
+            
+            # Contato
+            telefone = request.form.get("telefone") or None
+            email = request.form.get("email") or None
+            
+            # Endereço
+            endereco = request.form.get("endereco") or None
+            cep = request.form.get("cep") or None
+            cidade = request.form.get("cidade") or None
+            uf = request.form.get("uf") or None
+            bairro = request.form.get("bairro") or None
+            numero = request.form.get("numero") or None
+            complemento = request.form.get("complemento") or None
+            
+            # Dados maçônicos
+            cim_numero = request.form.get("cim_numero") or None
+            data_iniciacao = request.form.get("data_iniciacao") or None
+            data_elevacao = request.form.get("data_elevacao") or None
+            data_exaltacao = request.form.get("data_exaltacao") or None
+            data_instalacao = request.form.get("data_instalacao") or None
+            status_maconico = request.form.get("status_maconico") or "Regular"
+            distincao_maconica = request.form.get("distincao_maconica") or None
+            isento = request.form.get("isento") or "NÃO"
+            artigo_27 = request.form.get("artigo_27") or "NÃO"
+            recolhe = request.form.get("recolhe") or "Sim"
+            loja_iniciacao = request.form.get("loja_iniciacao") or None
+            
+            # Loja atual
+            loja_nome = request.form.get("loja_nome") or None
+            loja_numero = request.form.get("loja_numero") or None
+            loja_orient = request.form.get("loja_orient") or None
+            loja_cidade = request.form.get("loja_cidade") or None
+            loja_uf = request.form.get("loja_uf") or None
+            
+            # Filiação
+            nome_pai = request.form.get("nome_pai") or None
+            nome_mae = request.form.get("nome_mae") or None
+            
+            # Dados profissionais
+            profissao = request.form.get("profissao") or None
+            empresa = request.form.get("empresa") or None
+            email_profissional = request.form.get("email_profissional") or None
+            telefone_profissional = request.form.get("telefone_profissional") or None
+            endereco_profissional = request.form.get("endereco_profissional") or None
+            
+            # INSERT com todos os campos
+            cursor.execute("""
+                INSERT INTO usuarios 
+                (usuario, senha_hash, tipo, data_cadastro, ativo, 
+                 nome_completo, nome_maconico, cim_numero, grau_atual,
+                 data_iniciacao, data_elevacao, data_exaltacao, data_instalacao,
+                 telefone, email, endereco,
+                 loja_nome, loja_numero, loja_orient, loja_cidade, loja_uf,
+                 status_maconico, distincao_maconica, 
+                 isento, artigo_27, recolhe, loja_iniciacao,
+                 data_nascimento, cpf, tipo_sanguineo, rg, orgao_emissor,
+                 grau_instrucao, titulo_eleitor, naturalidade, estado_civil,
+                 cep, cidade, uf, bairro, numero, complemento,
+                 nome_pai, nome_mae, profissao, empresa, 
+                 email_profissional, telefone_profissional, endereco_profissional,
+                 grau_superior) 
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, 
+                        %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, 
+                        %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, 
+                        %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                RETURNING id
+            """, (
+                usuario, senha_hash, tipo, datetime.now(), ativo,
+                nome_completo, nome_maconico, cim_numero, grau_atual,
+                data_iniciacao, data_elevacao, data_exaltacao, data_instalacao,
+                telefone, email, endereco,
+                loja_nome, loja_numero, loja_orient, loja_cidade, loja_uf,
+                status_maconico, distincao_maconica,
+                isento, artigo_27, recolhe, loja_iniciacao,
+                data_nascimento, cpf, tipo_sanguineo, rg, orgao_emissor,
+                grau_instrucao, titulo_eleitor, naturalidade, estado_civil,
+                cep, cidade, uf, bairro, numero, complemento,
+                nome_pai, nome_mae, profissao, empresa,
+                email_profissional, telefone_profissional, endereco_profissional,
+                grau_superior if grau_superior else None
+            ))
+            
+            obreiro_id = cursor.fetchone()['id']
+            conn.commit()
+            
+            # Registrar histórico de grau inicial
+            if data_iniciacao:
+                nome_grau = get_nome_grau(grau_atual)
+                try:
                     cursor.execute("""
                         INSERT INTO historico_graus (obreiro_id, grau, data, observacao)
                         VALUES (%s, %s, %s, %s)
-                    """, (obreiro_id, grau_atual, data_iniciacao, f"{get_nome_grau(grau_atual)} - Iniciação"))
+                    """, (obreiro_id, grau_atual, data_iniciacao, f"{nome_grau} - Iniciação"))
                     conn.commit()
-                
-                registrar_log("criar", "obreiro", obreiro_id, dados_novos={"nome": nome_completo, "usuario": usuario, "grau": grau_atual})
-                flash(f"Obreiro '{nome_completo}' adicionado com sucesso!", "success")
-                return_connection(conn)
-                return redirect("/obreiros")
-                
-            except psycopg2.IntegrityError as e:
-                if "usuarios_usuario_key" in str(e):
-                    flash("Erro: Usuário já existe! Escolha outro nome de usuário.", "danger")
-                elif "usuarios_cim_numero_key" in str(e):
-                    flash("Erro: CIM já cadastrado para outro obreiro!", "danger")
-                else:
-                    flash(f"Erro ao criar obreiro: {str(e)}", "danger")
-                conn.rollback()
+                except Exception as e:
+                    print(f"⚠️ Erro ao registrar histórico: {e}")
+            
+            # Inserir dependentes se houver
+            dependentes_nomes = request.form.getlist('dependente_nome[]')
+            dependentes_parentescos = request.form.getlist('dependente_parentesco[]')
+            dependentes_nascimentos = request.form.getlist('dependente_nascimento[]')
+            
+            for i in range(len(dependentes_nomes)):
+                if dependentes_nomes[i] and dependentes_parentescos[i]:
+                    data_nasc_dep = dependentes_nascimentos[i] if i < len(dependentes_nascimentos) else None
+                    try:
+                        cursor.execute("""
+                            INSERT INTO dependentes (obreiro_id, nome, parentesco, data_nascimento)
+                            VALUES (%s, %s, %s, %s)
+                        """, (obreiro_id, dependentes_nomes[i], dependentes_parentescos[i], data_nasc_dep))
+                    except Exception as e:
+                        print(f"⚠️ Erro ao inserir dependente: {e}")
+            
+            conn.commit()
+            
+            registrar_log("criar", "obreiro", obreiro_id, dados_novos={"nome": nome_completo, "usuario": usuario, "grau": grau_atual})
+            flash(f"Obreiro '{nome_completo}' adicionado com sucesso!", "success")
+            return_connection(conn)
+            return redirect("/obreiros")
+            
+        except psycopg2.IntegrityError as e:
+            conn.rollback()
+            if "usuarios_usuario_key" in str(e):
+                flash("Erro: Usuário já existe! Escolha outro nome de usuário.", "danger")
+            elif "usuarios_cim_numero_key" in str(e):
+                flash("Erro: CIM já cadastrado para outro obreiro!", "danger")
+            elif "usuarios_cpf_key" in str(e):
+                flash("Erro: CPF já cadastrado para outro obreiro!", "danger")
+            else:
+                flash(f"Erro ao criar obreiro: {str(e)}", "danger")
+        except Exception as e:
+            conn.rollback()
+            flash(f"Erro ao criar obreiro: {str(e)}", "danger")
+        
+        return_connection(conn)
+        return redirect("/obreiros/novo")
     
     # GET - Carregar dados para o formulário
-    cursor.execute("SELECT id, nome, numero, oriente FROM lojas WHERE ativo = 1 ORDER BY nome")
+    cursor.execute("SELECT id, nome, numero, oriente, cidade, uf FROM lojas WHERE ativo = 1 ORDER BY nome")
     lojas = cursor.fetchall()
     
-    # Buscar graus (apenas os 3 principais)
     cursor.execute("SELECT nivel, nome FROM graus WHERE nivel IN (1, 2, 3) AND ativo = 1 ORDER BY nivel")
     graus = cursor.fetchall()
     
-    # ✅ Buscar graus superiores (nível >= 4)
     cursor.execute("SELECT nivel, nome FROM graus WHERE nivel >= 4 AND ativo = 1 ORDER BY nivel")
     graus_superiores = cursor.fetchall()
     
-       
     return_connection(conn)
     
     return render_template("obreiros/novo.html", 
                           lojas=lojas, 
                           graus=graus,
                           graus_superiores=graus_superiores)
-
-
-# Função auxiliar para obter nome do grau
-def get_nome_grau(grau):
-    """Retorna o nome do grau pelo número"""
-    graus_map = {
-        1: "Aprendiz",
-        2: "Companheiro",
-        3: "Mestre",
-        4: "Mestre Instalado",
-        5: "Arquiteto Real",
-        6: "Soberano Grande Inspetor Geral",
-        7: "Mestre Perfeito",
-        8: "Eleito dos Nove",
-        9: "Mestre da Maçonaria Real",
-        10: "Cavaleiro Rosa-Cruz",
-        11: "Cavaleiro Kadosch",
-        12: "Grande Escocês"
-    }
-    return graus_map.get(grau, f"Grau {grau}")
-
-@app.route("/obreiros/<int:id>")
-@login_required
-def visualizar_obreiro(id):
-    """Visualizar detalhes de um obreiro específico"""
-    cursor, conn = get_db()
-    
-    try:
-        # Buscar dados do obreiro
-        cursor.execute("""
-            SELECT u.*, l.nome as loja_nome_completo, l.cidade as loja_cidade, l.uf as loja_uf
-            FROM usuarios u
-            LEFT JOIN lojas l ON u.loja_nome = l.nome
-            WHERE u.id = %s
-        """, (id,))
-        obreiro = cursor.fetchone()
-        
-        if not obreiro:
-            flash("Obreiro não encontrado", "danger")
-            return_connection(conn)
-            return redirect("/obreiros")
-        
-        # ============================================
-        # PERMISSÃO DE VISUALIZAÇÃO
-        # ============================================
-        # Todos os usuários logados podem visualizar qualquer obreiro
-        
-        # Buscar cargo atual
-        cursor.execute("""
-            SELECT c.nome as cargo_nome, c.sigla, oc.data_inicio
-            FROM ocupacao_cargos oc
-            JOIN cargos c ON oc.cargo_id = c.id
-            WHERE oc.obreiro_id = %s AND oc.ativo = 1
-            ORDER BY oc.data_inicio DESC
-            LIMIT 1
-        """, (id,))
-        cargo_atual_row = cursor.fetchone()
-        cargo_atual = cargo_atual_row['cargo_nome'] if cargo_atual_row else None
-        
-        # Buscar todos os cargos do obreiro
-        cursor.execute("""
-            SELECT oc.*, c.nome as cargo_nome, c.sigla
-            FROM ocupacao_cargos oc
-            JOIN cargos c ON oc.cargo_id = c.id
-            WHERE oc.obreiro_id = %s
-            ORDER BY oc.data_inicio DESC
-        """, (id,))
-        cargos = cursor.fetchall()
-        
-        # Buscar histórico de graus
-        cursor.execute("""
-            SELECT h.*, 
-                   CASE 
-                       WHEN h.grau = 1 THEN 'Aprendiz'
-                       WHEN h.grau = 2 THEN 'Companheiro'
-                       WHEN h.grau = 3 THEN 'Mestre'
-                       WHEN h.grau = 4 THEN 'Mestre Instalado'
-                       WHEN h.grau = 5 THEN 'Arquiteto Real'
-                       WHEN h.grau = 6 THEN 'Soberano Grande Inspetor Geral'
-                       ELSE CONCAT('Grau ', h.grau)
-                   END as nome_grau
-            FROM historico_graus h
-            WHERE h.obreiro_id = %s
-            ORDER BY h.data DESC
-        """, (id,))
-        historico_graus = cursor.fetchall()
-        
-        # Contar familiares
-        cursor.execute("SELECT COUNT(*) as total FROM dependentes WHERE obreiro_id = %s", (id,))
-        familiares_count = cursor.fetchone()["total"]
-        
-        # Contar condecorações (se a tabela existir)
-        try:
-            cursor.execute("SELECT COUNT(*) as total FROM condecoracoes_obreiro WHERE obreiro_id = %s", (id,))
-            condecoracoes_count = cursor.fetchone()["total"]
-        except:
-            condecoracoes_count = 0
-        
-        # Contar comunicados (se a tabela existir)
-        try:
-            cursor.execute("SELECT COUNT(*) as total FROM comunicados_obreiro WHERE obreiro_id = %s AND ativo = 1", (id,))
-            comunicados_count = cursor.fetchone()["total"]
-        except:
-            comunicados_count = 0
-        
-        # Cargos disponíveis para adicionar (apenas admin)
-        cargos_disponiveis = []
-        if session.get("tipo") == "admin":
-            cursor.execute("SELECT id, nome, sigla FROM cargos WHERE ativo = 1 ORDER BY ordem, nome")
-            cargos_disponiveis = cursor.fetchall()
-        
-        # Graus disponíveis para registrar (apenas admin)
-        graus_disponiveis = []
-        if session.get("tipo") == "admin":
-            cursor.execute("SELECT nivel, nome FROM graus WHERE ativo = 1 ORDER BY nivel")
-            graus_disponiveis = cursor.fetchall()
-        
-        return_connection(conn)
-        
-        # Verificar se pode editar (admin ou próprio perfil)
-        pode_editar = (session.get("tipo") == "admin" or session.get("user_id") == id)
-        
-        return render_template("obreiros/visualizar.html",
-                              obreiro=obreiro,
-                              cargo_atual=cargo_atual,
-                              cargos=cargos,
-                              historico_graus=historico_graus,
-                              cargos_disponiveis=cargos_disponiveis,
-                              graus_disponiveis=graus_disponiveis,
-                              familiares_count=familiares_count,
-                              condecoracoes_count=condecoracoes_count,
-                              comunicados_count=comunicados_count,
-                              pode_editar=pode_editar)
-        
-    except Exception as e:
-        print(f"❌ Erro ao visualizar obreiro {id}: {e}")
-        import traceback
-        traceback.print_exc()
-        if conn:
-            return_connection(conn)
-        flash(f"Erro ao carregar dados do obreiro: {str(e)}", "danger")
-        return redirect("/obreiros")
-        
-        
-from datetime import datetime
-@app.route("/recuperar-senha", methods=["GET", "POST"])
-def recuperar_senha():
-    """Página de recuperação de senha"""
-    
-    if request.method == "POST":
-        email = request.form.get("email")
-        
-        if not email:
-            flash("Digite seu e-mail!", "danger")
-            return redirect("/recuperar-senha")
-        
-        try:
-            cursor, conn = get_db()
-            
-            # Buscar usuário pelo e-mail
-            cursor.execute("""
-                SELECT id, nome_completo, usuario, email
-                FROM usuarios 
-                WHERE email = %s AND ativo = 1
-            """, (email,))
-            
-            user = cursor.fetchone()
-            return_connection(conn)
-            
-            if user:
-                # Gerar token de recuperação
-                token = gerar_token_recuperacao(user['id'])
-                
-                # Criar link de redefinição (CORRIGIDO)
-                link = f"{request.url_root}redefinir-senha?token={token}"
-                
-                assunto = "🔐 Recuperação de Senha - Sistema Maçônico"
-                conteudo_html = f"""
-                <html>
-                <body style="font-family: Arial, sans-serif;">
-                    <div style="max-width: 600px; margin: 0 auto; padding: 20px;">
-                        <div style="background: linear-gradient(135deg, #1a472a, #0a2a1a); color: #ffd700; padding: 30px; text-align: center; border-radius: 10px;">
-                            <h1>🔐 Recuperação de Senha</h1>
-                        </div>
-                        <div style="background: white; padding: 30px; border-radius: 10px; margin-top: 20px;">
-                            <h2>Olá {user['nome_completo']},</h2>
-                            <p>Recebemos uma solicitação para redefinir sua senha.</p>
-                            <p>Clique no botão abaixo para criar uma nova senha:</p>
-                            <div style="text-align: center; margin: 30px 0;">
-                                <a href="{link}" style="background: #1a472a; color: #ffd700; padding: 12px 30px; text-decoration: none; border-radius: 5px;">
-                                    🔐 Redefinir Senha
-                                </a>
-                            </div>
-                            <p>Este link é válido por <strong>24 horas</strong>.</p>
-                            <p>Se você não solicitou esta alteração, ignore este e-mail.</p>
-                            <hr>
-                            <p style="font-size: 12px; color: #666;">Caso o botão não funcione, copie e cole o link abaixo:</p>
-                            <p style="font-size: 12px; word-break: break-all;">{link}</p>
-                        </div>
-                    </div>
-                </body>
-                </html>
-                """
-                
-                # Tentar enviar e-mail
-                if RESEND_API_KEY:
-                    enviar_email_resend(user['email'], assunto, conteudo_html)
-                    flash("✅ Link de recuperação enviado para seu e-mail!", "success")
-                else:
-                    # Se não tiver API key, mostrar o link no console
-                    print(f"\n{'='*60}")
-                    print(f"🔗 LINK DE RECUPERAÇÃO PARA {user['email']}:")
-                    print(f"{link}")
-                    print(f"{'='*60}\n")
-                    flash("⚠️ E-mail não configurado. Use o link abaixo para redefinir sua senha:", "warning")
-                    flash(f"Link: {link}", "info")
-            else:
-                # Não revelar se o e-mail existe ou não (segurança)
-                flash("Se o e-mail estiver cadastrado, você receberá um link de recuperação.", "info")
-                
-        except Exception as e:
-            print(f"Erro ao recuperar senha: {e}")
-            import traceback
-            traceback.print_exc()
-            flash("Erro ao processar solicitação. Tente novamente.", "danger")
-        
-        return redirect("/login")
-    
-    return render_template("recuperar_senha.html")
     
 @app.route("/redefinir-senha", methods=["GET", "POST"])
 def redefinir_senha():
