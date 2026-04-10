@@ -812,6 +812,49 @@ def allowed_foto(filename):
 
 from datetime import datetime
 
+# ============================================
+# FUNÇÃO AUXILIAR - NOME DOS GRAUS
+# ============================================
+
+def get_nome_grau(grau):
+    """Retorna o nome do grau pelo número"""
+    graus_map = {
+        1: "Aprendiz",
+        2: "Companheiro",
+        3: "Mestre",
+        4: "Mestre Instalado",
+        5: "Arquiteto Real",
+        6: "Soberano Grande Inspetor Geral",
+        7: "Mestre Perfeito",
+        8: "Eleito dos Nove",
+        9: "Mestre da Maçonaria Real",
+        10: "Cavaleiro Rosa-Cruz",
+        11: "Cavaleiro Kadosch",
+        12: "Grande Escocês",
+        13: "Grande Escocês da Abóbada Sagrada",
+        14: "Grande Escocês da Perfeição",
+        15: "Cavaleiro do Oriente",
+        16: "Príncipe de Jerusalém",
+        17: "Cavaleiro do Oriente e Ocidente",
+        18: "Cavaleiro Rosa-Cruz",
+        19: "Grande Pontífice",
+        20: "Venerável Grande Mestre",
+        21: "Cavaleiro do Sol",
+        22: "Cavaleiro da Cruz Vermelha",
+        23: "Cavaleiro do Santo Sepulcro",
+        24: "Cavaleiro da Águia Branca",
+        25: "Cavaleiro da Serpente",
+        26: "Príncipe da Mercê",
+        27: "Comendador do Templo",
+        28: "Cavaleiro do Sol",
+        29: "Cavaleiro de São Jorge",
+        30: "Cavaleiro Kadosch",
+        31: "Grande Escocês",
+        32: "Príncipe do Real Segredo",
+        33: "Soberano Grande Inspetor Geral"
+    }
+    return graus_map.get(grau, f"Grau {grau}")
+
 # =============================
 # FUNÇÃO DE LOG DE AUDITORIA
 # =============================
