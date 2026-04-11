@@ -570,9 +570,9 @@
                                     <a href="/atas/{{ ata_id }}" class="btn btn-info btn-sm">
                                         <i class="bi bi-eye"></i> Visualizar Ata
                                     </a>
-                                    <a href="/atas/{{ ata_id }}/pdf" class="btn btn-secondary btn-sm">
-                                        <i class="bi bi-file-pdf"></i> Baixar PDF
-                                    </a>
+                                    <a href="/atas/{{ ata.id }}/pdf-oficial" class="btn btn-primary">
+                                <i class="bi bi-file-pdf"></i> Baixar PDF Oficial
+                            </a>
                                     {% if session.tipo == 'admin' and not ata_aprovada %}
                                     <a href="/atas/{{ ata_id }}/editar" class="btn btn-warning btn-sm">
                                         <i class="bi bi-pencil"></i> Editar Ata
