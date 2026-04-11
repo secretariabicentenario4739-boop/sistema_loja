@@ -718,37 +718,24 @@ def init_db_pool():
         raise
 
 def get_db():
-    """Retorna cursor e conexão do banco (funciona local e no Render)"""
-    try:
-        DATABASE_URL = os.getenv('DATABASE_URL')
-        
-        if DATABASE_URL:
-            print(f"🔧 Conectando ao banco do Render")
-            conn = psycopg2.connect(
-                DATABASE_URL,
-                connect_timeout=10,           # Timeout de conexão
-                keepalives=1,                 # Mantém conexão ativa
-                keepalives_idle=30,           # Envia keepalive a cada 30 segundos
-                keepalives_interval=10,       # Intervalo entre keepalives
-                keepalives_count=5            # Tentativas de keepalive
-            )
-        else:
-            print(f"🔧 Conectando ao banco local")
-            conn = psycopg2.connect(
-                host=os.getenv('DB_HOST', 'localhost'),
-                port=os.getenv('DB_PORT', '5432'),
-                dbname=os.getenv('DB_NAME', 'sistema_maconico'),
-                user=os.getenv('DB_USER', 'postgres'),
-                password=os.getenv('DB_PASSWORD', 'postgres'),
-                connect_timeout=10
-            )
-        
-        cursor = conn.cursor(cursor_factory=RealDictCursor)
-        return cursor, conn
-        
-    except Exception as e:
-        print(f"❌ Erro ao conectar ao banco: {e}")
-        raise
+    """Obtém uma conexão do pool (NÃO cria nova conexão)"""
+    pool = init_db_pool()
+    conn = pool.getconn()
+    cursor = conn.cursor(cursor_factory=RealDictCursor)
+    
+    # Contagem para debug
+    used = pool._used
+    print(f"🔌 Conexão obtida do pool (ativas: {used})")
+    
+    return cursor, conn
+
+def return_connection(conn):
+    """Retorna a conexão para o pool"""
+    if conn and _db_pool:
+        _db_pool.putconn(conn)
+        used = _db_pool._used
+        print(f"🔌 Conexão retornada ao pool (ativas: {used})")
+
 # ============================================
 # CONTEXT MANAGER (recomendado)
 # ============================================
