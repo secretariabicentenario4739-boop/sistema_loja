@@ -667,33 +667,92 @@ def return_connection(conn):
         print(f"Erro ao fechar conexão: {e}")
 
 
-def get_db():
-    """Retorna cursor e conexão do banco (funciona local e no Render)"""
+import psycopg2
+import psycopg2.pool
+from psycopg2.extras import RealDictCursor
+import os
+
+# ============================================
+# POOL DE CONEXÕES - Singleton
+# ============================================
+_db_pool = None
+_pool_initialized = False
+
+def init_db_pool():
+    """Inicializa o pool de conexões (chamado apenas uma vez)"""
+    global _db_pool, _pool_initialized
+    
+    if _pool_initialized:
+        return _db_pool
+    
+    print("🚀 Inicializando pool de conexões...")
+    
     try:
-        # Tentar obter a URL do banco do ambiente (Render)
         DATABASE_URL = os.getenv('DATABASE_URL')
         
         if DATABASE_URL:
-            # Está no Render - usar URL
-            print(f"🔧 Conectando ao banco do Render")
-            conn = psycopg2.connect(DATABASE_URL)
+            # Render - usar URL
+            _db_pool = psycopg2.pool.SimpleConnectionPool(
+                1, 20,  # mínimo 1, máximo 20 conexões
+                dsn=DATABASE_URL,
+                cursor_factory=RealDictCursor
+            )
         else:
-            # Está localmente - usar parâmetros diretos
-            print(f"🔧 Conectando ao banco local")
-            conn = psycopg2.connect(
+            # Local
+            _db_pool = psycopg2.pool.SimpleConnectionPool(
+                1, 20,
                 host=os.getenv('DB_HOST', 'localhost'),
                 port=os.getenv('DB_PORT', '5432'),
                 dbname=os.getenv('DB_NAME', 'sistema_maconico'),
                 user=os.getenv('DB_USER', 'postgres'),
-                password=os.getenv('DB_PASSWORD', 'postgres')
+                password=os.getenv('DB_PASSWORD', 'postgres'),
+                cursor_factory=RealDictCursor
             )
         
-        cursor = conn.cursor(cursor_factory=RealDictCursor)
-        return cursor, conn
+        _pool_initialized = True
+        print(f"✅ Pool de conexões inicializado com sucesso!")
+        return _db_pool
         
     except Exception as e:
-        print(f"❌ Erro ao conectar ao banco: {e}")
+        print(f"❌ Erro ao inicializar pool: {e}")
         raise
+
+def get_db():
+    """Obtém uma conexão do pool (NÃO cria nova conexão)"""
+    pool = init_db_pool()
+    conn = pool.getconn()
+    cursor = conn.cursor(cursor_factory=RealDictCursor)
+    
+    # Contagem para debug
+    used = pool._used
+    print(f"🔌 Conexão obtida do pool (ativas: {used})")
+    
+    return cursor, conn
+
+def return_connection(conn):
+    """Retorna a conexão para o pool"""
+    if conn and _db_pool:
+        _db_pool.putconn(conn)
+        used = _db_pool._used
+        print(f"🔌 Conexão retornada ao pool (ativas: {used})")
+
+# ============================================
+# CONTEXT MANAGER (recomendado)
+# ============================================
+from contextlib import contextmanager
+
+@contextmanager
+def get_db_connection():
+    """Context manager para usar com 'with' - garante uma única conexão"""
+    cursor, conn = get_db()
+    try:
+        yield cursor
+        conn.commit()
+    except Exception:
+        conn.rollback()
+        raise
+    finally:
+        return_connection(conn)
 
 # =============================
 # IMPORTANTE: Chamar test_connection() DEPOIS de definir as funções
@@ -2387,12 +2446,13 @@ def download_material(material_id):
         return redirect(url_for('visualizar_material', material_id=material_id))
 
 # =============================
-# ROTAS DO DASHBOARD
+# ROTAS DO DASHBOARD OTIMIZADO
 # =============================
 @app.route("/dashboard")
 @login_required
 def dashboard():
     try:
+        # UMA única conexão para todo o dashboard
         cursor, conn = get_db()
         
         # ========== MEU CARGO ATUAL ==========
@@ -2409,7 +2469,7 @@ def dashboard():
         meu_cargo = meu_cargo_row['cargo_nome'] if meu_cargo_row else None
         meu_cargo_data_inicio = meu_cargo_row['data_inicio'] if meu_cargo_row else None
         
-        # ========== CARGOS OCUPADOS (LISTA GERAL) ==========
+        # ========== CARGOS OCUPADOS ==========
         cursor.execute("""
             SELECT oc.*, c.nome as cargo_nome, u.nome_completo as obreiro_nome, u.id as obreiro_id
             FROM ocupacao_cargos oc
@@ -2421,12 +2481,30 @@ def dashboard():
         """)
         cargos_ocupados = cursor.fetchall()
         
-        # ========== FAMILIARES E CONDECORAÇÕES ==========
-        cursor.execute("SELECT COUNT(*) as total FROM familiares")
-        total_familiares = cursor.fetchone()["total"]
+        # ========== ESTATÍSTICAS (TUDO EM UMA CONSULTA) ==========
+        cursor.execute("""
+            SELECT 
+                (SELECT COUNT(*) FROM familiares) as total_familiares,
+                (SELECT COUNT(*) FROM condecoracoes_obreiro) as total_condecoracoes,
+                (SELECT COUNT(*) FROM usuarios WHERE tipo IN ('admin', 'sindicante', 'obreiro') AND ativo = 1) as total_obreiros,
+                (SELECT COUNT(*) FROM usuarios WHERE grau_atual = 3 AND ativo = 1) as mestres,
+                (SELECT COUNT(*) FROM usuarios WHERE grau_atual = 2 AND ativo = 1) as companheiros,
+                (SELECT COUNT(*) FROM usuarios WHERE grau_atual = 1 AND ativo = 1) as aprendizes,
+                (SELECT COUNT(*) FROM reunioes) as total_reunioes,
+                (SELECT COUNT(*) FROM reunioes WHERE status = 'realizada') as reunioes_realizadas,
+                (SELECT COUNT(*) FROM reunioes WHERE status = 'agendada') as reunioes_agendadas
+        """)
+        stats = cursor.fetchone()
         
-        cursor.execute("SELECT COUNT(*) as total FROM condecoracoes_obreiro")
-        total_condecoracoes = cursor.fetchone()["total"]
+        total_familiares = stats['total_familiares']
+        total_condecoracoes = stats['total_condecoracoes']
+        total_obreiros = stats['total_obreiros']
+        mestres = stats['mestres']
+        companheiros = stats['companheiros']
+        aprendizes = stats['aprendizes']
+        total_reunioes = stats['total_reunioes']
+        reunioes_realizadas = stats['reunioes_realizadas']
+        reunioes_agendadas = stats['reunioes_agendadas']
         
         # ========== DOCUMENTOS RECENTES ==========
         cursor.execute("""
@@ -2438,8 +2516,21 @@ def dashboard():
         """)
         documentos_recentes = cursor.fetchall()
         
-        cursor.execute("SELECT * FROM candidatos ORDER BY data_criacao DESC")
+        # ========== CANDIDATOS COM SINDICANTES (UMA CONSULTA) ==========
+        cursor.execute("""
+            SELECT c.*, 
+                   COALESCE(
+                       (SELECT string_agg(s.sindicante, ',') 
+                        FROM sindicancias s 
+                        WHERE s.candidato_id = c.id), 
+                       ''
+                   ) as sindicantes_enviados
+            FROM candidatos c
+            ORDER BY c.data_criacao DESC
+        """)
         candidatos = cursor.fetchall()
+        
+        # ========== SINDICANTES ==========
         cursor.execute("""
             SELECT id, usuario, nome_completo, cim_numero, loja_nome, loja_numero, loja_orient, ativo 
             FROM usuarios 
@@ -2447,6 +2538,11 @@ def dashboard():
             ORDER BY nome_completo
         """)
         sindicantes = cursor.fetchall()
+        
+        total_sindicantes_ativos = len(sindicantes)
+        total_candidatos = len(candidatos)
+        
+        # ========== PARECERES CONCLUSIVOS ==========
         pareceres_conclusivos = []
         try:
             cursor.execute("""
@@ -2460,13 +2556,9 @@ def dashboard():
             pareceres_conclusivos = cursor.fetchall()
         except:
             pass
-        total_sindicantes_ativos = len(sindicantes)
-        total_candidatos = len(candidatos)
         
         # ========== AVISOS ==========
         usuario_grau = session.get('grau_atual', 1)
-        usuario_id = session['user_id']
-        
         cursor.execute("""
             SELECT a.*, u.nome_completo as autor_nome,
                    CASE WHEN av.id IS NOT NULL THEN 1 ELSE 0 END as ja_visto
@@ -2486,42 +2578,34 @@ def dashboard():
         # ADMIN VS NÃO-ADMIN
         # ============================================
         if session["tipo"] == "admin":
-            # ADMIN - vê todas as reuniões
-            em_analise = sum(1 for c in candidatos if c["status"] == "Em análise" and not c["fechado"])
-            aprovados = sum(1 for c in candidatos if c["status"] == "Aprovado")
-            reprovados = sum(1 for c in candidatos if c["status"] == "Reprovado")
+            # ADMIN - processar candidatos (sem consultas dentro do loop!)
+            em_analise = 0
+            aprovados = 0
+            reprovados = 0
             pendentes = []
+            prazo_vencido = []
+            
+            # Criar um conjunto de sindicantes para busca rápida
+            sindicantes_set = {s["usuario"] for s in sindicantes}
+            
             for c in candidatos:
-                if not c["fechado"]:
-                    cursor.execute("SELECT sindicante FROM sindicancias WHERE candidato_id = %s", (c["id"],))
-                    enviados = [r["sindicante"] for r in cursor.fetchall()]
-                    faltam = [s["usuario"] for s in sindicantes if s["usuario"] not in enviados]
+                if c["status"] == "Em análise" and not c["fechado"]:
+                    em_analise += 1
+                    # Usar o campo já calculado
+                    enviados = c["sindicantes_enviados"].split(',') if c["sindicantes_enviados"] else []
+                    faltam = [s for s in sindicantes_set if s not in enviados]
                     if faltam:
                         pendentes.append({"candidato": dict(c), "faltam": faltam})
-            prazo_vencido = []
-            for c in candidatos:
-                if not c["fechado"] and c["status"] == "Em análise" and c["data_criacao"]:
-                    try:
-                        data_criacao = c["data_criacao"]
-                        dias = (datetime.now() - data_criacao).days
+                    if c["data_criacao"]:
+                        dias = (datetime.now() - c["data_criacao"]).days
                         if dias > 7:
                             prazo_vencido.append(dict(c))
-                    except:
-                        pass
-            cursor.execute("SELECT COUNT(*) as total FROM usuarios WHERE tipo IN ('admin', 'sindicante', 'obreiro') AND ativo = 1")
-            total_obreiros = cursor.fetchone()["total"]
-            cursor.execute("SELECT COUNT(*) as total FROM usuarios WHERE grau_atual = 3 AND ativo = 1")
-            mestres = cursor.fetchone()["total"]
-            cursor.execute("SELECT COUNT(*) as total FROM usuarios WHERE grau_atual = 2 AND ativo = 1")
-            companheiros = cursor.fetchone()["total"]
-            cursor.execute("SELECT COUNT(*) as total FROM usuarios WHERE grau_atual = 1 AND ativo = 1")
-            aprendizes = cursor.fetchone()["total"]
-            cursor.execute("SELECT COUNT(*) as total FROM reunioes")
-            total_reunioes = cursor.fetchone()["total"]
-            cursor.execute("SELECT COUNT(*) as total FROM reunioes WHERE status = 'realizada'")
-            reunioes_realizadas = cursor.fetchone()["total"]
-            cursor.execute("SELECT COUNT(*) as total FROM reunioes WHERE status = 'agendada'")
-            reunioes_agendadas = cursor.fetchone()["total"]
+                elif c["status"] == "Aprovado":
+                    aprovados += 1
+                elif c["status"] == "Reprovado":
+                    reprovados += 1
+            
+            # Próximas reuniões
             cursor.execute("""
                 SELECT id, titulo, data, hora_inicio 
                 FROM reunioes 
@@ -2530,37 +2614,16 @@ def dashboard():
                 LIMIT 5
             """)
             proximas_reunioes = cursor.fetchall()
-            proxima_reuniao = proximas_reunioes[0] if proximas_reunioes else None
+            
         else:
             # NÃO-ADMIN - filtrar reuniões por grau
-            em_analise = aprovados = reprovados = total_obreiros = mestres = companheiros = aprendizes = 0
+            em_analise = aprovados = reprovados = 0
             pendentes = []
             prazo_vencido = []
             
-            # Buscar próximas reuniões filtradas por grau
             usuario_grau = session.get('grau_atual', 1)
             
-            query_reunioes = """
-                SELECT id, titulo, data, hora_inicio, grau, tipo, local, status
-                FROM reunioes 
-                WHERE status = 'agendada' 
-                AND data >= CURRENT_DATE
-            """
-            
-            if usuario_grau == 1:
-                query_reunioes += " AND (grau = 1 OR grau IS NULL)"
-            elif usuario_grau == 2:
-                query_reunioes += " AND (grau IN (1, 2) OR grau IS NULL)"
-            elif usuario_grau >= 3:
-                query_reunioes += " AND (grau <= 3 OR grau IS NULL OR grau > 3)"
-            
-            query_reunioes += " ORDER BY data ASC, hora_inicio ASC LIMIT 5"
-            
-            cursor.execute(query_reunioes)
-            proximas_reunioes = cursor.fetchall()
-            proxima_reuniao = proximas_reunioes[0] if proximas_reunioes else None
-            
-            # Estatísticas de reuniões filtradas por grau
+            # Construir filtro de grau
             if usuario_grau == 1:
                 grau_filter = "(grau = 1 OR grau IS NULL)"
             elif usuario_grau == 2:
@@ -2568,27 +2631,37 @@ def dashboard():
             else:
                 grau_filter = "(grau <= 3 OR grau IS NULL OR grau > 3)"
             
-            cursor.execute(f"SELECT COUNT(*) as total FROM reunioes WHERE {grau_filter}")
-            total_reunioes = cursor.fetchone()["total"]
+            # Próximas reuniões filtradas
+            cursor.execute(f"""
+                SELECT id, titulo, data, hora_inicio, grau, tipo, local, status
+                FROM reunioes 
+                WHERE status = 'agendada' 
+                AND data >= CURRENT_DATE
+                AND {grau_filter}
+                ORDER BY data ASC, hora_inicio ASC
+                LIMIT 5
+            """)
+            proximas_reunioes = cursor.fetchall()
             
-            cursor.execute(f"SELECT COUNT(*) as total FROM reunioes WHERE status = 'realizada' AND {grau_filter}")
-            reunioes_realizadas = cursor.fetchone()["total"]
+            # Processar candidatos para sindicância (sem consultas dentro do loop!)
+            # Buscar todos os pareceres de uma vez
+            cursor.execute("""
+                SELECT candidato_id, parecer 
+                FROM sindicancias 
+                WHERE sindicante = %s
+            """, (session["usuario"],))
+            pareceres_dict = {p["candidato_id"]: p["parecer"] for p in cursor.fetchall()}
             
-            cursor.execute(f"SELECT COUNT(*) as total FROM reunioes WHERE status = 'agendada' AND {grau_filter}")
-            reunioes_agendadas = cursor.fetchone()["total"]
-            
-            # Processar candidatos para sindicância
             for c in candidatos:
-                cursor.execute("SELECT parecer FROM sindicancias WHERE candidato_id = %s AND sindicante = %s", (c["id"], session["usuario"]))
-                parecer = cursor.fetchone()
-                if parecer:
-                    if parecer["parecer"] == "positivo":
+                if c["id"] in pareceres_dict:
+                    if pareceres_dict[c["id"]] == "positivo":
                         aprovados += 1
                     else:
                         reprovados += 1
                 elif not c["fechado"]:
                     em_analise += 1
         
+        # Fechar conexão APENAS UMA VEZ
         return_connection(conn)
         
         return render_template(
@@ -2604,7 +2677,6 @@ def dashboard():
             reunioes_realizadas=reunioes_realizadas,
             reunioes_agendadas=reunioes_agendadas,
             proximas_reunioes=proximas_reunioes,
-            proxima_reuniao=proxima_reuniao,
             em_analise=em_analise,
             aprovados=aprovados,
             reprovados=reprovados,
