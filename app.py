@@ -6883,7 +6883,9 @@ def assinar_ata_por_cargo(id, cargo, coluna_assinatura, coluna_data, nome_cargo)
     cursor, conn = get_db()
     
     try:
-        # Verificar se a ata existe e está aprovada
+        print(f"🚀 Assinando ata {id} como {nome_cargo}")
+        
+        # 1. Verificar se a ata existe e está aprovada
         cursor.execute(f"""
             SELECT aprovada, {coluna_assinatura} 
             FROM atas 
@@ -6906,7 +6908,7 @@ def assinar_ata_por_cargo(id, cargo, coluna_assinatura, coluna_data, nome_cargo)
             return_connection(conn)
             return redirect(f"/atas/{id}")
         
-        # Verificar cargo do usuário
+        # 2. Verificar cargo do usuário
         usuario_id = session.get('user_id')
         cursor.execute("""
             SELECT c.nome as cargo_nome
@@ -6923,45 +6925,43 @@ def assinar_ata_por_cargo(id, cargo, coluna_assinatura, coluna_data, nome_cargo)
             return_connection(conn)
             return redirect(f"/atas/{id}")
         
-        # Normalizar para comparação (minúsculo e sem acentos)
-        import unicodedata
-        def normalizar(texto):
-            if not texto:
-                return ""
-            texto = unicodedata.normalize('NFKD', texto).encode('ASCII', 'ignore').decode('ASCII')
-            return texto.lower().strip()
+        # 3. Comparação simplificada (sem acentos, minúsculo)
+        cargo_do_usuario = cargo_usuario['cargo_nome'].lower()
         
-        cargo_normalizado = normalizar(cargo_usuario['cargo_nome'])
-        cargo_esperado_normalizado = normalizar(cargo)
-        
-        print(f"🔍 Cargo do usuário: '{cargo_usuario['cargo_nome']}' -> normalizado: '{cargo_normalizado}'")
-        print(f"🔍 Cargo esperado: '{cargo}' -> normalizado: '{cargo_esperado_normalizado}'")
+        print(f"🔍 Cargo do usuário: '{cargo_do_usuario}'")
+        print(f"🔍 Cargo esperado: '{cargo}'")
         
         cargo_valido = False
         
+        # Verificação por palavras-chave
         if cargo == 'veneravel':
-            if cargo_normalizado in ['veneravel', 'venerável']:
+            if 'veneravel' in cargo_do_usuario or 'venerável' in cargo_do_usuario:
                 cargo_valido = True
-                cursor.execute("UPDATE atas SET veneravel_mestre_nome = %s WHERE id = %s", (cargo_usuario['cargo_nome'], id))
+                cursor.execute("UPDATE atas SET veneravel_mestre_nome = %s WHERE id = %s", 
+                             (cargo_usuario['cargo_nome'], id))
         elif cargo == 'orador':
-            if cargo_normalizado in ['orador', 'oradora']:
+            if 'orador' in cargo_do_usuario:
                 cargo_valido = True
-                cursor.execute("UPDATE atas SET orador_nome = %s WHERE id = %s", (cargo_usuario['cargo_nome'], id))
+                cursor.execute("UPDATE atas SET orador_nome = %s WHERE id = %s", 
+                             (cargo_usuario['cargo_nome'], id))
         elif cargo == 'secretario':
-            # Aceita várias variações
-            if cargo_normalizado in ['secretario', 'secretário', 'secretaria', 'secretária']:
+            if 'secret' in cargo_do_usuario:
                 cargo_valido = True
-                cursor.execute("UPDATE atas SET secretario_nome = %s WHERE id = %s", (cargo_usuario['cargo_nome'], id))
+                cursor.execute("UPDATE atas SET secretario_nome = %s WHERE id = %s", 
+                             (cargo_usuario['cargo_nome'], id))
+        
+        print(f"✅ Cargo válido: {cargo_valido}")
         
         if not cargo_valido:
             flash(f"Você não é {nome_cargo} para assinar esta ata. Seu cargo: {cargo_usuario['cargo_nome']}", "danger")
             return_connection(conn)
             return redirect(f"/atas/{id}")
         
-        # Registrar assinatura
+        # 4. Registrar assinatura
         cursor.execute(f"""
             UPDATE atas 
-            SET {coluna_assinatura} = TRUE, {coluna_data} = NOW()
+            SET {coluna_assinatura} = TRUE, 
+                {coluna_data} = NOW()
             WHERE id = %s
         """, (id,))
         
@@ -6971,7 +6971,7 @@ def assinar_ata_por_cargo(id, cargo, coluna_assinatura, coluna_data, nome_cargo)
         flash(f"✅ Ata assinada com sucesso como {nome_cargo}!", "success")
         
     except Exception as e:
-        print(f"Erro ao assinar ata: {e}")
+        print(f"❌ Erro ao assinar ata: {e}")
         import traceback
         traceback.print_exc()
         conn.rollback()
