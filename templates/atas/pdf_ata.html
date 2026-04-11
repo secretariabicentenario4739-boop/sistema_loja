@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <title>Ata - {{ ata.reuniao_titulo }}</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            font-size: 12px;
+            line-height: 1.5;
+            margin: 0;
+            padding: 20px;
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+            border-bottom: 2px solid #000;
+            padding-bottom: 10px;
+        }
+        .logo {
+            max-width: 100px;
+            margin-bottom: 10px;
+        }
+        .titulo-ata {
+            font-size: 18px;
+            font-weight: bold;
+            text-align: center;
+            margin: 20px 0;
+        }
+        .info-ata {
+            margin-bottom: 20px;
+        }
+        .info-ata table {
+            width: 100%;
+        }
+        .conteudo {
+            margin: 30px 0;
+            text-align: justify;
+        }
+        .assinaturas {
+            margin-top: 50px;
+            page-break-inside: avoid;
+        }
+        .assinaturas table {
+            width: 100%;
+            margin-top: 30px;
+        }
+        .assinatura {
+            text-align: center;
+            width: 33%;
+        }
+        .linha-assinatura {
+            border-top: 1px solid #000;
+            width: 80%;
+            margin: 20px auto 5px auto;
+        }
+        .footer {
+            margin-top: 50px;
+            text-align: center;
+            font-size: 10px;
+            color: #666;
+        }
+        @media print {
+            body {
+                margin: 0;
+                padding: 0;
+            }
+            .page-break {
+                page-break-before: always;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h2>{{ loja_nome }} - Nº {{ loja_numero }}</h2>
+        <h3>{{ loja_oriente }}</h3>
+        <hr>
+    </div>
+
+    <div class="titulo-ata">
+        ATA DA REUNIÃO {{ reuniao.tipo|upper }}
+        <br>
+        Nº {{ "%03d"|format(numero_ata|int) }}/{{ ano_ata }}
+    </div>
+
+    <div class="info-ata">
+        <table>
+            <tr>
+                <td width="20%"><strong>Data:</strong></td>
+                <td>{{ reuniao.data.strftime('%d/%m/%Y') if reuniao.data else '-' }}</td>
+            </tr>
+            <tr>
+                <td><strong>Horário:</strong></td>
+                <td>{{ reuniao.hora_inicio.strftime('%H:%M') if reuniao.hora_inicio else '-' }}h às {{ reuniao.hora_termino.strftime('%H:%M') if reuniao.hora_termino else '-' }}h</td>
+            </tr>
+            <tr>
+                <td><strong>Local:</strong></td>
+                <td>{{ reuniao.local }}</td>
+            </tr>
+            <tr>
+                <td><strong>Tipo:</strong></td>
+                <td>{{ reuniao.tipo }}</td>
+            </tr>
+            {% if reuniao.grau %}
+            <tr>
+                <td><strong>Grau:</strong></td>
+                <td>
+                    {% if reuniao.grau == 3 %}Mestre
+                    {% elif reuniao.grau == 2 %}Companheiro
+                    {% elif reuniao.grau == 1 %}Aprendiz
+                    {% else %}Grau {{ reuniao.grau }}{% endif %}
+                </td>
+            </tr>
+            {% endif %}
+        </table>
+    </div>
+
+    <div class="conteudo">
+        {{ conteudo|safe }}
+    </div>
+
+    {% if presentes %}
+    <div class="lista-presenca">
+        <h4>Lista de Presença</h4>
+        <table border="1" cellpadding="5" cellspacing="0" style="width: 100%; border-collapse: collapse;">
+            <thead>
+                <tr>
+                    <th>Obreiro</th>
+                    <th>Grau</th>
+                    <th>Cargo</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for p in presentes %}
+                <tr>
+                    <td>{{ p.nome_completo }}</td>
+                    <td>
+                        {% if p.grau_atual >= 3 %}Mestre
+                        {% elif p.grau_atual == 2 %}Companheiro
+                        {% else %}Aprendiz{% endif %}
+                    </td>
+                    <td>{{ p.cargo or '-' }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% endif %}
+
+    <div class="assinaturas">
+        <h4>Assinaturas</h4>
+        <table>
+            <tr>
+                <td class="assinatura">
+                    <div class="linha-assinatura"></div>
+                    <div>{{ veneravel_mestre_nome or '_________________________' }}</div>
+                    <div><strong>Venerável Mestre</strong></div>
+                    {% if assinatura_veneravel and data_assinatura_veneravel %}
+                    <div><small>Assinado em: {{ data_assinatura_veneravel.strftime('%d/%m/%Y %H:%M') }}</small></div>
+                    {% endif %}
+                </td>
+                <td class="assinatura">
+                    <div class="linha-assinatura"></div>
+                    <div>{{ orador_nome or '_________________________' }}</div>
+                    <div><strong>Orador</strong></div>
+                    {% if assinatura_orador and data_assinatura_orador %}
+                    <div><small>Assinado em: {{ data_assinatura_orador.strftime('%d/%m/%Y %H:%M') }}</small></div>
+                    {% endif %}
+                </td>
+                <td class="assinatura">
+                    <div class="linha-assinatura"></div>
+                    <div>{{ secretario_nome or '_________________________' }}</div>
+                    <div><strong>Secretário</strong></div>
+                    {% if assinatura_secretario and data_assinatura_secretario %}
+                    <div><small>Assinado em: {{ data_assinatura_secretario.strftime('%d/%m/%Y %H:%M') }}</small></div>
+                    {% endif %}
+                </td>
+            </tr>
+        </table>
+    </div>
+
+    <div class="footer">
+        <p>Documento gerado eletronicamente pelo Sistema Maçônico - ARLS Bicentenário</p>
+        <p>Data de emissão: {{ now.strftime('%d/%m/%Y %H:%M') }}</p>
+    </div>
+</body>
+</html>

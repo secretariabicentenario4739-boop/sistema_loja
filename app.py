@@ -6537,24 +6537,46 @@ def gerar_alertas():
 @app.route("/atas/<int:id>/pdf-oficial")
 @login_required
 def gerar_pdf_ata_oficial(id):
-    """Gera PDF oficial da ata com cabeçalho da loja"""
+    """Gera PDF oficial da ata com cabeçalho da loja e assinaturas"""
     from flask import render_template, url_for, Response
-    from io import BytesIO
     import pdfkit
     import os
     
     cursor, conn = get_db()
     
-    # Buscar dados da ata e reunião
+    # Buscar dados da ata, reunião e assinaturas
     cursor.execute("""
-        SELECT a.*, a.id as ata_id, a.numero_ata, a.ano_ata, a.conteudo as ata_conteudo,
-               r.id as reuniao_id, r.titulo as reuniao_titulo, r.tipo as reuniao_tipo,
-               r.grau as reuniao_grau, r.data as reuniao_data,
-               r.hora_inicio as reuniao_hora_inicio, r.hora_termino as reuniao_hora_termino,
-               r.local as reuniao_local, r.pauta as reuniao_pauta, r.observacoes as reuniao_observacoes,
-               l.nome as loja_nome, l.numero as loja_numero, l.oriente as loja_oriente,
-               l.veneravel_mestre, l.secretario, l.tesoureiro, l.orador,
-               l.telefone as loja_telefone, l.email as loja_email
+        SELECT a.*, 
+               a.id as ata_id, 
+               a.numero_ata, 
+               a.ano_ata, 
+               a.conteudo as ata_conteudo,
+               a.assinatura_veneravel,
+               a.assinatura_orador,
+               a.assinatura_secretario,
+               a.data_assinatura_veneravel,
+               a.data_assinatura_orador,
+               a.data_assinatura_secretario,
+               a.veneravel_mestre_nome,
+               a.orador_nome,
+               a.secretario_nome,
+               r.id as reuniao_id, 
+               r.titulo as reuniao_titulo, 
+               r.tipo as reuniao_tipo,
+               r.grau as reuniao_grau, 
+               r.data as reuniao_data,
+               r.hora_inicio as reuniao_hora_inicio, 
+               r.hora_termino as reuniao_hora_termino,
+               r.local as reuniao_local, 
+               r.pauta as reuniao_pauta, 
+               r.observacoes as reuniao_observacoes,
+               l.nome as loja_nombre, 
+               l.numero as loja_numero, 
+               l.oriente as loja_oriente,
+               l.veneravel_mestre as loja_veneravel_mestre,
+               l.secretario as loja_secretario,
+               l.tesoureiro as loja_tesoureiro,
+               l.orador as loja_orador
         FROM atas a
         JOIN reunioes r ON a.reuniao_id = r.id
         LEFT JOIN lojas l ON r.loja_id = l.id
@@ -6568,10 +6590,9 @@ def gerar_pdf_ata_oficial(id):
         return_connection(conn)
         return redirect("/atas")
     
-    # Buscar presentes
+    # Buscar presentes na reunião
     cursor.execute("""
-        SELECT u.id, u.nome_completo, u.grau_atual, c.nome as cargo,
-               CASE WHEN oc.cargo_id IS NOT NULL THEN 'Sim' ELSE 'Não' END as tem_cargo
+        SELECT u.id, u.nome_completo, u.grau_atual, c.nome as cargo
         FROM presenca p
         JOIN usuarios u ON p.obreiro_id = u.id
         LEFT JOIN ocupacao_cargos oc ON u.id = oc.obreiro_id AND oc.ativo = 1
@@ -6583,17 +6604,12 @@ def gerar_pdf_ata_oficial(id):
     
     # Buscar ausentes justificados
     cursor.execute("""
-        SELECT u.id, u.nome_completo, u.grau_atual, p.justificativa, p.tipo_ausencia
+        SELECT u.id, u.nome_completo, u.grau_atual, p.justificativa
         FROM presenca p
         JOIN usuarios u ON p.obreiro_id = u.id
         WHERE p.reuniao_id = %s AND p.presente = 0 AND p.justificativa IS NOT NULL
-        ORDER BY u.nome_completo
     """, (ata['reuniao_id'],))
     ausentes = cursor.fetchall()
-    
-    # Buscar total de obreiros
-    cursor.execute("SELECT COUNT(*) as total FROM usuarios u WHERE u.ativo = 1")
-    total_obreiros = cursor.fetchone()['total']
     
     return_connection(conn)
     
@@ -6606,30 +6622,30 @@ def gerar_pdf_ata_oficial(id):
         'data': ata['reuniao_data'],
         'hora_inicio': ata['reuniao_hora_inicio'],
         'hora_termino': ata['reuniao_hora_termino'],
-        'local': ata['reuniao_local'] or 'Templo Maçônico - ARLS Bicentenário',
-        'pauta': ata['reuniao_pauta'],
-        'observacoes': ata['reuniao_observacoes']
+        'local': ata['reuniao_local'] or 'Templo Maçônico'
     }
     
-    # Gerar HTML para PDF
-    logo_url = url_for('static', filename='images/logo_loja_ata.png', _external=True)
-    
-    html = render_template("atas/modelo_ata.html",
-                          reuniao=reuniao,
+    # Renderizar HTML para PDF
+    html = render_template("atas/pdf_ata.html",
                           ata=ata,
-                          numero_ata=ata['numero_ata'],
-                          ano_ata=ata['ano_ata'],
+                          reuniao=reuniao,
                           presentes=presentes,
                           ausentes=ausentes,
-                          total_obreiros=total_obreiros,
-                          veneravel_mestre=ata.get('veneravel_mestre', 'Venerável Mestre'),
-                          secretario=ata.get('secretario', 'Secretário'),
-                          tesoureiro=ata.get('tesoureiro', 'Tesoureiro'),
-                          orador=ata.get('orador', 'Orador'),
-                          loja_nome=ata.get('loja_nome', 'ARLS Bicentenário'),
+                          numero_ata=ata['numero_ata'],
+                          ano_ata=ata['ano_ata'],
+                          conteudo=ata['conteudo'],  # Conteúdo da ata
+                          assinatura_veneravel=ata['assinatura_veneravel'],
+                          assinatura_orador=ata['assinatura_orador'],
+                          assinatura_secretario=ata['assinatura_secretario'],
+                          data_assinatura_veneravel=ata['data_assinatura_veneravel'],
+                          data_assinatura_orador=ata['data_assinatura_orador'],
+                          data_assinatura_secretario=ata['data_assinatura_secretario'],
+                          veneravel_mestre_nome=ata['veneravel_mestre_nome'],
+                          orador_nome=ata['orador_nome'],
+                          secretario_nome=ata['secretario_nome'],
+                          loja_nome=ata.get('loja_nombre', 'ARLS Bicentenário'),
                           loja_numero=ata.get('loja_numero', '4739'),
                           loja_oriente=ata.get('loja_oriente', 'Ceilândia - DF'),
-                          logo_url=logo_url,
                           now=datetime.now())
     
     # Configurar opções do PDF
@@ -6640,11 +6656,9 @@ def gerar_pdf_ata_oficial(id):
         'margin-left': '15mm',
         'margin-right': '15mm',
         'encoding': 'UTF-8',
-        'no-outline': None,
-        'enable-local-file-access': None
+        'no-outline': None
     }
     
-    # Tentar gerar PDF com pdfkit
     try:
         config = None
         if os.name == 'nt':  # Windows
@@ -6663,6 +6677,7 @@ def gerar_pdf_ata_oficial(id):
         
     except Exception as e:
         print(f"Erro ao gerar PDF: {e}")
+        # Fallback: retornar HTML formatado para impressão
         return html
 
 
