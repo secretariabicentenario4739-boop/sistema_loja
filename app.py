@@ -6925,7 +6925,7 @@ def assinar_ata_por_cargo(id, cargo, coluna_assinatura, coluna_data, nome_cargo)
             return_connection(conn)
             return redirect(f"/atas/{id}")
         
-        # 3. Comparação simplificada (sem acentos, minúsculo)
+        # 3. Comparação SIMPLIFICADA - aceita qualquer cargo que contenha a palavra-chave
         cargo_do_usuario = cargo_usuario['cargo_nome'].lower()
         
         print(f"🔍 Cargo do usuário: '{cargo_do_usuario}'")
@@ -6933,9 +6933,10 @@ def assinar_ata_por_cargo(id, cargo, coluna_assinatura, coluna_data, nome_cargo)
         
         cargo_valido = False
         
-        # Verificação por palavras-chave
+        # Verificação por palavras-chave (mais flexível)
         if cargo == 'veneravel':
-            if 'veneravel' in cargo_do_usuario or 'venerável' in cargo_do_usuario:
+            # Aceita: Venerável, Venerável Mestre, Veneravel, etc.
+            if 'vener' in cargo_do_usuario:
                 cargo_valido = True
                 cursor.execute("UPDATE atas SET veneravel_mestre_nome = %s WHERE id = %s", 
                              (cargo_usuario['cargo_nome'], id))
