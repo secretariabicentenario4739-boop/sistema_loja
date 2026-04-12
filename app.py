@@ -865,11 +865,12 @@ def test_connection():
 # ============================================
 
 def init_whatsapp_tables():
-    """Inicializa todas as tabelas relacionadas ao WhatsApp"""
+    """Inicializa as tabelas do WhatsApp (sem dependência do request)"""
     try:
-        cursor, conn = get_db()
+        # Usar conexão direta sem passar pelo get_db()
+        conn = psycopg2.connect(DATABASE_URL)
+        cursor = conn.cursor()
         
-        # Criar tabela de grupos
         cursor.execute("""
             CREATE TABLE IF NOT EXISTS grupos_whatsapp (
                 id SERIAL PRIMARY KEY,
@@ -882,7 +883,6 @@ def init_whatsapp_tables():
             )
         """)
         
-        # Criar tabela de mensagens agendadas
         cursor.execute("""
             CREATE TABLE IF NOT EXISTS mensagens_agendadas (
                 id SERIAL PRIMARY KEY,
@@ -898,20 +898,21 @@ def init_whatsapp_tables():
             )
         """)
         
-        # Criar índices
         cursor.execute("CREATE INDEX IF NOT EXISTS idx_grupos_grupo_id ON grupos_whatsapp(grupo_id)")
         cursor.execute("CREATE INDEX IF NOT EXISTS idx_mensagens_data_envio ON mensagens_agendadas(data_envio)")
         cursor.execute("CREATE INDEX IF NOT EXISTS idx_mensagens_status ON mensagens_agendadas(status)")
         
-        return_connection(conn)
+        conn.commit()
+        cursor.close()
+        conn.close()
+        
         print("✅ Tabelas do WhatsApp inicializadas com sucesso!")
         return True
-        
     except Exception as e:
         print(f"❌ Erro ao inicializar tabelas do WhatsApp: {e}")
         return False
 
-# Chamar a função imediatamente ao iniciar o app
+# Agora pode chamar no nível global
 init_whatsapp_tables()
 
 # =============================
@@ -2009,6 +2010,154 @@ def logout():
     flash("Você saiu do sistema com sucesso!", "success")
     return redirect("/")
 
+# =============================
+# ROTAS DE CRIAR TABELAS DO WHATSAPP
+# =============================
+
+@app.route("/admin/criar-tabelas-whatsapp")
+@admin_required
+def admin_criar_tabelas_whatsapp():
+    if init_whatsapp_tables():
+        flash("✅ Tabelas do WhatsApp criadas com sucesso!", "success")
+    else:
+        flash("❌ Erro ao criar tabelas do WhatsApp", "danger")
+    return redirect("/dashboard")
+    
+# ============================================
+# ROTAS PARA CANDIDATOS (ACESSO EXTERNO)
+# ============================================
+
+@app.route("/candidato/acesso/<token>")
+def candidato_acesso(token):
+    """Página de acesso do candidato via token"""
+    cursor, conn = get_db()
+    
+    # Buscar candidato pelo token
+    cursor.execute("""
+        SELECT id, nome, status, token_acesso, email
+        FROM candidatos 
+        WHERE token_acesso = %s AND fechado = 0
+    """, (token,))
+    candidato = cursor.fetchone()
+    
+    if not candidato:
+        flash("Link inválido ou candidato já foi processado!", "danger")
+        return redirect("/")
+    
+    return_connection(conn)
+    
+    return render_template("candidatos/acesso.html", candidato=candidato)
+
+
+@app.route("/candidato/<int:candidato_id>/documentos")
+def candidato_documentos_externo(candidato_id):
+    """Página de documentos para o candidato (acesso externo)"""
+    # Verificar token na URL ou sessão
+    token = request.args.get('token')
+    
+    cursor, conn = get_db()
+    
+    cursor.execute("""
+        SELECT id, nome, status, token_acesso
+        FROM candidatos 
+        WHERE id = %s AND token_acesso = %s AND fechado = 0
+    """, (candidato_id, token))
+    candidato = cursor.fetchone()
+    
+    if not candidato:
+        flash("Acesso não autorizado!", "danger")
+        return redirect("/")
+    
+    # Buscar tipos de documentos
+    cursor.execute("""
+        SELECT id, nome, descricao, obrigatorio, ordem
+        FROM tipos_documentos_candidato
+        WHERE ativo = 1
+        ORDER BY ordem
+    """)
+    tipos_documentos = cursor.fetchall()
+    
+    # Buscar documentos já enviados
+    cursor.execute("""
+        SELECT * FROM documentos_candidato
+        WHERE candidato_id = %s
+    """, (candidato_id,))
+    documentos = cursor.fetchall()
+    
+    documentos_map = {doc['tipo_documento_id']: doc for doc in documentos}
+    
+    # Calcular progresso
+    total_obrigatorios = sum(1 for t in tipos_documentos if t['obrigatorio'] == 1)
+    total_enviados = sum(1 for t in tipos_documentos 
+                        if t['id'] in documentos_map and documentos_map[t['id']]['status'] == 'aprovado')
+    
+    percentual = int((total_enviados / total_obrigatorios * 100)) if total_obrigatorios > 0 else 0
+    
+    return_connection(conn)
+    
+    return render_template("candidatos/documentos_externo.html",
+                          candidato=candidato,
+                          tipos_documentos=tipos_documentos,
+                          documentos_map=documentos_map,
+                          total_obrigatorios=total_obrigatorios,
+                          total_enviados=total_enviados,
+                          percentual=percentual)
+
+
+@app.route("/candidatos/enviar-link", methods=["POST"])
+@login_required
+def enviar_link_candidato():
+    """Envia link de acesso para o candidato por e-mail"""
+    data = request.get_json()
+    email = data.get('email')
+    link = data.get('link')
+    candidato_nome = data.get('candidato_nome')
+    
+    if not email:
+        return jsonify({'success': False, 'error': 'E-mail não informado'})
+    
+    assunto = f"📄 Acesso aos documentos - {candidato_nome}"
+    
+    conteudo_html = f"""
+    <html>
+    <body style="font-family: Arial, sans-serif;">
+        <div style="max-width: 600px; margin: 0 auto; padding: 20px;">
+            <div style="background: linear-gradient(135deg, #1a472a, #0a2a1a); color: #ffd700; padding: 30px; text-align: center; border-radius: 10px;">
+                <h1>📄 Documentos do Candidato</h1>
+            </div>
+            <div style="background: white; padding: 30px; border-radius: 10px; margin-top: 20px;">
+                <h2>Olá {candidato_nome},</h2>
+                <p>Você foi convidado a enviar seus documentos para o processo de sindicância.</p>
+                <p>Clique no botão abaixo para acessar o sistema e enviar seus documentos:</p>
+                <div style="text-align: center; margin: 30px 0;">
+                    <a href="{link}" style="background: #1a472a; color: #ffd700; padding: 12px 30px; text-decoration: none; border-radius: 5px;">
+                        📄 Acessar e Enviar Documentos
+                    </a>
+                </div>
+                <p>Documentos necessários:</p>
+                <ul>
+                    <li>Foto 3x4 (obrigatório)</li>
+                    <li>Certidão de Nascimento (opcional)</li>
+                    <li>Comprovante de Residência (opcional)</li>
+                </ul>
+                <p>Este link é pessoal e intransferível.</p>
+                <hr>
+                <p style="font-size: 12px; color: #666;">
+                    Mensagem automática do Sistema Maçônico - ARLS Bicentenário
+                </p>
+            </div>
+        </div>
+    </body>
+    </html>
+    """
+    
+    # Usar sua função de envio de e-mail
+    if 'enviar_email_resend' in globals():
+        enviar_email_resend(email, assunto, conteudo_html)
+        return jsonify({'success': True})
+    else:
+        print(f"📧 Link para {email}: {link}")
+        return jsonify({'success': True, 'debug': True, 'link': link})    
 
 # =============================
 # ROTAS DA BIBLIOTECA
