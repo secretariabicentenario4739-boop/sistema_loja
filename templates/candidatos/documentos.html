@@ -289,6 +289,16 @@
 {% endblock %}
 
 {% block content %}
+
+<!-- Debug - remover em produção -->
+<div class="alert alert-info small mb-3">
+    <strong>Debug:</strong><br>
+    Total Obrigatórios: {{ total_obrigatorios }}<br>
+    Total Enviados: {{ total_enviados }}<br>
+    Percentual: {{ percentual }}%<br>
+    Documentos Pendentes: {{ documentos_pendentes }}<br>
+    Tipos de Documentos: {{ tipos_documentos|length }}
+</div>
 <div class="container-fluid py-4">
     <div class="container">
         <!-- Token de segurança oculto -->

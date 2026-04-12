@@ -9319,7 +9319,7 @@ def listar_documentos_candidato(candidato_id):
     cursor.execute("""
         SELECT * FROM tipos_documentos_candidato 
         WHERE ativo = 1 
-        ORDER BY ordem
+        ORDER BY ordem, obrigatorio DESC, nome
     """)
     tipos_documentos = cursor.fetchall()
     
@@ -9339,24 +9339,49 @@ def listar_documentos_candidato(candidato_id):
     # Mapear documentos enviados por tipo
     documentos_map = {d['tipo_documento_id']: d for d in documentos}
     
-    # Calcular progresso
-    total_obrigatorios = sum(1 for t in tipos_documentos if t['obrigatorio'] == 1)
-    total_enviados = sum(1 for d in documentos if d['status'] == 'aprovado' and 
-                        any(t['id'] == d['tipo_documento_id'] and t['obrigatorio'] == 1 
-                            for t in tipos_documentos))
+    # ============================================
+    # CORREÇÃO: Calcular progresso corretamente
+    # ============================================
     
+    # Total de documentos obrigatórios
+    total_obrigatorios = sum(1 for t in tipos_documentos if t['obrigatorio'] == 1)
+    
+    # Documentos obrigatórios enviados (qualquer status, exceto rejeitado? Ou todos?)
+    # Vamos contar documentos enviados (que existem no banco)
+    total_enviados = 0
+    for t in tipos_documentos:
+        if t['obrigatorio'] == 1:
+            if t['id'] in documentos_map:
+                total_enviados += 1
+    
+    # Calcular percentual
     percentual = int((total_enviados / total_obrigatorios * 100)) if total_obrigatorios > 0 else 0
+    
+    # Documentos pendentes de aprovação (enviados mas não aprovados)
+    documentos_pendentes = 0
+    for t in tipos_documentos:
+        if t['obrigatorio'] == 1:
+            if t['id'] in documentos_map:
+                doc = documentos_map[t['id']]
+                if doc['status'] == 'pendente':
+                    documentos_pendentes += 1
+    
+    # Documentos opcionais
+    documentos_opcionais_count = sum(1 for t in tipos_documentos if t['obrigatorio'] == 0)
+    
+    print(f"📊 Progresso: {total_enviados}/{total_obrigatorios} ({percentual}%)")
     
     return_connection(conn)
     
     return render_template("candidatos/documentos.html",
-                          candidato=candidato,  # ← Agora tem token_acesso!
+                          candidato=candidato,
                           tipos_documentos=tipos_documentos,
                           documentos_map=documentos_map,
                           total_obrigatorios=total_obrigatorios,
                           total_enviados=total_enviados,
-                          percentual=percentual)
-
+                          percentual=percentual,
+                          documentos_pendentes=documentos_pendentes,
+                          documentos_opcionais_count=documentos_opcionais_count)
 @app.route("/candidatos/<int:candidato_id>/documentos/upload/<int:tipo_id>", methods=["POST"])
 @login_required
 def upload_documento_candidato(candidato_id, tipo_id):
