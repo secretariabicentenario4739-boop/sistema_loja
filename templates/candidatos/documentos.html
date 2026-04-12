@@ -15,7 +15,6 @@
         --secondary: #64748b;
     }
 
-    /* Cards e containers */
     .card-elegant {
         border: none;
         border-radius: 20px;
@@ -28,15 +27,13 @@
         box-shadow: 0 8px 30px rgba(0, 0, 0, 0.12);
     }
     
-    /* Header gradiente */
     .header-gradient {
         background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
         padding: 2rem;
-        border-radius: 20px 20px 0 0;
-        margin-bottom: 0;
+        border-radius: 20px;
+        margin-bottom: 1.5rem;
     }
     
-    /* Barra de progresso */
     .progress-custom {
         height: 12px;
         border-radius: 20px;
@@ -50,7 +47,6 @@
         transition: width 0.5s ease;
     }
     
-    /* Tabela de documentos */
     .table-documentos {
         margin-bottom: 0;
     }
@@ -80,7 +76,6 @@
         vertical-align: middle;
     }
     
-    /* Badges personalizados */
     .badge-custom {
         padding: 6px 12px;
         border-radius: 20px;
@@ -121,12 +116,11 @@
         color: #475569;
     }
     
-    /* Botões de ação */
     .btn-action {
         width: 32px;
         height: 32px;
         padding: 0;
-        border-radius: 10px;
+        border-radius: 8px;
         display: inline-flex;
         align-items: center;
         justify-content: center;
@@ -138,7 +132,38 @@
         transform: translateY(-2px);
     }
     
-    /* Preview da foto */
+    .btn-aprovar {
+        background: #10b981;
+        color: white;
+        border: none;
+        padding: 4px 12px;
+        border-radius: 8px;
+        font-size: 0.75rem;
+        font-weight: 600;
+        transition: all 0.2s;
+    }
+    
+    .btn-aprovar:hover {
+        background: #059669;
+        transform: translateY(-1px);
+    }
+    
+    .btn-rejeitar {
+        background: #ef4444;
+        color: white;
+        border: none;
+        padding: 4px 12px;
+        border-radius: 8px;
+        font-size: 0.75rem;
+        font-weight: 600;
+        transition: all 0.2s;
+    }
+    
+    .btn-rejeitar:hover {
+        background: #dc2626;
+        transform: translateY(-1px);
+    }
+    
     .photo-preview {
         width: 50px;
         height: 50px;
@@ -146,6 +171,7 @@
         border-radius: 50%;
         border: 2px solid #e2e8f0;
         transition: transform 0.2s;
+        cursor: pointer;
     }
     
     .photo-preview:hover {
@@ -153,7 +179,6 @@
         border-color: var(--primary);
     }
     
-    /* Estatísticas */
     .stat-card {
         background: #f8fafc;
         border-radius: 16px;
@@ -173,7 +198,6 @@
         line-height: 1;
     }
     
-    /* Separador */
     .separator {
         display: flex;
         align-items: center;
@@ -195,7 +219,20 @@
         font-weight: 500;
     }
     
-    /* Animações */
+    .document-viewer {
+        max-height: 80vh;
+        overflow: auto;
+        background: #f8fafc;
+        border-radius: 12px;
+        padding: 1rem;
+    }
+    
+    .document-viewer iframe,
+    .document-viewer img {
+        width: 100%;
+        border-radius: 8px;
+    }
+    
     @keyframes fadeInUp {
         from {
             opacity: 0;
@@ -211,7 +248,6 @@
         animation: fadeInUp 0.5s ease-out;
     }
     
-    /* Responsivo */
     @media (max-width: 768px) {
         .table-documentos {
             font-size: 0.85rem;
@@ -230,6 +266,11 @@
         .stat-number {
             font-size: 1.5rem;
         }
+        
+        .btn-aprovar, .btn-rejeitar {
+            padding: 4px 8px;
+            font-size: 0.7rem;
+        }
     }
 </style>
 {% endblock %}
@@ -238,7 +279,7 @@
 <div class="container-fluid py-4">
     <div class="container">
         <!-- Cabeçalho -->
-        <div class="header-gradient text-white mb-4 animate-in">
+        <div class="header-gradient text-white animate-in">
             <div class="d-flex justify-content-between align-items-center flex-wrap gap-3">
                 <div>
                     <div class="d-flex align-items-center gap-3 mb-2">
@@ -270,8 +311,8 @@
             </div>
         </div>
 
-        <!-- Barra de Progresso Corrigida -->
-        <div class="card-elegant mb-4 animate-in">
+        <!-- Barra de Progresso -->
+        <div class="card-elegant mb-4 animate-in" id="progressCard">
             <div class="card-body p-4">
                 <div class="d-flex justify-content-between align-items-center mb-3">
                     <h5 class="mb-0 fw-bold">
@@ -318,7 +359,7 @@
             </div>
             <div class="col-md-3 col-6">
                 <div class="stat-card">
-                    <div class="stat-number text-secondary">{{ total_opcionais or 3 }}</div>
+                    <div class="stat-number text-secondary">{{ documentos_opcionais_count or 3 }}</div>
                     <small class="text-muted">Documentos Opcionais</small>
                 </div>
             </div>
@@ -330,8 +371,8 @@
             </div>
             <div class="col-md-3 col-6">
                 <div class="stat-card">
-                    <div class="stat-number text-warning">{{ total_aprovados or 0 }}</div>
-                    <small class="text-muted">Aprovados</small>
+                    <div class="stat-number text-warning" id="pendentesCount">{{ documentos_pendentes or 0 }}</div>
+                    <small class="text-muted">Pendentes Aprovação</small>
                 </div>
             </div>
         </div>
@@ -354,7 +395,7 @@
                                 <th>Tipo</th>
                                 <th>Status</th>
                                 <th>Data Envio</th>
-                                <th style="width: 120px">Ações</th>
+                                <th style="width: 200px">Ações</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -364,11 +405,9 @@
                             
                             {% for tipo in tipos_documentos %}
                                 {% if tipo.nome != 'Título de Eleitor' %}
-                                    {% if tipo.obrigatorio == 1 and tipo.nome not in ['Certidão de Nascimento', 'Comprovante de Residência', 'Currículo'] %}
+                                    {% if tipo.obrigatorio == 1 %}
                                         {% set _ = documentos_obrigatorios.append(tipo) %}
-                                    {% elif tipo.nome in ['Certidão de Nascimento', 'Comprovante de Residência', 'Currículo'] %}
-                                        {% set _ = documentos_opcionais.append(tipo) %}
-                                    {% elif tipo.obrigatorio == 0 %}
+                                    {% else %}
                                         {% set _ = documentos_opcionais.append(tipo) %}
                                     {% endif %}
                                 {% endif %}
@@ -377,7 +416,7 @@
                             <!-- Exibe Documentos Obrigatórios -->
                             {% for tipo in documentos_obrigatorios %}
                             {% set doc = documentos_map.get(tipo.id) %}
-                            <tr>
+                            <tr data-documento-id="{{ tipo.id }}" data-obrigatorio="1">
                                 <td>
                                     <div class="d-flex align-items-center gap-2">
                                         {% if tipo.nome == 'Foto 3x4' %}
@@ -400,7 +439,7 @@
                                         <i class="bi bi-star-fill"></i> Obrigatório
                                     </span>
                                 </td>
-                                <td>
+                                <td class="status-area">
                                     {% if doc %}
                                         {% if doc.status == 'aprovado' %}
                                             <span class="badge-custom badge-aprovado">
@@ -424,7 +463,9 @@
                                         
                                         {% if tipo.nome == 'Foto 3x4' and doc.caminho_arquivo %}
                                             <br>
-                                            <img src="{{ doc.caminho_arquivo }}" alt="Foto" class="photo-preview mt-1">
+                                            <img src="{{ doc.caminho_arquivo }}" alt="Foto" 
+                                                 class="photo-preview mt-1" 
+                                                 onclick="visualizarDocumento('{{ doc.caminho_arquivo }}', '{{ tipo.nome }}')">
                                         {% endif %}
                                     {% else %}
                                         <span class="badge-custom badge-nao-enviado">
@@ -440,22 +481,36 @@
                                     {% endif %}
                                 </td>
                                 <td>
-                                    <div class="btn-group btn-group-sm">
+                                    <div class="d-flex flex-wrap gap-1">
                                         {% if doc %}
-                                            <a href="{{ doc.caminho_arquivo }}" target="_blank" 
-                                               class="btn btn-outline-primary btn-action" title="Visualizar">
+                                            <button type="button" class="btn btn-outline-info btn-action" 
+                                                    onclick="visualizarDocumento('{{ doc.caminho_arquivo }}', '{{ tipo.nome }}')" 
+                                                    title="Visualizar">
                                                 <i class="bi bi-eye"></i>
-                                            </a>
+                                            </button>
                                             <a href="{{ doc.caminho_arquivo }}" download 
                                                class="btn btn-outline-success btn-action" title="Baixar">
                                                 <i class="bi bi-download"></i>
                                             </a>
+                                            
+                                            {% if doc.status == 'pendente' %}
+                                                <button type="button" class="btn-aprovar" 
+                                                        onclick="aprovarDocumento({{ doc.id }}, '{{ tipo.nome }}')">
+                                                    <i class="bi bi-check-lg"></i> Aprovar
+                                                </button>
+                                                <button type="button" class="btn-rejeitar" 
+                                                        onclick="rejeitarDocumento({{ doc.id }}, '{{ tipo.nome }}')">
+                                                    <i class="bi bi-x-lg"></i> Rejeitar
+                                                </button>
+                                            {% endif %}
+                                            
                                             <button type="button" class="btn btn-outline-danger btn-action" 
                                                     onclick="excluirDocumento({{ doc.id }}, '{{ tipo.nome }}', {{ tipo.id }})" 
                                                     title="Excluir">
                                                 <i class="bi bi-trash"></i>
                                             </button>
                                         {% endif %}
+                                        
                                         <button type="button" class="btn btn-outline-primary btn-action" 
                                                 data-bs-toggle="modal" 
                                                 data-bs-target="#modalUpload{{ tipo.id }}" title="Enviar">
@@ -480,7 +535,7 @@
                             <!-- DEPOIS: Documentos Opcionais -->
                             {% for tipo in documentos_opcionais %}
                             {% set doc = documentos_map.get(tipo.id) %}
-                            <tr class="table-light">
+                            <tr class="table-light" data-obrigatorio="0">
                                 <td>
                                     <div class="d-flex align-items-center gap-2">
                                         {% if tipo.nome == 'Certidão de Nascimento' %}
@@ -505,7 +560,7 @@
                                         <i class="bi bi-bookmark"></i> Opcional
                                     </span>
                                 </td>
-                                <td>
+                                <td class="status-area">
                                     {% if doc %}
                                         {% if doc.status == 'aprovado' %}
                                             <span class="badge-custom badge-aprovado">
@@ -537,22 +592,36 @@
                                     {% endif %}
                                 </td>
                                 <td>
-                                    <div class="btn-group btn-group-sm">
+                                    <div class="d-flex flex-wrap gap-1">
                                         {% if doc %}
-                                            <a href="{{ doc.caminho_arquivo }}" target="_blank" 
-                                               class="btn btn-outline-primary btn-action" title="Visualizar">
+                                            <button type="button" class="btn btn-outline-info btn-action" 
+                                                    onclick="visualizarDocumento('{{ doc.caminho_arquivo }}', '{{ tipo.nome }}')" 
+                                                    title="Visualizar">
                                                 <i class="bi bi-eye"></i>
-                                            </a>
+                                            </button>
                                             <a href="{{ doc.caminho_arquivo }}" download 
                                                class="btn btn-outline-success btn-action" title="Baixar">
                                                 <i class="bi bi-download"></i>
                                             </a>
+                                            
+                                            {% if doc.status == 'pendente' %}
+                                                <button type="button" class="btn-aprovar" 
+                                                        onclick="aprovarDocumento({{ doc.id }}, '{{ tipo.nome }}')">
+                                                    <i class="bi bi-check-lg"></i> Aprovar
+                                                </button>
+                                                <button type="button" class="btn-rejeitar" 
+                                                        onclick="rejeitarDocumento({{ doc.id }}, '{{ tipo.nome }}')">
+                                                    <i class="bi bi-x-lg"></i> Rejeitar
+                                                </button>
+                                            {% endif %}
+                                            
                                             <button type="button" class="btn btn-outline-danger btn-action" 
                                                     onclick="excluirDocumento({{ doc.id }}, '{{ tipo.nome }}', {{ tipo.id }})" 
                                                     title="Excluir">
                                                 <i class="bi bi-trash"></i>
                                             </button>
                                         {% endif %}
+                                        
                                         <button type="button" class="btn btn-outline-secondary btn-action" 
                                                 data-bs-toggle="modal" 
                                                 data-bs-target="#modalUpload{{ tipo.id }}" title="Enviar">
@@ -638,6 +707,39 @@
     </div>
 </div>
 
+<!-- Modal de Visualização de Documento -->
+<div class="modal fade" id="modalVisualizacao" tabindex="-1">
+    <div class="modal-dialog modal-xl modal-dialog-centered">
+        <div class="modal-content border-0 rounded-4">
+            <div class="modal-header bg-primary text-white border-0">
+                <h5 class="modal-title" id="modalVisualizacaoTitulo">
+                    <i class="bi bi-file-earmark-text me-2"></i>
+                    Visualizar Documento
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body p-0">
+                <div class="document-viewer" id="documentViewer">
+                    <div class="text-center p-5">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="visually-hidden">Carregando...</span>
+                        </div>
+                        <p class="mt-2">Carregando documento...</p>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer bg-light border-0">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                    <i class="bi bi-x-circle"></i> Fechar
+                </button>
+                <a href="#" id="btnDownloadVisualizacao" class="btn btn-success" download>
+                    <i class="bi bi-download"></i> Baixar
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
 <!-- Modals de Upload -->
 {% for tipo in tipos_documentos %}
 {% if tipo.nome != 'Título de Eleitor' %}
@@ -694,30 +796,47 @@
 {% endfor %}
 
 <script>
+let totalObrigatorios = {{ total_obrigatorios }};
+
 // Função para atualizar a barra de progresso
 function atualizarProgresso() {
-    const documentosObrigatorios = document.querySelectorAll('tr:not(.table-light) .badge-obrigatorio');
-    const totalObrigatorios = {{ total_obrigatorios }};
-    
+    const linhasObrigatorias = document.querySelectorAll('tr[data-obrigatorio="1"]');
     let enviadosObrigatorios = 0;
-    document.querySelectorAll('tr:not(.table-light)').forEach(row => {
-        const statusBadge = row.querySelector('.badge-aprovado, .badge-pendente, .badge-rejeitado');
-        if (statusBadge && row.querySelector('.badge-obrigatorio')) {
+    let pendentes = 0;
+    
+    linhasObrigatorias.forEach(row => {
+        const statusArea = row.querySelector('.status-area');
+        const statusBadge = statusArea ? statusArea.querySelector('.badge-custom') : null;
+        
+        if (statusBadge && !statusBadge.classList.contains('badge-nao-enviado')) {
             enviadosObrigatorios++;
+            
+            if (statusBadge.classList.contains('badge-pendente')) {
+                pendentes++;
+            }
         }
     });
     
+    // Atualiza contador de pendentes
+    const pendentesSpan = document.getElementById('pendentesCount');
+    if (pendentesSpan) {
+        pendentesSpan.textContent = pendentes;
+    }
+    
+    // Atualiza contador de documentos
     const contadorSpan = document.getElementById('contadorDocumentos');
     if (contadorSpan) {
         contadorSpan.textContent = `${enviadosObrigatorios}/${totalObrigatorios} Obrigatórios`;
     }
     
+    // Atualiza barra de progresso
     const percentual = totalObrigatorios > 0 ? (enviadosObrigatorios / totalObrigatorios) * 100 : 0;
     const barraProgresso = document.getElementById('barraProgresso');
     if (barraProgresso) {
         barraProgresso.style.width = `${percentual}%`;
     }
     
+    // Atualiza mensagem
     const mensagemDiv = document.getElementById('mensagemProgresso');
     if (mensagemDiv) {
         if (percentual === 100) {
@@ -744,6 +863,96 @@ function atualizarProgresso() {
             `;
         }
     }
+}
+
+// Função para visualizar documento
+function visualizarDocumento(caminho, nome) {
+    const modal = new bootstrap.Modal(document.getElementById('modalVisualizacao'));
+    const viewer = document.getElementById('documentViewer');
+    const titulo = document.getElementById('modalVisualizacaoTitulo');
+    const btnDownload = document.getElementById('btnDownloadVisualizacao');
+    
+    titulo.innerHTML = `<i class="bi bi-file-earmark-text me-2"></i> Visualizar: ${nome}`;
+    btnDownload.href = caminho;
+    
+    const extensao = caminho.split('.').pop().toLowerCase();
+    
+    if (extensao === 'pdf') {
+        viewer.innerHTML = `
+            <iframe src="${caminho}" style="width: 100%; height: 80vh;" frameborder="0"></iframe>
+        `;
+    } else if (['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(extensao)) {
+        viewer.innerHTML = `
+            <img src="${caminho}" alt="Documento" style="max-width: 100%; height: auto;">
+        `;
+    } else {
+        viewer.innerHTML = `
+            <div class="text-center p-5">
+                <i class="bi bi-file-earmark-text fs-1 text-muted"></i>
+                <p class="mt-2">Não é possível visualizar este tipo de arquivo diretamente.</p>
+                <a href="${caminho}" download class="btn btn-primary">Clique aqui para baixar</a>
+            </div>
+        `;
+    }
+    
+    modal.show();
+}
+
+// Função para aprovar documento
+function aprovarDocumento(docId, nomeDocumento) {
+    if (!confirm(`✅ Confirmar aprovação do documento "${nomeDocumento}"?`)) {
+        return;
+    }
+    
+    fetch(`/api/documentos-candidato/${docId}/aprovar`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert(`✅ Documento "${nomeDocumento}" aprovado com sucesso!`);
+            location.reload();
+        } else {
+            alert('❌ Erro: ' + (data.error || 'Erro desconhecido'));
+        }
+    })
+    .catch(error => {
+        console.error('Erro:', error);
+        alert('❌ Erro ao aprovar documento');
+    });
+}
+
+// Função para rejeitar documento
+function rejeitarDocumento(docId, nomeDocumento) {
+    const motivo = prompt(`❌ Rejeitar documento "${nomeDocumento}"\n\nDigite o motivo da rejeição:`);
+    
+    if (!motivo) {
+        return;
+    }
+    
+    fetch(`/api/documentos-candidato/${docId}/rejeitar`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ observacao: motivo })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert(`❌ Documento "${nomeDocumento}" rejeitado.\nMotivo: ${motivo}`);
+            location.reload();
+        } else {
+            alert('❌ Erro: ' + (data.error || 'Erro desconhecido'));
+        }
+    })
+    .catch(error => {
+        console.error('Erro:', error);
+        alert('❌ Erro ao rejeitar documento');
+    });
 }
 
 function excluirDocumento(docId, nomeDocumento, tipoId) {

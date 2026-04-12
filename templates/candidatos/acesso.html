@@ -71,6 +71,22 @@
         border-radius: 16px;
         padding: 1rem;
         margin: 1.5rem 0;
+        max-height: 500px;
+        overflow-y: auto;
+    }
+
+    .document-list::-webkit-scrollbar {
+        width: 6px;
+    }
+
+    .document-list::-webkit-scrollbar-track {
+        background: #e2e8f0;
+        border-radius: 10px;
+    }
+
+    .document-list::-webkit-scrollbar-thumb {
+        background: #cbd5e1;
+        border-radius: 10px;
     }
 
     .document-item {
@@ -99,6 +115,7 @@
         justify-content: center;
         margin-right: 1rem;
         font-size: 1.2rem;
+        flex-shrink: 0;
     }
 
     .icon-obrigatorio {
@@ -119,6 +136,7 @@
         font-weight: 600;
         color: #1e293b;
         margin-bottom: 0.25rem;
+        font-size: 0.9rem;
     }
 
     .document-badge {
@@ -126,6 +144,7 @@
         padding: 2px 8px;
         border-radius: 20px;
         font-weight: 500;
+        flex-shrink: 0;
     }
 
     .badge-obrigatorio {
@@ -213,6 +232,15 @@
     .animate-in {
         animation: fadeInUp 0.6s ease-out;
     }
+
+    .badge-count {
+        background: #e2e8f0;
+        color: #475569;
+        padding: 2px 8px;
+        border-radius: 20px;
+        font-size: 0.7rem;
+        margin-left: 8px;
+    }
 </style>
 {% endblock %}
 
@@ -256,6 +284,7 @@
                         <h5 class="fw-bold mb-3">
                             <i class="bi bi-file-earmark-text me-2 text-primary"></i>
                             Documentos Necessários
+                            <span class="badge-count">15 obrigatórios</span>
                         </h5>
                         
                         <div class="document-list">
@@ -263,82 +292,185 @@
                             <div class="mb-3">
                                 <div class="d-flex align-items-center gap-2 mb-2">
                                     <i class="bi bi-star-fill text-danger fs-6"></i>
-                                    <small class="text-uppercase fw-bold text-danger">Obrigatórios</small>
+                                    <small class="text-uppercase fw-bold text-danger">Documentos Obrigatórios (15)</small>
                                 </div>
                                 
+                                <!-- 1. Foto 3x4 -->
                                 <div class="document-item">
                                     <div class="document-icon icon-obrigatorio">
                                         <i class="bi bi-camera-fill"></i>
                                     </div>
                                     <div class="document-info">
                                         <div class="document-name">Foto 3x4</div>
-                                        <small class="text-muted">Formato JPG/PNG, fundo branco</small>
+                                        <small class="text-muted">Formato JPG/PNG, fundo branco, recente</small>
                                     </div>
                                     <span class="document-badge badge-obrigatorio">Obrigatório</span>
                                 </div>
 
+                                <!-- 2. Certidão de Antecedentes Criminais -->
                                 <div class="document-item">
                                     <div class="document-icon icon-obrigatorio">
-                                        <i class="bi bi-file-text-fill"></i>
+                                        <i class="bi bi-fingerprint"></i>
                                     </div>
                                     <div class="document-info">
                                         <div class="document-name">Certidão de Antecedentes Criminais</div>
-                                        <small class="text-muted">Polícia Federal - atualizada</small>
+                                        <small class="text-muted">Polícia Federal - emitida há no máximo 90 dias</small>
                                     </div>
                                     <span class="document-badge badge-obrigatorio">Obrigatório</span>
                                 </div>
 
+                                <!-- 3. Certidão Negativa Eleitoral -->
+                                <div class="document-item">
+                                    <div class="document-icon icon-obrigatorio">
+                                        <i class="bi bi-check-circle"></i>
+                                    </div>
+                                    <div class="document-info">
+                                        <div class="document-name">Certidão Negativa Eleitoral</div>
+                                        <small class="text-muted">Tribunal Superior Eleitoral (TSE) - quitação eleitoral</small>
+                                    </div>
+                                    <span class="document-badge badge-obrigatorio">Obrigatório</span>
+                                </div>
+
+                                <!-- 4. Certidão Negativa Militar -->
                                 <div class="document-item">
                                     <div class="document-icon icon-obrigatorio">
                                         <i class="bi bi-shield-check"></i>
                                     </div>
                                     <div class="document-info">
-                                        <div class="document-name">Certidão Negativa Eleitoral</div>
-                                        <small class="text-muted">Tribunal Superior Eleitoral (TSE)</small>
-                                    </div>
-                                    <span class="document-badge badge-obrigatorio">Obrigatório</span>
-                                </div>
-
-                                <div class="document-item">
-                                    <div class="document-icon icon-obrigatorio">
-                                        <i class="bi bi-building"></i>
-                                    </div>
-                                    <div class="document-info">
                                         <div class="document-name">Certidão Negativa Militar</div>
-                                        <small class="text-muted">Superior Tribunal Militar (STM)</small>
+                                        <small class="text-muted">Superior Tribunal Militar (STM) - situação militar</small>
                                     </div>
                                     <span class="document-badge badge-obrigatorio">Obrigatório</span>
                                 </div>
 
+                                <!-- 5. Certidão Negativa Justiça Federal -->
                                 <div class="document-item">
                                     <div class="document-icon icon-obrigatorio">
                                         <i class="bi bi-bank"></i>
                                     </div>
                                     <div class="document-info">
                                         <div class="document-name">Certidão Negativa Justiça Federal</div>
-                                        <small class="text-muted">TRF da 1ª Região</small>
+                                        <small class="text-muted">TRF da 1ª Região - ações na justiça federal</small>
                                     </div>
                                     <span class="document-badge badge-obrigatorio">Obrigatório</span>
                                 </div>
 
+                                <!-- 6. Certidão Criminal TJDFT -->
                                 <div class="document-item">
                                     <div class="document-icon icon-obrigatorio">
                                         <i class="bi bi-scale"></i>
                                     </div>
                                     <div class="document-info">
-                                        <div class="document-name">Certidões Negativas do TJDFT</div>
-                                        <small class="text-muted">Criminal, Cível, Falência e Recuperação Judicial</small>
+                                        <div class="document-name">Certidão Criminal - TJDFT</div>
+                                        <small class="text-muted">Tribunal de Justiça do DF - certidão criminal</small>
                                     </div>
                                     <span class="document-badge badge-obrigatorio">Obrigatório</span>
                                 </div>
 
+                                <!-- 7. Certidão Cível TJDFT -->
+                                <div class="document-item">
+                                    <div class="document-icon icon-obrigatorio">
+                                        <i class="bi bi-file-text"></i>
+                                    </div>
+                                    <div class="document-info">
+                                        <div class="document-name">Certidão Cível - TJDFT</div>
+                                        <small class="text-muted">Ações cíveis e execuções fiscais</small>
+                                    </div>
+                                    <span class="document-badge badge-obrigatorio">Obrigatório</span>
+                                </div>
+
+                                <!-- 8. Certidão de Falência TJDFT -->
+                                <div class="document-item">
+                                    <div class="document-icon icon-obrigatorio">
+                                        <i class="bi bi-briefcase"></i>
+                                    </div>
+                                    <div class="document-info">
+                                        <div class="document-name">Certidão de Falência e Recuperação Judicial</div>
+                                        <small class="text-muted">TJDFT - situação falimentar</small>
+                                    </div>
+                                    <span class="document-badge badge-obrigatorio">Obrigatório</span>
+                                </div>
+
+                                <!-- 9. Certidão Especial Cível TJDFT -->
+                                <div class="document-item">
+                                    <div class="document-icon icon-obrigatorio">
+                                        <i class="bi bi-journal"></i>
+                                    </div>
+                                    <div class="document-info">
+                                        <div class="document-name">Certidão Especial Cível - TJDFT</div>
+                                        <small class="text-muted">Distribuições processuais especiais cíveis</small>
+                                    </div>
+                                    <span class="document-badge badge-obrigatorio">Obrigatório</span>
+                                </div>
+
+                                <!-- 10. Certidão Especial Criminal TJDFT -->
+                                <div class="document-item">
+                                    <div class="document-icon icon-obrigatorio">
+                                        <i class="bi bi-gavel"></i>
+                                    </div>
+                                    <div class="document-info">
+                                        <div class="document-name">Certidão Especial Criminal - TJDFT</div>
+                                        <small class="text-muted">Distribuições processuais especiais criminais</small>
+                                    </div>
+                                    <span class="document-badge badge-obrigatorio">Obrigatório</span>
+                                </div>
+
+                                <!-- 11. Certidão Negativa de Débitos GDF -->
                                 <div class="document-item">
                                     <div class="document-icon icon-obrigatorio">
                                         <i class="bi bi-receipt"></i>
                                     </div>
                                     <div class="document-info">
                                         <div class="document-name">Certidão Negativa de Débitos - GDF</div>
-                                        <small class="text-muted">Receita do Distrito Federal</small>
+                                        <small class="text-muted">Receita do Distrito Federal - débitos fiscais</small>
+                                    </div>
+                                    <span class="document-badge badge-obrigatorio">Obrigatório</span>
+                                </div>
+
+                                <!-- 12. Certidão de Nascimento ou Casamento -->
+                                <div class="document-item">
+                                    <div class="document-icon icon-obrigatorio">
+                                        <i class="bi bi-file-person"></i>
+                                    </div>
+                                    <div class="document-info">
+                                        <div class="document-name">Certidão de Nascimento ou Casamento</div>
+                                        <small class="text-muted">Registro civil atualizado (até 6 meses)</small>
+                                    </div>
+                                    <span class="document-badge badge-obrigatorio">Obrigatório</span>
+                                </div>
+
+                                <!-- 13. Comprovante de Residência -->
+                                <div class="document-item">
+                                    <div class="document-icon icon-obrigatorio">
+                                        <i class="bi bi-house-door"></i>
+                                    </div>
+                                    <div class="document-info">
+                                        <div class="document-name">Comprovante de Residência</div>
+                                        <small class="text-muted">Últimos 3 meses (conta de luz, água, internet ou telefone)</small>
+                                    </div>
+                                    <span class="document-badge badge-obrigatorio">Obrigatório</span>
+                                </div>
+
+                                <!-- 14. Carteira de Identidade (RG) -->
+                                <div class="document-item">
+                                    <div class="document-icon icon-obrigatorio">
+                                        <i class="bi bi-card-identity"></i>
+                                    </div>
+                                    <div class="document-info">
+                                        <div class="document-name">Carteira de Identidade (RG)</div>
+                                        <small class="text-muted">Documento oficial com foto - frente e verso</small>
+                                    </div>
+                                    <span class="document-badge badge-obrigatorio">Obrigatório</span>
+                                </div>
+
+                                <!-- 15. CPF -->
+                                <div class="document-item">
+                                    <div class="document-icon icon-obrigatorio">
+                                        <i class="bi bi-upc-scan"></i>
+                                    </div>
+                                    <div class="document-info">
+                                        <div class="document-name">CPF</div>
+                                        <small class="text-muted">Cadastro de Pessoa Física - legível</small>
                                     </div>
                                     <span class="document-badge badge-obrigatorio">Obrigatório</span>
                                 </div>
@@ -348,7 +480,7 @@
                             <div>
                                 <div class="d-flex align-items-center gap-2 mb-2 mt-3 pt-2 border-top">
                                     <i class="bi bi-bookmark-fill text-secondary fs-6"></i>
-                                    <small class="text-uppercase fw-bold text-secondary">Opcionais</small>
+                                    <small class="text-uppercase fw-bold text-secondary">Documentos Opcionais (3)</small>
                                 </div>
 
                                 <div class="document-item">
@@ -357,29 +489,29 @@
                                     </div>
                                     <div class="document-info">
                                         <div class="document-name">Currículo</div>
-                                        <small class="text-muted">Documento atualizado com experiências profissionais</small>
+                                        <small class="text-muted">Documento atualizado com experiências profissionais e formação</small>
                                     </div>
                                     <span class="document-badge badge-opcional">Opcional</span>
                                 </div>
 
                                 <div class="document-item">
                                     <div class="document-icon icon-opcional">
-                                        <i class="bi bi-file-text-fill"></i>
+                                        <i class="bi bi-mortarboard"></i>
                                     </div>
                                     <div class="document-info">
-                                        <div class="document-name">Certidão de Nascimento</div>
-                                        <small class="text-muted">Versão legível e atualizada</small>
+                                        <div class="document-name">Diploma ou Certificado de Escolaridade</div>
+                                        <small class="text-muted">Comprovação de formação acadêmica</small>
                                     </div>
                                     <span class="document-badge badge-opcional">Opcional</span>
                                 </div>
 
                                 <div class="document-item">
                                     <div class="document-icon icon-opcional">
-                                        <i class="bi bi-house-fill"></i>
+                                        <i class="bi bi-card-list"></i>
                                     </div>
                                     <div class="document-info">
-                                        <div class="document-name">Comprovante de Residência</div>
-                                        <small class="text-muted">Últimos 3 meses (conta de luz, água ou internet)</small>
+                                        <div class="document-name">Carteira de Trabalho (CTPS)</div>
+                                        <small class="text-muted">Página de identificação e últimas anotações</small>
                                     </div>
                                     <span class="document-badge badge-opcional">Opcional</span>
                                 </div>
@@ -391,7 +523,7 @@
                     <div class="row g-3 mt-2 mb-4">
                         <div class="col-6">
                             <div class="text-center p-3 bg-light rounded-4">
-                                <div class="display-6 fw-bold text-primary mb-0">7</div>
+                                <div class="display-6 fw-bold text-primary mb-0">15</div>
                                 <small class="text-muted">Documentos Obrigatórios</small>
                             </div>
                         </div>
