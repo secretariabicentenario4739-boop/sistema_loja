@@ -34,18 +34,29 @@
         margin-bottom: 1.5rem;
     }
     
-    .progress-custom {
-        height: 12px;
-        border-radius: 20px;
-        background: #e2e8f0;
-        overflow: hidden;
-    }
-    
-    .progress-custom .progress-bar {
-        border-radius: 20px;
-        background: linear-gradient(90deg, var(--success), #34d399);
-        transition: width 0.5s ease;
-    }
+   /* Estilo para a barra de progresso - VERSÃO CORRIGIDA */
+.progress-custom {
+    height: 25px;
+    border-radius: 12px;
+    background: #e2e8f0;
+    overflow: hidden;
+    box-shadow: inset 0 1px 2px rgba(0,0,0,0.1);
+}
+
+.progress-custom .progress-bar {
+    border-radius: 12px;
+    background: linear-gradient(90deg, #10b981, #34d399);
+    transition: width 0.5s ease;
+    font-size: 0.8rem;
+    font-weight: 600;
+    line-height: 25px;
+    text-align: center;
+    color: white;
+    text-shadow: 0 1px 1px rgba(0,0,0,0.2);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
     
     .table-documentos {
         margin-bottom: 0;
