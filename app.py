@@ -726,12 +726,8 @@ import psycopg2
 from psycopg2.extras import RealDictCursor
 
 def return_connection(conn):
-    """Fecha a conexão com o banco de dados"""
-    try:
-        if conn and not conn.closed:
-            conn.close()
-    except Exception as e:
-        print(f"Erro ao fechar conexão: {e}")
+    """Retorna a conexão - não faz nada pois o teardown cuida disso"""
+    pass
 
 
 import psycopg2
@@ -794,11 +790,19 @@ def get_db():
     
     # Se já existe uma conexão na mesma requisição, reutiliza
     if hasattr(request, 'db_connection') and request.db_connection:
+        # IMPORTANTE: Rollback para limpar transações pendentes
+        try:
+            request.db_connection.rollback()
+        except:
+            pass
         return request.db_cursor, request.db_connection
     
     pool = init_db_pool()
     conn = pool.getconn()
     cursor = conn.cursor(cursor_factory=RealDictCursor)
+    
+    # Rollback inicial
+    conn.rollback()
     
     # Armazenar na requisição
     request.db_connection = conn
@@ -812,14 +816,21 @@ def return_connection(conn):
     # Não fazer nada aqui, a conexão será fechada no final da requisição
     pass
 
-# No final da requisição, fechar a conexão
 @app.teardown_request
 def teardown_request(exception=None):
     """Fecha a conexão no final da requisição"""
     if hasattr(request, 'db_connection') and request.db_connection:
-        pool = init_db_pool()
-        pool.putconn(request.db_connection)
-        print(f"🔌 Conexão fechada no final da requisição")
+        try:
+            # Sempre fazer rollback no final
+            request.db_connection.rollback()
+        except:
+            pass
+        try:
+            pool = init_db_pool()
+            pool.putconn(request.db_connection)
+            print(f"🔌 Conexão fechada no final da requisição")
+        except Exception as e:
+            print(f"Erro ao fechar conexão: {e}")
 
 # ============================================
 # CONTEXT MANAGER (recomendado)
@@ -8869,6 +8880,7 @@ def formulario_candidato(candidato_id):
                           candidato=candidato, 
                           filhos=filhos,
                           usuario=usuario)
+                          
 @app.route("/sindicancia/<int:id>", methods=["GET", "POST"])
 @login_required
 def visualizar_sindicancia(id):
@@ -8877,108 +8889,179 @@ def visualizar_sindicancia(id):
         return redirect("/candidatos")
     
     cursor, conn = get_db()
-    cursor.execute("SELECT * FROM candidatos WHERE id = %s", (id,))
-    candidato = cursor.fetchone()
     
-    if not candidato:
-        flash("Candidato não encontrado", "danger")
-        return_connection(conn)
-        return redirect("/minhas_sindicancias")
-    
-    cursor.execute("SELECT * FROM filhos_candidato WHERE candidato_id = %s ORDER BY data_nascimento", (id,))
-    filhos = cursor.fetchall()
-    
-    bloqueado = candidato["fechado"] == 1
-    usuario = session["usuario"]
-    
-    if request.method == "POST" and not bloqueado:
-        parecer = request.form["parecer"]
-        agora = datetime.now()
+    try:
+        conn.rollback()
         
-        # Verificar se já existe
+        # Processar POST (parecer)
+        if request.method == "POST":
+            # Limpa flashes anteriores
+            session.pop('_flashes', None)
+            
+            usuario_nome = session.get("usuario")
+            parecer = request.form.get('parecer')
+            
+            if parecer and parecer in ['positivo', 'negativo']:
+                from datetime import datetime
+                agora = datetime.now()
+                
+                # Verificar se a sindicância já foi fechada
+                cursor.execute("SELECT fechado FROM candidatos WHERE id = %s", (id,))
+                candidato_status = cursor.fetchone()
+                
+                if candidato_status and candidato_status["fechado"] == 1:
+                    flash("⚠️ Sindicância já foi encerrada! Não é possível alterar o voto.", "warning")
+                    return redirect(f"/sindicancia/{id}")
+                
+                # Verificar se já votou
+                cursor.execute("""
+                    SELECT id FROM sindicancias 
+                    WHERE candidato_id = %s AND sindicante = %s
+                """, (id, usuario_nome))
+                
+                if cursor.fetchone():
+                    # JÁ VOTOU - ATUALIZA O VOTO (UPDATE)
+                    cursor.execute("""
+                        UPDATE sindicancias 
+                        SET parecer = %s, data_envio = %s
+                        WHERE candidato_id = %s AND sindicante = %s
+                    """, (parecer, agora, id, usuario_nome))
+                    flash(f"🔄 Parecer alterado para {parecer} com sucesso!", "warning")
+                else:
+                    # PRIMEIRO VOTO - INSERE
+                    cursor.execute("""
+                        INSERT INTO sindicancias (candidato_id, sindicante, parecer, data_envio)
+                        VALUES (%s, %s, %s, %s)
+                    """, (id, usuario_nome, parecer, agora))
+                    flash(f"✅ Parecer {parecer} registrado com sucesso!", "success")
+                
+                conn.commit()
+                
+                # Verificar se todos os sindicantes votaram
+                cursor.execute("SELECT COUNT(*) as total FROM usuarios WHERE tipo = 'sindicante' AND ativo = 1")
+                total_sindicantes = cursor.fetchone()["total"]
+                
+                cursor.execute("SELECT COUNT(*) as votos FROM sindicancias WHERE candidato_id = %s", (id,))
+                votos = cursor.fetchone()["votos"]
+                
+                if votos >= total_sindicantes and total_sindicantes > 0:
+                    cursor.execute("""
+                        SELECT 
+                            SUM(CASE WHEN parecer = 'positivo' THEN 1 ELSE 0 END) as positivos,
+                            SUM(CASE WHEN parecer = 'negativo' THEN 1 ELSE 0 END) as negativos
+                        FROM sindicancias WHERE candidato_id = %s
+                    """, (id,))
+                    res = cursor.fetchone()
+                    status = "Aprovado" if res["positivos"] > res["negativos"] else "Reprovado"
+                    agora_fechamento = datetime.now()
+                    cursor.execute("""
+                        UPDATE candidatos 
+                        SET status = %s, fechado = 1, data_fechamento = %s, resultado_final = %s
+                        WHERE id = %s
+                    """, (status, agora_fechamento, f"{res['positivos']} votos positivos, {res['negativos']} negativos", id))
+                    conn.commit()
+                    registrar_log("fechar_sindicancia", "sindicancia", id, dados_novos={"status": status})
+                    flash(f"🎉 Sindicância encerrada! Resultado: {status}", "success")
+                
+            else:
+                flash("❌ Parecer inválido!", "danger")
+            
+            return redirect(f"/sindicancia/{id}")
+        
+        # GET - Buscar dados para exibir
+        # Buscar candidato
+        cursor.execute("SELECT * FROM candidatos WHERE id = %s", (id,))
+        candidato = cursor.fetchone()
+        
+        if not candidato:
+            flash("Candidato não encontrado", "danger")
+            return redirect("/candidatos")
+        
+        # Buscar filhos
+        cursor.execute("SELECT * FROM filhos_candidato WHERE candidato_id = %s ORDER BY data_nascimento", (id,))
+        filhos = cursor.fetchall()
+        
+        # Buscar votos registrados
         cursor.execute("""
-            SELECT id FROM sindicancias 
+            SELECT s.*, u.usuario, u.nome_completo
+            FROM sindicancias s
+            JOIN usuarios u ON s.sindicante = u.usuario
+            WHERE s.candidato_id = %s
+            ORDER BY s.data_envio DESC
+        """, (id,))
+        registros = cursor.fetchall()
+        
+        # Buscar meu parecer
+        usuario_nome = session.get("usuario")
+        cursor.execute("""
+            SELECT * FROM sindicancias 
             WHERE candidato_id = %s AND sindicante = %s
-        """, (id, usuario))
+        """, (id, usuario_nome))
+        meu_parecer = cursor.fetchone()
         
-        if cursor.fetchone():
-            cursor.execute("""
-                UPDATE sindicancias 
-                SET parecer = %s, data_envio = %s
-                WHERE candidato_id = %s AND sindicante = %s
-            """, (parecer, agora, id, usuario))
-        else:
-            cursor.execute("""
-                INSERT INTO sindicancias (candidato_id, sindicante, parecer, data_envio)
-                VALUES (%s, %s, %s, %s)
-            """, (id, usuario, parecer, agora))
+        # Buscar parecer conclusivo
+        cursor.execute("""
+            SELECT id FROM pareceres_conclusivos 
+            WHERE candidato_id = %s AND sindicante = %s
+        """, (id, usuario_nome))
+        parecer_conclusivo_existente = cursor.fetchone()
         
-        conn.commit()
-        registrar_log("emitir_parecer", "sindicancia", id, dados_novos={"parecer": parecer})
-        flash("Parecer enviado com sucesso!", "success")
+        bloqueado = candidato["fechado"] == 1
+        total_votos = len(registros)
+        votos_positivos = sum(1 for r in registros if r["parecer"] == "positivo")
+        votos_negativos = total_votos - votos_positivos
         
-        cursor.execute("SELECT COUNT(*) as total FROM usuarios WHERE tipo = 'sindicante' AND ativo = 1")
-        total_sindicantes = cursor.fetchone()["total"]
-        cursor.execute("SELECT COUNT(*) as votos FROM sindicancias WHERE candidato_id = %s", (id,))
-        votos = cursor.fetchone()["votos"]
+        return render_template("sindicancia.html", 
+                              candidato=candidato, 
+                              filhos=filhos, 
+                              registros=registros,
+                              meu_parecer=meu_parecer,
+                              parecer_conclusivo_existente=parecer_conclusivo_existente,
+                              total_votos=total_votos, 
+                              votos_positivos=votos_positivos, 
+                              votos_negativos=votos_negativos,
+                              bloqueado=bloqueado, 
+                              tipo=session["tipo"], 
+                              usuario_atual=usuario_nome)
         
-        if votos >= total_sindicantes and total_sindicantes > 0:
-            cursor.execute("""
-                SELECT 
-                    SUM(CASE WHEN parecer = 'positivo' THEN 1 ELSE 0 END) as positivos,
-                    SUM(CASE WHEN parecer = 'negativo' THEN 1 ELSE 0 END) as negativos
-                FROM sindicancias WHERE candidato_id = %s
-            """, (id,))
-            res = cursor.fetchone()
-            status = "Aprovado" if res["positivos"] > res["negativos"] else "Reprovado"
-            agora = datetime.now()
-            cursor.execute("""
-                UPDATE candidatos 
-                SET status = %s, fechado = 1, data_fechamento = %s, resultado_final = %s
-                WHERE id = %s
-            """, (status, agora, f"{res['positivos']} votos positivos, {res['negativos']} negativos", id))
-            conn.commit()
-            registrar_log("fechar_sindicancia", "sindicancia", id, dados_novos={"status": status})
+    except Exception as e:
+        conn.rollback()
+        print(f"Erro na visualização da sindicância: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        flash(f"Erro ao carregar página: {str(e)}", "danger")
+        return redirect("/candidatos")
     
-    cursor.execute("""
-        SELECT s.*, u.usuario, u.nome_completo
-        FROM sindicancias s
-        JOIN usuarios u ON s.sindicante = u.usuario
-        WHERE s.candidato_id = %s
-        ORDER BY s.data_envio DESC
-    """, (id,))
-    registros = cursor.fetchall()
-    
-    cursor.execute("SELECT * FROM sindicancias WHERE candidato_id = %s AND sindicante = %s", (id, usuario))
-    meu_parecer = cursor.fetchone()
-    
-    cursor.execute("SELECT id FROM pareceres_conclusivos WHERE candidato_id = %s AND sindicante = %s", (id, usuario))
-    parecer_conclusivo_existente = cursor.fetchone()
-    
-    return_connection(conn)
-    
-    total_votos = len(registros)
-    votos_positivos = sum(1 for r in registros if r["parecer"] == "positivo")
-    votos_negativos = total_votos - votos_positivos
-    
-    return render_template("sindicancia.html", candidato=candidato, filhos=filhos, registros=registros,
-                          meu_parecer=meu_parecer, parecer_conclusivo_existente=parecer_conclusivo_existente,
-                          total_votos=total_votos, votos_positivos=votos_positivos, votos_negativos=votos_negativos,
-                          bloqueado=bloqueado, tipo=session["tipo"], usuario_atual=usuario)
-
+    finally:
+        return_connection(conn)
+        
 @app.route("/excluir_parecer/<int:candidato_id>")
 @sindicante_required
 def excluir_parecer(candidato_id):
     cursor, conn = get_db()
+    
+    # Rollback para limpar transações pendentes
+    try:
+        conn.rollback()
+    except:
+        pass
+    
+    usuario_nome = session.get("usuario")
+    
     cursor.execute("SELECT fechado FROM candidatos WHERE id = %s", (candidato_id,))
     candidato = cursor.fetchone()
+    
     if candidato and candidato["fechado"] == 0:
-        cursor.execute("DELETE FROM sindicancias WHERE candidato_id = %s AND sindicante = %s", (candidato_id, session["usuario"]))
+        cursor.execute("""
+            DELETE FROM sindicancias 
+            WHERE candidato_id = %s AND sindicante = %s
+        """, (candidato_id, usuario_nome))
         conn.commit()
         registrar_log("excluir_parecer", "sindicancia", candidato_id)
         flash("Parecer excluído com sucesso!", "success")
     else:
         flash("Não é possível excluir parecer de uma sindicância fechada", "danger")
+    
     return_connection(conn)
     return redirect(f"/sindicancia/{candidato_id}")
 
@@ -9013,6 +9096,15 @@ def fechar_sindicancia_manual(id):
 @sindicante_required
 def minhas_sindicancias():
     cursor, conn = get_db()
+    
+    # Rollback para limpar transações pendentes
+    try:
+        conn.rollback()
+    except:
+        pass
+    
+    usuario_nome = session.get("usuario")  # Nome do usuário (texto)
+    
     cursor.execute("""
         SELECT c.*, 
                CASE WHEN s.parecer IS NOT NULL THEN 1 ELSE 0 END as parecer_enviado,
@@ -9021,8 +9113,9 @@ def minhas_sindicancias():
         FROM candidatos c
         LEFT JOIN sindicancias s ON c.id = s.candidato_id AND s.sindicante = %s
         ORDER BY c.fechado ASC, c.data_criacao DESC
-    """, (session["usuario"],))
+    """, (usuario_nome,))
     candidatos = cursor.fetchall()
+    
     return_connection(conn)
     return render_template("minhas_sindicancias.html", candidatos=candidatos)
 
@@ -9276,6 +9369,51 @@ def baixar_parecer_conclusivo(id):
         flash(f"Erro ao gerar PDF: {str(e)}", "danger")
         return redirect("/dashboard")
 
+@app.route("/sindicancia/<int:candidato_id>/parecer", methods=["POST"])
+@login_required
+def enviar_parecer(candidato_id):
+    cursor, conn = get_db()
+    
+    try:
+        conn.rollback()
+        
+        usuario_nome = session.get("usuario")
+        parecer = request.form.get('parecer')
+        
+        if not parecer or parecer not in ['positivo', 'negativo']:
+            flash("❌ Parecer inválido!", "danger")
+            return redirect(f"/sindicancia/{candidato_id}")
+        
+        # Verificar se já votou
+        cursor.execute("""
+            SELECT id FROM sindicancias 
+            WHERE candidato_id = %s AND sindicante = %s
+        """, (candidato_id, usuario_nome))
+        
+        if cursor.fetchone():
+            flash("⚠️ Você já votou neste candidato!", "warning")
+            return redirect(f"/sindicancia/{candidato_id}")
+        
+        # Inserir o voto
+        from datetime import datetime
+        agora = datetime.now()
+        
+        cursor.execute("""
+            INSERT INTO sindicancias (candidato_id, sindicante, parecer, data_envio)
+            VALUES (%s, %s, %s, %s)
+        """, (candidato_id, usuario_nome, parecer, agora))
+        
+        conn.commit()
+        
+        flash(f"✅ Parecer {parecer} registrado com sucesso!", "success")
+        
+    except Exception as e:
+        conn.rollback()
+        print(f"Erro ao enviar parecer: {str(e)}")
+        flash(f"❌ Erro ao enviar parecer: {str(e)}", "danger")
+    
+    return redirect(f"/candidatos")  # ← MUDE PARA REDIRECIONAR PARA CANDIDATOS, NÃO PARA SINDICANCIA
+        
 # =============================
 # ROTAS DE DOCUMENTOS DO CANDIDATO
 # =============================
