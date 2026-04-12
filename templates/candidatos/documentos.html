@@ -898,62 +898,114 @@ function visualizarDocumento(caminho, nome) {
     modal.show();
 }
 
-// Função para aprovar documento
+// Função para aprovar documento - VERSÃO CORRIGIDA
 function aprovarDocumento(docId, nomeDocumento) {
     if (!confirm(`✅ Confirmar aprovação do documento "${nomeDocumento}"?`)) {
         return;
     }
     
+    // Mostrar indicador de carregamento
+    const btn = event.target;
+    const originalText = btn.innerHTML;
+    btn.innerHTML = '<i class="bi bi-hourglass-split"></i> Aprovando...';
+    btn.disabled = true;
+    
+    // Envia o corpo da requisição corretamente
     fetch(`/api/documentos-candidato/${docId}/aprovar`, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json'
-        }
+        },
+        body: JSON.stringify({ 
+            status: 'aprovado',
+            data_aprovacao: new Date().toISOString()
+        })
     })
-    .then(response => response.json())
+    .then(response => {
+        if (!response.ok) {
+            return response.json().then(data => {
+                throw new Error(data.error || `HTTP error! status: ${response.status}`);
+            });
+        }
+        return response.json();
+    })
     .then(data => {
         if (data.success) {
             alert(`✅ Documento "${nomeDocumento}" aprovado com sucesso!`);
             location.reload();
         } else {
-            alert('❌ Erro: ' + (data.error || 'Erro desconhecido'));
+            throw new Error(data.error || 'Erro desconhecido');
         }
     })
     .catch(error => {
-        console.error('Erro:', error);
-        alert('❌ Erro ao aprovar documento');
+        console.error('Erro detalhado:', error);
+        alert(`❌ Erro ao aprovar documento: ${error.message}`);
+    })
+    .finally(() => {
+        if (btn) {
+            btn.innerHTML = originalText;
+            btn.disabled = false;
+        }
     });
 }
 
-// Função para rejeitar documento
+// Função para rejeitar documento - VERSÃO CORRIGIDA
 function rejeitarDocumento(docId, nomeDocumento) {
     const motivo = prompt(`❌ Rejeitar documento "${nomeDocumento}"\n\nDigite o motivo da rejeição:`);
     
-    if (!motivo) {
+    if (!motivo || motivo.trim() === '') {
+        if (motivo !== null) {
+            alert('❌ Motivo da rejeição é obrigatório!');
+        }
         return;
     }
     
+    // Mostrar indicador de carregamento
+    const btn = event.target;
+    const originalText = btn.innerHTML;
+    btn.innerHTML = '<i class="bi bi-hourglass-split"></i> Rejeitando...';
+    btn.disabled = true;
+    
+    // Envia o corpo da requisição corretamente
     fetch(`/api/documentos-candidato/${docId}/rejeitar`, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json'
         },
-        body: JSON.stringify({ observacao: motivo })
+        body: JSON.stringify({ 
+            status: 'rejeitado',
+            observacao: motivo.trim(),
+            data_reprovacao: new Date().toISOString()
+        })
     })
-    .then(response => response.json())
+    .then(response => {
+        if (!response.ok) {
+            return response.json().then(data => {
+                throw new Error(data.error || `HTTP error! status: ${response.status}`);
+            });
+        }
+        return response.json();
+    })
     .then(data => {
         if (data.success) {
             alert(`❌ Documento "${nomeDocumento}" rejeitado.\nMotivo: ${motivo}`);
             location.reload();
         } else {
-            alert('❌ Erro: ' + (data.error || 'Erro desconhecido'));
+            throw new Error(data.error || 'Erro desconhecido');
         }
     })
     .catch(error => {
-        console.error('Erro:', error);
-        alert('❌ Erro ao rejeitar documento');
+        console.error('Erro detalhado:', error);
+        alert(`❌ Erro ao rejeitar documento: ${error.message}`);
+    })
+    .finally(() => {
+        if (btn) {
+            btn.innerHTML = originalText;
+            btn.disabled = false;
+        }
     });
 }
+
 
 function excluirDocumento(docId, nomeDocumento, tipoId) {
     if (!confirm(`⚠️ ATENÇÃO!\n\nDeseja excluir o documento "${nomeDocumento}"?\n\nEsta ação não pode ser desfeita.`)) {
