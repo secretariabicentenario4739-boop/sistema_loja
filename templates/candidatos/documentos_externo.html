@@ -587,53 +587,66 @@ if (!token || !candidatoId) {
     window.location.href = '/';
 }
 
-// Função para atualizar a barra de progresso
+// Função para atualizar a barra de progresso - VERSÃO CORRIGIDA
 function atualizarProgresso() {
+    console.log('=== ATUALIZANDO PROGRESSO ===');
+    
+    // Conta apenas documentos obrigatórios (data-obrigatorio="1")
     const documentosObrigatorios = document.querySelectorAll('[data-obrigatorio="1"]');
     const totalObrigatorios = documentosObrigatorios.length;
     
     let enviadosObrigatorios = 0;
     
     documentosObrigatorios.forEach(card => {
+        // Procura o status dentro do card
         const statusArea = card.querySelector('.document-status-area');
+        // Verifica se existe um badge de status (aprovado, pendente, rejeitado)
         const statusBadge = statusArea ? statusArea.querySelector('.status-badge') : null;
         
+        // Se existe badge, significa que o documento foi enviado
         if (statusBadge) {
             enviadosObrigatorios++;
         }
     });
     
+    console.log(`Total obrigatórios: ${totalObrigatorios}, Enviados: ${enviadosObrigatorios}`);
+    
+    // Atualiza o contador na tela
     const contadorSpan = document.getElementById('contadorDocumentos');
     if (contadorSpan) {
         contadorSpan.textContent = `${enviadosObrigatorios}/${totalObrigatorios} Obrigatórios`;
     }
     
+    // Calcula percentual
     const percentual = totalObrigatorios > 0 ? (enviadosObrigatorios / totalObrigatorios) * 100 : 0;
+    
+    // Atualiza a barra de progresso
     const barraProgresso = document.getElementById('barraProgresso');
     if (barraProgresso) {
         barraProgresso.style.width = `${percentual}%`;
         barraProgresso.setAttribute('aria-valuenow', percentual);
     }
     
+    // Atualiza a mensagem
     const mensagemDiv = document.getElementById('mensagemProgresso');
     if (mensagemDiv) {
         if (percentual === 100) {
             mensagemDiv.innerHTML = `
                 <span class="badge bg-success bg-opacity-10 text-success px-3 py-2 rounded-pill">
-                    <i class="bi bi-trophy-fill me-1"></i> Parabéns! Todos os documentos obrigatórios foram enviados!
+                    <i class="bi bi-trophy-fill me-1"></i> 🎉 Parabéns! Todos os documentos obrigatórios foram enviados!
                 </span>
             `;
         } else if (enviadosObrigatorios > 0) {
             const faltam = totalObrigatorios - enviadosObrigatorios;
             mensagemDiv.innerHTML = `
                 <span class="badge bg-warning bg-opacity-10 text-warning px-3 py-2 rounded-pill">
-                    <i class="bi bi-hourglass-split me-1"></i> Aguardando envio de ${faltam} documento(s)
+                    <i class="bi bi-hourglass-split me-1"></i> ⏳ Aguardando envio de ${faltam} documento(s)
                 </span>
             `;
         } else {
             mensagemDiv.innerHTML = `
                 <span class="badge bg-secondary bg-opacity-10 text-secondary px-3 py-2 rounded-pill">
-                    <i class="bi bi-info-circle me-1"></i> Nenhum documento obrigatório enviado ainda
+                    <i class="bi bi-info-circle me-1"></i> 📄 Nenhum documento obrigatório enviado ainda
                 </span>
             `;
         }
@@ -710,33 +723,31 @@ async function uploadDocumento(tipoId, nomeDocumento) {
     btn.innerHTML = '<i class="bi bi-hourglass-split"></i> Enviando...';
     btn.disabled = true;
     
+    const modal = bootstrap.Modal.getInstance(document.getElementById(`modalUpload${tipoId}`));
+    if (modal) modal.hide();
+    
     try {
         const response = await fetch(`/candidato/documentos/upload/${candidatoId}/${tipoId}?token=${token}`, {
             method: 'POST',
             body: formData
         });
         
-        const data = await response.json();
-        
-        if (response.redirected || data.redirect) {
-            window.location.href = '/';
-            return;
-        }
-        
-        if (data.success) {
+        if (response.ok) {
             mostrarNotificacao(`✅ ${nomeDocumento} enviado com sucesso!`, 'success');
             setTimeout(() => {
                 location.reload();
             }, 1500);
         } else {
-            mostrarNotificacao(`❌ Erro ao enviar ${nomeDocumento}: ${data.error || 'Erro desconhecido'}`, 'error');
+            mostrarNotificacao(`❌ Erro ${response.status} ao enviar ${nomeDocumento}`, 'error');
+            btn.innerHTML = originalText;
+            btn.disabled = false;
         }
     } catch (error) {
-        console.error('Erro:', error);
-        mostrarNotificacao(`❌ Erro ao enviar ${nomeDocumento}`, 'error');
-    } finally {
-        btn.innerHTML = originalText;
-        btn.disabled = false;
+        console.error('Erro de rede:', error);
+        mostrarNotificacao(`⚠️ Verifique se ${nomeDocumento} foi enviado. Recarregue a página.`, 'warning');
+        setTimeout(() => {
+            location.reload();
+        }, 2000);
     }
 }
 
@@ -769,6 +780,7 @@ async function excluirDocumento(docId, nomeDocumento, tipoId) {
         if (data.success) {
             mostrarNotificacao(`✅ ${nomeDocumento} excluído com sucesso!`, 'success');
             
+            // Atualiza o DOM sem recarregar
             const card = document.querySelector(`[data-documento-id="${tipoId}"]`);
             if (card) {
                 const statusArea = card.querySelector('.document-status-area');
@@ -782,32 +794,31 @@ async function excluirDocumento(docId, nomeDocumento, tipoId) {
                 
                 const btnContainer = card.querySelector('.col-md-4.text-md-end');
                 if (btnContainer) {
-                    const uploadBtn = btnContainer.querySelector('.btn-upload');
-                    if (uploadBtn) {
-                        uploadBtn.innerHTML = '<i class="bi bi-cloud-upload"></i> Enviar';
-                    }
-                    
                     const viewBtn = btnContainer.querySelector('.btn-outline-info');
+                    const downloadLink = btnContainer.querySelector('.btn-outline-success');
                     const deleteBtn = btnContainer.querySelector('.btn-outline-danger');
                     if (viewBtn) viewBtn.remove();
+                    if (downloadLink) downloadLink.remove();
                     if (deleteBtn) deleteBtn.remove();
                 }
             }
             
+            // Atualiza a barra de progresso
             atualizarProgresso();
         } else {
             mostrarNotificacao(`❌ Erro ao excluir: ${data.error || 'Erro desconhecido'}`, 'error');
+            btn.innerHTML = originalText;
+            btn.disabled = false;
         }
     } catch (error) {
         console.error('Erro:', error);
         mostrarNotificacao(`❌ Erro ao excluir documento`, 'error');
-    } finally {
         btn.innerHTML = originalText;
         btn.disabled = false;
     }
 }
 
-// Verifica token na URL e no corpo da página
+// Inicialização - executa ao carregar a página
 document.addEventListener('DOMContentLoaded', function() {
     const urlParams = new URLSearchParams(window.location.search);
     const urlToken = urlParams.get('token');
@@ -825,7 +836,21 @@ document.addEventListener('DOMContentLoaded', function() {
         return;
     }
     
+    // Atualiza progresso
     atualizarProgresso();
+    
+    // Adiciona um observador para detectar mudanças na tabela
+    const observer = new MutationObserver(function(mutations) {
+        atualizarProgresso();
+    });
+    
+    const container = document.querySelector('.col-lg-8');
+    if (container) {
+        observer.observe(container, { childList: true, subtree: true, attributes: true });
+    }
+    
+    // Atualiza a cada 3 segundos (fallback)
+    setInterval(atualizarProgresso, 3000);
 });
 </script>
 {% endblock %}
