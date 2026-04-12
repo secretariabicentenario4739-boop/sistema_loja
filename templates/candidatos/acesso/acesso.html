@@ -1,33 +1,429 @@
 {% extends "base_public.html" %}
 
-{% block title %}Acesso do Candidato{% endblock %}
+{% block title %}Acesso do Candidato - {{ candidato.nome }}{% endblock %}
+
+{% block styles %}
+{{ super() }}
+<style>
+    :root {
+        --primary: #4f46e5;
+        --primary-dark: #4338ca;
+        --secondary: #64748b;
+        --success: #10b981;
+        --warning: #f59e0b;
+        --danger: #ef4444;
+        --info: #3b82f6;
+    }
+
+    .card-elegant {
+        border: none;
+        border-radius: 24px;
+        background: white;
+        box-shadow: 0 20px 35px -10px rgba(0, 0, 0, 0.1);
+        overflow: hidden;
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
+    }
+
+    .card-elegant:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 25px 40px -12px rgba(0, 0, 0, 0.15);
+    }
+
+    .header-gradient {
+        background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 50%, #a855f7 100%);
+        padding: 2rem;
+        text-align: center;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .header-gradient::before {
+        content: '';
+        position: absolute;
+        top: -50%;
+        right: -50%;
+        width: 200%;
+        height: 200%;
+        background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0) 70%);
+        transform: rotate(45deg);
+    }
+
+    .avatar-wrapper {
+        width: 100px;
+        height: 100px;
+        margin: 0 auto 1rem;
+        background: linear-gradient(135deg, #fff 0%, #f3f4f6 100%);
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
+        border: 4px solid rgba(255, 255, 255, 0.3);
+    }
+
+    .avatar-wrapper i {
+        font-size: 3rem;
+        color: #4f46e5;
+    }
+
+    .document-list {
+        background: #f8fafc;
+        border-radius: 16px;
+        padding: 1rem;
+        margin: 1.5rem 0;
+    }
+
+    .document-item {
+        display: flex;
+        align-items: center;
+        padding: 0.75rem;
+        margin-bottom: 0.5rem;
+        background: white;
+        border-radius: 12px;
+        transition: all 0.2s ease;
+        border: 1px solid #e2e8f0;
+    }
+
+    .document-item:hover {
+        transform: translateX(5px);
+        border-color: #cbd5e1;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+    }
+
+    .document-icon {
+        width: 40px;
+        height: 40px;
+        border-radius: 10px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-right: 1rem;
+        font-size: 1.2rem;
+    }
+
+    .icon-obrigatorio {
+        background: linear-gradient(135deg, #fee2e2, #fecaca);
+        color: #dc2626;
+    }
+
+    .icon-opcional {
+        background: linear-gradient(135deg, #e0e7ff, #c7d2fe);
+        color: #4f46e5;
+    }
+
+    .document-info {
+        flex: 1;
+    }
+
+    .document-name {
+        font-weight: 600;
+        color: #1e293b;
+        margin-bottom: 0.25rem;
+    }
+
+    .document-badge {
+        font-size: 0.7rem;
+        padding: 2px 8px;
+        border-radius: 20px;
+        font-weight: 500;
+    }
+
+    .badge-obrigatorio {
+        background: #fee2e2;
+        color: #dc2626;
+    }
+
+    .badge-opcional {
+        background: #e0e7ff;
+        color: #4f46e5;
+    }
+
+    .btn-acesso {
+        background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+        color: white;
+        border: none;
+        padding: 1rem 2rem;
+        font-size: 1.1rem;
+        font-weight: 600;
+        border-radius: 60px;
+        transition: all 0.3s ease;
+        box-shadow: 0 4px 15px rgba(16, 185, 129, 0.3);
+        width: 100%;
+    }
+
+    .btn-acesso:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 25px rgba(16, 185, 129, 0.4);
+        color: white;
+    }
+
+    .btn-acesso:active {
+        transform: translateY(0);
+    }
+
+    .status-badge-custom {
+        padding: 6px 16px;
+        border-radius: 60px;
+        font-size: 0.85rem;
+        font-weight: 600;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+    }
+
+    .status-em-analise {
+        background: #fef3c7;
+        color: #d97706;
+    }
+
+    .status-aprovado {
+        background: #d1fae5;
+        color: #059669;
+    }
+
+    .status-pendente {
+        background: #fee2e2;
+        color: #dc2626;
+    }
+
+    .info-box {
+        background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
+        border-radius: 16px;
+        padding: 1rem;
+        margin: 1.5rem 0;
+        border-left: 4px solid #3b82f6;
+    }
+
+    .info-box i {
+        color: #3b82f6;
+        font-size: 1.2rem;
+    }
+
+    @keyframes fadeInUp {
+        from {
+            opacity: 0;
+            transform: translateY(20px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    .animate-in {
+        animation: fadeInUp 0.6s ease-out;
+    }
+</style>
+{% endblock %}
 
 {% block content %}
 <div class="container py-5">
     <div class="row justify-content-center">
-        <div class="col-md-8">
-            <div class="card shadow">
-                <div class="card-header bg-primary text-white text-center">
-                    <h4 class="mb-0">
-                        <i class="bi bi-person-badge"></i> 
-                        Acesso do Candidato
-                    </h4>
-                </div>
-                <div class="card-body text-center">
-                    <i class="bi bi-file-text fs-1 text-primary"></i>
-                    <h3 class="mt-3">{{ candidato.nome }}</h3>
-                    <p class="text-muted">Status: <span class="badge bg-info">{{ candidato.status or 'Em análise' }}</span></p>
-                    
-                    <div class="alert alert-info">
-                        <i class="bi bi-info-circle"></i>
-                        Você está acessando o sistema para envio de documentos.
-                        Clique no botão abaixo para prosseguir.
+        <div class="col-lg-8 col-md-10">
+            <div class="card-elegant animate-in">
+                <!-- Header com gradiente -->
+                <div class="header-gradient">
+                    <div class="avatar-wrapper">
+                        <i class="bi bi-person-circle"></i>
                     </div>
-                    
-                    <a href="/candidato/{{ candidato.id }}/documentos?token={{ candidato.token_acesso }}" 
-                       class="btn btn-success btn-lg">
-                        <i class="bi bi-cloud-upload"></i> Acessar meus documentos
-                    </a>
+                    <h2 class="text-white mb-2 fw-bold">{{ candidato.nome }}</h2>
+                    <div class="mt-2">
+                        <span class="status-badge-custom status-em-analise">
+                            <i class="bi bi-hourglass-split"></i>
+                            {{ candidato.status or 'Em análise' }}
+                        </span>
+                    </div>
+                </div>
+
+                <!-- Body -->
+                <div class="p-4 p-md-5">
+                    <!-- Mensagem de boas-vindas -->
+                    <div class="info-box">
+                        <div class="d-flex align-items-start gap-3">
+                            <i class="bi bi-info-circle-fill fs-4"></i>
+                            <div>
+                                <strong class="d-block mb-1">Bem-vindo ao Sistema de Documentação</strong>
+                                <p class="mb-0 small text-muted">
+                                    Você está acessando o sistema para envio de documentos. 
+                                    Por favor, verifique a lista abaixo e envie todos os documentos solicitados.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Lista completa de documentos -->
+                    <div class="mt-4">
+                        <h5 class="fw-bold mb-3">
+                            <i class="bi bi-file-earmark-text me-2 text-primary"></i>
+                            Documentos Necessários
+                        </h5>
+                        
+                        <div class="document-list">
+                            <!-- Documentos Obrigatórios -->
+                            <div class="mb-3">
+                                <div class="d-flex align-items-center gap-2 mb-2">
+                                    <i class="bi bi-star-fill text-danger fs-6"></i>
+                                    <small class="text-uppercase fw-bold text-danger">Obrigatórios</small>
+                                </div>
+                                
+                                <div class="document-item">
+                                    <div class="document-icon icon-obrigatorio">
+                                        <i class="bi bi-camera-fill"></i>
+                                    </div>
+                                    <div class="document-info">
+                                        <div class="document-name">Foto 3x4</div>
+                                        <small class="text-muted">Formato JPG/PNG, fundo branco</small>
+                                    </div>
+                                    <span class="document-badge badge-obrigatorio">Obrigatório</span>
+                                </div>
+
+                                <div class="document-item">
+                                    <div class="document-icon icon-obrigatorio">
+                                        <i class="bi bi-file-text-fill"></i>
+                                    </div>
+                                    <div class="document-info">
+                                        <div class="document-name">Certidão de Antecedentes Criminais</div>
+                                        <small class="text-muted">Polícia Federal - atualizada</small>
+                                    </div>
+                                    <span class="document-badge badge-obrigatorio">Obrigatório</span>
+                                </div>
+
+                                <div class="document-item">
+                                    <div class="document-icon icon-obrigatorio">
+                                        <i class="bi bi-shield-check"></i>
+                                    </div>
+                                    <div class="document-info">
+                                        <div class="document-name">Certidão Negativa Eleitoral</div>
+                                        <small class="text-muted">Tribunal Superior Eleitoral (TSE)</small>
+                                    </div>
+                                    <span class="document-badge badge-obrigatorio">Obrigatório</span>
+                                </div>
+
+                                <div class="document-item">
+                                    <div class="document-icon icon-obrigatorio">
+                                        <i class="bi bi-building"></i>
+                                    </div>
+                                    <div class="document-info">
+                                        <div class="document-name">Certidão Negativa Militar</div>
+                                        <small class="text-muted">Superior Tribunal Militar (STM)</small>
+                                    </div>
+                                    <span class="document-badge badge-obrigatorio">Obrigatório</span>
+                                </div>
+
+                                <div class="document-item">
+                                    <div class="document-icon icon-obrigatorio">
+                                        <i class="bi bi-bank"></i>
+                                    </div>
+                                    <div class="document-info">
+                                        <div class="document-name">Certidão Negativa Justiça Federal</div>
+                                        <small class="text-muted">TRF da 1ª Região</small>
+                                    </div>
+                                    <span class="document-badge badge-obrigatorio">Obrigatório</span>
+                                </div>
+
+                                <div class="document-item">
+                                    <div class="document-icon icon-obrigatorio">
+                                        <i class="bi bi-scale"></i>
+                                    </div>
+                                    <div class="document-info">
+                                        <div class="document-name">Certidões Negativas do TJDFT</div>
+                                        <small class="text-muted">Criminal, Cível, Falência e Recuperação Judicial</small>
+                                    </div>
+                                    <span class="document-badge badge-obrigatorio">Obrigatório</span>
+                                </div>
+
+                                <div class="document-item">
+                                    <div class="document-icon icon-obrigatorio">
+                                        <i class="bi bi-receipt"></i>
+                                    </div>
+                                    <div class="document-info">
+                                        <div class="document-name">Certidão Negativa de Débitos - GDF</div>
+                                        <small class="text-muted">Receita do Distrito Federal</small>
+                                    </div>
+                                    <span class="document-badge badge-obrigatorio">Obrigatório</span>
+                                </div>
+                            </div>
+
+                            <!-- Documentos Opcionais -->
+                            <div>
+                                <div class="d-flex align-items-center gap-2 mb-2 mt-3 pt-2 border-top">
+                                    <i class="bi bi-bookmark-fill text-secondary fs-6"></i>
+                                    <small class="text-uppercase fw-bold text-secondary">Opcionais</small>
+                                </div>
+
+                                <div class="document-item">
+                                    <div class="document-icon icon-opcional">
+                                        <i class="bi bi-file-person-fill"></i>
+                                    </div>
+                                    <div class="document-info">
+                                        <div class="document-name">Currículo</div>
+                                        <small class="text-muted">Documento atualizado com experiências profissionais</small>
+                                    </div>
+                                    <span class="document-badge badge-opcional">Opcional</span>
+                                </div>
+
+                                <div class="document-item">
+                                    <div class="document-icon icon-opcional">
+                                        <i class="bi bi-file-text-fill"></i>
+                                    </div>
+                                    <div class="document-info">
+                                        <div class="document-name">Certidão de Nascimento</div>
+                                        <small class="text-muted">Versão legível e atualizada</small>
+                                    </div>
+                                    <span class="document-badge badge-opcional">Opcional</span>
+                                </div>
+
+                                <div class="document-item">
+                                    <div class="document-icon icon-opcional">
+                                        <i class="bi bi-house-fill"></i>
+                                    </div>
+                                    <div class="document-info">
+                                        <div class="document-name">Comprovante de Residência</div>
+                                        <small class="text-muted">Últimos 3 meses (conta de luz, água ou internet)</small>
+                                    </div>
+                                    <span class="document-badge badge-opcional">Opcional</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Resumo dos documentos -->
+                    <div class="row g-3 mt-2 mb-4">
+                        <div class="col-6">
+                            <div class="text-center p-3 bg-light rounded-4">
+                                <div class="display-6 fw-bold text-primary mb-0">7</div>
+                                <small class="text-muted">Documentos Obrigatórios</small>
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <div class="text-center p-3 bg-light rounded-4">
+                                <div class="display-6 fw-bold text-secondary mb-0">3</div>
+                                <small class="text-muted">Documentos Opcionais</small>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Botão de Acesso -->
+                    <div class="mt-4">
+                        <a href="/candidato/{{ candidato.id }}/documentos?token={{ candidato.token_acesso }}" 
+                           class="btn-acesso">
+                            <i class="bi bi-cloud-upload-fill me-2"></i>
+                            Acessar Área de Envio de Documentos
+                            <i class="bi bi-arrow-right-short ms-2 fs-4"></i>
+                        </a>
+                    </div>
+
+                    <!-- Informações de contato -->
+                    <div class="text-center mt-4 pt-3 border-top">
+                        <small class="text-muted d-block mb-2">
+                            <i class="bi bi-envelope me-1"></i> Em caso de dúvidas, entre em contato:
+                        </small>
+                        <small class="text-muted">
+                            <i class="bi bi-envelope-fill me-1"></i> secretaria.bicentenario4739@gmail.com
+                            <span class="mx-2">•</span>
+                            <i class="bi bi-telephone-fill me-1"></i> (61) 99368-1248
+                        </small>
+                    </div>
                 </div>
             </div>
         </div>
