@@ -160,6 +160,19 @@
         border-radius: 20px;
         overflow: hidden;
     }
+    .document-viewer {
+        max-height: 80vh;
+        overflow: auto;
+        background: #f8fafc;
+        border-radius: 12px;
+        padding: 1rem;
+        min-height: 400px;
+    }
+    .document-viewer iframe,
+    .document-viewer img {
+        width: 100%;
+        border-radius: 8px;
+    }
     @keyframes fadeIn {
         from { opacity: 0; transform: translateY(-10px); }
         to { opacity: 1; transform: translateY(0); }
@@ -207,9 +220,7 @@
                             <i class="bi bi-check-circle-fill text-success me-2"></i>
                             Progresso da Documentação
                         </h6>
-                        <span class="badge bg-primary rounded-pill px-3 py-2" id="contadorDocumentos">
-                            {{ total_enviados }}/{{ total_obrigatorios }} Obrigatórios
-                        </span>
+                        <span class="badge bg-primary rounded-pill px-3 py-2" id="contadorDocumentos">{{ total_enviados }}/{{ total_obrigatorios }} Obrigatórios</span>
                     </div>
                     <div class="progress-custom">
                         <div class="progress-bar" id="barraProgresso" role="progressbar" style="width: {{ percentual }}%"></div>
@@ -310,8 +321,14 @@
                                         {% if doc %}Reenviar{% else %}Enviar{% endif %}
                                     </button>
                                     {% if doc %}
-                                        <a href="{{ doc.caminho_arquivo }}" target="_blank" class="btn btn-outline-secondary btn-sm btn-icon ms-1" title="Visualizar">
+                                        <button type="button" class="btn btn-outline-info btn-sm btn-icon ms-1" 
+                                                onclick="visualizarDocumento('{{ doc.caminho_arquivo }}', '{{ tipo.nome }}')" 
+                                                title="Visualizar">
                                             <i class="bi bi-eye"></i>
+                                        </button>
+                                        <a href="{{ doc.caminho_arquivo }}" download 
+                                           class="btn btn-outline-success btn-sm btn-icon ms-1" title="Baixar">
+                                            <i class="bi bi-download"></i>
                                         </a>
                                         <button type="button" class="btn btn-outline-danger btn-sm btn-icon ms-1" 
                                                 onclick="excluirDocumento({{ doc.id }}, '{{ tipo.nome }}', {{ tipo.id }})" title="Excluir">
@@ -487,7 +504,7 @@
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body p-0">
-                <div class="document-viewer" id="documentViewer" style="min-height: 400px;">
+                <div class="document-viewer" id="documentViewer">
                     <div class="text-center p-5">
                         <div class="spinner-border text-primary" role="status">
                             <span class="visually-hidden">Carregando...</span>
@@ -681,12 +698,11 @@ function visualizarDocumento(caminho, nome) {
     modal.show();
 }
 
-// Função para upload de documento - ROTA CORRIGIDA
+// Função para upload de documento
 async function uploadDocumento(tipoId, nomeDocumento) {
     const form = document.getElementById(`formUpload${tipoId}`);
     const formData = new FormData(form);
     
-    // Adiciona o token ao FormData
     formData.append('token', token);
     
     const btn = event.target;
@@ -695,7 +711,6 @@ async function uploadDocumento(tipoId, nomeDocumento) {
     btn.disabled = true;
     
     try {
-        // ROTA CORRETA: /candidato/documentos/upload/ (sem o "s")
         const response = await fetch(`/candidato/documentos/upload/${candidatoId}/${tipoId}?token=${token}`, {
             method: 'POST',
             body: formData
@@ -730,6 +745,11 @@ async function excluirDocumento(docId, nomeDocumento, tipoId) {
     if (!confirm(`⚠️ ATENÇÃO!\n\nDeseja excluir o documento "${nomeDocumento}"?\n\nEsta ação não pode ser desfeita.`)) {
         return;
     }
+    
+    const btn = event.target;
+    const originalText = btn.innerHTML;
+    btn.innerHTML = '<i class="bi bi-hourglass-split"></i> Excluindo...';
+    btn.disabled = true;
     
     try {
         const response = await fetch(`/api/documentos-candidato/${docId}/excluir?token=${token}`, {
@@ -767,7 +787,7 @@ async function excluirDocumento(docId, nomeDocumento, tipoId) {
                         uploadBtn.innerHTML = '<i class="bi bi-cloud-upload"></i> Enviar';
                     }
                     
-                    const viewBtn = btnContainer.querySelector('.btn-outline-secondary');
+                    const viewBtn = btnContainer.querySelector('.btn-outline-info');
                     const deleteBtn = btnContainer.querySelector('.btn-outline-danger');
                     if (viewBtn) viewBtn.remove();
                     if (deleteBtn) deleteBtn.remove();
@@ -781,6 +801,9 @@ async function excluirDocumento(docId, nomeDocumento, tipoId) {
     } catch (error) {
         console.error('Erro:', error);
         mostrarNotificacao(`❌ Erro ao excluir documento`, 'error');
+    } finally {
+        btn.innerHTML = originalText;
+        btn.disabled = false;
     }
 }
 
