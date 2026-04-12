@@ -2,181 +2,565 @@
 
 {% block title %}Documentos do Candidato - {{ candidato.nome }}{% endblock %}
 
+{% block styles %}
+{{ super() }}
+<style>
+    :root {
+        --primary: #4f46e5;
+        --primary-dark: #4338ca;
+        --success: #10b981;
+        --warning: #f59e0b;
+        --danger: #ef4444;
+        --info: #3b82f6;
+        --secondary: #64748b;
+    }
+
+    /* Cards e containers */
+    .card-elegant {
+        border: none;
+        border-radius: 20px;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+        transition: transform 0.2s, box-shadow 0.2s;
+        overflow: hidden;
+    }
+    
+    .card-elegant:hover {
+        box-shadow: 0 8px 30px rgba(0, 0, 0, 0.12);
+    }
+    
+    /* Header gradiente */
+    .header-gradient {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        padding: 2rem;
+        border-radius: 20px 20px 0 0;
+        margin-bottom: 0;
+    }
+    
+    /* Barra de progresso */
+    .progress-custom {
+        height: 12px;
+        border-radius: 20px;
+        background: #e2e8f0;
+        overflow: hidden;
+    }
+    
+    .progress-custom .progress-bar {
+        border-radius: 20px;
+        background: linear-gradient(90deg, var(--success), #34d399);
+        transition: width 0.5s ease;
+    }
+    
+    /* Tabela de documentos */
+    .table-documentos {
+        margin-bottom: 0;
+    }
+    
+    .table-documentos thead th {
+        background: #f8fafc;
+        border-bottom: 2px solid #e2e8f0;
+        color: #1e293b;
+        font-weight: 600;
+        padding: 1rem;
+        font-size: 0.85rem;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+    
+    .table-documentos tbody tr {
+        transition: background 0.2s;
+        border-bottom: 1px solid #f1f5f9;
+    }
+    
+    .table-documentos tbody tr:hover {
+        background: #f8fafc;
+    }
+    
+    .table-documentos td {
+        padding: 1rem;
+        vertical-align: middle;
+    }
+    
+    /* Badges personalizados */
+    .badge-custom {
+        padding: 6px 12px;
+        border-radius: 20px;
+        font-size: 0.75rem;
+        font-weight: 600;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+    }
+    
+    .badge-obrigatorio {
+        background: #fee2e2;
+        color: #dc2626;
+    }
+    
+    .badge-opcional {
+        background: #e0e7ff;
+        color: #4f46e5;
+    }
+    
+    .badge-aprovado {
+        background: #d1fae5;
+        color: #059669;
+    }
+    
+    .badge-pendente {
+        background: #fed7aa;
+        color: #92400e;
+    }
+    
+    .badge-rejeitado {
+        background: #fee2e2;
+        color: #dc2626;
+    }
+    
+    .badge-nao-enviado {
+        background: #f1f5f9;
+        color: #475569;
+    }
+    
+    /* Botões de ação */
+    .btn-action {
+        width: 32px;
+        height: 32px;
+        padding: 0;
+        border-radius: 10px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        transition: all 0.2s;
+        margin: 0 2px;
+    }
+    
+    .btn-action:hover {
+        transform: translateY(-2px);
+    }
+    
+    /* Preview da foto */
+    .photo-preview {
+        width: 50px;
+        height: 50px;
+        object-fit: cover;
+        border-radius: 50%;
+        border: 2px solid #e2e8f0;
+        transition: transform 0.2s;
+    }
+    
+    .photo-preview:hover {
+        transform: scale(1.1);
+        border-color: var(--primary);
+    }
+    
+    /* Estatísticas */
+    .stat-card {
+        background: #f8fafc;
+        border-radius: 16px;
+        padding: 1rem;
+        text-align: center;
+        transition: all 0.2s;
+    }
+    
+    .stat-card:hover {
+        background: #f1f5f9;
+        transform: translateY(-2px);
+    }
+    
+    .stat-number {
+        font-size: 2rem;
+        font-weight: 700;
+        line-height: 1;
+    }
+    
+    /* Separador */
+    .separator {
+        display: flex;
+        align-items: center;
+        text-align: center;
+        margin: 1.5rem 0;
+    }
+    
+    .separator::before,
+    .separator::after {
+        content: '';
+        flex: 1;
+        border-bottom: 1px solid #e2e8f0;
+    }
+    
+    .separator span {
+        padding: 0 1rem;
+        color: #64748b;
+        font-size: 0.85rem;
+        font-weight: 500;
+    }
+    
+    /* Animações */
+    @keyframes fadeInUp {
+        from {
+            opacity: 0;
+            transform: translateY(20px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+    
+    .animate-in {
+        animation: fadeInUp 0.5s ease-out;
+    }
+    
+    /* Responsivo */
+    @media (max-width: 768px) {
+        .table-documentos {
+            font-size: 0.85rem;
+        }
+        
+        .table-documentos td,
+        .table-documentos th {
+            padding: 0.75rem;
+        }
+        
+        .btn-action {
+            width: 28px;
+            height: 28px;
+        }
+        
+        .stat-number {
+            font-size: 1.5rem;
+        }
+    }
+</style>
+{% endblock %}
+
 {% block content %}
 <div class="container-fluid py-4">
     <div class="container">
         <!-- Cabeçalho -->
-        <div class="d-flex justify-content-between align-items-center mb-4">
-            <div>
-                <h2>
-                    <i class="bi bi-file-text"></i> 
-                    Documentos do Candidato
-                </h2>
-                <p class="text-muted mb-0">{{ candidato.nome }}</p>
-                <div class="mt-2">
-                    <span class="badge bg-secondary">ID: {{ candidato.id }}</span>
-                    <span class="badge bg-info">Status: {{ candidato.status or 'Em análise' }}</span>
+        <div class="header-gradient text-white mb-4 animate-in">
+            <div class="d-flex justify-content-between align-items-center flex-wrap gap-3">
+                <div>
+                    <div class="d-flex align-items-center gap-3 mb-2">
+                        <div class="bg-white bg-opacity-25 rounded-circle p-3">
+                            <i class="bi bi-file-earmark-text fs-2"></i>
+                        </div>
+                        <div>
+                            <h1 class="h3 mb-1 fw-bold">Documentos do Candidato</h1>
+                            <p class="mb-0 text-white-50">{{ candidato.nome }}</p>
+                        </div>
+                    </div>
+                    <div class="mt-2">
+                        <span class="badge bg-white bg-opacity-25 text-white me-2">
+                            <i class="bi bi-hash"></i> ID: {{ candidato.id }}
+                        </span>
+                        <span class="badge bg-white bg-opacity-25 text-white">
+                            <i class="bi bi-info-circle"></i> Status: {{ candidato.status or 'Em análise' }}
+                        </span>
+                    </div>
                 </div>
-            </div>
-            <div>
-                <a href="/candidato/acesso/{{ candidato.token_acesso }}" class="btn btn-outline-info me-2" target="_blank">
-                    <i class="bi bi-link-45deg"></i> Link de Acesso
-                </a>
-                <a href="/candidatos" class="btn btn-outline-secondary">
-                    <i class="bi bi-arrow-left"></i> Voltar
-                </a>
+                <div>
+                    <a href="/candidato/acesso/{{ candidato.token_acesso }}" class="btn btn-light me-2" target="_blank">
+                        <i class="bi bi-link-45deg"></i> Link de Acesso
+                    </a>
+                    <a href="/candidatos" class="btn btn-outline-light">
+                        <i class="bi bi-arrow-left"></i> Voltar
+                    </a>
+                </div>
             </div>
         </div>
 
-        <!-- Barra de Progresso -->
-        <div class="card shadow mb-4">
-            <div class="card-body">
-                <h6 class="mb-2">
-                    <i class="bi bi-check-circle"></i> 
-                    Progresso da Documentação
-                    <span class="badge bg-primary ms-2">{{ total_enviados }}/{{ total_obrigatorios }}</span>
-                </h6>
-                <div class="progress" style="height: 25px;">
-                    <div class="progress-bar bg-success" role="progressbar" 
-                         style="width: {{ percentual }}%">
-                        {{ percentual }}%
-                    </div>
+        <!-- Barra de Progresso Corrigida -->
+        <div class="card-elegant mb-4 animate-in">
+            <div class="card-body p-4">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h5 class="mb-0 fw-bold">
+                        <i class="bi bi-check-circle-fill text-success me-2"></i>
+                        Progresso da Documentação
+                    </h5>
+                    <span class="badge bg-primary rounded-pill px-3 py-2" id="contadorDocumentos">
+                        {{ total_enviados }}/{{ total_obrigatorios }} Obrigatórios
+                    </span>
                 </div>
-                <small class="text-muted mt-2 d-block">
+                
+                <div class="progress-custom mb-3">
+                    <div class="progress-bar" id="barraProgresso" role="progressbar" style="width: {{ percentual }}%"></div>
+                </div>
+                
+                <div class="text-center" id="mensagemProgresso">
                     {% if percentual == 100 %}
-                        <i class="bi bi-check-circle-fill text-success"></i> 
-                        Todos os documentos obrigatórios foram enviados!
+                        <span class="badge bg-success bg-opacity-10 text-success px-3 py-2">
+                            <i class="bi bi-trophy-fill me-1"></i> 
+                            🎉 Parabéns! Todos os documentos obrigatórios foram enviados!
+                        </span>
                     {% elif total_enviados > 0 %}
-                        <i class="bi bi-hourglass-split"></i> 
-                        Aguardando envio de {{ total_obrigatorios - total_enviados }} documento(s)
+                        <span class="badge bg-warning bg-opacity-10 text-warning px-3 py-2">
+                            <i class="bi bi-hourglass-split me-1"></i> 
+                            ⏳ Aguardando envio de {{ total_obrigatorios - total_enviados }} documento(s) obrigatório(s)
+                        </span>
                     {% else %}
-                        <i class="bi bi-info-circle"></i> 
-                        Nenhum documento enviado ainda
+                        <span class="badge bg-secondary bg-opacity-10 text-secondary px-3 py-2">
+                            <i class="bi bi-info-circle me-1"></i> 
+                            📄 Nenhum documento obrigatório enviado ainda
+                        </span>
                     {% endif %}
-                </small>
+                </div>
+            </div>
+        </div>
+
+        <!-- Estatísticas Rápidas -->
+        <div class="row g-3 mb-4 animate-in">
+            <div class="col-md-3 col-6">
+                <div class="stat-card">
+                    <div class="stat-number text-primary">{{ total_obrigatorios }}</div>
+                    <small class="text-muted">Documentos Obrigatórios</small>
+                </div>
+            </div>
+            <div class="col-md-3 col-6">
+                <div class="stat-card">
+                    <div class="stat-number text-secondary">{{ total_opcionais or 3 }}</div>
+                    <small class="text-muted">Documentos Opcionais</small>
+                </div>
+            </div>
+            <div class="col-md-3 col-6">
+                <div class="stat-card">
+                    <div class="stat-number text-success">{{ total_enviados }}</div>
+                    <small class="text-muted">Enviados</small>
+                </div>
+            </div>
+            <div class="col-md-3 col-6">
+                <div class="stat-card">
+                    <div class="stat-number text-warning">{{ total_aprovados or 0 }}</div>
+                    <small class="text-muted">Aprovados</small>
+                </div>
             </div>
         </div>
 
         <!-- Lista de Documentos -->
-        <div class="card shadow">
-            <div class="card-header bg-primary text-white">
-                <h5 class="mb-0">
-                    <i class="bi bi-list-check"></i> 
+        <div class="card-elegant animate-in">
+            <div class="card-header bg-white border-bottom-0 pt-4 px-4">
+                <h5 class="mb-0 fw-bold">
+                    <i class="bi bi-list-check me-2 text-primary"></i>
                     Documentos para Envio
                 </h5>
+                <p class="text-muted small mt-1 mb-0">Gerencie os documentos do candidato</p>
             </div>
-            <div class="card-body">
+            <div class="card-body p-0">
                 <div class="table-responsive">
-                    <table class="table table-hover">
-                        <thead class="table-light">
+                    <table class="table table-documentos">
+                        <thead>
                             <tr>
                                 <th>Documento</th>
-                                <th>Obrigatório</th>
+                                <th>Tipo</th>
                                 <th>Status</th>
                                 <th>Data Envio</th>
-                                <th>Ações</th>
+                                <th style="width: 120px">Ações</th>
                             </tr>
                         </thead>
                         <tbody>
-                            {% for tipo in tipos_documentos %}
-                            {% set doc = documentos_map.get(tipo.id) %}
+                            <!-- PRIMEIRO: Documentos Obrigatórios -->
+                            {% set documentos_obrigatorios = [] %}
+                            {% set documentos_opcionais = [] %}
                             
-                            <!-- Pular Título de Eleitor -->
-                            {% if tipo.nome != 'Título de Eleitor' %}
-                            <tr class="{% if tipo.obrigatorio == 1 and not doc %}table-warning{% endif %}">
-                                <td style="vertical-align: middle;">
-                                    <strong>{{ tipo.nome }}</strong>
-                                    {% if tipo.descricao %}
-                                    <br><small class="text-muted">{{ tipo.descricao }}</small>
+                            {% for tipo in tipos_documentos %}
+                                {% if tipo.nome != 'Título de Eleitor' %}
+                                    {% if tipo.obrigatorio == 1 and tipo.nome not in ['Certidão de Nascimento', 'Comprovante de Residência', 'Currículo'] %}
+                                        {% set _ = documentos_obrigatorios.append(tipo) %}
+                                    {% elif tipo.nome in ['Certidão de Nascimento', 'Comprovante de Residência', 'Currículo'] %}
+                                        {% set _ = documentos_opcionais.append(tipo) %}
+                                    {% elif tipo.obrigatorio == 0 %}
+                                        {% set _ = documentos_opcionais.append(tipo) %}
                                     {% endif %}
-                                    {% if tipo.nome == 'Certidão de Nascimento' %}
-                                    <br><span class="badge bg-info mt-1">Opcional</span>
-                                    {% endif %}
-                                    {% if tipo.nome == 'Comprovante de Residência' %}
-                                    <br><span class="badge bg-info mt-1">Opcional</span>
-                                    {% endif %}
-                                    {% if tipo.nome == 'Foto 3x4' %}
-                                    <br><span class="badge bg-danger mt-1">Obrigatório</span>
-                                    {% endif %}
+                                {% endif %}
+                            {% endfor %}
+                            
+                            <!-- Exibe Documentos Obrigatórios -->
+                            {% for tipo in documentos_obrigatorios %}
+                            {% set doc = documentos_map.get(tipo.id) %}
+                            <tr>
+                                <td>
+                                    <div class="d-flex align-items-center gap-2">
+                                        {% if tipo.nome == 'Foto 3x4' %}
+                                            <i class="bi bi-camera-fill fs-5 text-danger"></i>
+                                        {% elif 'Certidão' in tipo.nome %}
+                                            <i class="bi bi-file-text-fill fs-5 text-info"></i>
+                                        {% else %}
+                                            <i class="bi bi-file-earmark-text fs-5 text-primary"></i>
+                                        {% endif %}
+                                        <div>
+                                            <strong>{{ tipo.nome }}</strong>
+                                            {% if tipo.descricao %}
+                                                <br><small class="text-muted">{{ tipo.descricao[:60] }}{% if tipo.descricao|length > 60 %}...{% endif %}</small>
+                                            {% endif %}
+                                        </div>
+                                    </div>
                                 </td>
-                                <td style="vertical-align: middle;">
-                                    {% if tipo.nome == 'Certidão de Nascimento' %}
-                                        <span class="badge bg-secondary">Opcional</span>
-                                    {% elif tipo.nome == 'Comprovante de Residência' %}
-                                        <span class="badge bg-secondary">Opcional</span>
-                                    {% elif tipo.nome == 'Foto 3x4' %}
-                                        <span class="badge bg-danger">Obrigatório</span>
-                                    {% elif tipo.obrigatorio == 1 %}
-                                        <span class="badge bg-danger">Obrigatório</span>
-                                    {% else %}
-                                        <span class="badge bg-secondary">Opcional</span>
-                                    {% endif %}
+                                <td>
+                                    <span class="badge-custom badge-obrigatorio">
+                                        <i class="bi bi-star-fill"></i> Obrigatório
+                                    </span>
                                 </td>
-                                <td style="vertical-align: middle;">
+                                <td>
                                     {% if doc %}
                                         {% if doc.status == 'aprovado' %}
-                                            <span class="badge bg-success">
-                                                <i class="bi bi-check-circle"></i> Aprovado
+                                            <span class="badge-custom badge-aprovado">
+                                                <i class="bi bi-check-circle-fill"></i> Aprovado
                                             </span>
+                                            {% if doc.data_aprovacao %}
+                                                <br><small>{{ doc.data_aprovacao.strftime('%d/%m/%Y') }}</small>
+                                            {% endif %}
                                         {% elif doc.status == 'rejeitado' %}
-                                            <span class="badge bg-danger">
-                                                <i class="bi bi-x-circle"></i> Rejeitado
+                                            <span class="badge-custom badge-rejeitado">
+                                                <i class="bi bi-x-circle-fill"></i> Rejeitado
                                             </span>
+                                            {% if doc.observacao %}
+                                                <br><small class="text-danger">{{ doc.observacao[:40] }}</small>
+                                            {% endif %}
                                         {% else %}
-                                            <span class="badge bg-warning">
-                                                <i class="bi bi-clock"></i> Pendente
+                                            <span class="badge-custom badge-pendente">
+                                                <i class="bi bi-clock-fill"></i> Pendente
                                             </span>
                                         {% endif %}
-                                        {% if doc.observacao %}
-                                            <br><small class="text-danger">{{ doc.observacao }}</small>
-                                        {% endif %}
-                                        <!-- Exibir foto se for o documento de foto -->
+                                        
                                         {% if tipo.nome == 'Foto 3x4' and doc.caminho_arquivo %}
-                                        <br>
-                                        <a href="{{ doc.caminho_arquivo }}" target="_blank" class="mt-1 d-inline-block">
-                                            <img src="{{ doc.caminho_arquivo }}" alt="Foto do candidato" 
-                                                 style="width: 50px; height: 50px; object-fit: cover; border-radius: 50%; border: 2px solid #ddd;">
-                                        </a>
+                                            <br>
+                                            <img src="{{ doc.caminho_arquivo }}" alt="Foto" class="photo-preview mt-1">
                                         {% endif %}
                                     {% else %}
-                                        <span class="badge bg-secondary">
+                                        <span class="badge-custom badge-nao-enviado">
                                             <i class="bi bi-cloud-slash"></i> Não enviado
                                         </span>
                                     {% endif %}
                                 </td>
-                                <td style="vertical-align: middle;">
+                                <td>
                                     {% if doc %}
                                         {{ doc.data_envio.strftime('%d/%m/%Y %H:%M') if doc.data_envio else '-' }}
                                     {% else %}
-                                        -
+                                        <span class="text-muted">-</span>
                                     {% endif %}
                                 </td>
-                                <td style="vertical-align: middle;">
+                                <td>
                                     <div class="btn-group btn-group-sm">
                                         {% if doc %}
                                             <a href="{{ doc.caminho_arquivo }}" target="_blank" 
-                                               class="btn btn-outline-primary" title="Visualizar">
+                                               class="btn btn-outline-primary btn-action" title="Visualizar">
                                                 <i class="bi bi-eye"></i>
                                             </a>
                                             <a href="{{ doc.caminho_arquivo }}" download 
-                                               class="btn btn-outline-success" title="Baixar">
+                                               class="btn btn-outline-success btn-action" title="Baixar">
                                                 <i class="bi bi-download"></i>
                                             </a>
-                                            <button type="button" class="btn btn-outline-danger" 
-                                                    onclick="excluirDocumento({{ doc.id }}, '{{ tipo.nome }}')" 
+                                            <button type="button" class="btn btn-outline-danger btn-action" 
+                                                    onclick="excluirDocumento({{ doc.id }}, '{{ tipo.nome }}', {{ tipo.id }})" 
                                                     title="Excluir">
                                                 <i class="bi bi-trash"></i>
                                             </button>
                                         {% endif %}
-                                        <button type="button" class="btn btn-outline-primary" 
+                                        <button type="button" class="btn btn-outline-primary btn-action" 
                                                 data-bs-toggle="modal" 
-                                                data-bs-target="#modalUpload{{ tipo.id }}">
+                                                data-bs-target="#modalUpload{{ tipo.id }}" title="Enviar">
                                             <i class="bi bi-cloud-upload"></i>
                                         </button>
                                     </div>
                                 </td>
                             </tr>
+                            {% endfor %}
+                            
+                            <!-- Separador para Documentos Opcionais -->
+                            {% if documentos_opcionais %}
+                            <tr class="separator-row">
+                                <td colspan="5">
+                                    <div class="separator">
+                                        <span><i class="bi bi-bookmark-fill me-1"></i> Documentos Opcionais</span>
+                                    </div>
+                                </td>
+                            </tr>
                             {% endif %}
+                            
+                            <!-- DEPOIS: Documentos Opcionais -->
+                            {% for tipo in documentos_opcionais %}
+                            {% set doc = documentos_map.get(tipo.id) %}
+                            <tr class="table-light">
+                                <td>
+                                    <div class="d-flex align-items-center gap-2">
+                                        {% if tipo.nome == 'Certidão de Nascimento' %}
+                                            <i class="bi bi-file-text-fill fs-5 text-secondary"></i>
+                                        {% elif tipo.nome == 'Comprovante de Residência' %}
+                                            <i class="bi bi-house-fill fs-5 text-secondary"></i>
+                                        {% elif tipo.nome == 'Currículo' %}
+                                            <i class="bi bi-file-person-fill fs-5 text-secondary"></i>
+                                        {% else %}
+                                            <i class="bi bi-file-earmark-text fs-5 text-secondary"></i>
+                                        {% endif %}
+                                        <div>
+                                            <strong>{{ tipo.nome }}</strong>
+                                            {% if tipo.descricao %}
+                                                <br><small class="text-muted">{{ tipo.descricao[:60] }}{% if tipo.descricao|length > 60 %}...{% endif %}</small>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                </td>
+                                <td>
+                                    <span class="badge-custom badge-opcional">
+                                        <i class="bi bi-bookmark"></i> Opcional
+                                    </span>
+                                </td>
+                                <td>
+                                    {% if doc %}
+                                        {% if doc.status == 'aprovado' %}
+                                            <span class="badge-custom badge-aprovado">
+                                                <i class="bi bi-check-circle-fill"></i> Aprovado
+                                            </span>
+                                        {% elif doc.status == 'rejeitado' %}
+                                            <span class="badge-custom badge-rejeitado">
+                                                <i class="bi bi-x-circle-fill"></i> Rejeitado
+                                            </span>
+                                            {% if doc.observacao %}
+                                                <br><small class="text-danger">{{ doc.observacao[:40] }}</small>
+                                            {% endif %}
+                                        {% else %}
+                                            <span class="badge-custom badge-pendente">
+                                                <i class="bi bi-clock-fill"></i> Pendente
+                                            </span>
+                                        {% endif %}
+                                    {% else %}
+                                        <span class="badge-custom badge-nao-enviado">
+                                            <i class="bi bi-cloud-slash"></i> Não enviado
+                                        </span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if doc %}
+                                        {{ doc.data_envio.strftime('%d/%m/%Y %H:%M') if doc.data_envio else '-' }}
+                                    {% else %}
+                                        <span class="text-muted">-</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <div class="btn-group btn-group-sm">
+                                        {% if doc %}
+                                            <a href="{{ doc.caminho_arquivo }}" target="_blank" 
+                                               class="btn btn-outline-primary btn-action" title="Visualizar">
+                                                <i class="bi bi-eye"></i>
+                                            </a>
+                                            <a href="{{ doc.caminho_arquivo }}" download 
+                                               class="btn btn-outline-success btn-action" title="Baixar">
+                                                <i class="bi bi-download"></i>
+                                            </a>
+                                            <button type="button" class="btn btn-outline-danger btn-action" 
+                                                    onclick="excluirDocumento({{ doc.id }}, '{{ tipo.nome }}', {{ tipo.id }})" 
+                                                    title="Excluir">
+                                                <i class="bi bi-trash"></i>
+                                            </button>
+                                        {% endif %}
+                                        <button type="button" class="btn btn-outline-secondary btn-action" 
+                                                data-bs-toggle="modal" 
+                                                data-bs-target="#modalUpload{{ tipo.id }}" title="Enviar">
+                                            <i class="bi bi-cloud-upload"></i>
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
                             {% endfor %}
                         </tbody>
                     </table>
@@ -184,40 +568,47 @@
             </div>
         </div>
 
-        <!-- Informações Adicionais -->
-        <div class="card shadow mt-4">
-            <div class="card-header bg-info text-white">
-                <h5 class="mb-0"><i class="bi bi-info-circle"></i> Informações</h5>
+        <!-- Informações Adicionais e Links -->
+        <div class="row mt-4 g-4">
+            <div class="col-md-6">
+                <div class="card-elegant h-100">
+                    <div class="card-header bg-white border-bottom-0 pt-4 px-4">
+                        <h5 class="mb-0 fw-bold">
+                            <i class="bi bi-info-circle-fill text-info me-2"></i>
+                            Informações Importantes
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <ul class="list-unstyled mb-0">
+                            <li class="mb-2"><i class="bi bi-camera-fill text-danger me-2"></i> <strong>Foto 3x4</strong> é <strong class="text-danger">obrigatória</strong> e será usada no cadastro</li>
+                            <li class="mb-2"><i class="bi bi-file-text-fill text-secondary me-2"></i> <strong>Certidão de Nascimento</strong> é <strong class="text-secondary">opcional</strong>, mas recomendada</li>
+                            <li class="mb-2"><i class="bi bi-house-fill text-secondary me-2"></i> <strong>Comprovante de Residência</strong> é <strong class="text-secondary">opcional</strong>, mas recomendado</li>
+                            <li class="mb-2"><i class="bi bi-file-person-fill text-secondary me-2"></i> <strong>Currículo</strong> é <strong class="text-secondary">opcional</strong> para melhor avaliação</li>
+                            <li class="mb-2"><i class="bi bi-check-circle-fill text-success me-2"></i> Documentos <strong>aprovados</strong> são validados pelo sindicante</li>
+                            <li class="mb-2"><i class="bi bi-clock-fill text-warning me-2"></i> Documentos <strong>pendentes</strong> aguardam análise</li>
+                            <li><i class="bi bi-x-circle-fill text-danger me-2"></i> Documentos <strong>rejeitados</strong> precisam ser reenviados</li>
+                        </ul>
+                    </div>
+                </div>
             </div>
-            <div class="card-body">
-                <ul class="mb-0">
-                    <li><i class="bi bi-camera-fill text-danger"></i> <strong>Foto 3x4</strong> é <strong>obrigatória</strong> e será usada no cadastro</li>
-                    <li><i class="bi bi-file-text-fill text-secondary"></i> <strong>Certidão de Nascimento</strong> é <strong>opcional</strong>, mas recomendada</li>
-                    <li><i class="bi bi-house-fill text-secondary"></i> <strong>Comprovante de Residência</strong> é <strong>opcional</strong>, mas recomendado</li>
-                    <li><i class="bi bi-check-circle-fill text-success"></i> Documentos <strong>aprovados</strong> são validados pelo sindicante</li>
-                    <li><i class="bi bi-clock-fill text-warning"></i> Documentos <strong>pendentes</strong> aguardam análise</li>
-                    <li><i class="bi bi-x-circle-fill text-danger"></i> Documentos <strong>rejeitados</strong> precisam ser reenviados</li>
-                    <li><i class="bi bi-link-45deg"></i> Compartilhe o <strong>link de acesso</strong> com o candidato para ele enviar seus documentos</li>
-                </ul>
-            </div>
-        </div>
-
-        <!-- Links de Acesso para o Candidato -->
-        <div class="card shadow mt-4">
-            <div class="card-header bg-success text-white">
-                <h5 class="mb-0"><i class="bi bi-share"></i> Links de Acesso para o Candidato</h5>
-            </div>
-            <div class="card-body">
-                <div class="row">
-                    <div class="col-md-6">
-                        <div class="alert alert-info">
-                            <i class="bi bi-link-45deg"></i>
+            
+            <div class="col-md-6">
+                <div class="card-elegant h-100">
+                    <div class="card-header bg-white border-bottom-0 pt-4 px-4">
+                        <h5 class="mb-0 fw-bold">
+                            <i class="bi bi-share-fill text-success me-2"></i>
+                            Links de Acesso
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="alert alert-info mb-3">
+                            <i class="bi bi-link-45deg me-2"></i>
                             <strong>Link de Acesso do Candidato:</strong>
                             <div class="input-group mt-2">
-                                <input type="text" class="form-control" id="linkAcesso" 
+                                <input type="text" class="form-control form-control-sm" id="linkAcesso" 
                                        value="{{ url_for('candidato_acesso', token=candidato.token_acesso, _external=True) }}" 
                                        readonly>
-                                <button class="btn btn-outline-primary" onclick="copiarLink()">
+                                <button class="btn btn-outline-primary btn-sm" onclick="copiarLink()">
                                     <i class="bi bi-copy"></i> Copiar
                                 </button>
                             </div>
@@ -225,15 +616,14 @@
                                 Envie este link para o candidato. Ele poderá enviar seus documentos e acompanhar o status.
                             </small>
                         </div>
-                    </div>
-                    <div class="col-md-6">
-                        <div class="alert alert-success">
-                            <i class="bi bi-envelope"></i>
+                        
+                        <div class="alert alert-success mb-0">
+                            <i class="bi bi-envelope-fill me-2"></i>
                             <strong>Enviar Link por E-mail:</strong>
                             <div class="input-group mt-2">
-                                <input type="email" class="form-control" id="emailCandidato" 
+                                <input type="email" class="form-control form-control-sm" id="emailCandidato" 
                                        placeholder="E-mail do candidato" value="{{ candidato.email or '' }}">
-                                <button class="btn btn-success" onclick="enviarLinkEmail()">
+                                <button class="btn btn-success btn-sm" onclick="enviarLinkEmail()">
                                     <i class="bi bi-send"></i> Enviar
                                 </button>
                             </div>
@@ -242,13 +632,6 @@
                             </small>
                         </div>
                     </div>
-                </div>
-                
-                <!-- Debug - Mostrar token (remover em produção) -->
-                <div class="alert alert-secondary mt-3 small">
-                    <strong>🔍 Informação Técnica:</strong><br>
-                    Token: <code>{{ candidato.token_acesso or 'NÃO ENCONTRADO' }}</code><br>
-                    Link gerado: <code>{{ url_for('candidato_acesso', token=candidato.token_acesso, _external=True) }}</code>
                 </div>
             </div>
         </div>
@@ -259,56 +642,48 @@
 {% for tipo in tipos_documentos %}
 {% if tipo.nome != 'Título de Eleitor' %}
 <div class="modal fade" id="modalUpload{{ tipo.id }}" tabindex="-1">
-    <div class="modal-dialog">
-        <div class="modal-content">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 rounded-4">
             <form method="POST" action="/candidatos/{{ candidato.id }}/documentos/upload/{{ tipo.id }}" 
                   enctype="multipart/form-data">
-                <div class="modal-header bg-primary text-white">
+                <div class="modal-header bg-primary text-white border-0">
                     <h5 class="modal-title">
-                        <i class="bi bi-cloud-upload"></i> 
+                        <i class="bi bi-cloud-upload-fill me-2"></i> 
                         Enviar {{ tipo.nome }}
                     </h5>
                     <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
                 </div>
-                <div class="modal-body">
-                    <p><strong>Documento:</strong> {{ tipo.nome }}</p>
-                    <p><small class="text-muted">{{ tipo.descricao or '' }}</small></p>
-                    
-                    {% if tipo.nome == 'Certidão de Nascimento' %}
-                    <div class="alert alert-info">
-                        <i class="bi bi-info-circle"></i>
-                        <strong>Documento opcional</strong><br>
-                        O envio da certidão de nascimento não é obrigatório, mas ajuda na validação.
-                    </div>
+                <div class="modal-body p-4">
+                    <p><strong>{{ tipo.nome }}</strong></p>
+                    {% if tipo.descricao %}
+                        <p class="small text-muted">{{ tipo.descricao }}</p>
                     {% endif %}
                     
-                    {% if tipo.nome == 'Comprovante de Residência' %}
-                    <div class="alert alert-info">
-                        <i class="bi bi-info-circle"></i>
-                        <strong>Documento opcional</strong><br>
-                        O envio do comprovante de residência não é obrigatório, mas ajuda na validação.
-                    </div>
-                    {% endif %}
-                    
-                    {% if tipo.nome == 'Foto 3x4' %}
-                    <div class="alert alert-danger">
-                        <i class="bi bi-exclamation-triangle"></i>
-                        <strong>Documento obrigatório</strong><br>
-                        A foto 3x4 é obrigatória e será usada no cadastro do obreiro.
-                    </div>
+                    {% if tipo.obrigatorio == 1 %}
+                        <div class="alert alert-danger py-2 small">
+                            <i class="bi bi-exclamation-triangle-fill me-1"></i>
+                            <strong>Documento obrigatório</strong> - O envio é necessário.
+                        </div>
+                    {% else %}
+                        <div class="alert alert-info py-2 small">
+                            <i class="bi bi-info-circle-fill me-1"></i>
+                            <strong>Documento opcional</strong> - O envio não é obrigatório, mas ajuda na validação.
+                        </div>
                     {% endif %}
                     
                     <div class="mb-3">
                         <label class="form-label fw-bold">Arquivo (PDF, JPG, PNG)</label>
                         <input type="file" class="form-control" name="arquivo" required 
                                accept=".pdf,.jpg,.jpeg,.png">
-                        <small class="text-muted">Tamanho máximo: 10MB</small>
+                        <div class="form-text">Tamanho máximo: 10MB</div>
                     </div>
                 </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <div class="modal-footer bg-light border-0">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                        <i class="bi bi-x-circle"></i> Cancelar
+                    </button>
                     <button type="submit" class="btn btn-primary">
-                        <i class="bi bi-cloud-upload"></i> Enviar
+                        <i class="bi bi-cloud-upload-fill"></i> Enviar
                     </button>
                 </div>
             </form>
@@ -319,7 +694,59 @@
 {% endfor %}
 
 <script>
-function excluirDocumento(docId, nomeDocumento) {
+// Função para atualizar a barra de progresso
+function atualizarProgresso() {
+    const documentosObrigatorios = document.querySelectorAll('tr:not(.table-light) .badge-obrigatorio');
+    const totalObrigatorios = {{ total_obrigatorios }};
+    
+    let enviadosObrigatorios = 0;
+    document.querySelectorAll('tr:not(.table-light)').forEach(row => {
+        const statusBadge = row.querySelector('.badge-aprovado, .badge-pendente, .badge-rejeitado');
+        if (statusBadge && row.querySelector('.badge-obrigatorio')) {
+            enviadosObrigatorios++;
+        }
+    });
+    
+    const contadorSpan = document.getElementById('contadorDocumentos');
+    if (contadorSpan) {
+        contadorSpan.textContent = `${enviadosObrigatorios}/${totalObrigatorios} Obrigatórios`;
+    }
+    
+    const percentual = totalObrigatorios > 0 ? (enviadosObrigatorios / totalObrigatorios) * 100 : 0;
+    const barraProgresso = document.getElementById('barraProgresso');
+    if (barraProgresso) {
+        barraProgresso.style.width = `${percentual}%`;
+    }
+    
+    const mensagemDiv = document.getElementById('mensagemProgresso');
+    if (mensagemDiv) {
+        if (percentual === 100) {
+            mensagemDiv.innerHTML = `
+                <span class="badge bg-success bg-opacity-10 text-success px-3 py-2">
+                    <i class="bi bi-trophy-fill me-1"></i> 
+                    🎉 Parabéns! Todos os documentos obrigatórios foram enviados!
+                </span>
+            `;
+        } else if (enviadosObrigatorios > 0) {
+            const faltam = totalObrigatorios - enviadosObrigatorios;
+            mensagemDiv.innerHTML = `
+                <span class="badge bg-warning bg-opacity-10 text-warning px-3 py-2">
+                    <i class="bi bi-hourglass-split me-1"></i> 
+                    ⏳ Aguardando envio de ${faltam} documento(s) obrigatório(s)
+                </span>
+            `;
+        } else {
+            mensagemDiv.innerHTML = `
+                <span class="badge bg-secondary bg-opacity-10 text-secondary px-3 py-2">
+                    <i class="bi bi-info-circle me-1"></i> 
+                    📄 Nenhum documento obrigatório enviado ainda
+                </span>
+            `;
+        }
+    }
+}
+
+function excluirDocumento(docId, nomeDocumento, tipoId) {
     if (!confirm(`⚠️ ATENÇÃO!\n\nDeseja excluir o documento "${nomeDocumento}"?\n\nEsta ação não pode ser desfeita.`)) {
         return;
     }
@@ -387,36 +814,9 @@ function enviarLinkEmail() {
     });
 }
 
-// Garantir que o link seja exibido corretamente
+// Atualiza progresso ao carregar
 document.addEventListener('DOMContentLoaded', function() {
-    const linkInput = document.getElementById('linkAcesso');
-    if (linkInput && linkInput.value && linkInput.value.indexOf('None') !== -1) {
-        linkInput.value = 'Token não disponível - gere um novo token';
-    }
+    atualizarProgresso();
 });
 </script>
-
-<style>
-    .progress {
-        border-radius: 10px;
-        overflow: hidden;
-    }
-    .progress-bar {
-        transition: width 0.3s ease;
-    }
-    .table td {
-        vertical-align: middle;
-    }
-    .badge {
-        font-size: 0.8rem;
-        padding: 0.4rem 0.6rem;
-    }
-    .btn-group-sm .btn {
-        padding: 0.25rem 0.5rem;
-    }
-    img {
-        border: 1px solid #ddd;
-        padding: 2px;
-    }
-</style>
 {% endblock %}
