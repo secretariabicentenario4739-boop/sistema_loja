@@ -819,26 +819,60 @@ if (!token || !candidatoId) {
     window.location.href = '/';
 }
 
-// Função para atualizar a barra de progresso - Usando valores do backend
+// Função para atualizar a barra de progresso - VERSÃO SIMPLES E CORRETA
 function atualizarProgresso() {
-      location.reload();
+    console.log('📊 Atualizando barra de progresso...');
+    
+    // Pegar os valores do HTML (já estão corretos)
+    const totalObrigatorios = {{ total_obrigatorios }};
+    const totalEnviados = {{ total_enviados }};
+    const percentual = {{ percentual }};
+    const pendentes = {{ documentos_pendentes|default(0) }};
+    
+    // 1. Atualizar a barra visual
+    const barraProgresso = document.getElementById('barraProgresso');
+    if (barraProgresso) {
+        barraProgresso.style.width = percentual + '%';
+        console.log(`✅ Barra atualizada para ${percentual}%`);
+    } else {
+        console.error('❌ Elemento barraProgresso não encontrado');
     }
     
-    // Atualiza a mensagem
+    // 2. Atualizar contador de documentos
+    const contadorSpan = document.getElementById('contadorDocumentos');
+    if (contadorSpan) {
+        contadorSpan.textContent = `${totalEnviados}/${totalObrigatorios} Obrigatórios`;
+    }
+    
+    // 3. Atualizar estatísticas
+    const totalEnviadosSpan = document.getElementById('totalEnviados');
+    if (totalEnviadosSpan) {
+        totalEnviadosSpan.textContent = totalEnviados;
+    }
+    
+    const pendentesSpan = document.getElementById('pendentesCount');
+    if (pendentesSpan) {
+        pendentesSpan.textContent = pendentes;
+    }
+    
+    // 4. Atualizar mensagem
     const mensagemDiv = document.getElementById('mensagemProgresso');
     if (mensagemDiv) {
         if (percentual === 100) {
-            mensagemDiv.innerHTML = `<span class="badge bg-success bg-opacity-10 text-success px-3 py-2 rounded-pill">
-                <i class="bi bi-trophy-fill me-1"></i> 🎉 Parabéns! Todos os documentos obrigatórios foram enviados!
+            mensagemDiv.innerHTML = `<span class="badge bg-success bg-opacity-10 text-success px-3 py-2">
+                <i class="bi bi-trophy-fill me-1"></i> 
+                🎉 Parabéns! Todos os documentos obrigatórios foram enviados!
             </span>`;
         } else if (totalEnviados > 0) {
             const faltam = totalObrigatorios - totalEnviados;
-            mensagemDiv.innerHTML = `<span class="badge bg-warning bg-opacity-10 text-warning px-3 py-2 rounded-pill">
-                <i class="bi bi-hourglass-split me-1"></i> ⏳ Aguardando envio de ${faltam} documento(s)
+            mensagemDiv.innerHTML = `<span class="badge bg-warning bg-opacity-10 text-warning px-3 py-2">
+                <i class="bi bi-hourglass-split me-1"></i> 
+                ⏳ Aguardando envio de ${faltam} documento(s) obrigatório(s)
             </span>`;
         } else {
-            mensagemDiv.innerHTML = `<span class="badge bg-secondary bg-opacity-10 text-secondary px-3 py-2 rounded-pill">
-                <i class="bi bi-info-circle me-1"></i> 📄 Nenhum documento obrigatório enviado ainda
+            mensagemDiv.innerHTML = `<span class="badge bg-secondary bg-opacity-10 text-secondary px-3 py-2">
+                <i class="bi bi-info-circle me-1"></i> 
+                📄 Nenhum documento obrigatório enviado ainda
             </span>`;
         }
     }
