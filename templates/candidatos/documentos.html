@@ -828,38 +828,59 @@ if (!token || !candidatoId) {
     window.location.href = '/';
 }
 
-// Função para atualizar a barra de progresso
+// Função para atualizar a barra de progresso - Usando valores do backend
 function atualizarProgresso() {
-    // Seleciona todas as linhas da tabela
-    const todasLinhas = document.querySelectorAll('.table-documentos tbody tr');
-    let totalObrigatorios = 0;
-    let enviadosObrigatorios = 0;
-    let pendentes = 0;
+    // Usar os valores passados do backend (mais confiável)
+    const totalObrigatorios = {{ total_obrigatorios }};
+    const totalEnviados = {{ total_enviados }};
+    const percentual = {{ percentual }};
+    const pendentes = {{ documentos_pendentes|default(0) }};
     
-    todasLinhas.forEach(row => {
-        // Pula a linha do separador
-        if (row.classList.contains('separator-row')) {
-            return;
+    console.log('📊 Atualizando barra:', { totalObrigatorios, totalEnviados, percentual, pendentes });
+    
+    // Atualiza contador de pendentes
+    const pendentesSpan = document.getElementById('pendentesCount');
+    if (pendentesSpan) pendentesSpan.textContent = pendentes;
+    
+    // Atualiza total enviados
+    const totalEnviadosSpan = document.getElementById('totalEnviados');
+    if (totalEnviadosSpan) totalEnviadosSpan.textContent = totalEnviados;
+    
+    // Atualiza contador de documentos
+    const contadorSpan = document.getElementById('contadorDocumentos');
+    if (contadorSpan) contadorSpan.textContent = `${totalEnviados}/${totalObrigatorios} Obrigatórios`;
+    
+    // Atualiza a barra de progresso VISUALMENTE
+    const barraProgresso = document.getElementById('barraProgresso');
+    if (barraProgresso) {
+        barraProgresso.style.width = `${percentual}%`;
+        barraProgresso.style.backgroundColor = '#10b981';
+        barraProgresso.style.background = 'linear-gradient(90deg, #10b981, #34d399)';
+        barraProgresso.setAttribute('aria-valuenow', percentual);
+        console.log(`✅ Barra atualizada para ${percentual}%`);
+    } else {
+        console.error('❌ Elemento barraProgresso não encontrado!');
+    }
+    
+    // Atualiza a mensagem
+    const mensagemDiv = document.getElementById('mensagemProgresso');
+    if (mensagemDiv) {
+        if (percentual === 100) {
+            mensagemDiv.innerHTML = `<span class="badge bg-success bg-opacity-10 text-success px-3 py-2 rounded-pill">
+                <i class="bi bi-trophy-fill me-1"></i> 🎉 Parabéns! Todos os documentos obrigatórios foram enviados!
+            </span>`;
+        } else if (totalEnviados > 0) {
+            const faltam = totalObrigatorios - totalEnviados;
+            mensagemDiv.innerHTML = `<span class="badge bg-warning bg-opacity-10 text-warning px-3 py-2 rounded-pill">
+                <i class="bi bi-hourglass-split me-1"></i> ⏳ Aguardando envio de ${faltam} documento(s)
+            </span>`;
+        } else {
+            mensagemDiv.innerHTML = `<span class="badge bg-secondary bg-opacity-10 text-secondary px-3 py-2 rounded-pill">
+                <i class="bi bi-info-circle me-1"></i> 📄 Nenhum documento obrigatório enviado ainda
+            </span>`;
         }
-        
-        // Verifica se é documento obrigatório (tem a badge-obrigatorio)
-        const badgeTipo = row.querySelector('.badge-obrigatorio');
-        if (badgeTipo) {
-            totalObrigatorios++;
-            
-            // Verifica se tem documento enviado
-            const statusArea = row.querySelector('.document-status-area');
-            const statusBadge = statusArea ? statusArea.querySelector('.status-badge') : null;
-            
-            if (statusBadge) {
-                enviadosObrigatorios++;
-                
-                if (statusBadge.classList.contains('status-pendente')) {
-                    pendentes++;
-                }
-            }
-        }
-    });
+    }
+}
     
     // Atualiza os elementos na tela
     const pendentesSpan = document.getElementById('pendentesCount');
