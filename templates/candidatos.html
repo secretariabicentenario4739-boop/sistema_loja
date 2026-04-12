@@ -81,7 +81,7 @@
         transform: translateY(-2px);
     }
 
-    /* Estilo para a barra de progresso - IGUAL AO DOCUMENTOS.HTML */
+    /* Estilo para a barra de progresso */
     .progress-custom {
         height: 25px;
         border-radius: 12px;
@@ -160,6 +160,24 @@
         box-shadow: 0 4px 15px rgba(16, 185, 129, 0.3);
     }
 
+    .stats-mini {
+        background: #f8fafc;
+        border-radius: 12px;
+        padding: 0.75rem;
+        text-align: center;
+    }
+    
+    .stats-mini .number {
+        font-size: 1.5rem;
+        font-weight: 700;
+        color: var(--primary);
+    }
+    
+    .stats-mini .label {
+        font-size: 0.7rem;
+        color: #64748b;
+    }
+
     @media (max-width: 768px) {
         .table-candidatos {
             font-size: 0.85rem;
@@ -178,6 +196,9 @@
         .progress-custom .progress-bar {
             font-size: 0.7rem;
             line-height: 20px;
+        }
+        .stats-mini .number {
+            font-size: 1.2rem;
         }
     }
 </style>
@@ -202,35 +223,70 @@
             </div>
         </div>
 
+        <!-- Cards de Estatísticas Rápidas -->
+        <div class="row g-3 mb-4">
+            <div class="col-md-3 col-6">
+                <div class="stats-mini">
+                    <div class="number">{{ candidatos|length }}</div>
+                    <div class="label">Total Candidatos</div>
+                </div>
+            </div>
+            <div class="col-md-3 col-6">
+                <div class="stats-mini">
+                    <div class="number text-warning">{{ candidatos|selectattr('fechado', 'equalto', 0)|list|length }}</div>
+                    <div class="label">Em Análise</div>
+                </div>
+            </div>
+            <div class="col-md-3 col-6">
+                <div class="stats-mini">
+                    <div class="number text-success">{{ candidatos|selectattr('status', 'equalto', 'Aprovado')|list|length }}</div>
+                    <div class="label">Aprovados</div>
+                </div>
+            </div>
+            <div class="col-md-3 col-6">
+                <div class="stats-mini">
+                    <div class="number text-danger">{{ candidatos|selectattr('status', 'equalto', 'Reprovado')|list|length }}</div>
+                    <div class="label">Reprovados</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Cards principais alinhados -->
         <div class="row">
-            <!-- Formulário para adicionar candidato -->
-            <div class="col-md-4 mb-4">
+            <!-- Formulário para adicionar candidato - LARGURA TOTAL COM O CARD DE SINDICANTES -->
+            <div class="col-md-12 mb-4">
                 <div class="card-modern">
                     <div class="card-header-gradient text-white">
                         <h5 class="mb-0 fw-bold">
                             <i class="bi bi-person-plus me-2"></i> Novo Candidato
                         </h5>
                     </div>
-                    <div class="card-body p-4">
+                    <div class="card-body">
                         <form method="POST">
-                            <div class="mb-3">
-                                <label class="form-label fw-bold">Nome do Candidato</label>
-                                <input type="text" class="form-control form-control-custom" name="nome" required 
-                                       placeholder="Digite o nome completo">
-                                <div class="form-text text-muted mt-2">
-                                    <i class="bi bi-info-circle me-1"></i> Digite o nome completo do candidato
+                            <div class="row align-items-end">
+                                <div class="col-md-10 mb-3 mb-md-0">
+                                    <label class="form-label fw-bold">Nome do Candidato</label>
+                                    <input type="text" class="form-control form-control-custom" name="nome" required 
+                                           placeholder="Digite o nome completo">
+                                    <div class="form-text text-muted mt-1">
+                                        <i class="bi bi-info-circle me-1"></i> Digite o nome completo do candidato
+                                    </div>
+                                </div>
+                                <div class="col-md-2">
+                                    <button type="submit" class="btn btn-add w-100 text-white">
+                                        <i class="bi bi-save me-2"></i> Adicionar
+                                    </button>
                                 </div>
                             </div>
-                            <button type="submit" class="btn btn-add w-100 text-white">
-                                <i class="bi bi-save me-2"></i> Adicionar Candidato
-                            </button>
                         </form>
                     </div>
                 </div>
             </div>
+        </div>
 
-            <!-- Lista de Candidatos -->
-            <div class="col-md-8 mb-4">
+        <!-- Lista de Candidatos -->
+        <div class="row">
+            <div class="col-md-12 mb-4">
                 <div class="card-modern">
                     <div class="card-header-gradient text-white">
                         <h5 class="mb-0 fw-bold">
@@ -256,10 +312,6 @@
                                 <tbody>
                                     {% for c in candidatos %}
                                     {% set doc_status = documentos_status.get(c.id) if documentos_status else None %}
-                                    {% set docs_faltantes = doc_status.faltantes if doc_status else 0 %}
-                                    {% set docs_enviados = doc_status.enviados if doc_status else 0 %}
-                                    {% set docs_total = doc_status.total if doc_status else 0 %}
-                                    {% set percentual_docs = (docs_enviados / docs_total * 100) if docs_total > 0 else 0 %}
                                     <tr class="{% if c.fechado == 1 %}table-secondary{% endif %}">
                                         <td>
                                             <div class="d-flex flex-column">
@@ -298,9 +350,7 @@
                                                 </span>
                                             {% endif %}
                                         </td>
-                                        <td style="min-width: 200px;">
-                                            {% set doc_status = documentos_status.get(c.id) if documentos_status else None %}
-                                            
+                                        <td style="min-width: 220px;">
                                             {% if doc_status and doc_status.total and doc_status.total > 0 %}
                                                 {% set enviados = doc_status.enviados|default(0) %}
                                                 {% set total = doc_status.total|default(0) %}
@@ -316,7 +366,6 @@
                                                             <span class="text-success fw-bold">✓ Completo</span>
                                                         {% endif %}
                                                     </div>
-                                                    <!-- Barra de progresso IGUAL à do documentos.html -->
                                                     <div class="progress-custom mb-2">
                                                         <div class="progress-bar" role="progressbar" 
                                                              style="width: {{ percentual }}%">
@@ -326,7 +375,7 @@
                                                     {% if faltantes > 0 %}
                                                         <div class="small text-muted mt-1">
                                                             <i class="bi bi-exclamation-triangle text-warning me-1"></i>
-                                                            Faltam {{ faltantes }} documento(s) obrigatório(s)
+                                                            Faltam {{ faltantes }} documento(s)
                                                         </div>
                                                     {% endif %}
                                                 </div>
@@ -364,17 +413,14 @@
                                             </div>
                                         </td>
                                         <td class="text-center">
-                                            <div class="d-flex flex-column gap-1">
-                                                <div class="btn-group btn-group-sm" role="group">
-                                                    <a href="/candidatos/{{ c.id }}/checklist" class="btn btn-success btn-icon" title="Checklist de Iniciação">
-                                                        <i class="bi bi-check2-square"></i>
-                                                    </a>
-                                                    <a href="/candidatos/{{ c.id }}/documentos" class="btn btn-outline-primary btn-icon" title="Gerenciar Documentos">
-                                                        <i class="bi bi-folder2-open"></i>
-                                                    </a>
-                                                </div>
+                                            <div class="d-flex flex-wrap gap-1 justify-content-center">
+                                                <a href="/candidatos/{{ c.id }}/checklist" class="btn btn-success btn-icon" title="Checklist de Iniciação">
+                                                    <i class="bi bi-check2-square"></i>
+                                                </a>
+                                                <a href="/candidatos/{{ c.id }}/documentos" class="btn btn-outline-primary btn-icon" title="Gerenciar Documentos">
+                                                    <i class="bi bi-folder2-open"></i>
+                                                </a>
                                                 {% if session.tipo == 'admin' or session.tipo == 'sindicante' %}
-                                                <div class="btn-group btn-group-sm" role="group">
                                                     <a href="/sindicancia/{{ c.id }}" class="btn btn-info btn-icon" title="Visualizar Sindicância">
                                                         <i class="bi bi-eye"></i>
                                                     </a>
@@ -390,7 +436,6 @@
                                                             <i class="bi bi-trash"></i>
                                                         </button>
                                                     </form>
-                                                </div>
                                                 {% endif %}
                                             </div>
                                         </td>
@@ -419,6 +464,7 @@
                     <div class="card-header-secondary text-white">
                         <h5 class="mb-0 fw-bold">
                             <i class="bi bi-person-badge me-2"></i> Sindicantes Ativos
+                            <span class="ms-2 badge bg-white text-dark rounded-pill">{{ sindicantes|length }}</span>
                         </h5>
                     </div>
                     <div class="card-body p-0">
@@ -477,6 +523,7 @@
                         <div class="card-header" style="background: #fef3c7; border-bottom: 1px solid #fde68a;">
                             <h5 class="mb-0 fw-bold text-warning">
                                 <i class="bi bi-exclamation-triangle-fill me-2"></i> Formulários Pendentes
+                                <span class="ms-2 badge bg-warning text-dark rounded-pill">{{ pendentes|length }}</span>
                             </h5>
                         </div>
                         <div class="card-body p-0">
@@ -517,41 +564,48 @@
                     </div>
                     <div class="card-body">
                         <div class="row text-center">
-                            <div class="col-md-3 col-6 mb-3">
+                            <div class="col-md-2 col-6 mb-3">
                                 <div class="bg-primary bg-opacity-10 rounded-circle p-3 d-inline-block mb-2">
                                     <i class="bi bi-person-plus fs-1 text-primary"></i>
                                 </div>
                                 <p class="mb-0"><strong>1. Cadastre</strong></p>
                                 <small class="text-muted">Adicione o candidato</small>
                             </div>
-                            <div class="col-md-3 col-6 mb-3">
+                            <div class="col-md-2 col-6 mb-3">
                                 <div class="bg-info bg-opacity-10 rounded-circle p-3 d-inline-block mb-2">
                                     <i class="bi bi-file-text fs-1 text-info"></i>
                                 </div>
                                 <p class="mb-0"><strong>2. Formulário</strong></p>
                                 <small class="text-muted">Preencha os dados</small>
                             </div>
-                            <div class="col-md-3 col-6 mb-3">
+                            <div class="col-md-2 col-6 mb-3">
                                 <div class="bg-success bg-opacity-10 rounded-circle p-3 d-inline-block mb-2">
                                     <i class="bi bi-file-earmark-text fs-1 text-success"></i>
                                 </div>
                                 <p class="mb-0"><strong>3. Documentos</strong></p>
                                 <small class="text-muted">Envie os documentos</small>
                             </div>
-                            <div class="col-md-3 col-6 mb-3">
+                            <div class="col-md-2 col-6 mb-3">
                                 <div class="bg-warning bg-opacity-10 rounded-circle p-3 d-inline-block mb-2">
                                     <i class="bi bi-envelope-paper fs-1 text-warning"></i>
                                 </div>
                                 <p class="mb-0"><strong>4. Sindicantes</strong></p>
                                 <small class="text-muted">Avaliam o candidato</small>
                             </div>
-                        </div>
-                        <div class="text-center mt-2">
-                            <div class="bg-success bg-opacity-10 rounded-circle p-3 d-inline-block mb-2">
-                                <i class="bi bi-check2-circle fs-1 text-success"></i>
+                            <div class="col-md-2 col-6 mb-3">
+                                <div class="bg-danger bg-opacity-10 rounded-circle p-3 d-inline-block mb-2">
+                                    <i class="bi bi-bar-chart fs-1 text-danger"></i>
+                                </div>
+                                <p class="mb-0"><strong>5. Votação</strong></p>
+                                <small class="text-muted">Sindicantes votam</small>
                             </div>
-                            <p class="mb-0"><strong>5. Resultado</strong></p>
-                            <small class="text-muted">Resultado automático após todos votarem</small>
+                            <div class="col-md-2 col-6 mb-3">
+                                <div class="bg-success bg-opacity-10 rounded-circle p-3 d-inline-block mb-2">
+                                    <i class="bi bi-check2-circle fs-1 text-success"></i>
+                                </div>
+                                <p class="mb-0"><strong>6. Resultado</strong></p>
+                                <small class="text-muted">Resultado automático</small>
+                            </div>
                         </div>
                         <hr class="my-3">
                         <div class="alert alert-info mb-0">
