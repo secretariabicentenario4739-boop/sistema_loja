@@ -9056,19 +9056,29 @@ def upload_documento_candidato(candidato_id, tipo_id):
         from werkzeug.utils import secure_filename
         
         # Buscar tipo do documento
-        cursor.execute("SELECT nome FROM tipos_documentos_candidato WHERE id = %s", (tipo_id,))
+        cursor.execute("SELECT id, nome FROM tipos_documentos_candidato WHERE id = %s", (tipo_id,))
         tipo_doc = cursor.fetchone()
         
         if not tipo_doc:
             flash("Tipo de documento inválido!", "danger")
             return redirect(f"/candidatos/{candidato_id}/documentos")
         
-        # Upload para Cloudinary
+        # CORREÇÃO: Definir resource_type baseado na extensão
+        if extensao == 'pdf':
+            resource_type = "raw"
+        elif extensao in ['jpg', 'jpeg', 'png']:
+            resource_type = "image"
+        else:
+            resource_type = "auto"
+        
+        # Upload para Cloudinary com configurações corretas
         nome_arquivo = secure_filename(arquivo.filename)
         upload_result = cloudinary.uploader.upload(
             arquivo,
             folder=f"candidatos/{candidato_id}/documentos",
-            resource_type="auto",
+            resource_type=resource_type,
+            type="upload",  # Importante: público
+            access_mode="public",
             use_filename=True,
             unique_filename=True
         )
@@ -9076,6 +9086,11 @@ def upload_documento_candidato(candidato_id, tipo_id):
         url_arquivo = upload_result.get('secure_url')
         public_id = upload_result.get('public_id')
         tamanho = upload_result.get('bytes', 0)
+        
+        # CORREÇÃO: Se for PDF e a URL estiver com /image/, corrigir
+        if extensao == 'pdf' and '/image/' in url_arquivo:
+            url_arquivo = url_arquivo.replace('/image/', '/raw/')
+            print(f"🔧 URL corrigida: {url_arquivo}")
         
         # Verificar se já existe documento deste tipo
         cursor.execute("""
@@ -9122,12 +9137,16 @@ def upload_documento_candidato(candidato_id, tipo_id):
         
     except Exception as e:
         print(f"Erro no upload: {e}")
+        import traceback
+        traceback.print_exc()
         flash(f"Erro ao enviar documento: {str(e)}", "danger")
         if conn:
             conn.rollback()
     
     return_connection(conn)
     return redirect(f"/candidatos/{candidato_id}/documentos")
+    
+    
 
 
 @app.route("/api/documentos-candidato/<int:doc_id>/aprovar", methods=["POST"])
@@ -9162,6 +9181,29 @@ def aprovar_documento_candidato(doc_id):
         return jsonify({'success': False, 'error': str(e)}), 500
     finally:
         return_connection(conn)
+        
+@app.route("/candidatos/<int:candidato_id>/documentos/ver/<int:doc_id>")
+@login_required
+def ver_documento_candidato(candidato_id, doc_id):
+    """Visualizar documento do candidato"""
+    cursor, conn = get_db()
+    
+    cursor.execute("""
+        SELECT d.*, t.nome as tipo_nome
+        FROM documentos_candidato d
+        JOIN tipos_documentos_candidato t ON d.tipo_documento_id = t.id
+        WHERE d.id = %s AND d.candidato_id = %s
+    """, (doc_id, candidato_id))
+    documento = cursor.fetchone()
+    
+    return_connection(conn)
+    
+    if not documento:
+        flash("Documento não encontrado!", "danger")
+        return redirect(f"/candidatos/{candidato_id}/documentos")
+    
+    # Redirecionar para a URL do arquivo
+    return redirect(documento['caminho_arquivo'])        
 
 
 @app.route("/api/documentos-candidato/<int:doc_id>/excluir", methods=["DELETE"])
