@@ -818,24 +818,38 @@ if (!token || !candidatoId) {
     window.location.href = '/';
 }
 
-// Função para atualizar a barra de progresso
+// Função para atualizar a barra de progresso - VERSÃO CORRIGIDA
 function atualizarProgresso() {
-    const documentosObrigatorios = document.querySelectorAll('[data-obrigatorio="1"]');
-    const totalObrigatorios = documentosObrigatorios.length;
-    
+    // Seleciona todas as linhas da tabela
+    const todasLinhas = document.querySelectorAll('.table-documentos tbody tr');
+    let totalObrigatorios = 0;
     let enviadosObrigatorios = 0;
     let pendentes = 0;
     
-    documentosObrigatorios.forEach(card => {
-        const statusArea = card.querySelector('.document-status-area');
-        const statusBadge = statusArea ? statusArea.querySelector('.status-badge') : null;
+    todasLinhas.forEach(row => {
+        // Pula a linha do separador
+        if (row.classList.contains('separator-row')) {
+            return;
+        }
         
-        if (statusBadge) {
-            enviadosObrigatorios++;
+        // Verifica se é documento obrigatório (tem a badge-obrigatorio)
+        const badgeTipo = row.querySelector('.badge-obrigatorio');
+        if (badgeTipo) {
+            totalObrigatorios++;
             
-            // Verifica se é pendente
-            if (statusBadge.classList.contains('status-pendente')) {
-                pendentes++;
+            // Verifica se tem documento enviado
+            const statusArea = row.querySelector('.document-status-area');
+            // Verifica se existe algum badge de status (aprovado, pendente, rejeitado)
+            const statusBadge = statusArea ? statusArea.querySelector('.status-badge') : null;
+            
+            // Se existe badge de status, significa que o documento foi enviado
+            if (statusBadge) {
+                enviadosObrigatorios++;
+                
+                // Verifica se é pendente (tem a classe status-pendente)
+                if (statusBadge.classList.contains('status-pendente')) {
+                    pendentes++;
+                }
             }
         }
     });
@@ -890,6 +904,8 @@ function atualizarProgresso() {
             `;
         }
     }
+    
+    console.log('Progresso:', { totalObrigatorios, enviadosObrigatorios, percentual, pendentes });
 }
 
 // Função para mostrar notificação
@@ -910,178 +926,24 @@ function mostrarNotificacao(mensagem, tipo = 'success') {
     }, 5000);
 }
 
-// Função para visualizar documento - VERSÃO CORRIGIDA
+// Função para visualizar documento - VERSÃO SIMPLIFICADA E CORRIGIDA
 function visualizarDocumento(caminho, nome) {
-    const modal = new bootstrap.Modal(document.getElementById('modalVisualizacao'));
-    const viewer = document.getElementById('documentViewer');
-    const titulo = document.getElementById('modalVisualizacaoTitulo');
-    const btnDownload = document.getElementById('btnDownloadVisualizacao');
+    console.log('Visualizando documento:', caminho, nome);
     
-    titulo.innerHTML = `<i class="bi bi-file-earmark-text me-2"></i> Visualizar: ${nome}`;
-    btnDownload.href = caminho;
-    
-    // Tenta extrair extensão de diferentes formas
-    let extensao = '';
-    let urlCompleta = '';
-    
-    // Verifica se caminho tem ponto para extrair extensão
-    if (caminho.includes('.')) {
-        extensao = caminho.split('.').pop().toLowerCase();
-        // Remove query strings se houver
-        if (extensao.includes('?')) {
-            extensao = extensao.split('?')[0];
-        }
+    // Verifica se o caminho é válido
+    if (!caminho) {
+        mostrarNotificacao('❌ Caminho do documento não encontrado', 'error');
+        return;
     }
     
-    // Constrói URL completa
-    if (caminho.startsWith('http')) {
-        urlCompleta = caminho;
-    } else {
+    // Constrói URL completa se necessário
+    let urlCompleta = caminho;
+    if (!caminho.startsWith('http')) {
         urlCompleta = window.location.origin + caminho;
     }
     
-    viewer.innerHTML = '<div class="text-center p-5"><div class="spinner-border text-primary" role="status"><span class="visually-hidden">Carregando...</span></div><p class="mt-2">Carregando documento...</p></div>';
-    
-    // Primeiro, tenta detectar o tipo do arquivo via fetch
-    fetch(urlCompleta, { method: 'HEAD' })
-        .then(response => {
-            const contentType = response.headers.get('content-type');
-            
-            if (contentType) {
-                if (contentType.includes('pdf')) {
-                    extensao = 'pdf';
-                } else if (contentType.includes('jpeg') || contentType.includes('jpg')) {
-                    extensao = 'jpg';
-                } else if (contentType.includes('png')) {
-                    extensao = 'png';
-                } else if (contentType.includes('gif')) {
-                    extensao = 'gif';
-                } else if (contentType.includes('msword') || contentType.includes('word')) {
-                    extensao = 'doc';
-                } else if (contentType.includes('spreadsheet') || contentType.includes('excel')) {
-                    extensao = 'xls';
-                } else if (contentType.includes('presentation') || contentType.includes('powerpoint')) {
-                    extensao = 'ppt';
-                }
-            }
-            
-            renderizarDocumento(extensao, urlCompleta, caminho, viewer);
-        })
-        .catch(error => {
-            console.error('Erro ao detectar tipo:', error);
-            renderizarDocumento(extensao, urlCompleta, caminho, viewer);
-        });
-}
-
-function renderizarDocumento(extensao, urlCompleta, caminho, viewer) {
-    // Lista de extensões de imagem
-    const imagens = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp', 'svg'];
-    // Lista de extensões de documentos que podem ser visualizados pelo Google Docs
-    const googleDocs = ['pdf', 'doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx'];
-    
-    // Tenta extrair extensão da URL se não foi detectada
-    if (!extensao || extensao.length > 5) {
-        // Tenta encontrar extensão na URL
-        const urlParts = urlCompleta.split('/');
-        const fileName = urlParts[urlParts.length - 1];
-        if (fileName.includes('.')) {
-            const possibleExt = fileName.split('.').pop().toLowerCase();
-            if (possibleExt.length <= 5) {
-                extensao = possibleExt;
-            }
-        }
-    }
-    
-    console.log('Extensão detectada:', extensao);
-    console.log('URL:', urlCompleta);
-    
-    // Se é imagem
-    if (imagens.includes(extensao)) {
-        viewer.innerHTML = `
-            <div class="text-center p-3">
-                <img src="${urlCompleta}" alt="Documento" style="max-width: 100%; max-height: 70vh; border-radius: 8px;" 
-                     onerror="this.onerror=null; this.src=''; this.alt='Erro ao carregar imagem';">
-                <div class="mt-2">
-                    <small class="text-muted">
-                        <i class="bi bi-info-circle"></i> 
-                        Clique com botão direito para salvar a imagem
-                    </small>
-                </div>
-            </div>
-        `;
-    } 
-    // Se é PDF ou documento do Office
-    else if (googleDocs.includes(extensao)) {
-        // Usa Google Docs Viewer
-        const googleDocsUrl = `https://docs.google.com/viewer?url=${encodeURIComponent(urlCompleta)}&embedded=true`;
-        
-        viewer.innerHTML = `
-            <div style="width: 100%; height: 80vh; position: relative;">
-                <iframe src="${googleDocsUrl}" 
-                        style="width: 100%; height: 100%; border: none;"
-                        frameborder="0"
-                        allowfullscreen>
-                </iframe>
-                <div class="text-center mt-2">
-                    <small class="text-muted">
-                        <i class="bi bi-info-circle"></i> 
-                        Visualização via Google Docs. 
-                        <a href="${caminho}" target="_blank">Clique aqui para abrir diretamente</a>
-                    </small>
-                </div>
-            </div>
-        `;
-    }
-    // Tenta usar iframe direto para PDF (fallback)
-    else if (extensao === 'pdf') {
-        viewer.innerHTML = `
-            <div style="width: 100%; height: 80vh; position: relative;">
-                <iframe src="${urlCompleta}" 
-                        style="width: 100%; height: 100%; border: none;"
-                        frameborder="0">
-                </iframe>
-                <div class="text-center mt-2">
-                    <small class="text-muted">
-                        <i class="bi bi-info-circle"></i> 
-                        <a href="${caminho}" target="_blank">Clique aqui para abrir em nova aba</a>
-                    </small>
-                </div>
-            </div>
-        `;
-    }
-    // Caso não consiga identificar
-    else {
-        viewer.innerHTML = `
-            <div class="text-center p-5">
-                <i class="bi bi-file-earmark-text fs-1 text-muted"></i>
-                <h5 class="mt-3">Pré-visualização não disponível</h5>
-                <p class="text-muted">
-                    Não foi possível identificar o tipo do arquivo para visualização direta.<br>
-                    Extensão detectada: <code>${extensao || 'desconhecida'}</code>
-                </p>
-                <div class="mt-3">
-                    <a href="${caminho}" download class="btn btn-primary me-2">
-                        <i class="bi bi-download"></i> Baixar Arquivo
-                    </a>
-                    <a href="${caminho}" target="_blank" class="btn btn-outline-secondary">
-                        <i class="bi bi-box-arrow-up-right"></i> Abrir em Nova Aba
-                    </a>
-                </div>
-                <hr class="my-3">
-                <div class="alert alert-info small">
-                    <i class="bi bi-info-circle"></i> Informação técnica:<br>
-                    <strong>Caminho do arquivo:</strong> ${caminho}<br>
-                    <strong>URL completa:</strong> ${urlCompleta}<br>
-                    <strong>Tipo detectado:</strong> ${extensao || 'não detectado'}
-                </div>
-            </div>
-        `;
-    }
-}
-
-// Função alternativa mais simples - abre em nova aba
-function visualizarDocumentoSimples(caminho, nome) {
-    window.open(caminho, '_blank');
+    // Abre em nova aba (mais simples e confiável)
+    window.open(urlCompleta, '_blank');
 }
 
 // Função para upload de documento
@@ -1090,6 +952,12 @@ async function uploadDocumento(tipoId, nomeDocumento) {
     const formData = new FormData(form);
     
     formData.append('token', token);
+    
+    // Mostrar loading no botão
+    const btn = event.target;
+    const originalText = btn.innerHTML;
+    btn.innerHTML = '<i class="bi bi-hourglass-split"></i> Enviando...';
+    btn.disabled = true;
     
     try {
         const response = await fetch(`/candidato/documentos/upload/${candidatoId}/${tipoId}?token=${token}`, {
@@ -1115,6 +983,9 @@ async function uploadDocumento(tipoId, nomeDocumento) {
     } catch (error) {
         console.error('Erro:', error);
         mostrarNotificacao(`❌ Erro ao enviar ${nomeDocumento}`, 'error');
+    } finally {
+        btn.innerHTML = originalText;
+        btn.disabled = false;
     }
 }
 
@@ -1166,7 +1037,7 @@ function rejeitarDocumento(docId, nomeDocumento) {
     
     if (!motivo || motivo.trim() === '') {
         if (motivo !== null) {
-            alert('❌ Motivo da rejeição é obrigatório!');
+            mostrarNotificacao('❌ Motivo da rejeição é obrigatório!', 'error');
         }
         return;
     }
@@ -1214,6 +1085,11 @@ async function excluirDocumento(docId, nomeDocumento, tipoId) {
         return;
     }
     
+    const btn = event.target;
+    const originalText = btn.innerHTML;
+    btn.innerHTML = '<i class="bi bi-hourglass-split"></i> Excluindo...';
+    btn.disabled = true;
+    
     try {
         const response = await fetch(`/api/documentos-candidato/${docId}/excluir?token=${token}`, {
             method: 'DELETE',
@@ -1231,42 +1107,16 @@ async function excluirDocumento(docId, nomeDocumento, tipoId) {
         
         if (data.success) {
             mostrarNotificacao(`✅ ${nomeDocumento} excluído com sucesso!`, 'success');
-            
-            const card = document.querySelector(`[data-documento-id="${tipoId}"]`);
-            if (card) {
-                const statusArea = card.querySelector('.document-status-area');
-                if (statusArea) {
-                    statusArea.innerHTML = `
-                        <div class="text-muted py-2">
-                            <i class="bi bi-inbox fs-5 me-2"></i> Nenhum arquivo enviado
-                        </div>
-                    `;
-                }
-                
-                const btnContainer = card.querySelector('.d-flex.flex-wrap.gap-1');
-                if (btnContainer) {
-                    const uploadBtn = btnContainer.querySelector('.btn-outline-primary');
-                    const viewBtn = btnContainer.querySelector('.btn-outline-info');
-                    const downloadBtn = btnContainer.querySelector('.btn-outline-success');
-                    const deleteBtn = btnContainer.querySelector('.btn-outline-danger');
-                    const aprovarBtn = btnContainer.querySelector('.btn-aprovar');
-                    const rejeitarBtn = btnContainer.querySelector('.btn-rejeitar');
-                    
-                    if (viewBtn) viewBtn.remove();
-                    if (downloadBtn) downloadBtn.remove();
-                    if (deleteBtn) deleteBtn.remove();
-                    if (aprovarBtn) aprovarBtn.remove();
-                    if (rejeitarBtn) rejeitarBtn.remove();
-                }
-            }
-            
-            atualizarProgresso();
+            location.reload();
         } else {
             mostrarNotificacao(`❌ Erro ao excluir: ${data.error || 'Erro desconhecido'}`, 'error');
         }
     } catch (error) {
         console.error('Erro:', error);
         mostrarNotificacao(`❌ Erro ao excluir documento`, 'error');
+    } finally {
+        btn.innerHTML = originalText;
+        btn.disabled = false;
     }
 }
 
@@ -1274,7 +1124,7 @@ function copiarLink() {
     const linkInput = document.getElementById('linkAcesso');
     linkInput.select();
     document.execCommand('copy');
-    alert('✅ Link copiado para a área de transferência!');
+    mostrarNotificacao('✅ Link copiado para a área de transferência!', 'success');
 }
 
 function enviarLinkEmail() {
@@ -1282,9 +1132,14 @@ function enviarLinkEmail() {
     const link = document.getElementById('linkAcesso').value;
     
     if (!email) {
-        alert('❌ Digite o e-mail do candidato!');
+        mostrarNotificacao('❌ Digite o e-mail do candidato!', 'error');
         return;
     }
+    
+    const btn = event.target;
+    const originalText = btn.innerHTML;
+    btn.innerHTML = '<i class="bi bi-hourglass-split"></i> Enviando...';
+    btn.disabled = true;
     
     fetch('/candidatos/enviar-link', {
         method: 'POST',
@@ -1301,20 +1156,34 @@ function enviarLinkEmail() {
     .then(response => response.json())
     .then(data => {
         if (data.success) {
-            alert('✅ Link enviado por e-mail com sucesso!');
+            mostrarNotificacao('✅ Link enviado por e-mail com sucesso!', 'success');
         } else {
-            alert('❌ Erro ao enviar e-mail: ' + (data.error || 'Erro desconhecido'));
+            throw new Error(data.error || 'Erro desconhecido');
         }
     })
     .catch(error => {
         console.error('Erro:', error);
-        alert('❌ Erro ao enviar e-mail');
+        mostrarNotificacao('❌ Erro ao enviar e-mail: ' + error.message, 'error');
+    })
+    .finally(() => {
+        btn.innerHTML = originalText;
+        btn.disabled = false;
     });
 }
 
-// Atualiza progresso ao carregar
+// Força atualização da barra de progresso a cada 2 segundos (para garantir)
+let intervaloProgresso;
 document.addEventListener('DOMContentLoaded', function() {
     atualizarProgresso();
+    // Atualiza a cada 2 segundos para garantir sincronia
+    intervaloProgresso = setInterval(atualizarProgresso, 2000);
+});
+
+// Limpa o intervalo quando a página for descarregada
+window.addEventListener('beforeunload', function() {
+    if (intervaloProgresso) {
+        clearInterval(intervaloProgresso);
+    }
 });
 </script>
 {% endblock %}
