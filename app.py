@@ -8611,84 +8611,135 @@ def gerenciar_candidatos():
     cursor, conn = get_db()
     
     if request.method == "POST":
-        nome = request.form["nome"].strip()
+        nome = request.form.get("nome", "").strip()
+        
         if nome:
-            agora = datetime.now()
-            cursor.execute("INSERT INTO candidatos (nome, data_criacao) VALUES (%s, %s)", (nome, agora))
-            conn.commit()
-            candidato_id = cursor.lastrowid
-            registrar_log("criar", "candidato", candidato_id, dados_novos={"nome": nome})
-            flash(f"Candidato '{nome}' adicionado com sucesso!", "success")
+            try:
+                from datetime import datetime
+                agora = datetime.now()
+                cursor.execute("INSERT INTO candidatos (nome, data_criacao) VALUES (%s, %s)", (nome, agora))
+                conn.commit()
+                candidato_id = cursor.lastrowid
+                
+                # Registrar log com tratamento de erro
+                try:
+                    registrar_log("criar", "candidato", candidato_id, dados_novos={"nome": nome})
+                except Exception as log_err:
+                    print(f"Erro no log: {log_err}")
+                
+                flash(f"Candidato '{nome}' adicionado com sucesso!", "success")
+                
+            except Exception as e:
+                conn.rollback()  # IMPORTANTE: rollback em caso de erro
+                print(f"Erro ao inserir: {str(e)}")
+                flash(f"Erro ao adicionar candidato: {str(e)}", "danger")
         else:
             flash("Nome do candidato não pode estar vazio", "danger")
+        
+        return_connection(conn)
+        return redirect("/candidatos")
     
-    # Buscar candidatos com informações de votos
-    cursor.execute("""
-        SELECT c.*,
-               (SELECT COUNT(*) FROM sindicancias WHERE candidato_id = c.id) as total_votos,
-               (SELECT COUNT(*) FROM sindicancias WHERE candidato_id = c.id AND parecer = 'positivo') as votos_positivos,
-               (SELECT COUNT(*) FROM sindicancias WHERE candidato_id = c.id AND parecer = 'negativo') as votos_negativos
-        FROM candidatos c
-        ORDER BY c.data_criacao DESC
-    """)
-    candidatos = cursor.fetchall()
+    # ============================================
+    # GET - Buscar candidatos
+    # ============================================
+    
+    # IMPORTANTE: Fazer rollback antes de começar uma nova transação
+    try:
+        conn.rollback()
+    except:
+        pass
+    
+    try:
+        cursor.execute("""
+            SELECT c.*,
+                   (SELECT COUNT(*) FROM sindicancias WHERE candidato_id = c.id) as total_votos,
+                   (SELECT COUNT(*) FROM sindicancias WHERE candidato_id = c.id AND parecer = 'positivo') as votos_positivos,
+                   (SELECT COUNT(*) FROM sindicancias WHERE candidato_id = c.id AND parecer = 'negativo') as votos_negativos
+            FROM candidatos c
+            ORDER BY c.data_criacao DESC
+        """)
+        candidatos = cursor.fetchall()
+    except Exception as e:
+        print(f"Erro ao buscar candidatos: {str(e)}")
+        conn.rollback()
+        candidatos = []
     
     # ============================================
     # BUSCAR STATUS DOS DOCUMENTOS POR CANDIDATO
     # ============================================
     
-    # Primeiro, buscar total de tipos de documentos obrigatórios
-    cursor.execute("SELECT COUNT(*) as total FROM tipos_documentos_candidato WHERE obrigatorio = 1")
-    total_tipos_obrigatorios = cursor.fetchone()['total']
-    
     documentos_status = {}
     
-    # Buscar documentos enviados por candidato
-    cursor.execute("""
-        SELECT 
-            d.candidato_id,
-            COUNT(d.id) as enviados,
-            SUM(CASE WHEN d.status = 'aprovado' THEN 1 ELSE 0 END) as aprovados,
-            SUM(CASE WHEN d.status = 'pendente' THEN 1 ELSE 0 END) as pendentes,
-            SUM(CASE WHEN d.status = 'rejeitado' THEN 1 ELSE 0 END) as rejeitados
-        FROM documentos_candidato d
-        GROUP BY d.candidato_id
-    """)
-    docs_enviados = cursor.fetchall()
-    
-    # Montar dicionário com status dos documentos
-    for doc in docs_enviados:
-        documentos_status[doc['candidato_id']] = {
-            'total': total_tipos_obrigatorios,
-            'enviados': doc['enviados'],
-            'faltantes': total_tipos_obrigatorios - doc['enviados'],
-            'aprovados': doc['aprovados'],
-            'pendentes': doc['pendentes'],
-            'rejeitados': doc['rejeitados']
-        }
-    
-    # Para candidatos que não têm nenhum documento
-    for candidato in candidatos:
-        if candidato['id'] not in documentos_status:
-            documentos_status[candidato['id']] = {
+    try:
+        # Primeiro, buscar total de tipos de documentos obrigatórios
+        cursor.execute("SELECT COUNT(*) as total FROM tipos_documentos_candidato WHERE obrigatorio = 1")
+        result = cursor.fetchone()
+        total_tipos_obrigatorios = result['total'] if result else 0
+        
+        # Buscar documentos enviados por candidato
+        cursor.execute("""
+            SELECT 
+                d.candidato_id,
+                COUNT(d.id) as enviados,
+                SUM(CASE WHEN d.status = 'aprovado' THEN 1 ELSE 0 END) as aprovados,
+                SUM(CASE WHEN d.status = 'pendente' THEN 1 ELSE 0 END) as pendentes,
+                SUM(CASE WHEN d.status = 'rejeitado' THEN 1 ELSE 0 END) as rejeitados
+            FROM documentos_candidato d
+            GROUP BY d.candidato_id
+        """)
+        docs_enviados = cursor.fetchall()
+        
+        # Montar dicionário com status dos documentos
+        for doc in docs_enviados:
+            documentos_status[doc['candidato_id']] = {
                 'total': total_tipos_obrigatorios,
+                'enviados': doc['enviados'],
+                'faltantes': max(0, total_tipos_obrigatorios - doc['enviados']),
+                'aprovados': doc['aprovados'] or 0,
+                'pendentes': doc['pendentes'] or 0,
+                'rejeitados': doc['rejeitados'] or 0
+            }
+        
+        # Para candidatos que não têm nenhum documento
+        for candidato in candidatos:
+            if candidato['id'] not in documentos_status:
+                documentos_status[candidato['id']] = {
+                    'total': total_tipos_obrigatorios,
+                    'enviados': 0,
+                    'faltantes': total_tipos_obrigatorios,
+                    'aprovados': 0,
+                    'pendentes': 0,
+                    'rejeitados': 0
+                }
+    except Exception as e:
+        print(f"Erro ao buscar status dos documentos: {str(e)}")
+        conn.rollback()
+        # Fallback: status vazio para todos os candidatos
+        for candidato in candidatos:
+            documentos_status[candidato['id']] = {
+                'total': 0,
                 'enviados': 0,
-                'faltantes': total_tipos_obrigatorios,
+                'faltantes': 0,
                 'aprovados': 0,
                 'pendentes': 0,
                 'rejeitados': 0
             }
     
     # Buscar sindicantes
-    cursor.execute("""
-        SELECT id, usuario, nome_completo, cim_numero, 
-               loja_nome, loja_numero, loja_orient, ativo,
-               telefone
-        FROM usuarios 
-        WHERE tipo = 'sindicante' AND ativo = 1 AND grau_atual >= 3
-        ORDER BY nome_completo
-    """)
-    sindicantes = cursor.fetchall()
+    try:
+        cursor.execute("""
+            SELECT id, usuario, nome_completo, cim_numero, 
+                   loja_nome, loja_numero, loja_orient, ativo,
+                   telefone
+            FROM usuarios 
+            WHERE tipo = 'sindicante' AND ativo = 1 AND grau_atual >= 3
+            ORDER BY nome_completo
+        """)
+        sindicantes = cursor.fetchall()
+    except Exception as e:
+        print(f"Erro ao buscar sindicantes: {str(e)}")
+        conn.rollback()
+        sindicantes = []
     
     return_connection(conn)
     
@@ -8696,7 +8747,7 @@ def gerenciar_candidatos():
                           candidatos=candidatos, 
                           sindicantes=sindicantes, 
                           documentos_status=documentos_status,
-                          tipo=session["tipo"])
+                          tipo=session.get("tipo", "admin"))
 
 @app.route("/candidatos/excluir/<int:id>", methods=["POST"])
 def excluir_candidato(id):
