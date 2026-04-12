@@ -279,43 +279,51 @@
                                             {% endif %}
                                         </td>
                                         <td style="min-width: 180px;">
-                                            {% if docs_total > 0 %}
-                                                <div class="d-flex flex-column">
-                                                    <div class="d-flex justify-content-between small mb-1">
-                                                        <span class="text-muted">{{ docs_enviados }}/{{ docs_total }} enviados</span>
-                                                        {% if docs_faltantes > 0 %}
-                                                            <span class="text-danger fw-bold">{{ docs_faltantes }} faltando</span>
-                                                        {% else %}
-                                                            <span class="text-success fw-bold">✓ Completo</span>
-                                                        {% endif %}
-                                                    </div>
-                                                    <div class="progress-custom mb-2">
-                                                        <div class="progress-bar bg-success" style="width: {{ percentual_docs }}%"></div>
-                                                    </div>
-                                                    {% if docs_faltantes > 0 %}
-                                                        <div class="small text-muted mt-1">
-                                                            <i class="bi bi-exclamation-triangle text-warning me-1"></i>
-                                                            Faltam {{ docs_faltantes }} documento(s)
-                                                        </div>
-                                                    {% endif %}
-                                                </div>
-                                            {% else %}
-                                                <div class="d-flex flex-column">
-                                                    <div class="d-flex justify-content-between small mb-1">
-                                                        <span class="text-muted">Documentos</span>
-                                                        <span class="text-warning fw-bold">Não iniciado</span>
-                                                    </div>
-                                                    <div class="progress-custom mb-2">
-                                                        <div class="progress-bar bg-success" style="width: 0%"></div>
-                                                    </div>
-                                                    <div class="small text-muted mt-1">
-                                                        <a href="/candidatos/{{ c.id }}/documentos" class="text-primary">
-                                                            <i class="bi bi-folder2-open me-1"></i> Iniciar envio
-                                                        </a>
-                                                    </div>
-                                                </div>
-                                            {% endif %}
-                                        </td>
+    {% set doc_status = documentos_status.get(c.id) if documentos_status else None %}
+    
+    <!-- Versão segura que não quebra mesmo sem dados -->
+    {% if doc_status and doc_status.total and doc_status.total > 0 %}
+        {% set enviados = doc_status.enviados|default(0) %}
+        {% set total = doc_status.total|default(0) %}
+        {% set faltantes = total - enviados %}
+        {% set percentual = (enviados / total * 100) if total > 0 else 0 %}
+        
+        <div class="d-flex flex-column">
+            <div class="d-flex justify-content-between small mb-1">
+                <span class="text-muted">{{ enviados }}/{{ total }} enviados</span>
+                {% if faltantes > 0 %}
+                    <span class="text-danger fw-bold">{{ faltantes }} faltando</span>
+                {% else %}
+                    <span class="text-success fw-bold">✓ Completo</span>
+                {% endif %}
+            </div>
+            <div class="progress-custom mb-2">
+                <div class="progress-bar bg-success" style="width: {{ percentual }}%"></div>
+            </div>
+            {% if faltantes > 0 %}
+                <div class="small text-muted mt-1">
+                    <i class="bi bi-exclamation-triangle text-warning"></i>
+                    Faltam {{ faltantes }} documento(s) obrigatório(s)
+                </div>
+            {% endif %}
+        </div>
+    {% else %}
+        <div class="d-flex flex-column">
+            <div class="d-flex justify-content-between small mb-1">
+                <span class="text-muted">Documentos</span>
+                <span class="text-warning fw-bold">Pendente</span>
+            </div>
+            <div class="progress-custom mb-2">
+                <div class="progress-bar bg-success" style="width: 0%"></div>
+            </div>
+            <div class="small text-muted mt-1">
+                <a href="/candidatos/{{ c.id }}/documentos" class="text-primary">
+                    <i class="bi bi-folder2-open me-1"></i> Enviar documentos
+                </a>
+            </div>
+        </div>
+    {% endif %}
+</td>
                                         <td class="text-center">
                                             {% if c.cpf or c.rg or c.endereco_residencial %}
                                                 <span class="badge-status" style="background:#d1fae5; color:#059669;">
