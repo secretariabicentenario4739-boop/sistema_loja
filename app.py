@@ -2157,7 +2157,45 @@ def enviar_link_candidato():
         return jsonify({'success': True})
     else:
         print(f"📧 Link para {email}: {link}")
-        return jsonify({'success': True, 'debug': True, 'link': link})    
+        return jsonify({'success': True, 'debug': True, 'link': link})
+
+@app.route("/admin/gerar-tokens-candidatos")
+@admin_required
+def gerar_tokens_candidatos():
+    """Gera tokens para candidatos que não têm"""
+    try:
+        cursor, conn = get_db()
+        
+        # Adicionar coluna se não existir
+        cursor.execute("""
+            DO $$
+            BEGIN
+                IF NOT EXISTS (
+                    SELECT 1 FROM information_schema.columns 
+                    WHERE table_name = 'candidatos' AND column_name = 'token_acesso'
+                ) THEN
+                    ALTER TABLE candidatos ADD COLUMN token_acesso VARCHAR(255);
+                END IF;
+            END $$;
+        """)
+        
+        # Atualizar tokens
+        cursor.execute("""
+            UPDATE candidatos 
+            SET token_acesso = encode(sha256(random()::text::bytea), 'hex')
+            WHERE token_acesso IS NULL
+        """)
+        
+        conn.commit()
+        total = cursor.rowcount
+        return_connection(conn)
+        
+        flash(f"✅ {total} tokens gerados com sucesso!", "success")
+        
+    except Exception as e:
+        flash(f"❌ Erro: {str(e)}", "danger")
+    
+    return redirect("/dashboard")        
 
 # =============================
 # ROTAS DA BIBLIOTECA
