@@ -818,7 +818,7 @@ if (!token || !candidatoId) {
     window.location.href = '/';
 }
 
-// Função para atualizar a barra de progresso - VERSÃO CORRIGIDA
+// Função para atualizar a barra de progresso
 function atualizarProgresso() {
     // Seleciona todas as linhas da tabela
     const todasLinhas = document.querySelectorAll('.table-documentos tbody tr');
@@ -839,14 +839,11 @@ function atualizarProgresso() {
             
             // Verifica se tem documento enviado
             const statusArea = row.querySelector('.document-status-area');
-            // Verifica se existe algum badge de status (aprovado, pendente, rejeitado)
             const statusBadge = statusArea ? statusArea.querySelector('.status-badge') : null;
             
-            // Se existe badge de status, significa que o documento foi enviado
             if (statusBadge) {
                 enviadosObrigatorios++;
                 
-                // Verifica se é pendente (tem a classe status-pendente)
                 if (statusBadge.classList.contains('status-pendente')) {
                     pendentes++;
                 }
@@ -854,54 +851,29 @@ function atualizarProgresso() {
         }
     });
     
-    // Atualiza contador de pendentes
+    // Atualiza os elementos na tela
     const pendentesSpan = document.getElementById('pendentesCount');
-    if (pendentesSpan) {
-        pendentesSpan.textContent = pendentes;
-    }
+    if (pendentesSpan) pendentesSpan.textContent = pendentes;
     
-    // Atualiza total enviados
     const totalEnviadosSpan = document.getElementById('totalEnviados');
-    if (totalEnviadosSpan) {
-        totalEnviadosSpan.textContent = enviadosObrigatorios;
-    }
+    if (totalEnviadosSpan) totalEnviadosSpan.textContent = enviadosObrigatorios;
     
-    // Atualiza contador de documentos
     const contadorSpan = document.getElementById('contadorDocumentos');
-    if (contadorSpan) {
-        contadorSpan.textContent = `${enviadosObrigatorios}/${totalObrigatorios} Obrigatórios`;
-    }
+    if (contadorSpan) contadorSpan.textContent = `${enviadosObrigatorios}/${totalObrigatorios} Obrigatórios`;
     
-    // Atualiza barra de progresso
     const percentual = totalObrigatorios > 0 ? (enviadosObrigatorios / totalObrigatorios) * 100 : 0;
     const barraProgresso = document.getElementById('barraProgresso');
-    if (barraProgresso) {
-        barraProgresso.style.width = `${percentual}%`;
-        barraProgresso.setAttribute('aria-valuenow', percentual);
-    }
+    if (barraProgresso) barraProgresso.style.width = `${percentual}%`;
     
-    // Atualiza mensagem
     const mensagemDiv = document.getElementById('mensagemProgresso');
     if (mensagemDiv) {
         if (percentual === 100) {
-            mensagemDiv.innerHTML = `
-                <span class="badge bg-success bg-opacity-10 text-success px-3 py-2 rounded-pill">
-                    <i class="bi bi-trophy-fill me-1"></i> Parabéns! Todos os documentos obrigatórios foram enviados!
-                </span>
-            `;
+            mensagemDiv.innerHTML = `<span class="badge bg-success bg-opacity-10 text-success px-3 py-2 rounded-pill"><i class="bi bi-trophy-fill me-1"></i> 🎉 Parabéns! Todos os documentos obrigatórios foram enviados!</span>`;
         } else if (enviadosObrigatorios > 0) {
             const faltam = totalObrigatorios - enviadosObrigatorios;
-            mensagemDiv.innerHTML = `
-                <span class="badge bg-warning bg-opacity-10 text-warning px-3 py-2 rounded-pill">
-                    <i class="bi bi-hourglass-split me-1"></i> Aguardando envio de ${faltam} documento(s)
-                </span>
-            `;
+            mensagemDiv.innerHTML = `<span class="badge bg-warning bg-opacity-10 text-warning px-3 py-2 rounded-pill"><i class="bi bi-hourglass-split me-1"></i> ⏳ Aguardando envio de ${faltam} documento(s)</span>`;
         } else {
-            mensagemDiv.innerHTML = `
-                <span class="badge bg-secondary bg-opacity-10 text-secondary px-3 py-2 rounded-pill">
-                    <i class="bi bi-info-circle me-1"></i> Nenhum documento obrigatório enviado ainda
-                </span>
-            `;
+            mensagemDiv.innerHTML = `<span class="badge bg-secondary bg-opacity-10 text-secondary px-3 py-2 rounded-pill"><i class="bi bi-info-circle me-1"></i> 📄 Nenhum documento obrigatório enviado ainda</span>`;
         }
     }
     
@@ -926,32 +898,52 @@ function mostrarNotificacao(mensagem, tipo = 'success') {
     }, 5000);
 }
 
-// Função para visualizar documento - VERSÃO SIMPLIFICADA E CORRIGIDA
+// Função para visualizar documento - ABRE NO MODAL (não em nova aba)
 function visualizarDocumento(caminho, nome) {
     console.log('Visualizando documento:', caminho, nome);
     
-    // Verifica se o caminho é válido
     if (!caminho) {
         mostrarNotificacao('❌ Caminho do documento não encontrado', 'error');
         return;
     }
     
-    // Constrói URL completa se necessário
     let urlCompleta = caminho;
     if (!caminho.startsWith('http')) {
         urlCompleta = window.location.origin + caminho;
     }
     
-    // Abre em nova aba (mais simples e confiável)
-    window.open(urlCompleta, '_blank');
+    const modal = new bootstrap.Modal(document.getElementById('modalVisualizacao'));
+    const viewer = document.getElementById('documentViewer');
+    const titulo = document.getElementById('modalVisualizacaoTitulo');
+    const btnDownload = document.getElementById('btnDownloadVisualizacao');
+    
+    titulo.innerHTML = `<i class="bi bi-file-earmark-text me-2"></i> Visualizar: ${nome}`;
+    btnDownload.href = urlCompleta;
+    
+    const extensao = caminho.split('.').pop().toLowerCase();
+    
+    if (['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(extensao)) {
+        viewer.innerHTML = `<div class="text-center p-3"><img src="${urlCompleta}" alt="Documento" style="max-width: 100%; max-height: 70vh; border-radius: 8px;"></div>`;
+    } else if (extensao === 'pdf') {
+        viewer.innerHTML = `<div style="width: 100%; height: 80vh;"><iframe src="${urlCompleta}" style="width: 100%; height: 100%; border: none;"></iframe></div>`;
+    } else {
+        viewer.innerHTML = `
+            <div class="text-center p-5">
+                <i class="bi bi-file-earmark-text fs-1 text-muted"></i>
+                <h5 class="mt-3">Pré-visualização não disponível</h5>
+                <p class="text-muted">Não é possível visualizar este tipo de arquivo diretamente.</p>
+                <a href="${urlCompleta}" download class="btn btn-primary">Baixar Arquivo</a>
+            </div>
+        `;
+    }
+    
+    modal.show();
 }
 
-// Função para upload de documento
+// Função para upload de documento - VERSÃO CORRIGIDA (com rota correta)
 async function uploadDocumento(tipoId, nomeDocumento) {
     const form = document.getElementById(`formUpload${tipoId}`);
     const formData = new FormData(form);
-    
-    formData.append('token', token);
     
     // Mostrar loading no botão
     const btn = event.target;
@@ -960,40 +952,62 @@ async function uploadDocumento(tipoId, nomeDocumento) {
     btn.disabled = true;
     
     try {
-        const response = await fetch(`/candidato/documentos/upload/${candidatoId}/${tipoId}?token=${token}`, {
+        // ROTA CORRETA: /candidatos/{candidatoId}/documentos/upload/{tipoId}
+        const response = await fetch(`/candidatos/${candidatoId}/documentos/upload/${tipoId}`, {
             method: 'POST',
             body: formData
         });
         
-        const data = await response.json();
-        
-        if (response.redirected || data.redirect) {
-            window.location.href = '/';
+        // Verifica se foi redirecionado (login necessário)
+        if (response.redirected) {
+            window.location.href = response.url;
             return;
         }
         
-        if (data.success) {
-            mostrarNotificacao(`✅ ${nomeDocumento} enviado com sucesso!`, 'success');
-            setTimeout(() => {
-                location.reload();
-            }, 1500);
-        } else {
-            mostrarNotificacao(`❌ Erro ao enviar ${nomeDocumento}: ${data.error || 'Erro desconhecido'}`, 'error');
+        // Tenta ler a resposta como texto primeiro
+        const textResponse = await response.text();
+        
+        // Verifica se a resposta é HTML (erro)
+        if (textResponse.trim().startsWith('<!DOCTYPE') || textResponse.trim().startsWith('<html')) {
+            console.error('Resposta HTML recebida:', textResponse.substring(0, 500));
+            throw new Error('Sessão expirada ou permissão negada. Faça login novamente.');
         }
+        
+        // Tenta parsear como JSON
+        let data;
+        try {
+            data = JSON.parse(textResponse);
+        } catch (e) {
+            console.error('Resposta não é JSON:', textResponse);
+            throw new Error('Resposta do servidor inválida');
+        }
+        
+        // Verifica se tem flash message na resposta
+        if (data.flash) {
+            if (data.flash.type === 'success') {
+                mostrarNotificacao(`✅ ${nomeDocumento} enviado com sucesso!`, 'success');
+                setTimeout(() => location.reload(), 1500);
+            } else {
+                mostrarNotificacao(`❌ ${data.flash.message || 'Erro ao enviar'}`, 'error');
+            }
+        } else if (data.success) {
+            mostrarNotificacao(`✅ ${nomeDocumento} enviado com sucesso!`, 'success');
+            setTimeout(() => location.reload(), 1500);
+        } else {
+            throw new Error(data.error || data.message || 'Erro desconhecido');
+        }
+        
     } catch (error) {
-        console.error('Erro:', error);
-        mostrarNotificacao(`❌ Erro ao enviar ${nomeDocumento}`, 'error');
+        console.error('Erro detalhado no upload:', error);
+        mostrarNotificacao(`❌ Erro ao enviar ${nomeDocumento}: ${error.message}`, 'error');
     } finally {
         btn.innerHTML = originalText;
         btn.disabled = false;
     }
 }
-
 // Função para aprovar documento
 function aprovarDocumento(docId, nomeDocumento) {
-    if (!confirm(`✅ Confirmar aprovação do documento "${nomeDocumento}"?`)) {
-        return;
-    }
+    if (!confirm(`✅ Confirmar aprovação do documento "${nomeDocumento}"?`)) return;
     
     const btn = event.target;
     const originalText = btn.innerHTML;
@@ -1002,28 +1016,21 @@ function aprovarDocumento(docId, nomeDocumento) {
     
     fetch(`/api/documentos-candidato/${docId}/aprovar`, {
         method: 'POST',
-        headers: {
-            'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ 
-            status: 'aprovado',
-            data_aprovacao: new Date().toISOString()
-        })
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: 'aprovado' })
     })
     .then(response => response.json())
     .then(data => {
         if (data.success) {
-            mostrarNotificacao(`✅ ${nomeDocumento} aprovado com sucesso!`, 'success');
-            setTimeout(() => {
-                location.reload();
-            }, 1000);
+            mostrarNotificacao(`✅ ${nomeDocumento} aprovado!`, 'success');
+            setTimeout(() => location.reload(), 1000);
         } else {
             throw new Error(data.error || 'Erro desconhecido');
         }
     })
     .catch(error => {
-        console.error('Erro detalhado:', error);
-        mostrarNotificacao(`❌ Erro ao aprovar documento: ${error.message}`, 'error');
+        console.error('Erro:', error);
+        mostrarNotificacao(`❌ Erro ao aprovar: ${error.message}`, 'error');
     })
     .finally(() => {
         btn.innerHTML = originalText;
@@ -1034,13 +1041,7 @@ function aprovarDocumento(docId, nomeDocumento) {
 // Função para rejeitar documento
 function rejeitarDocumento(docId, nomeDocumento) {
     const motivo = prompt(`❌ Rejeitar documento "${nomeDocumento}"\n\nDigite o motivo da rejeição:`);
-    
-    if (!motivo || motivo.trim() === '') {
-        if (motivo !== null) {
-            mostrarNotificacao('❌ Motivo da rejeição é obrigatório!', 'error');
-        }
-        return;
-    }
+    if (!motivo || motivo.trim() === '') return;
     
     const btn = event.target;
     const originalText = btn.innerHTML;
@@ -1049,29 +1050,21 @@ function rejeitarDocumento(docId, nomeDocumento) {
     
     fetch(`/api/documentos-candidato/${docId}/rejeitar`, {
         method: 'POST',
-        headers: {
-            'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ 
-            status: 'rejeitado',
-            observacao: motivo.trim(),
-            data_reprovacao: new Date().toISOString()
-        })
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: 'rejeitado', observacao: motivo.trim() })
     })
     .then(response => response.json())
     .then(data => {
         if (data.success) {
             mostrarNotificacao(`❌ ${nomeDocumento} rejeitado`, 'error');
-            setTimeout(() => {
-                location.reload();
-            }, 1000);
+            setTimeout(() => location.reload(), 1000);
         } else {
             throw new Error(data.error || 'Erro desconhecido');
         }
     })
     .catch(error => {
-        console.error('Erro detalhado:', error);
-        mostrarNotificacao(`❌ Erro ao rejeitar documento: ${error.message}`, 'error');
+        console.error('Erro:', error);
+        mostrarNotificacao(`❌ Erro ao rejeitar: ${error.message}`, 'error');
     })
     .finally(() => {
         btn.innerHTML = originalText;
@@ -1079,11 +1072,9 @@ function rejeitarDocumento(docId, nomeDocumento) {
     });
 }
 
-// Função para excluir documento
+// Função para excluir documento (apenas uma versão)
 async function excluirDocumento(docId, nomeDocumento, tipoId) {
-    if (!confirm(`⚠️ ATENÇÃO!\n\nDeseja excluir o documento "${nomeDocumento}"?\n\nEsta ação não pode ser desfeita.`)) {
-        return;
-    }
+    if (!confirm(`⚠️ ATENÇÃO!\n\nDeseja excluir o documento "${nomeDocumento}"?\n\nEsta ação não pode ser desfeita.`)) return;
     
     const btn = event.target;
     const originalText = btn.innerHTML;
@@ -1093,20 +1084,13 @@ async function excluirDocumento(docId, nomeDocumento, tipoId) {
     try {
         const response = await fetch(`/api/documentos-candidato/${docId}/excluir?token=${token}`, {
             method: 'DELETE',
-            headers: {
-                'Content-Type': 'application/json'
-            }
+            headers: { 'Content-Type': 'application/json' }
         });
         
         const data = await response.json();
         
-        if (response.redirected || data.redirect) {
-            window.location.href = '/';
-            return;
-        }
-        
         if (data.success) {
-            mostrarNotificacao(`✅ ${nomeDocumento} excluído com sucesso!`, 'success');
+            mostrarNotificacao(`✅ ${nomeDocumento} excluído!`, 'success');
             location.reload();
         } else {
             mostrarNotificacao(`❌ Erro ao excluir: ${data.error || 'Erro desconhecido'}`, 'error');
@@ -1124,7 +1108,7 @@ function copiarLink() {
     const linkInput = document.getElementById('linkAcesso');
     linkInput.select();
     document.execCommand('copy');
-    mostrarNotificacao('✅ Link copiado para a área de transferência!', 'success');
+    mostrarNotificacao('✅ Link copiado!', 'success');
 }
 
 function enviarLinkEmail() {
@@ -1143,9 +1127,7 @@ function enviarLinkEmail() {
     
     fetch('/candidatos/enviar-link', {
         method: 'POST',
-        headers: {
-            'Content-Type': 'application/json'
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
             email: email,
             link: link,
@@ -1156,7 +1138,7 @@ function enviarLinkEmail() {
     .then(response => response.json())
     .then(data => {
         if (data.success) {
-            mostrarNotificacao('✅ Link enviado por e-mail com sucesso!', 'success');
+            mostrarNotificacao('✅ Link enviado por e-mail!', 'success');
         } else {
             throw new Error(data.error || 'Erro desconhecido');
         }
@@ -1171,19 +1153,10 @@ function enviarLinkEmail() {
     });
 }
 
-// Força atualização da barra de progresso a cada 2 segundos (para garantir)
-let intervaloProgresso;
+// Inicialização
 document.addEventListener('DOMContentLoaded', function() {
     atualizarProgresso();
-    // Atualiza a cada 2 segundos para garantir sincronia
-    intervaloProgresso = setInterval(atualizarProgresso, 2000);
-});
-
-// Limpa o intervalo quando a página for descarregada
-window.addEventListener('beforeunload', function() {
-    if (intervaloProgresso) {
-        clearInterval(intervaloProgresso);
-    }
+    setInterval(atualizarProgresso, 3000);
 });
 </script>
 {% endblock %}
