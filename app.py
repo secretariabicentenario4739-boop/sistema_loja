@@ -1,11 +1,9 @@
-# app.py - Sistema Maçônico com PostgreSQL (VERSÃO COMPLETA E ORGANIZADA)
+# app.py - Sistema Maçônico com PostgreSQL (VERSÃO COMPLETA COM BIBLIOTECA)
 # -*- coding: utf-8 -*-
 
-# ============================================
-# 1. IMPORTS
-# ============================================
 import os
-import sys
+import cloudinary
+import cloudinary.uploader
 import json
 import zipfile
 import shutil
@@ -17,12 +15,11 @@ import csv
 import subprocess
 import tempfile
 import webbrowser
-import secrets
-import unicodedata
 from io import BytesIO, StringIO
 from datetime import datetime, timedelta
 from functools import wraps
 from urllib.parse import quote
+from reportlab.lib.units import cm
 
 from flask import (
     Blueprint, Flask, render_template, request, redirect, url_for, session, flash,
@@ -37,22 +34,642 @@ from dotenv import load_dotenv
 import openpyxl
 from openpyxl.styles import Font, Alignment, PatternFill
 from openpyxl.utils import get_column_letter
-import cloudinary
-import cloudinary.uploader
+from database import get_db, return_connection, get_db_connection
 
-# ============================================
-# 2. BLUEPRINT DA BIBLIOTECA
-# ============================================
+# =============================
+# BLUEPRINT DA BIBLIOTECA
+# =============================
 biblioteca_bp = Blueprint('biblioteca', __name__, url_prefix='/biblioteca')
 
-# ============================================
-# 3. CARREGAR VARIÁVEIS DE AMBIENTE
-# ============================================
+
+# =============================
+# FUNÇÕES DA BIBLIOTECA
+# =============================
+
+def tem_permissao_biblioteca():
+    """Verifica se o usuário tem permissão para acessar a biblioteca"""
+    if 'usuario_id' not in session:
+        print(f"DEBUG: Usuário não está logado na sessão")
+        print(f"DEBUG: Sessão keys: {list(session.keys())}")
+        return False
+    
+    if session.get('tipo') == 'admin':
+        print(f"DEBUG: Usuário é admin, acesso liberado")
+        return True
+    
+    grau = session.get('grau_atual', 0)
+    print(f"DEBUG: Grau do usuário: {grau}")
+    
+    if grau in [1, 2, 3]:
+        print(f"DEBUG: Usuário tem grau {grau}, acesso liberado")
+        return True
+    
+    print(f"DEBUG: Usuário sem permissão, grau {grau}")
+    return False
+
+def get_grau_usuario():
+    """Retorna o grau do usuário logado"""
+    return session.get('grau_atual', 1)
+
+# =============================
+# DECORATORS OTIMIZADOS
+# =============================
+
+# Cache para evitar consultas repetidas
+_cache_grau = {}
+_cache_timeout = 60  # 60 segundos
+
+def _get_grau_usuario(usuario_id):
+    """Busca o grau do usuário com cache"""
+    # Verificar cache
+    cache_key = f"grau_{usuario_id}"
+    cache_entry = _cache_grau.get(cache_key)
+    
+    if cache_entry and (time.time() - cache_entry['timestamp']) < _cache_timeout:
+        return cache_entry['grau']
+    
+    # Buscar no banco
+    cursor, conn = None, None
+    try:
+        cursor, conn = get_db()
+        cursor.execute("SELECT grau_atual FROM usuarios WHERE id = %s", (usuario_id,))
+        usuario = cursor.fetchone()
+        grau = usuario['grau_atual'] if usuario else 1
+        
+        # Salvar no cache
+        _cache_grau[cache_key] = {
+            'grau': grau,
+            'timestamp': time.time()
+        }
+        return grau
+    except Exception as e:
+        print(f"Erro ao buscar grau: {e}")
+        return 1
+    finally:
+        if conn:
+            return_connection(conn)
+
+def _get_ata_grau(ata_id):
+    """Busca o grau da ata com cache"""
+    cache_key = f"ata_grau_{ata_id}"
+    cache_entry = _cache_grau.get(cache_key)
+    
+    if cache_entry and (time.time() - cache_entry['timestamp']) < _cache_timeout:
+        return cache_entry.get('grau', 1)
+    
+    cursor, conn = None, None
+    try:
+        cursor, conn = get_db()
+        cursor.execute("""
+            SELECT r.grau as reuniao_grau
+            FROM atas a
+            JOIN reunioes r ON a.reuniao_id = r.id
+            WHERE a.id = %s
+        """, (ata_id,))
+        ata = cursor.fetchone()
+        grau = ata['reuniao_grau'] if ata else 1
+        
+        _cache_grau[cache_key] = {
+            'grau': grau,
+            'timestamp': time.time()
+        }
+        return grau
+    except Exception as e:
+        print(f"Erro ao buscar grau da ata: {e}")
+        return 1
+    finally:
+        if conn:
+            return_connection(conn)
+
+def require_grau(min_grau):
+    """Decorator para verificar permissão por grau - OTIMIZADO"""
+    def decorator(f):
+        @wraps(f)
+        def decorated_function(*args, **kwargs):
+            if 'usuario_id' not in session:
+                flash('Faça login para acessar esta página', 'warning')
+                return redirect(url_for('login'))
+            
+            # Verificar se é admin (admin tem acesso a tudo)
+            if session.get('tipo') == 'admin':
+                return f(*args, **kwargs)
+            
+            # Usar cache para buscar grau
+            grau_usuario = _get_grau_usuario(session['usuario_id'])
+            
+            if grau_usuario < min_grau:
+                flash('Você não tem permissão para acessar este conteúdo', 'danger')
+                return redirect(url_for('biblioteca.listar_materiais'))
+            
+            return f(*args, **kwargs)
+        return decorated_function
+    return decorator
+
+def login_required(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if "usuario" not in session:
+            flash("Faça login para acessar esta página", "warning")
+            return redirect("/")
+        return f(*args, **kwargs)
+    return decorated_function
+
+def admin_required(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if "usuario" not in session or session.get("tipo") != "admin":
+            flash("Acesso restrito a administradores", "danger")
+            return redirect("/dashboard")
+        return f(*args, **kwargs)
+    return decorated_function
+
+def sindicante_required(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if "usuario" not in session or session.get("tipo") != "sindicante":
+            flash("Acesso restrito a sindicantes", "danger")
+            return redirect("/dashboard")
+        return f(*args, **kwargs)
+    return decorated_function
+
+def nivel_required(nivel_minimo):
+    def decorator(f):
+        @wraps(f)
+        def decorated_function(*args, **kwargs):
+            if "usuario" not in session:
+                flash("Faça login para acessar esta página", "warning")
+                return redirect("/")
+            
+            # Admin tem acesso a tudo
+            if session.get('tipo') == 'admin':
+                return f(*args, **kwargs)
+            
+            nivel_usuario = session.get("nivel_acesso", 1)
+            if nivel_usuario >= nivel_minimo:
+                return f(*args, **kwargs)
+            else:
+                flash("Você não tem permissão para acessar esta página", "danger")
+                return redirect("/dashboard")
+        return decorated_function
+    return decorator
+
+def nivel_ata_required():
+    """Decorator para verificar permissão de ata por grau - OTIMIZADO"""
+    def decorator(f):
+        @wraps(f)
+        def decorated_function(*args, **kwargs):
+            if "usuario" not in session:
+                flash("Faça login para acessar esta página", "warning")
+                return redirect("/")
+            
+            # Admin tem acesso a tudo
+            if session.get('tipo') == 'admin':
+                return f(*args, **kwargs)
+            
+            ata_id = kwargs.get('id')
+            if ata_id:
+                # Usar cache para buscar grau da ata
+                reuniao_grau = _get_ata_grau(ata_id)
+                nivel_usuario = session.get("nivel_acesso", 1)
+                
+                if nivel_usuario == 1 and reuniao_grau == 1:
+                    return f(*args, **kwargs)
+                elif nivel_usuario == 2 and reuniao_grau <= 2:
+                    return f(*args, **kwargs)
+                elif nivel_usuario >= 3:
+                    return f(*args, **kwargs)
+                else:
+                    flash("Você não tem permissão para visualizar esta ata", "danger")
+                    return redirect("/dashboard")
+            
+            return f(*args, **kwargs)
+        return decorated_function
+    return decorator
+    
+    
+def permissao_required(permissao_codigo):
+    def decorator(f):
+        @wraps(f)
+        def decorated_function(*args, **kwargs):
+            if not tem_permissao(permissao_codigo):
+                flash("Você não tem permissão para acessar esta página", "danger")
+                return redirect("/dashboard")
+            return f(*args, **kwargs)
+        return decorated_function
+    return decorator
+
+def tem_permissao(permissao_codigo):
+    """Verifica se o usuário logado tem determinada permissão"""
+    if 'user_id' not in session:
+        return False
+    
+    # Admin tem todas as permissões
+    if session.get('tipo') == 'admin':
+        return True
+    
+    # Mestres (grau >= 3) têm permissão para visualizar obreiros
+    if permissao_codigo == 'obreiro.view' and session.get('grau_atual', 0) >= 3:
+        return True
+    
+    return _verificar_permissao_db(permissao_codigo)
+
+def _verificar_permissao_db(codigo):
+    try:
+        cursor, conn = get_db()
+        cursor.execute("""
+            SELECT permitido
+            FROM permissoes_usuario pu
+            JOIN permissoes p ON pu.permissao_id = p.id
+            WHERE pu.usuario_id = %s AND p.codigo = %s
+        """, (session['user_id'], codigo))
+        result = cursor.fetchone()
+        if result:
+            return_connection(conn)
+            return result['permitido'] == 1
+        grau_atual = session.get('grau_atual', 1)
+        cursor.execute("""
+            SELECT COUNT(*) as total
+            FROM permissoes_grau pg
+            JOIN permissoes p ON pg.permissao_id = p.id
+            WHERE pg.grau_id = %s AND p.codigo = %s
+        """, (grau_atual, codigo))
+        result = cursor.fetchone()
+        return_connection(conn)
+        return result and result['total'] > 0
+    except Exception as e:
+        print(f"Erro ao verificar permissão: {e}")
+        return False    
+
+from functools import wraps
+
+def permissao_required(permissao_chave):
+    """Decorador para verificar permissão"""
+    def decorator(f):
+        @wraps(f)
+        def decorated_function(*args, **kwargs):
+            if 'user_id' not in session:
+                flash("Você precisa estar logado para acessar esta página.", "danger")
+                return redirect(url_for('login'))
+            
+            if verificar_permissao(session['user_id'], permissao_chave):
+                return f(*args, **kwargs)
+            else:
+                flash("Você não tem permissão para acessar esta página.", "danger")
+                return redirect(url_for('dashboard'))
+        return decorated_function
+    return decorator
+
+
+# =============================
+# RELATÓRIOS DA BIBLIOTECA
+# =============================
+
+@biblioteca_bp.route('/relatorios')
+@admin_required
+def relatorios_biblioteca():
+    """Página de relatórios da biblioteca"""
+    
+    cursor, conn = get_db()
+    
+    # Estatísticas gerais
+    cursor.execute("""
+        SELECT 
+            COUNT(*) as total_materiais,
+            COUNT(CASE WHEN publicado = true THEN 1 END) as publicados,
+            COUNT(CASE WHEN publicado = false THEN 1 END) as nao_publicados,
+            SUM(downloads_count) as total_downloads,
+            SUM(visualizacoes_count) as total_visualizacoes,
+            COUNT(DISTINCT created_by) as total_contribuidores
+        FROM materiais
+    """)
+    estatisticas_gerais = cursor.fetchone()
+    
+    # Materiais por grau
+    cursor.execute("""
+        SELECT 
+            grau_acesso,
+            COUNT(*) as quantidade,
+            SUM(downloads_count) as downloads,
+            SUM(visualizacoes_count) as visualizacoes
+        FROM materiais
+        GROUP BY grau_acesso
+        ORDER BY grau_acesso
+    """)
+    materiais_por_grau = cursor.fetchall()
+    
+    # Materiais por tipo
+    cursor.execute("""
+        SELECT 
+            tipo,
+            COUNT(*) as quantidade,
+            SUM(downloads_count) as downloads,
+            SUM(visualizacoes_count) as visualizacoes
+        FROM materiais
+        GROUP BY tipo
+        ORDER BY quantidade DESC
+    """)
+    materiais_por_tipo = cursor.fetchall()
+    
+    # Materiais por categoria
+    cursor.execute("""
+        SELECT 
+            c.nome as categoria,
+            COUNT(m.id) as quantidade,
+            SUM(m.downloads_count) as downloads,
+            SUM(m.visualizacoes_count) as visualizacoes
+        FROM categorias_material c
+        LEFT JOIN materiais m ON c.id = m.categoria_id
+        GROUP BY c.id, c.nome
+        ORDER BY quantidade DESC
+    """)
+    materiais_por_categoria = cursor.fetchall()
+    
+    # Materiais mais acessados (top 10)
+    cursor.execute("""
+        SELECT 
+            m.id,
+            m.titulo,
+            m.tipo,
+            m.visualizacoes_count as visualizacoes,
+            m.downloads_count as downloads,
+            c.nome as categoria
+        FROM materiais m
+        LEFT JOIN categorias_material c ON m.categoria_id = c.id
+        WHERE m.publicado = true
+        ORDER BY (m.visualizacoes_count + m.downloads_count) DESC
+        LIMIT 10
+    """)
+    materiais_top = cursor.fetchall()
+    
+    # Materiais recentes
+    cursor.execute("""
+        SELECT 
+            m.id,
+            m.titulo,
+            m.tipo,
+            m.created_at,
+            u.nome_completo as autor_nome,
+            c.nome as categoria
+        FROM materiais m
+        LEFT JOIN categorias_material c ON m.categoria_id = c.id
+        LEFT JOIN usuarios u ON m.created_by = u.id
+        WHERE m.publicado = true
+        ORDER BY m.created_at DESC
+        LIMIT 10
+    """)
+    materiais_recentes = cursor.fetchall()
+    
+    # Downloads por período (últimos 30 dias)
+    cursor.execute("""
+        SELECT 
+            DATE(data_download) as data,
+            COUNT(*) as total_downloads
+        FROM downloads_material
+        WHERE data_download >= CURRENT_DATE - INTERVAL '30 days'
+        GROUP BY DATE(data_download)
+        ORDER BY data DESC
+    """)
+    downloads_periodo = cursor.fetchall()
+    
+    # Atividade por usuário
+    cursor.execute("""
+        SELECT 
+            u.nome_completo as usuario,
+            COUNT(DISTINCT d.material_id) as materiais_baixados,
+            COUNT(DISTINCT f.material_id) as favoritos,
+            COUNT(DISTINCT a.material_id) as avaliacoes
+        FROM usuarios u
+        LEFT JOIN downloads_material d ON u.id = d.usuario_id
+        LEFT JOIN favoritos_material f ON u.id = f.usuario_id
+        LEFT JOIN avaliacoes_material a ON u.id = a.usuario_id
+        WHERE u.ativo = 1
+        GROUP BY u.id, u.nome_completo
+        ORDER BY materiais_baixados DESC
+        LIMIT 10
+    """)
+    atividade_usuarios = cursor.fetchall()
+    
+    return_connection(conn)
+    
+    # Preparar dados para gráficos
+    labels_grau = []
+    dados_grau = []
+    for item in materiais_por_grau:
+        grau_nome = {1: 'Aprendiz', 2: 'Companheiro', 3: 'Mestre'}.get(item['grau_acesso'], 'Desconhecido')
+        labels_grau.append(grau_nome)
+        dados_grau.append(item['quantidade'])
+    
+    labels_tipo = [item['tipo'].capitalize() for item in materiais_por_tipo]
+    dados_tipo = [item['quantidade'] for item in materiais_por_tipo]
+    
+    labels_categoria = [item['categoria'] for item in materiais_por_categoria if item['categoria']]
+    dados_categoria = [item['quantidade'] for item in materiais_por_categoria if item['categoria']]
+    
+    return render_template('biblioteca/relatorios.html',
+                         estatisticas_gerais=estatisticas_gerais,
+                         materiais_por_grau=materiais_por_grau,
+                         materiais_por_tipo=materiais_por_tipo,
+                         materiais_por_categoria=materiais_por_categoria,
+                         materiais_top=materiais_top,
+                         materiais_recentes=materiais_recentes,
+                         downloads_periodo=downloads_periodo,
+                         atividade_usuarios=atividade_usuarios,
+                         labels_grau=labels_grau,
+                         dados_grau=dados_grau,
+                         labels_tipo=labels_tipo,
+                         dados_tipo=dados_tipo,
+                         labels_categoria=labels_categoria,
+                         dados_categoria=dados_categoria)
+
+
+@biblioteca_bp.route('/relatorios/exportar/<formato>')
+@admin_required
+def exportar_relatorio(formato):
+    """Exportar relatórios em CSV ou PDF"""
+    
+    cursor, conn = get_db()
+    
+    # Buscar dados para exportar
+    cursor.execute("""
+        SELECT 
+            m.id,
+            m.titulo,
+            m.tipo,
+            c.nome as categoria,
+            CASE 
+                WHEN m.grau_acesso = 1 THEN 'Aprendiz'
+                WHEN m.grau_acesso = 2 THEN 'Companheiro'
+                ELSE 'Mestre'
+            END as grau,
+            m.autor,
+            m.editora,
+            m.ano_publicacao,
+            m.visualizacoes_count as visualizacoes,
+            m.downloads_count as downloads,
+            m.created_at as data_criacao,
+            u.nome_completo as criado_por
+        FROM materiais m
+        LEFT JOIN categorias_material c ON m.categoria_id = c.id
+        LEFT JOIN usuarios u ON m.created_by = u.id
+        WHERE m.publicado = true
+        ORDER BY m.created_at DESC
+    """)
+    materiais = cursor.fetchall()
+    return_connection(conn)
+    
+    if formato == 'csv':
+        # Exportar como CSV
+        output = StringIO()
+        writer = csv.writer(output, delimiter=';')
+        
+        # Cabeçalho
+        writer.writerow(['ID', 'Título', 'Tipo', 'Categoria', 'Grau', 'Autor', 'Editora', 
+                        'Ano', 'Visualizações', 'Downloads', 'Data Criação', 'Criado Por'])
+        
+        # Dados
+        for m in materiais:
+            writer.writerow([
+                m['id'], m['titulo'], m['tipo'], m['categoria'] or '', 
+                m['grau'], m['autor'] or '', m['editora'] or '', 
+                m['ano_publicacao'] or '', m['visualizacoes'], m['downloads'],
+                m['data_criacao'].strftime('%d/%m/%Y') if m['data_criacao'] else '',
+                m['criado_por'] or ''
+            ])
+        
+        output.seek(0)
+        return Response(
+            output.getvalue(),
+            mimetype='text/csv',
+            headers={'Content-Disposition': f'attachment; filename=relatorio_materiais_{datetime.now().strftime("%Y%m%d")}.csv'}
+        )
+    
+    elif formato == 'pdf':
+        # Exportar como PDF (usando ReportLab)
+        try:
+            from reportlab.lib import colors
+            from reportlab.lib.pagesizes import A4, landscape
+            from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer
+            from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+            from reportlab.lib.units import cm
+            
+            buffer = BytesIO()
+            doc = SimpleDocTemplate(buffer, pagesize=landscape(A4), rightMargin=2*cm, leftMargin=2*cm, topMargin=2*cm, bottomMargin=2*cm)
+            elements = []
+            styles = getSampleStyleSheet()
+            
+            # Título
+            titulo_style = ParagraphStyle('CustomTitle', parent=styles['Title'], fontSize=16, alignment=1)
+            elements.append(Paragraph("Relatório de Materiais - Biblioteca Maçônica", titulo_style))
+            elements.append(Spacer(1, 0.5*cm))
+            elements.append(Paragraph(f"Gerado em: {datetime.now().strftime('%d/%m/%Y %H:%M')}", styles['Normal']))
+            elements.append(Spacer(1, 1*cm))
+            
+            # Tabela
+            data = [['ID', 'Título', 'Tipo', 'Categoria', 'Grau', 'Visualizações', 'Downloads']]
+            for m in materiais[:50]:  # Limitar a 50 itens no PDF
+                data.append([
+                    str(m['id']), m['titulo'][:40], m['tipo'], 
+                    m['categoria'] or '', m['grau'], str(m['visualizacoes']), str(m['downloads'])
+                ])
+            
+            table = Table(data)
+            table.setStyle(TableStyle([
+                ('BACKGROUND', (0, 0), (-1, 0), colors.grey),
+                ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
+                ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+                ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+                ('FONTSIZE', (0, 0), (-1, 0), 10),
+                ('BOTTOMPADDING', (0, 0), (-1, 0), 12),
+                ('BACKGROUND', (0, 1), (-1, -1), colors.beige),
+                ('GRID', (0, 0), (-1, -1), 1, colors.black),
+                ('FONTSIZE', (0, 1), (-1, -1), 8),
+            ]))
+            elements.append(table)
+            
+            doc.build(elements)
+            buffer.seek(0)
+            
+            return Response(
+                buffer.getvalue(),
+                mimetype='application/pdf',
+                headers={'Content-Disposition': f'attachment; filename=relatorio_materiais_{datetime.now().strftime("%Y%m%d")}.pdf'}
+            )
+        except ImportError:
+            flash('Módulo ReportLab não instalado. Use CSV para exportar.', 'warning')
+            return redirect(url_for('biblioteca.relatorios_biblioteca'))
+
+
+# =============================
+# COMPARTILHAMENTO
+# =============================
+
+@biblioteca_bp.route('/material/<int:material_id>/compartilhar')
+def compartilhar_material(material_id):
+    """Gerar link de compartilhamento para o material"""
+    
+    cursor, conn = get_db()
+    cursor.execute("""
+        SELECT titulo, descricao, capa_url, tipo
+        FROM materiais 
+        WHERE id = %s AND publicado = true
+    """, (material_id,))
+    material = cursor.fetchone()
+    return_connection(conn)
+    
+    if not material:
+        return jsonify({'error': 'Material não encontrado'}), 404
+    
+    # Gerar URL completa
+    url_completa = request.url_root.rstrip('/') + url_for('biblioteca.visualizar_material', material_id=material_id)
+    
+    # Preparar dados para compartilhamento
+    dados_compartilhamento = {
+        'url': url_completa,
+        'titulo': material['titulo'],
+        'descricao': material['descricao'][:150] if material['descricao'] else '',
+        'imagem': material['capa_url'] or request.url_root + 'static/img/logo.png',
+        'tipo': material['tipo']
+    }
+    
+    return render_template('biblioteca/compartilhar.html', dados=dados_compartilhamento)
+
+
+@biblioteca_bp.route('/api/material/<int:material_id>/compartilhar', methods=['POST'])
+def api_compartilhar_material(material_id):
+    """API para registrar compartilhamento"""
+    
+    plataforma = request.json.get('plataforma', 'link')
+    
+    cursor, conn = get_db()
+    cursor.execute("""
+        UPDATE materiais 
+        SET compartilhamentos_count = compartilhamentos_count + 1 
+        WHERE id = %s
+    """, (material_id,))
+    conn.commit()
+    return_connection(conn)
+    
+    return jsonify({'success': True})        
+
+
+# =============================
+# CONFIGURAÇÃO DO CLOUDINARY
+# =============================
+
+cloudinary.config(
+    cloud_name="da57u8plb",
+    api_key=os.getenv("CLOUDINARY_API_KEY"),
+    api_secret=os.getenv("CLOUDINARY_API_SECRET")
+)
+
+# =============================
+# CARREGAR VARIÁVEIS DE AMBIENTE
+# =============================
 load_dotenv()
 
-# ============================================
-# 4. CONFIGURAÇÕES GERAIS
-# ============================================
+# =============================
+# CONFIGURAÇÕES GERAIS
+# =============================
 UPLOAD_FOLDER = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'uploads', 'documentos')
 UPLOAD_FOLDER_FOTOS = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'uploads', 'fotos')
 ALLOWED_EXTENSIONS = {'pdf', 'jpg', 'jpeg', 'png', 'gif', 'doc', 'docx', 'xls', 'xlsx', 'txt', 'zip', 'rar'}
@@ -61,32 +678,32 @@ ALLOWED_EXTENSIONS_FOTOS = {'png', 'jpg', 'jpeg', 'gif', 'webp'}
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 os.makedirs(UPLOAD_FOLDER_FOTOS, exist_ok=True)
 
-# ============================================
-# 5. CONFIGURAÇÃO DO CLOUDINARY
-# ============================================
-cloudinary.config(
-    cloud_name="da57u8plb",
-    api_key=os.getenv("CLOUDINARY_API_KEY"),
-    api_secret=os.getenv("CLOUDINARY_API_SECRET")
-)
-
-# ============================================
-# 6. CRIAÇÃO DA APLICAÇÃO FLASK
-# ============================================
+# =============================
+# CRIAÇÃO DA APLICAÇÃO FLASK
+# =============================
 app = Flask(__name__)
 app.secret_key = os.getenv('SECRET_KEY', os.urandom(24))
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 app.config['MAX_CONTENT_LENGTH'] = 50 * 1024 * 1024  # 50MB
 
-# Registrar blueprint
+# =============================
+# REGISTRAR BLUEPRINT DA BIBLIOTECA
+# =============================
 app.register_blueprint(biblioteca_bp)
 
-# ============================================
-# 7. CONFIGURAÇÃO DO BANCO DE DADOS
-# ============================================
+# =============================
+# CONEXÃO COM BANCO DE DADOS
+# =============================
+import os
+import sys
+import psycopg2
+from psycopg2.extras import RealDictCursor
+
+# Configurar DATABASE_URL
 DATABASE_URL = os.getenv('DATABASE_URL')
 
 if not DATABASE_URL:
+    # Fallback para desenvolvimento local
     DB_HOST = os.getenv('DB_HOST', 'localhost')
     DB_PORT = os.getenv('DB_PORT', '5432')
     DB_NAME = os.getenv('DB_NAME', 'sistema_maconico')
@@ -95,59 +712,123 @@ if not DATABASE_URL:
     DATABASE_URL = f"postgresql://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:{DB_PORT}/{DB_NAME}"
     print(f"⚠️ Usando conexão LOCAL: {DB_HOST}:{DB_PORT}/{DB_NAME}")
 else:
+    # Corrigir URL para PostgreSQL (Render usa postgres://)
     if DATABASE_URL.startswith('postgres://'):
         DATABASE_URL = DATABASE_URL.replace('postgres://', 'postgresql://', 1)
     print(f"✅ Usando conexão RENDER (PostgreSQL)")
 
+# =============================
+# FUNÇÕES DE BANCO DE DADOS
+# =============================
+
+import os
+import psycopg2
+from psycopg2.extras import RealDictCursor
+
+def return_connection(conn):
+    """Fecha a conexão com o banco de dados"""
+    try:
+        if conn and not conn.closed:
+            conn.close()
+    except Exception as e:
+        print(f"Erro ao fechar conexão: {e}")
+
+
+import psycopg2
+import psycopg2.pool
+from psycopg2.extras import RealDictCursor
+import os
+
 # ============================================
-# 8. POOL DE CONEXÕES
+# POOL DE CONEXÕES - Singleton
 # ============================================
 _db_pool = None
 _pool_initialized = False
 
 def init_db_pool():
+    """Inicializa o pool de conexões (chamado apenas uma vez)"""
     global _db_pool, _pool_initialized
+    
     if _pool_initialized:
         return _db_pool
     
     print("🚀 Inicializando pool de conexões...")
+    
     try:
-        _db_pool = psycopg2.pool.SimpleConnectionPool(
-            1, 20,
-            dsn=DATABASE_URL,
-            cursor_factory=RealDictCursor
-        )
+        DATABASE_URL = os.getenv('DATABASE_URL')
+        
+        if DATABASE_URL:
+            # Render - usar URL
+            _db_pool = psycopg2.pool.SimpleConnectionPool(
+                1, 20,  # mínimo 1, máximo 20 conexões
+                dsn=DATABASE_URL,
+                cursor_factory=RealDictCursor
+            )
+        else:
+            # Local
+            _db_pool = psycopg2.pool.SimpleConnectionPool(
+                1, 20,
+                host=os.getenv('DB_HOST', 'localhost'),
+                port=os.getenv('DB_PORT', '5432'),
+                dbname=os.getenv('DB_NAME', 'sistema_maconico'),
+                user=os.getenv('DB_USER', 'postgres'),
+                password=os.getenv('DB_PASSWORD', 'postgres'),
+                cursor_factory=RealDictCursor
+            )
+        
         _pool_initialized = True
         print(f"✅ Pool de conexões inicializado com sucesso!")
         return _db_pool
+        
     except Exception as e:
         print(f"❌ Erro ao inicializar pool: {e}")
         raise
 
+# Variável global para reutilizar a mesma conexão na mesma requisição
+_conexao_atual = None
+_cursor_atual = None
+
 def get_db():
-    """Obtém uma conexão do pool"""
+    """Reutiliza a mesma conexão na mesma requisição"""
+    global _conexao_atual, _cursor_atual
+    
+    # Se já existe uma conexão na mesma requisição, reutiliza
+    if hasattr(request, 'db_connection') and request.db_connection:
+        return request.db_cursor, request.db_connection
+    
     pool = init_db_pool()
     conn = pool.getconn()
     cursor = conn.cursor(cursor_factory=RealDictCursor)
+    
+    # Armazenar na requisição
+    request.db_connection = conn
+    request.db_cursor = cursor
+    
+    print(f"🔌 Nova conexão criada (será reutilizada nesta requisição)")
     return cursor, conn
 
 def return_connection(conn):
-    """Retorna a conexão para o pool"""
-    if conn and _db_pool:
-        _db_pool.putconn(conn)
+    """Retorna a conexão - mas não fecha imediatamente"""
+    # Não fazer nada aqui, a conexão será fechada no final da requisição
+    pass
 
+# No final da requisição, fechar a conexão
 @app.teardown_request
 def teardown_request(exception=None):
     """Fecha a conexão no final da requisição"""
     if hasattr(request, 'db_connection') and request.db_connection:
         pool = init_db_pool()
         pool.putconn(request.db_connection)
+        print(f"🔌 Conexão fechada no final da requisição")
 
+# ============================================
+# CONTEXT MANAGER (recomendado)
+# ============================================
 from contextlib import contextmanager
 
 @contextmanager
 def get_db_connection():
-    """Context manager para usar com 'with'"""
+    """Context manager para usar com 'with' - garante uma única conexão"""
     cursor, conn = get_db()
     try:
         yield cursor
@@ -158,28 +839,92 @@ def get_db_connection():
     finally:
         return_connection(conn)
 
+# =============================
+# IMPORTANTE: Chamar test_connection() DEPOIS de definir as funções
+# =============================
 def test_connection():
     """Testa a conexão com o banco de dados"""
     try:
         cursor, conn = get_db()
         cursor.execute("SELECT 1")
-        cursor.fetchone()
+        result = cursor.fetchone()
         return_connection(conn)
         print("✅ Conexão com o banco de dados estabelecida com sucesso!")
         return True
     except Exception as e:
         print(f"❌ Erro na conexão com o banco: {e}")
         return False
+        
+# Verificar conexão (opcional)
+#if __name__ != '__main__':
+ #   print(f"🔧 Banco configurado: LOCAL (localhost:5432/sistema_maconico)")
+  #  test_connection()
 
 # ============================================
-# 9. FUNÇÕES AUXILIARES
+# CONFIGURAÇÕES INICIAIS DO WHATSAPP
 # ============================================
 
-def allowed_file(filename):
-    return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
+def init_whatsapp_tables():
+    """Inicializa todas as tabelas relacionadas ao WhatsApp"""
+    try:
+        cursor, conn = get_db()
+        
+        # Criar tabela de grupos
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS grupos_whatsapp (
+                id SERIAL PRIMARY KEY,
+                grupo_id VARCHAR(255) UNIQUE NOT NULL,
+                nome_grupo VARCHAR(255),
+                ultimo_envio TIMESTAMP,
+                criado_por INTEGER,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        """)
+        
+        # Criar tabela de mensagens agendadas
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS mensagens_agendadas (
+                id SERIAL PRIMARY KEY,
+                grupo_id VARCHAR(255) NOT NULL,
+                mensagem TEXT NOT NULL,
+                nome_grupo VARCHAR(255),
+                data_envio TIMESTAMP NOT NULL,
+                recorrencia VARCHAR(50),
+                criado_por INTEGER,
+                status VARCHAR(50) DEFAULT 'agendado',
+                enviado_em TIMESTAMP,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        """)
+        
+        # Criar índices
+        cursor.execute("CREATE INDEX IF NOT EXISTS idx_grupos_grupo_id ON grupos_whatsapp(grupo_id)")
+        cursor.execute("CREATE INDEX IF NOT EXISTS idx_mensagens_data_envio ON mensagens_agendadas(data_envio)")
+        cursor.execute("CREATE INDEX IF NOT EXISTS idx_mensagens_status ON mensagens_agendadas(status)")
+        
+        return_connection(conn)
+        print("✅ Tabelas do WhatsApp inicializadas com sucesso!")
+        return True
+        
+    except Exception as e:
+        print(f"❌ Erro ao inicializar tabelas do WhatsApp: {e}")
+        return False
 
-def allowed_foto(filename):
-    return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS_FOTOS
+# Chamar a função imediatamente ao iniciar o app
+init_whatsapp_tables()
+
+# =============================
+# FUNÇÕES AUXILIARES
+# =============================
+import unicodedata
+
+def remover_acentos(texto):
+    """Remove acentos de uma string"""
+    if not texto:
+        return texto
+    texto = unicodedata.normalize('NFKD', texto).encode('ASCII', 'ignore').decode('ASCII')
+    return texto.lower()
 
 def tratar_valor_nulo(valor, tipo='string'):
     if valor is None:
@@ -211,12 +956,99 @@ def tratar_valor_nulo(valor, tipo='string'):
             return valor.strip()
     return valor
 
-def remover_acentos(texto):
-    """Remove acentos de uma string"""
-    if not texto:
-        return texto
-    texto = unicodedata.normalize('NFKD', texto).encode('ASCII', 'ignore').decode('ASCII')
-    return texto.lower()
+def allowed_file(filename):
+    return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
+
+def allowed_foto(filename):
+    return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS_FOTOS
+
+from datetime import datetime
+
+# ============================================
+# FUNÇÃO AUXILIAR - NOME DOS GRAUS
+# ============================================
+
+def get_nome_grau(grau):
+    """Retorna o nome do grau pelo número"""
+    graus_map = {
+        1: "Aprendiz",
+        2: "Companheiro",
+        3: "Mestre",
+        4: "Mestre Instalado",
+        5: "Arquiteto Real",
+        6: "Soberano Grande Inspetor Geral",
+        7: "Mestre Perfeito",
+        8: "Eleito dos Nove",
+        9: "Mestre da Maçonaria Real",
+        10: "Cavaleiro Rosa-Cruz",
+        11: "Cavaleiro Kadosch",
+        12: "Grande Escocês",
+        13: "Grande Escocês da Abóbada Sagrada",
+        14: "Grande Escocês da Perfeição",
+        15: "Cavaleiro do Oriente",
+        16: "Príncipe de Jerusalém",
+        17: "Cavaleiro do Oriente e Ocidente",
+        18: "Cavaleiro Rosa-Cruz",
+        19: "Grande Pontífice",
+        20: "Venerável Grande Mestre",
+        21: "Cavaleiro do Sol",
+        22: "Cavaleiro da Cruz Vermelha",
+        23: "Cavaleiro do Santo Sepulcro",
+        24: "Cavaleiro da Águia Branca",
+        25: "Cavaleiro da Serpente",
+        26: "Príncipe da Mercê",
+        27: "Comendador do Templo",
+        28: "Cavaleiro do Sol",
+        29: "Cavaleiro de São Jorge",
+        30: "Cavaleiro Kadosch",
+        31: "Grande Escocês",
+        32: "Príncipe do Real Segredo",
+        33: "Soberano Grande Inspetor Geral"
+    }
+    return graus_map.get(grau, f"Grau {grau}")
+
+# =============================
+# FUNÇÃO DE LOG DE AUDITORIA
+# =============================
+import json
+
+def registrar_log(acao, entidade=None, entidade_id=None, dados_anteriores=None, dados_novos=None):
+    """Registra log de auditoria com detalhes completos"""
+    if "user_id" not in session:
+        return
+    try:
+        cursor, conn = get_db()
+        
+        # Converter dicionários para JSON string
+        if dados_anteriores and isinstance(dados_anteriores, dict):
+            dados_anteriores = json.dumps(dados_anteriores, ensure_ascii=False, default=str)
+        if dados_novos and isinstance(dados_novos, dict):
+            dados_novos = json.dumps(dados_novos, ensure_ascii=False, default=str)
+        
+        # Buscar nome completo do usuário
+        cursor.execute("SELECT nome_completo FROM usuarios WHERE id = %s", (session["user_id"],))
+        usuario = cursor.fetchone()
+        nome_completo = usuario['nome_completo'] if usuario else session.get("usuario", "Desconhecido")
+        
+        cursor.execute("""
+            INSERT INTO logs_auditoria 
+            (usuario_id, usuario_nome, acao, entidade, entidade_id, dados_anteriores, dados_novos, ip, user_agent)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
+        """, (
+            session["user_id"],
+            nome_completo,
+            acao,
+            entidade,
+            entidade_id,
+            dados_anteriores,
+            dados_novos,
+            request.remote_addr,
+            request.headers.get('User-Agent', '')[:500]
+        ))
+        conn.commit()
+        return_connection(conn)
+    except Exception as e:
+        print(f"Erro ao registrar log: {e}")
 
 def redimensionar_foto(caminho_origem, tamanho=(300, 300)):
     try:
@@ -247,145 +1079,11 @@ def enviar_whatsapp(numero, mensagem):
     except Exception as e:
         print(f"Erro ao abrir WhatsApp: {e}")
         return False
-
-def gerar_token_recuperacao(usuario_id):
-    token = secrets.token_urlsafe(32)
-    cursor, conn = get_db()
-    expira_em = datetime.now() + timedelta(hours=24)
-    cursor.execute("""
-        INSERT INTO password_reset_tokens (usuario_id, token, expira_em)
-        VALUES (%s, %s, %s)
-    """, (usuario_id, token, expira_em))
-    conn.commit()
-    return_connection(conn)
-    return token
-
-def verificar_token_recuperacao(token):
-    cursor, conn = get_db()
-    cursor.execute("""
-        SELECT usuario_id FROM password_reset_tokens 
-        WHERE token = %s AND expira_em > NOW() AND usado = FALSE
-    """, (token,))
-    result = cursor.fetchone()
-    return_connection(conn)
-    return result['usuario_id'] if result else None
-
-def usar_token_recuperacao(token):
-    cursor, conn = get_db()
-    cursor.execute("UPDATE password_reset_tokens SET usado = TRUE WHERE token = %s", (token,))
-    conn.commit()
-    return_connection(conn)
-
-# ============================================
-# 10. FUNÇÕES DE GRAU
-# ============================================
-
-def get_nome_grau(grau):
-    graus_map = {
-        1: "Aprendiz", 2: "Companheiro", 3: "Mestre", 4: "Mestre Instalado",
-        5: "Arquiteto Real", 6: "Soberano Grande Inspetor Geral", 7: "Mestre Perfeito",
-        8: "Eleito dos Nove", 9: "Mestre da Maçonaria Real", 10: "Cavaleiro Rosa-Cruz",
-        11: "Cavaleiro Kadosch", 12: "Grande Escocês"
-    }
-    return graus_map.get(grau, f"Grau {grau}")
-
-def get_grau_principal(grau_nivel):
-    if grau_nivel == 1:
-        return "Aprendiz"
-    elif grau_nivel == 2:
-        return "Companheiro"
-    elif grau_nivel >= 3:
-        return "Mestre"
-    return "Mestre"
-
-def get_grau_detalhado(grau_nivel):
-    grau_map = {
-        1: "Aprendiz", 2: "Companheiro", 3: "Mestre", 4: "Mestre Instalado",
-        5: "Arquiteto Real", 6: "Soberano Grande Inspetor Geral", 7: "Mestre Perfeito",
-        8: "Eleito dos Nove", 9: "Mestre da Maçonaria Real", 10: "Cavaleiro Rosa-Cruz",
-        11: "Cavaleiro Kadosch", 12: "Grande Escocês",
-    }
-    return grau_map.get(grau_nivel, f"Grau Superior {grau_nivel}")
-
-def get_grau_badge_class(grau_nivel):
-    if grau_nivel == 1:
-        return 'bg-secondary'
-    elif grau_nivel == 2:
-        return 'bg-primary'
-    elif grau_nivel == 3:
-        return 'bg-warning text-dark'
-    elif grau_nivel >= 4:
-        return 'bg-info'
-    return 'bg-secondary'
-
-def get_grau_icon(grau_nivel):
-    if grau_nivel == 1 or grau_nivel == 2:
-        return 'bi bi-star'
-    elif grau_nivel >= 3:
-        return 'bi bi-star-fill'
-    return 'bi bi-star'
-
-def get_grau_efetivo(grau_atual):
-    if grau_atual == 1:
-        return 1
-    elif grau_atual == 2:
-        return 2
-    elif grau_atual >= 3:
-        return 3
-    return 3
-
-def get_grau_nome(grau):
-    graus = {
-        1: "Aprendiz", 2: "Companheiro", 3: "Mestre", 4: "Mestre Instalado",
-        5: "Arquiteto Real", 6: "Soberano Grande Inspetor Geral", 7: "Mestre Perfeito",
-        8: "Eleito dos Nove", 9: "Mestre da Maçonaria Real", 10: "Cavaleiro Rosa-Cruz",
-        11: "Cavaleiro Kadosch", 12: "Grande Escocês",
-    }
-    return graus.get(int(grau) if grau else 3, f"Grau Superior {grau}")
-
-# ============================================
-# 11. FUNÇÕES DE PERMISSÃO
-# ============================================
-
-_cache_grau = {}
-_cache_timeout = 60
-
-def _get_grau_usuario(usuario_id):
-    cache_key = f"grau_{usuario_id}"
-    cache_entry = _cache_grau.get(cache_key)
-    if cache_entry and (time.time() - cache_entry['timestamp']) < _cache_timeout:
-        return cache_entry['grau']
-    
-    cursor, conn = get_db()
-    cursor.execute("SELECT grau_atual FROM usuarios WHERE id = %s", (usuario_id,))
-    usuario = cursor.fetchone()
-    grau = usuario['grau_atual'] if usuario else 1
-    return_connection(conn)
-    
-    _cache_grau[cache_key] = {'grau': grau, 'timestamp': time.time()}
-    return grau
-
-def _get_ata_grau(ata_id):
-    cache_key = f"ata_grau_{ata_id}"
-    cache_entry = _cache_grau.get(cache_key)
-    if cache_entry and (time.time() - cache_entry['timestamp']) < _cache_timeout:
-        return cache_entry.get('grau', 1)
-    
-    cursor, conn = get_db()
-    cursor.execute("""
-        SELECT r.grau as reuniao_grau
-        FROM atas a JOIN reunioes r ON a.reuniao_id = r.id
-        WHERE a.id = %s
-    """, (ata_id,))
-    ata = cursor.fetchone()
-    grau = ata['reuniao_grau'] if ata else 1
-    return_connection(conn)
-    
-    _cache_grau[cache_key] = {'grau': grau, 'timestamp': time.time()}
-    return grau
-
 def verificar_permissao(usuario_id, permissao_chave):
+    """Verifica se um usuário tem determinada permissão"""
     cursor, conn = get_db()
+    
+    # Buscar grau e tipo do usuário
     cursor.execute("SELECT grau_atual, tipo FROM usuarios WHERE id = %s", (usuario_id,))
     usuario = cursor.fetchone()
     
@@ -393,13 +1091,19 @@ def verificar_permissao(usuario_id, permissao_chave):
         return_connection(conn)
         return False
     
+    # Admin tem todas as permissões
     if usuario['tipo'] == 'admin':
         return_connection(conn)
         return True
     
+    # ✅ CORREÇÃO: Para graus >= 3, considerar como Mestre (grau 3)
     grau_original = usuario['grau_atual']
-    grau_efetivo = 3 if grau_original >= 3 else grau_original
+    if grau_original >= 3:
+        grau_efetivo = 3  # Mestres (grau 3, 4, 5, 6...) têm as mesmas permissões
+    else:
+        grau_efetivo = grau_original
     
+    # Buscar permissão pelo chave
     cursor.execute("SELECT id FROM permissoes WHERE chave = %s", (permissao_chave,))
     permissao = cursor.fetchone()
     
@@ -409,148 +1113,757 @@ def verificar_permissao(usuario_id, permissao_chave):
     
     permissao_id = permissao['id']
     
+    # Verificar bloqueio específico do usuário
+    try:
+        cursor.execute("""
+            SELECT permitido FROM permissoes_usuario 
+            WHERE usuario_id = %s AND permissao_id = %s
+        """, (usuario_id, permissao_id))
+        bloqueio = cursor.fetchone()
+        
+        if bloqueio and bloqueio['permitido'] == 0:
+            return_connection(conn)
+            return False
+    except:
+        # Se a coluna não existir, tentar com 'tipo'
+        try:
+            cursor.execute("""
+                SELECT tipo FROM permissoes_usuario 
+                WHERE usuario_id = %s AND permissao_id = %s
+            """, (usuario_id, permissao_id))
+            bloqueio = cursor.fetchone()
+            
+            if bloqueio and bloqueio['tipo'] == 0:
+                return_connection(conn)
+                return False
+        except:
+            pass
+    
+    # Verificar permissão por grau (usando grau efetivo)
     cursor.execute("""
         SELECT 1 FROM permissoes_grau 
         WHERE grau_id = %s AND permissao_id = %s
     """, (grau_efetivo, permissao_id))
     tem_permissao = cursor.fetchone() is not None
     
+    # Verificar permissão extra do usuário
+    if not tem_permissao:
+        try:
+            cursor.execute("""
+                SELECT 1 FROM permissoes_usuario 
+                WHERE usuario_id = %s AND permissao_id = %s AND permitido = 1
+            """, (usuario_id, permissao_id))
+            tem_permissao = cursor.fetchone() is not None
+        except:
+            try:
+                cursor.execute("""
+                    SELECT 1 FROM permissoes_usuario 
+                    WHERE usuario_id = %s AND permissao_id = %s AND tipo = 1
+                """, (usuario_id, permissao_id))
+                tem_permissao = cursor.fetchone() is not None
+            except:
+                pass
+    
     return_connection(conn)
     return tem_permissao
 
-def tem_permissao(permissao_chave):
-    if 'user_id' not in session:
-        return False
-    if session.get('tipo') == 'admin':
-        return True
-    return verificar_permissao(session['user_id'], permissao_chave)
+def get_grau_efetivo(grau_atual):
+    """Retorna o grau efetivo para permissões (1, 2 ou 3)"""
+    if grau_atual == 1:
+        return 1
+    elif grau_atual == 2:
+        return 2
+    elif grau_atual >= 3:
+        return 3  # Todos os graus >= 3 são tratados como Mestre
+    return 3
+    
+def get_grau_nome(grau):
+    """Retorna o nome do grau"""
+    graus = {
+        1: "Aprendiz",
+        2: "Companheiro",
+        3: "Mestre",
+        4: "Mestre Instalado",
+        5: "Arquiteto Real",
+        6: "Soberano Grande Inspetor Geral",
+        7: "Mestre Perfeito",
+        8: "Eleito dos Nove",
+        9: "Mestre da Maçonaria Real",
+        10: "Cavaleiro Rosa-Cruz",
+        11: "Cavaleiro Kadosch",
+        12: "Grande Escocês",
+    }
+    return graus.get(int(grau) if grau else 3, f"Grau Superior {grau}")
 
-def _verificar_permissao_db(codigo):
+import secrets
+from datetime import datetime, timedelta
+
+def gerar_token_recuperacao(usuario_id):
+    """Gera token único para recuperação de senha"""
+    token = secrets.token_urlsafe(32)
+    
+    cursor, conn = get_db()
+    expira_em = datetime.now() + timedelta(hours=24)
+    
+    cursor.execute("""
+        INSERT INTO password_reset_tokens (usuario_id, token, expira_em)
+        VALUES (%s, %s, %s)
+    """, (usuario_id, token, expira_em))
+    conn.commit()
+    return_connection(conn)
+    
+    return token
+
+def verificar_token_recuperacao(token):
+    """Verifica se o token de recuperação é válido"""
+    cursor, conn = get_db()
+    
+    cursor.execute("""
+        SELECT usuario_id FROM password_reset_tokens 
+        WHERE token = %s 
+        AND expira_em > NOW()
+        AND usado = FALSE
+    """, (token,))
+    
+    result = cursor.fetchone()
+    return_connection(conn)
+    
+    return result['usuario_id'] if result else None
+
+def usar_token_recuperacao(token):
+    """Marca token como usado"""
+    cursor, conn = get_db()
+    cursor.execute("UPDATE password_reset_tokens SET usado = TRUE WHERE token = %s", (token,))
+    conn.commit()
+    return_connection(conn)
+
+# =============================
+# FUNÇÕES DE NOTIFICAÇÕES
+# =============================
+
+from reportlab.lib.pagesizes import A4
+from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle
+from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+from reportlab.lib.units import cm
+from io import BytesIO
+import unicodedata
+
+def remover_acentos(texto):
+    """Remove acentos de um texto"""
+    if not texto:
+        return ""
+    # Substituir caracteres acentuados manualmente
+    mapa = {
+        'á': 'a', 'à': 'a', 'ã': 'a', 'â': 'a', 'ä': 'a',
+        'é': 'e', 'è': 'e', 'ê': 'e', 'ë': 'e',
+        'í': 'i', 'ì': 'i', 'î': 'i', 'ï': 'i',
+        'ó': 'o', 'ò': 'o', 'õ': 'o', 'ô': 'o', 'ö': 'o',
+        'ú': 'u', 'ù': 'u', 'û': 'u', 'ü': 'u',
+        'ç': 'c', 'ñ': 'n',
+        'Á': 'A', 'À': 'A', 'Ã': 'A', 'Â': 'A', 'Ä': 'A',
+        'É': 'E', 'È': 'E', 'Ê': 'E', 'Ë': 'E',
+        'Í': 'I', 'Ì': 'I', 'Î': 'I', 'Ï': 'I',
+        'Ó': 'O', 'Ò': 'O', 'Õ': 'O', 'Ô': 'O', 'Ö': 'O',
+        'Ú': 'U', 'Ù': 'U', 'Û': 'U', 'Ü': 'U',
+        'Ç': 'C', 'Ñ': 'N'
+    }
+    for acentuado, sem_acento in mapa.items():
+        texto = texto.replace(acentuado, sem_acento)
+    return texto
+
+def gerar_pdf_certificado(visitante):
+    """Gera PDF do certificado de visita - Versão estável"""
+    buffer = BytesIO()
+    doc = SimpleDocTemplate(buffer, pagesize=A4,
+                           topMargin=2*cm, bottomMargin=2*cm,
+                           leftMargin=2*cm, rightMargin=2*cm)
+    
+    styles = getSampleStyleSheet()
+    story = []
+    
+    # Remover acentos
+    nome = remover_acentos(visitante['nome'])
+    data = visitante['reuniao_data'].strftime('%d/%m/%Y')
+    hora = visitante['hora_inicio'].strftime('%H:%M')
+    codigo = visitante['codigo_verificacao']
+    loja_origem = remover_acentos(visitante.get('loja_origem', ''))
+    loja_nome = "ARLS Bicentenário"
+    cidade = "Brasilia - DF"
+    
+    # Estilos
+    titulo_style = ParagraphStyle(
+        'TituloStyle',
+        parent=styles['Normal'],
+        fontSize=22,
+        alignment=1,
+        spaceAfter=30,
+        fontName='Helvetica-Bold'
+    )
+    
+    texto_style = ParagraphStyle(
+        'TextoStyle',
+        parent=styles['Normal'],
+        fontSize=14,
+        alignment=1,
+        spaceAfter=12,
+        fontName='Helvetica'
+    )
+    
+    nome_style = ParagraphStyle(
+        'NomeStyle',
+        parent=styles['Normal'],
+        fontSize=18,
+        alignment=1,
+        spaceAfter=15,
+        fontName='Helvetica-Bold'
+    )
+    
+    small_style = ParagraphStyle(
+        'SmallStyle',
+        parent=styles['Normal'],
+        fontSize=9,
+        alignment=1,
+        fontName='Helvetica'
+    )
+    
+    # Conteúdo
+    story.append(Paragraph("CERTIFICADO DE VISITA", titulo_style))
+    story.append(Spacer(1, 0.5*cm))
+    
+    story.append(Paragraph("Certificamos que", texto_style))
+    story.append(Paragraph(nome, nome_style))
+    story.append(Spacer(1, 0.3*cm))
+    
+    story.append(Paragraph("visitou a Loja Maconica", texto_style))
+    story.append(Paragraph(loja_nome, texto_style))
+    story.append(Spacer(1, 0.3*cm))
+    
+    story.append(Paragraph(f"na reuniao realizada em {data}", texto_style))
+    story.append(Paragraph(f"as {hora}", texto_style))
+    story.append(Paragraph(f"na cidade de {cidade}", texto_style))
+    story.append(Spacer(1, 0.3*cm))
+    
+    if loja_origem:
+        story.append(Paragraph(f"Sendo integrante da Loja {loja_origem}", texto_style))
+        story.append(Spacer(1, 0.5*cm))
+    
+    story.append(Spacer(1, 0.8*cm))
+    story.append(Paragraph("_________________________________", texto_style))
+    story.append(Paragraph("Veneravel Mestre", texto_style))
+    story.append(Paragraph("ARLS Bicentenário", texto_style))
+    story.append(Spacer(1, 0.5*cm))
+    
+    story.append(Paragraph(f"Codigo de verificacao: {codigo}", small_style))
+    
+    # Gerar PDF
+    doc.build(story)
+    buffer.seek(0)
+    return buffer
+def enviar_certificado_email(visitante):
+    """Envia o certificado de visita por e-mail"""
+    if not visitante.get('email'):
+        return {'success': False, 'message': 'Visitante não tem e-mail cadastrado'}
+    
+    # Gerar PDF
+    pdf_buffer = gerar_pdf_certificado(visitante)
+    
+    assunto = f"Certificado de Visita - ARLS Bicentenário"
+    
+    conteudo_html = f"""
+    <html>
+    <body style="font-family: Arial, sans-serif;">
+        <div style="max-width: 600px; margin: 0 auto; padding: 20px;">
+            <div style="background: linear-gradient(135deg, #1a472a, #0a2a1a); color: #ffd700; padding: 30px; text-align: center; border-radius: 10px;">
+                <h1>📜 Certificado de Visita</h1>
+            </div>
+            <div style="background: white; padding: 30px; border-radius: 10px; margin-top: 20px;">
+                <h2>Olá {visitante['nome']},</h2>
+                <p>É com grande satisfação que lhe enviamos o certificado de sua visita à <strong>ARLS Bicentenário</strong>.</p>
+                
+                <div style="background: #f8f9fa; padding: 20px; border-radius: 8px; margin: 20px 0;">
+                    <p><strong>📅 Reunião:</strong> {visitante['reuniao_titulo']}</p>
+                    <p><strong>📆 Data:</strong> {visitante['reuniao_data'].strftime('%d/%m/%Y')}</p>
+                    <p><strong>⏰ Horário:</strong> {visitante['hora_inicio'].strftime('%H:%M')}</p>
+                    <p><strong>📍 Local:</strong> {visitante.get('local', 'Brasília - DF')}</p>
+                    <p><strong>🔑 Código de verificação:</strong> {visitante['codigo_verificacao']}</p>
+                </div>
+                
+                <p>Em anexo, segue seu certificado de visita.</p>
+                <p>Este certificado pode ser validado a qualquer momento através do nosso site.</p>
+                
+                <hr>
+                <p style="font-size: 12px; color: #666;">
+                    Certificado emitido pelo Sistema Maçônico da ARLS Bicentenário
+                </p>
+            </div>
+        </div>
+    </body>
+    </html>
+    """
+    
+    try:
+        if RESEND_API_KEY:
+            import resend
+            params = {
+                "from": f"Sistema Maçônico <{EMAIL_FROM_DEFAULT}>",
+                "to": [visitante['email']],
+                "subject": assunto,
+                "html": conteudo_html,
+                "attachments": [
+                    {
+                        "filename": f"certificado_{visitante['codigo_verificacao']}.pdf",
+                        "content": pdf_buffer.getvalue(),
+                        "content_type": "application/pdf"
+                    }
+                ]
+            }
+            email = resend.Emails.send(params)
+            return {'success': True, 'message': 'E-mail enviado com certificado!'}
+        else:
+            # Fallback: salvar PDF em arquivo
+            filename = f"certificado_{visitante['codigo_verificacao']}.pdf"
+            with open(filename, "wb") as f:
+                f.write(pdf_buffer.getvalue())
+            print(f"📧 Certificado salvo: {filename}")
+            print(f"📧 E-mail seria enviado para: {visitante['email']}")
+            return {'success': True, 'message': 'Certificado gerado (modo debug)'}
+            
+    except Exception as e:
+        print(f"Erro ao enviar e-mail: {e}")
+        return {'success': False, 'message': str(e)}
+
+def registrar_notificacao_sistema(usuario_id, titulo, mensagem, tipo='sistema', link=None):
+    """Registra notificação no sistema"""
     try:
         cursor, conn = get_db()
         cursor.execute("""
-            SELECT permitido
-            FROM permissoes_usuario pu
-            JOIN permissoes p ON pu.permissao_id = p.id
-            WHERE pu.usuario_id = %s AND p.codigo = %s
-        """, (session['user_id'], codigo))
-        result = cursor.fetchone()
-        if result:
-            return_connection(conn)
-            return result['permitido'] == 1
-        grau_atual = session.get('grau_atual', 1)
-        cursor.execute("""
-            SELECT COUNT(*) as total
-            FROM permissoes_grau pg
-            JOIN permissoes p ON pg.permissao_id = p.id
-            WHERE pg.grau_id = %s AND p.codigo = %s
-        """, (grau_atual, codigo))
-        result = cursor.fetchone()
+            INSERT INTO notificacoes (usuario_id, titulo, mensagem, tipo, link, data_criacao, lida)
+            VALUES (%s, %s, %s, %s, %s, CURRENT_TIMESTAMP, 0)
+        """, (usuario_id, titulo, mensagem, tipo, link))
+        conn.commit()
         return_connection(conn)
-        return result and result['total'] > 0
+        return True
     except Exception as e:
-        print(f"Erro ao verificar permissão: {e}")
+        print(f"Erro ao registrar notificação: {e}")
         return False
 
-# ============================================
-# 12. DECORATORS
-# ============================================
+def enviar_notificacao_reuniao_lembrete(participante, reuniao):
+    """Envia lembrete de reunião para o dia anterior"""
+    assunto = f"🔔 Lembrete: Reunião {reuniao['titulo']} - Amanhã"
+    
+    data_formatada = reuniao['data'].strftime('%d/%m/%Y')
+    hora_formatada = reuniao['hora_inicio'].strftime('%H:%M') if reuniao['hora_inicio'] else 'Horário a confirmar'
+    
+    conteudo_html = f"""
+    <html>
+    <body style="font-family: Arial, sans-serif;">
+        <div style="max-width: 600px; margin: 0 auto; padding: 20px;">
+            <div style="background: linear-gradient(135deg, #1a472a, #0a2a1a); color: #ffd700; padding: 30px; text-align: center; border-radius: 10px;">
+                <h1>🔔 Lembrete de Reunião</h1>
+                <p>Não esqueça! Amanhã tem reunião</p>
+            </div>
+            <div style="background: white; padding: 30px; border-radius: 10px; margin-top: 20px;">
+                <h2>Olá {participante['nome_completo']},</h2>
+                <p>Você tem uma reunião marcada para <strong>AMANHÃ</strong>:</p>
+                
+                <div style="background: #f8f9fa; padding: 20px; border-radius: 8px; margin: 20px 0;">
+                    <p><strong>📌 Título:</strong> {reuniao['titulo']}</p>
+                    <p><strong>📅 Data:</strong> {data_formatada}</p>
+                    <p><strong>⏰ Horário:</strong> {hora_formatada}</p>
+                    <p><strong>📍 Local:</strong> {reuniao['local'] or reuniao['loja_nome'] or 'Templo Maçônico'}</p>
+                </div>
+                
+                <p>Por favor, confirme sua presença através do sistema.</p>
+                <p>Atenciosamente,<br><strong>Sistema Maçônico</strong></p>
+            </div>
+        </div>
+    </body>
+    </html>
+    """
+    
+    # Registrar notificação no sistema
+    registrar_notificacao_sistema(
+        participante['id'],
+        assunto,
+        f"Lembrete: Reunião {reuniao['titulo']} amanhã às {hora_formatada}",
+        'reuniao_lembrete',
+        f"/reunioes/{reuniao['id']}"
+    )
+    
+    # Enviar e-mail
+    if 'enviar_email_resend' in globals():
+        enviar_email_resend(participante['email'], assunto, conteudo_html)
 
-def login_required(f):
-    @wraps(f)
-    def decorated_function(*args, **kwargs):
-        if "usuario" not in session:
-            flash("Faça login para acessar esta página", "warning")
-            return redirect("/")
-        return f(*args, **kwargs)
-    return decorated_function
+def verificar_reunioes_e_enviar_notificacoes():
+    """Verifica reuniões do dia seguinte e envia notificações"""
+    cursor, conn = get_db()
+    
+    try:
+        hoje = datetime.now().date()
+        amanha = hoje + timedelta(days=1)
+        
+        # Buscar reuniões agendadas para AMANHÃ
+        cursor.execute("""
+            SELECT r.*, l.nome as loja_nome
+            FROM reunioes r
+            LEFT JOIN lojas l ON r.loja_id = l.id
+            WHERE r.status = 'agendada'
+            AND r.data = %s
+            ORDER BY r.hora_inicio
+        """, (amanha,))
+        
+        reunioes_amanha = cursor.fetchall()
+        
+        total_notificados = 0
+        
+        for reuniao in reunioes_amanha:
+            # Buscar participantes que receberão o lembrete
+            cursor.execute("""
+                SELECT u.id, u.nome_completo, u.email, 
+                       COALESCE(nc.dias_antecedencia_reuniao, 1) as dias_antecedencia
+                FROM usuarios u
+                LEFT JOIN notificacoes_config nc ON u.id = nc.usuario_id
+                WHERE u.ativo = 1 
+                AND u.email IS NOT NULL 
+                AND u.email != ''
+            """)
+            participantes = cursor.fetchall()
+            
+            for participante in participantes:
+                # Verificar se o participante quer receber notificações com a antecedência configurada
+                dias_antecedencia = participante.get('dias_antecedencia', 1)
+                if dias_antecedencia >= 1:
+                    enviar_notificacao_reuniao_lembrete(participante, reuniao)
+                    total_notificados += 1
+        
+        return_connection(conn)
+        return {
+            'success': True,
+            'reunioes_amanha': len(reunioes_amanha),
+            'participantes_notificados': total_notificados
+        }
+        
+    except Exception as e:
+        print(f"Erro ao verificar reuniões: {e}")
+        import traceback
+        traceback.print_exc()
+        if conn:
+            return_connection(conn)
+        return {'success': False, 'error': str(e)}
 
-def admin_required(f):
-    @wraps(f)
-    def decorated_function(*args, **kwargs):
-        if "usuario" not in session or session.get("tipo") != "admin":
-            flash("Acesso restrito a administradores", "danger")
-            return redirect("/dashboard")
-        return f(*args, **kwargs)
-    return decorated_function
+def verificar_aniversarios_e_enviar_notificacoes():
+    """Verifica aniversários do dia e envia notificações"""
+    cursor, conn = get_db()
+    
+    try:
+        hoje = datetime.now().date()
+        
+        # Buscar obreiros que fazem aniversário hoje
+        cursor.execute("""
+            SELECT u.id, u.nome_completo, u.email, u.telefone,
+                   nc.notificar_aniversario_obreiro
+            FROM usuarios u
+            LEFT JOIN notificacoes_config nc ON u.id = nc.usuario_id
+            WHERE EXTRACT(MONTH FROM u.data_nascimento) = %s
+              AND EXTRACT(DAY FROM u.data_nascimento) = %s
+              AND u.ativo = 1
+              AND u.data_nascimento IS NOT NULL
+        """, (hoje.month, hoje.day))
+        
+        obreiros_aniversariantes = cursor.fetchall()
+        
+        # Buscar familiares que fazem aniversário hoje
+        cursor.execute("""
+            SELECT f.id, f.nome, f.obreiro_id, f.grau_parentesco,
+                   u.nome_completo as obreiro_nome, u.email as obreiro_email,
+                   nc.notificar_aniversario_familiar
+            FROM familiares f
+            JOIN usuarios u ON f.obreiro_id = u.id
+            LEFT JOIN notificacoes_config nc ON u.id = nc.usuario_id
+            WHERE EXTRACT(MONTH FROM f.data_nascimento) = %s
+              AND EXTRACT(DAY FROM f.data_nascimento) = %s
+              AND f.ativo = 1
+              AND f.data_nascimento IS NOT NULL
+        """, (hoje.month, hoje.day))
+        
+        familiares_aniversariantes = cursor.fetchall()
+        
+        # Enviar notificações para obreiros aniversariantes
+        for obreiro in obreiros_aniversariantes:
+            if obreiro.get('notificar_aniversario_obreiro', 1):
+                titulo = f"🎂 Feliz Aniversário, {obreiro['nome_completo']}!"
+                mensagem = f"Neste dia especial, toda a Loja Maçônica celebra sua vida. Que a Sabedoria, Força e Beleza continuem guiando seus passos."
+                
+                registrar_notificacao_sistema(
+                    obreiro['id'], 
+                    titulo, 
+                    mensagem, 
+                    'aniversario_obreiro',
+                    '/obreiros/perfil'
+                )
+                
+                if obreiro.get('email'):
+                    enviar_email_aniversario_obreiro(obreiro['email'], obreiro['nome_completo'])
+        
+        # Enviar notificações para obreiros sobre aniversário de familiares
+        for familiar in familiares_aniversariantes:
+            if familiar.get('notificar_aniversario_familiar', 1):
+                titulo = f"🎂 Aniversário do Familiar: {familiar['nome']}"
+                mensagem = f"Hoje é aniversário de {familiar['nome']} ({familiar['grau_parentesco']}). Que este dia seja repleto de alegria para sua família."
+                
+                registrar_notificacao_sistema(
+                    familiar['obreiro_id'], 
+                    titulo, 
+                    mensagem, 
+                    'aniversario_familiar',
+                    '/familiares'
+                )
+                
+                if familiar.get('obreiro_email'):
+                    enviar_email_aniversario_familiar(
+                        familiar['obreiro_email'], 
+                        familiar['obreiro_nome'], 
+                        familiar['nome'], 
+                        familiar['grau_parentesco']
+                    )
+        
+        return_connection(conn)
+        return {
+            'success': True,
+            'obreiro_aniversariantes': len(obreiros_aniversariantes),
+            'familiar_aniversariantes': len(familiares_aniversariantes)
+        }
+        
+    except Exception as e:
+        print(f"Erro ao verificar aniversários: {e}")
+        import traceback
+        traceback.print_exc()
+        if conn:
+            conn.rollback()
+        return_connection(conn)
+        return {'success': False, 'error': str(e)}
 
-def sindicante_required(f):
-    @wraps(f)
-    def decorated_function(*args, **kwargs):
-        if "usuario" not in session or session.get("tipo") != "sindicante":
-            flash("Acesso restrito a sindicantes", "danger")
-            return redirect("/dashboard")
-        return f(*args, **kwargs)
-    return decorated_function
+def enviar_email_aniversario_obreiro(email, nome):
+    """Envia e-mail de aniversário para obreiro"""
+    assunto = f"🎂 Feliz Aniversário, {nome}!"
+    
+    conteudo_html = f"""
+    <html>
+    <body style="font-family: Arial, sans-serif;">
+        <div style="max-width: 600px; margin: 0 auto; padding: 20px;">
+            <div style="background: linear-gradient(135deg, #1a472a, #0a2a1a); color: #ffd700; padding: 30px; text-align: center; border-radius: 10px;">
+                <h1>🎂 Feliz Aniversário!</h1>
+            </div>
+            <div style="background: white; padding: 30px; border-radius: 10px; margin-top: 20px;">
+                <h2>Querido {nome},</h2>
+                <p>Neste dia especial, toda a Loja Maçônica se une para celebrar sua vida e sua jornada.</p>
+                <p>Que a Sabedoria, Força e Beleza continuem guiando seus passos.</p>
+                <p style="margin-top: 30px;">Com fraternal abraço,<br><strong>Sistema Maçônico</strong></p>
+            </div>
+        </div>
+    </body>
+    </html>
+    """
+    
+    if 'enviar_email_resend' in globals():
+        enviar_email_resend(email, assunto, conteudo_html)
 
-def require_grau(min_grau):
-    def decorator(f):
-        @wraps(f)
-        def decorated_function(*args, **kwargs):
-            if 'usuario_id' not in session:
-                flash('Faça login para acessar esta página', 'warning')
-                return redirect(url_for('login'))
-            if session.get('tipo') == 'admin':
-                return f(*args, **kwargs)
-            grau_usuario = _get_grau_usuario(session['usuario_id'])
-            if grau_usuario < min_grau:
-                flash('Você não tem permissão para acessar este conteúdo', 'danger')
-                return redirect(url_for('biblioteca.listar_materiais'))
-            return f(*args, **kwargs)
-        return decorated_function
-    return decorator
+def enviar_email_aniversario_familiar(email, obreiro_nome, familiar_nome, parentesco):
+    """Envia e-mail de aniversário de familiar para obreiro"""
+    assunto = f"🎂 Aniversário do Familiar: {familiar_nome}"
+    
+    conteudo_html = f"""
+    <html>
+    <body style="font-family: Arial, sans-serif;">
+        <div style="max-width: 600px; margin: 0 auto; padding: 20px;">
+            <div style="background: linear-gradient(135deg, #1a472a, #0a2a1a); color: #ffd700; padding: 30px; text-align: center; border-radius: 10px;">
+                <h1>🎂 Aniversário de Familiar</h1>
+            </div>
+            <div style="background: white; padding: 30px; border-radius: 10px; margin-top: 20px;">
+                <h2>Querido {obreiro_nome},</h2>
+                <p>Hoje é aniversário de <strong>{familiar_nome}</strong> ({parentesco}).</p>
+                <p>Que este dia seja repleto de alegria e realizações para sua família.</p>
+                <p style="margin-top: 30px;">Com fraternal abraço,<br><strong>Sistema Maçônico</strong></p>
+            </div>
+        </div>
+    </body>
+    </html>
+    """
+    
+    if 'enviar_email_resend' in globals():
+        enviar_email_resend(email, assunto, conteudo_html)
 
-def nivel_required(nivel_minimo):
-    def decorator(f):
-        @wraps(f)
-        def decorated_function(*args, **kwargs):
-            if "usuario" not in session:
-                flash("Faça login para acessar esta página", "warning")
-                return redirect("/")
-            if session.get('tipo') == 'admin':
-                return f(*args, **kwargs)
-            nivel_usuario = session.get("nivel_acesso", 1)
-            if nivel_usuario >= nivel_minimo:
-                return f(*args, **kwargs)
-            else:
-                flash("Você não tem permissão para acessar esta página", "danger")
-                return redirect("/dashboard")
-        return decorated_function
-    return decorator
+def executar_rotinas_diarias():
+    """Executa todas as rotinas diárias (aniversários e lembretes)"""
+    print(f"\n{'='*50}")
+    print(f"🔄 Executando rotinas diárias em {datetime.now().strftime('%d/%m/%Y %H:%M')}")
+    print(f"{'='*50}")
+    
+    # Verificar aniversários (mesmo dia)
+    print("📅 Verificando aniversários...")
+    resultado_aniversarios = verificar_aniversarios_e_enviar_notificacoes()
+    
+    # Verificar reuniões (dia anterior)
+    print("📆 Verificando reuniões de amanhã...")
+    resultado_reunioes = verificar_reunioes_e_enviar_notificacoes()
+    
+    print(f"\n✅ Rotinas concluídas!")
+    print(f"   - Aniversários: {resultado_aniversarios.get('obreiro_aniversariantes', 0)} obreiros, {resultado_aniversarios.get('familiar_aniversariantes', 0)} familiares")
+    print(f"   - Reuniões amanhã: {resultado_reunioes.get('reunioes_amanha', 0)} reuniões, {resultado_reunioes.get('participantes_notificados', 0)} notificações")
+    print(f"{'='*50}\n")
+    
+    return {
+        'aniversarios': resultado_aniversarios,
+        'reunioes': resultado_reunioes
+    }
 
-def nivel_ata_required():
-    def decorator(f):
-        @wraps(f)
-        def decorated_function(*args, **kwargs):
-            if "usuario" not in session:
-                flash("Faça login para acessar esta página", "warning")
-                return redirect("/")
-            if session.get('tipo') == 'admin':
-                return f(*args, **kwargs)
-            ata_id = kwargs.get('id')
-            if ata_id:
-                reuniao_grau = _get_ata_grau(ata_id)
-                nivel_usuario = session.get("nivel_acesso", 1)
-                if nivel_usuario == 1 and reuniao_grau == 1:
-                    return f(*args, **kwargs)
-                elif nivel_usuario == 2 and reuniao_grau <= 2:
-                    return f(*args, **kwargs)
-                elif nivel_usuario >= 3:
-                    return f(*args, **kwargs)
-                else:
-                    flash("Você não tem permissão para visualizar esta ata", "danger")
-                    return redirect("/dashboard")
-            return f(*args, **kwargs)
-        return decorated_function
-    return decorator
+# =====================
+# FUNÇÕES DE GRAU (NOVAS)
+# =====================
+
+def get_grau_principal(grau_nivel):
+    """Retorna a classificação principal do grau (para exibição em listas)"""
+    if grau_nivel == 1:
+        return "Aprendiz"
+    elif grau_nivel == 2:
+        return "Companheiro"
+    elif grau_nivel >= 3:
+        return "Mestre"
+    else:
+        return "Mestre"
+
+def get_grau_detalhado(grau_nivel):
+    """Retorna o nome detalhado do grau (para tooltips)"""
+    grau_map = {
+        1: "Aprendiz",
+        2: "Companheiro",
+        3: "Mestre",
+        4: "Mestre Instalado",
+        5: "Arquiteto Real",
+        6: "Soberano Grande Inspetor Geral",
+        7: "Mestre Perfeito",
+        8: "Eleito dos Nove",
+        9: "Mestre da Maçonaria Real",
+        10: "Cavaleiro Rosa-Cruz",
+        11: "Cavaleiro Kadosch",
+        12: "Grande Escocês",
+    }
+    return grau_map.get(grau_nivel, f"Grau Superior {grau_nivel}")
+
+def get_grau_descricao(grau):
+    """Retorna a descrição do grau (mantido para compatibilidade)"""
+    if grau == 1:
+        return "Aprendiz"
+    elif grau == 2:
+        return "Companheiro"
+    elif grau == 3:
+        return "Mestre"
+    elif grau == 4:
+        return "Mestre Instalado"
+    elif grau == 5:
+        return "Mestre Inst. (5°)"
+    elif grau == 6:
+        return "Grau 6 - Superior"
+    elif grau >= 7:
+        return f"Grau Superior {grau}"
+    else:
+        return "Mestre"
+
+def get_grau_badge_class(grau_nivel):
+    """Retorna a classe CSS para o badge do grau"""
+    if grau_nivel == 1:
+        return 'bg-secondary'
+    elif grau_nivel == 2:
+        return 'bg-primary'
+    elif grau_nivel == 3:
+        return 'bg-warning text-dark'
+    elif grau_nivel >= 4:
+        return 'bg-info'
+    else:
+        return 'bg-secondary'
+
+def get_grau_icon(grau_nivel):
+    """Retorna o ícone para o grau"""
+    if grau_nivel == 1 or grau_nivel == 2:
+        return 'bi bi-star'
+    elif grau_nivel >= 3:
+        return 'bi bi-star-fill'
+    else:
+        return 'bi bi-star'
+# =============================
+# FUNÇÕES DE PERMISSÃO
+# =============================
+
+def verificar_permissao(usuario_id, permissao_chave):
+    """Verifica se um usuário tem determinada permissão"""
+    cursor, conn = get_db()
+    
+    try:
+        # Buscar grau e tipo do usuário
+        cursor.execute("SELECT grau_atual, tipo FROM usuarios WHERE id = %s", (usuario_id,))
+        usuario = cursor.fetchone()
+        
+        if not usuario:
+            return_connection(conn)
+            return False
+        
+        # Admin tem todas as permissões
+        if usuario['tipo'] == 'admin':
+            return_connection(conn)
+            return True
+        
+        # Para graus >= 3, considerar como Mestre (grau 3)
+        grau_original = usuario['grau_atual']
+        if grau_original >= 3:
+            grau_efetivo = 3
+        else:
+            grau_efetivo = grau_original
+        
+        # Buscar permissão pelo chave
+        cursor.execute("SELECT id FROM permissoes WHERE chave = %s", (permissao_chave,))
+        permissao = cursor.fetchone()
+        
+        if not permissao:
+            return_connection(conn)
+            return False
+        
+        permissao_id = permissao['id']
+        
+        # Verificar permissão por grau
+        cursor.execute("""
+            SELECT 1 FROM permissoes_grau 
+            WHERE grau_id = %s AND permissao_id = %s
+        """, (grau_efetivo, permissao_id))
+        tem_permissao = cursor.fetchone() is not None
+        
+        return_connection(conn)
+        return tem_permissao
+        
+    except Exception as e:
+        print(f"Erro ao verificar permissão: {e}")
+        if conn:
+            return_connection(conn)
+        return False
+
+
+def tem_permissao(permissao_chave):
+    """Verifica se o usuário logado tem determinada permissão"""
+    if 'user_id' not in session:
+        return False
+    return verificar_permissao(session['user_id'], permissao_chave)
+
 
 def permissao_required(permissao_chave):
+    """Decorador para verificar permissão"""
+    from functools import wraps
+    
     def decorator(f):
         @wraps(f)
         def decorated_function(*args, **kwargs):
             if 'user_id' not in session:
                 flash("Você precisa estar logado para acessar esta página.", "danger")
                 return redirect(url_for('login'))
+            
             if tem_permissao(permissao_chave):
                 return f(*args, **kwargs)
             else:
@@ -559,104 +1872,14 @@ def permissao_required(permissao_chave):
         return decorated_function
     return decorator
 
-# ============================================
-# 13. FUNÇÃO DE LOG DE AUDITORIA
-# ============================================
-
-def registrar_log(acao, entidade=None, entidade_id=None, dados_anteriores=None, dados_novos=None):
-    if "user_id" not in session:
-        return
-    try:
-        cursor, conn = get_db()
-        if dados_anteriores and isinstance(dados_anteriores, dict):
-            dados_anteriores = json.dumps(dados_anteriores, ensure_ascii=False, default=str)
-        if dados_novos and isinstance(dados_novos, dict):
-            dados_novos = json.dumps(dados_novos, ensure_ascii=False, default=str)
-        
-        cursor.execute("SELECT nome_completo FROM usuarios WHERE id = %s", (session["user_id"],))
-        usuario = cursor.fetchone()
-        nome_completo = usuario['nome_completo'] if usuario else session.get("usuario", "Desconhecido")
-        
-        cursor.execute("""
-            INSERT INTO logs_auditoria 
-            (usuario_id, usuario_nome, acao, entidade, entidade_id, dados_anteriores, dados_novos, ip, user_agent)
-            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
-        """, (session["user_id"], nome_completo, acao, entidade, entidade_id,
-              dados_anteriores, dados_novos, request.remote_addr, request.headers.get('User-Agent', '')[:500]))
-        conn.commit()
-        return_connection(conn)
-    except Exception as e:
-        print(f"Erro ao registrar log: {e}")
-
-# ============================================
-# 14. FUNÇÕES DA BIBLIOTECA
-# ============================================
-
-def tem_permissao_biblioteca():
-    if 'usuario_id' not in session:
-        return False
-    if session.get('tipo') == 'admin':
-        return True
-    grau = session.get('grau_atual', 0)
-    return grau in [1, 2, 3]
-
-# ============================================
-# 15. FUNÇÕES DE WHATSAPP
-# ============================================
-
-def init_whatsapp_tables():
-    """Inicializa as tabelas do WhatsApp (chamada via rota admin)"""
-    try:
-        cursor, conn = get_db()
-        
-        cursor.execute("""
-            CREATE TABLE IF NOT EXISTS grupos_whatsapp (
-                id SERIAL PRIMARY KEY,
-                grupo_id VARCHAR(255) UNIQUE NOT NULL,
-                nome_grupo VARCHAR(255),
-                ultimo_envio TIMESTAMP,
-                criado_por INTEGER,
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-            )
-        """)
-        
-        cursor.execute("""
-            CREATE TABLE IF NOT EXISTS mensagens_agendadas (
-                id SERIAL PRIMARY KEY,
-                grupo_id VARCHAR(255) NOT NULL,
-                mensagem TEXT NOT NULL,
-                nome_grupo VARCHAR(255),
-                data_envio TIMESTAMP NOT NULL,
-                recorrencia VARCHAR(50),
-                criado_por INTEGER,
-                status VARCHAR(50) DEFAULT 'agendado',
-                enviado_em TIMESTAMP,
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-            )
-        """)
-        
-        cursor.execute("CREATE INDEX IF NOT EXISTS idx_grupos_grupo_id ON grupos_whatsapp(grupo_id)")
-        cursor.execute("CREATE INDEX IF NOT EXISTS idx_mensagens_data_envio ON mensagens_agendadas(data_envio)")
-        cursor.execute("CREATE INDEX IF NOT EXISTS idx_mensagens_status ON mensagens_agendadas(status)")
-        
-        conn.commit()
-        return_connection(conn)
-        print("✅ Tabelas do WhatsApp inicializadas com sucesso!")
-        return True
-    except Exception as e:
-        print(f"❌ Erro ao inicializar tabelas do WhatsApp: {e}")
-        return False
-
-# ============================================
-# 16. CONTEXTO GLOBAL
-# ============================================
-
+# =============================
+# CONTEXTO GLOBAL
+# =============================
 @app.context_processor
 def inject_global():
     return {
-        'datetime': datetime,
-        'now': datetime.now(),
+        'datetime': datetime, 
+        'now': datetime.now(), 
         'tem_permissao': tem_permissao,
         'verificar_permissao': verificar_permissao,
         'get_grau_principal': get_grau_principal,
@@ -666,7 +1889,18 @@ def inject_global():
         'get_grau_icon': get_grau_icon
     }
 
+@app.context_processor
+def inject_permissions():
+    def tem_permissao(codigo):
+        if 'user_id' not in session:
+            return False
+        if session.get('tipo') == 'admin':
+            return True
+        return _verificar_permissao_db(codigo)
+    return {'tem_permissao': tem_permissao}
+
 @app.template_filter('markdown')
+
 def render_markdown(text):
     if not text:
         return ''
@@ -1296,20 +2530,6 @@ def download_material(material_id):
             return_connection(conn)
         flash('Erro ao baixar o arquivo', 'danger')
         return redirect(url_for('visualizar_material', material_id=material_id))
-        
-# ============================================
-# 18. ROTA ADMIN PARA CRIAR TABELAS WHATSAPP
-# ============================================
-
-@app.route("/admin/criar-tabelas-whatsapp")
-@admin_required
-def admin_criar_tabelas_whatsapp():
-    if init_whatsapp_tables():
-        flash("✅ Tabelas do WhatsApp criadas com sucesso!", "success")
-    else:
-        flash("❌ Erro ao criar tabelas do WhatsApp", "danger")
-    return redirect("/dashboard")
-        
 # =============================
 # ROTAS DO DASHBOARD OTIMIZADO
 # =============================
