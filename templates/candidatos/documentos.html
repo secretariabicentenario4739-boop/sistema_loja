@@ -290,15 +290,6 @@
 
 {% block content %}
 
-<!-- Debug - remover em produção -->
-<div class="alert alert-info small mb-3">
-    <strong>Debug:</strong><br>
-    Total Obrigatórios: {{ total_obrigatorios }}<br>
-    Total Enviados: {{ total_enviados }}<br>
-    Percentual: {{ percentual }}%<br>
-    Documentos Pendentes: {{ documentos_pendentes }}<br>
-    Tipos de Documentos: {{ tipos_documentos|length }}
-</div>
 <div class="container-fluid py-4">
     <div class="container">
         <!-- Token de segurança oculto -->
@@ -830,36 +821,7 @@ if (!token || !candidatoId) {
 
 // Função para atualizar a barra de progresso - Usando valores do backend
 function atualizarProgresso() {
-    // Usar os valores passados do backend (mais confiável)
-    const totalObrigatorios = {{ total_obrigatorios }};
-    const totalEnviados = {{ total_enviados }};
-    const percentual = {{ percentual }};
-    const pendentes = {{ documentos_pendentes|default(0) }};
-    
-    console.log('📊 Atualizando barra:', { totalObrigatorios, totalEnviados, percentual, pendentes });
-    
-    // Atualiza contador de pendentes
-    const pendentesSpan = document.getElementById('pendentesCount');
-    if (pendentesSpan) pendentesSpan.textContent = pendentes;
-    
-    // Atualiza total enviados
-    const totalEnviadosSpan = document.getElementById('totalEnviados');
-    if (totalEnviadosSpan) totalEnviadosSpan.textContent = totalEnviados;
-    
-    // Atualiza contador de documentos
-    const contadorSpan = document.getElementById('contadorDocumentos');
-    if (contadorSpan) contadorSpan.textContent = `${totalEnviados}/${totalObrigatorios} Obrigatórios`;
-    
-    // ATUALIZA A BARRA DE PROGRESSO VISUALMENTE
-    const barraProgresso = document.getElementById('barraProgresso');
-    if (barraProgresso) {
-        barraProgresso.style.width = `${percentual}%`;
-        barraProgresso.style.backgroundColor = '#10b981';
-        barraProgresso.style.background = 'linear-gradient(90deg, #10b981, #34d399)';
-        barraProgresso.setAttribute('aria-valuenow', percentual);
-        console.log(`✅ Barra atualizada para ${percentual}%`);
-    } else {
-        console.error('❌ Elemento barraProgresso não encontrado!');
+      location.reload();
     }
     
     // Atualiza a mensagem
