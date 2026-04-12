@@ -8636,30 +8636,48 @@ def gerenciar_candidatos():
     # ============================================
     # BUSCAR STATUS DOS DOCUMENTOS POR CANDIDATO
     # ============================================
-    # Verificar se a tabela documentos_candidato existe
-    cursor.execute("""
-        SELECT EXISTS (
-            SELECT FROM information_schema.tables 
-            WHERE table_name = 'documentos_candidato'
-        )
-    """)
-    tabela_documentos_existe = cursor.fetchone()['exists']
+    
+    # Primeiro, buscar total de tipos de documentos obrigatórios
+    cursor.execute("SELECT COUNT(*) as total FROM tipos_documentos_candidato WHERE obrigatorio = 1")
+    total_tipos_obrigatorios = cursor.fetchone()['total']
     
     documentos_status = {}
     
-    if tabela_documentos_existe:
-        cursor.execute("""
-            SELECT 
-                c.id as candidato_id,
-                COUNT(d.id) as total,
-                SUM(CASE WHEN d.status = 'pendente' OR d.status IS NULL THEN 1 ELSE 0 END) as pendentes,
-                SUM(CASE WHEN d.status = 'aprovado' THEN 1 ELSE 0 END) as aprovados
-            FROM candidatos c
-            LEFT JOIN documentos_candidato d ON c.id = d.candidato_id
-            GROUP BY c.id
-        """)
-        documentos_status_rows = cursor.fetchall()
-        documentos_status = {row['candidato_id']: row for row in documentos_status_rows}
+    # Buscar documentos enviados por candidato
+    cursor.execute("""
+        SELECT 
+            d.candidato_id,
+            COUNT(d.id) as enviados,
+            SUM(CASE WHEN d.status = 'aprovado' THEN 1 ELSE 0 END) as aprovados,
+            SUM(CASE WHEN d.status = 'pendente' THEN 1 ELSE 0 END) as pendentes,
+            SUM(CASE WHEN d.status = 'rejeitado' THEN 1 ELSE 0 END) as rejeitados
+        FROM documentos_candidato d
+        GROUP BY d.candidato_id
+    """)
+    docs_enviados = cursor.fetchall()
+    
+    # Montar dicionário com status dos documentos
+    for doc in docs_enviados:
+        documentos_status[doc['candidato_id']] = {
+            'total': total_tipos_obrigatorios,
+            'enviados': doc['enviados'],
+            'faltantes': total_tipos_obrigatorios - doc['enviados'],
+            'aprovados': doc['aprovados'],
+            'pendentes': doc['pendentes'],
+            'rejeitados': doc['rejeitados']
+        }
+    
+    # Para candidatos que não têm nenhum documento
+    for candidato in candidatos:
+        if candidato['id'] not in documentos_status:
+            documentos_status[candidato['id']] = {
+                'total': total_tipos_obrigatorios,
+                'enviados': 0,
+                'faltantes': total_tipos_obrigatorios,
+                'aprovados': 0,
+                'pendentes': 0,
+                'rejeitados': 0
+            }
     
     # Buscar sindicantes
     cursor.execute("""
