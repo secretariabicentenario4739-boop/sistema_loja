@@ -248,6 +248,19 @@
         animation: fadeInUp 0.5s ease-out;
     }
     
+    @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(-10px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+    
+    .toast-notification {
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        z-index: 9999;
+        animation: fadeIn 0.3s ease;
+    }
+    
     @media (max-width: 768px) {
         .table-documentos {
             font-size: 0.85rem;
@@ -278,6 +291,10 @@
 {% block content %}
 <div class="container-fluid py-4">
     <div class="container">
+        <!-- Token de segurança oculto -->
+        <input type="hidden" id="tokenAcesso" value="{{ candidato.token_acesso }}">
+        <input type="hidden" id="candidatoId" value="{{ candidato.id }}">
+
         <!-- Cabeçalho -->
         <div class="header-gradient text-white animate-in">
             <div class="d-flex justify-content-between align-items-center flex-wrap gap-3">
@@ -365,7 +382,7 @@
             </div>
             <div class="col-md-3 col-6">
                 <div class="stat-card">
-                    <div class="stat-number text-success">{{ total_enviados }}</div>
+                    <div class="stat-number text-success" id="totalEnviados">{{ total_enviados }}</div>
                     <small class="text-muted">Enviados</small>
                 </div>
             </div>
@@ -440,38 +457,34 @@
                                     </span>
                                 </td>
                                 <td class="status-area">
-                                    {% if doc %}
-                                        {% if doc.status == 'aprovado' %}
-                                            <span class="badge-custom badge-aprovado">
-                                                <i class="bi bi-check-circle-fill"></i> Aprovado
-                                            </span>
-                                            {% if doc.data_aprovacao %}
-                                                <br><small>{{ doc.data_aprovacao.strftime('%d/%m/%Y') }}</small>
-                                            {% endif %}
-                                        {% elif doc.status == 'rejeitado' %}
-                                            <span class="badge-custom badge-rejeitado">
-                                                <i class="bi bi-x-circle-fill"></i> Rejeitado
-                                            </span>
-                                            {% if doc.observacao %}
-                                                <br><small class="text-danger">{{ doc.observacao[:40] }}</small>
+                                    <div class="document-status-area">
+                                        {% if doc %}
+                                            <div class="mb-2">
+                                                <span class="status-badge status-{{ doc.status }}" data-status="{{ doc.status }}">
+                                                    <i class="bi 
+                                                        {% if doc.status == 'aprovado' %}bi-check-circle-fill
+                                                        {% elif doc.status == 'rejeitado' %}bi-x-circle-fill
+                                                        {% else %}bi-clock-fill{% endif %}"></i>
+                                                    {% if doc.status == 'aprovado' %}
+                                                        Aprovado em {{ doc.data_aprovacao.strftime('%d/%m/%Y') if doc.data_aprovacao else '-' }}
+                                                    {% elif doc.status == 'rejeitado' %}
+                                                        Rejeitado: {{ doc.observacao or 'Envie novamente' }}
+                                                    {% else %}
+                                                        Enviado em {{ doc.data_envio.strftime('%d/%m/%Y %H:%M') if doc.data_envio else '-' }}
+                                                    {% endif %}
+                                                </span>
+                                            </div>
+                                            {% if tipo.nome == 'Foto 3x4' and doc.caminho_arquivo %}
+                                                <div class="mt-2">
+                                                    <img src="{{ doc.caminho_arquivo }}" alt="Foto 3x4" class="photo-preview" onclick="visualizarDocumento('{{ doc.caminho_arquivo }}', '{{ tipo.nome }}')">
+                                                </div>
                                             {% endif %}
                                         {% else %}
-                                            <span class="badge-custom badge-pendente">
-                                                <i class="bi bi-clock-fill"></i> Pendente
-                                            </span>
+                                            <div class="text-muted py-2">
+                                                <i class="bi bi-inbox fs-5 me-2"></i> Nenhum arquivo enviado
+                                            </div>
                                         {% endif %}
-                                        
-                                        {% if tipo.nome == 'Foto 3x4' and doc.caminho_arquivo %}
-                                            <br>
-                                            <img src="{{ doc.caminho_arquivo }}" alt="Foto" 
-                                                 class="photo-preview mt-1" 
-                                                 onclick="visualizarDocumento('{{ doc.caminho_arquivo }}', '{{ tipo.nome }}')">
-                                        {% endif %}
-                                    {% else %}
-                                        <span class="badge-custom badge-nao-enviado">
-                                            <i class="bi bi-cloud-slash"></i> Não enviado
-                                        </span>
-                                    {% endif %}
+                                    </div>
                                 </td>
                                 <td>
                                     {% if doc %}
@@ -561,28 +574,29 @@
                                     </span>
                                 </td>
                                 <td class="status-area">
-                                    {% if doc %}
-                                        {% if doc.status == 'aprovado' %}
-                                            <span class="badge-custom badge-aprovado">
-                                                <i class="bi bi-check-circle-fill"></i> Aprovado
-                                            </span>
-                                        {% elif doc.status == 'rejeitado' %}
-                                            <span class="badge-custom badge-rejeitado">
-                                                <i class="bi bi-x-circle-fill"></i> Rejeitado
-                                            </span>
-                                            {% if doc.observacao %}
-                                                <br><small class="text-danger">{{ doc.observacao[:40] }}</small>
-                                            {% endif %}
+                                    <div class="document-status-area">
+                                        {% if doc %}
+                                            <div class="mb-2">
+                                                <span class="status-badge status-{{ doc.status }}" data-status="{{ doc.status }}">
+                                                    <i class="bi 
+                                                        {% if doc.status == 'aprovado' %}bi-check-circle-fill
+                                                        {% elif doc.status == 'rejeitado' %}bi-x-circle-fill
+                                                        {% else %}bi-clock-fill{% endif %}"></i>
+                                                    {% if doc.status == 'aprovado' %}
+                                                        Aprovado
+                                                    {% elif doc.status == 'rejeitado' %}
+                                                        Rejeitado: {{ doc.observacao or 'Envie novamente' }}
+                                                    {% else %}
+                                                        Enviado em {{ doc.data_envio.strftime('%d/%m/%Y %H:%M') if doc.data_envio else '-' }}
+                                                    {% endif %}
+                                                </span>
+                                            </div>
                                         {% else %}
-                                            <span class="badge-custom badge-pendente">
-                                                <i class="bi bi-clock-fill"></i> Pendente
-                                            </span>
+                                            <div class="text-muted py-2">
+                                                <i class="bi bi-inbox fs-5 me-2"></i> Nenhum arquivo enviado
+                                            </div>
                                         {% endif %}
-                                    {% else %}
-                                        <span class="badge-custom badge-nao-enviado">
-                                            <i class="bi bi-cloud-slash"></i> Não enviado
-                                        </span>
-                                    {% endif %}
+                                    </div>
                                 </td>
                                 <td>
                                     {% if doc %}
@@ -746,8 +760,7 @@
 <div class="modal fade" id="modalUpload{{ tipo.id }}" tabindex="-1">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content border-0 rounded-4">
-            <form method="POST" action="/candidatos/{{ candidato.id }}/documentos/upload/{{ tipo.id }}" 
-                  enctype="multipart/form-data">
+            <form id="formUpload{{ tipo.id }}" enctype="multipart/form-data">
                 <div class="modal-header bg-primary text-white border-0">
                     <h5 class="modal-title">
                         <i class="bi bi-cloud-upload-fill me-2"></i> 
@@ -756,36 +769,37 @@
                     <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body p-4">
-                    <p><strong>{{ tipo.nome }}</strong></p>
-                    {% if tipo.descricao %}
-                        <p class="small text-muted">{{ tipo.descricao }}</p>
-                    {% endif %}
+                    <div class="mb-3">
+                        <label class="fw-bold mb-2">{{ tipo.nome }}</label>
+                        {% if tipo.descricao %}
+                            <p class="small text-muted">{{ tipo.descricao }}</p>
+                        {% endif %}
+                    </div>
                     
                     {% if tipo.obrigatorio == 1 %}
                         <div class="alert alert-danger py-2 small">
                             <i class="bi bi-exclamation-triangle-fill me-1"></i>
-                            <strong>Documento obrigatório</strong> - O envio é necessário.
-                        </div>
-                    {% else %}
-                        <div class="alert alert-info py-2 small">
-                            <i class="bi bi-info-circle-fill me-1"></i>
-                            <strong>Documento opcional</strong> - O envio não é obrigatório, mas ajuda na validação.
+                            <strong>Documento obrigatório</strong> - O envio é necessário para completar sua candidatura.
                         </div>
                     {% endif %}
                     
                     <div class="mb-3">
-                        <label class="form-label fw-bold">Arquivo (PDF, JPG, PNG)</label>
+                        <label class="form-label fw-bold">
+                            <i class="bi bi-file-earmark-arrow-up me-1"></i> Arquivo
+                        </label>
                         <input type="file" class="form-control" name="arquivo" required 
                                accept=".pdf,.jpg,.jpeg,.png">
-                        <div class="form-text">Tamanho máximo: 10MB</div>
+                        <div class="form-text">
+                            <i class="bi bi-info-circle"></i> Formatos permitidos: PDF, JPG, PNG. Tamanho máximo: 10MB
+                        </div>
                     </div>
                 </div>
                 <div class="modal-footer bg-light border-0">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
                         <i class="bi bi-x-circle"></i> Cancelar
                     </button>
-                    <button type="submit" class="btn btn-primary">
-                        <i class="bi bi-cloud-upload-fill"></i> Enviar
+                    <button type="submit" class="btn btn-primary" onclick="uploadDocumento({{ tipo.id }}, '{{ tipo.nome }}'); return false;">
+                        <i class="bi bi-cloud-upload-fill"></i> Enviar Documento
                     </button>
                 </div>
             </form>
@@ -796,41 +810,32 @@
 {% endfor %}
 
 <script>
-let totalObrigatorios = {{ total_obrigatorios }};
+const token = document.getElementById('tokenAcesso')?.value;
+const candidatoId = document.getElementById('candidatoId')?.value;
 
-// Função para atualizar a barra de progresso - VERSÃO CORRIGIDA
+if (!token || !candidatoId) {
+    console.error('Token ou ID do candidato não encontrado');
+    window.location.href = '/';
+}
+
+// Função para atualizar a barra de progresso
 function atualizarProgresso() {
-    // Conta todas as linhas da tabela que são documentos obrigatórios
-    // Pega todas as linhas que NÃO têm a classe 'table-light' (documentos opcionais)
-    // E que NÃO são a linha do separador
-    const todasLinhas = document.querySelectorAll('.table-documentos tbody tr');
-    let totalObrigatorios = 0;
+    const documentosObrigatorios = document.querySelectorAll('[data-obrigatorio="1"]');
+    const totalObrigatorios = documentosObrigatorios.length;
+    
     let enviadosObrigatorios = 0;
     let pendentes = 0;
     
-    todasLinhas.forEach(row => {
-        // Pula a linha do separador
-        if (row.classList.contains('separator-row')) {
-            return;
-        }
+    documentosObrigatorios.forEach(card => {
+        const statusArea = card.querySelector('.document-status-area');
+        const statusBadge = statusArea ? statusArea.querySelector('.status-badge') : null;
         
-        // Verifica se é documento obrigatório (tem a badge-obrigatorio)
-        const badgeTipo = row.querySelector('.badge-obrigatorio');
-        if (badgeTipo) {
-            totalObrigatorios++;
+        if (statusBadge) {
+            enviadosObrigatorios++;
             
-            // Verifica se tem documento enviado (status-area não está vazio e tem badge de status)
-            const statusArea = row.querySelector('.status-area');
-            const statusBadge = statusArea ? statusArea.querySelector('.badge-custom') : null;
-            
-            // Se tem status badge e não é "Não enviado", considera como enviado
-            if (statusBadge && !statusBadge.classList.contains('badge-nao-enviado')) {
-                enviadosObrigatorios++;
-                
-                // Conta pendentes (badge-pendente)
-                if (statusBadge.classList.contains('badge-pendente')) {
-                    pendentes++;
-                }
+            // Verifica se é pendente
+            if (statusBadge.classList.contains('status-pendente')) {
+                pendentes++;
             }
         }
     });
@@ -839,6 +844,12 @@ function atualizarProgresso() {
     const pendentesSpan = document.getElementById('pendentesCount');
     if (pendentesSpan) {
         pendentesSpan.textContent = pendentes;
+    }
+    
+    // Atualiza total enviados
+    const totalEnviadosSpan = document.getElementById('totalEnviados');
+    if (totalEnviadosSpan) {
+        totalEnviadosSpan.textContent = enviadosObrigatorios;
     }
     
     // Atualiza contador de documentos
@@ -860,253 +871,46 @@ function atualizarProgresso() {
     if (mensagemDiv) {
         if (percentual === 100) {
             mensagemDiv.innerHTML = `
-                <span class="badge bg-success bg-opacity-10 text-success px-3 py-2">
-                    <i class="bi bi-trophy-fill me-1"></i> 
-                    🎉 Parabéns! Todos os documentos obrigatórios foram enviados!
+                <span class="badge bg-success bg-opacity-10 text-success px-3 py-2 rounded-pill">
+                    <i class="bi bi-trophy-fill me-1"></i> Parabéns! Todos os documentos obrigatórios foram enviados!
                 </span>
             `;
         } else if (enviadosObrigatorios > 0) {
             const faltam = totalObrigatorios - enviadosObrigatorios;
             mensagemDiv.innerHTML = `
-                <span class="badge bg-warning bg-opacity-10 text-warning px-3 py-2">
-                    <i class="bi bi-hourglass-split me-1"></i> 
-                    ⏳ Aguardando envio de ${faltam} documento(s) obrigatório(s)
+                <span class="badge bg-warning bg-opacity-10 text-warning px-3 py-2 rounded-pill">
+                    <i class="bi bi-hourglass-split me-1"></i> Aguardando envio de ${faltam} documento(s)
                 </span>
             `;
         } else {
             mensagemDiv.innerHTML = `
-                <span class="badge bg-secondary bg-opacity-10 text-secondary px-3 py-2">
-                    <i class="bi bi-info-circle me-1"></i> 
-                    📄 Nenhum documento obrigatório enviado ainda
+                <span class="badge bg-secondary bg-opacity-10 text-secondary px-3 py-2 rounded-pill">
+                    <i class="bi bi-info-circle me-1"></i> Nenhum documento obrigatório enviado ainda
                 </span>
             `;
         }
     }
-    
-    // Log para debug
-    console.log('Progresso atualizado:', {
-        totalObrigatorios: totalObrigatorios,
-        enviadosObrigatorios: enviadosObrigatorios,
-        percentual: percentual,
-        pendentes: pendentes
-    });
 }
 
-// Função para forçar atualização da barra após ações
-function atualizarTudo() {
-    atualizarProgresso();
+// Função para mostrar notificação
+function mostrarNotificacao(mensagem, tipo = 'success') {
+    const toastDiv = document.createElement('div');
+    toastDiv.className = `toast-notification alert alert-${tipo === 'success' ? 'success' : 'danger'} shadow-lg`;
+    toastDiv.style.cssText = 'position: fixed; top: 20px; right: 20px; z-index: 9999; min-width: 300px;';
+    toastDiv.innerHTML = `
+        <div class="d-flex align-items-center">
+            <i class="bi ${tipo === 'success' ? 'bi-check-circle-fill' : 'bi-exclamation-triangle-fill'} fs-4 me-2"></i>
+            <div>${mensagem}</div>
+            <button type="button" class="btn-close ms-auto" onclick="this.parentElement.parentElement.remove()"></button>
+        </div>
+    `;
+    document.body.appendChild(toastDiv);
+    setTimeout(() => {
+        if (toastDiv && toastDiv.remove) toastDiv.remove();
+    }, 5000);
 }
 
-// Modificar as funções de aprovar/rejeitar/excluir para atualizar sem recarregar
-function aprovarDocumento(docId, nomeDocumento) {
-    if (!confirm(`✅ Confirmar aprovação do documento "${nomeDocumento}"?`)) {
-        return;
-    }
-    
-    const btn = event.target;
-    const originalText = btn.innerHTML;
-    btn.innerHTML = '<i class="bi bi-hourglass-split"></i> Aprovando...';
-    btn.disabled = true;
-    
-    fetch(`/api/documentos-candidato/${docId}/aprovar`, {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ 
-            status: 'aprovado',
-            data_aprovacao: new Date().toISOString()
-        })
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.success) {
-            // Atualiza o status na tabela sem recarregar a página
-            const row = btn.closest('tr');
-            const statusArea = row.querySelector('.status-area');
-            
-            // Atualiza o HTML do status
-            statusArea.innerHTML = `
-                <span class="badge-custom badge-aprovado">
-                    <i class="bi bi-check-circle-fill"></i> Aprovado
-                </span>
-                <br><small>${new Date().toLocaleDateString('pt-BR')}</small>
-            `;
-            
-            // Remove os botões de aprovar/rejeitar
-            const botoesAcao = row.querySelector('.d-flex.flex-wrap.gap-1');
-            if (botoesAcao) {
-                const btnAprovar = botoesAcao.querySelector('.btn-aprovar');
-                const btnRejeitar = botoesAcao.querySelector('.btn-rejeitar');
-                if (btnAprovar) btnAprovar.remove();
-                if (btnRejeitar) btnRejeitar.remove();
-            }
-            
-            // Atualiza a barra de progresso
-            atualizarProgresso();
-            
-            alert(`✅ Documento "${nomeDocumento}" aprovado com sucesso!`);
-        } else {
-            throw new Error(data.error || 'Erro desconhecido');
-        }
-    })
-    .catch(error => {
-        console.error('Erro detalhado:', error);
-        alert(`❌ Erro ao aprovar documento: ${error.message}`);
-    })
-    .finally(() => {
-        btn.innerHTML = originalText;
-        btn.disabled = false;
-    });
-}
-
-function rejeitarDocumento(docId, nomeDocumento) {
-    const motivo = prompt(`❌ Rejeitar documento "${nomeDocumento}"\n\nDigite o motivo da rejeição:`);
-    
-    if (!motivo || motivo.trim() === '') {
-        if (motivo !== null) {
-            alert('❌ Motivo da rejeição é obrigatório!');
-        }
-        return;
-    }
-    
-    const btn = event.target;
-    const originalText = btn.innerHTML;
-    btn.innerHTML = '<i class="bi bi-hourglass-split"></i> Rejeitando...';
-    btn.disabled = true;
-    
-    fetch(`/api/documentos-candidato/${docId}/rejeitar`, {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ 
-            status: 'rejeitado',
-            observacao: motivo.trim(),
-            data_reprovacao: new Date().toISOString()
-        })
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.success) {
-            // Atualiza o status na tabela sem recarregar a página
-            const row = btn.closest('tr');
-            const statusArea = row.querySelector('.status-area');
-            
-            // Atualiza o HTML do status
-            statusArea.innerHTML = `
-                <span class="badge-custom badge-rejeitado">
-                    <i class="bi bi-x-circle-fill"></i> Rejeitado
-                </span>
-                <br><small class="text-danger">${motivo}</small>
-            `;
-            
-            // Remove os botões de aprovar/rejeitar
-            const botoesAcao = row.querySelector('.d-flex.flex-wrap.gap-1');
-            if (botoesAcao) {
-                const btnAprovar = botoesAcao.querySelector('.btn-aprovar');
-                const btnRejeitar = botoesAcao.querySelector('.btn-rejeitar');
-                if (btnAprovar) btnAprovar.remove();
-                if (btnRejeitar) btnRejeitar.remove();
-            }
-            
-            // Atualiza a barra de progresso
-            atualizarProgresso();
-            
-            alert(`❌ Documento "${nomeDocumento}" rejeitado.\nMotivo: ${motivo}`);
-        } else {
-            throw new Error(data.error || 'Erro desconhecido');
-        }
-    })
-    .catch(error => {
-        console.error('Erro detalhado:', error);
-        alert(`❌ Erro ao rejeitar documento: ${error.message}`);
-    })
-    .finally(() => {
-        btn.innerHTML = originalText;
-        btn.disabled = false;
-    });
-}
-
-function excluirDocumento(docId, nomeDocumento, tipoId) {
-    if (!confirm(`⚠️ ATENÇÃO!\n\nDeseja excluir o documento "${nomeDocumento}"?\n\nEsta ação não pode ser desfeita.`)) {
-        return;
-    }
-    
-    fetch(`/api/documentos-candidato/${docId}/excluir`, {
-        method: 'DELETE',
-        headers: {
-            'Content-Type': 'application/json'
-        }
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.success) {
-            // Atualiza o status na tabela sem recarregar a página
-            const row = document.querySelector(`tr[data-documento-id="${tipoId}"]`);
-            if (row) {
-                const statusArea = row.querySelector('.status-area');
-                statusArea.innerHTML = `
-                    <span class="badge-custom badge-nao-enviado">
-                        <i class="bi bi-cloud-slash"></i> Não enviado
-                    </span>
-                `;
-                
-                // Remove botões de visualizar/baixar/excluir
-                const botoesAcao = row.querySelector('.d-flex.flex-wrap.gap-1');
-                if (botoesAcao) {
-                    // Remove botões específicos
-                    const btnView = botoesAcao.querySelector('.btn-outline-info');
-                    const btnDownload = botoesAcao.querySelector('.btn-outline-success');
-                    const btnExcluir = botoesAcao.querySelector('.btn-outline-danger');
-                    const btnAprovar = botoesAcao.querySelector('.btn-aprovar');
-                    const btnRejeitar = botoesAcao.querySelector('.btn-rejeitar');
-                    
-                    if (btnView) btnView.remove();
-                    if (btnDownload) btnDownload.remove();
-                    if (btnExcluir) btnExcluir.remove();
-                    if (btnAprovar) btnAprovar.remove();
-                    if (btnRejeitar) btnRejeitar.remove();
-                }
-            }
-            
-            // Atualiza a barra de progresso
-            atualizarProgresso();
-            
-            alert('✅ Documento excluído com sucesso!');
-        } else {
-            alert('❌ Erro: ' + (data.error || 'Erro desconhecido'));
-        }
-    })
-    .catch(error => {
-        console.error('Erro:', error);
-        alert('❌ Erro ao excluir documento');
-    });
-}
-
-// Adiciona um observador para atualizar a barra quando a página carregar e quando houver mudanças
-document.addEventListener('DOMContentLoaded', function() {
-    // Atualiza progresso
-    atualizarProgresso();
-    
-    // Adiciona um observador de mutação para detectar mudanças na tabela
-    const observer = new MutationObserver(function(mutations) {
-        atualizarProgresso();
-    });
-    
-    const tabela = document.querySelector('.table-documentos tbody');
-    if (tabela) {
-        observer.observe(tabela, { childList: true, subtree: true, attributes: true });
-    }
-    
-    // Log para debug
-    console.log('Página carregada, total obrigatórios do backend:', {{ total_obrigatorios }});
-    
-    // Força atualização após 1 segundo
-    setTimeout(atualizarProgresso, 1000);
-});
-
-// Versão alternativa usando Google Docs Viewer (funciona para PDF, DOC, DOCX, PPT, etc.)
+// Função para visualizar documento - VERSÃO CORRIGIDA
 function visualizarDocumento(caminho, nome) {
     const modal = new bootstrap.Modal(document.getElementById('modalVisualizacao'));
     const viewer = document.getElementById('documentViewer');
@@ -1116,20 +920,107 @@ function visualizarDocumento(caminho, nome) {
     titulo.innerHTML = `<i class="bi bi-file-earmark-text me-2"></i> Visualizar: ${nome}`;
     btnDownload.href = caminho;
     
-    const extensao = caminho.split('.').pop().toLowerCase();
-    const urlCompleta = window.location.origin + caminho;
+    // Tenta extrair extensão de diferentes formas
+    let extensao = '';
+    let urlCompleta = '';
     
-    viewer.innerHTML = '';
+    // Verifica se caminho tem ponto para extrair extensão
+    if (caminho.includes('.')) {
+        extensao = caminho.split('.').pop().toLowerCase();
+        // Remove query strings se houver
+        if (extensao.includes('?')) {
+            extensao = extensao.split('?')[0];
+        }
+    }
     
-    // Usa Google Docs Viewer para PDF e documentos Office
-    if (['pdf', 'doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx'].includes(extensao)) {
+    // Constrói URL completa
+    if (caminho.startsWith('http')) {
+        urlCompleta = caminho;
+    } else {
+        urlCompleta = window.location.origin + caminho;
+    }
+    
+    viewer.innerHTML = '<div class="text-center p-5"><div class="spinner-border text-primary" role="status"><span class="visually-hidden">Carregando...</span></div><p class="mt-2">Carregando documento...</p></div>';
+    
+    // Primeiro, tenta detectar o tipo do arquivo via fetch
+    fetch(urlCompleta, { method: 'HEAD' })
+        .then(response => {
+            const contentType = response.headers.get('content-type');
+            
+            if (contentType) {
+                if (contentType.includes('pdf')) {
+                    extensao = 'pdf';
+                } else if (contentType.includes('jpeg') || contentType.includes('jpg')) {
+                    extensao = 'jpg';
+                } else if (contentType.includes('png')) {
+                    extensao = 'png';
+                } else if (contentType.includes('gif')) {
+                    extensao = 'gif';
+                } else if (contentType.includes('msword') || contentType.includes('word')) {
+                    extensao = 'doc';
+                } else if (contentType.includes('spreadsheet') || contentType.includes('excel')) {
+                    extensao = 'xls';
+                } else if (contentType.includes('presentation') || contentType.includes('powerpoint')) {
+                    extensao = 'ppt';
+                }
+            }
+            
+            renderizarDocumento(extensao, urlCompleta, caminho, viewer);
+        })
+        .catch(error => {
+            console.error('Erro ao detectar tipo:', error);
+            renderizarDocumento(extensao, urlCompleta, caminho, viewer);
+        });
+}
+
+function renderizarDocumento(extensao, urlCompleta, caminho, viewer) {
+    // Lista de extensões de imagem
+    const imagens = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp', 'svg'];
+    // Lista de extensões de documentos que podem ser visualizados pelo Google Docs
+    const googleDocs = ['pdf', 'doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx'];
+    
+    // Tenta extrair extensão da URL se não foi detectada
+    if (!extensao || extensao.length > 5) {
+        // Tenta encontrar extensão na URL
+        const urlParts = urlCompleta.split('/');
+        const fileName = urlParts[urlParts.length - 1];
+        if (fileName.includes('.')) {
+            const possibleExt = fileName.split('.').pop().toLowerCase();
+            if (possibleExt.length <= 5) {
+                extensao = possibleExt;
+            }
+        }
+    }
+    
+    console.log('Extensão detectada:', extensao);
+    console.log('URL:', urlCompleta);
+    
+    // Se é imagem
+    if (imagens.includes(extensao)) {
+        viewer.innerHTML = `
+            <div class="text-center p-3">
+                <img src="${urlCompleta}" alt="Documento" style="max-width: 100%; max-height: 70vh; border-radius: 8px;" 
+                     onerror="this.onerror=null; this.src=''; this.alt='Erro ao carregar imagem';">
+                <div class="mt-2">
+                    <small class="text-muted">
+                        <i class="bi bi-info-circle"></i> 
+                        Clique com botão direito para salvar a imagem
+                    </small>
+                </div>
+            </div>
+        `;
+    } 
+    // Se é PDF ou documento do Office
+    else if (googleDocs.includes(extensao)) {
+        // Usa Google Docs Viewer
         const googleDocsUrl = `https://docs.google.com/viewer?url=${encodeURIComponent(urlCompleta)}&embedded=true`;
         
         viewer.innerHTML = `
             <div style="width: 100%; height: 80vh; position: relative;">
                 <iframe src="${googleDocsUrl}" 
                         style="width: 100%; height: 100%; border: none;"
-                        frameborder="0">
+                        frameborder="0"
+                        allowfullscreen>
                 </iframe>
                 <div class="text-center mt-2">
                     <small class="text-muted">
@@ -1140,43 +1031,104 @@ function visualizarDocumento(caminho, nome) {
                 </div>
             </div>
         `;
-    } 
-    else if (['jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp'].includes(extensao)) {
+    }
+    // Tenta usar iframe direto para PDF (fallback)
+    else if (extensao === 'pdf') {
         viewer.innerHTML = `
-            <div class="text-center p-3">
-                <img src="${caminho}" alt="Documento" style="max-width: 100%; max-height: 70vh; border-radius: 8px;">
+            <div style="width: 100%; height: 80vh; position: relative;">
+                <iframe src="${urlCompleta}" 
+                        style="width: 100%; height: 100%; border: none;"
+                        frameborder="0">
+                </iframe>
+                <div class="text-center mt-2">
+                    <small class="text-muted">
+                        <i class="bi bi-info-circle"></i> 
+                        <a href="${caminho}" target="_blank">Clique aqui para abrir em nova aba</a>
+                    </small>
+                </div>
             </div>
         `;
     }
+    // Caso não consiga identificar
     else {
         viewer.innerHTML = `
             <div class="text-center p-5">
                 <i class="bi bi-file-earmark-text fs-1 text-muted"></i>
-                <h5 class="mt-3">Visualização não disponível</h5>
-                <p class="text-muted">Não é possível visualizar este tipo de arquivo (${extensao.toUpperCase()}) diretamente.</p>
-                <a href="${caminho}" download class="btn btn-primary">
-                    <i class="bi bi-download"></i> Baixar Arquivo
-                </a>
+                <h5 class="mt-3">Pré-visualização não disponível</h5>
+                <p class="text-muted">
+                    Não foi possível identificar o tipo do arquivo para visualização direta.<br>
+                    Extensão detectada: <code>${extensao || 'desconhecida'}</code>
+                </p>
+                <div class="mt-3">
+                    <a href="${caminho}" download class="btn btn-primary me-2">
+                        <i class="bi bi-download"></i> Baixar Arquivo
+                    </a>
+                    <a href="${caminho}" target="_blank" class="btn btn-outline-secondary">
+                        <i class="bi bi-box-arrow-up-right"></i> Abrir em Nova Aba
+                    </a>
+                </div>
+                <hr class="my-3">
+                <div class="alert alert-info small">
+                    <i class="bi bi-info-circle"></i> Informação técnica:<br>
+                    <strong>Caminho do arquivo:</strong> ${caminho}<br>
+                    <strong>URL completa:</strong> ${urlCompleta}<br>
+                    <strong>Tipo detectado:</strong> ${extensao || 'não detectado'}
+                </div>
             </div>
         `;
     }
-    
-    modal.show();
 }
 
-// Função para aprovar documento - VERSÃO CORRIGIDA
+// Função alternativa mais simples - abre em nova aba
+function visualizarDocumentoSimples(caminho, nome) {
+    window.open(caminho, '_blank');
+}
+
+// Função para upload de documento
+async function uploadDocumento(tipoId, nomeDocumento) {
+    const form = document.getElementById(`formUpload${tipoId}`);
+    const formData = new FormData(form);
+    
+    formData.append('token', token);
+    
+    try {
+        const response = await fetch(`/candidato/documentos/upload/${candidatoId}/${tipoId}?token=${token}`, {
+            method: 'POST',
+            body: formData
+        });
+        
+        const data = await response.json();
+        
+        if (response.redirected || data.redirect) {
+            window.location.href = '/';
+            return;
+        }
+        
+        if (data.success) {
+            mostrarNotificacao(`✅ ${nomeDocumento} enviado com sucesso!`, 'success');
+            setTimeout(() => {
+                location.reload();
+            }, 1500);
+        } else {
+            mostrarNotificacao(`❌ Erro ao enviar ${nomeDocumento}: ${data.error || 'Erro desconhecido'}`, 'error');
+        }
+    } catch (error) {
+        console.error('Erro:', error);
+        mostrarNotificacao(`❌ Erro ao enviar ${nomeDocumento}`, 'error');
+    }
+}
+
+// Função para aprovar documento
 function aprovarDocumento(docId, nomeDocumento) {
     if (!confirm(`✅ Confirmar aprovação do documento "${nomeDocumento}"?`)) {
         return;
     }
     
-    // Mostrar indicador de carregamento
     const btn = event.target;
     const originalText = btn.innerHTML;
     btn.innerHTML = '<i class="bi bi-hourglass-split"></i> Aprovando...';
     btn.disabled = true;
     
-    // Envia o corpo da requisição corretamente
     fetch(`/api/documentos-candidato/${docId}/aprovar`, {
         method: 'POST',
         headers: {
@@ -1187,35 +1139,28 @@ function aprovarDocumento(docId, nomeDocumento) {
             data_aprovacao: new Date().toISOString()
         })
     })
-    .then(response => {
-        if (!response.ok) {
-            return response.json().then(data => {
-                throw new Error(data.error || `HTTP error! status: ${response.status}`);
-            });
-        }
-        return response.json();
-    })
+    .then(response => response.json())
     .then(data => {
         if (data.success) {
-            alert(`✅ Documento "${nomeDocumento}" aprovado com sucesso!`);
-            location.reload();
+            mostrarNotificacao(`✅ ${nomeDocumento} aprovado com sucesso!`, 'success');
+            setTimeout(() => {
+                location.reload();
+            }, 1000);
         } else {
             throw new Error(data.error || 'Erro desconhecido');
         }
     })
     .catch(error => {
         console.error('Erro detalhado:', error);
-        alert(`❌ Erro ao aprovar documento: ${error.message}`);
+        mostrarNotificacao(`❌ Erro ao aprovar documento: ${error.message}`, 'error');
     })
     .finally(() => {
-        if (btn) {
-            btn.innerHTML = originalText;
-            btn.disabled = false;
-        }
+        btn.innerHTML = originalText;
+        btn.disabled = false;
     });
 }
 
-// Função para rejeitar documento - VERSÃO CORRIGIDA
+// Função para rejeitar documento
 function rejeitarDocumento(docId, nomeDocumento) {
     const motivo = prompt(`❌ Rejeitar documento "${nomeDocumento}"\n\nDigite o motivo da rejeição:`);
     
@@ -1226,13 +1171,11 @@ function rejeitarDocumento(docId, nomeDocumento) {
         return;
     }
     
-    // Mostrar indicador de carregamento
     const btn = event.target;
     const originalText = btn.innerHTML;
     btn.innerHTML = '<i class="bi bi-hourglass-split"></i> Rejeitando...';
     btn.disabled = true;
     
-    // Envia o corpo da requisição corretamente
     fetch(`/api/documentos-candidato/${docId}/rejeitar`, {
         method: 'POST',
         headers: {
@@ -1244,59 +1187,87 @@ function rejeitarDocumento(docId, nomeDocumento) {
             data_reprovacao: new Date().toISOString()
         })
     })
-    .then(response => {
-        if (!response.ok) {
-            return response.json().then(data => {
-                throw new Error(data.error || `HTTP error! status: ${response.status}`);
-            });
-        }
-        return response.json();
-    })
+    .then(response => response.json())
     .then(data => {
         if (data.success) {
-            alert(`❌ Documento "${nomeDocumento}" rejeitado.\nMotivo: ${motivo}`);
-            location.reload();
+            mostrarNotificacao(`❌ ${nomeDocumento} rejeitado`, 'error');
+            setTimeout(() => {
+                location.reload();
+            }, 1000);
         } else {
             throw new Error(data.error || 'Erro desconhecido');
         }
     })
     .catch(error => {
         console.error('Erro detalhado:', error);
-        alert(`❌ Erro ao rejeitar documento: ${error.message}`);
+        mostrarNotificacao(`❌ Erro ao rejeitar documento: ${error.message}`, 'error');
     })
     .finally(() => {
-        if (btn) {
-            btn.innerHTML = originalText;
-            btn.disabled = false;
-        }
+        btn.innerHTML = originalText;
+        btn.disabled = false;
     });
 }
 
-
-function excluirDocumento(docId, nomeDocumento, tipoId) {
+// Função para excluir documento
+async function excluirDocumento(docId, nomeDocumento, tipoId) {
     if (!confirm(`⚠️ ATENÇÃO!\n\nDeseja excluir o documento "${nomeDocumento}"?\n\nEsta ação não pode ser desfeita.`)) {
         return;
     }
     
-    fetch(`/api/documentos-candidato/${docId}/excluir`, {
-        method: 'DELETE',
-        headers: {
-            'Content-Type': 'application/json'
+    try {
+        const response = await fetch(`/api/documentos-candidato/${docId}/excluir?token=${token}`, {
+            method: 'DELETE',
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        });
+        
+        const data = await response.json();
+        
+        if (response.redirected || data.redirect) {
+            window.location.href = '/';
+            return;
         }
-    })
-    .then(response => response.json())
-    .then(data => {
+        
         if (data.success) {
-            alert('✅ Documento excluído com sucesso!');
-            location.reload();
+            mostrarNotificacao(`✅ ${nomeDocumento} excluído com sucesso!`, 'success');
+            
+            const card = document.querySelector(`[data-documento-id="${tipoId}"]`);
+            if (card) {
+                const statusArea = card.querySelector('.document-status-area');
+                if (statusArea) {
+                    statusArea.innerHTML = `
+                        <div class="text-muted py-2">
+                            <i class="bi bi-inbox fs-5 me-2"></i> Nenhum arquivo enviado
+                        </div>
+                    `;
+                }
+                
+                const btnContainer = card.querySelector('.d-flex.flex-wrap.gap-1');
+                if (btnContainer) {
+                    const uploadBtn = btnContainer.querySelector('.btn-outline-primary');
+                    const viewBtn = btnContainer.querySelector('.btn-outline-info');
+                    const downloadBtn = btnContainer.querySelector('.btn-outline-success');
+                    const deleteBtn = btnContainer.querySelector('.btn-outline-danger');
+                    const aprovarBtn = btnContainer.querySelector('.btn-aprovar');
+                    const rejeitarBtn = btnContainer.querySelector('.btn-rejeitar');
+                    
+                    if (viewBtn) viewBtn.remove();
+                    if (downloadBtn) downloadBtn.remove();
+                    if (deleteBtn) deleteBtn.remove();
+                    if (aprovarBtn) aprovarBtn.remove();
+                    if (rejeitarBtn) rejeitarBtn.remove();
+                }
+            }
+            
+            atualizarProgresso();
         } else {
-            alert('❌ Erro: ' + (data.error || 'Erro desconhecido'));
+            mostrarNotificacao(`❌ Erro ao excluir: ${data.error || 'Erro desconhecido'}`, 'error');
         }
-    })
-    .catch(error => {
+    } catch (error) {
         console.error('Erro:', error);
-        alert('❌ Erro ao excluir documento');
-    });
+        mostrarNotificacao(`❌ Erro ao excluir documento`, 'error');
+    }
 }
 
 function copiarLink() {
