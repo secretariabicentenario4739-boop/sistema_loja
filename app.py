@@ -9771,9 +9771,6 @@ def resetar_checklist(candidato_id):
     finally:
         return_connection(conn)        
 
-# =============================
-# ROTAS DE SINDICANTES
-# =============================
 @app.route("/sindicantes", methods=["GET", "POST"])
 @login_required
 @permissao_required('sindicante.view')
@@ -9804,6 +9801,10 @@ def gerenciar_sindicantes():
                     flash("Você não tem permissão para promover obreiros a sindicantes.", "danger")
             else:
                 flash("Obreiro não encontrado ou não atende aos requisitos (precisa ser Mestre ou superior e estar ativo)", "danger")
+            
+            return_connection(conn)
+            return redirect("/sindicantes")
+        
         else:
             # CADASTRAR NOVO SINDICANTE (apenas admin)
             if not tem_permissao('sindicante.create'):
@@ -9811,9 +9812,85 @@ def gerenciar_sindicantes():
                 return_connection(conn)
                 return redirect("/sindicantes")
             
-            # ... resto do código de cadastro ...
+            # Pegar dados do formulário
+            usuario = request.form.get('usuario', '').strip()
+            senha = request.form.get('senha', '')
+            nome_completo = request.form.get('nome_completo', '').strip()
+            cim_numero = request.form.get('cim_numero', '').strip()
+            grau_atual = request.form.get('grau_atual', 3)
+            loja_nome = request.form.get('loja_nome', '').strip()
+            loja_numero = request.form.get('loja_numero', '').strip()
+            loja_orient = request.form.get('loja_orient', '').strip()
+            telefone = request.form.get('telefone', '').strip()
+            email = request.form.get('email', '').strip()
+            
+            # Validações
+            if not usuario:
+                flash("❌ O campo Usuário é obrigatório!", "danger")
+                return_connection(conn)
+                return redirect("/sindicantes")
+            
+            if not senha:
+                flash("❌ O campo Senha é obrigatório!", "danger")
+                return_connection(conn)
+                return redirect("/sindicantes")
+            
+            if len(senha) < 6:
+                flash("❌ A senha deve ter no mínimo 6 caracteres!", "danger")
+                return_connection(conn)
+                return redirect("/sindicantes")
+            
+            # Verificar se usuário já existe
+            cursor.execute("SELECT id FROM usuarios WHERE usuario = %s", (usuario,))
+            if cursor.fetchone():
+                flash(f"❌ O usuário '{usuario}' já existe!", "danger")
+                return_connection(conn)
+                return redirect("/sindicantes")
+            
+            # Verificar se CIM já existe (se informado)
+            if cim_numero:
+                cursor.execute("SELECT id FROM usuarios WHERE cim_numero = %s", (cim_numero,))
+                if cursor.fetchone():
+                    flash(f"❌ O CIM número '{cim_numero}' já está cadastrado!", "danger")
+                    return_connection(conn)
+                    return redirect("/sindicantes")
+            
+            # Hash da senha
+            from werkzeug.security import generate_password_hash
+            from datetime import datetime
+            senha_hash = generate_password_hash(senha)
+            data_cadastro = datetime.now()
+            
+            try:
+                # Inserir novo sindicante
+                cursor.execute("""
+                    INSERT INTO usuarios 
+                    (usuario, senha_hash, tipo, data_cadastro, nome_completo, cim_numero, grau_atual, 
+                     loja_nome, loja_numero, loja_orient, telefone, email, ativo,
+                     status_maconico, isento, artigo_27, recolhe)
+                    VALUES (%s, %s, 'sindicante', %s, %s, %s, %s, 
+                            %s, %s, %s, %s, %s, 1,
+                            'Regular', 'NÃO', 'NÃO', 'Sim')
+                """, (usuario, senha_hash, data_cadastro, nome_completo, cim_numero, grau_atual, 
+                      loja_nome, loja_numero, loja_orient, telefone, email))
+                
+                conn.commit()
+                novo_id = cursor.lastrowid
+                
+                registrar_log("criar", "sindicante", novo_id, 
+                            dados_novos={"usuario": usuario, "nome": nome_completo})
+                
+                flash(f"✅ Sindicante '{usuario}' cadastrado com sucesso!", "success")
+                
+            except Exception as e:
+                conn.rollback()
+                print(f"Erro ao cadastrar sindicante: {str(e)}")
+                flash(f"❌ Erro ao cadastrar sindicante: {str(e)}", "danger")
+            
+            return_connection(conn)
+            return redirect("/sindicantes")
     
-    # GET - Listar sindicantes
+    # GET - Listar sindicantes (fora do POST)
     cursor.execute("""
         SELECT id, usuario, nome_completo, cim_numero, loja_nome, loja_numero, loja_orient, 
                ativo, telefone, email, grau_atual
@@ -9849,6 +9926,7 @@ def gerenciar_sindicantes():
         obreiros_mestres=obreiros_mestres,
         lojas=lojas
     )
+    
 @app.route("/sindicantes/<int:id>/rebaixar")
 @admin_required
 def rebaixar_sindicante(id):

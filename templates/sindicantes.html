@@ -2,42 +2,269 @@
 
 {% block title %}Gerenciar Sindicantes{% endblock %}
 
+{% block styles %}
+{{ super() }}
+<style>
+    :root {
+        --primary: #4f46e5;
+        --primary-dark: #4338ca;
+        --success: #10b981;
+        --warning: #f59e0b;
+        --danger: #ef4444;
+        --info: #3b82f6;
+        --secondary: #64748b;
+    }
+
+    .card-modern {
+        border: none;
+        border-radius: 20px;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+        transition: transform 0.2s, box-shadow 0.2s;
+        overflow: hidden;
+        height: 100%;
+    }
+    
+    .card-modern:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 12px 35px rgba(0, 0, 0, 0.12);
+    }
+
+    .card-header-gradient {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        border: none;
+        padding: 1.25rem 1.5rem;
+    }
+
+    .card-header-secondary {
+        background: linear-gradient(135deg, #64748b 0%, #475569 100%);
+        border: none;
+        padding: 1.25rem 1.5rem;
+    }
+
+    .card-header-success {
+        background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+        border: none;
+        padding: 1.25rem 1.5rem;
+    }
+
+    .stat-card {
+        background: white;
+        border-radius: 16px;
+        padding: 1.25rem;
+        text-align: center;
+        transition: all 0.2s;
+        border: 1px solid #e2e8f0;
+        height: 100%;
+    }
+    
+    .stat-card:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+    }
+    
+    .stat-number {
+        font-size: 2.5rem;
+        font-weight: 700;
+        line-height: 1;
+    }
+    
+    .stat-label {
+        font-size: 0.85rem;
+        color: #64748b;
+        margin-top: 0.5rem;
+    }
+
+    .badge-grau {
+        padding: 4px 10px;
+        border-radius: 20px;
+        font-size: 0.7rem;
+        font-weight: 600;
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+    }
+    
+    .badge-mestre {
+        background: #fed7aa;
+        color: #92400e;
+    }
+    
+    .badge-instalado {
+        background: #d1fae5;
+        color: #059669;
+    }
+    
+    .badge-superior {
+        background: #e0e7ff;
+        color: #4f46e5;
+    }
+
+    .btn-icon {
+        width: 34px;
+        height: 34px;
+        padding: 0;
+        border-radius: 10px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        transition: all 0.2s;
+    }
+    
+    .btn-icon:hover {
+        transform: translateY(-2px);
+    }
+
+    .form-control-custom {
+        border-radius: 12px;
+        border: 1px solid #e2e8f0;
+        padding: 0.75rem 1rem;
+        transition: all 0.2s;
+    }
+    
+    .form-control-custom:focus {
+        border-color: var(--primary);
+        box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
+    }
+
+    .form-select-custom {
+        border-radius: 12px;
+        border: 1px solid #e2e8f0;
+        padding: 0.75rem 1rem;
+        transition: all 0.2s;
+    }
+    
+    .form-select-custom:focus {
+        border-color: var(--primary);
+        box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
+    }
+
+    .table-sindicantes {
+        margin-bottom: 0;
+    }
+    
+    .table-sindicantes thead th {
+        background: #f8fafc;
+        border-bottom: 2px solid #e2e8f0;
+        color: #1e293b;
+        font-weight: 600;
+        padding: 1rem;
+        font-size: 0.85rem;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+    
+    .table-sindicantes tbody tr {
+        transition: background 0.2s;
+        border-bottom: 1px solid #f1f5f9;
+    }
+    
+    .table-sindicantes tbody tr:hover {
+        background: #f8fafc;
+    }
+    
+    .table-sindicantes td {
+        padding: 1rem;
+        vertical-align: middle;
+    }
+
+    @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(-10px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+    
+    .animate-in {
+        animation: fadeIn 0.4s ease-out;
+    }
+
+    @media (max-width: 768px) {
+        .table-sindicantes {
+            font-size: 0.85rem;
+        }
+        .table-sindicantes td,
+        .table-sindicantes th {
+            padding: 0.75rem;
+        }
+        .btn-icon {
+            width: 28px;
+            height: 28px;
+        }
+        .stat-number {
+            font-size: 1.8rem;
+        }
+    }
+</style>
+{% endblock %}
+
 {% block content %}
 <div class="container-fluid py-4">
     <div class="container">
-        <div class="d-flex justify-content-between align-items-center mb-4">
-            <h2>
-                <i class="bi bi-person-badge"></i> 
-                Gerenciar Sindicantes
-                <span class="badge bg-primary">{{ sindicantes|length }}</span>
-                {% if obreiros_mestres|length > 0 %}
-                <small class="text-muted fs-6">(+{{ obreiros_mestres|length }} disponíveis para promoção)</small>
-                {% endif %}
-            </h2>
+        <!-- Cabeçalho -->
+        <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-3">
+            <div>
+                <h2 class="fw-bold mb-1">
+                    <i class="bi bi-person-badge-fill text-primary me-2"></i>
+                    Gerenciar Sindicantes
+                </h2>
+                <p class="text-muted mb-0">Gerencie os sindicantes responsáveis pelas avaliações dos candidatos</p>
+            </div>
             <div>
                 <a href="/dashboard" class="btn btn-outline-secondary">
-                    <i class="bi bi-arrow-left"></i> Voltar
+                    <i class="bi bi-arrow-left me-1"></i> Voltar
                 </a>
             </div>
         </div>
 
-            <div class="row">
-            <!-- Promover Mestre a Sindicante -->
-            <div class="col-md-6 mb-4">
-                <div class="card shadow">
-                    <div class="card-header bg-primary text-white">
-                        <h5 class="mb-0"><i class="bi bi-arrow-up-circle"></i> Promover a Sindicante</h5>
+        <!-- Cards de Estatísticas -->
+        <div class="row g-3 mb-4">
+            <div class="col-md-4">
+                <div class="stat-card text-center">
+                    <div class="stat-number text-primary">{{ sindicantes|length }}</div>
+                    <div class="stat-label">Sindicantes Ativos</div>
+                    <div class="mt-2">
+                        <span class="badge bg-primary bg-opacity-10 text-primary">Total</span>
                     </div>
-                    <div class="card-body">
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="stat-card text-center">
+                    <div class="stat-number text-success">{{ obreiros_mestres|length }}</div>
+                    <div class="stat-label">Mestres Disponíveis</div>
+                    <div class="mt-2">
+                        <span class="badge bg-success bg-opacity-10 text-success">Prontos para promoção</span>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="stat-card text-center">
+                    <div class="stat-number text-warning">{{ lojas|length }}</div>
+                    <div class="stat-label">Lojas Cadastradas</div>
+                    <div class="mt-2">
+                        <span class="badge bg-warning bg-opacity-10 text-warning">Oficinas</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Cards de Ação -->
+        <div class="row g-4 mb-4">
+            <!-- Promover Mestre a Sindicante -->
+            <div class="col-md-6">
+                <div class="card-modern">
+                    <div class="card-header-success text-white">
+                        <h5 class="mb-0 fw-bold">
+                            <i class="bi bi-arrow-up-circle me-2"></i> Promover a Sindicante
+                        </h5>
+                    </div>
+                    <div class="card-body p-4">
                         <form method="POST" id="formPromover">
-                            <div class="alert alert-info">
-                                <i class="bi bi-info-circle"></i> 
+                            <div class="alert alert-info mb-3">
+                                <i class="bi bi-info-circle me-2"></i> 
                                 Selecione um Mestre ou grau superior da lista abaixo para promovê-lo a sindicante.
                             </div>
                             
                             <div class="mb-3">
-                                <label class="form-label">Selecionar Obreiro *</label>
-                                <select class="form-select" name="obreiro_id" id="obreiroSelect" required>
+                                <label class="form-label fw-bold">Selecionar Obreiro *</label>
+                                <select class="form-select form-select-custom" name="obreiro_id" id="obreiroSelect" required>
                                     <option value="">Selecione um Mestre ou grau superior...</option>
                                     {% for obreiro in obreiros_mestres %}
                                     <option value="{{ obreiro.id }}" 
@@ -45,39 +272,33 @@
                                             data-nome="{{ obreiro.nome_completo }}">
                                         {{ obreiro.nome_completo }} ({{ obreiro.usuario }}) - 
                                         {% if obreiro.grau_atual == 3 %}
-                                            <span class="badge bg-warning text-dark">Mestre (3°)</span>
+                                            <span class="badge-grau badge-mestre">Mestre (3°)</span>
                                         {% elif obreiro.grau_atual == 4 %}
-                                            <span class="badge bg-info">Mestre Instalado (4°)</span>
+                                            <span class="badge-grau badge-instalado">Mestre Instalado (4°)</span>
                                         {% elif obreiro.grau_atual >= 5 %}
-                                            <span class="badge bg-primary">Grau Superior ({{ obreiro.grau_atual }}°)</span>
+                                            <span class="badge-grau badge-superior">Grau Superior ({{ obreiro.grau_atual }}°)</span>
                                         {% endif %}
                                         - CIM: {{ obreiro.cim_numero or 'Não informado' }}
-                                        {% if obreiro.loja_nome %} - Loja: {{ obreiro.loja_nome }}{% endif %}
                                     </option>
                                     {% endfor %}
                                 </select>
                                 {% if not obreiros_mestres %}
                                 <div class="alert alert-warning mt-2">
-                                    <i class="bi bi-exclamation-triangle"></i> 
+                                    <i class="bi bi-exclamation-triangle me-1"></i> 
                                     Nenhum Mestre ou grau superior disponível para promoção. 
-                                    <a href="/obreiros/novo" class="alert-link">Cadastre um obreiro com grau de Mestre ou superior</a> primeiro.
+                                    <a href="/obreiros/novo" class="alert-link">Cadastre um obreiro</a> com grau de Mestre ou superior.
                                 </div>
                                 {% endif %}
                             </div>
                             
-                            <div id="infoObreiroSelecionado" class="alert alert-secondary" style="display: none;">
-                                <i class="bi bi-star-fill text-warning"></i> 
+                            <div id="infoObreiroSelecionado" class="alert alert-secondary mb-3" style="display: none;">
+                                <i class="bi bi-star-fill text-warning me-2"></i> 
                                 <strong>Obreiro selecionado:</strong> <span id="nomeSelecionado"></span><br>
                                 <strong>Grau:</strong> <span id="grauSelecionado"></span>
                             </div>
                             
-                            <div class="alert alert-secondary">
-                                <i class="bi bi-star-fill text-warning"></i> 
-                                <strong>Requisitos:</strong> O obreiro deve ser <strong>Mestre (3º Grau) ou superior</strong> e estar <strong>ativo</strong>.
-                            </div>
-                            
-                            <button type="submit" class="btn btn-success w-100" {% if not obreiros_mestres %}disabled{% endif %}>
-                                <i class="bi bi-arrow-up-circle"></i> Promover a Sindicante
+                            <button type="submit" class="btn btn-success w-100 py-2 fw-bold" {% if not obreiros_mestres %}disabled{% endif %}>
+                                <i class="bi bi-arrow-up-circle me-2"></i> Promover a Sindicante
                             </button>
                         </form>
                     </div>
@@ -85,61 +306,62 @@
             </div>
 
             <!-- Cadastrar Novo Sindicante -->
-            <div class="col-md-6 mb-4">
-                <div class="card shadow">
-                    <div class="card-header bg-secondary text-white">
-                        <h5 class="mb-0"><i class="bi bi-person-plus"></i> Cadastrar Novo Sindicante</h5>
+            <div class="col-md-6">
+                <div class="card-modern">
+                    <div class="card-header-secondary text-white">
+                        <h5 class="mb-0 fw-bold">
+                            <i class="bi bi-person-plus me-2"></i> Cadastrar Novo Sindicante
+                        </h5>
                     </div>
-                    <div class="card-body">
+                    <div class="card-body p-4">
                         <form method="POST" id="formNovoSindicante">
-                            <div class="alert alert-secondary">
-                                <i class="bi bi-info-circle"></i> 
+                            <div class="alert alert-secondary mb-3">
+                                <i class="bi bi-info-circle me-2"></i> 
                                 Cadastre um novo sindicante (não vinculado a um obreiro existente).
                             </div>
                             
                             <div class="row">
                                 <div class="col-md-6 mb-3">
-                                    <label class="form-label">Usuário *</label>
-                                    <input type="text" class="form-control" name="usuario" id="usuario" required>
-                                    <small class="text-muted">Nome de usuário para login</small>
+                                    <label class="form-label fw-bold">Usuário *</label>
+                                    <input type="text" class="form-control form-control-custom" name="usuario" id="usuario" required>
+                                    <div class="form-text text-muted">Nome de usuário para login</div>
                                 </div>
                                 <div class="col-md-6 mb-3">
-                                    <label class="form-label">Senha *</label>
-                                    <input type="password" class="form-control" name="senha" id="senha" required>
-                                    <small class="text-muted">Mínimo de 6 caracteres</small>
+                                    <label class="form-label fw-bold">Senha *</label>
+                                    <input type="password" class="form-control form-control-custom" name="senha" id="senha" required>
+                                    <div class="form-text text-muted">Mínimo de 6 caracteres</div>
                                 </div>
                             </div>
                             
                             <div class="mb-3">
-                                <label class="form-label">Nome Completo</label>
-                                <input type="text" class="form-control" name="nome_completo" id="nome_completo">
+                                <label class="form-label fw-bold">Nome Completo</label>
+                                <input type="text" class="form-control form-control-custom" name="nome_completo" id="nome_completo">
                             </div>
                             
                             <div class="row">
                                 <div class="col-md-6 mb-3">
-                                    <label class="form-label">CIM Nº</label>
-                                    <input type="text" class="form-control" name="cim_numero" id="cim_numero">
+                                    <label class="form-label fw-bold">CIM Nº</label>
+                                    <input type="text" class="form-control form-control-custom" name="cim_numero" id="cim_numero">
                                 </div>
                                 <div class="col-md-6 mb-3">
-                                    <label class="form-label">Grau</label>
-                                    <select class="form-select" name="grau_atual" id="grau_atual">
+                                    <label class="form-label fw-bold">Grau</label>
+                                    <select class="form-select form-select-custom" name="grau_atual" id="grau_atual">
                                         <option value="3">Mestre (3º Grau)</option>
                                         <option value="4">Mestre Instalado (4º Grau)</option>
-                                        <option value="5">Mestre Instalado (5º Grau)</option>
-                                        <option value="6">Grau Superior 6</option>
-                                        <option value="7">Grau Superior 7</option>
-                                        <option value="8">Grau Superior 8</option>
-                                        <option value="9">Grau Superior 9</option>
-                                        <option value="10">Grau Superior 10</option>
+                                        <option value="5">Grau Superior (5º Grau)</option>
+                                        <option value="6">Grau Superior (6º Grau)</option>
+                                        <option value="7">Grau Superior (7º Grau)</option>
+                                        <option value="8">Grau Superior (8º Grau)</option>
+                                        <option value="9">Grau Superior (9º Grau)</option>
+                                        <option value="10">Grau Superior (10º Grau)</option>
                                     </select>
-                                    <small class="text-muted">Graus superiores também são considerados Mestres para sindicância</small>
                                 </div>
                             </div>
                             
                             <div class="row">
                                 <div class="col-md-5 mb-3">
-                                    <label class="form-label">Loja</label>
-                                    <select class="form-select" name="loja_nome" id="lojaSelect">
+                                    <label class="form-label fw-bold">Loja</label>
+                                    <select class="form-select form-select-custom" name="loja_nome" id="lojaSelect">
                                         <option value="">Selecione uma loja...</option>
                                         {% for loja in lojas %}
                                         <option value="{{ loja.nome }}" 
@@ -151,17 +373,17 @@
                                     </select>
                                 </div>
                                 <div class="col-md-3 mb-3">
-                                    <label class="form-label">Nº Loja</label>
-                                    <input type="text" class="form-control" name="loja_numero" id="lojaNumero" readonly>
+                                    <label class="form-label fw-bold">Nº Loja</label>
+                                    <input type="text" class="form-control form-control-custom" name="loja_numero" id="lojaNumero" readonly>
                                 </div>
                                 <div class="col-md-4 mb-3">
-                                    <label class="form-label">Oriente</label>
-                                    <input type="text" class="form-control" name="loja_orient" id="lojaOriente" readonly>
+                                    <label class="form-label fw-bold">Oriente</label>
+                                    <input type="text" class="form-control form-control-custom" name="loja_orient" id="lojaOriente" readonly>
                                 </div>
                             </div>
                             
-                            <button type="submit" class="btn btn-primary w-100">
-                                <i class="bi bi-save"></i> Cadastrar Sindicante
+                            <button type="submit" class="btn btn-primary w-100 py-2 fw-bold">
+                                <i class="bi bi-save me-2"></i> Cadastrar Sindicante
                             </button>
                         </form>
                     </div>
@@ -170,21 +392,24 @@
         </div>
 
         <!-- Lista de Sindicantes -->
-        <div class="card shadow mt-4">
-            <div class="card-header bg-dark text-white d-flex justify-content-between align-items-center">
-                <h5 class="mb-0"><i class="bi bi-list-ul"></i> Sindicantes Ativos</h5>
-                <div>
+        <div class="card-modern">
+            <div class="card-header-gradient text-white">
+                <div class="d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0 fw-bold">
+                        <i class="bi bi-list-ul me-2"></i> Sindicantes Ativos
+                        <span class="ms-2 badge bg-white text-dark rounded-pill">{{ sindicantes|length }}</span>
+                    </h5>
                     <button class="btn btn-sm btn-outline-light" onclick="exportarLista()">
-                        <i class="bi bi-download"></i> Exportar
+                        <i class="bi bi-download me-1"></i> Exportar
                     </button>
                 </div>
             </div>
-            <div class="card-body">
+            <div class="card-body p-0">
                 {% if sindicantes %}
                 <div class="table-responsive">
-                    <table class="table table-hover" id="tabelaSindicantes">
-                        <thead class="table-light">
-                             <thead>
+                    <table class="table table-sindicantes" id="tabelaSindicantes">
+                        <thead>
+                            <tr>
                                 <th>Usuário</th>
                                 <th>Nome</th>
                                 <th>CIM</th>
@@ -192,141 +417,130 @@
                                 <th>Loja</th>
                                 <th>Contato</th>
                                 <th>Ações</th>
-                            </thead>
+                            </tr>
                         </thead>
                         <tbody>
                             {% for s in sindicantes %}
                             <tr>
-                                <td><strong>{{ s.usuario }}</strong></td>
+                                <td>
+                                    <strong><i class="bi bi-person-circle me-1"></i> {{ s.usuario }}</strong>
+                                 </td>
                                 <td>{{ s.nome_completo or '-' }}</td>
                                 <td>{{ s.cim_numero or '-' }}</td>
                                 <td>
                                     {% if s.grau_atual == 3 %}
-                                        <span class="badge bg-warning text-dark">Mestre (3°)</span>
+                                        <span class="badge-grau badge-mestre">
+                                            <i class="bi bi-star-fill"></i> Mestre (3°)
+                                        </span>
                                     {% elif s.grau_atual == 4 %}
-                                        <span class="badge bg-info">Mestre Instalado (4°)</span>
+                                        <span class="badge-grau badge-instalado">
+                                            <i class="bi bi-check-circle-fill"></i> Mestre Instalado (4°)
+                                        </span>
                                     {% elif s.grau_atual >= 5 %}
-                                        <span class="badge bg-primary">Grau Superior ({{ s.grau_atual }}°)</span>
+                                        <span class="badge-grau badge-superior">
+                                            <i class="bi bi-trophy-fill"></i> Grau Superior ({{ s.grau_atual }}°)
+                                        </span>
                                     {% else %}
-                                        <span class="badge bg-secondary">Grau {{ s.grau_atual }}</span>
+                                        <span class="badge-grau badge-secondary">Grau {{ s.grau_atual }}</span>
                                     {% endif %}
-                                </td>
+                                 </td>
                                 <td>
                                     {% if s.loja_nome %}
-                                        {{ s.loja_nome }} - Nº {{ s.loja_numero or '-' }}
+                                        <i class="bi bi-building me-1 text-muted"></i> {{ s.loja_nome }}
+                                        <br><small class="text-muted">Nº {{ s.loja_numero or '-' }}</small>
                                         {% if s.loja_orient %}
-                                        <br><small class="text-muted">{{ s.loja_orient }}</small>
+                                            <br><small class="text-muted"><i class="bi bi-geo-alt me-1"></i> {{ s.loja_orient }}</small>
                                         {% endif %}
                                     {% else %}
-                                        -
+                                        <span class="text-muted">-</span>
                                     {% endif %}
-                                </td>
+                                 </td>
                                 <td>
                                     {% if s.telefone %}
-                                    <i class="bi bi-whatsapp text-success"></i> {{ s.telefone }}<br>
+                                        <i class="bi bi-whatsapp text-success me-1"></i> {{ s.telefone }}<br>
                                     {% endif %}
                                     {% if s.email %}
-                                    <i class="bi bi-envelope text-info"></i> <small>{{ s.email }}</small>
+                                        <i class="bi bi-envelope text-info me-1"></i> <small>{{ s.email }}</small>
                                     {% endif %}
-                                </td>
+                                    {% if not s.telefone and not s.email %}
+                                        <span class="text-muted">-</span>
+                                    {% endif %}
+                                 </td>
                                 <td>
-                                    <div class="btn-group btn-group-sm">
-                                        <a href="/obreiros/{{ s.id }}" class="btn btn-info" title="Visualizar">
+                                    <div class="btn-group btn-group-sm" role="group">
+                                        <a href="/obreiros/{{ s.id }}" class="btn btn-info btn-icon" title="Visualizar">
                                             <i class="bi bi-eye"></i>
                                         </a>
-                                        <a href="/obreiros/{{ s.id }}/editar" class="btn btn-warning" title="Editar">
+                                        <a href="/obreiros/{{ s.id }}/editar" class="btn btn-warning btn-icon" title="Editar">
                                             <i class="bi bi-pencil"></i>
                                         </a>
-                                        <a href="/sindicantes/{{ s.id }}/rebaixar" class="btn btn-secondary" 
+                                        <a href="/sindicantes/{{ s.id }}/rebaixar" class="btn btn-secondary btn-icon" 
                                            onclick="return confirm('Rebaixar este sindicante para obreiro? Ele continuará como Mestre no sistema.')" 
                                            title="Rebaixar para Obreiro">
                                             <i class="bi bi-arrow-down-circle"></i>
                                         </a>
-                                        <a href="/sindicantes/{{ s.id }}/excluir" class="btn btn-danger" 
+                                        <a href="/sindicantes/{{ s.id }}/excluir" class="btn btn-danger btn-icon" 
                                            onclick="return confirm('Excluir este sindicante? Esta ação não pode ser desfeita!')" 
                                            title="Excluir">
                                             <i class="bi bi-trash"></i>
                                         </a>
                                     </div>
-                                </td>
-                            </tr>
+                                 </td>
+                             </tr>
                             {% endfor %}
                         </tbody>
                     </table>
                 </div>
                 {% else %}
-                <div class="text-center text-muted py-4">
+                <div class="text-center text-muted py-5">
                     <i class="bi bi-person-x fs-1"></i>
-                    <p class="mt-2">Nenhum sindicante cadastrado</p>
-                    <p class="small">Promova um Mestre ou cadastre um novo sindicante usando os formulários acima.</p>
+                    <p class="mt-2 mb-0">Nenhum sindicante cadastrado</p>
+                    <small>Promova um Mestre ou cadastre um novo sindicante usando os formulários acima.</small>
                 </div>
                 {% endif %}
             </div>
         </div>
 
-        <!-- Estatísticas -->
-        <div class="row mt-4">
+        <!-- Informações e Legenda -->
+        <div class="row g-4 mt-2">
             <div class="col-md-6">
-                <div class="card shadow">
-                    <div class="card-header bg-light">
-                        <h6 class="mb-0"><i class="bi bi-graph-up"></i> Estatísticas</h6>
+                <div class="card-modern">
+                    <div class="card-header" style="background: #f8fafc; border-bottom: 1px solid #e2e8f0;">
+                        <h6 class="mb-0 fw-bold">
+                            <i class="bi bi-graph-up text-primary me-2"></i> Informações Importantes
+                        </h6>
                     </div>
                     <div class="card-body">
-                        <div class="row text-center">
-                            <div class="col-6">
-                                <div class="card bg-primary text-white">
-                                    <div class="card-body py-3">
-                                        <h3 class="mb-0">{{ sindicantes|length }}</h3>
-                                        <small>Sindicantes Ativos</small>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="col-6">
-                                <div class="card bg-success text-white">
-                                    <div class="card-body py-3">
-                                        <h3 class="mb-0">{{ obreiros_mestres|length }}</h3>
-                                        <small>Mestres Disponíveis</small>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            <div class="col-md-6">
-                <div class="card shadow">
-                    <div class="card-header bg-light">
-                        <h6 class="mb-0"><i class="bi bi-info-circle"></i> Informações Importantes</h6>
-                    </div>
-                    <div class="card-body">
-                        <ul class="mb-0 small">
-                            <li><i class="bi bi-check-circle text-success"></i> Sindicantes são responsáveis por avaliar candidatos</li>
-                            <li><i class="bi bi-star-fill text-warning"></i> Apenas <strong>Mestres (3º Grau) ou superiores</strong> podem ser sindicantes</li>
-                            <li><i class="bi bi-arrow-up-circle text-primary"></i> Promover um Mestre mantém todos os seus dados e histórico</li>
-                            <li><i class="bi bi-arrow-down-circle text-secondary"></i> Rebaixar um sindicante mantém seu grau de Mestre</li>
+                        <ul class="list-unstyled mb-0">
+                            <li class="mb-2"><i class="bi bi-check-circle-fill text-success me-2"></i> Sindicantes são responsáveis por avaliar candidatos</li>
+                            <li class="mb-2"><i class="bi bi-star-fill text-warning me-2"></i> Apenas <strong>Mestres (3º Grau) ou superiores</strong> podem ser sindicantes</li>
+                            <li class="mb-2"><i class="bi bi-arrow-up-circle-fill text-primary me-2"></i> Promover um Mestre mantém todos os seus dados e histórico</li>
+                            <li class="mb-2"><i class="bi bi-arrow-down-circle-fill text-secondary me-2"></i> Rebaixar um sindicante mantém seu grau de Mestre</li>
                         </ul>
                     </div>
                 </div>
             </div>
-        </div>
-
-        <!-- Legenda -->
-        <div class="card shadow mt-4">
-            <div class="card-header bg-light">
-                <h6 class="mb-0"><i class="bi bi-palette"></i> Legenda de Graus</h6>
-            </div>
-            <div class="card-body">
-                <div class="d-flex flex-wrap gap-3">
-                    <div><span class="badge bg-warning text-dark">Mestre (3°)</span> = Mestre Maçom</div>
-                    <div><span class="badge bg-info">Mestre Instalado (4°)</span> = Mestre Instalado</div>
-                    <div><span class="badge bg-primary">Grau Superior (5°+)</span> = Graus superiores (também são Mestres)</div>
+            <div class="col-md-6">
+                <div class="card-modern">
+                    <div class="card-header" style="background: #f8fafc; border-bottom: 1px solid #e2e8f0;">
+                        <h6 class="mb-0 fw-bold">
+                            <i class="bi bi-palette text-info me-2"></i> Legenda de Graus
+                        </h6>
+                    </div>
+                    <div class="card-body">
+                        <div class="d-flex flex-wrap gap-3 mb-3">
+                            <div><span class="badge-grau badge-mestre">Mestre (3°)</span> = Mestre Maçom</div>
+                            <div><span class="badge-grau badge-instalado">Mestre Instalado (4°)</span> = Mestre Instalado</div>
+                            <div><span class="badge-grau badge-superior">Grau Superior (5°+)</span> = Graus superiores</div>
+                        </div>
+                        <hr>
+                        <small class="text-muted">
+                            <i class="bi bi-info-circle me-1"></i> 
+                            Todos os graus 3, 4, 5, 6+ são considerados <strong>Mestres</strong> para efeitos de sindicância.
+                            Isso significa que obreiros com qualquer um desses graus podem ser promovidos a sindicantes.
+                        </small>
+                    </div>
                 </div>
-                <hr class="my-2">
-                <small class="text-muted">
-                    <i class="bi bi-info-circle"></i> 
-                    Todos os graus 3, 4, 5, 6+ são considerados <strong>Mestres</strong> para efeitos de sindicância.
-                    Isso significa que obreiros com qualquer um desses graus podem ser promovidos a sindicantes.
-                </small>
             </div>
         </div>
     </div>
@@ -354,11 +568,14 @@
             const selected = this.options[this.selectedIndex];
             if (selected.value) {
                 const nome = selected.dataset.nome || selected.text.split(' (')[0];
-                const grau = selected.dataset.grau || 
-                    (selected.text.includes('Mestre (3°)') ? 'Mestre (3° Grau)' :
-                     selected.text.includes('Mestre Instalado (4°)') ? 'Mestre Instalado (4° Grau)' :
-                     selected.text.includes('Grau Superior') ? selected.text.match(/Grau Superior \(\d+°\)/)?.[0] || 'Grau Superior' :
-                     'Mestre');
+                let grau = '';
+                if (selected.text.includes('Mestre (3°)')) grau = 'Mestre (3° Grau)';
+                else if (selected.text.includes('Mestre Instalado (4°)')) grau = 'Mestre Instalado (4° Grau)';
+                else if (selected.text.includes('Grau Superior')) {
+                    const match = selected.text.match(/Grau Superior \(\d+°\)/);
+                    grau = match ? match[0] : 'Grau Superior';
+                }
+                else grau = 'Mestre';
                 
                 nomeSpan.textContent = nome;
                 grauSpan.textContent = grau;
@@ -404,59 +621,4 @@
         URL.revokeObjectURL(link.href);
     }
 </script>
-
-<style>
-    .card {
-        border-radius: 10px;
-        overflow: hidden;
-    }
-    .card-header {
-        font-weight: 600;
-    }
-    .table-responsive {
-        overflow-x: auto;
-    }
-    .btn-group-sm .btn {
-        padding: 0.25rem 0.5rem;
-        margin: 0 2px;
-    }
-    .badge {
-        font-size: 0.75rem;
-        padding: 0.3rem 0.6rem;
-    }
-    @media (max-width: 768px) {
-        .table {
-            font-size: 0.85rem;
-        }
-        .btn-group {
-            flex-direction: column;
-        }
-        .btn-group .btn {
-            margin-bottom: 5px;
-        }
-        .row .col-md-6 {
-            margin-bottom: 1rem;
-        }
-    }
-    
-    /* Animações */
-    @keyframes fadeIn {
-        from { opacity: 0; transform: translateY(-10px); }
-        to { opacity: 1; transform: translateY(0); }
-    }
-    
-    .alert {
-        animation: fadeIn 0.3s ease-out;
-    }
-    
-    select option {
-        padding: 5px;
-    }
-    
-    select option .badge {
-        display: inline-block;
-        margin-left: 5px;
-    }
-</style>
-
 {% endblock %}
