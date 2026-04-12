@@ -38,7 +38,7 @@
                 <small class="text-muted mt-2 d-block">
                     {% if percentual == 100 %}
                         <i class="bi bi-check-circle-fill text-success"></i> 
-                        Todos os documentos obrigatórios foram enviados e aprovados!
+                        Todos os documentos obrigatórios foram enviados!
                     {% elif total_enviados > 0 %}
                         <i class="bi bi-hourglass-split"></i> 
                         Aguardando envio de {{ total_obrigatorios - total_enviados }} documento(s)
@@ -55,7 +55,7 @@
             <div class="card-header bg-primary text-white">
                 <h5 class="mb-0">
                     <i class="bi bi-list-check"></i> 
-                    Documentos Obrigatórios
+                    Documentos para Envio
                 </h5>
             </div>
             <div class="card-body">
@@ -73,21 +73,29 @@
                         <tbody>
                             {% for tipo in tipos_documentos %}
                             {% set doc = documentos_map.get(tipo.id) %}
+                            
+                            <!-- Pular Título de Eleitor -->
+                            {% if tipo.nome != 'Título de Eleitor' %}
                             <tr class="{% if tipo.obrigatorio == 1 and not doc %}table-warning{% endif %}">
-                                <td>
+                                <td style="vertical-align: middle;">
                                     <strong>{{ tipo.nome }}</strong>
                                     {% if tipo.descricao %}
                                     <br><small class="text-muted">{{ tipo.descricao }}</small>
                                     {% endif %}
+                                    {% if tipo.nome == 'Comprovante de Endereço' %}
+                                    <br><span class="badge bg-info mt-1">Opcional</span>
+                                    {% endif %}
                                  </td>
-                                <td>
-                                    {% if tipo.obrigatorio == 1 %}
+                                <td style="vertical-align: middle;">
+                                    {% if tipo.nome == 'Comprovante de Endereço' %}
+                                        <span class="badge bg-secondary">Opcional</span>
+                                    {% elif tipo.obrigatorio == 1 %}
                                         <span class="badge bg-danger">Obrigatório</span>
                                     {% else %}
                                         <span class="badge bg-secondary">Opcional</span>
                                     {% endif %}
                                  </td>
-                                <td>
+                                <td style="vertical-align: middle;">
                                     {% if doc %}
                                         {% if doc.status == 'aprovado' %}
                                             <span class="badge bg-success">
@@ -111,14 +119,14 @@
                                         </span>
                                     {% endif %}
                                  </td>
-                                <td>
+                                <td style="vertical-align: middle;">
                                     {% if doc %}
                                         {{ doc.data_envio.strftime('%d/%m/%Y %H:%M') if doc.data_envio else '-' }}
                                     {% else %}
                                         -
                                     {% endif %}
                                  </td>
-                                <td>
+                                <td style="vertical-align: middle;">
                                     <div class="btn-group btn-group-sm">
                                         {% if doc %}
                                             <a href="{{ doc.caminho_arquivo }}" target="_blank" 
@@ -141,12 +149,29 @@
                                             <i class="bi bi-cloud-upload"></i>
                                         </button>
                                     </div>
-                                </td>
-                            </tr>
+                                 </td>
+                             </tr>
+                            {% endif %}
                             {% endfor %}
                         </tbody>
                     </table>
                 </div>
+            </div>
+        </div>
+
+        <!-- Informações Adicionais -->
+        <div class="card shadow mt-4">
+            <div class="card-header bg-info text-white">
+                <h5 class="mb-0"><i class="bi bi-info-circle"></i> Informações</h5>
+            </div>
+            <div class="card-body">
+                <ul class="mb-0">
+                    <li><i class="bi bi-check-circle-fill text-success"></i> Documentos <strong>aprovados</strong> são validados pelo sindicante</li>
+                    <li><i class="bi bi-clock-fill text-warning"></i> Documentos <strong>pendentes</strong> aguardam análise</li>
+                    <li><i class="bi bi-x-circle-fill text-danger"></i> Documentos <strong>rejeitados</strong> precisam ser reenviados</li>
+                    <li><i class="bi bi-info-circle"></i> <strong>Comprovante de Endereço</strong> é opcional, mas recomendado</li>
+                    <li><i class="bi bi-eye-slash"></i> <strong>Título de Eleitor</strong> não é mais exigido</li>
+                </ul>
             </div>
         </div>
     </div>
@@ -154,6 +179,7 @@
 
 <!-- Modals de Upload -->
 {% for tipo in tipos_documentos %}
+{% if tipo.nome != 'Título de Eleitor' %}
 <div class="modal fade" id="modalUpload{{ tipo.id }}" tabindex="-1">
     <div class="modal-dialog">
         <div class="modal-content">
@@ -169,6 +195,13 @@
                 <div class="modal-body">
                     <p><strong>Documento:</strong> {{ tipo.nome }}</p>
                     <p><small class="text-muted">{{ tipo.descricao or '' }}</small></p>
+                    {% if tipo.nome == 'Comprovante de Endereço' %}
+                    <div class="alert alert-info">
+                        <i class="bi bi-info-circle"></i>
+                        <strong>Documento opcional</strong><br>
+                        O envio do comprovante de endereço não é obrigatório, mas ajuda na validação.
+                    </div>
+                    {% endif %}
                     <div class="mb-3">
                         <label class="form-label fw-bold">Arquivo (PDF, JPG, PNG)</label>
                         <input type="file" class="form-control" name="arquivo" required 
@@ -186,11 +219,12 @@
         </div>
     </div>
 </div>
+{% endif %}
 {% endfor %}
 
 <script>
 function excluirDocumento(docId, nomeDocumento) {
-    if (!confirm(`Tem certeza que deseja excluir o documento "${nomeDocumento}"?`)) {
+    if (!confirm(`⚠️ ATENÇÃO!\n\nDeseja excluir o documento "${nomeDocumento}"?\n\nEsta ação não pode ser desfeita.`)) {
         return;
     }
     
@@ -203,15 +237,15 @@ function excluirDocumento(docId, nomeDocumento) {
     .then(response => response.json())
     .then(data => {
         if (data.success) {
-            alert('Documento excluído com sucesso!');
+            alert('✅ Documento excluído com sucesso!');
             location.reload();
         } else {
-            alert('Erro: ' + (data.error || 'Erro desconhecido'));
+            alert('❌ Erro: ' + (data.error || 'Erro desconhecido'));
         }
     })
     .catch(error => {
         console.error('Erro:', error);
-        alert('Erro ao excluir documento');
+        alert('❌ Erro ao excluir documento');
     });
 }
 </script>
@@ -226,6 +260,10 @@ function excluirDocumento(docId, nomeDocumento) {
     }
     .table td {
         vertical-align: middle;
+    }
+    .badge {
+        font-size: 0.8rem;
+        padding: 0.4rem 0.6rem;
     }
 </style>
 
