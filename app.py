@@ -2023,180 +2023,245 @@ def admin_criar_tabelas_whatsapp():
         flash("❌ Erro ao criar tabelas do WhatsApp", "danger")
     return redirect("/dashboard")
     
+
 # ============================================
-# ROTAS PARA CANDIDATOS (ACESSO EXTERNO)
+# ROTA PARA ACESSO DO CANDIDATO
 # ============================================
+@app.route("/candidatos/<int:candidato_id>/gerar-link")
+@admin_required
+def gerar_link_candidato(candidato_id):
+    """Gera link de acesso para o candidato"""
+    cursor, conn = get_db()
+    
+    cursor.execute("""
+        SELECT id, nome, token_acesso
+        FROM candidatos 
+        WHERE id = %s
+    """, (candidato_id,))
+    candidato = cursor.fetchone()
+    
+    return_connection(conn)
+    
+    if not candidato or not candidato['token_acesso']:
+        flash("Candidato ou token não encontrado!", "danger")
+        return redirect(f"/candidatos/{candidato_id}/documentos")
+    
+    link = f"https://www.juramelo.com.br/candidato/acesso/{candidato['token_acesso']}"
+    
+    return jsonify({
+        'link': link,
+        'token': candidato['token_acesso'],
+        'candidato': candidato['nome']
+    })
 
 @app.route("/candidato/acesso/<token>")
 def candidato_acesso(token):
     """Página de acesso do candidato via token"""
+    print(f"🔍 ROTA ACIONADA - Token: {token}")
+    
     cursor, conn = get_db()
     
-    # Buscar candidato pelo token
-    cursor.execute("""
-        SELECT id, nome, status, token_acesso, email
-        FROM candidatos 
-        WHERE token_acesso = %s AND fechado = 0
-    """, (token,))
-    candidato = cursor.fetchone()
-    
-    if not candidato:
-        flash("Link inválido ou candidato já foi processado!", "danger")
+    try:
+        # Buscar candidato pelo token
+        cursor.execute("""
+            SELECT id, nome, status, token_acesso, email
+            FROM candidatos 
+            WHERE token_acesso = %s
+        """, (token,))
+        candidato = cursor.fetchone()
+        
+        print(f"🔍 Candidato encontrado: {candidato is not None}")
+        
+        if not candidato:
+            flash("Link inválido ou candidato não encontrado!", "danger")
+            return redirect("/")
+        
+        print(f"✅ Candidato: {candidato['nome']} - ID: {candidato['id']}")
+        
+        return_connection(conn)
+        
+        return render_template("candidatos/acesso.html", candidato=candidato)
+        
+    except Exception as e:
+        print(f"❌ Erro: {e}")
+        import traceback
+        traceback.print_exc()
+        if conn:
+            return_connection(conn)
+        flash("Erro ao acessar o link. Tente novamente.", "danger")
         return redirect("/")
-    
-    return_connection(conn)
-    
-    return render_template("candidatos/acesso.html", candidato=candidato)
-
 
 @app.route("/candidato/<int:candidato_id>/documentos")
 def candidato_documentos_externo(candidato_id):
     """Página de documentos para o candidato (acesso externo)"""
-    # Verificar token na URL ou sessão
     token = request.args.get('token')
+    
+    if not token:
+        flash("Token de acesso não informado!", "danger")
+        return redirect("/")
     
     cursor, conn = get_db()
     
-    cursor.execute("""
-        SELECT id, nome, status, token_acesso
-        FROM candidatos 
-        WHERE id = %s AND token_acesso = %s AND fechado = 0
-    """, (candidato_id, token))
-    candidato = cursor.fetchone()
-    
-    if not candidato:
-        flash("Acesso não autorizado!", "danger")
-        return redirect("/")
-    
-    # Buscar tipos de documentos
-    cursor.execute("""
-        SELECT id, nome, descricao, obrigatorio, ordem
-        FROM tipos_documentos_candidato
-        WHERE ativo = 1
-        ORDER BY ordem
-    """)
-    tipos_documentos = cursor.fetchall()
-    
-    # Buscar documentos já enviados
-    cursor.execute("""
-        SELECT * FROM documentos_candidato
-        WHERE candidato_id = %s
-    """, (candidato_id,))
-    documentos = cursor.fetchall()
-    
-    documentos_map = {doc['tipo_documento_id']: doc for doc in documentos}
-    
-    # Calcular progresso
-    total_obrigatorios = sum(1 for t in tipos_documentos if t['obrigatorio'] == 1)
-    total_enviados = sum(1 for t in tipos_documentos 
-                        if t['id'] in documentos_map and documentos_map[t['id']]['status'] == 'aprovado')
-    
-    percentual = int((total_enviados / total_obrigatorios * 100)) if total_obrigatorios > 0 else 0
-    
-    return_connection(conn)
-    
-    return render_template("candidatos/documentos_externo.html",
-                          candidato=candidato,
-                          tipos_documentos=tipos_documentos,
-                          documentos_map=documentos_map,
-                          total_obrigatorios=total_obrigatorios,
-                          total_enviados=total_enviados,
-                          percentual=percentual)
-
-
-@app.route("/candidatos/enviar-link", methods=["POST"])
-@login_required
-def enviar_link_candidato():
-    """Envia link de acesso para o candidato por e-mail"""
-    data = request.get_json()
-    email = data.get('email')
-    link = data.get('link')
-    candidato_nome = data.get('candidato_nome')
-    
-    if not email:
-        return jsonify({'success': False, 'error': 'E-mail não informado'})
-    
-    assunto = f"📄 Acesso aos documentos - {candidato_nome}"
-    
-    conteudo_html = f"""
-    <html>
-    <body style="font-family: Arial, sans-serif;">
-        <div style="max-width: 600px; margin: 0 auto; padding: 20px;">
-            <div style="background: linear-gradient(135deg, #1a472a, #0a2a1a); color: #ffd700; padding: 30px; text-align: center; border-radius: 10px;">
-                <h1>📄 Documentos do Candidato</h1>
-            </div>
-            <div style="background: white; padding: 30px; border-radius: 10px; margin-top: 20px;">
-                <h2>Olá {candidato_nome},</h2>
-                <p>Você foi convidado a enviar seus documentos para o processo de sindicância.</p>
-                <p>Clique no botão abaixo para acessar o sistema e enviar seus documentos:</p>
-                <div style="text-align: center; margin: 30px 0;">
-                    <a href="{link}" style="background: #1a472a; color: #ffd700; padding: 12px 30px; text-decoration: none; border-radius: 5px;">
-                        📄 Acessar e Enviar Documentos
-                    </a>
-                </div>
-                <p>Documentos necessários:</p>
-                <ul>
-                    <li>Foto 3x4 (obrigatório)</li>
-                    <li>Certidão de Nascimento (opcional)</li>
-                    <li>Comprovante de Residência (opcional)</li>
-                </ul>
-                <p>Este link é pessoal e intransferível.</p>
-                <hr>
-                <p style="font-size: 12px; color: #666;">
-                    Mensagem automática do Sistema Maçônico - ARLS Bicentenário
-                </p>
-            </div>
-        </div>
-    </body>
-    </html>
-    """
-    
-    # Usar sua função de envio de e-mail
-    if 'enviar_email_resend' in globals():
-        enviar_email_resend(email, assunto, conteudo_html)
-        return jsonify({'success': True})
-    else:
-        print(f"📧 Link para {email}: {link}")
-        return jsonify({'success': True, 'debug': True, 'link': link})
-
-@app.route("/admin/gerar-tokens-candidatos")
-@admin_required
-def gerar_tokens_candidatos():
-    """Gera tokens para candidatos que não têm"""
     try:
-        cursor, conn = get_db()
-        
-        # Adicionar coluna se não existir
         cursor.execute("""
-            DO $$
-            BEGIN
-                IF NOT EXISTS (
-                    SELECT 1 FROM information_schema.columns 
-                    WHERE table_name = 'candidatos' AND column_name = 'token_acesso'
-                ) THEN
-                    ALTER TABLE candidatos ADD COLUMN token_acesso VARCHAR(255);
-                END IF;
-            END $$;
-        """)
+            SELECT id, nome, status, token_acesso, email
+            FROM candidatos 
+            WHERE id = %s AND token_acesso = %s
+        """, (candidato_id, token))
+        candidato = cursor.fetchone()
         
-        # Atualizar tokens
+        if not candidato:
+            flash("Acesso não autorizado!", "danger")
+            return redirect("/")
+        
+        # Buscar tipos de documentos
         cursor.execute("""
-            UPDATE candidatos 
-            SET token_acesso = encode(sha256(random()::text::bytea), 'hex')
-            WHERE token_acesso IS NULL
+            SELECT id, nome, descricao, obrigatorio, ordem
+            FROM tipos_documentos_candidato
+            WHERE ativo = 1
+            ORDER BY ordem
         """)
+        tipos_documentos = cursor.fetchall()
         
-        conn.commit()
-        total = cursor.rowcount
+        # Buscar documentos já enviados
+        cursor.execute("""
+            SELECT * FROM documentos_candidato
+            WHERE candidato_id = %s
+        """, (candidato_id,))
+        documentos = cursor.fetchall()
+        
+        documentos_map = {doc['tipo_documento_id']: doc for doc in documentos}
+        
+        total_obrigatorios = sum(1 for t in tipos_documentos if t['obrigatorio'] == 1)
+        total_enviados = sum(1 for t in tipos_documentos 
+                            if t['id'] in documentos_map and documentos_map[t['id']]['status'] == 'aprovado')
+        
+        percentual = int((total_enviados / total_obrigatorios * 100)) if total_obrigatorios > 0 else 0
+        
         return_connection(conn)
         
-        flash(f"✅ {total} tokens gerados com sucesso!", "success")
+        return render_template("candidatos/documentos_externo.html",
+                              candidato=candidato,
+                              tipos_documentos=tipos_documentos,
+                              documentos_map=documentos_map,
+                              total_obrigatorios=total_obrigatorios,
+                              total_enviados=total_enviados,
+                              percentual=percentual)
         
     except Exception as e:
-        flash(f"❌ Erro: {str(e)}", "danger")
-    
-    return redirect("/dashboard")        
+        print(f"Erro: {e}")
+        if conn:
+            return_connection(conn)
+        flash("Erro ao carregar página.", "danger")
+        return redirect("/")
 
+
+@app.route("/candidato/documentos/upload/<int:candidato_id>/<int:tipo_id>", methods=["POST"])
+def candidato_upload_documento_externo(candidato_id, tipo_id):
+    """Upload de documento pelo candidato"""
+    token = request.form.get('token')
+    
+    if not token:
+        flash("Token não informado!", "danger")
+        return redirect("/")
+    
+    if 'arquivo' not in request.files:
+        flash("Nenhum arquivo selecionado!", "danger")
+        return redirect(f"/candidato/{candidato_id}/documentos?token={token}")
+    
+    arquivo = request.files['arquivo']
+    
+    if arquivo.filename == '':
+        flash("Nenhum arquivo selecionado!", "danger")
+        return redirect(f"/candidato/{candidato_id}/documentos?token={token}")
+    
+    extensao = arquivo.filename.rsplit('.', 1)[1].lower() if '.' in arquivo.filename else ''
+    allowed_extensions = ['pdf', 'jpg', 'jpeg', 'png']
+    
+    if extensao not in allowed_extensions:
+        flash(f"Tipo de arquivo não permitido. Use: {', '.join(allowed_extensions)}", "danger")
+        return redirect(f"/candidato/{candidato_id}/documentos?token={token}")
+    
+    cursor, conn = get_db()
+    
+    try:
+        cursor.execute("""
+            SELECT id, nome, token_acesso
+            FROM candidatos 
+            WHERE id = %s AND token_acesso = %s
+        """, (candidato_id, token))
+        candidato = cursor.fetchone()
+        
+        if not candidato:
+            flash("Acesso não autorizado!", "danger")
+            return redirect("/")
+        
+        cursor.execute("SELECT nome FROM tipos_documentos_candidato WHERE id = %s", (tipo_id,))
+        tipo_doc = cursor.fetchone()
+        
+        if not tipo_doc:
+            flash("Tipo de documento inválido!", "danger")
+            return redirect(f"/candidato/{candidato_id}/documentos?token={token}")
+        
+        import cloudinary.uploader
+        from werkzeug.utils import secure_filename
+        
+        resource_type = "raw" if extensao == 'pdf' else "image"
+        
+        upload_result = cloudinary.uploader.upload(
+            arquivo,
+            folder=f"candidatos/{candidato_id}/documentos",
+            resource_type=resource_type,
+            type="upload",
+            access_mode="public"
+        )
+        
+        url_arquivo = upload_result.get('secure_url')
+        public_id = upload_result.get('public_id')
+        tamanho = upload_result.get('bytes', 0)
+        
+        if extensao == 'pdf' and '/image/' in url_arquivo:
+            url_arquivo = url_arquivo.replace('/image/', '/raw/')
+        
+        cursor.execute("""
+            SELECT id FROM documentos_candidato 
+            WHERE candidato_id = %s AND tipo_documento_id = %s
+        """, (candidato_id, tipo_id))
+        
+        existing = cursor.fetchone()
+        
+        if existing:
+            cursor.execute("""
+                UPDATE documentos_candidato SET
+                    nome_arquivo = %s,
+                    caminho_arquivo = %s,
+                    tipo_arquivo = %s,
+                    tamanho = %s,
+                    status = 'pendente',
+                    data_envio = CURRENT_TIMESTAMP
+                WHERE id = %s
+            """, (public_id, url_arquivo, extensao, tamanho, existing['id']))
+        else:
+            cursor.execute("""
+                INSERT INTO documentos_candidato 
+                (candidato_id, tipo_documento_id, nome_arquivo, caminho_arquivo, 
+                 tipo_arquivo, tamanho, status)
+                VALUES (%s, %s, %s, %s, %s, %s, 'pendente')
+            """, (candidato_id, tipo_id, public_id, url_arquivo, extensao, tamanho))
+        
+        conn.commit()
+        flash(f"Documento '{tipo_doc['nome']}' enviado com sucesso!", "success")
+        
+    except Exception as e:
+        print(f"Erro: {e}")
+        flash(f"Erro ao enviar: {str(e)}", "danger")
+        if conn:
+            conn.rollback()
+    
+    return_connection(conn)
+    return redirect(f"/candidato/{candidato_id}/documentos?token={token}")
+    
+    
 # =============================
 # ROTAS DA BIBLIOTECA
 # =============================
@@ -9157,14 +9222,29 @@ def listar_documentos_candidato(candidato_id):
         flash("Permissão negada!", "danger")
         return redirect("/candidatos")
     
-    # Buscar candidato
-    cursor.execute("SELECT id, nome FROM candidatos WHERE id = %s", (candidato_id,))
+    # Buscar candidato - INCLUINDO token_acesso
+    cursor.execute("""
+        SELECT id, nome, status, token_acesso, email 
+        FROM candidatos 
+        WHERE id = %s
+    """, (candidato_id,))
     candidato = cursor.fetchone()
     
     if not candidato:
         flash("Candidato não encontrado!", "danger")
         return_connection(conn)
         return redirect("/candidatos")
+    
+    # Se não tiver token, gerar automaticamente
+    if not candidato['token_acesso']:
+        import secrets
+        token = secrets.token_hex(32)
+        cursor.execute("UPDATE candidatos SET token_acesso = %s WHERE id = %s", (token, candidato_id))
+        conn.commit()
+        candidato['token_acesso'] = token
+        print(f"🔍 Token gerado automaticamente para {candidato['nome']}: {token}")
+    
+    print(f"🔍 Token do candidato {candidato_id}: {candidato['token_acesso']}")
     
     # Buscar tipos de documentos obrigatórios
     cursor.execute("""
@@ -9201,13 +9281,12 @@ def listar_documentos_candidato(candidato_id):
     return_connection(conn)
     
     return render_template("candidatos/documentos.html",
-                          candidato=candidato,
+                          candidato=candidato,  # ← Agora tem token_acesso!
                           tipos_documentos=tipos_documentos,
                           documentos_map=documentos_map,
                           total_obrigatorios=total_obrigatorios,
                           total_enviados=total_enviados,
                           percentual=percentual)
-
 
 @app.route("/candidatos/<int:candidato_id>/documentos/upload/<int:tipo_id>", methods=["POST"])
 @login_required
@@ -9424,6 +9503,7 @@ def excluir_documento_candidato(doc_id):
         return jsonify({'success': False, 'error': str(e)}), 500
     finally:
         return_connection(conn)
+
 
 # =============================
 # ROTAS DE CHECKLIST DIGITAL

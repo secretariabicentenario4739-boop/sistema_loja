@@ -1,0 +1,543 @@
+{% extends "base_public.html" %}
+
+{% block title %}Meus Documentos - {{ candidato.nome }}{% endblock %}
+
+{% block styles %}
+{{ super() }}
+<style>
+    :root {
+        --primary-gradient-start: #667eea;
+        --primary-gradient-end: #764ba2;
+        --success: #10b981;
+        --warning: #f59e0b;
+        --danger: #ef4444;
+        --info: #3b82f6;
+    }
+
+    .document-card {
+        transition: transform 0.2s, box-shadow 0.2s;
+        border-radius: 16px;
+        overflow: hidden;
+        border: none;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    }
+    .document-card:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 20px 30px -12px rgba(0,0,0,0.15);
+    }
+    .document-header {
+        padding: 16px 20px;
+        background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+        border-bottom: 2px solid #e2e8f0;
+    }
+    .document-body {
+        padding: 20px;
+    }
+    .btn-upload {
+        background: linear-gradient(135deg, var(--primary-gradient-start) 0%, var(--primary-gradient-end) 100%);
+        color: white;
+        border: none;
+        padding: 8px 20px;
+        border-radius: 10px;
+        font-weight: 500;
+        transition: all 0.3s;
+    }
+    .btn-upload:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+        color: white;
+    }
+    .status-badge {
+        padding: 6px 14px;
+        border-radius: 24px;
+        font-size: 0.8rem;
+        font-weight: 600;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+    }
+    .status-aprovado {
+        background: #d1fae5;
+        color: #065f46;
+    }
+    .status-pendente {
+        background: #fed7aa;
+        color: #92400e;
+    }
+    .status-rejeitado {
+        background: #fee2e2;
+        color: #991b1b;
+    }
+    .status-nao-enviado {
+        background: #f1f5f9;
+        color: #475569;
+    }
+    .progress-custom {
+        border-radius: 20px;
+        height: 12px;
+        background: #e2e8f0;
+    }
+    .progress-custom .progress-bar {
+        border-radius: 20px;
+        background: linear-gradient(90deg, var(--success), #34d399);
+        transition: width 0.5s ease;
+    }
+    .certidao-link {
+        background: #f8fafc;
+        border-radius: 12px;
+        padding: 12px 16px;
+        margin-bottom: 12px;
+        transition: all 0.2s;
+        border-left: 3px solid var(--success);
+    }
+    .certidao-link:hover {
+        background: #f1f5f9;
+        transform: translateX(5px);
+        border-left-color: var(--primary-gradient-start);
+    }
+    .certidao-link a {
+        text-decoration: none;
+        color: #1e293b;
+        font-weight: 600;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+    .certidao-link a:hover {
+        color: var(--primary-gradient-start);
+    }
+    .certidao-link small {
+        margin-left: 28px;
+        display: block;
+        color: #64748b;
+    }
+    .info-card {
+        border: none;
+        border-radius: 16px;
+        overflow: hidden;
+    }
+    .info-card .card-header {
+        border: none;
+        padding: 16px 20px;
+        font-weight: 600;
+    }
+    .photo-preview {
+        width: 80px;
+        height: 80px;
+        object-fit: cover;
+        border-radius: 50%;
+        border: 3px solid white;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    }
+    .badge-required {
+        background: linear-gradient(135deg, var(--danger), #dc2626);
+        color: white;
+        padding: 4px 12px;
+        border-radius: 20px;
+        font-size: 0.7rem;
+        font-weight: 600;
+    }
+    .badge-optional {
+        background: #64748b;
+        color: white;
+        padding: 4px 12px;
+        border-radius: 20px;
+        font-size: 0.7rem;
+        font-weight: 600;
+    }
+    .btn-icon {
+        width: 34px;
+        height: 34px;
+        padding: 0;
+        border-radius: 10px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+    }
+    .modal-content-custom {
+        border: none;
+        border-radius: 20px;
+        overflow: hidden;
+    }
+    @media (max-width: 768px) {
+        .document-header h5 { font-size: 1rem; }
+        .status-badge { font-size: 0.7rem; }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="row">
+        <div class="col-12">
+            <!-- Cabeçalho -->
+            <div class="card shadow-lg mb-4 border-0 rounded-4 overflow-hidden">
+                <div class="card-body text-center py-5" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+                    <div class="mb-3">
+                        <div class="bg-white bg-opacity-25 rounded-circle d-inline-flex p-3">
+                            <i class="bi bi-file-earmark-text fs-1 text-white"></i>
+                        </div>
+                    </div>
+                    <h2 class="text-white fw-bold mb-2">Meus Documentos</h2>
+                    <p class="text-white-50 mb-0">Olá, <strong class="text-white">{{ candidato.nome }}</strong>! Gerencie seus documentos aqui</p>
+                </div>
+            </div>
+
+            <!-- Barra de Progresso -->
+            <div class="card shadow-sm mb-4 border-0 rounded-4">
+                <div class="card-body p-4">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h6 class="mb-0 fw-bold">
+                            <i class="bi bi-check-circle-fill text-success me-2"></i>
+                            Progresso da Documentação
+                        </h6>
+                        <span class="badge bg-primary rounded-pill px-3 py-2">{{ total_enviados }}/{{ total_obrigatorios }} Obrigatórios</span>
+                    </div>
+                    <div class="progress progress-custom">
+                        <div class="progress-bar" role="progressbar" style="width: {{ percentual }}%"></div>
+                    </div>
+                    <div class="mt-3 text-center">
+                        {% if percentual == 100 %}
+                            <span class="badge bg-success bg-opacity-10 text-success px-3 py-2 rounded-pill">
+                                <i class="bi bi-trophy-fill me-1"></i> Parabéns! Todos os documentos obrigatórios foram enviados!
+                            </span>
+                        {% elif total_enviados > 0 %}
+                            <span class="badge bg-warning bg-opacity-10 text-warning px-3 py-2 rounded-pill">
+                                <i class="bi bi-hourglass-split me-1"></i> Aguardando envio de {{ total_obrigatorios - total_enviados }} documento(s)
+                            </span>
+                        {% else %}
+                            <span class="badge bg-secondary bg-opacity-10 text-secondary px-3 py-2 rounded-pill">
+                                <i class="bi bi-info-circle me-1"></i> Nenhum documento obrigatório enviado ainda
+                            </span>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <div class="row g-4">
+                <!-- Coluna dos Documentos -->
+                <div class="col-lg-8">
+                    {% for tipo in tipos_documentos %}
+                    {% set doc = documentos_map.get(tipo.id) %}
+                    <div class="card document-card mb-4">
+                        <div class="document-header">
+                            <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+                                <div>
+                                    <h5 class="mb-1 fw-bold">
+                                        {% if tipo.nome == 'Foto 3x4' %}
+                                            <i class="bi bi-camera-fill text-danger me-2"></i>
+                                        {% elif tipo.nome == 'Certidão de Nascimento' %}
+                                            <i class="bi bi-file-text-fill text-info me-2"></i>
+                                        {% elif tipo.nome == 'Comprovante de Residência' %}
+                                            <i class="bi bi-house-fill text-success me-2"></i>
+                                        {% else %}
+                                            <i class="bi bi-file-earmark-text me-2 text-primary"></i>
+                                        {% endif %}
+                                        {{ tipo.nome }}
+                                    </h5>
+                                    {% if tipo.descricao %}
+                                        <small class="text-muted">{{ tipo.descricao }}</small>
+                                    {% endif %}
+                                </div>
+                                <div>
+                                    {% if tipo.obrigatorio == 1 %}
+                                        <span class="badge-required">
+                                            <i class="bi bi-star-fill me-1"></i> Obrigatório
+                                        </span>
+                                    {% else %}
+                                        <span class="badge-optional">
+                                            <i class="bi bi-bookmark me-1"></i> Opcional
+                                        </span>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                        <div class="document-body">
+                            <div class="row align-items-center gy-3">
+                                <div class="col-md-8">
+                                    {% if doc %}
+                                        <div class="mb-2">
+                                            <span class="status-badge 
+                                                {% if doc.status == 'aprovado' %}status-aprovado
+                                                {% elif doc.status == 'rejeitado' %}status-rejeitado
+                                                {% else %}status-pendente{% endif %}">
+                                                <i class="bi 
+                                                    {% if doc.status == 'aprovado' %}bi-check-circle-fill
+                                                    {% elif doc.status == 'rejeitado' %}bi-x-circle-fill
+                                                    {% else %}bi-clock-fill{% endif %}"></i>
+                                                {% if doc.status == 'aprovado' %}
+                                                    Aprovado em {{ doc.data_aprovacao.strftime('%d/%m/%Y') if doc.data_aprovacao else '-' }}
+                                                {% elif doc.status == 'rejeitado' %}
+                                                    Rejeitado: {{ doc.observacao or 'Envie novamente' }}
+                                                {% else %}
+                                                    Enviado em {{ doc.data_envio.strftime('%d/%m/%Y %H:%M') if doc.data_envio else '-' }}
+                                                {% endif %}
+                                            </span>
+                                        </div>
+                                        {% if tipo.nome == 'Foto 3x4' and doc.caminho_arquivo %}
+                                            <div class="mt-2">
+                                                <img src="{{ doc.caminho_arquivo }}" alt="Foto 3x4" class="photo-preview">
+                                            </div>
+                                        {% endif %}
+                                    {% else %}
+                                        <div class="text-muted py-2">
+                                            <i class="bi bi-inbox fs-5 me-2"></i> Nenhum arquivo enviado
+                                        </div>
+                                    {% endif %}
+                                </div>
+                                <div class="col-md-4 text-md-end">
+                                    <button type="button" class="btn btn-upload btn-sm" 
+                                            data-bs-toggle="modal" 
+                                            data-bs-target="#modalUpload{{ tipo.id }}">
+                                        <i class="bi bi-cloud-upload"></i> 
+                                        {% if doc %}Reenviar{% else %}Enviar{% endif %}
+                                    </button>
+                                    {% if doc %}
+                                        <a href="{{ doc.caminho_arquivo }}" target="_blank" class="btn btn-outline-secondary btn-sm btn-icon ms-1" title="Visualizar">
+                                            <i class="bi bi-eye"></i>
+                                        </a>
+                                        <button type="button" class="btn btn-outline-danger btn-sm btn-icon ms-1" 
+                                                onclick="excluirDocumento({{ doc.id }}, '{{ tipo.nome }}')" title="Excluir">
+                                            <i class="bi bi-trash"></i>
+                                        </button>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+
+                <!-- Coluna das Certidões e Links Úteis -->
+                <div class="col-lg-4">
+                    <!-- Certidões Necessárias -->
+                    <div class="card info-card shadow-sm mb-4">
+                        <div class="card-header bg-primary text-white">
+                            <h5 class="mb-0 fw-bold">
+                                <i class="bi bi-file-check-fill me-2"></i> Certidões Necessárias
+                            </h5>
+                        </div>
+                        <div class="card-body p-3">
+                            <div class="certidao-link">
+                                <a href="https://www.tse.jus.br/eleitor/certidoes/certidao-de-crimes-eleitorais" target="_blank">
+                                    <i class="bi bi-check-circle-fill text-success fs-5"></i>
+                                    Certidão Negativa Eleitoral
+                                </a>
+                                <small>Tribunal Superior Eleitoral (TSE)</small>
+                            </div>
+                            
+                            <div class="certidao-link">
+                                <a href="https://www.stm.jus.br/servicos-stm/certidao-negativa/emitir-certidao-negativa" target="_blank">
+                                    <i class="bi bi-shield-check text-success fs-5"></i>
+                                    Certidão Negativa Militar
+                                </a>
+                                <small>Superior Tribunal Militar (STM)</small>
+                            </div>
+                            
+                            <div class="certidao-link">
+                                <a href="https://sistemas.trf1.jus.br/certidao/#/solicitacao" target="_blank">
+                                    <i class="bi bi-bank text-success fs-5"></i>
+                                    Certidão Negativa Justiça Federal
+                                </a>
+                                <small>Tribunal Regional Federal da 1ª Região</small>
+                            </div>
+                            
+                            <div class="certidao-link">
+                                <a href="https://cnc.tjdft.jus.br/" target="_blank">
+                                    <i class="bi bi-building text-success fs-5"></i>
+                                    Certidões Negativas do TJDFT
+                                </a>
+                                <small>Criminal, Cível, Falência, Recuperação Judicial, Especial Cível e Criminal</small>
+                            </div>
+                            
+                            <div class="certidao-link">
+                                <a href="https://antecedentes.dpf.gov.br/" target="_blank">
+                                    <i class="bi bi-fingerprint text-success fs-5"></i>
+                                    Certidão de Antecedentes Criminais
+                                </a>
+                                <small>Polícia Federal</small>
+                            </div>
+                            
+                            <div class="certidao-link">
+                                <a href="https://ww1.receita.fazenda.df.gov.br/cidadao/certidoes/Certidao" target="_blank">
+                                    <i class="bi bi-receipt text-success fs-5"></i>
+                                    Certidão Negativa de Débitos - GDF
+                                </a>
+                                <small>Receita do Distrito Federal</small>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Informações sobre Documentos -->
+                    <div class="card info-card shadow-sm mb-4">
+                        <div class="card-header bg-info text-white">
+                            <h5 class="mb-0 fw-bold">
+                                <i class="bi bi-info-circle-fill me-2"></i> Documentos Obrigatórios
+                            </h5>
+                        </div>
+                        <div class="card-body p-3">
+                            <div class="d-flex align-items-start mb-3">
+                                <i class="bi bi-camera-fill text-danger fs-5 me-3 mt-1"></i>
+                                <div>
+                                    <strong>Foto 3x4</strong>
+                                    <div class="small text-muted">Obrigatória - Formato JPG/PNG</div>
+                                </div>
+                            </div>
+                            <hr class="my-2">
+                            <div class="d-flex align-items-start mb-2">
+                                <i class="bi bi-file-earmark-text text-primary fs-5 me-3 mt-1"></i>
+                                <div>
+                                    <strong>Demais documentos</strong>
+                                    <div class="small text-muted">Envie em PDF, JPG ou PNG (máx. 10MB)</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Documentos Opcionais -->
+                    <div class="card info-card shadow-sm mb-4">
+                        <div class="card-header bg-secondary text-white">
+                            <h5 class="mb-0 fw-bold">
+                                <i class="bi bi-bookmark-fill me-2"></i> Documentos Opcionais
+                            </h5>
+                        </div>
+                        <div class="card-body p-3">
+                            <div class="d-flex align-items-start mb-3">
+                                <i class="bi bi-file-text-fill text-info fs-5 me-3 mt-1"></i>
+                                <div>
+                                    <strong>Certidão de Nascimento</strong>
+                                    <div class="small text-muted">Recomendado manter atualizado</div>
+                                </div>
+                            </div>
+                            <div class="d-flex align-items-start">
+                                <i class="bi bi-house-fill text-success fs-5 me-3 mt-1"></i>
+                                <div>
+                                    <strong>Comprovante de Residência</strong>
+                                    <div class="small text-muted">Últimos 3 meses</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Currículo -->
+                    <div class="card info-card shadow-sm mb-4">
+                        <div class="card-header bg-dark text-white">
+                            <h5 class="mb-0 fw-bold">
+                                <i class="bi bi-file-person-fill me-2"></i> Currículo
+                            </h5>
+                        </div>
+                        <div class="card-body p-3">
+                            <p class="small mb-0">Documento opcional - Envie seu currículo atualizado para melhor avaliação do seu perfil.</p>
+                        </div>
+                    </div>
+
+                    <!-- Contato -->
+                    <div class="card info-card shadow-sm">
+                        <div class="card-header bg-warning text-dark">
+                            <h5 class="mb-0 fw-bold">
+                                <i class="bi bi-headset me-2"></i> Precisa de ajuda?
+                            </h5>
+                        </div>
+                        <div class="card-body p-3">
+                            <p class="small mb-2">Em caso de dúvidas, entre em contato com a secretaria:</p>
+                            <div class="d-flex flex-column gap-2">
+                                <div>
+                                    <i class="bi bi-envelope-fill me-2 text-secondary"></i>
+                                    <span class="small">secretaria.bicentenario4739@gmail.com</span>
+                                </div>
+                                <div>
+                                    <i class="bi bi-telephone-fill me-2 text-secondary"></i>
+                                    <span class="small">(61) 99368-1248</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modals de Upload para cada tipo de documento -->
+{% for tipo in tipos_documentos %}
+<div class="modal fade" id="modalUpload{{ tipo.id }}" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content modal-content-custom">
+            <form method="POST" action="/candidato/documentos/upload/{{ candidato.id }}/{{ tipo.id }}?token={{ candidato.token_acesso }}" 
+                  enctype="multipart/form-data">
+                <input type="hidden" name="token" value="{{ candidato.token_acesso }}">
+                <div class="modal-header bg-primary text-white border-0">
+                    <h5 class="modal-title">
+                        <i class="bi bi-cloud-upload-fill me-2"></i> 
+                        Enviar {{ tipo.nome }}
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body p-4">
+                    <div class="mb-3">
+                        <label class="fw-bold mb-2">{{ tipo.nome }}</label>
+                        {% if tipo.descricao %}
+                            <p class="small text-muted">{{ tipo.descricao }}</p>
+                        {% endif %}
+                    </div>
+                    
+                    {% if tipo.obrigatorio == 1 %}
+                        <div class="alert alert-danger py-2 small">
+                            <i class="bi bi-exclamation-triangle-fill me-1"></i>
+                            <strong>Documento obrigatório</strong> - O envio é necessário para completar sua candidatura.
+                        </div>
+                    {% endif %}
+                    
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">
+                            <i class="bi bi-file-earmark-arrow-up me-1"></i> Arquivo
+                        </label>
+                        <input type="file" class="form-control" name="arquivo" required 
+                               accept=".pdf,.jpg,.jpeg,.png">
+                        <div class="form-text">
+                            <i class="bi bi-info-circle"></i> Formatos permitidos: PDF, JPG, PNG. Tamanho máximo: 10MB
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer bg-light border-0">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                        <i class="bi bi-x-circle"></i> Cancelar
+                    </button>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="bi bi-cloud-upload-fill"></i> Enviar Documento
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endfor %}
+
+<script>
+function excluirDocumento(docId, nomeDocumento) {
+    if (!confirm(`⚠️ ATENÇÃO!\n\nDeseja excluir o documento "${nomeDocumento}"?\n\nEsta ação não pode ser desfeita.`)) {
+        return;
+    }
+    
+    fetch(`/api/documentos-candidato/${docId}/excluir`, {
+        method: 'DELETE',
+        headers: {
+            'Content-Type': 'application/json'
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert('✅ Documento excluído com sucesso!');
+            location.reload();
+        } else {
+            alert('❌ Erro: ' + (data.error || 'Erro desconhecido'));
+        }
+    })
+    .catch(error => {
+        console.error('Erro:', error);
+        alert('❌ Erro ao excluir documento');
+    });
+}
+</script>
+{% endblock %}
