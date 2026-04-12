@@ -213,62 +213,7 @@
                     <p class="text-white-50 mb-0">Olá, <strong class="text-white">{{ candidato.nome }}</strong>! Gerencie seus documentos aqui</p>
                 </div>
             </div>
-<!-- Script de debug para barra de progresso -->
-<script>
-// Forçar atualização da barra de progresso após a página carregar
-document.addEventListener('DOMContentLoaded', function() {
-    console.log('=== DEBUG BARRA DE PROGRESSO ===');
-    
-    // Verifica elementos
-    const contador = document.getElementById('contadorDocumentos');
-    const barra = document.getElementById('barraProgresso');
-    const mensagem = document.getElementById('mensagemProgresso');
-    
-    console.log('Elemento contador:', contador);
-    console.log('Elemento barra:', barra);
-    console.log('Elemento mensagem:', mensagem);
-    
-    // Conta documentos obrigatórios
-    const obrigatorios = document.querySelectorAll('[data-obrigatorio="1"]');
-    console.log('Documentos com data-obrigatorio="1":', obrigatorios.length);
-    
-    let enviados = 0;
-    obrigatorios.forEach((card, index) => {
-        const statusArea = card.querySelector('.document-status-area');
-        const statusBadge = statusArea ? statusArea.querySelector('.status-badge') : null;
-        console.log(`Card ${index + 1}:`, {
-            temStatusArea: !!statusArea,
-            temStatusBadge: !!statusBadge,
-            texto: statusBadge ? statusBadge.innerText : 'sem badge'
-        });
-        if (statusBadge) enviados++;
-    });
-    
-    console.log(`Total obrigatórios: ${obrigatorios.length}, Enviados: ${enviados}`);
-    
-    // Força atualização manual
-    if (contador) {
-        contador.textContent = `${enviados}/${obrigatorios.length} Obrigatórios`;
-    }
-    
-    const percentual = obrigatorios.length > 0 ? (enviados / obrigatorios.length) * 100 : 0;
-    if (barra) {
-        barra.style.width = `${percentual}%`;
-        console.log(`Barra ajustada para ${percentual}%`);
-    }
-    
-    if (mensagem) {
-        if (percentual === 100) {
-            mensagem.innerHTML = `<span class="badge bg-success bg-opacity-10 text-success px-3 py-2 rounded-pill"><i class="bi bi-trophy-fill me-1"></i> 🎉 Parabéns! Todos os documentos obrigatórios foram enviados!</span>`;
-        } else if (enviados > 0) {
-            const faltam = obrigatorios.length - enviados;
-            mensagem.innerHTML = `<span class="badge bg-warning bg-opacity-10 text-warning px-3 py-2 rounded-pill"><i class="bi bi-hourglass-split me-1"></i> ⏳ Aguardando envio de ${faltam} documento(s)</span>`;
-        } else {
-            mensagem.innerHTML = `<span class="badge bg-secondary bg-opacity-10 text-secondary px-3 py-2 rounded-pill"><i class="bi bi-info-circle me-1"></i> 📄 Nenhum documento obrigatório enviado ainda</span>`;
-        }
-    }
-});
-</script>
+
             <!-- Barra de Progresso -->
             <div class="card shadow-sm mb-4 border-0 rounded-4" id="progressCard">
                 <div class="card-body p-4">
