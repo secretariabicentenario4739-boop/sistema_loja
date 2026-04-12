@@ -798,21 +798,39 @@
 <script>
 let totalObrigatorios = {{ total_obrigatorios }};
 
-// Função para atualizar a barra de progresso
+// Função para atualizar a barra de progresso - VERSÃO CORRIGIDA
 function atualizarProgresso() {
-    const linhasObrigatorias = document.querySelectorAll('tr[data-obrigatorio="1"]');
+    // Conta todas as linhas da tabela que são documentos obrigatórios
+    // Pega todas as linhas que NÃO têm a classe 'table-light' (documentos opcionais)
+    // E que NÃO são a linha do separador
+    const todasLinhas = document.querySelectorAll('.table-documentos tbody tr');
+    let totalObrigatorios = 0;
     let enviadosObrigatorios = 0;
     let pendentes = 0;
     
-    linhasObrigatorias.forEach(row => {
-        const statusArea = row.querySelector('.status-area');
-        const statusBadge = statusArea ? statusArea.querySelector('.badge-custom') : null;
+    todasLinhas.forEach(row => {
+        // Pula a linha do separador
+        if (row.classList.contains('separator-row')) {
+            return;
+        }
         
-        if (statusBadge && !statusBadge.classList.contains('badge-nao-enviado')) {
-            enviadosObrigatorios++;
+        // Verifica se é documento obrigatório (tem a badge-obrigatorio)
+        const badgeTipo = row.querySelector('.badge-obrigatorio');
+        if (badgeTipo) {
+            totalObrigatorios++;
             
-            if (statusBadge.classList.contains('badge-pendente')) {
-                pendentes++;
+            // Verifica se tem documento enviado (status-area não está vazio e tem badge de status)
+            const statusArea = row.querySelector('.status-area');
+            const statusBadge = statusArea ? statusArea.querySelector('.badge-custom') : null;
+            
+            // Se tem status badge e não é "Não enviado", considera como enviado
+            if (statusBadge && !statusBadge.classList.contains('badge-nao-enviado')) {
+                enviadosObrigatorios++;
+                
+                // Conta pendentes (badge-pendente)
+                if (statusBadge.classList.contains('badge-pendente')) {
+                    pendentes++;
+                }
             }
         }
     });
@@ -834,6 +852,7 @@ function atualizarProgresso() {
     const barraProgresso = document.getElementById('barraProgresso');
     if (barraProgresso) {
         barraProgresso.style.width = `${percentual}%`;
+        barraProgresso.setAttribute('aria-valuenow', percentual);
     }
     
     // Atualiza mensagem
@@ -863,7 +882,229 @@ function atualizarProgresso() {
             `;
         }
     }
+    
+    // Log para debug
+    console.log('Progresso atualizado:', {
+        totalObrigatorios: totalObrigatorios,
+        enviadosObrigatorios: enviadosObrigatorios,
+        percentual: percentual,
+        pendentes: pendentes
+    });
 }
+
+// Função para forçar atualização da barra após ações
+function atualizarTudo() {
+    atualizarProgresso();
+}
+
+// Modificar as funções de aprovar/rejeitar/excluir para atualizar sem recarregar
+function aprovarDocumento(docId, nomeDocumento) {
+    if (!confirm(`✅ Confirmar aprovação do documento "${nomeDocumento}"?`)) {
+        return;
+    }
+    
+    const btn = event.target;
+    const originalText = btn.innerHTML;
+    btn.innerHTML = '<i class="bi bi-hourglass-split"></i> Aprovando...';
+    btn.disabled = true;
+    
+    fetch(`/api/documentos-candidato/${docId}/aprovar`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ 
+            status: 'aprovado',
+            data_aprovacao: new Date().toISOString()
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Atualiza o status na tabela sem recarregar a página
+            const row = btn.closest('tr');
+            const statusArea = row.querySelector('.status-area');
+            
+            // Atualiza o HTML do status
+            statusArea.innerHTML = `
+                <span class="badge-custom badge-aprovado">
+                    <i class="bi bi-check-circle-fill"></i> Aprovado
+                </span>
+                <br><small>${new Date().toLocaleDateString('pt-BR')}</small>
+            `;
+            
+            // Remove os botões de aprovar/rejeitar
+            const botoesAcao = row.querySelector('.d-flex.flex-wrap.gap-1');
+            if (botoesAcao) {
+                const btnAprovar = botoesAcao.querySelector('.btn-aprovar');
+                const btnRejeitar = botoesAcao.querySelector('.btn-rejeitar');
+                if (btnAprovar) btnAprovar.remove();
+                if (btnRejeitar) btnRejeitar.remove();
+            }
+            
+            // Atualiza a barra de progresso
+            atualizarProgresso();
+            
+            alert(`✅ Documento "${nomeDocumento}" aprovado com sucesso!`);
+        } else {
+            throw new Error(data.error || 'Erro desconhecido');
+        }
+    })
+    .catch(error => {
+        console.error('Erro detalhado:', error);
+        alert(`❌ Erro ao aprovar documento: ${error.message}`);
+    })
+    .finally(() => {
+        btn.innerHTML = originalText;
+        btn.disabled = false;
+    });
+}
+
+function rejeitarDocumento(docId, nomeDocumento) {
+    const motivo = prompt(`❌ Rejeitar documento "${nomeDocumento}"\n\nDigite o motivo da rejeição:`);
+    
+    if (!motivo || motivo.trim() === '') {
+        if (motivo !== null) {
+            alert('❌ Motivo da rejeição é obrigatório!');
+        }
+        return;
+    }
+    
+    const btn = event.target;
+    const originalText = btn.innerHTML;
+    btn.innerHTML = '<i class="bi bi-hourglass-split"></i> Rejeitando...';
+    btn.disabled = true;
+    
+    fetch(`/api/documentos-candidato/${docId}/rejeitar`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ 
+            status: 'rejeitado',
+            observacao: motivo.trim(),
+            data_reprovacao: new Date().toISOString()
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Atualiza o status na tabela sem recarregar a página
+            const row = btn.closest('tr');
+            const statusArea = row.querySelector('.status-area');
+            
+            // Atualiza o HTML do status
+            statusArea.innerHTML = `
+                <span class="badge-custom badge-rejeitado">
+                    <i class="bi bi-x-circle-fill"></i> Rejeitado
+                </span>
+                <br><small class="text-danger">${motivo}</small>
+            `;
+            
+            // Remove os botões de aprovar/rejeitar
+            const botoesAcao = row.querySelector('.d-flex.flex-wrap.gap-1');
+            if (botoesAcao) {
+                const btnAprovar = botoesAcao.querySelector('.btn-aprovar');
+                const btnRejeitar = botoesAcao.querySelector('.btn-rejeitar');
+                if (btnAprovar) btnAprovar.remove();
+                if (btnRejeitar) btnRejeitar.remove();
+            }
+            
+            // Atualiza a barra de progresso
+            atualizarProgresso();
+            
+            alert(`❌ Documento "${nomeDocumento}" rejeitado.\nMotivo: ${motivo}`);
+        } else {
+            throw new Error(data.error || 'Erro desconhecido');
+        }
+    })
+    .catch(error => {
+        console.error('Erro detalhado:', error);
+        alert(`❌ Erro ao rejeitar documento: ${error.message}`);
+    })
+    .finally(() => {
+        btn.innerHTML = originalText;
+        btn.disabled = false;
+    });
+}
+
+function excluirDocumento(docId, nomeDocumento, tipoId) {
+    if (!confirm(`⚠️ ATENÇÃO!\n\nDeseja excluir o documento "${nomeDocumento}"?\n\nEsta ação não pode ser desfeita.`)) {
+        return;
+    }
+    
+    fetch(`/api/documentos-candidato/${docId}/excluir`, {
+        method: 'DELETE',
+        headers: {
+            'Content-Type': 'application/json'
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Atualiza o status na tabela sem recarregar a página
+            const row = document.querySelector(`tr[data-documento-id="${tipoId}"]`);
+            if (row) {
+                const statusArea = row.querySelector('.status-area');
+                statusArea.innerHTML = `
+                    <span class="badge-custom badge-nao-enviado">
+                        <i class="bi bi-cloud-slash"></i> Não enviado
+                    </span>
+                `;
+                
+                // Remove botões de visualizar/baixar/excluir
+                const botoesAcao = row.querySelector('.d-flex.flex-wrap.gap-1');
+                if (botoesAcao) {
+                    // Remove botões específicos
+                    const btnView = botoesAcao.querySelector('.btn-outline-info');
+                    const btnDownload = botoesAcao.querySelector('.btn-outline-success');
+                    const btnExcluir = botoesAcao.querySelector('.btn-outline-danger');
+                    const btnAprovar = botoesAcao.querySelector('.btn-aprovar');
+                    const btnRejeitar = botoesAcao.querySelector('.btn-rejeitar');
+                    
+                    if (btnView) btnView.remove();
+                    if (btnDownload) btnDownload.remove();
+                    if (btnExcluir) btnExcluir.remove();
+                    if (btnAprovar) btnAprovar.remove();
+                    if (btnRejeitar) btnRejeitar.remove();
+                }
+            }
+            
+            // Atualiza a barra de progresso
+            atualizarProgresso();
+            
+            alert('✅ Documento excluído com sucesso!');
+        } else {
+            alert('❌ Erro: ' + (data.error || 'Erro desconhecido'));
+        }
+    })
+    .catch(error => {
+        console.error('Erro:', error);
+        alert('❌ Erro ao excluir documento');
+    });
+}
+
+// Adiciona um observador para atualizar a barra quando a página carregar e quando houver mudanças
+document.addEventListener('DOMContentLoaded', function() {
+    // Atualiza progresso
+    atualizarProgresso();
+    
+    // Adiciona um observador de mutação para detectar mudanças na tabela
+    const observer = new MutationObserver(function(mutations) {
+        atualizarProgresso();
+    });
+    
+    const tabela = document.querySelector('.table-documentos tbody');
+    if (tabela) {
+        observer.observe(tabela, { childList: true, subtree: true, attributes: true });
+    }
+    
+    // Log para debug
+    console.log('Página carregada, total obrigatórios do backend:', {{ total_obrigatorios }});
+    
+    // Força atualização após 1 segundo
+    setTimeout(atualizarProgresso, 1000);
+});
 
 // Versão alternativa usando Google Docs Viewer (funciona para PDF, DOC, DOCX, PPT, etc.)
 function visualizarDocumento(caminho, nome) {
