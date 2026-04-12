@@ -1,15 +1,18 @@
 # database.py
-import mysql.connector
-from mysql.connector import pooling
+import os
+import psycopg2
+from psycopg2 import pool
+from psycopg2.extras import RealDictCursor
 import logging
 from functools import wraps
 import time
+from contextlib import contextmanager
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 class DatabasePool:
-    """Singleton para gerenciar pool de conexões"""
+    """Singleton para gerenciar pool de conexões PostgreSQL"""
     
     _instance = None
     _pool = None
@@ -21,22 +24,38 @@ class DatabasePool:
         return cls._instance
     
     def _initialize_pool(self):
-        """Inicializa o pool de conexões"""
+        """Inicializa o pool de conexões PostgreSQL"""
         try:
-            config = {
-                'host': 'localhost',
-                'user': 'seu_usuario',
-                'password': 'sua_senha',
-                'database': 'seu_banco',
-                'pool_name': 'mypool',
-                'pool_size': 10,  # Número máximo de conexões simultâneas
-                'pool_reset_session': True,
-                'autocommit': False,
-                'use_pure': True
-            }
+            DATABASE_URL = os.getenv('DATABASE_URL')
             
-            self._pool = mysql.connector.pooling.MySQLConnectionPool(**config)
-            logger.info(f"✅ Pool de conexões criado com sucesso (tamanho: {config['pool_size']})")
+            if DATABASE_URL:
+                # Render - usar URL
+                logger.info("🔧 Configurando pool para o banco do Render")
+                self._pool = psycopg2.pool.SimpleConnectionPool(
+                    1, 20,
+                    dsn=DATABASE_URL,
+                    cursor_factory=RealDictCursor,
+                    connect_timeout=10,
+                    keepalives=1,
+                    keepalives_idle=30,
+                    keepalives_interval=10,
+                    keepalives_count=5
+                )
+            else:
+                # Local - PostgreSQL
+                logger.info("🔧 Configurando pool para o banco local (PostgreSQL)")
+                self._pool = psycopg2.pool.SimpleConnectionPool(
+                    1, 20,
+                    host=os.getenv('DB_HOST', 'localhost'),
+                    port=os.getenv('DB_PORT', '5432'),
+                    dbname=os.getenv('DB_NAME', 'sistema_maconico'),
+                    user=os.getenv('DB_USER', 'postgres'),
+                    password=os.getenv('DB_PASSWORD', 'postgres'),
+                    cursor_factory=RealDictCursor,
+                    connect_timeout=10
+                )
+            
+            logger.info(f"✅ Pool de conexões PostgreSQL criado com sucesso!")
             
         except Exception as e:
             logger.error(f"❌ Erro ao criar pool de conexões: {e}")
@@ -48,63 +67,64 @@ class DatabasePool:
             self._initialize_pool()
         
         try:
-            connection = self._pool.get_connection()
-            logger.debug("🔌 Conexão obtida do pool")
-            return connection
+            conn = self._pool.getconn()
+            cursor = conn.cursor(cursor_factory=RealDictCursor)
+            logger.debug(f"🔌 Conexão obtida do pool (ativas: {self._pool._used})")
+            return cursor, conn
         except Exception as e:
             logger.error(f"❌ Erro ao obter conexão: {e}")
             raise
     
+    def return_connection(self, conn):
+        """Retorna a conexão para o pool"""
+        if self._pool and conn:
+            self._pool.putconn(conn)
+            logger.debug(f"🔌 Conexão retornada ao pool (ativas: {self._pool._used})")
+    
     def close_all_connections(self):
         """Fecha todas as conexões do pool"""
         if self._pool:
-            self._pool._remove_connections()
+            self._pool.closeall()
             logger.info("🔌 Todas as conexões foram fechadas")
 
 # Instância global do pool
 db_pool = DatabasePool()
 
+# Funções para compatibilidade
+def get_db():
+    """Obtém cursor e conexão do pool"""
+    return db_pool.get_connection()
+
+def return_connection(conn):
+    """Retorna a conexão para o pool"""
+    db_pool.return_connection(conn)
+
+# Context manager
+@contextmanager
+def get_db_connection():
+    """Context manager para usar com 'with'"""
+    cursor, conn = get_db()
+    try:
+        yield cursor
+        conn.commit()
+    except Exception as e:
+        conn.rollback()
+        raise e
+    finally:
+        return_connection(conn)
+
 # Decorador para gerenciar conexões automaticamente
 def with_db_connection(func):
-    """Decorador que gerencia automaticamente a conexão com o banco"""
     @wraps(func)
     def wrapper(*args, **kwargs):
-        connection = None
-        cursor = None
+        cursor, conn = get_db()
         try:
-            connection = db_pool.get_connection()
-            cursor = connection.cursor(dictionary=True)
             result = func(cursor, *args, **kwargs)
-            connection.commit()
+            conn.commit()
             return result
         except Exception as e:
-            if connection:
-                connection.rollback()
-            logger.error(f"Erro na função {func.__name__}: {e}")
-            raise
+            conn.rollback()
+            raise e
         finally:
-            if cursor:
-                cursor.close()
-            if connection:
-                connection.close()
-                logger.debug("🔌 Conexão retornada ao pool")
-    
+            return_connection(conn)
     return wrapper
-
-# Context manager para usar com 'with'
-class DatabaseConnection:
-    """Context manager para conexões com o banco"""
-    
-    def __enter__(self):
-        self.connection = db_pool.get_connection()
-        self.cursor = self.connection.cursor(dictionary=True)
-        return self.cursor
-    
-    def __exit__(self, exc_type, exc_val, exc_tb):
-        if exc_type:
-            self.connection.rollback()
-        else:
-            self.connection.commit()
-        
-        self.cursor.close()
-        self.connection.close()

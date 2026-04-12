@@ -156,16 +156,306 @@
                     </div>
                 </div>
 
-                <!-- Lista de Presença (mantido igual) -->
-                <div class="card shadow">
-                    <div class="card-header bg-secondary text-white">
-                        <h5 class="mb-0"><i class="bi bi-check2-square"></i> Lista de Presença</h5>
-                    </div>
-                    <div class="card-body">
-                        <!-- ... mantém o mesmo conteúdo da lista de presença ... -->
-                    </div>
+               <!-- Lista de Presença -->
+<div class="card shadow">
+    <div class="card-header bg-secondary text-white">
+        <h5 class="mb-0"><i class="bi bi-check2-square"></i> Lista de Presença</h5>
+    </div>
+    <div class="card-body">
+        <!-- DEBUG - Mostrar dados da presença -->
+        <div class="alert alert-info small">
+            <strong>DEBUG:</strong><br>
+            Total de obreiros: {{ total_obreiros }}<br>
+            Presentes: {{ presentes }}<br>
+            Ausentes: {{ ausentes }}<br>
+            Tamanho da lista presenca: {{ presenca|length }}
+        </div>
+        
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead class="table-light">
+                    <tr>
+                        <th>Obreiro</th>
+                        <th>Grau</th>
+                        <th>Presença</th>
+                        <th>Tipo Ausência</th>
+                        <th>Justificativa</th>
+                        <th>Ações</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for p in presenca %}
+                    <tr class="{% if p.presente == 1 %}table-success{% elif p.tipo_ausencia %}table-warning{% else %}table-danger{% endif %}">
+                        <td>
+                            <strong>{{ p.nome_completo or '-' }}</strong>
+                            {% if p.cargo_nome %}
+                            <br>
+                            <small class="text-muted">
+                                <i class="bi bi-briefcase"></i> {{ p.cargo_nome }}
+                            </small>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% set grau_num = p.grau_atual|int %}
+                            {% if grau_num == 1 %}
+                                <span class="badge bg-secondary">Aprendiz</span>
+                            {% elif grau_num == 2 %}
+                                <span class="badge bg-primary">Companheiro</span>
+                            {% elif grau_num == 3 %}
+                                <span class="badge bg-success">Mestre</span>
+                            {% elif grau_num >= 4 %}
+                                <span class="badge bg-info">Grau Superior</span>
+                            {% else %}
+                                <span class="badge bg-secondary">Grau {{ grau_num }}</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if p.presente == 1 %}
+                                <span class="badge bg-success">
+                                    <i class="bi bi-check-circle"></i> Presente
+                                </span>
+                            {% else %}
+                                <span class="badge bg-danger">
+                                    <i class="bi bi-x-circle"></i> Ausente
+                                </span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if p.tipo_ausencia %}
+                                <span class="badge bg-warning">{{ p.tipo_ausencia }}</span>
+                            {% else %}
+                                -
+                            {% endif %}
+                        </td>
+                        <td>
+                            <small>{{ p.justificativa or '-' }}</small>
+                        </td>
+                        <td>
+                            {% if session.tipo == 'admin' %}
+                                {% if p.presente == 0 %}
+                                    <a href="/presenca/justificar/{{ p.presenca_id }}" 
+                                       class="btn btn-sm btn-warning" title="Justificar Ausência">
+                                        <i class="bi bi-pencil"></i>
+                                    </a>
+                                {% endif %}
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="6" class="text-center text-muted py-5">
+                            <i class="bi bi-inbox fs-1"></i><br>
+                            Nenhum obreiro encontrado na lista de presença.
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        
+        <!-- DROPBOX PARA MARCAR PRESENÇA DOS OBREIROS -->
+        <hr>
+        <div class="alert alert-info">
+            <i class="bi bi-info-circle"></i> 
+            <strong>Registro de Presença:</strong> Selecione um obreiro abaixo e marque sua presença ou ausência.
+            {% if session.tipo != 'admin' %}
+            <span class="badge bg-warning ms-2">Apenas administradores podem registrar</span>
+            {% endif %}
+            {% if reuniao.status != 'agendada' and reuniao.status != 'realizada' %}
+            <span class="badge bg-danger ms-2">Reunião {{ reuniao.status or 'indefinida' }} - Registro bloqueado</span>
+            {% endif %}
+        </div>
+        
+        <form method="POST" action="/reunioes/{{ reuniao.id }}/presenca" class="mt-3" id="formPresenca">
+            <div class="row g-3">
+                <div class="col-md-5">
+                    <label class="form-label fw-bold">
+                        <i class="bi bi-person-badge"></i> Selecionar Obreiro
+                    </label>
+                    <select name="obreiro_id" class="form-select form-select-lg" required 
+                            id="selectObreiro"
+                            {% if session.tipo != 'admin' or (reuniao.status != 'agendada' and reuniao.status != 'realizada') %}disabled{% endif %}>
+                        <option value="">-- Escolha um obreiro --</option>
+                        {% for p in presenca %}
+                            <option value="{{ p.id }}" 
+                                    data-nome="{{ p.nome_completo }}"
+                                    data-grau="{% set g=p.grau_atual|int %}{% if g==1 %}Aprendiz{% elif g==2 %}Companheiro{% elif g==3 %}Mestre{% else %}Grau {{ g }}{% endif %}"
+                                    data-presente="{{ p.presente }}">
+                                {{ p.nome_completo }} 
+                                ({% set g=p.grau_atual|int %}{% if g==1 %}Aprendiz{% elif g==2 %}Companheiro{% elif g==3 %}Mestre{% else %}Grau {{ g }}{% endif %})
+                                {% if p.presente == 1 %} - ✅ Presente
+                                {% elif p.tipo_ausencia %} - ⚠️ Ausente ({{ p.tipo_ausencia }})
+                                {% else %} - ❌ Ausente{% endif %}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                
+                <div class="col-md-3">
+                    <label class="form-label fw-bold">
+                        <i class="bi bi-check-circle"></i> Status
+                    </label>
+                    <select name="presente" class="form-select" required id="selectStatus"
+                            {% if session.tipo != 'admin' or (reuniao.status != 'agendada' and reuniao.status != 'realizada') %}disabled{% endif %}>
+                        <option value="1">✅ Presente</option>
+                        <option value="0">❌ Ausente</option>
+                    </select>
+                </div>
+                
+                <div class="col-md-4" id="divTipoAusencia" style="display: none;">
+                    <label class="form-label fw-bold">
+                        <i class="bi bi-exclamation-triangle"></i> Tipo de Ausência
+                    </label>
+                    <select name="tipo_ausencia" class="form-select" id="selectTipoAusencia"
+                            {% if session.tipo != 'admin' or (reuniao.status != 'agendada' and reuniao.status != 'realizada') %}disabled{% endif %}>
+                        <option value="">Selecione (se ausente)...</option>
+                        {% for tipo in tipos_ausencia %}
+                        <option value="{{ tipo.nome }}">{{ tipo.nome }}</option>
+                        {% endfor %}
+                    </select>
                 </div>
             </div>
+            
+            <div class="mt-3" id="divJustificativa" style="display: none;">
+                <label class="form-label fw-bold">
+                    <i class="bi bi-chat-text"></i> Justificativa (se ausente)
+                </label>
+                <input type="text" name="justificativa" class="form-control" placeholder="Digite a justificativa..." 
+                       id="justificativa"
+                       {% if session.tipo != 'admin' or (reuniao.status != 'agendada' and reuniao.status != 'realizada') %}disabled{% endif %}>
+            </div>
+            
+            <div class="mt-3">
+                {% if session.tipo == 'admin' and (reuniao.status == 'agendada' or reuniao.status == 'realizada') %}
+                <button type="submit" class="btn btn-primary btn-lg" id="btnRegistrar">
+                    <i class="bi bi-save"></i> Registrar Presença
+                </button>
+                <button type="button" class="btn btn-outline-secondary btn-lg" onclick="limparFormulario()">
+                    <i class="bi bi-eraser"></i> Limpar
+                </button>
+                {% else %}
+                <div class="alert alert-warning">
+                    <i class="bi bi-lock"></i> 
+                    {% if session.tipo != 'admin' %}
+                    Registro de presença disponível apenas para administradores.
+                    {% else %}
+                    Registro de presença bloqueado. Status da reunião: {{ reuniao.status or 'indefinido' }}
+                    {% endif %}
+                </div>
+                {% endif %}
+            </div>
+            
+            <div class="mt-3 alert alert-light border" id="infoObreiro" style="display: none;">
+                <i class="bi bi-person-circle"></i> 
+                <strong id="infoNome"></strong> - 
+                <span id="infoGrau"></span><br>
+                <small id="infoStatusAtual" class="text-muted"></small>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+    // Elementos do DOM
+    const selectObreiro = document.getElementById('selectObreiro');
+    const selectStatus = document.getElementById('selectStatus');
+    const divTipoAusencia = document.getElementById('divTipoAusencia');
+    const divJustificativa = document.getElementById('divJustificativa');
+    const selectTipoAusencia = document.getElementById('selectTipoAusencia');
+    const justificativa = document.getElementById('justificativa');
+    const infoObreiro = document.getElementById('infoObreiro');
+    const infoNome = document.getElementById('infoNome');
+    const infoGrau = document.getElementById('infoGrau');
+    const infoStatusAtual = document.getElementById('infoStatusAtual');
+    
+    // Verificar se o formulário está habilitado
+    const isFormEnabled = {{ 'true' if session.tipo == 'admin' and (reuniao.status == 'agendada' or reuniao.status == 'realizada') else 'false' }};
+    
+    function toggleAusenciaFields() {
+        if (!isFormEnabled) return;
+        const isAusente = selectStatus.value === '0';
+        divTipoAusencia.style.display = isAusente ? 'block' : 'none';
+        divJustificativa.style.display = isAusente ? 'block' : 'none';
+        if (!isAusente) {
+            if (selectTipoAusencia) selectTipoAusencia.value = '';
+            if (justificativa) justificativa.value = '';
+        }
+    }
+    
+    function atualizarInfoObreiro() {
+        const selectedOption = selectObreiro.options[selectObreiro.selectedIndex];
+        if (selectObreiro.value && selectedOption && selectedOption.value) {
+            const nome = selectedOption.getAttribute('data-nome') || selectedOption.text.split(' (')[0];
+            const grau = selectedOption.getAttribute('data-grau') || '';
+            const presente = selectedOption.getAttribute('data-presente');
+            
+            let statusText = '';
+            if (presente === '1') {
+                statusText = '✅ Status atual: Presente';
+            } else {
+                statusText = '❌ Status atual: Ausente';
+            }
+            
+            if (infoNome) infoNome.textContent = nome;
+            if (infoGrau) infoGrau.textContent = grau;
+            if (infoStatusAtual) infoStatusAtual.textContent = statusText;
+            if (infoObreiro) infoObreiro.style.display = 'block';
+        } else {
+            if (infoObreiro) infoObreiro.style.display = 'none';
+        }
+    }
+    
+    function limparFormulario() {
+        if (!isFormEnabled) return;
+        if (selectObreiro) selectObreiro.value = '';
+        if (selectStatus) selectStatus.value = '1';
+        if (selectTipoAusencia) selectTipoAusencia.value = '';
+        if (justificativa) justificativa.value = '';
+        toggleAusenciaFields();
+        atualizarInfoObreiro();
+    }
+    
+    if (isFormEnabled) {
+        if (selectStatus) selectStatus.addEventListener('change', toggleAusenciaFields);
+        if (selectObreiro) selectObreiro.addEventListener('change', atualizarInfoObreiro);
+        toggleAusenciaFields();
+        
+        const formPresenca = document.getElementById('formPresenca');
+        if (formPresenca) {
+            formPresenca.addEventListener('submit', function(e) {
+                if (!selectObreiro || !selectObreiro.value) {
+                    e.preventDefault();
+                    alert('Por favor, selecione um obreiro!');
+                    return false;
+                }
+                return true;
+            });
+        }
+    }
+</script>
+
+<style>
+    .form-select-lg {
+        font-size: 1rem;
+        padding: 0.5rem 1rem;
+    }
+    #btnRegistrar {
+        min-width: 200px;
+    }
+    #infoObreiro {
+        border-left: 4px solid #0d6efd;
+        background-color: #f8f9fa;
+    }
+    @media (max-width: 768px) {
+        .row.g-3 > div {
+            margin-bottom: 10px;
+        }
+        #btnRegistrar {
+            width: 100%;
+            margin-bottom: 10px;
+        }
+    }
+</style>
 
             <div class="col-md-4">
                 <!-- Card de Ações -->

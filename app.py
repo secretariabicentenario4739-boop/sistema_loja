@@ -34,6 +34,7 @@ from dotenv import load_dotenv
 import openpyxl
 from openpyxl.styles import Font, Alignment, PatternFill
 from openpyxl.utils import get_column_letter
+from database import get_db, return_connection, get_db_connection
 
 # =============================
 # BLUEPRINT DA BIBLIOTECA
@@ -71,11 +72,77 @@ def get_grau_usuario():
     return session.get('grau_atual', 1)
 
 # =============================
-# DECORATORS
+# DECORATORS OTIMIZADOS
 # =============================
 
-# Decorator para verificar permissão por grau
+# Cache para evitar consultas repetidas
+_cache_grau = {}
+_cache_timeout = 60  # 60 segundos
+
+def _get_grau_usuario(usuario_id):
+    """Busca o grau do usuário com cache"""
+    # Verificar cache
+    cache_key = f"grau_{usuario_id}"
+    cache_entry = _cache_grau.get(cache_key)
+    
+    if cache_entry and (time.time() - cache_entry['timestamp']) < _cache_timeout:
+        return cache_entry['grau']
+    
+    # Buscar no banco
+    cursor, conn = None, None
+    try:
+        cursor, conn = get_db()
+        cursor.execute("SELECT grau_atual FROM usuarios WHERE id = %s", (usuario_id,))
+        usuario = cursor.fetchone()
+        grau = usuario['grau_atual'] if usuario else 1
+        
+        # Salvar no cache
+        _cache_grau[cache_key] = {
+            'grau': grau,
+            'timestamp': time.time()
+        }
+        return grau
+    except Exception as e:
+        print(f"Erro ao buscar grau: {e}")
+        return 1
+    finally:
+        if conn:
+            return_connection(conn)
+
+def _get_ata_grau(ata_id):
+    """Busca o grau da ata com cache"""
+    cache_key = f"ata_grau_{ata_id}"
+    cache_entry = _cache_grau.get(cache_key)
+    
+    if cache_entry and (time.time() - cache_entry['timestamp']) < _cache_timeout:
+        return cache_entry.get('grau', 1)
+    
+    cursor, conn = None, None
+    try:
+        cursor, conn = get_db()
+        cursor.execute("""
+            SELECT r.grau as reuniao_grau
+            FROM atas a
+            JOIN reunioes r ON a.reuniao_id = r.id
+            WHERE a.id = %s
+        """, (ata_id,))
+        ata = cursor.fetchone()
+        grau = ata['reuniao_grau'] if ata else 1
+        
+        _cache_grau[cache_key] = {
+            'grau': grau,
+            'timestamp': time.time()
+        }
+        return grau
+    except Exception as e:
+        print(f"Erro ao buscar grau da ata: {e}")
+        return 1
+    finally:
+        if conn:
+            return_connection(conn)
+
 def require_grau(min_grau):
+    """Decorator para verificar permissão por grau - OTIMIZADO"""
     def decorator(f):
         @wraps(f)
         def decorated_function(*args, **kwargs):
@@ -83,13 +150,14 @@ def require_grau(min_grau):
                 flash('Faça login para acessar esta página', 'warning')
                 return redirect(url_for('login'))
             
-            # Buscar grau do usuário
-            cursor, conn = get_db()
-            cursor.execute("SELECT grau_atual FROM usuarios WHERE id = %s", (session['usuario_id'],))
-            usuario = cursor.fetchone()
-            return_connection(conn)
+            # Verificar se é admin (admin tem acesso a tudo)
+            if session.get('tipo') == 'admin':
+                return f(*args, **kwargs)
             
-            if not usuario or usuario['grau_atual'] < min_grau:
+            # Usar cache para buscar grau
+            grau_usuario = _get_grau_usuario(session['usuario_id'])
+            
+            if grau_usuario < min_grau:
                 flash('Você não tem permissão para acessar este conteúdo', 'danger')
                 return redirect(url_for('biblioteca.listar_materiais'))
             
@@ -131,10 +199,12 @@ def nivel_required(nivel_minimo):
             if "usuario" not in session:
                 flash("Faça login para acessar esta página", "warning")
                 return redirect("/")
-            nivel_usuario = session.get("nivel_acesso", 1)
-            tipo_usuario = session.get("tipo", "obreiro")
-            if tipo_usuario == "admin":
+            
+            # Admin tem acesso a tudo
+            if session.get('tipo') == 'admin':
                 return f(*args, **kwargs)
+            
+            nivel_usuario = session.get("nivel_acesso", 1)
             if nivel_usuario >= nivel_minimo:
                 return f(*args, **kwargs)
             else:
@@ -144,42 +214,39 @@ def nivel_required(nivel_minimo):
     return decorator
 
 def nivel_ata_required():
+    """Decorator para verificar permissão de ata por grau - OTIMIZADO"""
     def decorator(f):
         @wraps(f)
         def decorated_function(*args, **kwargs):
             if "usuario" not in session:
                 flash("Faça login para acessar esta página", "warning")
                 return redirect("/")
+            
+            # Admin tem acesso a tudo
+            if session.get('tipo') == 'admin':
+                return f(*args, **kwargs)
+            
             ata_id = kwargs.get('id')
             if ata_id:
-                cursor, conn = get_db()
-                cursor.execute("""
-                    SELECT a.*, r.grau as reuniao_grau
-                    FROM atas a
-                    JOIN reunioes r ON a.reuniao_id = r.id
-                    WHERE a.id = %s
-                """, (ata_id,))
-                ata = cursor.fetchone()
-                return_connection(conn)
-                if ata:
-                    reuniao_grau = ata.get('reuniao_grau') or 1
-                    nivel_usuario = session.get("nivel_acesso", 1)
-                    tipo_usuario = session.get("tipo", "obreiro")
-                    if tipo_usuario == "admin":
-                        return f(*args, **kwargs)
-                    if nivel_usuario == 1 and reuniao_grau == 1:
-                        return f(*args, **kwargs)
-                    elif nivel_usuario == 2 and reuniao_grau <= 2:
-                        return f(*args, **kwargs)
-                    elif nivel_usuario >= 3:
-                        return f(*args, **kwargs)
-                    else:
-                        flash("Você não tem permissão para visualizar esta ata", "danger")
-                        return redirect("/dashboard")
+                # Usar cache para buscar grau da ata
+                reuniao_grau = _get_ata_grau(ata_id)
+                nivel_usuario = session.get("nivel_acesso", 1)
+                
+                if nivel_usuario == 1 and reuniao_grau == 1:
+                    return f(*args, **kwargs)
+                elif nivel_usuario == 2 and reuniao_grau <= 2:
+                    return f(*args, **kwargs)
+                elif nivel_usuario >= 3:
+                    return f(*args, **kwargs)
+                else:
+                    flash("Você não tem permissão para visualizar esta ata", "danger")
+                    return redirect("/dashboard")
+            
             return f(*args, **kwargs)
         return decorated_function
     return decorator
-
+    
+    
 def permissao_required(permissao_codigo):
     def decorator(f):
         @wraps(f)
@@ -717,33 +784,42 @@ def init_db_pool():
         print(f"❌ Erro ao inicializar pool: {e}")
         raise
 
+# Variável global para reutilizar a mesma conexão na mesma requisição
+_conexao_atual = None
+_cursor_atual = None
+
 def get_db():
-    """Retorna cursor e conexão do banco (funciona local e no Render)"""
-    try:
-        # Tentar obter a URL do banco do ambiente (Render)
-        DATABASE_URL = os.getenv('DATABASE_URL')
-        
-        if DATABASE_URL:
-            # Está no Render - usar URL
-            print(f"🔧 Conectando ao banco do Render")
-            conn = psycopg2.connect(DATABASE_URL)
-        else:
-            # Está localmente - usar parâmetros diretos
-            print(f"🔧 Conectando ao banco local")
-            conn = psycopg2.connect(
-                host=os.getenv('DB_HOST', 'localhost'),
-                port=os.getenv('DB_PORT', '5432'),
-                dbname=os.getenv('DB_NAME', 'sistema_maconico'),
-                user=os.getenv('DB_USER', 'postgres'),
-                password=os.getenv('DB_PASSWORD', 'postgres')
-            )
-        
-        cursor = conn.cursor(cursor_factory=RealDictCursor)
-        return cursor, conn
-        
-    except Exception as e:
-        print(f"❌ Erro ao conectar ao banco: {e}")
-        raise
+    """Reutiliza a mesma conexão na mesma requisição"""
+    global _conexao_atual, _cursor_atual
+    
+    # Se já existe uma conexão na mesma requisição, reutiliza
+    if hasattr(request, 'db_connection') and request.db_connection:
+        return request.db_cursor, request.db_connection
+    
+    pool = init_db_pool()
+    conn = pool.getconn()
+    cursor = conn.cursor(cursor_factory=RealDictCursor)
+    
+    # Armazenar na requisição
+    request.db_connection = conn
+    request.db_cursor = cursor
+    
+    print(f"🔌 Nova conexão criada (será reutilizada nesta requisição)")
+    return cursor, conn
+
+def return_connection(conn):
+    """Retorna a conexão - mas não fecha imediatamente"""
+    # Não fazer nada aqui, a conexão será fechada no final da requisição
+    pass
+
+# No final da requisição, fechar a conexão
+@app.teardown_request
+def teardown_request(exception=None):
+    """Fecha a conexão no final da requisição"""
+    if hasattr(request, 'db_connection') and request.db_connection:
+        pool = init_db_pool()
+        pool.putconn(request.db_connection)
+        print(f"🔌 Conexão fechada no final da requisição")
 
 # ============================================
 # CONTEXT MANAGER (recomendado)
@@ -1914,6 +1990,7 @@ def login():
             session['grau_atual'] = user['grau_atual']
             session['nome_completo'] = user['nome_completo']
             session['user_id'] = user['id']
+            session['nivel_acesso'] = user.get('nivel_acesso', 1)
             
             flash(f'✅ Bem-vindo, {user["nome_completo"]}!', 'success')
             return redirect(url_for('dashboard'))
@@ -2453,7 +2530,6 @@ def download_material(material_id):
             return_connection(conn)
         flash('Erro ao baixar o arquivo', 'danger')
         return redirect(url_for('visualizar_material', material_id=material_id))
-
 # =============================
 # ROTAS DO DASHBOARD OTIMIZADO
 # =============================
@@ -2461,217 +2537,207 @@ def download_material(material_id):
 @login_required
 def dashboard():
     try:
-        # UMA única conexão para todo o dashboard
-        cursor, conn = get_db()
-        
-        # ========== MEU CARGO ATUAL ==========
-        usuario_id = session['user_id']
-        cursor.execute("""
-            SELECT c.nome as cargo_nome, oc.data_inicio
-            FROM ocupacao_cargos oc
-            JOIN cargos c ON oc.cargo_id = c.id
-            WHERE oc.obreiro_id = %s AND oc.ativo = 1
-            ORDER BY oc.data_inicio DESC
-            LIMIT 1
-        """, (usuario_id,))
-        meu_cargo_row = cursor.fetchone()
-        meu_cargo = meu_cargo_row['cargo_nome'] if meu_cargo_row else None
-        meu_cargo_data_inicio = meu_cargo_row['data_inicio'] if meu_cargo_row else None
-        
-        # ========== CARGOS OCUPADOS ==========
-        cursor.execute("""
-            SELECT oc.*, c.nome as cargo_nome, u.nome_completo as obreiro_nome, u.id as obreiro_id
-            FROM ocupacao_cargos oc
-            JOIN cargos c ON oc.cargo_id = c.id
-            JOIN usuarios u ON oc.obreiro_id = u.id
-            WHERE oc.ativo = 1
-            ORDER BY oc.data_inicio DESC
-            LIMIT 10
-        """)
-        cargos_ocupados = cursor.fetchall()
-        
-        # ========== ESTATÍSTICAS (TUDO EM UMA CONSULTA) ==========
-        cursor.execute("""
-            SELECT 
-                (SELECT COUNT(*) FROM familiares) as total_familiares,
-                (SELECT COUNT(*) FROM condecoracoes_obreiro) as total_condecoracoes,
-                (SELECT COUNT(*) FROM usuarios WHERE tipo IN ('admin', 'sindicante', 'obreiro') AND ativo = 1) as total_obreiros,
-                (SELECT COUNT(*) FROM usuarios WHERE grau_atual = 3 AND ativo = 1) as mestres,
-                (SELECT COUNT(*) FROM usuarios WHERE grau_atual = 2 AND ativo = 1) as companheiros,
-                (SELECT COUNT(*) FROM usuarios WHERE grau_atual = 1 AND ativo = 1) as aprendizes,
-                (SELECT COUNT(*) FROM reunioes) as total_reunioes,
-                (SELECT COUNT(*) FROM reunioes WHERE status = 'realizada') as reunioes_realizadas,
-                (SELECT COUNT(*) FROM reunioes WHERE status = 'agendada') as reunioes_agendadas
-        """)
-        stats = cursor.fetchone()
-        
-        total_familiares = stats['total_familiares']
-        total_condecoracoes = stats['total_condecoracoes']
-        total_obreiros = stats['total_obreiros']
-        mestres = stats['mestres']
-        companheiros = stats['companheiros']
-        aprendizes = stats['aprendizes']
-        total_reunioes = stats['total_reunioes']
-        reunioes_realizadas = stats['reunioes_realizadas']
-        reunioes_agendadas = stats['reunioes_agendadas']
-        
-        # ========== DOCUMENTOS RECENTES ==========
-        cursor.execute("""
-            SELECT d.*, u.nome_completo as obreiro_nome, u.usuario as obreiro_usuario
-            FROM documentos_obreiro d
-            JOIN usuarios u ON d.obreiro_id = u.id
-            ORDER BY d.data_upload DESC
-            LIMIT 10
-        """)
-        documentos_recentes = cursor.fetchall()
-        
-        # ========== CANDIDATOS COM SINDICANTES (UMA CONSULTA) ==========
-        cursor.execute("""
-            SELECT c.*, 
-                   COALESCE(
-                       (SELECT string_agg(s.sindicante, ',') 
-                        FROM sindicancias s 
-                        WHERE s.candidato_id = c.id), 
-                       ''
-                   ) as sindicantes_enviados
-            FROM candidatos c
-            ORDER BY c.data_criacao DESC
-        """)
-        candidatos = cursor.fetchall()
-        
-        # ========== SINDICANTES ==========
-        cursor.execute("""
-            SELECT id, usuario, nome_completo, cim_numero, loja_nome, loja_numero, loja_orient, ativo 
-            FROM usuarios 
-            WHERE tipo = 'sindicante' AND ativo = 1
-            ORDER BY nome_completo
-        """)
-        sindicantes = cursor.fetchall()
-        
-        total_sindicantes_ativos = len(sindicantes)
-        total_candidatos = len(candidatos)
-        
-        # ========== PARECERES CONCLUSIVOS ==========
-        pareceres_conclusivos = []
-        try:
+        # UMA única conexão para todo o dashboard usando context manager
+        with get_db_connection() as cursor:
+            
+            # ========== MEU CARGO ATUAL ==========
+            usuario_id = session['user_id']
             cursor.execute("""
-                SELECT pc.*, c.nome as candidato_nome, u.nome_completo as sindicante_nome
-                FROM pareceres_conclusivos pc
-                JOIN candidatos c ON pc.candidato_id = c.id
-                JOIN usuarios u ON pc.sindicante = u.usuario
-                ORDER BY pc.data_envio DESC
+                SELECT c.nome as cargo_nome, oc.data_inicio
+                FROM ocupacao_cargos oc
+                JOIN cargos c ON oc.cargo_id = c.id
+                WHERE oc.obreiro_id = %s AND oc.ativo = 1
+                ORDER BY oc.data_inicio DESC
+                LIMIT 1
+            """, (usuario_id,))
+            meu_cargo_row = cursor.fetchone()
+            meu_cargo = meu_cargo_row['cargo_nome'] if meu_cargo_row else None
+            meu_cargo_data_inicio = meu_cargo_row['data_inicio'] if meu_cargo_row else None
+            
+            # ========== CARGOS OCUPADOS ==========
+            cursor.execute("""
+                SELECT oc.*, c.nome as cargo_nome, u.nome_completo as obreiro_nome, u.id as obreiro_id
+                FROM ocupacao_cargos oc
+                JOIN cargos c ON oc.cargo_id = c.id
+                JOIN usuarios u ON oc.obreiro_id = u.id
+                WHERE oc.ativo = 1
+                ORDER BY oc.data_inicio DESC
                 LIMIT 10
             """)
-            pareceres_conclusivos = cursor.fetchall()
-        except:
-            pass
-        
-        # ========== AVISOS ==========
-        usuario_grau = session.get('grau_atual', 1)
-        cursor.execute("""
-            SELECT a.*, u.nome_completo as autor_nome,
-                   CASE WHEN av.id IS NOT NULL THEN 1 ELSE 0 END as ja_visto
-            FROM avisos a
-            LEFT JOIN usuarios u ON a.created_by = u.id
-            LEFT JOIN avisos_visualizacoes av ON a.id = av.aviso_id AND av.usuario_id = %s
-            WHERE a.ativo = 1 
-            AND a.data_inicio <= CURRENT_TIMESTAMP
-            AND (a.data_fim IS NULL OR a.data_fim >= CURRENT_TIMESTAMP)
-            AND a.grau_destino <= %s
-            ORDER BY a.created_at DESC
-            LIMIT 5
-        """, (usuario_id, usuario_grau))
-        ultimos_avisos = cursor.fetchall()
-        
-        # ============================================
-        # ADMIN VS NÃO-ADMIN
-        # ============================================
-        if session["tipo"] == "admin":
-            # ADMIN - processar candidatos (sem consultas dentro do loop!)
-            em_analise = 0
-            aprovados = 0
-            reprovados = 0
-            pendentes = []
-            prazo_vencido = []
+            cargos_ocupados = cursor.fetchall()
             
-            # Criar um conjunto de sindicantes para busca rápida
-            sindicantes_set = {s["usuario"] for s in sindicantes}
-            
-            for c in candidatos:
-                if c["status"] == "Em análise" and not c["fechado"]:
-                    em_analise += 1
-                    # Usar o campo já calculado
-                    enviados = c["sindicantes_enviados"].split(',') if c["sindicantes_enviados"] else []
-                    faltam = [s for s in sindicantes_set if s not in enviados]
-                    if faltam:
-                        pendentes.append({"candidato": dict(c), "faltam": faltam})
-                    if c["data_criacao"]:
-                        dias = (datetime.now() - c["data_criacao"]).days
-                        if dias > 7:
-                            prazo_vencido.append(dict(c))
-                elif c["status"] == "Aprovado":
-                    aprovados += 1
-                elif c["status"] == "Reprovado":
-                    reprovados += 1
-            
-            # Próximas reuniões
+            # ========== ESTATÍSTICAS (TUDO EM UMA CONSULTA) ==========
             cursor.execute("""
-                SELECT id, titulo, data, hora_inicio 
-                FROM reunioes 
-                WHERE status = 'agendada' AND data >= CURRENT_DATE
-                ORDER BY data ASC, hora_inicio ASC
-                LIMIT 5
+                SELECT 
+                    (SELECT COUNT(*) FROM familiares) as total_familiares,
+                    (SELECT COUNT(*) FROM condecoracoes_obreiro) as total_condecoracoes,
+                    (SELECT COUNT(*) FROM usuarios WHERE tipo IN ('admin', 'sindicante', 'obreiro') AND ativo = 1) as total_obreiros,
+                    (SELECT COUNT(*) FROM usuarios WHERE grau_atual = 3 AND ativo = 1) as mestres,
+                    (SELECT COUNT(*) FROM usuarios WHERE grau_atual = 2 AND ativo = 1) as companheiros,
+                    (SELECT COUNT(*) FROM usuarios WHERE grau_atual = 1 AND ativo = 1) as aprendizes,
+                    (SELECT COUNT(*) FROM reunioes) as total_reunioes,
+                    (SELECT COUNT(*) FROM reunioes WHERE status = 'realizada') as reunioes_realizadas,
+                    (SELECT COUNT(*) FROM reunioes WHERE status = 'agendada') as reunioes_agendadas
             """)
-            proximas_reunioes = cursor.fetchall()
+            stats = cursor.fetchone()
             
-        else:
-            # NÃO-ADMIN - filtrar reuniões por grau
-            em_analise = aprovados = reprovados = 0
-            pendentes = []
-            prazo_vencido = []
+            total_familiares = stats['total_familiares']
+            total_condecoracoes = stats['total_condecoracoes']
+            total_obreiros = stats['total_obreiros']
+            mestres = stats['mestres']
+            companheiros = stats['companheiros']
+            aprendizes = stats['aprendizes']
+            total_reunioes = stats['total_reunioes']
+            reunioes_realizadas = stats['reunioes_realizadas']
+            reunioes_agendadas = stats['reunioes_agendadas']
             
+            # ========== DOCUMENTOS RECENTES ==========
+            cursor.execute("""
+                SELECT d.*, u.nome_completo as obreiro_nome, u.usuario as obreiro_usuario
+                FROM documentos_obreiro d
+                JOIN usuarios u ON d.obreiro_id = u.id
+                ORDER BY d.data_upload DESC
+                LIMIT 10
+            """)
+            documentos_recentes = cursor.fetchall()
+            
+            # ========== CANDIDATOS COM SINDICANTES ==========
+            cursor.execute("""
+                SELECT c.*, 
+                       COALESCE(
+                           (SELECT string_agg(s.sindicante, ',') 
+                            FROM sindicancias s 
+                            WHERE s.candidato_id = c.id), 
+                           ''
+                       ) as sindicantes_enviados
+                FROM candidatos c
+                ORDER BY c.data_criacao DESC
+            """)
+            candidatos = cursor.fetchall()
+            
+            # ========== SINDICANTES ==========
+            cursor.execute("""
+                SELECT id, usuario, nome_completo, cim_numero, loja_nome, loja_numero, loja_orient, ativo 
+                FROM usuarios 
+                WHERE tipo = 'sindicante' AND ativo = 1
+                ORDER BY nome_completo
+            """)
+            sindicantes = cursor.fetchall()
+            
+            total_sindicantes_ativos = len(sindicantes)
+            total_candidatos = len(candidatos)
+            
+            # ========== PARECERES CONCLUSIVOS ==========
+            pareceres_conclusivos = []
+            try:
+                cursor.execute("""
+                    SELECT pc.*, c.nome as candidato_nome, u.nome_completo as sindicante_nome
+                    FROM pareceres_conclusivos pc
+                    JOIN candidatos c ON pc.candidato_id = c.id
+                    JOIN usuarios u ON pc.sindicante = u.usuario
+                    ORDER BY pc.data_envio DESC
+                    LIMIT 10
+                """)
+                pareceres_conclusivos = cursor.fetchall()
+            except:
+                pass
+            
+            # ========== AVISOS ==========
             usuario_grau = session.get('grau_atual', 1)
-            
-            # Construir filtro de grau
-            if usuario_grau == 1:
-                grau_filter = "(grau = 1 OR grau IS NULL)"
-            elif usuario_grau == 2:
-                grau_filter = "(grau IN (1, 2) OR grau IS NULL)"
-            else:
-                grau_filter = "(grau <= 3 OR grau IS NULL OR grau > 3)"
-            
-            # Próximas reuniões filtradas
-            cursor.execute(f"""
-                SELECT id, titulo, data, hora_inicio, grau, tipo, local, status
-                FROM reunioes 
-                WHERE status = 'agendada' 
-                AND data >= CURRENT_DATE
-                AND {grau_filter}
-                ORDER BY data ASC, hora_inicio ASC
-                LIMIT 5
-            """)
-            proximas_reunioes = cursor.fetchall()
-            
-            # Processar candidatos para sindicância (sem consultas dentro do loop!)
-            # Buscar todos os pareceres de uma vez
             cursor.execute("""
-                SELECT candidato_id, parecer 
-                FROM sindicancias 
-                WHERE sindicante = %s
-            """, (session["usuario"],))
-            pareceres_dict = {p["candidato_id"]: p["parecer"] for p in cursor.fetchall()}
+                SELECT a.*, u.nome_completo as autor_nome,
+                       CASE WHEN av.id IS NOT NULL THEN 1 ELSE 0 END as ja_visto
+                FROM avisos a
+                LEFT JOIN usuarios u ON a.created_by = u.id
+                LEFT JOIN avisos_visualizacoes av ON a.id = av.aviso_id AND av.usuario_id = %s
+                WHERE a.ativo = 1 
+                AND a.data_inicio <= CURRENT_TIMESTAMP
+                AND (a.data_fim IS NULL OR a.data_fim >= CURRENT_TIMESTAMP)
+                AND a.grau_destino <= %s
+                ORDER BY a.created_at DESC
+                LIMIT 5
+            """, (usuario_id, usuario_grau))
+            ultimos_avisos = cursor.fetchall()
             
-            for c in candidatos:
-                if c["id"] in pareceres_dict:
-                    if pareceres_dict[c["id"]] == "positivo":
+            # ============================================
+            # ADMIN VS NÃO-ADMIN
+            # ============================================
+            if session["tipo"] == "admin":
+                em_analise = 0
+                aprovados = 0
+                reprovados = 0
+                pendentes = []
+                prazo_vencido = []
+                
+                sindicantes_set = {s["usuario"] for s in sindicantes}
+                
+                for c in candidatos:
+                    if c["status"] == "Em análise" and not c["fechado"]:
+                        em_analise += 1
+                        enviados = c["sindicantes_enviados"].split(',') if c["sindicantes_enviados"] else []
+                        faltam = [s for s in sindicantes_set if s not in enviados]
+                        if faltam:
+                            pendentes.append({"candidato": dict(c), "faltam": faltam})
+                        if c["data_criacao"]:
+                            dias = (datetime.now() - c["data_criacao"]).days
+                            if dias > 7:
+                                prazo_vencido.append(dict(c))
+                    elif c["status"] == "Aprovado":
                         aprovados += 1
-                    else:
+                    elif c["status"] == "Reprovado":
                         reprovados += 1
-                elif not c["fechado"]:
-                    em_analise += 1
+                
+                cursor.execute("""
+                    SELECT id, titulo, data, hora_inicio 
+                    FROM reunioes 
+                    WHERE status = 'agendada' AND data >= CURRENT_DATE
+                    ORDER BY data ASC, hora_inicio ASC
+                    LIMIT 5
+                """)
+                proximas_reunioes = cursor.fetchall()
+                
+            else:
+                em_analise = aprovados = reprovados = 0
+                pendentes = []
+                prazo_vencido = []
+                
+                usuario_grau = session.get('grau_atual', 1)
+                
+                if usuario_grau == 1:
+                    grau_filter = "(grau = 1 OR grau IS NULL)"
+                elif usuario_grau == 2:
+                    grau_filter = "(grau IN (1, 2) OR grau IS NULL)"
+                else:
+                    grau_filter = "(grau <= 3 OR grau IS NULL OR grau > 3)"
+                
+                cursor.execute(f"""
+                    SELECT id, titulo, data, hora_inicio, grau, tipo, local, status
+                    FROM reunioes 
+                    WHERE status = 'agendada' 
+                    AND data >= CURRENT_DATE
+                    AND {grau_filter}
+                    ORDER BY data ASC, hora_inicio ASC
+                    LIMIT 5
+                """)
+                proximas_reunioes = cursor.fetchall()
+                
+                cursor.execute("""
+                    SELECT candidato_id, parecer 
+                    FROM sindicancias 
+                    WHERE sindicante = %s
+                """, (session["usuario"],))
+                pareceres_dict = {p["candidato_id"]: p["parecer"] for p in cursor.fetchall()}
+                
+                for c in candidatos:
+                    if c["id"] in pareceres_dict:
+                        if pareceres_dict[c["id"]] == "positivo":
+                            aprovados += 1
+                        else:
+                            reprovados += 1
+                    elif not c["fechado"]:
+                        em_analise += 1
         
-        # Fechar conexão APENAS UMA VEZ
-        return_connection(conn)
+        # Conexão é fechada automaticamente ao sair do with
         
         return render_template(
             "dashboard.html",
@@ -2707,6 +2773,7 @@ def dashboard():
         traceback.print_exc()
         flash(f"Erro ao carregar dashboard: {e}", "danger")
         return redirect("/")
+
 # =============================
 # ROTAS DE PERFIL
 # =============================
@@ -5862,6 +5929,7 @@ def nova_reuniao():
     hoje = datetime.now().strftime("%Y-%m-%d")
     
     return render_template("reunioes/nova.html", tipos=tipos, lojas=lojas, hoje=hoje)
+    
 @app.route("/reunioes/<int:id>")
 @login_required
 def detalhes_reuniao(id):
