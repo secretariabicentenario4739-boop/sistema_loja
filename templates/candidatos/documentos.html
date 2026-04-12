@@ -1038,12 +1038,8 @@ function aprovarDocumento(docId, nomeDocumento) {
     });
 }
 
-// Função para rejeitar documento - VERSÃO CORRIGIDA COM MAIS LOGS
+// Função para rejeitar documento - USANDO A ROTA CORRETA DO BACKEND
 function rejeitarDocumento(docId, nomeDocumento) {
-    console.log('=== REJEITAR DOCUMENTO ===');
-    console.log('Documento ID:', docId);
-    console.log('Nome:', nomeDocumento);
-    
     const motivo = prompt(`❌ Rejeitar documento "${nomeDocumento}"\n\nDigite o motivo da rejeição:`);
     
     if (!motivo || motivo.trim() === '') {
@@ -1053,67 +1049,47 @@ function rejeitarDocumento(docId, nomeDocumento) {
         return;
     }
     
-    console.log('Motivo:', motivo);
-    
     const btn = event.target;
     const originalText = btn.innerHTML;
     btn.innerHTML = '<i class="bi bi-hourglass-split"></i> Rejeitando...';
     btn.disabled = true;
     
-    // Tenta diferentes rotas
-    const rotas = [
-        `/api/documentos-candidato/${docId}/rejeitar`,
-        `/api/documentos/${docId}/rejeitar`,
-        `/candidatos/documentos/${docId}/rejeitar`
-    ];
-    
-    function tentarRota(index) {
-        if (index >= rotas.length) {
-            console.error('Todas as rotas falharam');
-            mostrarNotificacao('❌ Nenhuma rota disponível para rejeitar documento', 'error');
-            btn.innerHTML = originalText;
-            btn.disabled = false;
-            return;
+    // Usa a mesma rota de aprovação mas com status diferente
+    fetch(`/api/documentos-candidato/${docId}/aprovar`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ 
+            status: 'rejeitado',
+            observacao: motivo.trim(),
+            data_reprovacao: new Date().toISOString()
+        })
+    })
+    .then(response => {
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
         }
-        
-        const rota = rotas[index];
-        console.log(`Tentando rota ${index + 1}: ${rota}`);
-        
-        fetch(rota, {
-            method: 'POST',
-            headers: { 
-                'Content-Type': 'application/json',
-                'X-Requested-With': 'XMLHttpRequest'
-            },
-            body: JSON.stringify({ 
-                status: 'rejeitado', 
-                observacao: motivo.trim(),
-                data_reprovacao: new Date().toISOString()
-            })
-        })
-        .then(response => {
-            console.log(`Resposta da rota ${rota}:`, response.status);
-            if (!response.ok) {
-                throw new Error(`HTTP ${response.status}`);
-            }
-            return response.json();
-        })
-        .then(data => {
-            console.log('Dados da resposta:', data);
-            if (data.success) {
-                mostrarNotificacao(`❌ ${nomeDocumento} rejeitado: ${motivo}`, 'error');
-                setTimeout(() => location.reload(), 1500);
-            } else {
-                throw new Error(data.error || 'Erro desconhecido');
-            }
-        })
-        .catch(error => {
-            console.error(`Erro na rota ${rota}:`, error);
-            tentarRota(index + 1);
-        });
-    }
-    
-    tentarRota(0);
+        return response.json();
+    })
+    .then(data => {
+        if (data.success) {
+            mostrarNotificacao(`❌ ${nomeDocumento} rejeitado: ${motivo}`, 'error');
+            setTimeout(() => {
+                location.reload();
+            }, 1500);
+        } else {
+            throw new Error(data.error || 'Erro desconhecido');
+        }
+    })
+    .catch(error => {
+        console.error('Erro detalhado:', error);
+        mostrarNotificacao(`❌ Erro ao rejeitar documento: ${error.message}`, 'error');
+    })
+    .finally(() => {
+        btn.innerHTML = originalText;
+        btn.disabled = false;
+    });
 }
 
 // Função para excluir documento (apenas uma versão)
