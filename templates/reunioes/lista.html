@@ -300,43 +300,49 @@
                                         <span class="badge bg-secondary">{{ reuniao.status }}</span>
                                     {% endif %}
                                 </td>
-                                <td class="text-center" style="min-width: 100px;">
-                                    {% if reuniao.presentes_confirmados is defined %}
-                                        <div class="progress" style="height: 20px;">
-                                            {% set percentual = (reuniao.presentes_confirmados / reuniao.total_presentes * 100) if reuniao.total_presentes and reuniao.total_presentes > 0 else 0 %}
-                                            <div class="progress-bar bg-success" role="progressbar" 
-                                                 style="width: {{ percentual }}%"
-                                                 title="{{ reuniao.presentes_confirmados or 0 }} presentes">
-                                                {{ "%.0f"|format(percentual) }}%
-                                            </div>
-                                        </div>
-                                        <small class="text-muted">
-                                            {{ reuniao.presentes_confirmados or 0 }}/{{ reuniao.total_presentes or 0 }}
-                                        </small>
-                                    {% else %}
-                                        -
-                                    {% endif %}
-                                </td>
+                               <td class="text-center" style="min-width: 100px;">
+    {% if reuniao.total_obreiros and reuniao.total_obreiros > 0 %}
+        {% set percentual = (reuniao.presentes_confirmados / reuniao.total_obreiros * 100) if reuniao.total_obreiros and reuniao.total_obreiros > 0 else 0 %}
+        <div class="progress" style="height: 20px;">
+            <div class="progress-bar bg-success" role="progressbar" 
+                 style="width: {{ percentual }}%"
+                 title="{{ reuniao.presentes_confirmados or 0 }} presentes">
+                {{ "%.0f"|format(percentual) }}%
+            </div>
+        </div>
+        <small class="text-muted">
+            {{ reuniao.presentes_confirmados or 0 }}/{{ reuniao.total_obreiros or 0 }}
+        </small>
+    {% else %}
+        <span class="text-muted">-</span>
+    {% endif %}
+</td>
                                 <td>
                                     <div class="btn-group btn-group-sm" role="group">
+                                        <!-- Botão Visualizar - Todos podem ver -->
                                         <a href="/reunioes/{{ reuniao.id }}" class="btn btn-info" title="Visualizar">
                                             <i class="bi bi-eye"></i>
                                         </a>
                                         
-                                        {% if session.tipo == 'admin' and reuniao.status != 'realizada' and reuniao.status != 'cancelada' %}
-                                        <a href="/reunioes/{{ reuniao.id }}/editar" class="btn btn-warning" title="Editar">
-                                            <i class="bi bi-pencil"></i>
-                                        </a>
-                                        {% endif %}
-                                        
-                                        {% if session.tipo == 'admin' and reuniao.status != 'realizada' and reuniao.status != 'cancelada' %}
-                                        <a href="/reunioes/{{ reuniao.id }}/excluir" class="btn btn-danger" 
-                                           title="Excluir" onclick="return confirm('Tem certeza que deseja excluir esta reunião?')">
-                                            <i class="bi bi-trash"></i>
-                                        </a>
-                                        {% endif %}
-                                        
-                                        {% if reuniao.status == 'realizada' %}
+                                        <!-- Ações apenas para ADMIN -->
+                                        {% if session.tipo == 'admin' %}
+                                            <!-- Botão Editar - Apenas para reuniões não realizadas e não canceladas -->
+                                            {% if reuniao.status != 'realizada' and reuniao.status != 'cancelada' %}
+                                            <a href="/reunioes/{{ reuniao.id }}/editar" class="btn btn-warning" title="Editar">
+                                                <i class="bi bi-pencil"></i>
+                                            </a>
+                                            {% endif %}
+                                            
+                                            <!-- Botão Excluir - Apenas para reuniões não realizadas e não canceladas -->
+                                            {% if reuniao.status != 'realizada' and reuniao.status != 'cancelada' %}
+                                            <a href="/reunioes/{{ reuniao.id }}/excluir" class="btn btn-danger" 
+                                               title="Excluir" onclick="return confirm('Tem certeza que deseja excluir esta reunião?')">
+                                                <i class="bi bi-trash"></i>
+                                            </a>
+                                            {% endif %}
+                                            
+                                            <!-- Botão Cancelar - Apenas para reuniões realizadas -->
+                                            {% if reuniao.status == 'realizada' %}
                                             <form method="POST" action="/reunioes/{{ reuniao.id }}/cancelar" style="display: inline;">
                                                 <button type="submit" class="btn btn-secondary" 
                                                         onclick="return confirm('⚠️ ATENÇÃO!\n\nDeseja CANCELAR esta reunião realizada?\n\nA reunião será marcada como CANCELADA.\n\nEsta ação pode ser desfeita.\n\nDeseja continuar?')" 
@@ -344,22 +350,25 @@
                                                     <i class="bi bi-x-circle"></i>
                                                 </button>
                                             </form>
-                                        {% endif %}
-                                        
-                                        {% if reuniao.status == 'realizada' %}
-                                        <a href="/atas/nova/{{ reuniao.id }}" class="btn btn-success" title="Criar Ata">
-                                            <i class="bi bi-file-text"></i>
-                                        </a>
-                                        {% endif %}
-                                        
-                                        {% if reuniao.status == 'cancelada' and session.tipo == 'admin' %}
-                                        <form method="POST" action="/reunioes/{{ reuniao.id }}/reativar" style="display: inline;">
-                                            <button type="submit" class="btn btn-warning" 
-                                                    onclick="return confirm('Deseja REATIVAR esta reunião cancelada?\n\nEla voltará ao status AGENDADA.')" 
-                                                    title="Reativar Reunião">
-                                                <i class="bi bi-arrow-repeat"></i>
-                                            </button>
-                                        </form>
+                                            {% endif %}
+                                            
+                                            <!-- Botão Criar Ata - Apenas para reuniões realizadas -->
+                                            {% if reuniao.status == 'realizada' %}
+                                            <a href="/atas/nova/{{ reuniao.id }}" class="btn btn-success" title="Criar Ata">
+                                                <i class="bi bi-file-text"></i>
+                                            </a>
+                                            {% endif %}
+                                            
+                                            <!-- Botão Reativar - Apenas para reuniões canceladas -->
+                                            {% if reuniao.status == 'cancelada' %}
+                                            <form method="POST" action="/reunioes/{{ reuniao.id }}/reativar" style="display: inline;">
+                                                <button type="submit" class="btn btn-warning" 
+                                                        onclick="return confirm('Deseja REATIVAR esta reunião cancelada?\n\nEla voltará ao status AGENDADA.')" 
+                                                        title="Reativar Reunião">
+                                                    <i class="bi bi-arrow-repeat"></i>
+                                                </button>
+                                            </form>
+                                            {% endif %}
                                         {% endif %}
                                     </div>
                                 </td>
@@ -407,9 +416,11 @@
                         <i class="bi bi-x-circle text-danger"></i> = Cancelada
                     </div>
                     <div class="col-md-3">
-                        <i class="bi bi-eye"></i> = Visualizar<br>
-                        <i class="bi bi-pencil"></i> = Editar<br>
-                        <i class="bi bi-file-text"></i> = Criar Ata
+                        <i class="bi bi-eye"></i> = Visualizar (todos)<br>
+                        {% if session.tipo == 'admin' %}
+                        <i class="bi bi-pencil"></i> = Editar (admin)<br>
+                        <i class="bi bi-file-text"></i> = Criar Ata (admin)
+                        {% endif %}
                     </div>
                 </div>
                 <hr>
@@ -417,8 +428,13 @@
                     <div class="col-12">
                         <small class="text-muted">
                             <i class="bi bi-info-circle"></i> 
-                            <strong>Dica:</strong> Reuniões realizadas podem ser canceladas (mantendo o histórico). 
-                            Reuniões canceladas podem ser reativadas.
+                            <strong>Dica:</strong> 
+                            {% if session.tipo == 'admin' %}
+                                Administradores podem criar, editar, excluir e gerenciar atas.
+                            {% else %}
+                                Você está visualizando as reuniões como {{ session.tipo|capitalize }}. 
+                                Apenas administradores podem gerenciar reuniões e atas.
+                            {% endif %}
                         </small>
                     </div>
                 </div>

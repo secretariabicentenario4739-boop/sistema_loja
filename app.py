@@ -5776,46 +5776,67 @@ def registrar_presenca_lote(reuniao_id):
     cursor, conn = get_db()
     
     try:
-        # Buscar todos os obreiros
-        cursor.execute("SELECT id FROM usuarios WHERE ativo = 1")
+        # Buscar apenas obreiros ATIVOS (incluindo sindicantes ativos)
+        cursor.execute("""
+            SELECT id, nome_completo, tipo
+            FROM usuarios 
+            WHERE ativo = 1 
+              AND tipo IN ('admin', 'obreiro', 'sindicante')
+            ORDER BY nome_completo
+        """)
         todos_obreiros = cursor.fetchall()
         
-        # Criar set com os IDs que vieram no formulário (presentes)
+        print(f"Total de obreiros ativos: {len(todos_obreiros)}")
+        
+        # Coletar IDs dos presentes
         presentes_ids = set()
         for key, value in request.form.items():
-            if key.startswith('presenca_') and value == '1':
-                obreiro_id = int(key.replace('presenca_', ''))
-                presentes_ids.add(obreiro_id)
+            if key.startswith('presenca_') and not key.endswith('_hidden') and value == '1':
+                try:
+                    obreiro_id = int(key.replace('presenca_', ''))
+                    presentes_ids.add(obreiro_id)
+                except ValueError:
+                    continue
         
-        print(f"Presentes: {presentes_ids}")
+        print(f"Presentes IDs: {presentes_ids}")
         
-        registros = 0
+        # Salvar presenças
         for obreiro in todos_obreiros:
             obreiro_id = obreiro['id']
-            presente = 1 if obreiro_id in presentes_ids else 0
+            presente = True if obreiro_id in presentes_ids else False
             
-            tipo_ausencia = request.form.get(f'tipo_ausencia_{obreiro_id}', '')
-            justificativa = request.form.get(f'justificativa_{obreiro_id}', '')
+            tipo_ausencia = None
+            justificativa = None
+            
+            if not presente:
+                tipo_ausencia = request.form.get(f'tipo_ausencia_{obreiro_id}', '')
+                justificativa = request.form.get(f'justificativa_{obreiro_id}', '')
+                
+                if not tipo_ausencia:
+                    tipo_ausencia = None
+                if not justificativa:
+                    justificativa = None
             
             cursor.execute("""
-                INSERT INTO presenca (reuniao_id, obreiro_id, presente, tipo_ausencia, justificativa)
+                INSERT INTO presenca_reuniao (reuniao_id, obreiro_id, presente, tipo_ausencia, justificativa)
                 VALUES (%s, %s, %s, %s, %s)
                 ON CONFLICT (reuniao_id, obreiro_id) 
                 DO UPDATE SET 
                     presente = EXCLUDED.presente,
                     tipo_ausencia = EXCLUDED.tipo_ausencia,
                     justificativa = EXCLUDED.justificativa
-            """, (reuniao_id, obreiro_id, presente,
-                  tipo_ausencia if presente == 0 else None,
-                  justificativa if presente == 0 else None))
-            
-            registros += 1
+            """, (reuniao_id, obreiro_id, presente, tipo_ausencia, justificativa))
         
         conn.commit()
-        flash(f"✅ {registros} presenças registradas!", "success")
+        
+        total_presentes = len(presentes_ids)
+        flash(f"✅ Presenças registradas! Presentes: {total_presentes} | Ausentes: {len(todos_obreiros) - total_presentes}", "success")
         
     except Exception as e:
         conn.rollback()
+        print(f"ERRO: {str(e)}")
+        import traceback
+        traceback.print_exc()
         flash(f"❌ Erro: {str(e)}", "danger")
     
     finally:
@@ -5892,19 +5913,53 @@ def listar_reunioes():
         grau_filter = "1=1"
     
     # ============================================
-    # QUERY PRINCIPAL COM FILTROS
+    # QUERY PRINCIPAL COM FILTROS E PRESENÇA CORRETA
     # ============================================
     query = """
-        SELECT r.id, r.titulo, r.tipo, r.grau, r.data, r.hora_inicio, 
-               r.hora_termino, r.local, r.loja_id, r.pauta, r.observacoes, 
-               r.status, r.criado_por,
-               l.nome as loja_nome, t.cor,
-               COUNT(DISTINCT p.id) as total_presentes,
-               SUM(CASE WHEN p.presente = 1 THEN 1 ELSE 0 END) as presentes_confirmados
+        WITH obreiros_ativos AS (
+            SELECT id 
+            FROM usuarios 
+            WHERE ativo = 1 
+              AND tipo IN ('admin', 'obreiro', 'sindicante')
+        ),
+        presenca_calculada AS (
+            SELECT 
+                pr.reuniao_id,
+                COUNT(DISTINCT oa.id) as total_obreiros,
+                COUNT(DISTINCT CASE WHEN pr.presente = TRUE THEN oa.id END) as presentes_confirmados
+            FROM obreiros_ativos oa
+            CROSS JOIN reunioes r
+            LEFT JOIN presenca_reuniao pr ON r.id = pr.reuniao_id AND oa.id = pr.obreiro_id
+            GROUP BY pr.reuniao_id
+        )
+        SELECT 
+            r.id, 
+            r.titulo, 
+            r.tipo, 
+            r.grau, 
+            r.data, 
+            r.hora_inicio, 
+            r.hora_termino, 
+            r.local, 
+            r.loja_id, 
+            r.pauta, 
+            r.observacoes, 
+            r.status, 
+            r.criado_por,
+            l.nome as loja_nome, 
+            t.cor,
+            COALESCE(pc.total_obreiros, 0) as total_obreiros,
+            COALESCE(pc.presentes_confirmados, 0) as presentes_confirmados,
+            -- Calcular percentual diretamente na query
+            CASE 
+                WHEN COALESCE(pc.total_obreiros, 0) > 0 
+                THEN ROUND((COALESCE(pc.presentes_confirmados, 0)::decimal / COALESCE(pc.total_obreiros, 0) * 100), 1)
+                ELSE 0 
+            END as percentual_presenca
         FROM reunioes r
         LEFT JOIN lojas l ON r.loja_id = l.id
         LEFT JOIN tipos_reuniao t ON r.tipo = t.nome
-        LEFT JOIN presenca p ON r.id = p.reuniao_id
+        LEFT JOIN presenca_calculada pc ON r.id = pc.reuniao_id
         WHERE {grau_filter}
     """.format(grau_filter=grau_filter)
     
@@ -5931,9 +5986,6 @@ def listar_reunioes():
         params.append(f"%{local}%")
     
     query += """ 
-        GROUP BY r.id, r.titulo, r.tipo, r.grau, r.data, r.hora_inicio, 
-                 r.hora_termino, r.local, r.loja_id, r.pauta, r.observacoes, 
-                 r.status, r.criado_por, l.nome, t.cor
         ORDER BY r.data ASC, r.hora_inicio ASC
     """
     
@@ -5943,10 +5995,24 @@ def listar_reunioes():
     # ============================================
     # ESTATÍSTICAS PARA OS CARDS
     # ============================================
-    
     stats_query = """
+        WITH obreiros_ativos AS (
+            SELECT id 
+            FROM usuarios 
+            WHERE ativo = 1 
+              AND tipo IN ('admin', 'obreiro', 'sindicante')
+        ),
+        presenca_calculada AS (
+            SELECT 
+                pr.reuniao_id,
+                COUNT(DISTINCT CASE WHEN pr.presente = TRUE THEN oa.id END) as presentes_confirmados
+            FROM obreiros_ativos oa
+            CROSS JOIN reunioes r
+            LEFT JOIN presenca_reuniao pr ON r.id = pr.reuniao_id AND oa.id = pr.obreiro_id
+            GROUP BY pr.reuniao_id
+        )
         SELECT 
-            COUNT(*) as total_reunioes,
+            COUNT(DISTINCT r.id) as total_reunioes,
             SUM(CASE WHEN r.status = 'realizada' THEN 1 ELSE 0 END) as realizadas,
             SUM(CASE WHEN r.status = 'agendada' THEN 1 ELSE 0 END) as agendadas,
             SUM(CASE WHEN r.status = 'cancelada' THEN 1 ELSE 0 END) as canceladas,
@@ -5954,13 +6020,9 @@ def listar_reunioes():
             SUM(CASE WHEN r.status = 'realizada' AND EXTRACT(MONTH FROM r.data) = EXTRACT(MONTH FROM CURRENT_DATE)
                       AND EXTRACT(YEAR FROM r.data) = EXTRACT(YEAR FROM CURRENT_DATE) THEN 1 ELSE 0 END) as reunioes_mes,
             SUM(CASE WHEN r.data < CURRENT_DATE AND r.status = 'agendada' THEN 1 ELSE 0 END) as reunioes_atrasadas,
-            COALESCE(SUM(CASE WHEN r.status = 'realizada' THEN p.presentes_confirmados ELSE 0 END), 0) as total_presentes
+            COALESCE(SUM(pc.presentes_confirmados), 0) as total_presentes
         FROM reunioes r
-        LEFT JOIN (
-            SELECT reuniao_id, COUNT(CASE WHEN presente = 1 THEN 1 END) as presentes_confirmados
-            FROM presenca
-            GROUP BY reuniao_id
-        ) p ON r.id = p.reuniao_id
+        LEFT JOIN presenca_calculada pc ON r.id = pc.reuniao_id
         WHERE {grau_filter}
     """.format(grau_filter=grau_filter)
     
@@ -6074,37 +6136,52 @@ def visualizar_reuniao(id):
             return redirect("/reunioes")
         
         # ============================================
-        # BUSCAR TODOS OS OBREIROS ATIVOS
+        # BUSCAR APENAS OBREIROS ATIVOS COM MESMO CRITÉRIO DA LISTA
         # ============================================
         cursor.execute("""
             SELECT 
                 u.id, 
                 u.nome_completo, 
                 u.grau_atual,
+                u.tipo,
                 u.cim_numero,
-                COALESCE(pr.presente, false) as presente,
+                COALESCE(pr.presente, FALSE) as presente,
                 pr.tipo_ausencia,
                 pr.justificativa,
                 pr.id as presenca_id
             FROM usuarios u
             LEFT JOIN presenca_reuniao pr ON u.id = pr.obreiro_id AND pr.reuniao_id = %s
-            WHERE u.tipo = 'obreiro' AND u.ativo = 1
-            ORDER BY u.nome_completo
+            WHERE u.ativo = 1 
+              AND u.tipo IN ('admin', 'obreiro', 'sindicante')
+            ORDER BY 
+                CASE u.tipo
+                    WHEN 'admin' THEN 1
+                    WHEN 'obreiro' THEN 2
+                    WHEN 'sindicante' THEN 3
+                    ELSE 4
+                END,
+                u.grau_atual DESC,
+                u.nome_completo
         """, (id,))
         presenca = cursor.fetchall()
         
-        print(f"Total de obreiros encontrados: {len(presenca)}")
-        for p in presenca:
-            print(f"  - {p['nome_completo']}: presente={p['presente']}")
-        
-        # Calcular estatísticas
+        # Calcular estatísticas (USAR MESMO CRITÉRIO)
         total_obreiros = len(presenca)
-        presentes = sum(1 for p in presenca if p['presente'])
+        presentes = sum(1 for p in presenca if p['presente'] == True)
         ausentes = total_obreiros - presentes
+        
+        # DEBUG - Verificar se os números estão corretos
+        print(f"=== DEBUG detalhes_reuniao ===")
+        print(f"Total de obreiros ativos: {total_obreiros}")
+        print(f"Presentes: {presentes}")
+        print(f"Ausentes: {ausentes}")
+        for p in presenca:
+            print(f"  - {p['nome_completo']} (tipo: {p['tipo']}): presente={p['presente']}")
+        print(f"==============================")
         
         # Buscar tipos de ausência
         try:
-            cursor.execute("SELECT nome FROM tipos_ausencia WHERE ativo = 1 ORDER BY nome")
+            cursor.execute("SELECT id, nome FROM tipos_ausencia WHERE ativo = 1 ORDER BY nome")
             tipos_ausencia = cursor.fetchall()
         except:
             tipos_ausencia = []
@@ -6151,7 +6228,7 @@ def visualizar_reuniao(id):
             return_connection(conn)
         flash(f"Erro ao carregar reunião: {str(e)}", "danger")
         return redirect("/reunioes")
-
+        
 @app.route("/reunioes/calendario")
 @login_required
 def calendario_reunioes():
@@ -6507,106 +6584,6 @@ def nova_reuniao():
     
     return render_template("reunioes/nova.html", tipos=tipos, lojas=lojas, hoje=hoje)
     
-@app.route("/reunioes/<int:id>")
-@login_required
-def detalhes_reuniao(id):
-    cursor, conn = get_db()
-    
-    # Buscar dados da reunião
-    cursor.execute("""
-        SELECT r.*, l.nome as loja_nome, t.cor as tipo_cor,
-               u.nome_completo as criado_por_nome
-        FROM reunioes r
-        LEFT JOIN lojas l ON r.loja_id = l.id
-        LEFT JOIN tipos_reuniao t ON r.tipo = t.nome
-        LEFT JOIN usuarios u ON r.criado_por = u.id
-        WHERE r.id = %s
-    """, (id,))
-    reuniao = cursor.fetchone()
-    
-    if not reuniao:
-        flash("Reunião não encontrada", "danger")
-        return_connection(conn)
-        return redirect("/reunioes")
-    
-    # ============================================
-    # VERIFICAR PERMISSÃO POR GRAU
-    # ============================================
-    usuario_grau = session.get('grau_atual', 1)
-    usuario_tipo = session.get('tipo', 'obreiro')
-    reuniao_grau = reuniao.get('grau')
-    
-    # Se não for admin, verificar se o grau da reunião é permitido
-    if usuario_tipo != 'admin':
-        # Se a reunião tem grau específico
-        if reuniao_grau is not None:
-            # Aprendiz (grau 1) só pode ver reuniões de grau 1
-            if usuario_grau == 1 and reuniao_grau > 1:
-                flash("Você não tem permissão para visualizar esta reunião (apenas para graus superiores).", "danger")
-                return_connection(conn)
-                return redirect("/reunioes")
-            # Companheiro (grau 2) só pode ver reuniões de grau 1 ou 2
-            elif usuario_grau == 2 and reuniao_grau > 2:
-                flash("Você não tem permissão para visualizar esta reunião (apenas para Companheiros e Mestres).", "danger")
-                return_connection(conn)
-                return redirect("/reunioes")
-            # Mestres (grau >= 3) podem ver todas
-            elif usuario_grau >= 3:
-                pass  # Pode ver
-            else:
-                flash("Você não tem permissão para visualizar esta reunião.", "danger")
-                return_connection(conn)
-                return redirect("/reunioes")
-        # Se a reunião não tem grau específico (NULL), todos podem ver
-        else:
-            pass  # Pode ver
-    
-    # Buscar presenças (apenas obreiros que podem ver a reunião)
-    cursor.execute("""
-        SELECT u.id, u.nome_completo, u.grau_atual, 
-               p.id as presenca_id, p.presente, p.tipo_ausencia, 
-               p.justificativa, p.validado_por, p.data_registro,
-               p.comprovante
-        FROM usuarios u
-        LEFT JOIN presenca p ON u.id = p.obreiro_id AND p.reuniao_id = %s
-        WHERE u.ativo = 1 
-        ORDER BY u.grau_atual DESC, u.nome_completo
-    """, (id,))
-    presenca = cursor.fetchall()
-    
-    total_obreiros = len(presenca)
-    presentes = sum(1 for p in presenca if p["presente"] == 1)
-    ausentes = total_obreiros - presentes
-
-    # Buscar ata
-    cursor.execute("""
-        SELECT id, aprovada, numero_ata, ano_ata 
-        FROM atas 
-        WHERE reuniao_id = %s
-    """, (id,))
-    ata_row = cursor.fetchone()
-    ata_id = ata_row["id"] if ata_row else None
-    ata_aprovada = ata_row["aprovada"] if ata_row else None
-    ata_numero = ata_row["numero_ata"] if ata_row else None
-    ata_ano = ata_row["ano_ata"] if ata_row else None
-
-    # Buscar tipos de ausência
-    cursor.execute("SELECT * FROM tipos_ausencia WHERE ativo = 1 ORDER BY nome")
-    tipos_ausencia = cursor.fetchall()
-
-    return_connection(conn)
-    
-    return render_template("reunioes/detalhes.html",
-                          reuniao=reuniao,
-                          presenca=presenca,
-                          total_obreiros=total_obreiros,
-                          presentes=presentes,
-                          ausentes=ausentes,
-                          ata_id=ata_id,
-                          ata_aprovada=ata_aprovada,
-                          ata_numero=ata_numero,
-                          ata_ano=ata_ano,
-                          tipos_ausencia=tipos_ausencia)
 
 @app.route("/reunioes/<int:id>/editar", methods=["GET", "POST"])
 @login_required

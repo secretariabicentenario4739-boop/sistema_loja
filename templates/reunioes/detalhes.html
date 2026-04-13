@@ -2,781 +2,561 @@
 
 {% block title %}Detalhes da Reunião - {{ reuniao.titulo or 'Reunião' }}{% endblock %}
 
-{% block styles %}
-{{ super() }}
-<style>
-    :root {
-        --primary: #4f46e5;
-        --primary-dark: #4338ca;
-        --success: #10b981;
-        --success-dark: #059669;
-        --warning: #f59e0b;
-        --danger: #ef4444;
-        --info: #3b82f6;
-        --secondary: #64748b;
-        --gray-50: #f9fafb;
-        --gray-100: #f3f4f6;
-        --gray-200: #e5e7eb;
-        --gray-600: #4b5563;
-        --gray-800: #1f2937;
-    }
-
-    /* Cards Modernos */
-    .card-modern {
-        background: white;
-        border: none;
-        border-radius: 20px;
-        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
-        transition: transform 0.2s, box-shadow 0.2s;
-        overflow: hidden;
-    }
-    
-    .card-modern:hover {
-        transform: translateY(-3px);
-        box-shadow: 0 12px 35px rgba(0, 0, 0, 0.12);
-    }
-
-    /* Headers Gradientes */
-    .card-header-gradient {
-        background: linear-gradient(135deg, var(--primary) 0%, #764ba2 100%);
-        border: none;
-        padding: 1rem 1.5rem;
-    }
-
-    .card-header-success {
-        background: linear-gradient(135deg, var(--success) 0%, var(--success-dark) 100%);
-        border: none;
-        padding: 1rem 1.5rem;
-    }
-
-    .card-header-dark {
-        background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
-        border: none;
-        padding: 1rem 1.5rem;
-    }
-
-    .card-header-secondary {
-        background: linear-gradient(135deg, var(--secondary) 0%, #475569 100%);
-        border: none;
-        padding: 1rem 1.5rem;
-    }
-
-    .card-header-warning {
-        background: linear-gradient(135deg, var(--warning) 0%, #d97706 100%);
-        border: none;
-        padding: 1rem 1.5rem;
-    }
-
-    /* Informações */
-    .info-row {
-        display: flex;
-        padding: 0.75rem 0;
-        border-bottom: 1px solid var(--gray-200);
-    }
-    
-    .info-label {
-        width: 140px;
-        font-weight: 600;
-        color: var(--gray-800);
-    }
-    
-    .info-value {
-        flex: 1;
-        color: var(--gray-600);
-    }
-
-    /* Cards de Estatísticas */
-    .stat-card {
-        background: var(--gray-50);
-        border-radius: 16px;
-        padding: 1rem;
-        text-align: center;
-        transition: all 0.2s;
-    }
-    
-    .stat-card:hover {
-        background: var(--gray-100);
-        transform: translateY(-2px);
-    }
-    
-    .stat-number {
-        font-size: 2rem;
-        font-weight: 700;
-        line-height: 1;
-    }
-
-    /* Progress Bar */
-    .progress-custom {
-        height: 25px;
-        border-radius: 12px;
-        background: var(--gray-200);
-        overflow: hidden;
-    }
-    
-    .progress-custom .progress-bar {
-        border-radius: 12px;
-        background: linear-gradient(90deg, var(--success), #34d399);
-        transition: width 0.5s ease;
-        font-size: 0.8rem;
-        font-weight: 600;
-        line-height: 25px;
-        text-align: center;
-        color: white;
-    }
-
-    /* Tabela de Presença */
-    .table-presenca {
-        margin-bottom: 0;
-    }
-    
-    .table-presenca thead th {
-        background: var(--gray-50);
-        border-bottom: 2px solid var(--gray-200);
-        color: var(--gray-800);
-        font-weight: 600;
-        padding: 1rem;
-        font-size: 0.85rem;
-        text-transform: uppercase;
-        letter-spacing: 0.5px;
-    }
-    
-    .table-presenca tbody tr {
-        transition: background 0.2s;
-        border-bottom: 1px solid var(--gray-100);
-    }
-    
-    .table-presenca tbody tr:hover {
-        background: var(--gray-50);
-    }
-    
-    .table-presenca td {
-        padding: 1rem;
-        vertical-align: middle;
-    }
-
-    /* Badges */
-    .badge-status {
-        padding: 6px 12px;
-        border-radius: 20px;
-        font-size: 0.75rem;
-        font-weight: 600;
-        display: inline-flex;
-        align-items: center;
-        gap: 6px;
-    }
-    
-    .badge-realizada {
-        background: #d1fae5;
-        color: #059669;
-    }
-    
-    .badge-agendada {
-        background: #fed7aa;
-        color: #92400e;
-    }
-    
-    .badge-cancelada {
-        background: #fee2e2;
-        color: #dc2626;
-    }
-
-    /* Formulário de Presença em Lote */
-    .presenca-batch-card {
-        max-height: 500px;
-        overflow-y: auto;
-        scrollbar-width: thin;
-    }
-    
-    .presenca-batch-card::-webkit-scrollbar {
-        width: 8px;
-    }
-    
-    .presenca-batch-card::-webkit-scrollbar-track {
-        background: var(--gray-100);
-        border-radius: 10px;
-    }
-    
-    .presenca-batch-card::-webkit-scrollbar-thumb {
-        background: #c1c1c1;
-        border-radius: 10px;
-    }
-    
-    .presenca-batch-card::-webkit-scrollbar-thumb:hover {
-        background: #a8a8a8;
-    }
-    
-    .presenca-item {
-        padding: 1rem;
-        border-bottom: 1px solid var(--gray-200);
-        transition: background 0.2s;
-    }
-    
-    .presenca-item:hover {
-        background: var(--gray-50);
-    }
-    
-    .presenca-item:last-child {
-        border-bottom: none;
-    }
-    
-    .justificativa-input {
-        margin-top: 0.5rem;
-        margin-left: 2rem;
-        animation: fadeIn 0.3s ease;
-    }
-    
-    @keyframes fadeIn {
-        from { opacity: 0; transform: translateY(-10px); }
-        to { opacity: 1; transform: translateY(0); }
-    }
-    
-    /* Contador Flutuante */
-    .contador-flutuante {
-        position: sticky;
-        top: 0;
-        background: white;
-        padding: 10px;
-        border-bottom: 1px solid var(--gray-200);
-        z-index: 10;
-    }
-
-    /* Botões */
-    .btn-batch {
-        border-radius: 10px;
-        padding: 0.5rem 1rem;
-        font-weight: 600;
-        transition: all 0.2s;
-    }
-    
-    .btn-batch:hover {
-        transform: translateY(-2px);
-    }
-
-    /* Responsividade */
-    @media (max-width: 768px) {
-        .info-label {
-            width: 110px;
-            font-size: 0.85rem;
-        }
-        .stat-number {
-            font-size: 1.5rem;
-        }
-        .progress-custom {
-            height: 20px;
-        }
-        .progress-custom .progress-bar {
-            font-size: 0.7rem;
-            line-height: 20px;
-        }
-        .presenca-item .row {
-            flex-direction: column;
-            gap: 0.5rem;
-        }
-        .presenca-batch-card {
-            max-height: 400px;
-        }
-    }
-</style>
-{% endblock %}
-
 {% block content %}
 <div class="container-fluid py-4">
     <div class="container">
         <!-- Cabeçalho -->
-        <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-3">
+        <div class="d-flex justify-content-between align-items-center mb-4">
             <div>
-                <h2 class="fw-bold mb-1">
-                    <i class="bi bi-calendar-event-fill text-primary me-2"></i>
+                <h2>
+                    <i class="bi bi-calendar-event-fill"></i> 
                     Detalhes da Reunião
+                    <span class="badge bg-primary">{{ reuniao.titulo or 'Reunião' }}</span>
                 </h2>
-                <p class="text-muted mb-0">{{ reuniao.titulo or 'Reunião sem título' }}</p>
+                <small class="text-muted">
+                    <i class="bi bi-calendar3"></i> 
+                    {{ reuniao.data.strftime('%d/%m/%Y') if reuniao.data else '-' }}
+                    {% if reuniao.hora_inicio %}
+                    • <i class="bi bi-clock"></i>
+                    {{ reuniao.hora_inicio.strftime('%H:%M') }}
+                    {% if reuniao.hora_termino %}
+                    às {{ reuniao.hora_termino.strftime('%H:%M') }}
+                    {% endif %}
+                    {% endif %}
+                </small>
             </div>
             <div>
                 <a href="/reunioes" class="btn btn-outline-secondary">
-                    <i class="bi bi-arrow-left me-1"></i> Voltar
+                    <i class="bi bi-arrow-left"></i> Voltar
                 </a>
             </div>
         </div>
 
-        <div class="row g-4">
-            <!-- COLUNA PRINCIPAL -->
-            <div class="col-lg-8">
-                <!-- Informações da Reunião -->
-                <div class="card-modern mb-4">
-                    <div class="card-header-gradient text-white">
-                        <h5 class="mb-0 fw-bold">
-                            <i class="bi bi-info-circle-fill me-2"></i> Informações da Reunião
-                        </h5>
-                    </div>
-                    <div class="card-body p-4">
-                        <div class="row">
-                            <div class="col-md-6">
-                                <div class="info-row">
-                                    <span class="info-label">Título:</span>
-                                    <span class="info-value">{{ reuniao.titulo or '-' }}</span>
-                                </div>
-                                <div class="info-row">
-                                    <span class="info-label">Tipo:</span>
-                                    <span class="info-value">
-                                        <span class="badge-status" style="background: {{ reuniao.tipo_cor or '#6c757d' }}20; color: {{ reuniao.tipo_cor or '#6c757d' }};">
-                                            {{ reuniao.tipo or '-' }}
-                                        </span>
-                                    </span>
-                                </div>
-                                <div class="info-row">
-                                    <span class="info-label">Data:</span>
-                                    <span class="info-value">
-                                        <i class="bi bi-calendar3 me-1"></i>
-                                        {{ reuniao.data.strftime('%d/%m/%Y') if reuniao.data else '-' }}
-                                    </span>
-                                </div>
-                                <div class="info-row">
-                                    <span class="info-label">Horário:</span>
-                                    <span class="info-value">
-                                        {% if reuniao.hora_inicio %}
-                                            <i class="bi bi-clock me-1"></i>
-                                            {{ reuniao.hora_inicio.strftime('%H:%M') }}
-                                            {% if reuniao.hora_termino %}
-                                            às {{ reuniao.hora_termino.strftime('%H:%M') }}
-                                            {% endif %}
-                                        {% else %}
-                                            -
-                                        {% endif %}
-                                    </span>
-                                </div>
+        <!-- Cards de Estatísticas da Reunião -->
+        <div class="row mb-4">
+            <div class="col-md-3">
+                <div class="card bg-primary text-white shadow">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <h6 class="card-title mb-0">Total de Obreiros</h6>
+                                <h2 class="mb-0">{{ total_obreiros or 0 }}</h2>
                             </div>
-                            <div class="col-md-6">
-                                <div class="info-row">
-                                    <span class="info-label">Status:</span>
-                                    <span class="info-value">
-                                        {% if reuniao.status == 'realizada' %}
-                                            <span class="badge-status badge-realizada">
-                                                <i class="bi bi-check-circle-fill"></i> Realizada
-                                            </span>
-                                        {% elif reuniao.status == 'agendada' %}
-                                            <span class="badge-status badge-agendada">
-                                                <i class="bi bi-clock-fill"></i> Agendada
-                                            </span>
-                                        {% elif reuniao.status == 'cancelada' %}
-                                            <span class="badge-status badge-cancelada">
-                                                <i class="bi bi-x-circle-fill"></i> Cancelada
-                                            </span>
-                                        {% else %}
-                                            <span class="badge bg-secondary">{{ reuniao.status or 'Agendada' }}</span>
-                                        {% endif %}
-                                    </span>
-                                </div>
-                                <div class="info-row">
-                                    <span class="info-label">Local:</span>
-                                    <span class="info-value">{{ reuniao.local or 'Templo Maçônico' }}</span>
-                                </div>
-                                <div class="info-row">
-                                    <span class="info-label">Grau:</span>
-                                    <span class="info-value">
-                                        {% if reuniao.grau %}
-                                            {% if reuniao.grau == 3 %}
-                                                <span class="badge bg-success">Mestre (3º)</span>
-                                            {% elif reuniao.grau == 2 %}
-                                                <span class="badge bg-primary">Companheiro (2º)</span>
-                                            {% elif reuniao.grau == 1 %}
-                                                <span class="badge bg-secondary">Aprendiz (1º)</span>
-                                            {% else %}
-                                                <span class="badge bg-secondary">Todos os Graus</span>
-                                            {% endif %}
-                                        {% else %}
-                                            <span class="badge bg-secondary">Todos os Graus</span>
-                                        {% endif %}
-                                    </span>
-                                </div>
-                                <div class="info-row">
-                                    <span class="info-label">Criado por:</span>
-                                    <span class="info-value">
-                                        <i class="bi bi-person-circle me-1"></i>
-                                        {{ reuniao.criado_por_nome or '-' }}
-                                    </span>
-                                </div>
-                            </div>
-                        </div>
-                        
-                        {% if reuniao.pauta %}
-                        <hr>
-                        <h6 class="fw-bold mb-2"><i class="bi bi-list-ul me-2 text-primary"></i> Pauta</h6>
-                        <div class="bg-light p-3 rounded-4">
-                            {{ reuniao.pauta|safe }}
-                        </div>
-                        {% endif %}
-                        
-                        {% if reuniao.observacoes %}
-                        <hr>
-                        <h6 class="fw-bold mb-2"><i class="bi bi-chat-text me-2 text-primary"></i> Observações</h6>
-                        <div class="bg-light p-3 rounded-4">
-                            {{ reuniao.observacoes|safe }}
-                        </div>
-                        {% endif %}
-                    </div>
-                </div>
-
-                <!-- Estatísticas de Presença -->
-                <div class="card-modern mb-4">
-                    <div class="card-header-success text-white">
-                        <h5 class="mb-0 fw-bold">
-                            <i class="bi bi-people-fill me-2"></i> Estatísticas de Presença
-                        </h5>
-                    </div>
-                    <div class="card-body p-4">
-                        <div class="row g-3 text-center mb-4">
-                            <div class="col-md-4">
-                                <div class="stat-card">
-                                    <div class="stat-number text-primary">{{ total_obreiros or 0 }}</div>
-                                    <small class="text-muted">Total de Obreiros</small>
-                                </div>
-                            </div>
-                            <div class="col-md-4">
-                                <div class="stat-card">
-                                    <div class="stat-number text-success">{{ presentes or 0 }}</div>
-                                    <small class="text-muted">Presentes</small>
-                                </div>
-                            </div>
-                            <div class="col-md-4">
-                                <div class="stat-card">
-                                    <div class="stat-number text-danger">{{ ausentes or 0 }}</div>
-                                    <small class="text-muted">Ausentes</small>
-                                </div>
-                            </div>
-                        </div>
-                        
-                        {% set percentual_presentes = (presentes / total_obreiros * 100) if total_obreiros and total_obreiros > 0 else 0 %}
-                        <div class="mb-2">
-                            <div class="d-flex justify-content-between mb-1">
-                                <small class="text-muted">Taxa de Presença</small>
-                                <small class="fw-bold">{{ "%.1f"|format(percentual_presentes) }}%</small>
-                            </div>
-                            <div class="progress-custom">
-                                <div class="progress-bar" style="width: {{ percentual_presentes }}%">
-                                    {{ "%.1f"|format(percentual_presentes) }}%
-                                </div>
-                            </div>
+                            <i class="bi bi-people-fill fs-1"></i>
                         </div>
                     </div>
                 </div>
-
-                <!-- REGISTRO DE PRESENÇA EM LOTE -->
-                {% if session.tipo == 'admin' and (reuniao.status == 'agendada' or reuniao.status == 'realizada') %}
-                <div class="card-modern mb-4">
-                    <div class="card-header-dark text-white">
-                        <h5 class="mb-0 fw-bold">
-                            <i class="bi bi-pencil-square me-2"></i> Registrar Presença
-                        </h5>
-                    </div>
-                    <div class="card-body p-0">
-                        <div class="p-3 bg-light border-bottom">
-                            <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
-                                <div>
-                                    <i class="bi bi-info-circle-fill text-info me-1"></i>
-                                    <small>Marque/desmarque a presença dos obreiros</small>
-                                </div>
-                                <div>
-                                    <button type="button" class="btn btn-sm btn-success me-2" onclick="marcarTodosPresentes()">
-                                        <i class="bi bi-check-all"></i> Todos Presentes
-                                    </button>
-                                    <button type="button" class="btn btn-sm btn-danger" onclick="marcarTodosAusentes()">
-                                        <i class="bi bi-x-lg"></i> Todos Ausentes
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-                        
-                        <div class="contador-flutuante">
-                            <div class="d-flex justify-content-between align-items-center">
-                                <span>
-                                    <i class="bi bi-person-check-fill text-primary"></i>
-                                    <strong id="contadorSelecionados">0</strong> presentes
-                                </span>
-                                <span class="text-muted">
-                                    <i class="bi bi-arrow-down"></i> Role para ver mais
-                                </span>
-                            </div>
-                        </div>
-                        
-                        <form method="POST" action="/reunioes/{{ reuniao.id }}/presenca/lote" id="formPresencaLote">
-                           <div class="presenca-batch-card">
-    {% for p in presenca %}
-    <div class="presenca-item" data-obreiro-id="{{ p.id }}">
-        <div class="row align-items-center">
-            <div class="col-md-5">
-                <div class="form-check">
-                    <!-- Checkbox para presença -->
-                    <input class="form-check-input presencia-checkbox" type="checkbox" 
-                           name="presenca_{{ p.id }}" id="presenca_{{ p.id }}" 
-                           value="1" {% if p.presente == 1 %}checked{% endif %}
-                           onchange="toggleJustificativa(this, {{ p.id }})">
-                    <label class="form-check-label fw-bold" for="presenca_{{ p.id }}">
-                        <i class="bi bi-person-circle me-2"></i>
-                        {{ p.nome_completo }}
-                    </label>
-                    <br>
-                    <small class="text-muted ms-4">
-                        {% set grau_num = p.grau_atual|int %}
-                        {% if grau_num == 1 %}Aprendiz
-                        {% elif grau_num == 2 %}Companheiro
-                        {% elif grau_num == 3 %}Mestre
-                        {% else %}Grau {{ grau_num }}{% endif %}
-                    </small>
-                </div>
-                <!-- Campo hidden para enviar valor 0 quando checkbox não estiver marcado -->
-                <input type="hidden" name="presenca_{{ p.id }}_hidden" value="0">
             </div>
-            <div class="col-md-7">
-                <div id="justificativa_container_{{ p.id }}" style="{% if p.presente == 1 %}display: none;{% endif %}">
-                    <div class="row g-2">
-                        <div class="col-md-5">
-                            <select name="tipo_ausencia_{{ p.id }}" class="form-select form-select-sm tipo-ausencia"
-                                    data-obreiro="{{ p.id }}">
-                                <option value="">Tipo de ausência...</option>
-                                {% for tipo in tipos_ausencia %}
-                                <option value="{{ tipo.nome }}" {% if p.tipo_ausencia == tipo.nome %}selected{% endif %}>
-                                    {{ tipo.nome }}
-                                </option>
-                                {% endfor %}
-                            </select>
+            <div class="col-md-3">
+                <div class="card bg-success text-white shadow">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <h6 class="card-title mb-0">Presentes</h6>
+                                <h2 class="mb-0">{{ presentes or 0 }}</h2>
+                            </div>
+                            <i class="bi bi-check-circle-fill fs-1"></i>
                         </div>
-                        <div class="col-md-7">
-                            <input type="text" name="justificativa_{{ p.id }}" 
-                                   class="form-control form-control-sm justificativa-input"
-                                   placeholder="Justificativa (opcional)"
-                                   value="{{ p.justificativa or '' }}">
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card bg-danger text-white shadow">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <h6 class="card-title mb-0">Ausentes</h6>
+                                <h2 class="mb-0">{{ ausentes or 0 }}</h2>
+                            </div>
+                            <i class="bi bi-x-circle-fill fs-1"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card shadow" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white;">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <h6 class="card-title mb-0">Taxa de Presença</h6>
+                                <h2 class="mb-0">
+                                    {% set percentual = (presentes / total_obreiros * 100) if total_obreiros and total_obreiros > 0 else 0 %}
+                                    {{ "%.0f"|format(percentual) }}%
+                                </h2>
+                            </div>
+                            <i class="bi bi-graph-up fs-1"></i>
                         </div>
                     </div>
                 </div>
             </div>
         </div>
-    </div>
-    {% endfor %}
-</div>
-                            
-                            <div class="p-3 bg-light border-top">
-                                <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
-                                    <button type="button" class="btn btn-secondary" onclick="resetarFormulario()">
-                                        <i class="bi bi-arrow-repeat me-1"></i> Resetar
-                                    </button>
-                                    <button type="submit" class="btn btn-primary">
-                                        <i class="bi bi-save me-1"></i> Salvar Presenças
-                                    </button>
-                                </div>
-                            </div>
-                        </form>
+
+        <!-- Informações da Reunião -->
+        <div class="card shadow mb-4">
+            <div class="card-header bg-light">
+                <h6 class="mb-0"><i class="bi bi-info-circle"></i> Informações da Reunião</h6>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <table class="table table-sm table-borderless">
+                            <tr>
+                                <td width="30%"><strong>Título:</strong></td>
+                                <td>{{ reuniao.titulo or '-' }}</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Tipo:</strong></td>
+                                <td>
+                                    <span class="badge" style="background-color: {{ reuniao.tipo_cor or '#6c757d' }}; color: white;">
+                                        {{ reuniao.tipo or '-' }}
+                                    </span>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td><strong>Data:</strong></td>
+                                <td>
+                                    <i class="bi bi-calendar3"></i> 
+                                    {{ reuniao.data.strftime('%d/%m/%Y') if reuniao.data else '-' }}
+                                </td>
+                            </tr>
+                            <tr>
+                                <td><strong>Horário:</strong></td>
+                                <td>
+                                    {% if reuniao.hora_inicio %}
+                                        <i class="bi bi-clock"></i> 
+                                        {{ reuniao.hora_inicio.strftime('%H:%M') }}
+                                        {% if reuniao.hora_termino %}
+                                        às {{ reuniao.hora_termino.strftime('%H:%M') }}
+                                        {% endif %}
+                                    {% else %}
+                                        -
+                                    {% endif %}
+                                </td>
+                            </tr>
+                        </table>
+                    </div>
+                    <div class="col-md-6">
+                        <table class="table table-sm table-borderless">
+                            <tr>
+                                <td width="30%"><strong>Status:</strong></td>
+                                <td>
+                                    {% if reuniao.status == 'realizada' %}
+                                        <span class="badge bg-success">
+                                            <i class="bi bi-check-circle-fill"></i> Realizada
+                                        </span>
+                                    {% elif reuniao.status == 'agendada' %}
+                                        <span class="badge bg-warning">
+                                            <i class="bi bi-calendar-check"></i> Agendada
+                                        </span>
+                                    {% elif reuniao.status == 'cancelada' %}
+                                        <span class="badge bg-danger">
+                                            <i class="bi bi-x-circle-fill"></i> Cancelada
+                                        </span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            <tr>
+                                <td><strong>Local:</strong></td>
+                                <td>
+                                    <i class="bi bi-geo-alt"></i> 
+                                    {{ reuniao.local or 'Templo Maçônico' }}
+                                    {% if reuniao.loja_nome %}
+                                    <br><small class="text-muted">{{ reuniao.loja_nome }}</small>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            <tr>
+                                <td><strong>Grau:</strong></td>
+                                <td>
+                                    {% if reuniao.grau == 3 %}
+                                        <span class="badge bg-success">
+                                            <i class="bi bi-star-fill"></i> Mestre (3º)
+                                        </span>
+                                    {% elif reuniao.grau == 2 %}
+                                        <span class="badge bg-primary">
+                                            <i class="bi bi-star"></i> Companheiro (2º)
+                                        </span>
+                                    {% elif reuniao.grau == 1 %}
+                                        <span class="badge bg-secondary">
+                                            <i class="bi bi-star"></i> Aprendiz (1º)
+                                        </span>
+                                    {% else %}
+                                        <span class="badge bg-secondary">Todos os Graus</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            <tr>
+                                <td><strong>Criado por:</strong></td>
+                                <td>
+                                    <i class="bi bi-person-circle"></i> 
+                                    {{ reuniao.criado_por_nome or '-' }}
+                                </td>
+                            </tr>
+                        </table>
                     </div>
                 </div>
-                {% elif session.tipo != 'admin' %}
-                <div class="card-modern mb-4">
-                    <div class="card-header-warning text-white">
-                        <h5 class="mb-0 fw-bold">
-                            <i class="bi bi-lock-fill me-2"></i> Acesso Restrito
-                        </h5>
-                    </div>
-                    <div class="card-body text-center py-4">
-                        <i class="bi bi-shield-lock fs-1 text-muted"></i>
-                        <p class="mt-2 mb-0">Apenas administradores podem registrar presença.</p>
-                    </div>
-                </div>
-                {% elif reuniao.status != 'agendada' and reuniao.status != 'realizada' %}
-                <div class="card-modern mb-4">
-                    <div class="card-header-warning text-white">
-                        <h5 class="mb-0 fw-bold">
-                            <i class="bi bi-exclamation-triangle-fill me-2"></i> Registro Bloqueado
-                        </h5>
-                    </div>
-                    <div class="card-body text-center py-4">
-                        <i class="bi bi-calendar-x fs-1 text-muted"></i>
-                        <p class="mt-2 mb-0">Status da reunião: {{ reuniao.status or 'indefinido' }}</p>
-                    </div>
+                
+                {% if reuniao.pauta %}
+                <hr>
+                <h6 class="fw-bold mb-2"><i class="bi bi-list-ul"></i> Pauta</h6>
+                <div class="bg-light p-3 rounded">
+                    {{ reuniao.pauta|safe }}
                 </div>
                 {% endif %}
+                
+                {% if reuniao.observacoes %}
+                <hr>
+                <h6 class="fw-bold mb-2"><i class="bi bi-chat-text"></i> Observações</h6>
+                <div class="bg-light p-3 rounded">
+                    {{ reuniao.observacoes|safe }}
+                </div>
+                {% endif %}
+            </div>
+        </div>
 
-                <!-- Lista de Presença Atual -->
-                <div class="card-modern">
-                    <div class="card-header-secondary text-white">
-                        <h5 class="mb-0 fw-bold">
-                            <i class="bi bi-list-ul me-2"></i> Lista de Presença
-                        </h5>
+        <!-- Progresso de Presença -->
+        <div class="card shadow mb-4">
+            <div class="card-header bg-light">
+                <h6 class="mb-0"><i class="bi bi-bar-chart-steps"></i> Progresso de Presença</h6>
+            </div>
+            <div class="card-body">
+                <div class="progress" style="height: 30px;">
+                    {% set percentual = (presentes / total_obreiros * 100) if total_obreiros and total_obreiros > 0 else 0 %}
+                    <div class="progress-bar bg-success" role="progressbar" 
+                         style="width: {{ percentual }}%">
+                        {{ "%.1f"|format(percentual) }}% Presentes
                     </div>
-                    <div class="card-body p-0">
-                        <div class="table-responsive">
-                            <table class="table table-presenca">
-                                <thead>
-                                    <tr>
-                                        <th>Obreiro</th>
-                                        <th>Grau</th>
-                                        <th>Presença</th>
-                                        <th>Ausência</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {% for p in presenca %}
-                                    <tr>
-                                        <td>
-                                            <div class="d-flex flex-column">
-                                                <strong>{{ p.nome_completo or '-' }}</strong>
-                                            </div>
-                                        </td>
-                                        <td>
-                                            {% set grau_num = p.grau_atual|int %}
-                                            {% if grau_num == 1 %}
-                                                <span class="badge bg-secondary">Aprendiz</span>
-                                            {% elif grau_num == 2 %}
-                                                <span class="badge bg-primary">Companheiro</span>
-                                            {% elif grau_num == 3 %}
-                                                <span class="badge bg-success">Mestre</span>
-                                            {% else %}
-                                                <span class="badge bg-info">Grau Superior</span>
-                                            {% endif %}
-                                        </td>
-                                        <td>
-                                            {% if p.presente %}
-                                                <span class="badge bg-success">
-                                                    <i class="bi bi-check-circle-fill me-1"></i> Presente
-                                                </span>
-                                            {% else %}
-                                                <span class="badge bg-danger">
-                                                    <i class="bi bi-x-circle-fill me-1"></i> Ausente
-                                                </span>
-                                            {% endif %}
-                                        </td>
-                                        <td>
-                                            {% if p.tipo_ausencia %}
-                                                <span class="badge bg-warning">{{ p.tipo_ausencia }}</span>
-                                                {% if p.justificativa %}
-                                                <br><small class="text-muted">{{ p.justificativa[:50] }}{% if p.justificativa|length > 50 %}...{% endif %}</small>
-                                                {% endif %}
-                                            {% else %}
-                                                <span class="text-muted">-</span>
-                                            {% endif %}
-                                        </td>
-                                    </tr>
-                                    {% else %}
-                                    <tr>
-                                        <td colspan="4" class="text-center text-muted py-5">
-                                            <i class="bi bi-inbox fs-1"></i>
-                                            <p class="mt-2 mb-0">Nenhum obreiro encontrado</p>
-                                        \n
-                                    </tr>
-                                    {% endfor %}
-                                </tbody>
-                            </table>
-                        </div>
+                </div>
+                <div class="text-center mt-2">
+                    <small class="text-muted">
+                        <i class="bi bi-people-fill"></i> 
+                        {{ presentes }} de {{ total_obreiros }} obreiros presentes
+                    </small>
+                </div>
+            </div>
+        </div>
+
+        <!-- Lista de Presença com Registro -->
+        {% if session.tipo == 'admin' and reuniao.status in ['agendada', 'realizada'] %}
+        <div class="card shadow mb-4">
+            <div class="card-header bg-light">
+                <div class="d-flex justify-content-between align-items-center">
+                    <h6 class="mb-0"><i class="bi bi-pencil-square"></i> Registrar Presença</h6>
+                    <div>
+                        <button type="button" class="btn btn-sm btn-success me-2" id="btnTodosPresentes">
+                            <i class="bi bi-check-all"></i> Todos Presentes
+                        </button>
+                        <button type="button" class="btn btn-sm btn-danger" id="btnTodosAusentes">
+                            <i class="bi bi-x-lg"></i> Todos Ausentes
+                        </button>
                     </div>
                 </div>
             </div>
-
-            <!-- COLUNA LATERAL -->
-            <div class="col-lg-4">
-                <!-- Card de Ações -->
-                <div class="card-modern mb-4">
-                    <div class="card-header-dark text-white">
-                        <h5 class="mb-0 fw-bold">
-                            <i class="bi bi-gear-fill me-2"></i> Ações
-                        </h5>
+            <div class="card-body">
+                <div class="alert alert-info">
+                    <i class="bi bi-info-circle-fill"></i>
+                    <strong>Controle de Presença:</strong> 
+                    <span id="contadorSelecionados">0</span> obreiros marcados como presentes
+                </div>
+                
+                <form method="POST" action="/reunioes/{{ reuniao.id }}/presenca/lote" id="formPresencaLote">
+                    <div class="table-responsive" style="max-height: 500px; overflow-y: auto;">
+                        <table class="table table-hover" id="tabelaPresenca">
+                            <thead class="table-light">
+                                <tr>
+                                    <th style="width: 50px">Presente</th>
+                                    <th>Obreiro</th>
+                                    <th>Grau</th>
+                                    <th>Tipo</th>
+                                    <th>Justificativa (se ausente)</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for p in presenca %}
+                                <tr>
+                                    <td class="text-center">
+                                        <input type="checkbox" 
+                                               name="presenca_{{ p.id }}" 
+                                               class="form-check-input presencia-checkbox"
+                                               value="1"
+                                               data-id="{{ p.id }}"
+                                               {% if p.presente %}checked{% endif %}
+                                               style="width: 20px; height: 20px; cursor: pointer;">
+                                    </td>
+                                    <td>
+                                        <strong>{{ p.nome_completo }}</strong>
+                                        {% if not p.presente and p.tipo_ausencia %}
+                                        <br>
+                                        <small class="text-muted">Motivo anterior: {{ p.tipo_ausencia }}</small>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% set grau = p.grau_atual|int %}
+                                        {% if grau == 3 %}
+                                            <span class="badge bg-success">
+                                                <i class="bi bi-star-fill"></i> Mestre
+                                            </span>
+                                        {% elif grau == 2 %}
+                                            <span class="badge bg-primary">
+                                                <i class="bi bi-star"></i> Companheiro
+                                            </span>
+                                        {% elif grau == 1 %}
+                                            <span class="badge bg-secondary">
+                                                <i class="bi bi-star"></i> Aprendiz
+                                            </span>
+                                        {% else %}
+                                            <span class="badge bg-info">Grau {{ grau }}</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if p.tipo == 'admin' %}
+                                            <span class="badge bg-primary">Admin</span>
+                                        {% elif p.tipo == 'sindicante' %}
+                                            <span class="badge bg-warning">Sindicante</span>
+                                        {% else %}
+                                            <span class="badge bg-secondary">Obreiro</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <div id="justificativa_div_{{ p.id }}" style="{% if p.presente %}display: none;{% endif %}">
+                                            <div class="row g-2">
+                                                <div class="col-md-5">
+                                                    <select name="tipo_ausencia_{{ p.id }}" class="form-select form-select-sm">
+                                                        <option value="">Selecione o motivo...</option>
+                                                        {% for tipo in tipos_ausencia %}
+                                                        <option value="{{ tipo.nome }}" {% if p.tipo_ausencia == tipo.nome %}selected{% endif %}>
+                                                            {{ tipo.nome }}
+                                                        </option>
+                                                        {% endfor %}
+                                                    </select>
+                                                </div>
+                                                <div class="col-md-7">
+                                                    <input type="text" 
+                                                           name="justificativa_{{ p.id }}" 
+                                                           class="form-control form-control-sm"
+                                                           placeholder="Justificativa (opcional)"
+                                                           value="{{ p.justificativa or '' }}">
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% else %}
+                                <tr>
+                                    <td colspan="5" class="text-center text-muted py-5">
+                                        <i class="bi bi-inbox fs-1"></i><br>
+                                        Nenhum obreiro encontrado
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
                     </div>
-                    <div class="card-body p-4">
-                        <div class="d-grid gap-2 mb-3">
+                    
+                    <hr>
+                    <div class="d-flex justify-content-between">
+                        <button type="button" class="btn btn-secondary" onclick="location.reload()">
+                            <i class="bi bi-arrow-repeat"></i> Resetar
+                        </button>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-save"></i> Salvar Presenças
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+        {% elif session.tipo != 'admin' %}
+        <div class="card shadow mb-4">
+            <div class="card-header bg-light">
+                <h6 class="mb-0"><i class="bi bi-people"></i> Lista de Presença</h6>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Obreiro</th>
+                                <th>Grau</th>
+                                <th>Tipo</th>
+                                <th>Status</th>
+                                <th>Justificativa</th>
+                            </thead>
+                        </thead>
+                        <tbody>
+                            {% for p in presenca %}
+                            <tr>
+                                <td>
+                                    <strong>{{ p.nome_completo }}</strong>
+                                </td>
+                                <td>
+                                    {% set grau = p.grau_atual|int %}
+                                    {% if grau == 3 %}
+                                        <span class="badge bg-success">Mestre</span>
+                                    {% elif grau == 2 %}
+                                        <span class="badge bg-primary">Companheiro</span>
+                                    {% elif grau == 1 %}
+                                        <span class="badge bg-secondary">Aprendiz</span>
+                                    {% else %}
+                                        <span class="badge bg-info">Grau {{ grau }}</span>
+                                    {% endif %}
+                                 </td>
+                                <td>
+                                    {% if p.tipo == 'admin' %}
+                                        <span class="badge bg-primary">Admin</span>
+                                    {% elif p.tipo == 'sindicante' %}
+                                        <span class="badge bg-warning">Sindicante</span>
+                                    {% else %}
+                                        <span class="badge bg-secondary">Obreiro</span>
+                                    {% endif %}
+                                 </td>
+                                <td>
+                                    {% if p.presente %}
+                                        <span class="badge bg-success">
+                                            <i class="bi bi-check-circle-fill"></i> Presente
+                                        </span>
+                                    {% else %}
+                                        <span class="badge bg-danger">
+                                            <i class="bi bi-x-circle-fill"></i> Ausente
+                                        </span>
+                                    {% endif %}
+                                 </td>
+                                <td>
+                                    {% if not p.presente and p.tipo_ausencia %}
+                                        <strong>{{ p.tipo_ausencia }}</strong>
+                                        {% if p.justificativa %}
+                                        <br><small class="text-muted">{{ p.justificativa }}</small>
+                                        {% endif %}
+                                    {% else %}
+                                        -
+                                    {% endif %}
+                                 </td>
+                             </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Ações e Ata -->
+        <div class="row">
+            <div class="col-md-6">
+                <div class="card shadow">
+                    <div class="card-header bg-light">
+                        <h6 class="mb-0"><i class="bi bi-gear"></i> Ações da Reunião</h6>
+                    </div>
+                    <div class="card-body">
+                        <div class="d-grid gap-2">
                             <button class="btn btn-outline-primary" onclick="window.print()">
-                                <i class="bi bi-printer me-2"></i> Imprimir
+                                <i class="bi bi-printer"></i> Imprimir Página
                             </button>
                             <button class="btn btn-outline-secondary" onclick="copiarLista()">
-                                <i class="bi bi-clipboard me-2"></i> Copiar Lista
+                                <i class="bi bi-clipboard"></i> Copiar Lista de Presença
                             </button>
-                        </div>
-
-                        <hr>
-
-                        <h6 class="fw-bold mb-2"><i class="bi bi-calendar-check me-2"></i> Gerenciar</h6>
-                        <div class="d-grid gap-2 mb-3">
+                            
+                            <hr>
+                            
                             {% if session.tipo == 'admin' %}
                                 <a href="/reunioes/{{ reuniao.id }}/editar" class="btn btn-warning">
-                                    <i class="bi bi-pencil me-2"></i> Editar Reunião
+                                    <i class="bi bi-pencil"></i> Editar Reunião
                                 </a>
                                 {% if reuniao.status != 'realizada' %}
                                 <a href="/reunioes/{{ reuniao.id }}/excluir" class="btn btn-danger" 
-                                   onclick="return confirm('Excluir esta reunião?')">
-                                    <i class="bi bi-trash me-2"></i> Excluir
+                                   onclick="return confirm('Tem certeza que deseja excluir esta reunião?')">
+                                    <i class="bi bi-trash"></i> Excluir Reunião
                                 </a>
                                 {% endif %}
                             {% endif %}
                         </div>
-
-                        <hr>
-
-                        <h6 class="fw-bold mb-2"><i class="bi bi-arrow-repeat me-2"></i> Status</h6>
-                        {% if session.tipo == 'admin' %}
-                        <form method="POST" action="/reunioes/{{ reuniao.id }}/status">
-                            <select name="status" class="form-select mb-2">
-                                <option value="agendada" {% if reuniao.status == 'agendada' %}selected{% endif %}>📅 Agendada</option>
-                                <option value="realizada" {% if reuniao.status == 'realizada' %}selected{% endif %}>✅ Realizada</option>
-                                <option value="cancelada" {% if reuniao.status == 'cancelada' %}selected{% endif %}>❌ Cancelada</option>
-                            </select>
-                            <button type="submit" class="btn btn-outline-primary w-100">
-                                <i class="bi bi-arrow-repeat me-2"></i> Aplicar
-                            </button>
-                        </form>
-                        {% else %}
-                        <p class="text-muted small mb-0">Apenas administradores podem alterar o status</p>
-                        {% endif %}
-
-                        <hr>
-
-                        <h6 class="fw-bold mb-2"><i class="bi bi-file-text me-2"></i> Ata</h6>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-md-6">
+                <div class="card shadow">
+                    <div class="card-header bg-light">
+                        <h6 class="mb-0"><i class="bi bi-file-text"></i> Ata da Reunião</h6>
+                    </div>
+                    <div class="card-body text-center">
                         {% if ata_id %}
-                            <div class="text-center">
-                                <i class="bi bi-file-text-fill fs-2 text-success"></i>
-                                <p class="mt-1"><strong>Ata nº {{ ata_numero or '?' }}/{{ ata_ano or '?' }}</strong></p>
-                                <div class="d-grid gap-2">
-                                    <a href="/atas/{{ ata_id }}" class="btn btn-info">
-                                        <i class="bi bi-eye me-2"></i> Visualizar
-                                    </a>
-                                    <a href="/atas/{{ ata_id }}/pdf-oficial" class="btn btn-primary" target="_blank">
-                                        <i class="bi bi-file-pdf-fill me-2"></i> PDF Oficial
-                                    </a>
-                                    {% if session.tipo == 'admin' and not ata_aprovada %}
-                                    <a href="/atas/{{ ata_id }}/editar" class="btn btn-warning">
-                                        <i class="bi bi-pencil me-2"></i> Editar
-                                    </a>
-                                    <form method="POST" action="/atas/{{ ata_id }}/aprovar">
-                                        <button type="submit" class="btn btn-success w-100" 
-                                                onclick="return confirm('Aprovar esta ata?')">
-                                            <i class="bi bi-check-lg me-2"></i> Aprovar
-                                        </button>
-                                    </form>
-                                    {% endif %}
-                                </div>
+                            <div class="mb-3">
+                                <i class="bi bi-file-text-fill fs-1 text-success"></i>
+                                <h5>Ata nº {{ ata_numero or '?' }}/{{ ata_ano or '?' }}</h5>
+                                {% if ata_aprovada %}
+                                    <span class="badge bg-success">✓ Aprovada</span>
+                                {% else %}
+                                    <span class="badge bg-warning">⏰ Pendente</span>
+                                {% endif %}
+                            </div>
+                            <div class="d-grid gap-2">
+                                <a href="/atas/{{ ata_id }}" class="btn btn-info">
+                                    <i class="bi bi-eye"></i> Visualizar Ata
+                                </a>
+                                <a href="/atas/{{ ata_id }}/pdf-oficial" class="btn btn-primary" target="_blank">
+                                    <i class="bi bi-file-pdf-fill"></i> Baixar PDF Oficial
+                                </a>
+                                {% if session.tipo == 'admin' and not ata_aprovada %}
+                                <a href="/atas/{{ ata_id }}/editar" class="btn btn-warning">
+                                    <i class="bi bi-pencil"></i> Editar Ata
+                                </a>
+                                <form method="POST" action="/atas/{{ ata_id }}/aprovar">
+                                    <button type="submit" class="btn btn-success w-100" 
+                                            onclick="return confirm('Aprovar esta ata?')">
+                                        <i class="bi bi-check-lg"></i> Aprovar Ata
+                                    </button>
+                                </form>
+                                {% endif %}
                             </div>
                         {% else %}
-                            <div class="text-center">
-                                <i class="bi bi-file-earmark-text fs-2 text-muted"></i>
-                                <p class="text-muted mt-2 mb-2">Nenhuma ata registrada</p>
-                                {% if session.tipo == 'admin' %}
-                                    <a href="/atas/nova/{{ reuniao.id }}" class="btn btn-success w-100">
-                                        <i class="bi bi-plus-circle me-2"></i> Criar Ata
-                                    </a>
+                            <div class="py-3">
+                                <i class="bi bi-file-earmark-text fs-1 text-muted"></i>
+                                <p class="text-muted mt-2 mb-3">Nenhuma ata registrada para esta reunião</p>
+                                {% if session.tipo == 'admin' and reuniao.status == 'realizada' %}
+                                <a href="/atas/nova/{{ reuniao.id }}" class="btn btn-success">
+                                    <i class="bi bi-plus-circle"></i> Criar Ata
+                                </a>
                                 {% endif %}
                             </div>
                         {% endif %}
                     </div>
                 </div>
+            </div>
+        </div>
 
-                <!-- Card de Informações -->
-                <div class="card-modern">
-                    <div class="card-header" style="background: var(--gray-50); border-bottom: 1px solid var(--gray-200);">
-                        <h6 class="mb-0 fw-bold">
-                            <i class="bi bi-info-circle-fill text-info me-2"></i> Legenda
-                        </h6>
+        <!-- Legenda -->
+        <div class="card shadow mt-4">
+            <div class="card-header bg-light">
+                <h6 class="mb-0"><i class="bi bi-info-circle"></i> Legenda</h6>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-3">
+                        <span class="badge bg-success">Verde</span> = Presente<br>
+                        <span class="badge bg-danger">Vermelho</span> = Ausente
                     </div>
-                    <div class="card-body p-4">
-                        <ul class="list-unstyled mb-0">
-                            <li class="mb-2"><i class="bi bi-check-circle-fill text-success me-2"></i> Presente</li>
-                            <li class="mb-2"><i class="bi bi-x-circle-fill text-danger me-2"></i> Ausente</li>
-                            <li class="mb-2"><i class="bi bi-file-pdf-fill text-primary me-2"></i> PDF Oficial</li>
-                            <li><i class="bi bi-plus-circle text-success me-2"></i> Criar Ata</li>
-                        </ul>
+                    <div class="col-md-3">
+                        <i class="bi bi-star-fill text-warning"></i> = Mestre<br>
+                        <i class="bi bi-star text-primary"></i> = Companheiro<br>
+                        <i class="bi bi-star text-secondary"></i> = Aprendiz
+                    </div>
+                    <div class="col-md-3">
+                        <span class="badge bg-primary">Admin</span> = Administrador<br>
+                        <span class="badge bg-warning">Sindicante</span> = Sindicante
+                    </div>
+                    <div class="col-md-3">
+                        <i class="bi bi-check-circle text-success"></i> = Reunião Realizada<br>
+                        <i class="bi bi-calendar-check text-warning"></i> = Reunião Agendada<br>
+                        <i class="bi bi-x-circle text-danger"></i> = Reunião Cancelada
+                    </div>
+                </div>
+                <hr>
+                <div class="row">
+                    <div class="col-12">
+                        <small class="text-muted">
+                            <i class="bi bi-info-circle"></i> 
+                            <strong>Dica:</strong> Apenas administradores podem registrar presenças e gerenciar reuniões.
+                        </small>
                     </div>
                 </div>
             </div>
@@ -784,11 +564,60 @@
     </div>
 </div>
 
+<style>
+    .card {
+        border-radius: 10px;
+        overflow: hidden;
+        transition: transform 0.2s ease;
+    }
+    .card:hover {
+        transform: translateY(-2px);
+    }
+    .card-header {
+        font-weight: 600;
+    }
+    .progress {
+        border-radius: 10px;
+        overflow: hidden;
+    }
+    .progress-bar {
+        transition: width 0.3s ease;
+        font-size: 12px;
+        line-height: 30px;
+    }
+    .table-hover tbody tr:hover {
+        cursor: pointer;
+        background-color: rgba(0, 123, 255, 0.05);
+    }
+    .badge {
+        font-size: 0.8rem;
+        padding: 0.4rem 0.6rem;
+    }
+    @media (max-width: 768px) {
+        .table-responsive {
+            font-size: 0.85rem;
+        }
+        .progress {
+            height: 20px;
+        }
+        .progress-bar {
+            font-size: 10px;
+            line-height: 20px;
+        }
+        .btn-group {
+            flex-direction: column;
+        }
+        .btn-group .btn {
+            margin-bottom: 5px;
+        }
+    }
+</style>
+
 <script>
-    function toggleJustificativa(checkbox, obreiroId) {
-        const container = document.getElementById(`justificativa_container_${obreiroId}`);
-        if (container) {
-            container.style.display = checkbox.checked ? 'none' : 'block';
+    function toggleJustificativa(checkbox, id) {
+        const div = document.getElementById(`justificativa_div_${id}`);
+        if (div) {
+            div.style.display = checkbox.checked ? 'none' : 'block';
         }
         atualizarContador();
     }
@@ -805,9 +634,9 @@
         const checkboxes = document.querySelectorAll('.presencia-checkbox');
         checkboxes.forEach(checkbox => {
             checkbox.checked = true;
-            const obreiroId = checkbox.id.split('_')[1];
-            const container = document.getElementById(`justificativa_container_${obreiroId}`);
-            if (container) container.style.display = 'none';
+            const id = checkbox.getAttribute('data-id');
+            const div = document.getElementById(`justificativa_div_${id}`);
+            if (div) div.style.display = 'none';
         });
         atualizarContador();
     }
@@ -816,43 +645,56 @@
         const checkboxes = document.querySelectorAll('.presencia-checkbox');
         checkboxes.forEach(checkbox => {
             checkbox.checked = false;
-            const obreiroId = checkbox.id.split('_')[1];
-            const container = document.getElementById(`justificativa_container_${obreiroId}`);
-            if (container) container.style.display = 'block';
+            const id = checkbox.getAttribute('data-id');
+            const div = document.getElementById(`justificativa_div_${id}`);
+            if (div) div.style.display = 'block';
         });
         atualizarContador();
     }
     
-    function resetarFormulario() {
-        if (confirm('Resetar todas as alterações?')) {
-            location.reload();
-        }
-    }
-    
     function copiarLista() {
-        let lista = "Lista de Presença - {{ reuniao.titulo or 'Reunião' }}\n";
-        lista += "Data: {{ reuniao.data.strftime('%d/%m/%Y') if reuniao.data else '-' }}\n";
-        lista += "=".repeat(50) + "\n\n";
+        let texto = "📋 LISTA DE PRESENÇA\n";
+        texto += "═".repeat(50) + "\n";
+        texto += "{{ reuniao.titulo }}\n";
+        texto += "{{ reuniao.data.strftime('%d/%m/%Y') if reuniao.data else '-' }}\n";
+        texto += "═".repeat(50) + "\n\n";
         
         {% for p in presenca %}
-            lista += "{{ p.nome_completo }} - ";
-            {% if p.presente %}
-                lista += "PRESENTE\n";
-            {% else %}
-                lista += "AUSENTE";
-                {% if p.tipo_ausencia %}
-                    lista += " ({{ p.tipo_ausencia }})";
-                {% endif %}
-                lista += "\n";
-            {% endif %}
+        texto += "{% if p.presente %}✓{% else %}✗{% endif %} {{ p.nome_completo }}";
+        {% if p.tipo == 'admin' %}texto += " [Admin]";{% endif %}
+        {% if p.tipo == 'sindicante' %}texto += " [Sindicante]";{% endif %}
+        {% if not p.presente and p.tipo_ausencia %}
+        texto += " ({{ p.tipo_ausencia }})";
+        {% endif %}
+        texto += "\n";
         {% endfor %}
         
-        lista += "\n" + "=".repeat(50) + "\n";
-        lista += "Total: {{ total_obreiros or 0 }} | Presentes: {{ presentes or 0 }} | Ausentes: {{ ausentes or 0 }}\n";
+        texto += "\n" + "═".repeat(50) + "\n";
+        texto += "Presentes: {{ presentes }} | Ausentes: {{ ausentes }} | Total: {{ total_obreiros }}";
         
-        navigator.clipboard.writeText(lista).then(() => alert('✅ Lista copiada!'), () => alert('❌ Erro ao copiar!'));
+        navigator.clipboard.writeText(texto).then(() => {
+            alert('✅ Lista copiada com sucesso!');
+        }).catch(() => {
+            alert('❌ Erro ao copiar lista');
+        });
     }
     
-    document.addEventListener('DOMContentLoaded', () => atualizarContador());
+    document.addEventListener('DOMContentLoaded', function() {
+        const checkboxes = document.querySelectorAll('.presencia-checkbox');
+        checkboxes.forEach(checkbox => {
+            const id = checkbox.getAttribute('data-id');
+            checkbox.addEventListener('change', function() {
+                toggleJustificativa(this, id);
+            });
+        });
+        
+        const btnPresentes = document.getElementById('btnTodosPresentes');
+        const btnAusentes = document.getElementById('btnTodosAusentes');
+        
+        if (btnPresentes) btnPresentes.addEventListener('click', marcarTodosPresentes);
+        if (btnAusentes) btnAusentes.addEventListener('click', marcarTodosAusentes);
+        
+        atualizarContador();
+    });
 </script>
 {% endblock %}
