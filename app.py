@@ -5860,6 +5860,8 @@ def registrar_presenca_lote(reuniao_id):
         return_connection(conn)
     
     return redirect(f"/reunioes/{reuniao_id}")  
+    
+    
 @app.route("/reunioes/<int:reuniao_id>/inicializar_presenca", methods=["GET"])
 @login_required
 @admin_required
