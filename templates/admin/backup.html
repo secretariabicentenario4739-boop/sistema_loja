@@ -25,10 +25,9 @@
             </div>
         </div>
 
-       
-        <!-- Cards de Estatísticas -->
+        <!-- Cards de Estatísticas (ajustados para Cloudinary) -->
         <div class="row mb-4">
-            <div class="col-md-3">
+            <div class="col-md-4">
                 <div class="card bg-primary text-white shadow">
                     <div class="card-body">
                         <div class="d-flex justify-content-between align-items-center">
@@ -41,7 +40,7 @@
                     </div>
                 </div>
             </div>
-            <div class="col-md-3">
+            <div class="col-md-4">
                 <div class="card bg-success text-white shadow">
                     <div class="card-body">
                         <div class="d-flex justify-content-between align-items-center">
@@ -55,21 +54,7 @@
                     </div>
                 </div>
             </div>
-            <div class="col-md-3">
-                <div class="card bg-info text-white shadow">
-                    <div class="card-body">
-                        <div class="d-flex justify-content-between align-items-center">
-                            <div>
-                                <h6 class="card-title mb-0">Espaço Disponível</h6>
-                                <h2 class="mb-0">{{ stats.disk_free_gb }} GB</h2>
-                                <small>de {{ stats.disk_total_gb }} GB</small>
-                            </div>
-                            <i class="bi bi-sd-card fs-1"></i>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            <div class="col-md-3">
+            <div class="col-md-4">
                 <div class="card bg-secondary text-white shadow">
                     <div class="card-body">
                         <div class="d-flex justify-content-between align-items-center">
@@ -79,35 +64,6 @@
                             </div>
                             <i class="bi bi-clock-history fs-1"></i>
                         </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Uso de Disco -->
-        <div class="card shadow mb-4">
-            <div class="card-header bg-light">
-                <h6 class="mb-0"><i class="bi bi-pie-chart"></i> Uso de Disco</h6>
-            </div>
-            <div class="card-body">
-                <div class="row align-items-center">
-                    <div class="col-md-8">
-                        <div class="progress" style="height: 30px;">
-                            <div class="progress-bar bg-primary" 
-                                 role="progressbar" 
-                                 style="width: {{ stats.disk_used_percent }}%;"
-                                 aria-valuenow="{{ stats.disk_used_percent }}" 
-                                 aria-valuemin="0" 
-                                 aria-valuemax="100">
-                                {{ stats.disk_used_percent }}%
-                            </div>
-                        </div>
-                    </div>
-                    <div class="col-md-4">
-                        <small class="text-muted">
-                            <i class="bi bi-database"></i> Backups ocupam {{ stats.total_size_gb }} GB 
-                            de {{ stats.disk_total_gb }} GB disponíveis
-                        </small>
                     </div>
                 </div>
             </div>
@@ -132,24 +88,16 @@
                                 <td>
                                     <i class="bi bi-file-zip-fill text-warning"></i>
                                     <strong>{{ backup.name }}</strong>
-                                    {% if backup.info and backup.info.db_name %}
                                     <br>
                                     <small class="text-muted">
-                                        <i class="bi bi-database"></i> Banco: {{ backup.info.db_name }}
+                                        <i class="bi bi-cloud"></i> Cloudinary
                                     </small>
-                                    {% endif %}
-                                    {% if backup.info and backup.info.date %}
-                                    <br>
-                                    <small class="text-muted">
-                                        <i class="bi bi-calendar"></i> Data backup: {{ backup.info.date }}
-                                    </small>
-                                    {% endif %}
                                 </td>
                                 <td>
                                     <i class="bi bi-calendar3"></i> {{ backup.date_str }}
                                     <br>
                                     <small class="text-muted">
-                                        <i class="bi bi-clock"></i> Criado: {{ backup.date.strftime('%H:%M:%S') if backup.date else '-' }}
+                                        <i class="bi bi-clock"></i> {{ backup.date.strftime('%H:%M:%S') if backup.date else '-' }}
                                     </small>
                                 </td>
                                 <td>
@@ -159,21 +107,21 @@
                                 </td>
                                 <td>
                                     <div class="btn-group btn-group-sm" role="group">
-                                        <button class="btn btn-info" onclick="infoBackup('{{ backup.name }}')" title="Informações">
+                                        <button class="btn btn-info" onclick="infoBackup('{{ backup.public_id }}')" title="Informações">
                                             <i class="bi bi-info-circle"></i>
                                         </button>
-                                        <a href="/api/backup/baixar/{{ backup.name }}" 
+                                        <a href="/api/backup/baixar/{{ backup.public_id }}" 
                                            class="btn btn-success" 
                                            title="Download">
                                             <i class="bi bi-download"></i>
                                         </a>
                                         <button class="btn btn-warning" 
-                                                onclick="restaurarBackup('{{ backup.name }}')" 
+                                                onclick="restaurarBackup('{{ backup.public_id }}')" 
                                                 title="Restaurar">
                                             <i class="bi bi-arrow-repeat"></i>
                                         </button>
                                         <button class="btn btn-danger" 
-                                                onclick="excluirBackup('{{ backup.name }}')" 
+                                                onclick="excluirBackup('{{ backup.public_id }}')" 
                                                 title="Excluir">
                                             <i class="bi bi-trash"></i>
                                         </button>
@@ -198,76 +146,6 @@
             </div>
         </div>
 
-        <!-- Histórico de Operações -->
-        {% if logs and logs|length > 0 %}
-        <div class="card shadow mt-4">
-            <div class="card-header bg-light">
-                <h6 class="mb-0"><i class="bi bi-clock-history"></i> Últimas Operações</h6>
-            </div>
-            <div class="card-body">
-                <div class="table-responsive">
-                    <table class="table table-sm">
-                        <thead>
-                            <tr>
-                                <th>Data/Hora</th>
-                                <th>Operação</th>
-                                <th>Arquivo</th>
-                                <th>Status</th>
-                                <th>Usuário</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% for log in logs %}
-                            <tr class="{% if log.success %}table-success{% else %}table-danger{% endif %}">
-                                <td>
-                                    <i class="bi bi-calendar"></i> 
-                                    {{ log.timestamp[:19].replace('T', ' ') if log.timestamp else '-' }}
-                                </td>
-                                <td>
-                                    {% if log.operation == 'backup' %}
-                                        <i class="bi bi-database text-primary"></i> Backup
-                                    {% elif log.operation == 'restore' %}
-                                        <i class="bi bi-arrow-repeat text-warning"></i> Restauração
-                                    {% elif log.operation == 'download' %}
-                                        <i class="bi bi-download text-info"></i> Download
-                                    {% elif log.operation == 'delete' %}
-                                        <i class="bi bi-trash text-danger"></i> Exclusão
-                                    {% elif log.operation == 'cleanup' %}
-                                        <i class="bi bi-broom text-secondary"></i> Limpeza
-                                    {% else %}
-                                        {{ log.operation }}
-                                    {% endif %}
-                                </td>
-                                <td>
-                                    {% if log.filename %}
-                                    <small title="{{ log.filename }}">{{ log.filename[:40] }}{% if log.filename|length > 40 %}...{% endif %}</small>
-                                    {% else %}
-                                    -
-                                    {% endif %}
-                                </td>
-                                <td>
-                                    {% if log.success %}
-                                    <span class="badge bg-success">
-                                        <i class="bi bi-check-circle"></i> Sucesso
-                                    </span>
-                                    {% else %}
-                                    <span class="badge bg-danger">
-                                        <i class="bi bi-x-circle"></i> Falha
-                                    </span>
-                                    {% endif %}
-                                </td>
-                                <td>
-                                    <i class="bi bi-person-circle"></i> {{ log.user }}
-                                </td>
-                            </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-        </div>
-        {% endif %}
-
         <!-- Legenda -->
         <div class="card shadow mt-4">
             <div class="card-header bg-light">
@@ -290,13 +168,10 @@
                 </div>
                 <hr class="my-2">
                 <div class="row">
-                    <div class="col-md-4">
-                        <span class="badge bg-success">Verde</span> = Operação bem-sucedida
+                    <div class="col-md-6">
+                        <i class="bi bi-cloud text-info"></i> = Armazenado na nuvem (Cloudinary)
                     </div>
-                    <div class="col-md-4">
-                        <span class="badge bg-danger">Vermelho</span> = Operação com falha
-                    </div>
-                    <div class="col-md-4">
+                    <div class="col-md-6">
                         <i class="bi bi-file-zip-fill text-warning"></i> = Arquivo de backup
                     </div>
                 </div>
@@ -385,7 +260,6 @@ document.addEventListener('DOMContentLoaded', function() {
     modalInfo = new bootstrap.Modal(document.getElementById('modalInfoBackup'));
     modalRestore = new bootstrap.Modal(document.getElementById('modalConfirmRestore'));
     
-    // Habilitar botão de confirmação quando digitar RESTAURAR
     const confirmInput = document.getElementById('confirmRestoreText');
     if (confirmInput) {
         confirmInput.addEventListener('input', function() {
@@ -395,7 +269,6 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
         
-        // Enter no campo confirma
         confirmInput.addEventListener('keypress', function(e) {
             if (e.key === 'Enter' && this.value === 'RESTAURAR') {
                 confirmarRestauracao();
@@ -423,8 +296,7 @@ function criarBackup() {
             mostrarAlerta('success', 
                 `<i class="bi bi-check-circle"></i> Backup criado com sucesso!<br>
                  Arquivo: ${data.filename}<br>
-                 Tamanho: ${data.size_mb} MB<br>
-                 Tabelas: ${data.tables || 'N/A'}`, 
+                 Tamanho: ${data.size_mb} MB`, 
                 5000);
             setTimeout(() => location.reload(), 2000);
         } else {
@@ -440,9 +312,9 @@ function criarBackup() {
     });
 }
 
-function restaurarBackup(filename) {
-    backupParaRestaurar = filename;
-    document.getElementById('restoreFileName').textContent = filename;
+function restaurarBackup(publicId) {
+    backupParaRestaurar = publicId;
+    document.getElementById('restoreFileName').textContent = publicId.split('/').pop();
     document.getElementById('confirmRestoreText').value = '';
     document.getElementById('btnConfirmRestore').disabled = true;
     modalRestore.show();
@@ -456,12 +328,11 @@ function confirmarRestauracao() {
     btn.innerHTML = '<i class="bi bi-hourglass-split"></i> Restaurando...';
     btn.disabled = true;
     
-    fetch(`/api/backup/restaurar/${backupParaRestaurar}`, {
+    fetch(`/api/backup/restaurar/${encodeURIComponent(backupParaRestaurar)}`, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ confirm: true })
+        }
     })
     .then(response => response.json())
     .then(data => {
@@ -470,8 +341,7 @@ function confirmarRestauracao() {
         if (data.success) {
             mostrarAlerta('success', 
                 `<i class="bi bi-check-circle-fill"></i> Backup restaurado com sucesso!<br>
-                 Backup de emergência: ${data.emergency_backup || 'N/A'}<br>
-                 Statements executados: ${data.statements_executed || 0}`,
+                 Backup de emergência: ${data.emergency_backup || 'N/A'}`,
                 8000);
             
             setTimeout(() => {
@@ -479,8 +349,6 @@ function confirmarRestauracao() {
                     location.reload();
                 }
             }, 2000);
-        } else if (data.requires_confirmation) {
-            mostrarAlerta('warning', '<i class="bi bi-shield-exclamation"></i> Confirmação necessária. Por favor, confirme a operação.', 3000);
         } else {
             let msg = `<i class="bi bi-x-octagon"></i> Erro ao restaurar: ${data.error}`;
             if (data.emergency_backup) {
@@ -500,15 +368,15 @@ function confirmarRestauracao() {
     });
 }
 
-function excluirBackup(filename) {
-    if (confirm(`⚠️ Tem certeza que deseja excluir o backup:\n\n${filename}\n\nEsta ação não pode ser desfeita.`)) {
-        fetch(`/api/backup/excluir/${filename}`, {
+function excluirBackup(publicId) {
+    if (confirm(`⚠️ Tem certeza que deseja excluir este backup?\n\nEsta ação não pode ser desfeita.`)) {
+        fetch(`/api/backup/excluir/${encodeURIComponent(publicId)}`, {
             method: 'DELETE'
         })
         .then(response => response.json())
         .then(data => {
             if (data.success) {
-                mostrarAlerta('success', `<i class="bi bi-check-circle"></i> Backup ${filename} excluído com sucesso!`, 3000);
+                mostrarAlerta('success', `<i class="bi bi-check-circle"></i> Backup excluído com sucesso!`, 3000);
                 setTimeout(() => location.reload(), 1500);
             } else {
                 mostrarAlerta('danger', `<i class="bi bi-exclamation-triangle"></i> Erro ao excluir: ${data.error}`, 5000);
@@ -544,7 +412,7 @@ function limparBackupsAntigos() {
     }
 }
 
-function infoBackup(filename) {
+function infoBackup(publicId) {
     modalInfo.show();
     const contentDiv = document.getElementById('infoBackupContent');
     contentDiv.innerHTML = `
@@ -556,7 +424,7 @@ function infoBackup(filename) {
         </div>
     `;
     
-    fetch(`/api/backup/info/${filename}`)
+    fetch(`/api/backup/info/${encodeURIComponent(publicId)}`)
         .then(response => response.json())
         .then(data => {
             if (data.success && data.info) {
@@ -577,27 +445,9 @@ function infoBackup(filename) {
                                 <td>${new Date(info.created).toLocaleString('pt-BR')}</td>
                             </tr>
                             <tr>
-                                <th><i class="bi bi-calendar-check"></i> Última modificação</th>
-                                <td>${new Date(info.modified).toLocaleString('pt-BR')}</td>
+                                <th><i class="bi bi-cloud"></i> Armazenamento</th>
+                                <td><i class="bi bi-cloud-check text-success"></i> Cloudinary</td>
                             </tr>
-                            ${info.backup_date ? `
-                            <tr>
-                                <th><i class="bi bi-calendar-event"></i> Data do backup</th>
-                                <td>${escapeHtml(info.backup_date)}</td>
-                            </tr>
-                            ` : ''}
-                            ${info.tables ? `
-                            <tr>
-                                <th><i class="bi bi-table"></i> Tabelas</th>
-                                <td>${info.tables}</td>
-                            </tr>
-                            ` : ''}
-                            ${info.database ? `
-                            <tr>
-                                <th><i class="bi bi-database"></i> Banco de dados</th>
-                                <td>${escapeHtml(info.database)}</td>
-                            </tr>
-                            ` : ''}
                         </table>
                     </div>
                 `;
@@ -708,12 +558,8 @@ function escapeHtml(text) {
         .table-responsive {
             font-size: 0.85rem;
         }
-        .card-title h2 {
-            font-size: 1.5rem;
-        }
     }
     
-    /* Animações */
     @keyframes fadeIn {
         from { opacity: 0; transform: translateY(-20px); }
         to { opacity: 1; transform: translateY(0); }
@@ -724,7 +570,6 @@ function escapeHtml(text) {
         box-shadow: 0 4px 12px rgba(0,0,0,0.15);
     }
     
-    /* Modal personalizado */
     .modal-content {
         border-radius: 12px;
         overflow: hidden;
@@ -738,12 +583,10 @@ function escapeHtml(text) {
         border-top: 1px solid rgba(0,0,0,0.1);
     }
     
-    /* Botões com ícones */
     .btn i {
         margin-right: 5px;
     }
     
-    /* Progress bar animada */
     .progress-bar {
         background-image: linear-gradient(45deg, 
             rgba(255,255,255,0.15) 25%, 
@@ -762,7 +605,6 @@ function escapeHtml(text) {
         100% { background-position: 0 0; }
     }
     
-    /* Tooltip customizado */
     [title] {
         position: relative;
         cursor: help;

@@ -13347,731 +13347,314 @@ def configuracoes_notificacoes():
 
 
 
-# =============================
-# ROTAS DE BACKUP E RESTAURAÇÃO (VERSÃO CORRIGIDA)
-# =============================
+# ============================================
+# GERENCIAMENTO DE BACKUPS COM CLOUDINARY
+# ============================================
 
-import zipfile
-import json
-import shutil
-import re
-from datetime import datetime, timedelta
-from flask import send_file, make_response
-import psycopg2
-from psycopg2.extras import RealDictCursor
+import cloudinary.uploader
+import cloudinary.api
+import cloudinary
 import subprocess
 import tempfile
+import os
+from datetime import datetime
 
-BACKUP_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'backups')
-TEMP_RESTORE_DIR = os.path.join(BACKUP_DIR, 'temp_restore')
-BACKUP_LOG_FILE = os.path.join(BACKUP_DIR, 'backup_log.json')
+# Configuração do Cloudinary (já deve estar no config.py)
+# cloudinary.config(
+#     cloud_name=os.getenv('CLOUDINARY_CLOUD_NAME'),
+#     api_key=os.getenv('CLOUDINARY_API_KEY'),
+#     api_secret=os.getenv('CLOUDINARY_API_SECRET')
+# )
 
-# Criar diretórios
-os.makedirs(BACKUP_DIR, exist_ok=True)
-os.makedirs(TEMP_RESTORE_DIR, exist_ok=True)
+CLOUDINARY_BACKUP_FOLDER = 'backups/sistema_maconico'
 
-def log_backup_operation(operation, filename, success, details=None, error=None):
-    """Registra operações de backup/restauração em log"""
+def get_backup_list():
+    """Retorna lista de backups do Cloudinary"""
     try:
-        logs = []
-        if os.path.exists(BACKUP_LOG_FILE):
-            with open(BACKUP_LOG_FILE, 'r', encoding='utf-8') as f:
-                logs = json.load(f)
+        result = cloudinary.api.resources(
+            type="upload",
+            prefix=CLOUDINARY_BACKUP_FOLDER,
+            resource_type="raw",
+            max_results=500
+        )
         
-        logs.append({
-            'timestamp': datetime.now().isoformat(),
-            'operation': operation,
-            'filename': filename,
-            'success': success,
-            'details': details,
-            'error': error,
-            'user': session.get('usuario', 'unknown'),
-            'user_id': session.get('user_id'),
-            'ip': request.remote_addr
-        })
-        
-        # Manter apenas últimos 100 registros
-        logs = logs[-100:]
-        
-        with open(BACKUP_LOG_FILE, 'w', encoding='utf-8') as f:
-            json.dump(logs, f, ensure_ascii=False, indent=2)
-            
-    except Exception as e:
-        print(f"Erro ao registrar log: {e}")
-
-def escape_sql_string(value):
-    """Escapa strings para SQL de forma segura"""
-    if value is None:
-        return 'NULL'
-    if isinstance(value, str):
-        # Escapar aspas simples e caracteres especiais
-        escaped = value.replace("'", "''")
-        # Escapar barras invertidas
-        escaped = escaped.replace("\\", "\\\\")
-        return f"'{escaped}'"
-    elif isinstance(value, datetime):
-        return f"'{value.strftime('%Y-%m-%d %H:%M:%S')}'"
-    elif isinstance(value, bool):
-        return 'TRUE' if value else 'FALSE'
-    elif isinstance(value, (int, float)):
-        return str(value)
-    else:
-        escaped = str(value).replace("'", "''")
-        return f"'{escaped}'"
-
-def listar_backups_sistema():
-    """Lista todos os backups disponíveis com informações detalhadas"""
-    backups = []
-    if not os.path.exists(BACKUP_DIR):
-        return backups
-    
-    for file in os.listdir(BACKUP_DIR):
-        if file.endswith('.zip'):
-            filepath = os.path.join(BACKUP_DIR, file)
-            mtime = os.path.getmtime(filepath)
-            ctime = os.path.getctime(filepath)
-            size = os.path.getsize(filepath) / (1024 * 1024)
+        backups = []
+        for resource in result.get('resources', []):
+            public_id = resource.get('public_id')
+            created_at = resource.get('created_at')
+            try:
+                date_obj = datetime.strptime(created_at, '%Y-%m-%dT%H:%M:%S%z')
+                date_str = date_obj.strftime('%d/%m/%Y %H:%M:%S')
+            except:
+                date_str = created_at
             
             backups.append({
-                'name': file,
-                'date_str': datetime.fromtimestamp(mtime).strftime('%d/%m/%Y %H:%M:%S'),
-                'date': datetime.fromtimestamp(mtime),
-                'size_mb': round(size, 2),
-                'size_bytes': os.path.getsize(filepath),
-                'path': filepath,
-                'created': datetime.fromtimestamp(ctime)
+                'public_id': public_id,
+                'name': public_id.split('/')[-1] + '.sql',
+                'size_bytes': resource.get('bytes', 0),
+                'size_mb': round(resource.get('bytes', 0) / (1024 * 1024), 2),
+                'created_at': created_at,
+                'date_str': date_str,
+                'date': date_obj if 'date_obj' in locals() else None,
+                'url': resource.get('secure_url')
             })
-    
-    backups.sort(key=lambda x: x['date'], reverse=True)
-    return backups
-
-def criar_backup_sistema():
-    """Cria backup completo usando pg_dump (mais confiável)"""
-    try:
-        timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
-        db_name = os.getenv('DB_NAME', 'sistema_maconico')
-        backup_name = f'backup_{db_name}_{timestamp}'
         
-        # Usar pg_dump para criar backup (mais confiável que SQL manual)
-        dump_file = os.path.join(BACKUP_DIR, f'{backup_name}.dump')
-        
-        # Extrair dados de conexão
-        import urllib.parse
-        db_url = DATABASE_URL
-        
-        # Se for URL do PostgreSQL, parsear
-        if db_url.startswith('postgresql://'):
-            parsed = urllib.parse.urlparse(db_url)
-            db_host = parsed.hostname
-            db_port = parsed.port or 5432
-            db_name_parsed = parsed.path[1:] if parsed.path else db_name
-            db_user = parsed.username
-            db_password = parsed.password
-            
-            # Comando pg_dump
-            cmd = [
-                'pg_dump',
-                '-h', db_host,
-                '-p', str(db_port),
-                '-U', db_user,
-                '-d', db_name_parsed,
-                '-F', 'c',  # Formato customizado
-                '-f', dump_file,
-                '-v'
-            ]
-            
-            # Definir variável de ambiente para senha
-            env = os.environ.copy()
-            env['PGPASSWORD'] = db_password
-            
-            # Executar pg_dump
-            result = subprocess.run(cmd, capture_output=True, text=True, env=env)
-            
-            if result.returncode != 0:
-                raise Exception(f"pg_dump falhou: {result.stderr}")
-        
-        # Se pg_dump não estiver disponível, usar método SQL alternativo
-        if not os.path.exists(dump_file):
-            raise Exception("pg_dump não disponível, usando método SQL alternativo")
-        
-        # Compactar em ZIP
-        zip_file = dump_file + '.zip'
-        with zipfile.ZipFile(zip_file, 'w', zipfile.ZIP_DEFLATED) as zf:
-            zf.write(dump_file, os.path.basename(dump_file))
-        
-        # Remover arquivo dump temporário
-        os.remove(dump_file)
-        
-        tamanho_mb = os.path.getsize(zip_file) / (1024 * 1024)
-        
-        # Manter apenas últimos 20 backups
-        backups = listar_backups_sistema()
-        deleted = []
-        for i, b in enumerate(backups):
-            if i >= 20:
-                try:
-                    os.remove(b['path'])
-                    deleted.append(b['name'])
-                except:
-                    pass
-        
-        result = {
-            'success': True,
-            'filename': os.path.basename(zip_file),
-            'size_mb': round(tamanho_mb, 2),
-            'size_bytes': os.path.getsize(zip_file),
-            'deleted_old': len(deleted)
-        }
-        
-        log_backup_operation('backup', result['filename'], True, result)
-        return result
-        
+        # Ordenar por data (mais recentes primeiro)
+        backups.sort(key=lambda x: x.get('date') or datetime.min, reverse=True)
+        return backups
     except Exception as e:
-        print(f"Erro ao criar backup com pg_dump: {e}")
-        traceback.print_exc()
-        
-        # Fallback: método SQL manual melhorado
-        return criar_backup_sql_fallback()
+        print(f"Erro ao listar backups: {e}")
+        return []
 
-def criar_backup_sql_fallback():
-    """Método alternativo de backup usando SQL (com escape melhorado)"""
-    temp_sql_file = None
-    try:
-        timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
-        db_name = os.getenv('DB_NAME', 'sistema_maconico')
-        backup_name = f'backup_{db_name}_{timestamp}'
-        temp_sql_file = os.path.join(BACKUP_DIR, f'{backup_name}.sql')
-        
-        # Conectar ao banco
-        conn = psycopg2.connect(DATABASE_URL)
-        conn.autocommit = False
-        cursor = conn.cursor(cursor_factory=RealDictCursor)
-        
-        # Obter lista de tabelas
-        cursor.execute("""
-            SELECT tablename FROM pg_tables 
-            WHERE schemaname = 'public' 
-            AND tablename NOT LIKE 'pg_%'
-            ORDER BY tablename
-        """)
-        tables = [row['tablename'] for row in cursor.fetchall()]
-        
-        # Criar arquivo SQL
-        with open(temp_sql_file, 'w', encoding='utf-8') as f:
-            f.write(f"-- ============================================\n")
-            f.write(f"-- BACKUP DO SISTEMA MAÇÔNICO\n")
-            f.write(f"-- ============================================\n")
-            f.write(f"-- Data: {datetime.now().strftime('%d/%m/%Y %H:%M:%S')}\n")
-            f.write(f"-- Banco: {db_name}\n")
-            f.write(f"-- Tabelas: {len(tables)}\n")
-            f.write(f"-- ============================================\n\n")
-            
-            f.write("BEGIN;\n\n")
-            f.write("SET client_encoding = 'UTF8';\n\n")
-            
-            # Backup de cada tabela
-            tables_backuped = []
-            for table in tables:
-                try:
-                    # Obter estrutura da tabela
-                    cursor.execute(f"""
-                        SELECT column_name, data_type, is_nullable, column_default
-                        FROM information_schema.columns 
-                        WHERE table_name = '{table}'
-                        ORDER BY ordinal_position
-                    """)
-                    columns = cursor.fetchall()
-                    
-                    if not columns:
-                        continue
-                    
-                    f.write(f"-- ============================================\n")
-                    f.write(f"-- Tabela: {table}\n")
-                    f.write(f"-- ============================================\n\n")
-                    
-                    # DROP e CREATE TABLE
-                    f.write(f"DROP TABLE IF EXISTS {table} CASCADE;\n")
-                    f.write(f"CREATE TABLE {table} (\n")
-                    
-                    col_defs = []
-                    for col in columns:
-                        col_def = f"    {col['column_name']} {col['data_type']}"
-                        if col['is_nullable'] == 'NO':
-                            col_def += " NOT NULL"
-                        col_defs.append(col_def)
-                    
-                    f.write(",\n".join(col_defs))
-                    f.write("\n);\n\n")
-                    
-                    # Backup dos dados
-                    cursor.execute(f"SELECT * FROM {table}")
-                    rows = cursor.fetchall()
-                    
-                    if rows:
-                        col_names = [col['column_name'] for col in columns]
-                        col_names_str = ', '.join(col_names)
-                        
-                        batch_size = 100
-                        for i in range(0, len(rows), batch_size):
-                            batch = rows[i:i+batch_size]
-                            f.write(f"INSERT INTO {table} ({col_names_str}) VALUES\n")
-                            
-                            values_list = []
-                            for row in batch:
-                                values = []
-                                for col_name in col_names:
-                                    val = row.get(col_name)
-                                    values.append(escape_sql_string(val))
-                                values_list.append(f"    ({', '.join(values)})")
-                            
-                            f.write(",\n".join(values_list))
-                            f.write(";\n\n")
-                    
-                    tables_backuped.append(table)
-                    
-                except Exception as e:
-                    print(f"Erro ao fazer backup da tabela {table}: {e}")
-                    f.write(f"-- ERRO AO FAZER BACKUP DA TABELA {table}: {str(e)}\n\n")
-            
-            f.write("COMMIT;\n")
-        
-        cursor.close()
-        conn.close()
-        
-        # Compactar em ZIP
-        zip_file = temp_sql_file + '.zip'
-        with zipfile.ZipFile(zip_file, 'w', zipfile.ZIP_DEFLATED) as zf:
-            zf.write(temp_sql_file, os.path.basename(temp_sql_file))
-        
-        # Remover arquivo SQL temporário
-        os.remove(temp_sql_file)
-        
-        tamanho_mb = os.path.getsize(zip_file) / (1024 * 1024)
-        
-        # Manter apenas últimos 20 backups
-        backups = listar_backups_sistema()
-        deleted = []
-        for i, b in enumerate(backups):
-            if i >= 20:
-                try:
-                    os.remove(b['path'])
-                    deleted.append(b['name'])
-                except:
-                    pass
-        
-        result = {
-            'success': True,
-            'filename': os.path.basename(zip_file),
-            'size_mb': round(tamanho_mb, 2),
-            'size_bytes': os.path.getsize(zip_file),
-            'tables': len(tables_backuped),
-            'total_tables': len(tables),
-            'deleted_old': len(deleted)
-        }
-        
-        log_backup_operation('backup', result['filename'], True, result)
-        return result
-        
-    except Exception as e:
-        print(f"Erro ao criar backup SQL: {e}")
-        traceback.print_exc()
-        
-        if temp_sql_file and os.path.exists(temp_sql_file):
-            try:
-                os.remove(temp_sql_file)
-            except:
-                pass
-        
-        error_msg = str(e)
-        log_backup_operation('backup', None, False, error=error_msg)
-        return {'success': False, 'error': error_msg}
 
-def restaurar_backup_sistema(filename, confirm=False):
-    """Restaura um backup do sistema usando pg_restore ou SQL"""
-    if not confirm:
-        return {'success': False, 'error': 'Confirmação necessária', 'requires_confirmation': True}
-    
-    temp_dir = None
-    try:
-        # Validar arquivo
-        backup_path = os.path.join(BACKUP_DIR, filename)
-        if not os.path.exists(backup_path):
-            return {'success': False, 'error': 'Arquivo de backup não encontrado'}
-        
-        # Criar backup de emergência
-        print("Criando backup de emergência...")
-        emergency_backup = criar_backup_sistema()
-        
-        if not emergency_backup['success']:
-            return {
-                'success': False,
-                'error': 'Não foi possível criar backup de emergência. Operação cancelada.',
-                'emergency_backup': None
-            }
-        
-        # Criar diretório temporário
-        temp_dir = os.path.join(TEMP_RESTORE_DIR, f'restore_{datetime.now().strftime("%Y%m%d_%H%M%S")}')
-        os.makedirs(temp_dir, exist_ok=True)
-        
-        # Extrair arquivo
-        with zipfile.ZipFile(backup_path, 'r') as zf:
-            zf.extractall(temp_dir)
-            extracted_files = os.listdir(temp_dir)
-            
-            # Verificar tipo de backup
-            dump_files = [f for f in extracted_files if f.endswith('.dump')]
-            sql_files = [f for f in extracted_files if f.endswith('.sql')]
-            
-            if dump_files:
-                # Restaurar com pg_restore
-                dump_file = os.path.join(temp_dir, dump_files[0])
-                
-                import urllib.parse
-                db_url = DATABASE_URL
-                
-                if db_url.startswith('postgresql://'):
-                    parsed = urllib.parse.urlparse(db_url)
-                    db_host = parsed.hostname
-                    db_port = parsed.port or 5432
-                    db_name_parsed = parsed.path[1:] if parsed.path else 'sistema_maconico'
-                    db_user = parsed.username
-                    db_password = parsed.password
-                    
-                    cmd = [
-                        'pg_restore',
-                        '-h', db_host,
-                        '-p', str(db_port),
-                        '-U', db_user,
-                        '-d', db_name_parsed,
-                        '--clean',
-                        '--if-exists',
-                        '--no-owner',
-                        '--no-privileges',
-                        dump_file
-                    ]
-                    
-                    env = os.environ.copy()
-                    env['PGPASSWORD'] = db_password
-                    
-                    result = subprocess.run(cmd, capture_output=True, text=True, env=env)
-                    
-                    if result.returncode != 0:
-                        raise Exception(f"pg_restore falhou: {result.stderr}")
-                    
-                    statements_executed = "pg_restore completed"
-                    
-            elif sql_files:
-                # Restaurar com SQL
-                sql_file_path = os.path.join(temp_dir, sql_files[0])
-                
-                # Conectar ao banco
-                conn = psycopg2.connect(DATABASE_URL)
-                conn.autocommit = False
-                cursor = conn.cursor()
-                
-                # Ler e executar SQL
-                with open(sql_file_path, 'r', encoding='utf-8') as f:
-                    sql_content = f.read()
-                
-                # Separar comandos SQL de forma mais inteligente
-                statements = []
-                current = []
-                in_string = False
-                string_char = None
-                
-                for line in sql_content.split('\n'):
-                    stripped = line.strip()
-                    
-                    # Ignorar comentários de linha
-                    if stripped.startswith('--') and not in_string:
-                        continue
-                    
-                    current.append(line)
-                    
-                    # Verificar se estamos dentro de uma string
-                    for char in line:
-                        if char in ("'", '"') and not in_string:
-                            in_string = True
-                            string_char = char
-                        elif char == string_char and in_string:
-                            # Verificar se não é escape
-                            idx = line.find(char)
-                            if idx > 0 and line[idx-1] == '\\':
-                                continue
-                            in_string = False
-                            string_char = None
-                    
-                    # Se não estamos dentro de string e linha termina com ;
-                    if not in_string and stripped.endswith(';'):
-                        statements.append('\n'.join(current))
-                        current = []
-                
-                if current:
-                    statements.append('\n'.join(current))
-                
-                # Executar statements
-                executed = 0
-                errors = []
-                
-                for i, stmt in enumerate(statements):
-                    if stmt.strip() and not stmt.strip().startswith('--'):
-                        try:
-                            cursor.execute(stmt)
-                            executed += 1
-                        except Exception as e:
-                            errors.append(f"Statement {i+1}: {str(e)[:200]}")
-                            print(f"Erro na statement {i+1}: {e}")
-                            print(f"SQL: {stmt[:300]}")
-                            
-                            # Se erro crítico, abortar
-                            if 'syntax error' in str(e).lower():
-                                raise Exception(f"Erro de sintaxe: {str(e)}")
-                
-                if errors and not executed:
-                    conn.rollback()
-                    raise Exception(f"{len(errors)} erros encontrados. Primeiro erro: {errors[0]}")
-                
-                conn.commit()
-                cursor.close()
-                conn.close()
-                
-                statements_executed = executed
-            else:
-                raise Exception("Formato de backup não reconhecido")
-        
-        # Limpar diretório temporário
-        shutil.rmtree(temp_dir)
-        
-        result = {
-            'success': True,
-            'message': f'Backup restaurado com sucesso!',
-            'emergency_backup': emergency_backup.get('filename'),
-            'emergency_backup_size': emergency_backup.get('size_mb'),
-            'statements_executed': statements_executed,
-            'restored_from': filename
-        }
-        
-        log_backup_operation('restore', filename, True, result)
-        return result
-        
-    except Exception as e:
-        print(f"Erro ao restaurar backup: {e}")
-        traceback.print_exc()
-        
-        if temp_dir and os.path.exists(temp_dir):
-            try:
-                shutil.rmtree(temp_dir)
-            except:
-                pass
-        
-        error_msg = str(e)
-        log_backup_operation('restore', filename, False, error=error_msg)
-        
-        return {
-            'success': False,
-            'error': error_msg,
-            'emergency_backup': emergency_backup.get('filename') if 'emergency_backup' in locals() else None
-        }
-
-# =============================
-# ROTAS DE BACKUP (mantidas as mesmas)
-# =============================
-
-@app.route("/admin/backup")
+@app.route("/backups")
+@login_required
 @admin_required
-def pagina_backup_sistema():
-    """Página principal de gerenciamento de backups"""
-    backups = listar_backups_sistema()
+def gerenciar_backups():
+    """Página de gerenciamento de backups"""
+    backups = get_backup_list()
     
-    total_size = sum(b['size_mb'] for b in backups)
+    # Estatísticas
     total_backups = len(backups)
-    oldest = backups[-1]['date_str'] if backups else None
-    newest = backups[0]['date_str'] if backups else None
-    
-    disk_usage = shutil.disk_usage(BACKUP_DIR)
-    disk_free_gb = disk_usage.free / (1024**3)
-    disk_total_gb = disk_usage.total / (1024**3)
+    total_size_bytes = sum(b['size_bytes'] for b in backups)
+    total_size_mb = round(total_size_bytes / (1024 * 1024), 2)
+    total_size_gb = round(total_size_bytes / (1024 * 1024 * 1024), 2)
     
     stats = {
         'total': total_backups,
-        'total_size_mb': round(total_size, 2),
-        'total_size_gb': round(total_size / 1024, 2),
-        'newest': newest,
-        'oldest': oldest,
-        'disk_free_gb': round(disk_free_gb, 2),
-        'disk_total_gb': round(disk_total_gb, 2),
-        'disk_used_percent': round((1 - disk_free_gb / disk_total_gb) * 100, 1) if disk_total_gb > 0 else 0
+        'total_size_mb': total_size_mb,
+        'total_size_gb': total_size_gb,
+        'newest': backups[0]['date_str'] if backups else 'Nenhum'
     }
     
-    logs = []
-    if os.path.exists(BACKUP_LOG_FILE):
-        try:
-            with open(BACKUP_LOG_FILE, 'r', encoding='utf-8') as f:
-                logs = json.load(f)
-                logs = logs[-20:]
-        except:
-            pass
-    
-    return render_template("admin/backup.html", 
-                          backups=backups, 
-                          stats=stats,
-                          logs=logs,
-                          now=datetime.now())
+    return render_template("backups.html", backups=backups, stats=stats)
+
 
 @app.route("/api/backup/criar", methods=["POST"])
+@login_required
 @admin_required
-def api_criar_backup_sistema():
-    """Cria um novo backup"""
-    result = criar_backup_sistema()
-    
-    if result['success']:
-        flash(f"Backup criado com sucesso! Arquivo: {result['filename']} ({result['size_mb']} MB)", "success")
-    else:
-        flash(f"Erro ao criar backup: {result['error']}", "danger")
-    
-    return jsonify(result)
-
-@app.route("/api/backup/restaurar/<filename>", methods=["POST"])
-@admin_required
-def api_restaurar_backup(filename):
-    """Restaura um backup existente"""
-    data = request.get_json() or {}
-    confirm = data.get('confirm', False)
-    
-    result = restaurar_backup_sistema(filename, confirm)
-    
-    if result.get('requires_confirmation'):
-        return jsonify(result), 400
-    elif result['success']:
-        flash(f"Backup restaurado com sucesso! Backup de emergência: {result.get('emergency_backup', 'N/A')}", "success")
-    else:
-        flash(f"Erro ao restaurar backup: {result['error']}", "danger")
-        if result.get('emergency_backup'):
-            flash(f"Backup de emergência criado: {result['emergency_backup']}", "info")
-    
-    return jsonify(result)
-
-@app.route("/api/backup/listar")
-@admin_required
-def api_listar_backups_sistema():
-    """Lista todos os backups disponíveis"""
-    backups = listar_backups_sistema()
-    return jsonify({'success': True, 'backups': backups})
-
-@app.route("/api/backup/baixar/<filename>")
-@admin_required
-def api_baixar_backup_sistema(filename):
-    """Download de um backup"""
-    backup_path = os.path.join(BACKUP_DIR, filename)
-    
-    if not os.path.exists(backup_path):
-        flash("Arquivo não encontrado", "danger")
-        return redirect("/admin/backup")
-    
-    log_backup_operation('download', filename, True)
-    
-    return send_file(backup_path, 
-                    as_attachment=True, 
-                    download_name=filename, 
-                    mimetype='application/zip')
-
-@app.route("/api/backup/excluir/<filename>", methods=["DELETE"])
-@admin_required
-def api_excluir_backup_sistema(filename):
-    """Exclui um backup específico"""
-    backup_path = os.path.join(BACKUP_DIR, filename)
-    
-    if not os.path.exists(backup_path):
-        return jsonify({'success': False, 'error': 'Arquivo não encontrado'}), 404
-    
+def criar_backup():
+    """Cria backup e envia para Cloudinary"""
     try:
-        os.remove(backup_path)
-        log_backup_operation('delete', filename, True)
-        return jsonify({'success': True, 'message': 'Backup excluído com sucesso'})
+        timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+        filename = f"backup_{timestamp}.sql"
+        
+        # Criar backup temporário
+        with tempfile.NamedTemporaryFile(suffix='.sql', delete=False) as tmp_file:
+            temp_path = tmp_file.name
+        
+        try:
+            # Executar pg_dump
+            db_url = os.getenv('DATABASE_URL')
+            cmd = f"pg_dump -Fc --no-owner --no-privileges {db_url} > {temp_path}"
+            result = subprocess.run(cmd, shell=True, capture_output=True, text=True)
+            
+            if result.returncode != 0:
+                raise Exception(f"Erro no pg_dump: {result.stderr}")
+            
+            # Upload para Cloudinary
+            upload_result = cloudinary.uploader.upload(
+                temp_path,
+                folder=CLOUDINARY_BACKUP_FOLDER,
+                resource_type="raw",
+                public_id=f"backup_{timestamp}",
+                use_filename=True,
+                unique_filename=False
+            )
+            
+            # Registrar log
+            registrar_log("criar_backup", "backup", None, 
+                         dados_novos={"filename": filename, "size": upload_result.get('bytes')})
+            
+            return jsonify({
+                'success': True,
+                'filename': filename,
+                'public_id': upload_result.get('public_id'),
+                'size_mb': round(upload_result.get('bytes') / (1024 * 1024), 2),
+                'url': upload_result.get('secure_url')
+            })
+            
+        finally:
+            # Remover arquivo temporário
+            if os.path.exists(temp_path):
+                os.unlink(temp_path)
+                
+    except Exception as e:
+        print(f"Erro ao criar backup: {e}")
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+
+@app.route("/api/backup/baixar/<path:public_id>")
+@login_required
+@admin_required
+def baixar_backup(public_id):
+    """Redireciona para download do backup no Cloudinary"""
+    try:
+        resource = cloudinary.api.resource(public_id, resource_type="raw")
+        url = resource.get('secure_url')
+        
+        registrar_log("baixar_backup", "backup", None, dados_novos={"backup": public_id})
+        
+        return redirect(url)
+    except Exception as e:
+        flash(f"Erro ao baixar backup: {str(e)}", "danger")
+        return redirect("/backups")
+
+
+@app.route("/api/backup/restaurar/<path:public_id>", methods=["POST"])
+@login_required
+@admin_required
+def restaurar_backup(public_id):
+    """Restaura backup do Cloudinary"""
+    try:
+        # Criar backup de emergência antes de restaurar
+        backup_emergencia = criar_backup_emergencia()
+        
+        # Baixar backup do Cloudinary
+        resource = cloudinary.api.resource(public_id, resource_type="raw")
+        url = resource.get('secure_url')
+        
+        import requests
+        response = requests.get(url)
+        
+        if response.status_code != 200:
+            raise Exception("Erro ao baixar backup do Cloudinary")
+        
+        # Salvar em arquivo temporário
+        with tempfile.NamedTemporaryFile(suffix='.sql', delete=False) as tmp_file:
+            tmp_file.write(response.content)
+            temp_path = tmp_file.name
+        
+        try:
+            # Restaurar banco
+            db_url = os.getenv('DATABASE_URL')
+            cmd = f"pg_restore -c --no-owner --no-privileges -d {db_url} {temp_path}"
+            result = subprocess.run(cmd, shell=True, capture_output=True, text=True)
+            
+            if result.returncode != 0:
+                raise Exception(f"Erro na restauração: {result.stderr}")
+            
+            registrar_log("restaurar_backup", "backup", None, 
+                         dados_novos={"backup": public_id, "emergencia": backup_emergencia})
+            
+            return jsonify({
+                'success': True,
+                'message': 'Backup restaurado com sucesso',
+                'emergency_backup': backup_emergencia
+            })
+            
+        finally:
+            if os.path.exists(temp_path):
+                os.unlink(temp_path)
+                
+    except Exception as e:
+        print(f"Erro ao restaurar backup: {e}")
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+
+@app.route("/api/backup/excluir/<path:public_id>", methods=["DELETE"])
+@login_required
+@admin_required
+def excluir_backup(public_id):
+    """Exclui backup do Cloudinary"""
+    try:
+        cloudinary.uploader.destroy(public_id, resource_type="raw")
+        
+        registrar_log("excluir_backup", "backup", None, dados_novos={"backup": public_id})
+        
+        return jsonify({'success': True})
     except Exception as e:
         return jsonify({'success': False, 'error': str(e)}), 500
 
-@app.route("/api/backup/limpar", methods=["POST"])
-@admin_required
-def api_limpar_backups_sistema():
-    """Remove backups antigos mantendo apenas os últimos 20"""
-    try:
-        backups = listar_backups_sistema()
-        deleted = []
-        
-        for i, backup in enumerate(backups):
-            if i >= 20:
-                try:
-                    os.remove(backup['path'])
-                    deleted.append(backup['name'])
-                except Exception as e:
-                    print(f"Erro ao remover {backup['name']}: {e}")
-        
-        log_backup_operation('cleanup', None, True, {'deleted': len(deleted), 'files': deleted})
-        
-        return jsonify({
-            'success': True, 
-            'deleted': len(deleted),
-            'deleted_files': deleted,
-            'remaining': min(len(backups), 20)
-        })
-    except Exception as e:
-        return jsonify({'success': False, 'error': str(e)}), 500
 
-@app.route("/api/backup/info/<filename>")
+@app.route("/api/backup/info/<path:public_id>")
+@login_required
 @admin_required
-def api_backup_info(filename):
-    """Obtém informações detalhadas de um backup"""
-    backup_path = os.path.join(BACKUP_DIR, filename)
-    
-    if not os.path.exists(backup_path):
-        return jsonify({'success': False, 'error': 'Arquivo não encontrado'}), 404
-    
+def info_backup(public_id):
+    """Obtém informações do backup"""
     try:
+        resource = cloudinary.api.resource(public_id, resource_type="raw")
+        
         info = {
-            'filename': filename,
-            'size_bytes': os.path.getsize(backup_path),
-            'size_mb': round(os.path.getsize(backup_path) / (1024 * 1024), 2),
-            'modified': datetime.fromtimestamp(os.path.getmtime(backup_path)).isoformat(),
-            'created': datetime.fromtimestamp(os.path.getctime(backup_path)).isoformat()
+            'filename': public_id.split('/')[-1] + '.sql',
+            'size_bytes': resource.get('bytes', 0),
+            'size_mb': round(resource.get('bytes', 0) / (1024 * 1024), 2),
+            'created': resource.get('created_at'),
+            'modified': resource.get('updated_at'),
+            'url': resource.get('secure_url'),
+            'public_id': public_id
         }
         
-        # Tentar ler cabeçalho
-        with zipfile.ZipFile(backup_path, 'r') as zf:
-            sql_files = [f for f in zf.namelist() if f.endswith(('.sql', '.dump'))]
-            if sql_files:
-                with zf.open(sql_files[0]) as f:
-                    header = f.read(2000).decode('utf-8', errors='ignore')
-                    for line in header.split('\n'):
-                        if 'Data:' in line:
-                            info['backup_date'] = line.strip()
-                        elif 'Tabelas:' in line:
-                            try:
-                                info['tables'] = int(line.split(':')[1].strip())
-                            except:
-                                pass
-        
         return jsonify({'success': True, 'info': info})
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+
+@app.route("/api/backup/limpar", methods=["POST"])
+@login_required
+@admin_required
+def limpar_backups():
+    """Limpa backups antigos (mantém últimos 20)"""
+    try:
+        backups = get_backup_list()
+        
+        if len(backups) <= 20:
+            return jsonify({
+                'success': True,
+                'deleted': 0,
+                'remaining': len(backups),
+                'message': 'Nenhum backup antigo para remover'
+            })
+        
+        # Manter os 20 mais recentes
+        to_delete = backups[20:]
+        deleted = 0
+        
+        for backup in to_delete:
+            try:
+                cloudinary.uploader.destroy(backup['public_id'], resource_type="raw")
+                deleted += 1
+            except Exception as e:
+                print(f"Erro ao excluir {backup['public_id']}: {e}")
+        
+        registrar_log("limpar_backups", "backup", None, 
+                     dados_novos={"deleted": deleted, "remaining": len(backups) - deleted})
+        
+        return jsonify({
+            'success': True,
+            'deleted': deleted,
+            'remaining': len(backups) - deleted
+        })
         
     except Exception as e:
         return jsonify({'success': False, 'error': str(e)}), 500
 
-@app.route("/api/backup/logs")
-@admin_required
-def api_backup_logs():
-    """Retorna logs de operações de backup"""
-    limit = request.args.get('limit', 50, type=int)
-    
-    logs = []
-    if os.path.exists(BACKUP_LOG_FILE):
-        try:
-            with open(BACKUP_LOG_FILE, 'r', encoding='utf-8') as f:
-                logs = json.load(f)
-                logs = logs[-limit:]
-        except:
-            pass
-    
-    return jsonify({'success': True, 'logs': logs, 'total': len(logs)})
+
+def criar_backup_emergencia():
+    """Cria backup de emergência antes de restaurar"""
+    try:
+        timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+        
+        with tempfile.NamedTemporaryFile(suffix='.sql', delete=False) as tmp_file:
+            temp_path = tmp_file.name
+        
+        db_url = os.getenv('DATABASE_URL')
+        cmd = f"pg_dump -Fc --no-owner --no-privileges {db_url} > {temp_path}"
+        subprocess.run(cmd, shell=True, check=True)
+        
+        upload_result = cloudinary.uploader.upload(
+            temp_path,
+            folder=CLOUDINARY_BACKUP_FOLDER,
+            resource_type="raw",
+            public_id=f"emergencia_antes_restore_{timestamp}"
+        )
+        
+        os.unlink(temp_path)
+        
+        return upload_result.get('public_id')
+    except Exception as e:
+        print(f"Erro ao criar backup de emergência: {e}")
+        return None
 
 
 # =============================
