@@ -5931,6 +5931,13 @@ def listar_reunioes():
             CROSS JOIN reunioes r
             LEFT JOIN presenca_reuniao pr ON r.id = pr.reuniao_id AND oa.id = pr.obreiro_id
             GROUP BY pr.reuniao_id
+        ),
+        ata_info AS (
+            SELECT 
+                reuniao_id,
+                id as ata_id,
+                TRUE as tem_ata
+            FROM atas
         )
         SELECT 
             r.id, 
@@ -5950,16 +5957,18 @@ def listar_reunioes():
             t.cor,
             COALESCE(pc.total_obreiros, 0) as total_obreiros,
             COALESCE(pc.presentes_confirmados, 0) as presentes_confirmados,
-            -- Calcular percentual diretamente na query
             CASE 
                 WHEN COALESCE(pc.total_obreiros, 0) > 0 
                 THEN ROUND((COALESCE(pc.presentes_confirmados, 0)::decimal / COALESCE(pc.total_obreiros, 0) * 100), 1)
                 ELSE 0 
-            END as percentual_presenca
+            END as percentual_presenca,
+            COALESCE(ai.tem_ata, FALSE) as tem_ata,
+            ai.ata_id
         FROM reunioes r
         LEFT JOIN lojas l ON r.loja_id = l.id
         LEFT JOIN tipos_reuniao t ON r.tipo = t.nome
         LEFT JOIN presenca_calculada pc ON r.id = pc.reuniao_id
+        LEFT JOIN ata_info ai ON r.id = ai.reuniao_id
         WHERE {grau_filter}
     """.format(grau_filter=grau_filter)
     
