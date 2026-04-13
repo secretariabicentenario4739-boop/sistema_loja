@@ -754,37 +754,46 @@ def init_db_pool():
         DATABASE_URL = os.getenv('DATABASE_URL')
         
         if DATABASE_URL:
-            # Render - usar URL
             print(f"🔧 Configurando pool para o banco do Render")
             
             # Converter postgres:// para postgresql:// se necessário
             if DATABASE_URL.startswith('postgres://'):
                 DATABASE_URL = DATABASE_URL.replace('postgres://', 'postgresql://', 1)
             
-            # Adicionar sslmode se não tiver
+            # Adicionar sslmode e timeout se não tiver
             if 'sslmode' not in DATABASE_URL:
                 separator = '&' if '?' in DATABASE_URL else '?'
-                DATABASE_URL += f"{separator}sslmode=require"
+                DATABASE_URL += f"{separator}sslmode=require&connect_timeout=30"
             
-            _db_pool = psycopg2.pool.SimpleConnectionPool(
-                1, 20,  # mínimo 1, máximo 20 conexões
-                DATABASE_URL
+            # Usar ThreadedConnectionPool em vez de SimpleConnectionPool
+            _db_pool = psycopg2.pool.ThreadedConnectionPool(
+                1, 10,  # mínimo 1, máximo 10 (reduzido)
+                DATABASE_URL,
+                keepalives=1,
+                keepalives_idle=5,
+                keepalives_interval=2,
+                keepalives_count=2
             )
         else:
-            # Local
             print(f"🔧 Configurando pool para banco local")
-            _db_pool = psycopg2.pool.SimpleConnectionPool(
-                1, 20,
+            _db_pool = psycopg2.pool.ThreadedConnectionPool(
+                1, 10,
                 host=os.getenv('DB_HOST', 'localhost'),
                 port=os.getenv('DB_PORT', '5432'),
                 dbname=os.getenv('DB_NAME', 'sistema_maconico'),
                 user=os.getenv('DB_USER', 'postgres'),
-                password=os.getenv('DB_PASSWORD', 'postgres')
+                password=os.getenv('DB_PASSWORD', 'postgres'),
+                keepalives=1,
+                keepalives_idle=5,
+                keepalives_interval=2,
+                keepalives_count=2
             )
         
-        # Testar conexão
+        # Testar conexão (apenas uma)
         test_conn = _db_pool.getconn()
-        test_conn.close()
+        cursor = test_conn.cursor()
+        cursor.execute("SELECT 1")
+        cursor.close()
         _db_pool.putconn(test_conn)
         
         _pool_initialized = True
@@ -795,7 +804,9 @@ def init_db_pool():
         print(f"❌ Erro ao inicializar pool: {e}")
         import traceback
         traceback.print_exc()
-        raise
+        # Não levantar exceção - permitir que a aplicação continue
+        _pool_initialized = True  # Marcar como tentado
+        return None
 
 # Variável global para reutilizar a mesma conexão na mesma requisição
 _conexao_atual = None
@@ -807,7 +818,7 @@ def get_db():
     
     # Se já existe uma conexão na mesma requisição, reutiliza
     if hasattr(request, 'db_connection') and request.db_connection:
-        # IMPORTANTE: Rollback para limpar transações pendentes
+        # Rollback para limpar transações pendentes
         try:
             request.db_connection.rollback()
         except:
@@ -815,22 +826,65 @@ def get_db():
         return request.db_cursor, request.db_connection
     
     pool = init_db_pool()
-    conn = pool.getconn()
-    cursor = conn.cursor(cursor_factory=RealDictCursor)
     
-    # Rollback inicial
-    conn.rollback()
+    # Se o pool falhou, criar conexão direta
+    if pool is None:
+        print("⚠️ Pool não disponível, criando conexão direta")
+        return get_db_direct()
     
-    # Armazenar na requisição
-    request.db_connection = conn
-    request.db_cursor = cursor
+    try:
+        conn = pool.getconn()
+        cursor = conn.cursor(cursor_factory=RealDictCursor)
+        
+        # Rollback inicial
+        conn.rollback()
+        
+        # Armazenar na requisição
+        request.db_connection = conn
+        request.db_cursor = cursor
+        
+        print(f"🔌 Conexão obtida do pool")
+        return cursor, conn
+        
+    except Exception as e:
+        print(f"❌ Erro ao obter conexão do pool: {e}")
+        # Fallback: conexão direta
+        return get_db_direct()
+
+def get_db_direct():
+    """Cria conexão direta (fallback)"""
+    DATABASE_URL = os.getenv('DATABASE_URL')
     
-    print(f"🔌 Nova conexão criada (será reutilizada nesta requisição)")
+    if DATABASE_URL:
+        if DATABASE_URL.startswith('postgres://'):
+            DATABASE_URL = DATABASE_URL.replace('postgres://', 'postgresql://', 1)
+        
+        conn = psycopg2.connect(
+            DATABASE_URL,
+            cursor_factory=RealDictCursor,
+            connect_timeout=30,
+            keepalives=1,
+            keepalives_idle=5,
+            keepalives_interval=2,
+            keepalives_count=2
+        )
+    else:
+        conn = psycopg2.connect(
+            host=os.getenv('DB_HOST', 'localhost'),
+            port=os.getenv('DB_PORT', '5432'),
+            dbname=os.getenv('DB_NAME', 'sistema_maconico'),
+            user=os.getenv('DB_USER', 'postgres'),
+            password=os.getenv('DB_PASSWORD', 'postgres'),
+            cursor_factory=RealDictCursor,
+            connect_timeout=30
+        )
+    
+    cursor = conn.cursor()
+    print(f"🔌 Conexão direta criada")
     return cursor, conn
 
 def return_connection(conn):
     """Retorna a conexão - mas não fecha imediatamente"""
-    # Não fazer nada aqui, a conexão será fechada no final da requisição
     pass
 
 @app.teardown_request
@@ -844,11 +898,17 @@ def teardown_request(exception=None):
             pass
         try:
             pool = init_db_pool()
-            pool.putconn(request.db_connection)
-            print(f"🔌 Conexão fechada no final da requisição")
+            if pool:
+                pool.putconn(request.db_connection)
+                print(f"🔌 Conexão retornada ao pool")
+            else:
+                request.db_connection.close()
+                print(f"🔌 Conexão direta fechada")
         except Exception as e:
             print(f"Erro ao fechar conexão: {e}")
-
+        finally:
+            delattr(request, 'db_connection')
+            delattr(request, 'db_cursor')
 # ============================================
 # CONTEXT MANAGER (recomendado)
 # ============================================
