@@ -1,0 +1,613 @@
+{% extends "base.html" %}
+
+{% block title %}Gerenciamento de Backups - Sistema Maçônico{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="container">
+        <!-- Cabeçalho com botões -->
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h2>
+                <i class="bi bi-database-fill"></i> 
+                Gerenciamento de Backups
+                <span class="badge bg-primary">{{ stats.total }}</span>
+            </h2>
+            <div>
+                <button type="button" class="btn btn-success me-2" onclick="criarBackup()" id="btnCriarBackup">
+                    <i class="bi bi-plus-circle"></i> Criar Backup
+                </button>
+                <button type="button" class="btn btn-warning me-2" onclick="limparBackupsAntigos()">
+                    <i class="bi bi-trash"></i> Limpar Antigos
+                </button>
+                <a href="/dashboard" class="btn btn-outline-secondary">
+                    <i class="bi bi-arrow-left"></i> Voltar ao Dashboard
+                </a>
+            </div>
+        </div>
+
+        <!-- Cards de Estatísticas (ajustados para Cloudinary) -->
+        <div class="row mb-4">
+            <div class="col-md-4">
+                <div class="card bg-primary text-white shadow">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <h6 class="card-title mb-0">Total de Backups</h6>
+                                <h2 class="mb-0">{{ stats.total }}</h2>
+                            </div>
+                            <i class="bi bi-archive fs-1"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card bg-success text-white shadow">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <h6 class="card-title mb-0">Espaço Total</h6>
+                                <h2 class="mb-0">{{ stats.total_size_gb }} GB</h2>
+                                <small>{{ stats.total_size_mb }} MB</small>
+                            </div>
+                            <i class="bi bi-hdd-stack fs-1"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card bg-secondary text-white shadow">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <h6 class="card-title mb-0">Último Backup</h6>
+                                <h6 class="mb-0">{{ stats.newest or 'Nenhum' }}</h6>
+                            </div>
+                            <i class="bi bi-clock-history fs-1"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Lista de Backups -->
+        <div class="card shadow">
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-hover" id="tabelaBackups">
+                        <thead class="table-light">
+                            <tr>
+                                <th style="width: 45%">Arquivo</th>
+                                <th style="width: 25%">Data/Hora</th>
+                                <th style="width: 15%">Tamanho</th>
+                                <th style="width: 15%">Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for backup in backups %}
+                            <tr>
+                                <td>
+                                    <i class="bi bi-file-zip-fill text-warning"></i>
+                                    <strong>{{ backup.name }}</strong>
+                                    <br>
+                                    <small class="text-muted">
+                                        <i class="bi bi-cloud"></i> Cloudinary
+                                    </small>
+                                </td>
+                                <td>
+                                    <i class="bi bi-calendar3"></i> {{ backup.date_str }}
+                                    <br>
+                                    <small class="text-muted">
+                                        <i class="bi bi-clock"></i> {{ backup.date.strftime('%H:%M:%S') if backup.date else '-' }}
+                                    </small>
+                                </td>
+                                <td>
+                                    <i class="bi bi-hdd"></i> <strong>{{ backup.size_mb }} MB</strong>
+                                    <br>
+                                    <small class="text-muted">{{ (backup.size_bytes / 1024)|int }} KB</small>
+                                </td>
+                                <td>
+                                    <div class="btn-group btn-group-sm" role="group">
+                                        <button class="btn btn-info" onclick="infoBackup('{{ backup.public_id }}')" title="Informações">
+                                            <i class="bi bi-info-circle"></i>
+                                        </button>
+                                        <a href="/api/backup/baixar/{{ backup.public_id }}" 
+                                           class="btn btn-success" 
+                                           title="Download">
+                                            <i class="bi bi-download"></i>
+                                        </a>
+                                        <button class="btn btn-warning" 
+                                                onclick="restaurarBackup('{{ backup.public_id }}')" 
+                                                title="Restaurar">
+                                            <i class="bi bi-arrow-repeat"></i>
+                                        </button>
+                                        <button class="btn btn-danger" 
+                                                onclick="excluirBackup('{{ backup.public_id }}')" 
+                                                title="Excluir">
+                                            <i class="bi bi-trash"></i>
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% else %}
+                            <tr>
+                                <td colspan="4" class="text-center text-muted py-5">
+                                    <i class="bi bi-inbox fs-1"></i><br>
+                                    Nenhum backup encontrado
+                                    <br>
+                                    <button class="btn btn-primary mt-3" onclick="criarBackup()">
+                                        <i class="bi bi-plus-circle"></i> Criar primeiro backup
+                                    </button>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Legenda -->
+        <div class="card shadow mt-4">
+            <div class="card-header bg-light">
+                <h6 class="mb-0"><i class="bi bi-info-circle"></i> Legenda</h6>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-3">
+                        <i class="bi bi-eye text-info"></i> = Informações
+                    </div>
+                    <div class="col-md-3">
+                        <i class="bi bi-download text-success"></i> = Download
+                    </div>
+                    <div class="col-md-3">
+                        <i class="bi bi-arrow-repeat text-warning"></i> = Restaurar
+                    </div>
+                    <div class="col-md-3">
+                        <i class="bi bi-trash text-danger"></i> = Excluir
+                    </div>
+                </div>
+                <hr class="my-2">
+                <div class="row">
+                    <div class="col-md-6">
+                        <i class="bi bi-cloud text-info"></i> = Armazenado na nuvem (Cloudinary)
+                    </div>
+                    <div class="col-md-6">
+                        <i class="bi bi-file-zip-fill text-warning"></i> = Arquivo de backup
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal de Informações do Backup -->
+<div class="modal fade" id="modalInfoBackup" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-info text-white">
+                <h5 class="modal-title">
+                    <i class="bi bi-info-circle"></i> Informações do Backup
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="infoBackupContent">
+                <div class="text-center py-4">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Carregando...</span>
+                    </div>
+                    <p class="mt-2">Carregando informações...</p>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                    <i class="bi bi-x-circle"></i> Fechar
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal de Confirmação de Restauração -->
+<div class="modal fade" id="modalConfirmRestore" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header bg-warning">
+                <h5 class="modal-title">
+                    <i class="bi bi-exclamation-triangle-fill"></i> ATENÇÃO - Restauração de Backup
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="alert alert-danger">
+                    <i class="bi bi-skull"></i>
+                    <strong>Esta operação é irreversível!</strong>
+                </div>
+                <p>Você está prestes a restaurar o backup:</p>
+                <p class="alert alert-info">
+                    <i class="bi bi-file-zip-fill"></i>
+                    <strong id="restoreFileName"></strong>
+                </p>
+                <p>Esta ação irá:</p>
+                <ul>
+                    <li><i class="bi bi-database-exclamation"></i> Substituir TODOS os dados atuais do sistema</li>
+                    <li><i class="bi bi-arrow-repeat"></i> Não poderá ser desfeita facilmente</li>
+                    <li><i class="bi bi-shield-check"></i> Um backup de emergência será criado automaticamente</li>
+                </ul>
+                <div class="alert alert-info">
+                    <i class="bi bi-info-circle"></i>
+                    Para confirmar, digite <strong class="text-danger">RESTAURAR</strong> no campo abaixo:
+                </div>
+                <input type="text" id="confirmRestoreText" class="form-control" 
+                       placeholder="Digite RESTAURAR para confirmar" autocomplete="off">
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                    <i class="bi bi-x-circle"></i> Cancelar
+                </button>
+                <button type="button" class="btn btn-danger" id="btnConfirmRestore" onclick="confirmarRestauracao()" disabled>
+                    <i class="bi bi-arrow-repeat"></i> Confirmar Restauração
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+let backupParaRestaurar = null;
+let modalInfo, modalRestore;
+
+document.addEventListener('DOMContentLoaded', function() {
+    modalInfo = new bootstrap.Modal(document.getElementById('modalInfoBackup'));
+    modalRestore = new bootstrap.Modal(document.getElementById('modalConfirmRestore'));
+    
+    const confirmInput = document.getElementById('confirmRestoreText');
+    if (confirmInput) {
+        confirmInput.addEventListener('input', function() {
+            const btn = document.getElementById('btnConfirmRestore');
+            if (btn) {
+                btn.disabled = this.value !== 'RESTAURAR';
+            }
+        });
+        
+        confirmInput.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter' && this.value === 'RESTAURAR') {
+                confirmarRestauracao();
+            }
+        });
+    }
+});
+
+function criarBackup() {
+    const btn = document.getElementById('btnCriarBackup');
+    const originalText = btn.innerHTML;
+    
+    btn.innerHTML = '<i class="bi bi-hourglass-split"></i> Criando backup...';
+    btn.disabled = true;
+    
+    fetch('/api/backup/criar', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            mostrarAlerta('success', 
+                `<i class="bi bi-check-circle"></i> Backup criado com sucesso!<br>
+                 Arquivo: ${data.filename}<br>
+                 Tamanho: ${data.size_mb} MB`, 
+                5000);
+            setTimeout(() => location.reload(), 2000);
+        } else {
+            mostrarAlerta('danger', `<i class="bi bi-exclamation-triangle"></i> Erro ao criar backup: ${data.error}`, 8000);
+        }
+    })
+    .catch(error => {
+        mostrarAlerta('danger', `<i class="bi bi-bug"></i> Erro na requisição: ${error.message}`, 5000);
+    })
+    .finally(() => {
+        btn.innerHTML = originalText;
+        btn.disabled = false;
+    });
+}
+
+function restaurarBackup(publicId) {
+    backupParaRestaurar = publicId;
+    document.getElementById('restoreFileName').textContent = publicId.split('/').pop();
+    document.getElementById('confirmRestoreText').value = '';
+    document.getElementById('btnConfirmRestore').disabled = true;
+    modalRestore.show();
+}
+
+function confirmarRestauracao() {
+    if (!backupParaRestaurar) return;
+    
+    const btn = document.getElementById('btnConfirmRestore');
+    const originalText = btn.innerHTML;
+    btn.innerHTML = '<i class="bi bi-hourglass-split"></i> Restaurando...';
+    btn.disabled = true;
+    
+    fetch(`/api/backup/restaurar/${encodeURIComponent(backupParaRestaurar)}`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        modalRestore.hide();
+        
+        if (data.success) {
+            mostrarAlerta('success', 
+                `<i class="bi bi-check-circle-fill"></i> Backup restaurado com sucesso!<br>
+                 Backup de emergência: ${data.emergency_backup || 'N/A'}`,
+                8000);
+            
+            setTimeout(() => {
+                if (confirm('Deseja recarregar a página para ver os dados restaurados?')) {
+                    location.reload();
+                }
+            }, 2000);
+        } else {
+            let msg = `<i class="bi bi-x-octagon"></i> Erro ao restaurar: ${data.error}`;
+            if (data.emergency_backup) {
+                msg += `<br><i class="bi bi-shield-check"></i> Backup de emergência criado: ${data.emergency_backup}`;
+            }
+            mostrarAlerta('danger', msg, 10000);
+        }
+    })
+    .catch(error => {
+        modalRestore.hide();
+        mostrarAlerta('danger', `<i class="bi bi-bug"></i> Erro na requisição: ${error.message}`, 5000);
+    })
+    .finally(() => {
+        btn.innerHTML = originalText;
+        btn.disabled = false;
+        backupParaRestaurar = null;
+    });
+}
+
+function excluirBackup(publicId) {
+    if (confirm(`⚠️ Tem certeza que deseja excluir este backup?\n\nEsta ação não pode ser desfeita.`)) {
+        fetch(`/api/backup/excluir/${encodeURIComponent(publicId)}`, {
+            method: 'DELETE'
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                mostrarAlerta('success', `<i class="bi bi-check-circle"></i> Backup excluído com sucesso!`, 3000);
+                setTimeout(() => location.reload(), 1500);
+            } else {
+                mostrarAlerta('danger', `<i class="bi bi-exclamation-triangle"></i> Erro ao excluir: ${data.error}`, 5000);
+            }
+        })
+        .catch(error => {
+            mostrarAlerta('danger', `<i class="bi bi-bug"></i> Erro: ${error.message}`, 5000);
+        });
+    }
+}
+
+function limparBackupsAntigos() {
+    if (confirm('⚠️ Esta ação irá manter apenas os últimos 20 backups e excluir os mais antigos.\n\nDeseja continuar?')) {
+        fetch('/api/backup/limpar', {
+            method: 'POST'
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                mostrarAlerta('success', 
+                    `<i class="bi bi-broom"></i> Limpeza concluída!<br>
+                     ${data.deleted} backups antigos removidos.<br>
+                     ${data.remaining} backups mantidos.`, 
+                    5000);
+                setTimeout(() => location.reload(), 1500);
+            } else {
+                mostrarAlerta('danger', `<i class="bi bi-exclamation-triangle"></i> Erro na limpeza: ${data.error}`, 5000);
+            }
+        })
+        .catch(error => {
+            mostrarAlerta('danger', `<i class="bi bi-bug"></i> Erro: ${error.message}`, 5000);
+        });
+    }
+}
+
+function infoBackup(publicId) {
+    modalInfo.show();
+    const contentDiv = document.getElementById('infoBackupContent');
+    contentDiv.innerHTML = `
+        <div class="text-center py-4">
+            <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">Carregando...</span>
+            </div>
+            <p class="mt-2">Carregando informações...</p>
+        </div>
+    `;
+    
+    fetch(`/api/backup/info/${encodeURIComponent(publicId)}`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.success && data.info) {
+                const info = data.info;
+                contentDiv.innerHTML = `
+                    <div class="table-responsive">
+                        <table class="table table-striped">
+                            <tr>
+                                <th width="40%"><i class="bi bi-file-zip-fill"></i> Arquivo</th>
+                                <td><strong>${escapeHtml(info.filename)}</strong></td>
+                            </tr>
+                            <tr>
+                                <th><i class="bi bi-hdd"></i> Tamanho</th>
+                                <td>${info.size_mb} MB (${info.size_bytes.toLocaleString()} bytes)</td>
+                            </tr>
+                            <tr>
+                                <th><i class="bi bi-calendar-plus"></i> Data de criação</th>
+                                <td>${new Date(info.created).toLocaleString('pt-BR')}</td>
+                            </tr>
+                            <tr>
+                                <th><i class="bi bi-cloud"></i> Armazenamento</th>
+                                <td><i class="bi bi-cloud-check text-success"></i> Cloudinary</td>
+                            </tr>
+                        </table>
+                    </div>
+                `;
+            } else {
+                contentDiv.innerHTML = `
+                    <div class="alert alert-danger">
+                        <i class="bi bi-exclamation-triangle-fill"></i>
+                        Erro ao carregar informações: ${escapeHtml(data.error || 'Desconhecido')}
+                    </div>
+                `;
+            }
+        })
+        .catch(error => {
+            contentDiv.innerHTML = `
+                <div class="alert alert-danger">
+                    <i class="bi bi-bug"></i>
+                    Erro na requisição: ${escapeHtml(error.message)}
+                </div>
+            `;
+        });
+}
+
+function mostrarAlerta(tipo, mensagem, timeout = 5000) {
+    const alertContainer = document.getElementById('alert-container') || criarContainerAlerta();
+    const alertId = 'alert-' + Date.now();
+    const alertHtml = `
+        <div id="${alertId}" class="alert alert-${tipo} alert-dismissible fade show" role="alert">
+            ${mensagem}
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    `;
+    alertContainer.insertAdjacentHTML('beforeend', alertHtml);
+    
+    setTimeout(() => {
+        const alertEl = document.getElementById(alertId);
+        if (alertEl) {
+            alertEl.classList.remove('show');
+            setTimeout(() => alertEl.remove(), 150);
+        }
+    }, timeout);
+}
+
+function criarContainerAlerta() {
+    const container = document.createElement('div');
+    container.id = 'alert-container';
+    container.style.position = 'fixed';
+    container.style.top = '20px';
+    container.style.right = '20px';
+    container.style.zIndex = '9999';
+    container.style.maxWidth = '500px';
+    document.body.appendChild(container);
+    return container;
+}
+
+function escapeHtml(text) {
+    if (!text) return '';
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+}
+</script>
+
+<style>
+    .card {
+        border-radius: 10px;
+        overflow: hidden;
+        transition: transform 0.2s, box-shadow 0.2s;
+    }
+    .card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 16px rgba(0,0,0,0.1);
+    }
+    .card-header {
+        font-weight: 600;
+    }
+    .progress {
+        border-radius: 10px;
+        overflow: hidden;
+    }
+    .progress-bar {
+        transition: width 0.3s ease;
+        font-size: 12px;
+        line-height: 30px;
+    }
+    .table-hover tbody tr:hover {
+        cursor: pointer;
+        background-color: rgba(0, 123, 255, 0.05);
+    }
+    .badge {
+        font-size: 0.8rem;
+        padding: 0.4rem 0.6rem;
+    }
+    .btn-group-sm .btn {
+        padding: 0.25rem 0.5rem;
+        margin: 0 2px;
+    }
+    .btn-group-sm .btn i {
+        font-size: 1rem;
+    }
+    @media (max-width: 768px) {
+        .btn-group {
+            flex-direction: row;
+            flex-wrap: wrap;
+        }
+        .btn-group .btn {
+            margin-bottom: 5px;
+        }
+        .table-responsive {
+            font-size: 0.85rem;
+        }
+    }
+    
+    @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(-20px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+    
+    .alert {
+        animation: fadeIn 0.3s ease-out;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    }
+    
+    .modal-content {
+        border-radius: 12px;
+        overflow: hidden;
+    }
+    
+    .modal-header {
+        border-bottom: 2px solid rgba(0,0,0,0.1);
+    }
+    
+    .modal-footer {
+        border-top: 1px solid rgba(0,0,0,0.1);
+    }
+    
+    .btn i {
+        margin-right: 5px;
+    }
+    
+    .progress-bar {
+        background-image: linear-gradient(45deg, 
+            rgba(255,255,255,0.15) 25%, 
+            transparent 25%, 
+            transparent 50%, 
+            rgba(255,255,255,0.15) 50%, 
+            rgba(255,255,255,0.15) 75%, 
+            transparent 75%, 
+            transparent);
+        background-size: 1rem 1rem;
+        animation: progress-bar-stripes 1s linear infinite;
+    }
+    
+    @keyframes progress-bar-stripes {
+        0% { background-position: 1rem 0; }
+        100% { background-position: 0 0; }
+    }
+    
+    [title] {
+        position: relative;
+        cursor: help;
+    }
+</style>
+{% endblock %}
