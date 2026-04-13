@@ -755,22 +755,37 @@ def init_db_pool():
         
         if DATABASE_URL:
             # Render - usar URL
+            print(f"🔧 Configurando pool para o banco do Render")
+            
+            # Converter postgres:// para postgresql:// se necessário
+            if DATABASE_URL.startswith('postgres://'):
+                DATABASE_URL = DATABASE_URL.replace('postgres://', 'postgresql://', 1)
+            
+            # Adicionar sslmode se não tiver
+            if 'sslmode' not in DATABASE_URL:
+                separator = '&' if '?' in DATABASE_URL else '?'
+                DATABASE_URL += f"{separator}sslmode=require"
+            
             _db_pool = psycopg2.pool.SimpleConnectionPool(
                 1, 20,  # mínimo 1, máximo 20 conexões
-                dsn=DATABASE_URL,
-                cursor_factory=RealDictCursor
+                DATABASE_URL
             )
         else:
             # Local
+            print(f"🔧 Configurando pool para banco local")
             _db_pool = psycopg2.pool.SimpleConnectionPool(
                 1, 20,
                 host=os.getenv('DB_HOST', 'localhost'),
                 port=os.getenv('DB_PORT', '5432'),
                 dbname=os.getenv('DB_NAME', 'sistema_maconico'),
                 user=os.getenv('DB_USER', 'postgres'),
-                password=os.getenv('DB_PASSWORD', 'postgres'),
-                cursor_factory=RealDictCursor
+                password=os.getenv('DB_PASSWORD', 'postgres')
             )
+        
+        # Testar conexão
+        test_conn = _db_pool.getconn()
+        test_conn.close()
+        _db_pool.putconn(test_conn)
         
         _pool_initialized = True
         print(f"✅ Pool de conexões inicializado com sucesso!")
@@ -778,6 +793,8 @@ def init_db_pool():
         
     except Exception as e:
         print(f"❌ Erro ao inicializar pool: {e}")
+        import traceback
+        traceback.print_exc()
         raise
 
 # Variável global para reutilizar a mesma conexão na mesma requisição
