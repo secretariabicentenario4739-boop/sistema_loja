@@ -6,134 +6,233 @@
 {{ super() }}
 <style>
     :root {
-        --primary: #4f46e5;
+        --primary: #6366f1;
+        --primary-dark: #4f46e5;
         --success: #10b981;
+        --success-light: #d1fae5;
         --warning: #f59e0b;
+        --warning-light: #fed7aa;
         --danger: #ef4444;
+        --danger-light: #fee2e2;
         --info: #3b82f6;
+        --info-light: #dbeafe;
         --secondary: #64748b;
+        --secondary-light: #f1f5f9;
+        --dark: #1e293b;
     }
 
+    /* Cards Modernos */
     .card-modern {
-        border: none;
-        border-radius: 20px;
-        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
-        transition: transform 0.2s, box-shadow 0.2s;
+        background: white;
+        border-radius: 24px;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05), 0 1px 2px rgba(0, 0, 0, 0.1);
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         overflow: hidden;
+        border: 1px solid rgba(0, 0, 0, 0.05);
     }
     
     .card-modern:hover {
-        transform: translateY(-3px);
-        box-shadow: 0 12px 35px rgba(0, 0, 0, 0.12);
+        box-shadow: 0 20px 25px -12px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.02);
+        transform: translateY(-2px);
     }
 
+    /* Headers com Gradientes */
     .card-header-gradient {
         background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        padding: 1.25rem 1.5rem;
         border: none;
-        padding: 1rem 1.5rem;
     }
 
     .card-header-success {
         background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+        padding: 1.25rem 1.5rem;
         border: none;
-        padding: 1rem 1.5rem;
     }
 
     .card-header-dark {
         background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+        padding: 1.25rem 1.5rem;
         border: none;
-        padding: 1rem 1.5rem;
     }
 
     .card-header-secondary {
         background: linear-gradient(135deg, #64748b 0%, #475569 100%);
+        padding: 1.25rem 1.5rem;
         border: none;
-        padding: 1rem 1.5rem;
     }
 
+    /* Info Rows */
     .info-row {
         display: flex;
-        padding: 0.75rem 0;
+        align-items: flex-start;
+        padding: 0.875rem 0;
         border-bottom: 1px solid #e2e8f0;
     }
     
     .info-label {
-        width: 140px;
+        width: 120px;
         font-weight: 600;
         color: #1e293b;
+        font-size: 0.875rem;
     }
     
     .info-value {
         flex: 1;
         color: #475569;
+        font-size: 0.875rem;
     }
 
+    /* Stats Cards */
     .stat-card {
-        background: #f8fafc;
-        border-radius: 16px;
-        padding: 1rem;
+        background: linear-gradient(135deg, #f8fafc 0%, #ffffff 100%);
+        border-radius: 20px;
+        padding: 1.25rem;
         text-align: center;
-        transition: all 0.2s;
+        transition: all 0.3s ease;
+        border: 1px solid #e2e8f0;
     }
     
     .stat-card:hover {
-        background: #f1f5f9;
-        transform: translateY(-2px);
+        transform: translateY(-3px);
+        box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+        border-color: #cbd5e1;
     }
     
     .stat-number {
         font-size: 2rem;
         font-weight: 700;
-        line-height: 1;
+        line-height: 1.2;
+        margin-bottom: 0.25rem;
     }
 
+    /* Progress Bar Customizada */
     .progress-custom {
-        height: 25px;
-        border-radius: 12px;
+        height: 32px;
+        border-radius: 16px;
         background: #e2e8f0;
         overflow: hidden;
+        box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.05);
     }
     
     .progress-custom .progress-bar {
-        border-radius: 12px;
+        border-radius: 16px;
         background: linear-gradient(90deg, #10b981, #34d399);
-        transition: width 0.5s ease;
-        font-size: 0.8rem;
+        transition: width 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+        font-size: 0.875rem;
         font-weight: 600;
-        line-height: 25px;
+        line-height: 32px;
         text-align: center;
         color: white;
     }
 
-    .table-presenca {
-        margin-bottom: 0;
+    /* NOVA LISTA DE PRESENÇA - CARDS MODERNOS */
+    .presenca-grid {
+        display: grid;
+        gap: 1rem;
+        padding: 1rem;
+        max-height: 600px;
+        overflow-y: auto;
     }
     
-    .table-presenca thead th {
-        background: #f8fafc;
-        border-bottom: 2px solid #e2e8f0;
-        color: #1e293b;
+    .presenca-card {
+        background: white;
+        border-radius: 16px;
+        padding: 1rem;
+        transition: all 0.3s ease;
+        border: 2px solid #e2e8f0;
+        cursor: pointer;
+        position: relative;
+    }
+    
+    .presenca-card:hover {
+        border-color: var(--primary);
+        transform: translateX(4px);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+    }
+    
+    .presenca-card.presente {
+        background: linear-gradient(135deg, #f0fdf4 0%, #ffffff 100%);
+        border-color: var(--success);
+    }
+    
+    .presenca-card.ausente {
+        background: linear-gradient(135deg, #fef2f2 0%, #ffffff 100%);
+        border-color: var(--danger);
+    }
+    
+    .obreiro-avatar {
+        width: 48px;
+        height: 48px;
+        border-radius: 12px;
+        background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-weight: 700;
+        font-size: 1.25rem;
+    }
+    
+    .obreiro-info {
+        flex: 1;
+    }
+    
+    .obreiro-nome {
+        font-weight: 700;
+        color: var(--dark);
+        margin-bottom: 0.25rem;
+    }
+    
+    .badge-grau {
+        padding: 4px 10px;
+        border-radius: 20px;
+        font-size: 0.7rem;
         font-weight: 600;
-        padding: 1rem;
-        font-size: 0.85rem;
-        text-transform: uppercase;
-        letter-spacing: 0.5px;
+        display: inline-block;
     }
     
-    .table-presenca tbody tr {
-        transition: background 0.2s;
-        border-bottom: 1px solid #f1f5f9;
+    .badge-grau-1 { background: #e0e7ff; color: #4338ca; }
+    .badge-grau-2 { background: #dbeafe; color: #1e40af; }
+    .badge-grau-3 { background: #d1fae5; color: #065f46; }
+    .badge-grau-superior { background: #f3e8ff; color: #6b21a5; }
+    
+    .status-indicator {
+        width: 12px;
+        height: 12px;
+        border-radius: 50%;
+        display: inline-block;
+        margin-right: 6px;
+        animation: pulse 2s infinite;
     }
     
-    .table-presenca tbody tr:hover {
-        background: #f8fafc;
+    .status-presente { background: var(--success); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.4); }
+    .status-ausente { background: var(--danger); }
+    
+    @keyframes pulse {
+        0% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.4); }
+        70% { box-shadow: 0 0 0 6px rgba(16, 185, 129, 0); }
+        100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
     }
     
-    .table-presenca td {
-        padding: 1rem;
-        vertical-align: middle;
+    .justificativa-panel {
+        margin-top: 1rem;
+        padding-top: 1rem;
+        border-top: 1px solid #e2e8f0;
+        animation: slideDown 0.3s ease;
     }
-
+    
+    @keyframes slideDown {
+        from {
+            opacity: 0;
+            transform: translateY(-10px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+    
+    /* Badges de Status */
     .badge-status {
         padding: 6px 12px;
         border-radius: 20px;
@@ -145,112 +244,72 @@
     }
     
     .badge-realizada {
-        background: #d1fae5;
+        background: var(--success-light);
         color: #059669;
     }
     
     .badge-agendada {
-        background: #fed7aa;
+        background: var(--warning-light);
         color: #92400e;
     }
     
     .badge-cancelada {
-        background: #fee2e2;
+        background: var(--danger-light);
         color: #dc2626;
     }
-
-    /* Estilos para o card de registro em lote */
-    .presenca-batch-card {
-        max-height: 500px;
-        overflow-y: auto;
-        scrollbar-width: thin;
+    
+    /* Botões */
+    .btn-modern {
+        border-radius: 12px;
+        padding: 0.5rem 1rem;
+        font-weight: 600;
+        transition: all 0.2s;
+        border: none;
     }
     
-    .presenca-batch-card::-webkit-scrollbar {
+    .btn-modern:hover {
+        transform: translateY(-1px);
+        filter: brightness(0.95);
+    }
+    
+    /* Scrollbar Customizada */
+    .presenca-grid::-webkit-scrollbar {
         width: 8px;
     }
     
-    .presenca-batch-card::-webkit-scrollbar-track {
+    .presenca-grid::-webkit-scrollbar-track {
         background: #f1f1f1;
         border-radius: 10px;
     }
     
-    .presenca-batch-card::-webkit-scrollbar-thumb {
-        background: #c1c1c1;
+    .presenca-grid::-webkit-scrollbar-thumb {
+        background: #cbd5e1;
         border-radius: 10px;
     }
     
-    .presenca-batch-card::-webkit-scrollbar-thumb:hover {
-        background: #a8a8a8;
+    .presenca-grid::-webkit-scrollbar-thumb:hover {
+        background: #94a3b8;
     }
     
-    .presenca-item {
-        padding: 1rem;
-        border-bottom: 1px solid #e2e8f0;
-        transition: background 0.2s;
-    }
-    
-    .presenca-item:hover {
-        background: #f8fafc;
-    }
-    
-    .presenca-item:last-child {
-        border-bottom: none;
-    }
-    
-    .btn-batch {
-        border-radius: 10px;
-        padding: 0.5rem 1rem;
-        font-weight: 600;
-        transition: all 0.2s;
-    }
-    
-    .btn-batch:hover {
-        transform: translateY(-2px);
-    }
-    
-    .justificativa-input {
-        margin-top: 0.5rem;
-        margin-left: 2rem;
-        animation: fadeIn 0.3s ease;
-    }
-    
-    @keyframes fadeIn {
-        from { opacity: 0; transform: translateY(-10px); }
-        to { opacity: 1; transform: translateY(0); }
-    }
-    
-    /* Contador flutuante */
-    .contador-flutuante {
-        position: sticky;
-        top: 0;
-        background: white;
-        padding: 10px;
-        border-bottom: 1px solid #e2e8f0;
-        z-index: 10;
-    }
-
+    /* Responsividade */
     @media (max-width: 768px) {
         .info-label {
-            width: 110px;
-            font-size: 0.85rem;
+            width: 100px;
+            font-size: 0.8rem;
         }
+        
         .stat-number {
             font-size: 1.5rem;
         }
-        .progress-custom {
-            height: 20px;
+        
+        .obreiro-avatar {
+            width: 40px;
+            height: 40px;
+            font-size: 1rem;
         }
-        .progress-custom .progress-bar {
-            font-size: 0.7rem;
-            line-height: 20px;
-        }
-        .presenca-item .row {
-            flex-direction: column;
-            gap: 0.5rem;
-        }
-        .presenca-batch-card {
-            max-height: 400px;
+        
+        .presenca-card {
+            padding: 0.875rem;
         }
     }
 </style>
@@ -259,23 +318,22 @@
 {% block content %}
 <div class="container-fluid py-4">
     <div class="container">
-        <!-- Cabeçalho -->
+        <!-- Header Moderno -->
         <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-3">
             <div>
-                <h2 class="fw-bold mb-1">
-                    <i class="bi bi-calendar-event-fill text-primary me-2"></i>
+                <h2 class="fw-bold mb-2" style="color: var(--dark);">
+                    <i class="bi bi-calendar-event-fill" style="color: var(--primary);"></i>
                     Detalhes da Reunião
                 </h2>
-                <p class="text-muted mb-0">{{ reuniao.titulo or 'Reunião sem título' }}</p>
+                <p class="text-muted mb-0 fs-5">{{ reuniao.titulo or 'Reunião sem título' }}</p>
             </div>
-            <div>
-                <a href="/reunioes" class="btn btn-outline-secondary">
-                    <i class="bi bi-arrow-left me-1"></i> Voltar para Lista
-                </a>
-            </div>
+            <a href="/reunioes" class="btn btn-outline-secondary btn-modern">
+                <i class="bi bi-arrow-left me-2"></i> Voltar
+            </a>
         </div>
 
         <div class="row g-4">
+            <!-- Coluna Principal -->
             <div class="col-lg-8">
                 <!-- Informações da Reunião -->
                 <div class="card-modern mb-4">
@@ -302,7 +360,7 @@
                                 <div class="info-row">
                                     <span class="info-label">Data:</span>
                                     <span class="info-value">
-                                        <i class="bi bi-calendar3 me-1"></i>
+                                        <i class="bi bi-calendar3 me-2"></i>
                                         {% if reuniao.data %}
                                             {{ reuniao.data.strftime('%d/%m/%Y') }}
                                         {% else %}
@@ -314,7 +372,7 @@
                                     <span class="info-label">Horário:</span>
                                     <span class="info-value">
                                         {% if reuniao.hora_inicio %}
-                                            <i class="bi bi-clock me-1"></i>
+                                            <i class="bi bi-clock me-2"></i>
                                             {{ reuniao.hora_inicio.strftime('%H:%M') }}
                                             {% if reuniao.hora_termino %}
                                             às {{ reuniao.hora_termino.strftime('%H:%M') }}
@@ -341,37 +399,34 @@
                                             <span class="badge-status badge-cancelada">
                                                 <i class="bi bi-x-circle-fill"></i> Cancelada
                                             </span>
-                                        {% else %}
-                                            <span class="badge-status bg-secondary">{{ reuniao.status or 'Agendada' }}</span>
                                         {% endif %}
                                     </span>
                                 </div>
                                 <div class="info-row">
                                     <span class="info-label">Local:</span>
-                                    <span class="info-value">{{ reuniao.local or 'Templo Maçônico' }}</span>
+                                    <span class="info-value">
+                                        <i class="bi bi-geo-alt-fill me-2"></i>
+                                        {{ reuniao.local or 'Templo Maçônico' }}
+                                    </span>
                                 </div>
                                 <div class="info-row">
                                     <span class="info-label">Grau:</span>
                                     <span class="info-value">
-                                        {% if reuniao.grau %}
-                                            {% if reuniao.grau == 3 %}
-                                                <span class="badge bg-success">Mestre (3º)</span>
-                                            {% elif reuniao.grau == 2 %}
-                                                <span class="badge bg-primary">Companheiro (2º)</span>
-                                            {% elif reuniao.grau == 1 %}
-                                                <span class="badge bg-secondary">Aprendiz (1º)</span>
-                                            {% else %}
-                                                <span class="badge bg-secondary">Todos os Graus</span>
-                                            {% endif %}
+                                        {% if reuniao.grau == 3 %}
+                                            <span class="badge-grau badge-grau-3">Mestre (3º)</span>
+                                        {% elif reuniao.grau == 2 %}
+                                            <span class="badge-grau badge-grau-2">Companheiro (2º)</span>
+                                        {% elif reuniao.grau == 1 %}
+                                            <span class="badge-grau badge-grau-1">Aprendiz (1º)</span>
                                         {% else %}
-                                            <span class="badge bg-secondary">Todos os Graus</span>
+                                            <span class="badge-grau" style="background: #e2e8f0; color: #475569;">Todos os Graus</span>
                                         {% endif %}
                                     </span>
                                 </div>
                                 <div class="info-row">
                                     <span class="info-label">Criado por:</span>
                                     <span class="info-value">
-                                        <i class="bi bi-person-circle me-1"></i>
+                                        <i class="bi bi-person-circle me-2"></i>
                                         {{ reuniao.criado_por_nome or '-' }}
                                     </span>
                                 </div>
@@ -379,17 +434,21 @@
                         </div>
                         
                         {% if reuniao.pauta %}
-                        <hr>
-                        <h6 class="fw-bold mb-2"><i class="bi bi-list-ul me-2 text-primary"></i> Pauta</h6>
-                        <div class="bg-light p-3 rounded-4">
+                        <hr class="my-3">
+                        <h6 class="fw-bold mb-2">
+                            <i class="bi bi-list-ul me-2" style="color: var(--primary);"></i> Pauta
+                        </h6>
+                        <div class="bg-light p-3 rounded-3">
                             {{ reuniao.pauta|safe }}
                         </div>
                         {% endif %}
                         
                         {% if reuniao.observacoes %}
-                        <hr>
-                        <h6 class="fw-bold mb-2"><i class="bi bi-chat-text me-2 text-primary"></i> Observações</h6>
-                        <div class="bg-light p-3 rounded-4">
+                        <hr class="my-3">
+                        <h6 class="fw-bold mb-2">
+                            <i class="bi bi-chat-text me-2" style="color: var(--primary);"></i> Observações
+                        </h6>
+                        <div class="bg-light p-3 rounded-3">
                             {{ reuniao.observacoes|safe }}
                         </div>
                         {% endif %}
@@ -400,40 +459,42 @@
                 <div class="card-modern mb-4">
                     <div class="card-header-success text-white">
                         <h5 class="mb-0 fw-bold">
-                            <i class="bi bi-people-fill me-2"></i> Estatísticas de Presença
+                            <i class="bi bi-bar-chart-steps me-2"></i> Estatísticas de Presença
                         </h5>
                     </div>
                     <div class="card-body p-4">
-                        <div class="row g-3 text-center mb-4">
+                        <div class="row g-3 mb-4">
                             <div class="col-md-4">
                                 <div class="stat-card">
-                                    <div class="stat-number text-primary">{{ total_obreiros or 0 }}</div>
+                                    <i class="bi bi-people-fill fs-2" style="color: var(--primary);"></i>
+                                    <div class="stat-number" style="color: var(--primary);">{{ total_obreiros or 0 }}</div>
                                     <small class="text-muted">Total de Obreiros</small>
                                 </div>
                             </div>
                             <div class="col-md-4">
                                 <div class="stat-card">
-                                    <div class="stat-number text-success">{{ presentes or 0 }}</div>
+                                    <i class="bi bi-check-circle-fill fs-2" style="color: var(--success);"></i>
+                                    <div class="stat-number" style="color: var(--success);">{{ presentes or 0 }}</div>
                                     <small class="text-muted">Presentes</small>
                                 </div>
                             </div>
                             <div class="col-md-4">
                                 <div class="stat-card">
-                                    <div class="stat-number text-danger">{{ ausentes or 0 }}</div>
+                                    <i class="bi bi-x-circle-fill fs-2" style="color: var(--danger);"></i>
+                                    <div class="stat-number" style="color: var(--danger);">{{ ausentes or 0 }}</div>
                                     <small class="text-muted">Ausentes</small>
                                 </div>
                             </div>
                         </div>
                         
                         {% set percentual_presentes = (presentes / total_obreiros * 100) if total_obreiros and total_obreiros > 0 else 0 %}
-                        <div class="mb-2">
-                            <div class="d-flex justify-content-between mb-1">
-                                <small class="text-muted">Taxa de Presença</small>
-                                <small class="fw-bold">{{ "%.1f"|format(percentual_presentes) }}%</small>
+                        <div>
+                            <div class="d-flex justify-content-between mb-2">
+                                <span class="fw-semibold">Taxa de Presença</span>
+                                <span class="fw-bold" style="color: var(--success);">{{ "%.1f"|format(percentual_presentes) }}%</span>
                             </div>
                             <div class="progress-custom">
-                                <div class="progress-bar bg-success" role="progressbar" 
-                                     style="width: {{ percentual_presentes }}%">
+                                <div class="progress-bar" style="width: {{ percentual_presentes }}%">
                                     {{ "%.1f"|format(percentual_presentes) }}%
                                 </div>
                             </div>
@@ -441,89 +502,103 @@
                     </div>
                 </div>
 
-                <!-- REGISTRO DE PRESENÇA EM LOTE -->
+                <!-- NOVA LISTA DE PRESENÇA EM CARDS -->
                 {% if session.tipo == 'admin' and (reuniao.status == 'agendada' or reuniao.status == 'realizada') %}
                 <div class="card-modern mb-4">
                     <div class="card-header-dark text-white">
-                        <h5 class="mb-0 fw-bold">
-                            <i class="bi bi-pencil-square me-2"></i> Registrar Presença em Lote
-                        </h5>
-                    </div>
-                    <div class="card-body p-0">
-                        <div class="p-3 bg-light border-bottom">
-                            <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
-                                <div>
-                                    <i class="bi bi-info-circle-fill text-info me-1"></i>
-                                    <small>Marque/desmarque a presença de vários obreiros de uma vez</small>
-                                </div>
-                                <div>
-                                    <button type="button" class="btn btn-sm btn-success me-2" onclick="marcarTodosPresentes()">
-                                        <i class="bi bi-check-all"></i> Marcar Todos Presentes
-                                    </button>
-                                    <button type="button" class="btn btn-sm btn-danger" onclick="marcarTodosAusentes()">
-                                        <i class="bi bi-x-lg"></i> Marcar Todos Ausentes
-                                    </button>
-                                </div>
+                        <div class="d-flex justify-content-between align-items-center">
+                            <h5 class="mb-0 fw-bold">
+                                <i class="bi bi-pencil-square me-2"></i> Registrar Presença
+                            </h5>
+                            <div>
+                                <button type="button" class="btn btn-sm btn-light me-2" onclick="marcarTodosPresentes()">
+                                    <i class="bi bi-check-all"></i> Todos Presentes
+                                </button>
+                                <button type="button" class="btn btn-sm btn-light" onclick="marcarTodosAusentes()">
+                                    <i class="bi bi-x-lg"></i> Todos Ausentes
+                                </button>
                             </div>
                         </div>
-                        
-                        <!-- Contador flutuante -->
-                        <div class="contador-flutuante">
+                    </div>
+                    <div class="card-body p-0">
+                        <!-- Contador Flutuante -->
+                        <div class="p-3 bg-light border-bottom sticky-top" style="top: 0; z-index: 10;">
                             <div class="d-flex justify-content-between align-items-center">
-                                <span>
-                                    <i class="bi bi-person-check-fill text-primary"></i>
-                                    <strong id="contadorSelecionados">0</strong> obreiros selecionados como presentes
+                                <span class="fw-semibold">
+                                    <i class="bi bi-person-check-fill text-primary me-1"></i>
+                                    <span id="contadorSelecionados">0</span> obreiros selecionados
                                 </span>
-                                <span class="text-muted">
-                                    <i class="bi bi-arrow-down"></i> Role para ver mais
-                                </span>
+                                <small class="text-muted">
+                                    <i class="bi bi-arrow-down-circle"></i> Role para ver mais
+                                </small>
                             </div>
                         </div>
                         
                         <form method="POST" action="/reunioes/{{ reuniao.id }}/presenca/lote" id="formPresencaLote">
-                            <div class="presenca-batch-card">
+                            <div class="presenca-grid">
                                 {% for p in presenca %}
-                                <div class="presenca-item" data-obreiro-id="{{ p.id }}">
-                                    <div class="row align-items-center">
-                                        <div class="col-md-5">
-                                            <div class="form-check">
-                                                <input class="form-check-input presencia-checkbox" type="checkbox" 
-                                                       name="presenca_{{ p.id }}" id="presenca_{{ p.id }}" 
-                                                       value="1" {% if p.presente %}checked{% endif %}
-                                                       onchange="toggleJustificativa(this, {{ p.id }})">
-                                                <label class="form-check-label fw-bold" for="presenca_{{ p.id }}">
-                                                    <i class="bi bi-person-circle me-2"></i>
-                                                    {{ p.nome_completo }}
-                                                </label>
-                                                <br>
-                                                <small class="text-muted ms-4">
-                                                    {% set grau_num = p.grau_atual|int %}
-                                                    {% if grau_num == 1 %}Aprendiz (1º)
-                                                    {% elif grau_num == 2 %}Companheiro (2º)
-                                                    {% elif grau_num == 3 %}Mestre (3º)
-                                                    {% else %}Grau {{ grau_num }}{% endif %}
-                                                </small>
-                                            </div>
+                                <div class="presenca-card {% if p.presente %}presente{% else %}ausente{% endif %}" 
+                                     data-obreiro-id="{{ p.id }}">
+                                    <div class="d-flex gap-3">
+                                        <!-- Avatar -->
+                                        <div class="obreiro-avatar">
+                                            {{ p.nome_completo[0]|upper if p.nome_completo else '?' }}
                                         </div>
-                                        <div class="col-md-7">
-                                            <div id="justificativa_container_{{ p.id }}" style="{% if p.presente %}display: none;{% endif %}">
-                                                <div class="row g-2">
-                                                    <div class="col-md-5">
-                                                        <select name="tipo_ausencia_{{ p.id }}" class="form-select form-select-sm tipo-ausencia"
-                                                                data-obreiro="{{ p.id }}">
-                                                            <option value="">Selecione o tipo de ausência...</option>
-                                                            {% for tipo in tipos_ausencia %}
-                                                            <option value="{{ tipo.nome }}" {% if p.tipo_ausencia == tipo.nome %}selected{% endif %}>
-                                                                {{ tipo.nome }}
-                                                            </option>
-                                                            {% endfor %}
-                                                        </select>
+                                        
+                                        <!-- Informações -->
+                                        <div class="obreiro-info">
+                                            <div class="d-flex justify-content-between align-items-start">
+                                                <div>
+                                                    <div class="obreiro-nome">
+                                                        {{ p.nome_completo or '-' }}
+                                                        <span class="status-indicator {% if p.presente %}status-presente{% else %}status-ausente{% endif %}"></span>
                                                     </div>
-                                                    <div class="col-md-7">
-                                                        <input type="text" name="justificativa_{{ p.id }}" 
-                                                               class="form-control form-control-sm justificativa-input"
-                                                               placeholder="Justificativa (opcional)"
-                                                               value="{{ p.justificativa or '' }}">
+                                                    {% set grau_num = p.grau_atual|int %}
+                                                    <span class="badge-grau 
+                                                        {% if grau_num == 1 %}badge-grau-1
+                                                        {% elif grau_num == 2 %}badge-grau-2
+                                                        {% elif grau_num == 3 %}badge-grau-3
+                                                        {% else %}badge-grau-superior{% endif %}">
+                                                        {% if grau_num == 1 %}Aprendiz (1º)
+                                                        {% elif grau_num == 2 %}Companheiro (2º)
+                                                        {% elif grau_num == 3 %}Mestre (3º)
+                                                        {% else %}Grau Superior{% endif %}
+                                                    </span>
+                                                </div>
+                                                
+                                                <!-- Switch de Presença Moderno -->
+                                                <div class="form-check form-switch">
+                                                    <input class="form-check-input presencia-checkbox" type="checkbox" 
+                                                           name="presenca_{{ p.id }}" id="presenca_{{ p.id }}" 
+                                                           value="1" {% if p.presente %}checked{% endif %}
+                                                           style="width: 3rem; height: 1.5rem; cursor: pointer;">
+                                                    <label class="form-check-label text-muted" for="presenca_{{ p.id }}">
+                                                        {{ 'Presente' if p.presente else 'Ausente' }}
+                                                    </label>
+                                                </div>
+                                            </div>
+                                            
+                                            <!-- Justificativa (aparece quando ausente) -->
+                                            <div id="justificativa_container_{{ p.id }}" style="{% if p.presente %}display: none;{% endif %}">
+                                                <div class="justificativa-panel">
+                                                    <div class="row g-2">
+                                                        <div class="col-md-5">
+                                                            <select name="tipo_ausencia_{{ p.id }}" class="form-select form-select-sm tipo-ausencia"
+                                                                    data-obreiro="{{ p.id }}">
+                                                                <option value="">Selecione o tipo de ausência...</option>
+                                                                {% for tipo in tipos_ausencia %}
+                                                                <option value="{{ tipo.nome }}" {% if p.tipo_ausencia == tipo.nome %}selected{% endif %}>
+                                                                    {{ tipo.nome }}
+                                                                </option>
+                                                                {% endfor %}
+                                                            </select>
+                                                        </div>
+                                                        <div class="col-md-7">
+                                                            <input type="text" name="justificativa_{{ p.id }}" 
+                                                                   class="form-control form-control-sm"
+                                                                   placeholder="Justificativa (opcional)"
+                                                                   value="{{ p.justificativa or '' }}">
+                                                        </div>
                                                     </div>
                                                 </div>
                                             </div>
@@ -533,18 +608,15 @@
                                 {% endfor %}
                             </div>
                             
+                            <!-- Botões de Ação -->
                             <div class="p-3 bg-light border-top">
-                                <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
-                                    <div>
-                                        <button type="button" class="btn btn-secondary" onclick="resetarFormulario()">
-                                            <i class="bi bi-arrow-repeat me-1"></i> Resetar
-                                        </button>
-                                    </div>
-                                    <div>
-                                        <button type="submit" class="btn btn-primary">
-                                            <i class="bi bi-save me-1"></i> Salvar Todas as Presenças
-                                        </button>
-                                    </div>
+                                <div class="d-flex justify-content-between gap-2">
+                                    <button type="button" class="btn btn-outline-secondary btn-modern" onclick="resetarFormulario()">
+                                        <i class="bi bi-arrow-repeat me-1"></i> Resetar
+                                    </button>
+                                    <button type="submit" class="btn btn-primary btn-modern">
+                                        <i class="bi bi-save me-1"></i> Salvar Presenças
+                                    </button>
                                 </div>
                             </div>
                         </form>
@@ -552,136 +624,104 @@
                 </div>
                 {% elif session.tipo != 'admin' %}
                 <div class="card-modern mb-4">
-                    <div class="card-header-warning text-white">
+                    <div class="card-header-secondary text-white">
                         <h5 class="mb-0 fw-bold">
-                            <i class="bi bi-lock-fill me-2"></i> Registro de Presença
+                            <i class="bi bi-lock-fill me-2"></i> Acesso Restrito
                         </h5>
                     </div>
-                    <div class="card-body text-center py-4">
+                    <div class="card-body text-center py-5">
                         <i class="bi bi-shield-lock fs-1 text-muted"></i>
-                        <p class="mt-2 mb-0">Apenas administradores podem registrar presença.</p>
-                    </div>
-                </div>
-                {% elif reuniao.status != 'agendada' and reuniao.status != 'realizada' %}
-                <div class="card-modern mb-4">
-                    <div class="card-header-warning text-white">
-                        <h5 class="mb-0 fw-bold">
-                            <i class="bi bi-exclamation-triangle-fill me-2"></i> Registro Bloqueado
-                        </h5>
-                    </div>
-                    <div class="card-body text-center py-4">
-                        <i class="bi bi-calendar-x fs-1 text-muted"></i>
-                        <p class="mt-2 mb-0">Registro de presença bloqueado. Status da reunião: {{ reuniao.status or 'indefinido' }}</p>
+                        <p class="mt-3 mb-0">Apenas administradores podem registrar presença.</p>
                     </div>
                 </div>
                 {% endif %}
 
-                <!-- Lista de Presença Atual -->
+                <!-- Lista de Presença Atual (Visualização) -->
                 <div class="card-modern">
                     <div class="card-header-secondary text-white">
                         <h5 class="mb-0 fw-bold">
-                            <i class="bi bi-list-ul me-2"></i> Lista de Presença Atual
+                            <i class="bi bi-eye me-2"></i> Lista de Presença Atual
                         </h5>
                     </div>
                     <div class="card-body p-0">
-                        <div class="table-responsive">
-                            <table class="table table-presenca">
-                                <thead>
-                                    <tr>
-                                        <th>Obreiro</th>
-                                        <th>Grau</th>
-                                        <th>Presença</th>
-                                        <th>Tipo Ausência</th>
-                                        <th>Justificativa</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {% for p in presenca %}
-                                    <tr>
-                                        <td>
-                                            <div class="d-flex flex-column">
-                                                <strong>{{ p.nome_completo or '-' }}</strong>
-                                            </div>
-                                        </td>
-                                        <td>
-                                            {% set grau_num = p.grau_atual|int %}
-                                            {% if grau_num == 1 %}
-                                                <span class="badge bg-secondary">Aprendiz (1º)</span>
-                                            {% elif grau_num == 2 %}
-                                                <span class="badge bg-primary">Companheiro (2º)</span>
-                                            {% elif grau_num == 3 %}
-                                                <span class="badge bg-success">Mestre (3º)</span>
-                                            {% elif grau_num >= 4 %}
-                                                <span class="badge bg-info">Grau Superior</span>
-                                            {% else %}
-                                                <span class="badge bg-secondary">Grau {{ grau_num }}</span>
-                                            {% endif %}
-                                        </td>
-                                        <td>
-                                            {% if p.presente %}
-                                                <span class="badge bg-success">
-                                                    <i class="bi bi-check-circle-fill me-1"></i> Presente
-                                                </span>
-                                            {% else %}
-                                                <span class="badge bg-danger">
-                                                    <i class="bi bi-x-circle-fill me-1"></i> Ausente
-                                                </span>
-                                            {% endif %}
-                                        </td>
-                                        <td>
+                        <div class="presenca-grid" style="max-height: 500px;">
+                            {% for p in presenca %}
+                            <div class="presenca-card {% if p.presente %}presente{% else %}ausente{% endif %}" style="cursor: default;">
+                                <div class="d-flex gap-3 align-items-center">
+                                    <div class="obreiro-avatar" style="width: 40px; height: 40px; font-size: 1rem;">
+                                        {{ p.nome_completo[0]|upper if p.nome_completo else '?' }}
+                                    </div>
+                                    <div class="flex-grow-1">
+                                        <div class="fw-semibold">{{ p.nome_completo or '-' }}</div>
+                                        {% set grau_num = p.grau_atual|int %}
+                                        <span class="badge-grau 
+                                            {% if grau_num == 1 %}badge-grau-1
+                                            {% elif grau_num == 2 %}badge-grau-2
+                                            {% elif grau_num == 3 %}badge-grau-3
+                                            {% else %}badge-grau-superior{% endif %}"
+                                            style="font-size: 0.7rem;">
+                                            {% if grau_num == 1 %}Aprendiz
+                                            {% elif grau_num == 2 %}Companheiro
+                                            {% elif grau_num == 3 %}Mestre
+                                            {% else %}Grau Superior{% endif %}
+                                        </span>
+                                    </div>
+                                    <div class="text-end">
+                                        {% if p.presente %}
+                                            <span class="badge bg-success">
+                                                <i class="bi bi-check-circle-fill me-1"></i> Presente
+                                            </span>
+                                        {% else %}
+                                            <span class="badge bg-danger">
+                                                <i class="bi bi-x-circle-fill me-1"></i> Ausente
+                                            </span>
                                             {% if p.tipo_ausencia %}
-                                                <span class="badge bg-warning">{{ p.tipo_ausencia }}</span>
-                                            {% else %}
-                                                <span class="text-muted">-</span>
+                                            <div class="small text-muted mt-1">{{ p.tipo_ausencia }}</div>
                                             {% endif %}
-                                        </td>
-                                        <td>
-                                            <small>{{ p.justificativa or '-' }}</small>
-                                        </td>
-                                    </tr>
-                                    {% else %}
-                                    <tr>
-                                        <td colspan="5" class="text-center text-muted py-5">
-                                            <i class="bi bi-inbox fs-1"></i>
-                                            <p class="mt-2 mb-0">Nenhum obreiro encontrado</p>
-                                        </td>
-                                    </tr>
-                                    {% endfor %}
-                                </tbody>
-                            </table>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                            {% else %}
+                            <div class="text-center py-5">
+                                <i class="bi bi-inbox fs-1 text-muted"></i>
+                                <p class="mt-2">Nenhum obreiro encontrado</p>
+                            </div>
+                            {% endfor %}
                         </div>
                     </div>
                 </div>
             </div>
 
+            <!-- Coluna Lateral -->
             <div class="col-lg-4">
-                <!-- Card de Ações -->
+                <!-- Ações Rápidas -->
                 <div class="card-modern mb-4">
                     <div class="card-header-dark text-white">
                         <h5 class="mb-0 fw-bold">
-                            <i class="bi bi-gear-fill me-2"></i> Ações
+                            <i class="bi bi-lightning-charge-fill me-2"></i> Ações Rápidas
                         </h5>
                     </div>
                     <div class="card-body p-4">
-                        <div class="d-grid gap-2 mb-3">
-                            <button class="btn btn-outline-primary" onclick="window.print()">
+                        <div class="d-grid gap-2 mb-4">
+                            <button class="btn btn-outline-primary btn-modern" onclick="window.print()">
                                 <i class="bi bi-printer me-2"></i> Imprimir Página
                             </button>
-                            <button class="btn btn-outline-secondary" onclick="copiarLista()">
-                                <i class="bi bi-clipboard me-2"></i> Copiar Lista de Presença
+                            <button class="btn btn-outline-secondary btn-modern" onclick="copiarLista()">
+                                <i class="bi bi-clipboard me-2"></i> Copiar Lista
                             </button>
                         </div>
 
                         <hr>
 
-                        <h6 class="fw-bold mb-2"><i class="bi bi-calendar-check me-2"></i> Ações da Reunião</h6>
-                        <div class="d-grid gap-2 mb-3">
+                        <h6 class="fw-bold mb-3">Gerenciar Reunião</h6>
+                        <div class="d-grid gap-2">
                             {% if session.tipo == 'admin' %}
-                                <a href="/reunioes/{{ reuniao.id }}/editar" class="btn btn-warning">
+                                <a href="/reunioes/{{ reuniao.id }}/editar" class="btn btn-warning btn-modern">
                                     <i class="bi bi-pencil me-2"></i> Editar Reunião
                                 </a>
                                 {% if reuniao.status != 'realizada' %}
-                                <a href="/reunioes/{{ reuniao.id }}/excluir" class="btn btn-danger" 
+                                <a href="/reunioes/{{ reuniao.id }}/excluir" class="btn btn-danger btn-modern" 
                                    onclick="return confirm('Tem certeza que deseja excluir esta reunião?')">
                                     <i class="bi bi-trash me-2"></i> Excluir Reunião
                                 </a>
@@ -691,7 +731,7 @@
 
                         <hr>
 
-                        <h6 class="fw-bold mb-2"><i class="bi bi-arrow-repeat me-2"></i> Alterar Status</h6>
+                        <h6 class="fw-bold mb-3">Alterar Status</h6>
                         {% if session.tipo == 'admin' %}
                         <form method="POST" action="/reunioes/{{ reuniao.id }}/status">
                             <select name="status" class="form-select mb-2">
@@ -705,34 +745,34 @@
                                     ❌ Cancelada
                                 </option>
                             </select>
-                            <button type="submit" class="btn btn-outline-primary w-100">
-                                <i class="bi bi-arrow-repeat me-2"></i> Aplicar
+                            <button type="submit" class="btn btn-primary btn-modern w-100">
+                                <i class="bi bi-arrow-repeat me-2"></i> Aplicar Status
                             </button>
                         </form>
                         {% else %}
                         <p class="text-muted small mb-0">Apenas administradores podem alterar o status</p>
                         {% endif %}
 
-                                               <hr>
+                        <hr>
 
-                        <h6 class="fw-bold mb-2"><i class="bi bi-file-text me-2"></i> Ata da Reunião</h6>
+                        <h6 class="fw-bold mb-3">Ata da Reunião</h6>
                         {% if ata_id %}
                             <div class="text-center">
-                                <i class="bi bi-file-text-fill fs-2 text-success"></i>
-                                <p class="mt-1"><strong>Ata nº {{ ata_numero or '?' }}/{{ ata_ano or '?' }}</strong></p>
+                                <i class="bi bi-file-text-fill fs-2" style="color: var(--success);"></i>
+                                <p class="mt-2 fw-semibold">Ata nº {{ ata_numero or '?' }}/{{ ata_ano or '?' }}</p>
                                 <div class="d-grid gap-2">
-                                    <a href="/atas/{{ ata_id }}" class="btn btn-info">
-                                        <i class="bi bi-eye me-2"></i> Visualizar Ata
+                                    <a href="/atas/{{ ata_id }}" class="btn btn-info btn-modern">
+                                        <i class="bi bi-eye me-2"></i> Visualizar
                                     </a>
-                                    <a href="/atas/{{ ata_id }}/pdf-oficial" class="btn btn-primary" target="_blank">
-                                        <i class="bi bi-file-pdf-fill me-2"></i> Baixar PDF Oficial
+                                    <a href="/atas/{{ ata_id }}/pdf-oficial" class="btn btn-primary btn-modern" target="_blank">
+                                        <i class="bi bi-file-pdf-fill me-2"></i> PDF Oficial
                                     </a>
                                     {% if session.tipo == 'admin' and not ata_aprovada %}
-                                    <a href="/atas/{{ ata_id }}/editar" class="btn btn-warning">
-                                        <i class="bi bi-pencil me-2"></i> Editar Ata
+                                    <a href="/atas/{{ ata_id }}/editar" class="btn btn-warning btn-modern">
+                                        <i class="bi bi-pencil me-2"></i> Editar
                                     </a>
                                     <form method="POST" action="/atas/{{ ata_id }}/aprovar">
-                                        <button type="submit" class="btn btn-success w-100" 
+                                        <button type="submit" class="btn btn-success btn-modern w-100" 
                                                 onclick="return confirm('Aprovar esta ata?')">
                                             <i class="bi bi-check-lg me-2"></i> Aprovar Ata
                                         </button>
@@ -743,9 +783,9 @@
                         {% else %}
                             <div class="text-center">
                                 <i class="bi bi-file-earmark-text fs-2 text-muted"></i>
-                                <p class="text-muted mt-2 mb-2">Nenhuma ata registrada</p>
+                                <p class="text-muted mt-2 mb-3">Nenhuma ata registrada</p>
                                 {% if session.tipo == 'admin' %}
-                                    <a href="/atas/nova/{{ reuniao.id }}" class="btn btn-success w-100">
+                                    <a href="/atas/nova/{{ reuniao.id }}" class="btn btn-success btn-modern w-100">
                                         <i class="bi bi-plus-circle me-2"></i> Criar Ata
                                     </a>
                                 {% endif %}
@@ -754,19 +794,31 @@
                     </div>
                 </div>
 
-                <!-- Card de Informações -->
+                <!-- Legenda -->
                 <div class="card-modern">
                     <div class="card-header" style="background: #f8fafc; border-bottom: 1px solid #e2e8f0;">
                         <h6 class="mb-0 fw-bold">
-                            <i class="bi bi-info-circle-fill text-info me-2"></i> Legenda
+                            <i class="bi bi-info-circle-fill me-2" style="color: var(--info);"></i> Legenda
                         </h6>
                     </div>
                     <div class="card-body p-4">
                         <ul class="list-unstyled mb-0">
-                            <li class="mb-2"><i class="bi bi-check-circle-fill text-success me-2"></i> Presente</li>
-                            <li class="mb-2"><i class="bi bi-x-circle-fill text-danger me-2"></i> Ausente</li>
-                            <li class="mb-2"><i class="bi bi-file-pdf-fill text-primary me-2"></i> Ata em PDF oficial</li>
-                            <li><i class="bi bi-plus-circle text-success me-2"></i> Criar ata mesmo com reunião agendada</li>
+                            <li class="mb-2">
+                                <span class="status-indicator status-presente me-2"></span>
+                                Presente
+                            </li>
+                            <li class="mb-2">
+                                <span class="status-indicator status-ausente me-2" style="background: var(--danger);"></span>
+                                Ausente
+                            </li>
+                            <li class="mb-2">
+                                <i class="bi bi-file-pdf-fill me-2" style="color: var(--danger);"></i>
+                                Ata em PDF oficial
+                            </li>
+                            <li>
+                                <i class="bi bi-plus-circle me-2" style="color: var(--success);"></i>
+                                Criar ata mesmo com reunião agendada
+                            </li>
                         </ul>
                     </div>
                 </div>
@@ -778,9 +830,22 @@
 <script>
     function toggleJustificativa(checkbox, obreiroId) {
         const container = document.getElementById(`justificativa_container_${obreiroId}`);
+        const card = document.querySelector(`.presenca-card[data-obreiro-id="${obreiroId}"]`);
+        
         if (container) {
             container.style.display = checkbox.checked ? 'none' : 'block';
         }
+        
+        if (card) {
+            if (checkbox.checked) {
+                card.classList.remove('ausente');
+                card.classList.add('presente');
+            } else {
+                card.classList.remove('presente');
+                card.classList.add('ausente');
+            }
+        }
+        
         atualizarContador();
     }
     
@@ -795,10 +860,18 @@
     function marcarTodosPresentes() {
         const checkboxes = document.querySelectorAll('.presencia-checkbox');
         checkboxes.forEach(checkbox => {
-            checkbox.checked = true;
-            const obreiroId = checkbox.id.split('_')[1];
-            const container = document.getElementById(`justificativa_container_${obreiroId}`);
-            if (container) container.style.display = 'none';
+            if (!checkbox.checked) {
+                checkbox.checked = true;
+                const obreiroId = checkbox.id.split('_')[1];
+                const container = document.getElementById(`justificativa_container_${obreiroId}`);
+                const card = document.querySelector(`.presenca-card[data-obreiro-id="${obreiroId}"]`);
+                
+                if (container) container.style.display = 'none';
+                if (card) {
+                    card.classList.remove('ausente');
+                    card.classList.add('presente');
+                }
+            }
         });
         atualizarContador();
     }
@@ -806,10 +879,18 @@
     function marcarTodosAusentes() {
         const checkboxes = document.querySelectorAll('.presencia-checkbox');
         checkboxes.forEach(checkbox => {
-            checkbox.checked = false;
-            const obreiroId = checkbox.id.split('_')[1];
-            const container = document.getElementById(`justificativa_container_${obreiroId}`);
-            if (container) container.style.display = 'block';
+            if (checkbox.checked) {
+                checkbox.checked = false;
+                const obreiroId = checkbox.id.split('_')[1];
+                const container = document.getElementById(`justificativa_container_${obreiroId}`);
+                const card = document.querySelector(`.presenca-card[data-obreiro-id="${obreiroId}"]`);
+                
+                if (container) container.style.display = 'block';
+                if (card) {
+                    card.classList.remove('presente');
+                    card.classList.add('ausente');
+                }
+            }
         });
         atualizarContador();
     }
@@ -821,37 +902,44 @@
     }
     
     function copiarLista() {
-        let lista = "Lista de Presença - {{ reuniao.titulo or 'Reunião' }}\n";
+        let lista = "📋 LISTA DE PRESENÇA\n";
+        lista += "═".repeat(50) + "\n";
+        lista += "Reunião: {{ reuniao.titulo or 'Reunião' }}\n";
         lista += "Data: {% if reuniao.data %}{{ reuniao.data.strftime('%d/%m/%Y') }}{% else %}-{% endif %}\n";
-        lista += "=".repeat(50) + "\n\n";
+        lista += "═".repeat(50) + "\n\n";
         
         {% for p in presenca %}
-            lista += "{{ p.nome_completo }} - ";
+            lista += "👤 {{ p.nome_completo }}";
             {% if p.presente %}
-                lista += "PRESENTE\n";
-            {% else %}
-                lista += "AUSENTE";
+                lista += " ✅ PRESENTE\n";
+            else %}
+                lista += " ❌ AUSENTE";
                 {% if p.tipo_ausencia %}
-                    lista += " ({{ p.tipo_ausencia }})";
+                    lista += " [{{ p.tipo_ausencia }}]";
                 {% endif %}
                 lista += "\n";
             {% endif %}
         {% endfor %}
         
-        lista += "\n" + "=".repeat(50) + "\n";
-        lista += "Total de Obreiros: {{ total_obreiros or 0 }}\n";
-        lista += "Presentes: {{ presentes or 0 }}\n";
-        lista += "Ausentes: {{ ausentes or 0 }}\n";
+        lista += "\n" + "═".repeat(50) + "\n";
+        lista += `📊 Total: {{ total_obreiros or 0 }} | ✅ Presentes: {{ presentes or 0 }} | ❌ Ausentes: {{ ausentes or 0 }}\n`;
         
-        navigator.clipboard.writeText(lista).then(function() {
-            alert('✅ Lista copiada para a área de transferência!');
-        }, function() {
+        navigator.clipboard.writeText(lista).then(() => {
+            alert('✅ Lista copiada com sucesso!');
+        }, () => {
             alert('❌ Erro ao copiar lista!');
         });
     }
     
-    // Inicializar contador ao carregar
+    // Adicionar event listeners aos checkboxes
     document.addEventListener('DOMContentLoaded', function() {
+        const checkboxes = document.querySelectorAll('.presencia-checkbox');
+        checkboxes.forEach(checkbox => {
+            checkbox.addEventListener('change', function() {
+                const obreiroId = this.id.split('_')[1];
+                toggleJustificativa(this, obreiroId);
+            });
+        });
         atualizarContador();
     });
 </script>
