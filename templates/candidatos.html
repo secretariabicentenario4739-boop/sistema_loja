@@ -251,9 +251,8 @@
             </div>
         </div>
 
-        <!-- Cards principais alinhados -->
+        <!-- Formulário para adicionar candidato -->
         <div class="row">
-            <!-- Formulário para adicionar candidato - LARGURA TOTAL COM O CARD DE SINDICANTES -->
             <div class="col-md-12 mb-4">
                 <div class="card-modern">
                     <div class="card-header-gradient text-white">
@@ -372,7 +371,6 @@
                                                             {{ percentual|int }}%
                                                         </div>
                                                     </div>
-                                                   
                                                 </div>
                                             {% else %}
                                                 <div class="d-flex flex-column">
@@ -408,36 +406,34 @@
                                             </div>
                                         </td>
                                         <td class="text-center">
-    <div class="d-flex flex-wrap gap-1 justify-content-center">
-        <a href="/candidatos/{{ c.id }}/checklist" class="btn btn-success btn-icon" title="Checklist de Iniciação">
-            <i class="bi bi-check2-square"></i>
-        </a>
-        <a href="/candidatos/{{ c.id }}/documentos" class="btn btn-outline-primary btn-icon" title="Gerenciar Documentos">
-            <i class="bi bi-folder2-open"></i>
-        </a>
-        <a href="/candidato/formulario/{{ c.id }}" class="btn btn-outline-info btn-icon" title="Preencher Formulário">
-            <i class="bi bi-file-text"></i>
-        </a>
-        <a href="/sindicancia/{{ c.id }}" class="btn btn-info btn-icon" title="Visualizar Sindicância">
-            <i class="bi bi-eye"></i>
-        </a>
-        {% if not c.fechado %}
-            <a href="/fechar_sindicancia/{{ c.id }}" class="btn btn-warning btn-icon" 
-               onclick="return confirm('Encerrar sindicância deste candidato?')" title="Encerrar Sindicância">
-                <i class="bi bi-check2-circle"></i>
-            </a>
-        {% endif %}
-        {% if session.tipo == 'admin' %}
-            <form action="/candidatos/excluir/{{ c.id }}" method="POST" style="display:inline;">
-                <button type="submit" class="btn btn-danger btn-icon" 
-                        onclick="return confirm('Excluir este candidato? Esta ação não pode ser desfeita!')" 
-                        title="Excluir Candidato">
-                    <i class="bi bi-trash"></i>
-                </button>
-            </form>
-        {% endif %}
-    </div>
-</td>
+                                            <div class="d-flex flex-wrap gap-1 justify-content-center">
+                                                <!-- ORDEM CORRIGIDA: Visualizar primeiro -->
+                                                <a href="/sindicancia/{{ c.id }}" class="btn btn-info btn-icon" title="Visualizar Sindicância">
+                                                    <i class="bi bi-eye"></i>
+                                                </a>
+                                                <a href="/candidatos/{{ c.id }}/checklist" class="btn btn-success btn-icon" title="Checklist de Iniciação">
+                                                    <i class="bi bi-check2-square"></i>
+                                                </a>
+                                                <a href="/candidatos/{{ c.id }}/documentos" class="btn btn-outline-primary btn-icon" title="Gerenciar Documentos">
+                                                    <i class="bi bi-folder2-open"></i>
+                                                </a>
+                                                {% if not c.fechado %}
+                                                    <a href="/fechar_sindicancia/{{ c.id }}" class="btn btn-warning btn-icon" 
+                                                       onclick="return confirm('Encerrar sindicância deste candidato?')" title="Encerrar Sindicância">
+                                                        <i class="bi bi-check2-circle"></i>
+                                                    </a>
+                                                {% endif %}
+                                                {% if session.tipo == 'admin' %}
+                                                    <form action="/candidatos/excluir/{{ c.id }}" method="POST" style="display:inline;">
+                                                        <button type="submit" class="btn btn-danger btn-icon" 
+                                                                onclick="return confirm('Excluir este candidato? Esta ação não pode ser desfeita!')" 
+                                                                title="Excluir Candidato">
+                                                            <i class="bi bi-trash"></i>
+                                                        </button>
+                                                    </form>
+                                                {% endif %}
+                                            </div>
+                                        </td>
                                     </tr>
                                     {% endfor %}
                                 </tbody>
@@ -611,7 +607,7 @@
                             <i class="bi bi-lightbulb-fill me-2"></i>
                             <strong>Dicas importantes:</strong>
                             <ul class="mb-0 mt-2">
-                                <li>Clique no ícone <i class="bi bi-file-text"></i> para preencher o formulário completo do candidato</li>
+                                <li>Clique no ícone <i class="bi bi-eye"></i> para visualizar a sindicância</li>
                                 <li>Clique no ícone <i class="bi bi-folder2-open"></i> para gerenciar os documentos do candidato</li>
                                 <li>Quanto mais informações e documentos, melhor para a análise dos sindicantes</li>
                                 <li>A barra de progresso mostra quantos documentos já foram enviados</li>
