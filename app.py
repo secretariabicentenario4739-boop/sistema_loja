@@ -5692,6 +5692,134 @@ def excluir_familiar(id):
 # =============================
 # ROTAS DE REUNIÕES
 # =============================
+@app.route("/reunioes/<int:reuniao_id>/presenca/lote", methods=["POST"])
+@login_required
+@admin_required
+def registrar_presenca_lote(reuniao_id):
+    """Registra presença de múltiplos obreiros em lote"""
+    cursor, conn = get_db()
+    
+    try:
+        # Limpar transações pendentes
+        conn.rollback()
+        
+        print("=== INICIANDO REGISTRO DE PRESENÇA ===")
+        print(f"Reunião ID: {reuniao_id}")
+        
+        # Verificar se a reunião existe
+        cursor.execute("SELECT id, status FROM reunioes WHERE id = %s", (reuniao_id,))
+        reuniao = cursor.fetchone()
+        
+        if not reuniao:
+            flash("❌ Reunião não encontrada!", "danger")
+            return redirect("/reunioes")
+        
+        print(f"Reunião encontrada: Status={reuniao['status']}")
+        
+        # Processar cada obreiro
+        registros = 0
+        
+        for key, value in request.form.items():
+            if key.startswith('presenca_'):
+                obreiro_id = int(key.replace('presenca_', ''))
+                presente = (value == '1')
+                
+                tipo_ausencia = request.form.get(f'tipo_ausencia_{obreiro_id}', '')
+                justificativa = request.form.get(f'justificativa_{obreiro_id}', '')
+                
+                print(f"Processando obreiro {obreiro_id}: presente={presente}")
+                
+                # Verificar se já existe
+                cursor.execute("""
+                    SELECT id FROM presenca_reuniao 
+                    WHERE reuniao_id = %s AND obreiro_id = %s
+                """, (reuniao_id, obreiro_id))
+                
+                existe = cursor.fetchone()
+                
+                if existe:
+                    # Atualizar
+                    cursor.execute("""
+                        UPDATE presenca_reuniao 
+                        SET presente = %s, 
+                            tipo_ausencia = %s,
+                            justificativa = %s,
+                            data_atualizacao = CURRENT_TIMESTAMP
+                        WHERE reuniao_id = %s AND obreiro_id = %s
+                    """, (presente, tipo_ausencia if not presente else None,
+                          justificativa if not presente else None,
+                          reuniao_id, obreiro_id))
+                    print(f"  → Atualizado registro existente")
+                else:
+                    # Inserir novo
+                    cursor.execute("""
+                        INSERT INTO presenca_reuniao (reuniao_id, obreiro_id, presente, tipo_ausencia, justificativa)
+                        VALUES (%s, %s, %s, %s, %s)
+                    """, (reuniao_id, obreiro_id, presente,
+                          tipo_ausencia if not presente else None,
+                          justificativa if not presente else None))
+                    print(f"  → Inserido novo registro")
+                
+                registros += 1
+        
+        conn.commit()
+        print(f"✅ {registros} registros processados com sucesso!")
+        
+        # Verificar se salvou
+        cursor.execute("SELECT COUNT(*) as total FROM presenca_reuniao WHERE reuniao_id = %s", (reuniao_id,))
+        total = cursor.fetchone()['total']
+        print(f"Total de registros na tabela: {total}")
+        
+        flash(f"✅ {registros} presenças registradas com sucesso!", "success")
+        
+    except Exception as e:
+        conn.rollback()
+        print(f"❌ ERRO: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        flash(f"❌ Erro ao registrar presenças: {str(e)}", "danger")
+    
+    finally:
+        return_connection(conn)
+    
+    return redirect(f"/reunioes/{reuniao_id}")  
+@app.route("/reunioes/<int:reuniao_id>/inicializar_presenca", methods=["GET"])
+@login_required
+@admin_required
+def inicializar_presenca_reuniao(reuniao_id):
+    """Inicializa os registros de presença para todos os obreiros"""
+    cursor, conn = get_db()
+    
+    try:
+        conn.rollback()
+        
+        # Buscar todos os obreiros ativos
+        cursor.execute("SELECT id FROM usuarios WHERE tipo = 'obreiro' AND ativo = 1")
+        obreiros = cursor.fetchall()
+        
+        registros = 0
+        for obreiro in obreiros:
+            cursor.execute("""
+                INSERT INTO presenca_reuniao (reuniao_id, obreiro_id, presente)
+                VALUES (%s, %s, false)
+                ON CONFLICT (reuniao_id, obreiro_id) DO NOTHING
+            """, (reuniao_id, obreiro['id']))
+            registros += 1
+        
+        conn.commit()
+        
+        flash(f"✅ {registros} registros de presença inicializados!", "success")
+        
+    except Exception as e:
+        conn.rollback()
+        print(f"Erro: {str(e)}")
+        flash(f"❌ Erro ao inicializar: {str(e)}", "danger")
+    
+    finally:
+        return_connection(conn)
+    
+    return redirect(f"/reunioes/{reuniao_id}")    
+    
 
 @app.route("/reunioes")
 @login_required
@@ -5880,6 +6008,109 @@ def listar_reunioes():
                               'local': local
                           },
                           now=datetime.now())
+                          
+@app.route("/reunioes/<int:id>")
+@login_required
+def visualizar_reuniao(id):
+    cursor, conn = get_db()
+    
+    try:
+        conn.rollback()
+        
+        # Buscar dados da reunião
+        cursor.execute("""
+            SELECT r.*, l.nome as loja_nome, t.cor as tipo_cor,
+                   u.nome_completo as criado_por_nome
+            FROM reunioes r
+            LEFT JOIN lojas l ON r.loja_id = l.id
+            LEFT JOIN tipos_reuniao t ON r.tipo = t.nome
+            LEFT JOIN usuarios u ON r.criado_por = u.id
+            WHERE r.id = %s
+        """, (id,))
+        reuniao = cursor.fetchone()
+        
+        if not reuniao:
+            flash("Reunião não encontrada!", "danger")
+            return redirect("/reunioes")
+        
+        # ============================================
+        # BUSCAR TODOS OS OBREIROS ATIVOS
+        # ============================================
+        cursor.execute("""
+            SELECT 
+                u.id, 
+                u.nome_completo, 
+                u.grau_atual,
+                u.cim_numero,
+                COALESCE(pr.presente, false) as presente,
+                pr.tipo_ausencia,
+                pr.justificativa,
+                pr.id as presenca_id
+            FROM usuarios u
+            LEFT JOIN presenca_reuniao pr ON u.id = pr.obreiro_id AND pr.reuniao_id = %s
+            WHERE u.tipo = 'obreiro' AND u.ativo = 1
+            ORDER BY u.nome_completo
+        """, (id,))
+        presenca = cursor.fetchall()
+        
+        print(f"Total de obreiros encontrados: {len(presenca)}")
+        for p in presenca:
+            print(f"  - {p['nome_completo']}: presente={p['presente']}")
+        
+        # Calcular estatísticas
+        total_obreiros = len(presenca)
+        presentes = sum(1 for p in presenca if p['presente'])
+        ausentes = total_obreiros - presentes
+        
+        # Buscar tipos de ausência
+        try:
+            cursor.execute("SELECT nome FROM tipos_ausencia WHERE ativo = 1 ORDER BY nome")
+            tipos_ausencia = cursor.fetchall()
+        except:
+            tipos_ausencia = []
+        
+        # Buscar ata da reunião
+        cursor.execute("""
+            SELECT a.* FROM atas a
+            WHERE a.reuniao_id = %s 
+            ORDER BY a.id DESC 
+            LIMIT 1
+        """, (id,))
+        ata = cursor.fetchone()
+        
+        ata_id = ata['id'] if ata else None
+        if ata:
+            ata_numero = ata.get('numero') or ata.get('numero_ata') or ata.get('num_ata') or str(ata.get('id', '?'))
+            ata_ano = ata.get('ano') or ata.get('ano_ata') or str(datetime.now().year)
+            ata_aprovada = ata.get('status') == 'aprovada' if ata else False
+        else:
+            ata_numero = None
+            ata_ano = None
+            ata_aprovada = False
+        
+        return_connection(conn)
+        
+        return render_template("reunioes/detalhes.html",
+                              reuniao=reuniao,
+                              presenca=presenca,
+                              total_obreiros=total_obreiros,
+                              presentes=presentes,
+                              ausentes=ausentes,
+                              tipos_ausencia=tipos_ausencia,
+                              ata_id=ata_id,
+                              ata_numero=ata_numero,
+                              ata_ano=ata_ano,
+                              ata_aprovada=ata_aprovada,
+                              now=datetime.now())
+        
+    except Exception as e:
+        print(f"Erro ao visualizar reunião: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        if conn:
+            return_connection(conn)
+        flash(f"Erro ao carregar reunião: {str(e)}", "danger")
+        return redirect("/reunioes")
 
 @app.route("/reunioes/calendario")
 @login_required
