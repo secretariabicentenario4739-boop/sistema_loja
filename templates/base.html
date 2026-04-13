@@ -737,52 +737,7 @@
             </a>
         </nav>
 
-        <div class="alert alert-info small mt-3" style="background: #e3f2fd; border-left: 4px solid #2196f3;">
-            <strong>🔍 DEBUG - PERMISSÕES DO USUÁRIO:</strong><br>
-            <strong>Usuário:</strong> {{ session.usuario }} | 
-            <strong>Grau:</strong> {{ session.grau_atual }} | 
-            <strong>Tipo:</strong> {{ session.tipo }}<br>
-            
-            {% if session.tipo == 'admin' %}
-                <span class="badge bg-success">ADMIN - todas as permissões</span>
-            {% else %}
-                <strong>Permissões que este usuário TEM:</strong>
-                <div class="row mt-2">
-                    <div class="col-md-3">
-                        <i class="bi bi-{% if tem_permissao('obreiro.view') %}check-circle text-success{% else %}x-circle text-danger{% endif %}"></i>
-                        Obreiros: {% if tem_permissao('obreiro.view') %}✅ Sim{% else %}❌ Não{% endif %}
-                    </div>
-                    <div class="col-md-3">
-                        <i class="bi bi-{% if tem_permissao('reuniao.view') %}check-circle text-success{% else %}x-circle text-danger{% endif %}"></i>
-                        Reuniões: {% if tem_permissao('reuniao.view') %}✅ Sim{% else %}❌ Não{% endif %}
-                    </div>
-                    <div class="col-md-3">
-                        <i class="bi bi-{% if tem_permissao('ata.view') %}check-circle text-success{% else %}x-circle text-danger{% endif %}"></i>
-                        Atas: {% if tem_permissao('ata.view') %}✅ Sim{% else %}❌ Não{% endif %}
-                    </div>
-                    <div class="col-md-3">
-                        <i class="bi bi-{% if tem_permissao('material.view') %}check-circle text-success{% else %}x-circle text-danger{% endif %}"></i>
-                        Biblioteca: {% if tem_permissao('material.view') %}✅ Sim{% else %}❌ Não{% endif %}
-                    </div>
-                    <div class="col-md-3 mt-2">
-                        <i class="bi bi-{% if tem_permissao('candidato.view') %}check-circle text-success{% else %}x-circle text-danger{% endif %}"></i>
-                        Candidatos: {% if tem_permissao('candidato.view') %}✅ Sim{% else %}❌ Não{% endif %}
-                    </div>
-                    <div class="col-md-3 mt-2">
-                        <i class="bi bi-{% if tem_permissao('sindicante.view') %}check-circle text-success{% else %}x-circle text-danger{% endif %}"></i>
-                        Sindicantes: {% if tem_permissao('sindicante.view') %}✅ Sim{% else %}❌ Não{% endif %}
-                    </div>
-                    <div class="col-md-3 mt-2">
-                        <i class="bi bi-{% if tem_permissao('loja.view') %}check-circle text-success{% else %}x-circle text-danger{% endif %}"></i>
-                        Lojas: {% if tem_permissao('loja.view') %}✅ Sim{% else %}❌ Não{% endif %}
-                    </div>
-                    <div class="col-md-3 mt-2">
-                        <i class="bi bi-{% if tem_permissao('configuracoes.view') %}check-circle text-success{% else %}x-circle text-danger{% endif %}"></i>
-                        Notificações: {% if tem_permissao('configuracoes.view') %}✅ Sim{% else %}❌ Não{% endif %}
-                    </div>
-                </div>
-            {% endif %}
-        </div>
+       
     </div>
     
     <div class="main-content" id="mainContent">
