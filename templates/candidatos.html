@@ -408,32 +408,36 @@
                                             </div>
                                         </td>
                                         <td class="text-center">
-                                            <div class="d-flex flex-wrap gap-1 justify-content-center">
-                                                <a href="/candidatos/{{ c.id }}/checklist" class="btn btn-success btn-icon" title="Checklist de Iniciação">
-                                                    <i class="bi bi-check2-square"></i>
-                                                </a>
-                                                <a href="/candidatos/{{ c.id }}/documentos" class="btn btn-outline-primary btn-icon" title="Gerenciar Documentos">
-                                                    <i class="bi bi-folder2-open"></i>
-                                                </a>
-                                                {% if session.tipo == 'admin' or session.tipo == 'sindicante' %}
-                                                    <a href="/sindicancia/{{ c.id }}" class="btn btn-info btn-icon" title="Visualizar Sindicância">
-                                                        <i class="bi bi-eye"></i>
-                                                    </a>
-                                                    {% if not c.fechado %}
-                                                    <a href="/fechar_sindicancia/{{ c.id }}" class="btn btn-warning btn-icon" 
-                                                       onclick="return confirm('Encerrar sindicância deste candidato?')" title="Encerrar Sindicância">
-                                                        <i class="bi bi-check2-circle"></i>
-                                                    </a>
-                                                    {% endif %}
-                                                    <form action="/candidatos/excluir/{{ c.id }}" method="POST" style="display:inline;">
-                                                        <button type="submit" class="btn btn-danger btn-icon" 
-                                                                onclick="return confirm('Excluir este candidato?')" title="Excluir Candidato">
-                                                            <i class="bi bi-trash"></i>
-                                                        </button>
-                                                    </form>
-                                                {% endif %}
-                                            </div>
-                                        </td>
+    <div class="d-flex flex-wrap gap-1 justify-content-center">
+        <a href="/candidatos/{{ c.id }}/checklist" class="btn btn-success btn-icon" title="Checklist de Iniciação">
+            <i class="bi bi-check2-square"></i>
+        </a>
+        <a href="/candidatos/{{ c.id }}/documentos" class="btn btn-outline-primary btn-icon" title="Gerenciar Documentos">
+            <i class="bi bi-folder2-open"></i>
+        </a>
+        <a href="/candidato/formulario/{{ c.id }}" class="btn btn-outline-info btn-icon" title="Preencher Formulário">
+            <i class="bi bi-file-text"></i>
+        </a>
+        <a href="/sindicancia/{{ c.id }}" class="btn btn-info btn-icon" title="Visualizar Sindicância">
+            <i class="bi bi-eye"></i>
+        </a>
+        {% if not c.fechado %}
+            <a href="/fechar_sindicancia/{{ c.id }}" class="btn btn-warning btn-icon" 
+               onclick="return confirm('Encerrar sindicância deste candidato?')" title="Encerrar Sindicância">
+                <i class="bi bi-check2-circle"></i>
+            </a>
+        {% endif %}
+        {% if session.tipo == 'admin' %}
+            <form action="/candidatos/excluir/{{ c.id }}" method="POST" style="display:inline;">
+                <button type="submit" class="btn btn-danger btn-icon" 
+                        onclick="return confirm('Excluir este candidato? Esta ação não pode ser desfeita!')" 
+                        title="Excluir Candidato">
+                    <i class="bi bi-trash"></i>
+                </button>
+            </form>
+        {% endif %}
+    </div>
+</td>
                                     </tr>
                                     {% endfor %}
                                 </tbody>

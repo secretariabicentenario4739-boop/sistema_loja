@@ -9035,35 +9035,8 @@ def visualizar_sindicancia(id):
     finally:
         return_connection(conn)
         
-@app.route("/excluir_parecer/<int:candidato_id>")
-@sindicante_required
-def excluir_parecer(candidato_id):
-    cursor, conn = get_db()
-    
-    # Rollback para limpar transações pendentes
-    try:
-        conn.rollback()
-    except:
-        pass
-    
-    usuario_nome = session.get("usuario")
-    
-    cursor.execute("SELECT fechado FROM candidatos WHERE id = %s", (candidato_id,))
-    candidato = cursor.fetchone()
-    
-    if candidato and candidato["fechado"] == 0:
-        cursor.execute("""
-            DELETE FROM sindicancias 
-            WHERE candidato_id = %s AND sindicante = %s
-        """, (candidato_id, usuario_nome))
-        conn.commit()
-        registrar_log("excluir_parecer", "sindicancia", candidato_id)
-        flash("Parecer excluído com sucesso!", "success")
-    else:
-        flash("Não é possível excluir parecer de uma sindicância fechada", "danger")
-    
-    return_connection(conn)
-    return redirect(f"/sindicancia/{candidato_id}")
+
+        
 
 @app.route("/fechar_sindicancia/<int:id>")
 @admin_required
@@ -9118,6 +9091,101 @@ def minhas_sindicancias():
     
     return_connection(conn)
     return render_template("minhas_sindicancias.html", candidatos=candidatos)
+    
+@app.route("/parecer_conclusivo/<int:candidato_id>/excluir", methods=["POST"])
+@login_required
+def excluir_parecer_conclusivo(candidato_id):
+    """Sindicante exclui seu parecer conclusivo"""
+    # Verificar se é sindicante
+    if session.get("tipo") != 'sindicante':
+        flash("❌ Apenas sindicantes podem excluir seus próprios pareceres!", "danger")
+        return redirect("/dashboard")
+    
+    cursor, conn = get_db()
+    
+    try:
+        conn.rollback()
+        
+        usuario_nome = session.get("usuario")
+        
+        # Verificar se o parecer existe
+        cursor.execute("""
+            SELECT id FROM pareceres_conclusivos 
+            WHERE candidato_id = %s AND sindicante = %s
+        """, (candidato_id, usuario_nome))
+        
+        resultado = cursor.fetchone()
+        
+        if not resultado:
+            flash("❌ Você não tem um parecer conclusivo para este candidato!", "warning")
+            return redirect(f"/sindicancia/{candidato_id}")
+        
+        # Excluir o parecer conclusivo
+        cursor.execute("""
+            DELETE FROM pareceres_conclusivos 
+            WHERE candidato_id = %s AND sindicante = %s
+        """, (candidato_id, usuario_nome))
+        
+        conn.commit()
+        
+        flash("🗑️ Seu parecer conclusivo foi excluído com sucesso!", "success")
+        
+    except Exception as e:
+        conn.rollback()
+        print(f"Erro ao excluir parecer conclusivo: {str(e)}")
+        flash(f"❌ Erro ao excluir parecer conclusivo: {str(e)}", "danger")
+    
+    finally:
+        return_connection(conn)
+    
+    return redirect(f"/sindicancia/{candidato_id}")      
+
+@app.route("/sindicancia/<int:candidato_id>/excluir_parecer", methods=["POST"])
+@login_required
+def excluir_parecer_simples(candidato_id):
+    """Sindicante exclui seu voto simples (positivo/negativo)"""
+    if session.get("tipo") != 'sindicante':
+        flash("❌ Apenas sindicantes podem excluir seus próprios votos!", "danger")
+        return redirect("/dashboard")
+    
+    cursor, conn = get_db()
+    
+    try:
+        conn.rollback()
+        
+        usuario_nome = session.get("usuario")
+        
+        # Verificar se o voto existe
+        cursor.execute("""
+            SELECT id FROM sindicancias 
+            WHERE candidato_id = %s AND sindicante = %s
+        """, (candidato_id, usuario_nome))
+        
+        resultado = cursor.fetchone()
+        
+        if not resultado:
+            flash("❌ Você não tem um voto registrado para este candidato!", "warning")
+            return redirect(f"/sindicancia/{candidato_id}")
+        
+        # Excluir o voto
+        cursor.execute("""
+            DELETE FROM sindicancias 
+            WHERE candidato_id = %s AND sindicante = %s
+        """, (candidato_id, usuario_nome))
+        
+        conn.commit()
+        
+        flash("🗑️ Seu voto foi excluído com sucesso! Você pode votar novamente.", "success")
+        
+    except Exception as e:
+        conn.rollback()
+        print(f"Erro ao excluir voto: {str(e)}")
+        flash(f"❌ Erro ao excluir voto: {str(e)}", "danger")
+    
+    finally:
+        return_connection(conn)
+    
+    return redirect(f"/sindicancia/{candidato_id}")    
 
 @app.route("/parecer_conclusivo/<int:id>", methods=["GET"])
 @login_required
@@ -9168,38 +9236,57 @@ def salvar_parecer_conclusivo(id):
         flash("Acesso restrito a sindicantes", "danger")
         return redirect("/dashboard")
     
+    # Limpar flashes anteriores
+    session.pop('_flashes', None)
+    
     cursor, conn = get_db()
-    parecer_texto = request.form.get("parecer_texto", "")
-    conclusao = request.form.get("conclusao", "")
-    observacoes = request.form.get("observacoes", "")
-    cim_numero = request.form.get("cim_numero", session.get("cim_numero", ""))
-    data_parecer = request.form.get("data_parecer", datetime.now().strftime("%Y-%m-%d"))
-    loja_nome = request.form.get("loja_nome", session.get("loja_nome", ""))
-    loja_numero = request.form.get("loja_numero", session.get("loja_numero", ""))
-    loja_orient = request.form.get("loja_orient", session.get("loja_orient", ""))
     
-    fontes = []
-    i = 1
-    while True:
-        fonte_nome = request.form.get(f"fonte_nome_{i}")
-        fonte_info = request.form.get(f"fonte_info_{i}")
-        if fonte_nome and fonte_info:
-            fontes.append({"nome": fonte_nome, "informacao": fonte_info})
-        else:
-            break
-        i += 1
-    
-    fontes_json = json.dumps(fontes, ensure_ascii=False)
-    agora = datetime.now()
+    # Rollback para limpar qualquer transação pendente
+    try:
+        conn.rollback()
+    except Exception as rollback_err:
+        print(f"Rollback inicial: {rollback_err}")
     
     try:
+        parecer_texto = request.form.get("parecer_texto", "")
+        conclusao = request.form.get("conclusao", "")
+        observacoes = request.form.get("observacoes", "")
+        cim_numero = request.form.get("cim_numero", session.get("cim_numero", ""))
+        data_parecer = request.form.get("data_parecer", datetime.now().strftime("%Y-%m-%d"))
+        loja_nome = request.form.get("loja_nome", session.get("loja_nome", ""))
+        loja_numero = request.form.get("loja_numero", session.get("loja_numero", ""))
+        loja_orient = request.form.get("loja_orient", session.get("loja_orient", ""))
+        
+        fontes = []
+        i = 1
+        while True:
+            fonte_nome = request.form.get(f"fonte_nome_{i}")
+            fonte_info = request.form.get(f"fonte_info_{i}")
+            if fonte_nome and fonte_info:
+                fontes.append({"nome": fonte_nome, "informacao": fonte_info})
+            else:
+                break
+            i += 1
+        
+        fontes_json = json.dumps(fontes, ensure_ascii=False)
+        agora = datetime.now()
+        
+        usuario_nome = session.get("usuario")
+        
+        # ============================================
+        # SALVAR PARECER CONCLUSIVO
+        # ============================================
+        
         # Verificar se já existe
         cursor.execute("""
             SELECT id FROM pareceres_conclusivos 
             WHERE candidato_id = %s AND sindicante = %s
-        """, (id, session["usuario"]))
+        """, (id, usuario_nome))
         
-        if cursor.fetchone():
+        existe = cursor.fetchone()
+        
+        if existe:
+            # UPDATE
             cursor.execute("""
                 UPDATE pareceres_conclusivos 
                 SET parecer_texto = %s, conclusao = %s, observacoes = %s,
@@ -9207,51 +9294,64 @@ def salvar_parecer_conclusivo(id):
                     fontes = %s, loja_nome = %s, loja_numero = %s, loja_orient = %s
                 WHERE candidato_id = %s AND sindicante = %s
             """, (parecer_texto, conclusao, observacoes, cim_numero, data_parecer, agora,
-                  fontes_json, loja_nome, loja_numero, loja_orient, id, session["usuario"]))
+                  fontes_json, loja_nome, loja_numero, loja_orient, id, usuario_nome))
         else:
+            # INSERT - sem o ID
             cursor.execute("""
                 INSERT INTO pareceres_conclusivos 
                 (candidato_id, sindicante, parecer_texto, conclusao, observacoes, 
                  cim_numero, data_parecer, data_envio, fontes, loja_nome, loja_numero, loja_orient)
                 VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
-            """, (id, session["usuario"], parecer_texto, conclusao, observacoes,
+            """, (id, usuario_nome, parecer_texto, conclusao, observacoes,
                   cim_numero, data_parecer, agora, fontes_json,
                   loja_nome, loja_numero, loja_orient))
         
         conn.commit()
-        registrar_log("salvar_parecer_conclusivo", "parecer_conclusivo", id, dados_novos={"conclusao": conclusao})
-        flash("Parecer conclusivo salvo com sucesso!", "success")
+        
+        # ============================================
+        # ATUALIZAR VOTO SIMPLES
+        # ============================================
         
         parecer_simples = "positivo" if conclusao == "APROVADO" else "negativo"
         
-        # Atualizar sindicância simples
+        # Verificar se já existe voto
         cursor.execute("""
             SELECT id FROM sindicancias 
             WHERE candidato_id = %s AND sindicante = %s
-        """, (id, session["usuario"]))
+        """, (id, usuario_nome))
         
-        if cursor.fetchone():
+        voto_existe = cursor.fetchone()
+        
+        if voto_existe:
             cursor.execute("""
                 UPDATE sindicancias 
                 SET parecer = %s, data_envio = %s
                 WHERE candidato_id = %s AND sindicante = %s
-            """, (parecer_simples, agora, id, session["usuario"]))
+            """, (parecer_simples, agora, id, usuario_nome))
         else:
             cursor.execute("""
                 INSERT INTO sindicancias (candidato_id, sindicante, parecer, data_envio)
                 VALUES (%s, %s, %s, %s)
-            """, (id, session["usuario"], parecer_simples, agora))
+            """, (id, usuario_nome, parecer_simples, agora))
         
         conn.commit()
         
+        registrar_log("salvar_parecer_conclusivo", "parecer_conclusivo", id, dados_novos={"conclusao": conclusao})
+        flash("Parecer conclusivo salvo com sucesso!", "success")
+        
     except Exception as e:
-        print(f"Erro ao salvar parecer: {e}")
         conn.rollback()
+        print(f"Erro ao salvar parecer: {str(e)}")
+        import traceback
+        traceback.print_exc()
         flash(f"Erro ao salvar parecer: {str(e)}", "danger")
     
-    return_connection(conn)
+    finally:
+        return_connection(conn)
+    
     return redirect(f"/sindicancia/{id}")
-
+    
+    
 @app.route("/visualizar_parecer_conclusivo/<int:id>")
 @login_required
 def visualizar_parecer_conclusivo(id):
