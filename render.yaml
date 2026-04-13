@@ -2,7 +2,6 @@ services:
   - type: web
     name: sistema-maconico
     runtime: python
-    plan: free
     buildCommand: pip install -r requirements.txt
     startCommand: gunicorn app:app
     envVars:
@@ -12,17 +11,15 @@ services:
           property: connectionString
       - key: SECRET_KEY
         generateValue: true
+      - key: CLOUDINARY_CLOUD_NAME
+        sync: false
       - key: CLOUDINARY_API_KEY
         sync: false
       - key: CLOUDINARY_API_SECRET
         sync: false
-      - key: CLOUDINARY_CLOUD_NAME
-        sync: false
-      - key: PYTHON_VERSION
-        value: 3.11.0
+      - key: DEBUG
+        value: false
 
 databases:
   - name: sistema-maconico-db
     plan: free
-    databaseName: sistema_maconico
-    user: sistema_user
