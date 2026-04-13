@@ -251,7 +251,7 @@
             </div>
         </div>
 
-      <!-- Cargos e Documentos -->
+     <!-- Cargos e Documentos -->
 <div class="row mb-4">
     <div class="col-md-6">
         <div class="card shadow h-100">
@@ -303,6 +303,94 @@
                     </div>
                 {% endif %}
 
+                <!-- Formulário para adicionar novo cargo (apenas admin) -->
+                {% if session.tipo == 'admin' and cargos_disponiveis %}
+                <hr>
+                <h6 class="mb-3"><i class="bi bi-plus-circle"></i> Adicionar Novo Cargo</h6>
+                
+                <!-- Exibir grau do obreiro -->
+                <div class="alert alert-info small mb-3">
+                    <i class="bi bi-star-fill"></i>
+                    <strong>Grau atual do obreiro:</strong> 
+                    {% set grau_num = obreiro.grau_atual|int %}
+                    {% if grau_num == 1 %}
+                        Aprendiz (1º Grau)
+                    {% elif grau_num == 2 %}
+                        Companheiro (2º Grau)
+                    {% elif grau_num == 3 %}
+                        Mestre (3º Grau)
+                    {% elif grau_num >= 4 %}
+                        Grau {{ grau_num }}
+                    {% endif %}
+                </div>
+                
+                <form method="POST" action="/obreiros/{{ obreiro.id }}/vincular_cargo" class="row g-2" onsubmit="return validarCargo()">
+                    <div class="col-md-5">
+                        <select name="cargo_id" id="cargoSelect" class="form-select form-select-sm" required onchange="verificarGrauCargo()">
+                            <option value="">Selecione o cargo...</option>
+                            {% for cargo in cargos_disponiveis %}
+                            <option value="{{ cargo.id }}" 
+                                    data-grau-minimo="{{ cargo.grau_minimo or 3 }}"
+                                    data-cargo-nome="{{ cargo.nome }}">
+                                {{ cargo.nome }} ({{ cargo.sigla }})
+                                {% if cargo.grau_minimo %}
+                                    - Exige {{ cargo.grau_minimo }}º Grau
+                                {% else %}
+                                    - Exige 3º Grau
+                                {% endif %}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <input type="date" name="data_inicio" id="dataInicio" class="form-control form-control-sm" 
+                               value="{{ now.strftime('%Y-%m-%d') }}" required>
+                    </div>
+                    <div class="col-md-3">
+                        <input type="text" name="gestao" id="gestao" class="form-control form-control-sm" 
+                               placeholder="Gestão (ex: 2024-2026)">
+                    </div>
+                    <div class="col-md-1">
+                        <button type="submit" class="btn btn-success btn-sm w-100" id="btnAtribuirCargo">
+                            <i class="bi bi-plus"></i>
+                        </button>
+                    </div>
+                </form>
+                
+                <!-- Mensagem de aviso sobre grau -->
+                <div id="avisoGrau" class="alert alert-warning small mt-2" style="display: none;">
+                    <i class="bi bi-exclamation-triangle-fill"></i>
+                    <span id="avisoGrauTexto"></span>
+                </div>
+                
+                <small class="text-muted mt-2 d-block">
+                    <i class="bi bi-info-circle"></i> 
+                    Ao adicionar um novo cargo, o cargo anterior será mantido no histórico.
+                </small>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-6">
+        <div class="card shadow h-100">
+            <div class="card-header bg-info text-white">
+                <h5 class="mb-0">
+                    <i class="bi bi-cloud-arrow-up"></i> Documentos
+                    <span class="badge bg-light text-dark ms-2" id="totalDocumentosVis">0</span>
+                </h5>
+            </div>
+            <div class="card-body" style="max-height: 400px; overflow-y: auto;">
+                <div id="listaDocumentosVis">
+                    <div class="text-center text-muted py-4" id="semDocumentosVis">
+                        <i class="bi bi-cloud-slash fs-1"></i>
+                        <p class="mb-0 mt-2">Nenhum documento enviado</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
                 <!-- Formulário para adicionar novo cargo (apenas admin) -->
                 {% if session.tipo == 'admin' and cargos_disponiveis %}
                 <hr>
@@ -528,6 +616,63 @@
 </div>
 
 <script>
+function verificarGrauCargo() {
+    const select = document.getElementById('cargoSelect');
+    const selectedOption = select.options[select.selectedIndex];
+    const avisoDiv = document.getElementById('avisoGrau');
+    const avisoTexto = document.getElementById('avisoGrauTexto');
+    const btnAtribuir = document.getElementById('btnAtribuirCargo');
+    
+    if (!selectedOption || !selectedOption.value) {
+        avisoDiv.style.display = 'none';
+        btnAtribuir.disabled = false;
+        return;
+    }
+    
+    const grauMinimo = parseInt(selectedOption.dataset.grauMinimo) || 3;
+    const cargoNome = selectedOption.dataset.cargoNome;
+    const grauObreiro = {{ obreiro.grau_atual|default(3)|int }};
+    
+    if (grauObreiro < grauMinimo) {
+        avisoTexto.innerHTML = `⚠️ O cargo "${cargoNome}" exige ${grauMinimo}º Grau, mas o obreiro tem apenas ${grauObreiro}º Grau. Não é possível atribuir este cargo.`;
+        avisoDiv.style.display = 'block';
+        btnAtribuir.disabled = true;
+    } else {
+        avisoDiv.style.display = 'none';
+        btnAtribuir.disabled = false;
+    }
+}
+
+function validarCargo() {
+    const select = document.getElementById('cargoSelect');
+    const selectedOption = select.options[select.selectedIndex];
+    
+    if (!selectedOption || !selectedOption.value) {
+        alert('❌ Selecione um cargo!');
+        return false;
+    }
+    
+    const grauMinimo = parseInt(selectedOption.dataset.grauMinimo) || 3;
+    const cargoNome = selectedOption.dataset.cargoNome;
+    const grauObreiro = {{ obreiro.grau_atual|default(3)|int }};
+    
+    if (grauObreiro < grauMinimo) {
+        alert(`❌ O cargo "${cargoNome}" exige ${grauMinimo}º Grau, mas o obreiro tem apenas ${grauObreiro}º Grau.`);
+        return false;
+    }
+    
+    return confirm(`✅ Confirmar atribuição do cargo "${cargoNome}" ao obreiro?`);
+}
+
+// Inicializar verificação ao carregar a página
+document.addEventListener('DOMContentLoaded', function() {
+    const cargoSelect = document.getElementById('cargoSelect');
+    if (cargoSelect) {
+        cargoSelect.addEventListener('change', verificarGrauCargo);
+        verificarGrauCargo(); // Verificar se já tem um cargo selecionado
+    }
+});
+
 let modalExclusaoDefinitiva;
 
 document.addEventListener('DOMContentLoaded', function() {

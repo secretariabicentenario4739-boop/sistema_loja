@@ -1730,7 +1730,42 @@ def executar_rotinas_diarias():
     }
 
 # =====================
-# FUNÇÕES DE GRAU (NOVAS)
+# FUNÇÕES DE CARGOS
+# =====================
+def pode_ocupar_cargo(obreiro_id, cargo_id):
+    """Verifica se um obreiro pode ocupar um determinado cargo baseado no grau"""
+    cursor, conn = get_db()
+    
+    try:
+        # Buscar grau do obreiro
+        cursor.execute("SELECT grau_atual FROM usuarios WHERE id = %s", (obreiro_id,))
+        obreiro = cursor.fetchone()
+        
+        if not obreiro:
+            return False, "Obreiro não encontrado"
+        
+        # Buscar grau mínimo do cargo
+        cursor.execute("SELECT nome, grau_minimo FROM cargos WHERE id = %s", (cargo_id,))
+        cargo = cursor.fetchone()
+        
+        if not cargo:
+            return False, "Cargo não encontrado"
+        
+        grau_minimo = cargo["grau_minimo"] if cargo["grau_minimo"] else 3
+        
+        if obreiro["grau_atual"] < grau_minimo:
+            return False, f"Grau mínimo exigido: {grau_minimo}º. Obreiro tem grau {obreiro['grau_atual']}º"
+        
+        return True, "OK"
+        
+    except Exception as e:
+        return False, str(e)
+    finally:
+        return_connection(conn)
+
+
+# =====================
+# FUNÇÕES DE GRAU
 # =====================
 
 def get_grau_principal(grau_nivel):
@@ -4559,7 +4594,7 @@ def visualizar_obreiro(id):
         # BUSCAR CARGO ATUAL DO OBREIRO (ativo)
         # ============================================
         cursor.execute("""
-            SELECT c.nome as cargo_nome, c.sigla, oc.data_inicio, oc.id as ocupacao_id
+            SELECT c.nome as cargo_nome, c.sigla, c.grau_minimo, oc.data_inicio, oc.id as ocupacao_id
             FROM ocupacao_cargos oc
             JOIN cargos c ON oc.cargo_id = c.id
             WHERE oc.obreiro_id = %s AND oc.ativo = 1
@@ -4573,7 +4608,7 @@ def visualizar_obreiro(id):
         # BUSCAR TODOS OS CARGOS DO OBREIRO (apenas ativos)
         # ============================================
         cursor.execute("""
-            SELECT oc.*, c.nome as cargo_nome, c.sigla
+            SELECT oc.*, c.nome as cargo_nome, c.sigla, c.grau_minimo
             FROM ocupacao_cargos oc
             JOIN cargos c ON oc.cargo_id = c.id
             WHERE oc.obreiro_id = %s AND oc.ativo = 1
@@ -4630,8 +4665,18 @@ def visualizar_obreiro(id):
         # ============================================
         cargos_disponiveis = []
         if session.get("tipo") == "admin":
-            cursor.execute("SELECT id, nome, sigla FROM cargos WHERE ativo = 1 ORDER BY ordem, nome")
+            # CORREÇÃO: Adicionar grau_minimo na query
+            cursor.execute("""
+                SELECT id, nome, sigla, grau_minimo, descricao 
+                FROM cargos 
+                WHERE ativo = 1 
+                ORDER BY grau_minimo ASC, ordem ASC, nome
+            """)
             cargos_disponiveis = cursor.fetchall()
+            
+            # Debug: imprimir no terminal
+            for cargo in cargos_disponiveis:
+                print(f"Cargo: {cargo['nome']}, grau_minimo: {cargo.get('grau_minimo', 'NULL')}")
         
         # ============================================
         # GRAUS DISPONÍVEIS (apenas admin)
@@ -4665,8 +4710,6 @@ def visualizar_obreiro(id):
             return_connection(conn)
         flash(f"Erro ao carregar dados do obreiro: {str(e)}", "danger")
         return redirect("/obreiros")
-
-
     
 @app.route("/obreiros/<int:id>/foto", methods=["POST"])
 @login_required
@@ -10865,6 +10908,179 @@ def excluir_cargo(id):
             return_connection(conn)
         flash(f"Erro ao excluir cargo: {str(e)}", "danger")
         return redirect("/cargos")
+        
+        
+@app.route("/obreiros/<int:obreiro_id>/atribuir_cargo", methods=["POST"])
+@login_required
+@admin_required
+def atribuir_cargo_obreiro(obreiro_id):  # Nome alterado
+    """Atribui um cargo a um obreiro verificando o grau mínimo"""
+    cursor, conn = get_db()
+    
+    try:
+        conn.rollback()
+        
+        cargo_id = request.form.get("cargo_id")
+        data_inicio = request.form.get("data_inicio", datetime.now().strftime("%Y-%m-%d"))
+        observacao = request.form.get("observacao", "")
+        
+        if not cargo_id:
+            flash("❌ Selecione um cargo!", "danger")
+            return redirect(f"/obreiros/{obreiro_id}")
+        
+        # Buscar grau do obreiro
+        cursor.execute("SELECT grau_atual, nome_completo FROM usuarios WHERE id = %s", (obreiro_id,))
+        obreiro = cursor.fetchone()
+        
+        if not obreiro:
+            flash("❌ Obreiro não encontrado!", "danger")
+            return redirect("/obreiros")
+        
+        grau_obreiro = obreiro["grau_atual"]
+        
+        # Buscar grau mínimo do cargo
+        cursor.execute("SELECT id, nome, sigla, grau_minimo FROM cargos WHERE id = %s", (cargo_id,))
+        cargo = cursor.fetchone()
+        
+        if not cargo:
+            flash("❌ Cargo não encontrado!", "danger")
+            return redirect(f"/obreiros/{obreiro_id}")
+        
+        grau_minimo = cargo["grau_minimo"] if cargo["grau_minimo"] else 3
+        
+        # Verificar se o obreiro tem grau suficiente
+        if grau_obreiro < grau_minimo:
+            flash(f"❌ O obreiro tem grau {grau_obreiro}º, mas o cargo '{cargo['nome']}' exige no mínimo {grau_minimo}º Grau!", "danger")
+            return redirect(f"/obreiros/{obreiro_id}")
+        
+        # Verificar se já está ocupando algum cargo ativo
+        cursor.execute("""
+            SELECT oc.id, c.nome as cargo_nome 
+            FROM ocupacao_cargos oc
+            JOIN cargos c ON oc.cargo_id = c.id
+            WHERE oc.obreiro_id = %s AND oc.ativo = 1
+        """, (obreiro_id,))
+        cargo_atual = cursor.fetchone()
+        
+        if cargo_atual:
+            # Desativar cargo atual
+            cursor.execute("""
+                UPDATE ocupacao_cargos 
+                SET ativo = 0, data_fim = CURRENT_DATE
+                WHERE obreiro_id = %s AND ativo = 1
+            """, (obreiro_id,))
+            flash(f"ℹ️ Cargo anterior '{cargo_atual['cargo_nome']}' foi desativado.", "info")
+        
+        # Atribuir novo cargo
+        cursor.execute("""
+            INSERT INTO ocupacao_cargos (cargo_id, obreiro_id, data_inicio, observacao, ativo)
+            VALUES (%s, %s, %s, %s, 1)
+        """, (cargo_id, obreiro_id, data_inicio, observacao))
+        
+        conn.commit()
+        
+        registrar_log("atribuir_cargo", "ocupacao_cargos", cursor.lastrowid, 
+                     dados_novos={"obreiro_id": obreiro_id, "cargo_id": cargo_id, "cargo_nome": cargo['nome']})
+        
+        flash(f"✅ Cargo '{cargo['nome']}' atribuído com sucesso a {obreiro['nome_completo']}!", "success")
+        
+    except Exception as e:
+        conn.rollback()
+        print(f"Erro ao atribuir cargo: {str(e)}")
+        flash(f"❌ Erro ao atribuir cargo: {str(e)}", "danger")
+    finally:
+        return_connection(conn)
+    
+    return redirect(f"/obreiros/{obreiro_id}")
+    
+@app.route("/obreiros/<int:obreiro_id>/vincular_cargo", methods=["POST"])
+@login_required
+@admin_required
+def vincular_cargo_obreiro(obreiro_id):
+    """Atribui um cargo a um obreiro verificando o grau mínimo"""
+    cursor, conn = get_db()
+    
+    try:
+        conn.rollback()
+        
+        cargo_id = request.form.get("cargo_id")
+        data_inicio = request.form.get("data_inicio")
+        gestao = request.form.get("gestao", "")
+        
+        if not cargo_id:
+            flash("❌ Selecione um cargo!", "danger")
+            return redirect(f"/obreiros/{obreiro_id}")
+        
+        if not data_inicio:
+            from datetime import datetime
+            data_inicio = datetime.now().strftime("%Y-%m-%d")
+        
+        # Buscar grau do obreiro
+        cursor.execute("SELECT grau_atual, nome_completo FROM usuarios WHERE id = %s", (obreiro_id,))
+        obreiro = cursor.fetchone()
+        
+        if not obreiro:
+            flash("❌ Obreiro não encontrado!", "danger")
+            return redirect("/obreiros")
+        
+        grau_obreiro = obreiro["grau_atual"] if obreiro["grau_atual"] else 0
+        
+        # Buscar grau mínimo do cargo
+        cursor.execute("SELECT id, nome, sigla, grau_minimo FROM cargos WHERE id = %s", (cargo_id,))
+        cargo = cursor.fetchone()
+        
+        if not cargo:
+            flash("❌ Cargo não encontrado!", "danger")
+            return redirect(f"/obreiros/{obreiro_id}")
+        
+        grau_minimo = cargo["grau_minimo"] if cargo["grau_minimo"] else 3
+        
+        # Verificar se o obreiro tem grau suficiente
+        if grau_obreiro < grau_minimo:
+            flash(f"❌ O obreiro tem grau {grau_obreiro}º, mas o cargo '{cargo['nome']}' exige no mínimo {grau_minimo}º Grau!", "danger")
+            return redirect(f"/obreiros/{obreiro_id}")
+        
+        # Verificar se já está ocupando algum cargo ativo (opcional)
+        cursor.execute("""
+            SELECT oc.id, c.nome as cargo_nome 
+            FROM ocupacao_cargos oc
+            JOIN cargos c ON oc.cargo_id = c.id
+            WHERE oc.obreiro_id = %s AND oc.ativo = 1
+        """, (obreiro_id,))
+        cargo_atual = cursor.fetchone()
+        
+        if cargo_atual:
+            # Desativar cargo atual
+            cursor.execute("""
+                UPDATE ocupacao_cargos 
+                SET ativo = 0, data_fim = CURRENT_DATE
+                WHERE obreiro_id = %s AND ativo = 1
+            """, (obreiro_id,))
+            flash(f"ℹ️ Cargo anterior '{cargo_atual['cargo_nome']}' foi desativado.", "info")
+        
+        # Atribuir novo cargo
+        cursor.execute("""
+            INSERT INTO ocupacao_cargos (cargo_id, obreiro_id, data_inicio, gestao, ativo)
+            VALUES (%s, %s, %s, %s, 1)
+        """, (cargo_id, obreiro_id, data_inicio, gestao))
+        
+        conn.commit()
+        
+        registrar_log("atribuir_cargo", "ocupacao_cargos", cursor.lastrowid, 
+                     dados_novos={"obreiro_id": obreiro_id, "cargo_id": cargo_id, "cargo_nome": cargo['nome']})
+        
+        flash(f"✅ Cargo '{cargo['nome']}' atribuído com sucesso a {obreiro['nome_completo']}!", "success")
+        
+    except Exception as e:
+        conn.rollback()
+        print(f"Erro ao atribuir cargo: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        flash(f"❌ Erro ao atribuir cargo: {str(e)}", "danger")
+    finally:
+        return_connection(conn)
+    
+    return redirect(f"/obreiros/{obreiro_id}")    
 
 # =============================
 # ROTAS DE GRAUS

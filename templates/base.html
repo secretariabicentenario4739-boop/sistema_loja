@@ -648,6 +648,14 @@
                 <i class="bi bi-person-workspace"></i> <span>Obreiros</span>
             </a>
             {% endif %}
+			{% if session.tipo == 'admin' %}
+			<li class="nav-item">
+				<a class="nav-link" href="/cargos">
+					<i class="bi bi-briefcase-fill me-2"></i>
+					<span>Gerenciar Cargos</span>
+				</a>
+			</li>
+			{% endif %}
             
             {% if tem_permissao('reuniao.view') %}
             <a class="nav-link" href="/reunioes">
