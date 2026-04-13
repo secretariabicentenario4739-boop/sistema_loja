@@ -5773,94 +5773,55 @@ def excluir_familiar(id):
 @login_required
 @admin_required
 def registrar_presenca_lote(reuniao_id):
-    """Registra presença de múltiplos obreiros em lote"""
     cursor, conn = get_db()
     
     try:
-        # Limpar transações pendentes
-        conn.rollback()
+        # Buscar todos os obreiros
+        cursor.execute("SELECT id FROM usuarios WHERE ativo = 1")
+        todos_obreiros = cursor.fetchall()
         
-        print("=== INICIANDO REGISTRO DE PRESENÇA ===")
-        print(f"Reunião ID: {reuniao_id}")
-        
-        # Verificar se a reunião existe
-        cursor.execute("SELECT id, status FROM reunioes WHERE id = %s", (reuniao_id,))
-        reuniao = cursor.fetchone()
-        
-        if not reuniao:
-            flash("❌ Reunião não encontrada!", "danger")
-            return redirect("/reunioes")
-        
-        print(f"Reunião encontrada: Status={reuniao['status']}")
-        
-        # Processar cada obreiro
-        registros = 0
-        
+        # Criar set com os IDs que vieram no formulário (presentes)
+        presentes_ids = set()
         for key, value in request.form.items():
-            if key.startswith('presenca_'):
+            if key.startswith('presenca_') and value == '1':
                 obreiro_id = int(key.replace('presenca_', ''))
-                presente = (value == '1')
-                
-                tipo_ausencia = request.form.get(f'tipo_ausencia_{obreiro_id}', '')
-                justificativa = request.form.get(f'justificativa_{obreiro_id}', '')
-                
-                print(f"Processando obreiro {obreiro_id}: presente={presente}")
-                
-                # Verificar se já existe
-                cursor.execute("""
-                    SELECT id FROM presenca_reuniao 
-                    WHERE reuniao_id = %s AND obreiro_id = %s
-                """, (reuniao_id, obreiro_id))
-                
-                existe = cursor.fetchone()
-                
-                if existe:
-                    # Atualizar
-                    cursor.execute("""
-                        UPDATE presenca_reuniao 
-                        SET presente = %s, 
-                            tipo_ausencia = %s,
-                            justificativa = %s,
-                            data_atualizacao = CURRENT_TIMESTAMP
-                        WHERE reuniao_id = %s AND obreiro_id = %s
-                    """, (presente, tipo_ausencia if not presente else None,
-                          justificativa if not presente else None,
-                          reuniao_id, obreiro_id))
-                    print(f"  → Atualizado registro existente")
-                else:
-                    # Inserir novo
-                    cursor.execute("""
-                        INSERT INTO presenca_reuniao (reuniao_id, obreiro_id, presente, tipo_ausencia, justificativa)
-                        VALUES (%s, %s, %s, %s, %s)
-                    """, (reuniao_id, obreiro_id, presente,
-                          tipo_ausencia if not presente else None,
-                          justificativa if not presente else None))
-                    print(f"  → Inserido novo registro")
-                
-                registros += 1
+                presentes_ids.add(obreiro_id)
+        
+        print(f"Presentes: {presentes_ids}")
+        
+        registros = 0
+        for obreiro in todos_obreiros:
+            obreiro_id = obreiro['id']
+            presente = 1 if obreiro_id in presentes_ids else 0
+            
+            tipo_ausencia = request.form.get(f'tipo_ausencia_{obreiro_id}', '')
+            justificativa = request.form.get(f'justificativa_{obreiro_id}', '')
+            
+            cursor.execute("""
+                INSERT INTO presenca (reuniao_id, obreiro_id, presente, tipo_ausencia, justificativa)
+                VALUES (%s, %s, %s, %s, %s)
+                ON CONFLICT (reuniao_id, obreiro_id) 
+                DO UPDATE SET 
+                    presente = EXCLUDED.presente,
+                    tipo_ausencia = EXCLUDED.tipo_ausencia,
+                    justificativa = EXCLUDED.justificativa
+            """, (reuniao_id, obreiro_id, presente,
+                  tipo_ausencia if presente == 0 else None,
+                  justificativa if presente == 0 else None))
+            
+            registros += 1
         
         conn.commit()
-        print(f"✅ {registros} registros processados com sucesso!")
-        
-        # Verificar se salvou
-        cursor.execute("SELECT COUNT(*) as total FROM presenca_reuniao WHERE reuniao_id = %s", (reuniao_id,))
-        total = cursor.fetchone()['total']
-        print(f"Total de registros na tabela: {total}")
-        
-        flash(f"✅ {registros} presenças registradas com sucesso!", "success")
+        flash(f"✅ {registros} presenças registradas!", "success")
         
     except Exception as e:
         conn.rollback()
-        print(f"❌ ERRO: {str(e)}")
-        import traceback
-        traceback.print_exc()
-        flash(f"❌ Erro ao registrar presenças: {str(e)}", "danger")
+        flash(f"❌ Erro: {str(e)}", "danger")
     
     finally:
         return_connection(conn)
     
-    return redirect(f"/reunioes/{reuniao_id}")  
-    
+    return redirect(f"/reunioes/{reuniao_id}")
     
 @app.route("/reunioes/<int:reuniao_id>/inicializar_presenca", methods=["GET"])
 @login_required

@@ -499,57 +499,60 @@
                         </div>
                         
                         <form method="POST" action="/reunioes/{{ reuniao.id }}/presenca/lote" id="formPresencaLote">
-                            <div class="presenca-batch-card">
-                                {% for p in presenca %}
-                                <div class="presenca-item" data-obreiro-id="{{ p.id }}">
-                                    <div class="row align-items-center">
-                                        <div class="col-md-5">
-                                            <div class="form-check">
-                                                <input class="form-check-input presencia-checkbox" type="checkbox" 
-                                                       name="presenca_{{ p.id }}" id="presenca_{{ p.id }}" 
-                                                       value="1" {% if p.presente %}checked{% endif %}
-                                                       onchange="toggleJustificativa(this, {{ p.id }})">
-                                                <label class="form-check-label fw-bold" for="presenca_{{ p.id }}">
-                                                    <i class="bi bi-person-circle me-2"></i>
-                                                    {{ p.nome_completo }}
-                                                </label>
-                                                <br>
-                                                <small class="text-muted ms-4">
-                                                    {% set grau_num = p.grau_atual|int %}
-                                                    {% if grau_num == 1 %}Aprendiz
-                                                    {% elif grau_num == 2 %}Companheiro
-                                                    {% elif grau_num == 3 %}Mestre
-                                                    {% else %}Grau {{ grau_num }}{% endif %}
-                                                </small>
-                                            </div>
-                                        </div>
-                                        <div class="col-md-7">
-                                            <div id="justificativa_container_{{ p.id }}" style="{% if p.presente %}display: none;{% endif %}">
-                                                <div class="row g-2">
-                                                    <div class="col-md-5">
-                                                        <select name="tipo_ausencia_{{ p.id }}" class="form-select form-select-sm tipo-ausencia"
-                                                                data-obreiro="{{ p.id }}">
-                                                            <option value="">Tipo de ausência...</option>
-                                                            {% for tipo in tipos_ausencia %}
-                                                            <option value="{{ tipo.nome }}" {% if p.tipo_ausencia == tipo.nome %}selected{% endif %}>
-                                                                {{ tipo.nome }}
-                                                            </option>
-                                                            {% endfor %}
-                                                        </select>
-                                                    </div>
-                                                    <div class="col-md-7">
-                                                        <input type="text" name="justificativa_{{ p.id }}" 
-                                                               class="form-control form-control-sm justificativa-input"
-                                                               placeholder="Justificativa (opcional)"
-                                                               value="{{ p.justificativa or '' }}">
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
+                           <div class="presenca-batch-card">
+    {% for p in presenca %}
+    <div class="presenca-item" data-obreiro-id="{{ p.id }}">
+        <div class="row align-items-center">
+            <div class="col-md-5">
+                <div class="form-check">
+                    <!-- Checkbox para presença -->
+                    <input class="form-check-input presencia-checkbox" type="checkbox" 
+                           name="presenca_{{ p.id }}" id="presenca_{{ p.id }}" 
+                           value="1" {% if p.presente == 1 %}checked{% endif %}
+                           onchange="toggleJustificativa(this, {{ p.id }})">
+                    <label class="form-check-label fw-bold" for="presenca_{{ p.id }}">
+                        <i class="bi bi-person-circle me-2"></i>
+                        {{ p.nome_completo }}
+                    </label>
+                    <br>
+                    <small class="text-muted ms-4">
+                        {% set grau_num = p.grau_atual|int %}
+                        {% if grau_num == 1 %}Aprendiz
+                        {% elif grau_num == 2 %}Companheiro
+                        {% elif grau_num == 3 %}Mestre
+                        {% else %}Grau {{ grau_num }}{% endif %}
+                    </small>
+                </div>
+                <!-- Campo hidden para enviar valor 0 quando checkbox não estiver marcado -->
+                <input type="hidden" name="presenca_{{ p.id }}_hidden" value="0">
+            </div>
+            <div class="col-md-7">
+                <div id="justificativa_container_{{ p.id }}" style="{% if p.presente == 1 %}display: none;{% endif %}">
+                    <div class="row g-2">
+                        <div class="col-md-5">
+                            <select name="tipo_ausencia_{{ p.id }}" class="form-select form-select-sm tipo-ausencia"
+                                    data-obreiro="{{ p.id }}">
+                                <option value="">Tipo de ausência...</option>
+                                {% for tipo in tipos_ausencia %}
+                                <option value="{{ tipo.nome }}" {% if p.tipo_ausencia == tipo.nome %}selected{% endif %}>
+                                    {{ tipo.nome }}
+                                </option>
                                 {% endfor %}
-                            </div>
+                            </select>
+                        </div>
+                        <div class="col-md-7">
+                            <input type="text" name="justificativa_{{ p.id }}" 
+                                   class="form-control form-control-sm justificativa-input"
+                                   placeholder="Justificativa (opcional)"
+                                   value="{{ p.justificativa or '' }}">
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
                             
                             <div class="p-3 bg-light border-top">
                                 <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
@@ -589,14 +592,7 @@
                     </div>
                 </div>
                 {% endif %}
-<!-- DEBUG -->
-<div class="alert alert-info small">
-    <strong>DEBUG - Dados da Presença:</strong><br>
-    Total de obreiros na lista: {{ presenca|length }}<br>
-    {% set presentes_count = presenca|selectattr('presente', 'equalto', 1)|list|length %}
-    Presentes: {{ presentes_count }}<br>
-    Ausentes: {{ presenca|length - presentes_count }}
-</div>
+
                 <!-- Lista de Presença Atual -->
                 <div class="card-modern">
                     <div class="card-header-secondary text-white">
