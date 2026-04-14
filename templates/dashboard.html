@@ -474,39 +474,51 @@
                 </div>
             </div>
             <div class="card-body p-4">
-                <!-- Estatísticas da Sindicância -->
-                <div class="row g-3 mb-4">
-                    <div class="col-md-3 col-sm-6">
-                        <div class="stat-maconico p-3 text-center">
-                            <i class="bi bi-hourglass-split fs-2 text-bordo"></i>
-                            <h2 class="fw-bold numero-bordo mb-0 mt-2">{{ em_analise|default(0) }}</h2>
-                            <small class="text-muted">Em Investigação</small>
-                        </div>
-                    </div>
-                    <div class="col-md-3 col-sm-6">
-                        <div class="stat-maconico p-3 text-center">
-                            <i class="bi bi-check-circle-fill fs-2 text-success"></i>
-                            <h2 class="fw-bold text-success mb-0 mt-2">{{ aprovados|default(0) }}</h2>
-                            <small class="text-muted">Aprovados</small>
-                        </div>
-                    </div>
-                    <div class="col-md-3 col-sm-6">
-                        <div class="stat-maconico p-3 text-center">
-                            <i class="bi bi-x-circle-fill fs-2 text-danger"></i>
-                            <h2 class="fw-bold text-danger mb-0 mt-2">{{ reprovados|default(0) }}</h2>
-                            <small class="text-muted">Reprovados</small>
-                        </div>
-                    </div>
-                    <div class="col-md-3 col-sm-6">
-                        <div class="stat-maconico p-3 text-center">
-                            <i class="bi bi-people-fill fs-2 text-info"></i>
-                            <h2 class="fw-bold text-info mb-0 mt-2">{{ total_candidatos|default(0) }}</h2>
-                            <small class="text-muted">Total</small>
-                        </div>
-                    </div>
-                </div>
+               <!-- Estatísticas da Sindicância -->
+<div class="row g-3 mb-4">
+    <div class="col-md-3 col-sm-6">
+        <div class="stat-maconico p-3 text-center">
+            <i class="bi bi-hourglass-split fs-2 text-bordo"></i>
+            <h2 class="fw-bold numero-bordo mb-0 mt-2">{{ em_analise|default(0) }}</h2>
+            <small class="text-muted">Em Andamento</small>
+            <div class="small text-muted mt-1">
+                <i class="bi bi-info-circle"></i> Aguardando análise
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3 col-sm-6">
+        <div class="stat-maconico p-3 text-center">
+            <i class="bi bi-check-circle-fill fs-2 text-success"></i>
+            <h2 class="fw-bold text-success mb-0 mt-2">{{ aprovados|default(0) }}</h2>
+            <small class="text-muted">Aprovados</small>
+            <div class="small text-muted mt-1">
+                <i class="bi bi-check-lg"></i> Parecer positivo
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3 col-sm-6">
+        <div class="stat-maconico p-3 text-center">
+            <i class="bi bi-x-circle-fill fs-2 text-danger"></i>
+            <h2 class="fw-bold text-danger mb-0 mt-2">{{ reprovados|default(0) }}</h2>
+            <small class="text-muted">Reprovados</small>
+            <div class="small text-muted mt-1">
+                <i class="bi bi-x-lg"></i> Parecer negativo
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3 col-sm-6">
+        <div class="stat-maconico p-3 text-center">
+            <i class="bi bi-people-fill fs-2 text-info"></i>
+            <h2 class="fw-bold text-info mb-0 mt-2">{{ total_candidatos|default(0) }}</h2>
+            <small class="text-muted">Total de Candidatos</small>
+            <div class="small text-muted mt-1">
+                <i class="bi bi-person-plus"></i> Cadastrados no sistema
+            </div>
+        </div>
+    </div>
+</div>
 
-                <!-- Progresso da Sindicância - CORRIGIDO -->
+ <!-- Progresso da Sindicância - CORRIGIDO -->
 <div class="mb-4">
     <div class="d-flex justify-content-between align-items-center mb-3">
         <h6 class="mb-0 fw-bold text-bordo">
@@ -518,108 +530,16 @@
         </span>
     </div>
     
-    {% if candidatos and candidatos|length > 0 %}
-        {% set candidatos_com_formulario = 0 %}
-        {% set candidatos_com_documentos = 0 %}
-        {% set candidatos_completos = 0 %}
-        
-        {% for c in candidatos %}
-            {% if c.cpf or c.rg or c.endereco_residencial %}
-                {% set candidatos_com_formulario = candidatos_com_formulario + 1 %}
-            {% endif %}
-            
-            {% set doc_status = documentos_status.get(c.id) if documentos_status else None %}
-            {% if doc_status and doc_status.enviados and doc_status.enviados > 0 %}
-                {% set candidatos_com_documentos = candidatos_com_documentos + 1 %}
-            {% endif %}
-            
-            {% if (c.cpf or c.rg or c.endereco_residencial) and doc_status and doc_status.enviados and doc_status.enviados > 0 %}
-                {% set candidatos_completos = candidatos_completos + 1 %}
-            {% endif %}
-        {% endfor %}
-        
-        {% set percentual_formulario = (candidatos_com_formulario / total_candidatos * 100) if total_candidatos > 0 else 0 %}
-        {% set percentual_documentos = (candidatos_com_documentos / total_candidatos * 100) if total_candidatos > 0 else 0 %}
-        {% set percentual_completo = (candidatos_completos / total_candidatos * 100) if total_candidatos > 0 else 0 %}
-        
-        <!-- Barra de Progresso - Formulários -->
-        <div class="mb-3">
-            <div class="d-flex justify-content-between mb-1">
-                <small class="text-muted">
-                    <i class="bi bi-file-text me-1"></i> Formulários Preenchidos
-                </small>
-                <small class="fw-bold">{{ candidatos_com_formulario }}/{{ total_candidatos }}</small>
-            </div>
-            <div class="progress-maconico" style="background: rgba(74, 14, 46, 0.1); border-radius: 30px; height: 8px; overflow: hidden;">
-                <div class="progress-bar" role="progressbar" 
-                     style="width: {{ percentual_formulario }}%; background: linear-gradient(90deg, #3b82f6, #60a5fa); border-radius: 30px; height: 100%;"
-                     aria-valuenow="{{ percentual_formulario }}" aria-valuemin="0" aria-valuemax="100">
+    {% if total_candidatos|default(0) > 0 %}
+        <!-- Contagem via JavaScript para evitar problemas com Jinja2 -->
+        <div id="progressoContainer">
+            <div class="text-center py-3">
+                <div class="spinner-border spinner-border-sm text-primary" role="status">
+                    <span class="visually-hidden">Calculando...</span>
                 </div>
+                <p class="mt-2 small text-muted">Calculando progresso...</p>
             </div>
         </div>
-        
-        <!-- Barra de Progresso - Documentos -->
-        <div class="mb-3">
-            <div class="d-flex justify-content-between mb-1">
-                <small class="text-muted">
-                    <i class="bi bi-folder2-open me-1"></i> Documentos Enviados
-                </small>
-                <small class="fw-bold">{{ candidatos_com_documentos }}/{{ total_candidatos }}</small>
-            </div>
-            <div class="progress-maconico" style="background: rgba(74, 14, 46, 0.1); border-radius: 30px; height: 8px; overflow: hidden;">
-                <div class="progress-bar" role="progressbar" 
-                     style="width: {{ percentual_documentos }}%; background: linear-gradient(90deg, #10b981, #34d399); border-radius: 30px; height: 100%;"
-                     aria-valuenow="{{ percentual_documentos }}" aria-valuemin="0" aria-valuemax="100">
-                </div>
-            </div>
-        </div>
-        
-        <!-- Barra de Progresso - Completos -->
-        <div class="mb-2">
-            <div class="d-flex justify-content-between mb-1">
-                <small class="text-muted">
-                    <i class="bi bi-check-circle-fill me-1"></i> Candidatos Completos
-                </small>
-                <small class="fw-bold">{{ candidatos_completos }}/{{ total_candidatos }}</small>
-            </div>
-            <div class="progress-maconico" style="background: rgba(74, 14, 46, 0.1); border-radius: 30px; height: 10px; overflow: hidden;">
-                <div class="progress-bar" role="progressbar" 
-                     style="width: {{ percentual_completo }}%; background: linear-gradient(90deg, var(--bordo), var(--bordo-claro)); border-radius: 30px; height: 100%;"
-                     aria-valuenow="{{ percentual_completo }}" aria-valuemin="0" aria-valuemax="100">
-                </div>
-            </div>
-        </div>
-        
-        <!-- Legenda das cores -->
-        <div class="d-flex justify-content-center gap-3 mt-3">
-            <small class="text-muted">
-                <i class="bi bi-circle-fill text-primary" style="font-size: 0.7rem;"></i> Formulários
-            </small>
-            <small class="text-muted">
-                <i class="bi bi-circle-fill text-success" style="font-size: 0.7rem;"></i> Documentos
-            </small>
-            <small class="text-muted">
-                <i class="bi bi-circle-fill text-bordo" style="font-size: 0.7rem;"></i> Completos
-            </small>
-        </div>
-        
-        {% if candidatos_completos == total_candidatos and total_candidatos > 0 %}
-        <div class="alert alert-success text-center mt-3 mb-0">
-            <i class="bi bi-trophy-fill me-2"></i>
-            🎉 Todos os candidatos estão completos! Aguardando análise dos sindicantes.
-        </div>
-        {% elif candidatos_completos > 0 %}
-        <div class="alert alert-info text-center mt-3 mb-0">
-            <i class="bi bi-hourglass-split me-2"></i>
-            {{ candidatos_completos }} candidato(s) completo(s), aguardando os demais.
-        </div>
-        {% else %}
-        <div class="alert alert-warning text-center mt-3 mb-0">
-            <i class="bi bi-exclamation-triangle me-2"></i>
-            Nenhum candidato completo ainda. Preencha formulários e envie documentos.
-        </div>
-        {% endif %}
-        
     {% else %}
         <div class="alert alert-info text-center mb-0">
             <i class="bi bi-info-circle me-2"></i>
@@ -627,6 +547,132 @@
         </div>
     {% endif %}
 </div>
+
+<script>
+// Função para calcular o progresso da sindicância via JavaScript
+function calcularProgressoSindicancia() {
+    const candidatos = {{ candidatos|tojson|safe }};
+    const documentosStatus = {{ documentos_status|tojson|safe }};
+    const totalCandidatos = {{ total_candidatos|default(0) }};
+    
+    console.log("Candidatos:", candidatos);
+    console.log("Documentos Status:", documentosStatus);
+    console.log("Total:", totalCandidatos);
+    
+    // Lista de documentos obrigatórios
+    const documentosObrigatorios = [
+        'CIM',
+        'RG',
+        'CPF',
+        'Comprovante de Residência',
+        'Certidão de Nascimento',
+        'Certificado de Grau'
+    ];
+    
+    let comFormulario = 0;
+    let comDocumentosCompletos = 0;
+    let totalDocumentosEnviados = 0;
+    let totalDocumentosEsperados = 0;
+    
+    for (const c of candidatos) {
+        // Verificar se tem formulário preenchido (CPF, RG ou endereço)
+        if (c.cpf || c.rg || c.endereco_residencial) {
+            comFormulario++;
+        }
+        
+        // Verificar documentos
+        const docStatus = documentosStatus[c.id.toString()] || documentosStatus[c.id];
+        const enviados = docStatus ? docStatus.enviados : 0;
+        const total = docStatus ? docStatus.total : 0;
+        
+        totalDocumentosEnviados += enviados;
+        
+        // Considera que tem documentos completos se enviou pelo menos 3 documentos
+        // OU se enviou todos os documentos que o candidato tem disponíveis
+        if (enviados >= 3) {
+            comDocumentosCompletos++;
+        }
+    }
+    
+    const percentualForm = totalCandidatos > 0 ? (comFormulario / totalCandidatos * 100) : 0;
+    const percentualDoc = totalCandidatos > 0 ? (comDocumentosCompletos / totalCandidatos * 100) : 0;
+    
+    // Determinar mensagem baseada no status
+    let mensagemStatus = '';
+    let mensagemClasse = 'alert-warning';
+    let mensagemIcone = 'bi-exclamation-triangle';
+    let mensagemTexto = 'Nenhum candidato completo ainda. Preencha formulários e envie documentos.';
+    
+    if (comFormulario === totalCandidatos && comDocumentosCompletos === totalCandidatos && totalCandidatos > 0) {
+        mensagemClasse = 'alert-success';
+        mensagemIcone = 'bi-trophy-fill';
+        mensagemTexto = '🎉 Todos os candidatos estão completos! Aguardando análise dos sindicantes.';
+    } else if (comDocumentosCompletos > 0 || comFormulario > 0) {
+        mensagemClasse = 'alert-info';
+        mensagemIcone = 'bi-hourglass-split';
+        mensagemTexto = `${comFormulario} candidato(s) com formulário, ${comDocumentosCompletos} com documentos suficientes (mínimo 3 documentos).`;
+    }
+    
+    const html = `
+        <div class="mb-3">
+            <div class="d-flex justify-content-between mb-1">
+                <small class="text-muted">
+                    <i class="bi bi-file-text me-1"></i> Formulários Preenchidos
+                </small>
+                <small class="fw-bold">${comFormulario}/${totalCandidatos}</small>
+            </div>
+            <div class="progress-maconico" style="background: rgba(74, 14, 46, 0.1); border-radius: 30px; height: 8px; overflow: hidden;">
+                <div class="progress-bar" role="progressbar" 
+                     style="width: ${percentualForm}%; background: linear-gradient(90deg, #3b82f6, #60a5fa); border-radius: 30px; height: 100%;">
+                </div>
+            </div>
+        </div>
+        
+        <div class="mb-3">
+            <div class="d-flex justify-content-between mb-1">
+                <small class="text-muted">
+                    <i class="bi bi-folder2-open me-1"></i> Candidatos com Documentos (mín. 3)
+                </small>
+                <small class="fw-bold">${comDocumentosCompletos}/${totalCandidatos}</small>
+            </div>
+            <div class="progress-maconico" style="background: rgba(74, 14, 46, 0.1); border-radius: 30px; height: 8px; overflow: hidden;">
+                <div class="progress-bar" role="progressbar" 
+                     style="width: ${percentualDoc}%; background: linear-gradient(90deg, #10b981, #34d399); border-radius: 30px; height: 100%;">
+                </div>
+            </div>
+        </div>
+        
+        <div class="small text-muted mb-2">
+            <i class="bi bi-info-circle me-1"></i>
+            Total de documentos enviados: ${totalDocumentosEnviados}
+        </div>
+        
+        <div class="d-flex justify-content-center gap-3 mt-3">
+            <small class="text-muted">
+                <i class="bi bi-circle-fill text-primary" style="font-size: 0.7rem;"></i> Formulários
+            </small>
+            <small class="text-muted">
+                <i class="bi bi-circle-fill text-success" style="font-size: 0.7rem;"></i> Documentos (≥3)
+            </small>
+        </div>
+        
+        <div class="${mensagemClasse} text-center mt-3 mb-0">
+            <i class="bi ${mensagemIcone} me-2"></i>
+            ${mensagemTexto}
+        </div>
+    `;
+    
+    const container = document.getElementById('progressoContainer');
+    if (container) {
+        container.innerHTML = html;
+    }
+}
+
+// Executar quando a página carregar
+document.addEventListener('DOMContentLoaded', function() {
+    calcularProgressoSindicancia();
+});
+</script>
 
                 <!-- Pendências -->
                 <div class="row g-4">
