@@ -182,8 +182,9 @@
                             <hr>
                             <h6>🏛️ Dados Maçônicos</h6>
 
+                            <!-- DADOS MAÇÔNICOS - APENAS ADMIN PODE EDITAR -->
                             <div class="row">
-                                
+                                {% if is_admin %}
                                 <div class="col-md-4 mb-3">
                                     <label class="form-label">CIM</label>
                                     <input type="text" class="form-control" name="cim_numero" value="{{ obreiro.cim_numero or '' }}">
@@ -197,9 +198,22 @@
                                         <option value="Excluído" {% if obreiro.status_maconico == 'Excluído' %}selected{% endif %}>Excluído</option>
                                     </select>
                                 </div>
+                                {% else %}
+                                <!-- Exibir apenas para não-admin (campo somente leitura) -->
+                                <div class="col-md-4 mb-3">
+                                    <label class="form-label">CIM</label>
+                                    <input type="text" class="form-control" value="{{ obreiro.cim_numero or '-' }}" readonly disabled>
+                                </div>
+                                <div class="col-md-4 mb-3">
+                                    <label class="form-label">Status Maçônico</label>
+                                    <input type="text" class="form-control" value="{{ obreiro.status_maconico or 'Regular' }}" readonly disabled>
+                                </div>
+                                {% endif %}
                             </div>
 
+                            <!-- DATAS MAÇÔNICAS - APENAS ADMIN PODE EDITAR -->
                             <div class="row">
+                                {% if is_admin %}
                                 <div class="col-md-4 mb-3">
                                     <label class="form-label">Data de Iniciação</label>
                                     <input type="date" class="form-control" name="data_iniciacao" value="{{ obreiro.data_iniciacao or '' }}">
@@ -212,9 +226,25 @@
                                     <label class="form-label">Data de Exaltação</label>
                                     <input type="date" class="form-control" name="data_exaltacao" value="{{ obreiro.data_exaltacao or '' }}">
                                 </div>
+                                {% else %}
+                                <div class="col-md-4 mb-3">
+                                    <label class="form-label">Data de Iniciação</label>
+                                    <input type="text" class="form-control" value="{{ obreiro.data_iniciacao.strftime('%d/%m/%Y') if obreiro.data_iniciacao else '-' }}" readonly disabled>
+                                </div>
+                                <div class="col-md-4 mb-3">
+                                    <label class="form-label">Data de Elevação</label>
+                                    <input type="text" class="form-control" value="{{ obreiro.data_elevacao.strftime('%d/%m/%Y') if obreiro.data_elevacao else '-' }}" readonly disabled>
+                                </div>
+                                <div class="col-md-4 mb-3">
+                                    <label class="form-label">Data de Exaltação</label>
+                                    <input type="text" class="form-control" value="{{ obreiro.data_exaltacao.strftime('%d/%m/%Y') if obreiro.data_exaltacao else '-' }}" readonly disabled>
+                                </div>
+                                {% endif %}
                             </div>
 
+                            <!-- DADOS ADICIONAIS MAÇÔNICOS - APENAS ADMIN -->
                             <div class="row">
+                                {% if is_admin %}
                                 <div class="col-md-4 mb-3">
                                     <label class="form-label">Data de Instalação</label>
                                     <input type="date" class="form-control" name="data_instalacao" value="{{ obreiro.data_instalacao or '' }}">
@@ -237,9 +267,29 @@
                                         <option value="SIM" {% if obreiro.artigo_27 == 'SIM' %}selected{% endif %}>Sim</option>
                                     </select>
                                 </div>
+                                {% else %}
+                                <div class="col-md-4 mb-3">
+                                    <label class="form-label">Data de Instalação</label>
+                                    <input type="text" class="form-control" value="{{ obreiro.data_instalacao.strftime('%d/%m/%Y') if obreiro.data_instalacao else '-' }}" readonly disabled>
+                                </div>
+                                <div class="col-md-4 mb-3">
+                                    <label class="form-label">Distinção Maçônica</label>
+                                    <input type="text" class="form-control" value="{{ obreiro.distincao_maconica or '-' }}" readonly disabled>
+                                </div>
+                                <div class="col-md-2 mb-3">
+                                    <label class="form-label">Isento</label>
+                                    <input type="text" class="form-control" value="{{ obreiro.isento or 'NÃO' }}" readonly disabled>
+                                </div>
+                                <div class="col-md-2 mb-3">
+                                    <label class="form-label">Artigo 27</label>
+                                    <input type="text" class="form-control" value="{{ obreiro.artigo_27 or 'NÃO' }}" readonly disabled>
+                                </div>
+                                {% endif %}
                             </div>
 
+                            <!-- LOJA - APENAS ADMIN PODE EDITAR -->
                             <div class="row">
+                                {% if is_admin %}
                                 <div class="col-md-6 mb-3">
                                     <label class="form-label">Loja de Iniciação</label>
                                     <input type="text" class="form-control" name="loja_iniciacao" value="{{ obreiro.loja_iniciacao or '' }}" placeholder="Ex: Loja Maçônica XYZ - Nº 123">
@@ -261,9 +311,21 @@
                                         {% endfor %}
                                     </select>
                                 </div>
+                                {% else %}
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label">Loja de Iniciação</label>
+                                    <input type="text" class="form-control" value="{{ obreiro.loja_iniciacao or '-' }}" readonly disabled>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label">Loja Atual</label>
+                                    <input type="text" class="form-control" value="{{ obreiro.loja_nome or '-' }}" readonly disabled>
+                                </div>
+                                {% endif %}
                             </div>
 
+                            <!-- DADOS DA LOJA (somente leitura para não-admin) -->
                             <div class="row">
+                                {% if is_admin %}
                                 <div class="col-md-4 mb-3">
                                     <label class="form-label">Número da Loja</label>
                                     <input type="text" class="form-control" name="loja_numero" id="lojaNumero" value="{{ obreiro.loja_numero or '' }}">
@@ -280,9 +342,29 @@
                                     <label class="form-label">UF</label>
                                     <input type="text" class="form-control" name="loja_uf" id="lojaUf" value="{{ obreiro.loja_uf or '' }}" maxlength="2">
                                 </div>
+                                {% else %}
+                                <div class="col-md-4 mb-3">
+                                    <label class="form-label">Número da Loja</label>
+                                    <input type="text" class="form-control" value="{{ obreiro.loja_numero or '-' }}" readonly disabled>
+                                </div>
+                                <div class="col-md-4 mb-3">
+                                    <label class="form-label">Oriente</label>
+                                    <input type="text" class="form-control" value="{{ obreiro.loja_orient or '-' }}" readonly disabled>
+                                </div>
+                                <div class="col-md-2 mb-3">
+                                    <label class="form-label">Cidade</label>
+                                    <input type="text" class="form-control" value="{{ obreiro.loja_cidade or '-' }}" readonly disabled>
+                                </div>
+                                <div class="col-md-2 mb-3">
+                                    <label class="form-label">UF</label>
+                                    <input type="text" class="form-control" value="{{ obreiro.loja_uf or '-' }}" readonly disabled>
+                                </div>
+                                {% endif %}
                             </div>
 
+                            <!-- RECOLHE - APENAS ADMIN -->
                             <div class="row">
+                                {% if is_admin %}
                                 <div class="col-md-3 mb-3">
                                     <label class="form-label">Recolhe</label>
                                     <select class="form-select" name="recolhe">
@@ -290,6 +372,12 @@
                                         <option value="Não" {% if obreiro.recolhe == 'Não' %}selected{% endif %}>Não</option>
                                     </select>
                                 </div>
+                                {% else %}
+                                <div class="col-md-3 mb-3">
+                                    <label class="form-label">Recolhe</label>
+                                    <input type="text" class="form-control" value="{{ obreiro.recolhe or 'Não' }}" readonly disabled>
+                                </div>
+                                {% endif %}
                             </div>
 
                             <hr>
@@ -912,6 +1000,10 @@ document.addEventListener('DOMContentLoaded', function() {
     .form-control:focus, .form-select:focus {
         border-color: #0d6efd;
         box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.25);
+    }
+    input:disabled, input[readonly] {
+        background-color: #e9ecef;
+        cursor: not-allowed;
     }
     @media (max-width: 768px) {
         .d-flex.align-items-center {

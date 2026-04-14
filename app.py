@@ -1008,6 +1008,14 @@ init_whatsapp_tables()
 # =============================
 import unicodedata
 
+def formatar_data_pt(data):
+    meses = {
+        1: 'Janeiro', 2: 'Fevereiro', 3: 'Março', 4: 'Abril',
+        5: 'Maio', 6: 'Junho', 7: 'Julho', 8: 'Agosto',
+        9: 'Setembro', 10: 'Outubro', 11: 'Novembro', 12: 'Dezembro'
+    }
+    return f"{data.day} de {meses[data.month]} de {data.year}"
+
 def remover_acentos(texto):
     """Remove acentos de uma string"""
     if not texto:
@@ -4722,17 +4730,35 @@ def visualizar_obreiro(id):
         historico_graus = cursor.fetchall()
         
         # ============================================
-        # CONTAR FAMILIARES (dependentes)
+        # CONTAR FAMILIARES - CORRIGIDO (tabela: familiares)
         # ============================================
-        cursor.execute("SELECT COUNT(*) as total FROM dependentes WHERE obreiro_id = %s", (id,))
-        familiares_count = cursor.fetchone()["total"]
+        # Verificar qual tabela existe primeiro
+        familiares_count = 0
+        try:
+            # Tentar com tabela 'familiares'
+            cursor.execute("SELECT COUNT(*) as total FROM familiares WHERE obreiro_id = %s", (id,))
+            result = cursor.fetchone()
+            if result:
+                familiares_count = result["total"]
+            else:
+                # Se não, tentar com 'dependentes'
+                cursor.execute("SELECT COUNT(*) as total FROM dependentes WHERE obreiro_id = %s", (id,))
+                result = cursor.fetchone()
+                if result:
+                    familiares_count = result["total"]
+        except Exception as e:
+            print(f"Erro ao contar familiares: {e}")
+            familiares_count = 0
+        
+        print(f"DEBUG: Obreiro ID {id} tem {familiares_count} familiares")
         
         # ============================================
         # CONTAR CONDECORAÇÕES
         # ============================================
         try:
             cursor.execute("SELECT COUNT(*) as total FROM condecoracoes_obreiro WHERE obreiro_id = %s", (id,))
-            condecoracoes_count = cursor.fetchone()["total"]
+            result = cursor.fetchone()
+            condecoracoes_count = result["total"] if result else 0
         except:
             condecoracoes_count = 0
         
@@ -4741,7 +4767,8 @@ def visualizar_obreiro(id):
         # ============================================
         try:
             cursor.execute("SELECT COUNT(*) as total FROM comunicados_obreiro WHERE obreiro_id = %s AND ativo = 1", (id,))
-            comunicados_count = cursor.fetchone()["total"]
+            result = cursor.fetchone()
+            comunicados_count = result["total"] if result else 0
         except:
             comunicados_count = 0
         
@@ -4750,7 +4777,6 @@ def visualizar_obreiro(id):
         # ============================================
         cargos_disponiveis = []
         if session.get("tipo") == "admin":
-            # CORREÇÃO: Adicionar grau_minimo na query
             cursor.execute("""
                 SELECT id, nome, sigla, grau_minimo, descricao 
                 FROM cargos 
@@ -4758,10 +4784,6 @@ def visualizar_obreiro(id):
                 ORDER BY grau_minimo ASC, ordem ASC, nome
             """)
             cargos_disponiveis = cursor.fetchall()
-            
-            # Debug: imprimir no terminal
-            for cargo in cargos_disponiveis:
-                print(f"Cargo: {cargo['nome']}, grau_minimo: {cargo.get('grau_minimo', 'NULL')}")
         
         # ============================================
         # GRAUS DISPONÍVEIS (apenas admin)

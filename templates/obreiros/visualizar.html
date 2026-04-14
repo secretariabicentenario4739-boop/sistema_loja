@@ -79,7 +79,7 @@
                         <div class="d-flex justify-content-between align-items-center">
                             <div>
                                 <h6 class="card-title mb-0">Familiares</h6>
-                                <h2 class="mb-0">{{ familiares_count }}</h2>
+                                <h2 class="mb-0">{{ familiares_count|default(0) }}</h2>
                             </div>
                             <i class="bi bi-people fs-1 opacity-50"></i>
                         </div>
@@ -92,7 +92,7 @@
                         <div class="d-flex justify-content-between align-items-center">
                             <div>
                                 <h6 class="card-title mb-0">Condecorações</h6>
-                                <h2 class="mb-0">{{ condecoracoes_count }}</h2>
+                                <h2 class="mb-0">{{ condecoracoes_count|default(0) }}</h2>
                             </div>
                             <i class="bi bi-award fs-1 opacity-50"></i>
                         </div>
@@ -179,8 +179,7 @@
                                             {% else %}
                                                 -
                                             {% endif %}
-                                         </td>
-                                    </tr>
+                                        </tr>
                                 </table>
                             </div>
                             <div class="col-md-6">
@@ -238,10 +237,10 @@
             </div>
         </div>
 
-        <!-- Cargos, Graus e Documentos em 3 colunas -->
+        <!-- Cargos Ocupados e Documentos -->
         <div class="row g-4 mb-4">
-            <!-- Coluna 1: Cargos Ocupados -->
-            <div class="col-md-4">
+            <!-- Coluna 1: Cargos Ocupados (com formulário de adicionar dentro) -->
+            <div class="col-md-6">
                 <div class="card shadow-sm h-100">
                     <div class="card-header bg-secondary text-white">
                         <h5 class="mb-0"><i class="bi bi-journal"></i> Cargos Ocupados</h5>
@@ -254,6 +253,7 @@
                                         <tr>
                                             <th>Cargo</th>
                                             <th>Início</th>
+                                            <th>Gestão</th>
                                             <th>Ações</th>
                                         </tr>
                                     </thead>
@@ -265,8 +265,9 @@
                                                 {% if cargo.sigla %}
                                                 <br><small class="text-muted">{{ cargo.sigla }}</small>
                                                 {% endif %}
-                                            </td>
+                                              </td>
                                             <td class="text-nowrap">{{ cargo.data_inicio.strftime('%d/%m/%Y') if cargo.data_inicio else '-' }}</td>
+                                            <td>{{ cargo.gestao or '-' }}</td>
                                             <td>
                                                 {% if session.tipo == 'admin' %}
                                                 <a href="/obreiros/cargo/{{ cargo.id }}/remover" 
@@ -283,26 +284,20 @@
                                 </table>
                             </div>
                         {% else %}
-                            <div class="text-center text-muted py-4">
+                            <div class="text-center text-muted py-3">
                                 <i class="bi bi-journal-x fs-1"></i>
                                 <p class="mb-0">Nenhum cargo ocupado</p>
                             </div>
                         {% endif %}
-                    </div>
-                </div>
-            </div>
 
-            <!-- Coluna 2: Gerenciamento de Graus -->
-            <div class="col-md-4">
-                <div class="card shadow-sm h-100">
-                    <div class="card-header bg-success text-white">
-                        <h5 class="mb-0"><i class="bi bi-star-fill"></i> Gerenciar Graus</h5>
-                    </div>
-                    <div class="card-body">
-                        <!-- Grau Atual -->
-                        <div class="alert alert-info mb-3">
+                        <!-- Formulário para adicionar novo cargo (dentro do card) -->
+                        {% if session.tipo == 'admin' and cargos_disponiveis %}
+                        <hr>
+                        <h6 class="mb-3"><i class="bi bi-plus-circle"></i> Adicionar Novo Cargo</h6>
+                        
+                        <div class="alert alert-info small mb-3">
                             <i class="bi bi-star-fill"></i>
-                            <strong>Grau Atual:</strong>
+                            <strong>Grau atual do obreiro:</strong> 
                             {% set grau_num = obreiro.grau_atual|int %}
                             {% if grau_num == 1 %}
                                 Aprendiz (1º Grau)
@@ -314,58 +309,56 @@
                                 Grau {{ grau_num }}
                             {% endif %}
                         </div>
-
-                        <!-- Formulário para atribuir novo grau (apenas admin) -->
-                        {% if session.tipo == 'admin' and graus_disponiveis %}
-                        <h6 class="mb-3"><i class="bi bi-plus-circle"></i> Atribuir Novo Grau</h6>
-                        <form method="POST" action="/obreiros/{{ obreiro.id }}/atribuir_grau" class="mb-3" onsubmit="return validarGrau()">
-                            <div class="mb-2">
-                                <select name="grau_id" id="grauSelect" class="form-select form-select-sm" required onchange="verificarGrau()">
-                                    <option value="">Selecione o grau...</option>
-                                    {% for grau in graus_disponiveis %}
-                                    <option value="{{ grau.id }}" 
-                                            data-nivel="{{ grau.nivel }}"
-                                            data-nome="{{ grau.nome }}">
-                                        {{ grau.nome }} ({{ grau.nivel }}º Grau)
+                        
+                        <form method="POST" action="/obreiros/{{ obreiro.id }}/vincular_cargo" class="row g-2" onsubmit="return validarCargo()">
+                            <div class="col-md-6">
+                                <select name="cargo_id" id="cargoSelect" class="form-select form-select-sm" required onchange="verificarGrauCargo()">
+                                    <option value="">Selecione o cargo...</option>
+                                    {% for cargo in cargos_disponiveis %}
+                                    <option value="{{ cargo.id }}" 
+                                            data-grau-minimo="{{ cargo.grau_minimo or 3 }}"
+                                            data-cargo-nome="{{ cargo.nome }}">
+                                        {{ cargo.nome }} ({{ cargo.sigla }})
+                                        {% if cargo.grau_minimo %}
+                                            - Exige {{ cargo.grau_minimo }}º Grau
+                                        {% else %}
+                                            - Exige 3º Grau
+                                        {% endif %}
                                     </option>
                                     {% endfor %}
                                 </select>
                             </div>
-                            <div class="mb-2">
-                                <input type="date" name="data_grau" class="form-control form-control-sm" 
+                            <div class="col-md-3">
+                                <input type="date" name="data_inicio" id="dataInicio" class="form-control form-control-sm" 
                                        value="{{ now.strftime('%Y-%m-%d') }}" required>
                             </div>
-                            <div class="mb-2">
-                                <textarea name="observacao" class="form-control form-control-sm" 
-                                          rows="2" placeholder="Observação sobre a elevação de grau (opcional)"></textarea>
+                            <div class="col-md-2">
+                                <input type="text" name="gestao" id="gestao" class="form-control form-control-sm" 
+                                       placeholder="Gestão">
                             </div>
-                            <button type="submit" class="btn btn-success btn-sm w-100" id="btnAtribuirGrau">
-                                <i class="bi bi-plus-circle"></i> Atribuir Grau
-                            </button>
+                            <div class="col-md-1">
+                                <button type="submit" class="btn btn-success btn-sm w-100" id="btnAtribuirCargo">
+                                    <i class="bi bi-plus"></i>
+                                </button>
+                            </div>
                         </form>
                         
-                        <!-- Mensagem de aviso sobre grau -->
-                        <div id="avisoGrau" class="alert alert-warning small mt-2" style="display: none;">
+                        <div id="avisoGrauCargo" class="alert alert-warning small mt-2" style="display: none;">
                             <i class="bi bi-exclamation-triangle-fill"></i>
-                            <span id="avisoGrauTexto"></span>
+                            <span id="avisoGrauCargoTexto"></span>
                         </div>
                         
-                        <small class="text-muted d-block">
+                        <small class="text-muted mt-2 d-block">
                             <i class="bi bi-info-circle"></i> 
-                            Ao atribuir um novo grau, será registrado no histórico e o grau atual será atualizado.
+                            Ao adicionar um novo cargo, o cargo anterior será mantido no histórico.
                         </small>
-                        {% else %}
-                        <div class="text-center text-muted py-3">
-                            <i class="bi bi-lock fs-1"></i>
-                            <p class="mb-0">Apenas administradores podem gerenciar graus.</p>
-                        </div>
                         {% endif %}
                     </div>
                 </div>
             </div>
 
-            <!-- Coluna 3: Documentos -->
-            <div class="col-md-4">
+            <!-- Coluna 2: Documentos -->
+            <div class="col-md-6">
                 <div class="card shadow-sm h-100">
                     <div class="card-header bg-info text-white">
                         <h5 class="mb-0">
@@ -373,7 +366,7 @@
                             <span class="badge bg-light text-dark ms-2" id="totalDocumentosVis">0</span>
                         </h5>
                     </div>
-                    <div class="card-body" style="max-height: 350px; overflow-y: auto;">
+                    <div class="card-body" style="max-height: 400px; overflow-y: auto;">
                         <div id="listaDocumentosVis">
                             <div class="text-center text-muted py-4" id="semDocumentosVis">
                                 <i class="bi bi-cloud-slash fs-1"></i>
@@ -385,105 +378,58 @@
             </div>
         </div>
 
-        <!-- Histórico de Graus, Familiares e Condecorações -->
+        <!-- Familiares, Condecorações e Comunicados -->
         <div class="row g-4 mb-4">
-            <!-- Histórico de Graus -->
-            <div class="col-md-6">
+            <!-- Familiares -->
+            <div class="col-md-4">
                 <div class="card shadow-sm h-100">
-                    <div class="card-header bg-success text-white">
-                        <h5 class="mb-0"><i class="bi bi-clock-history"></i> Histórico de Graus</h5>
+                    <div class="card-header bg-info text-white">
+                        <h5 class="mb-0"><i class="bi bi-people"></i> Familiares</h5>
                     </div>
-                    <div class="card-body">
-                        {% if historico_graus and historico_graus|length > 0 %}
-                            <div class="table-responsive">
-                                <table class="table table-sm table-hover">
-                                    <thead>
-                                        <tr>
-                                            <th>Grau</th>
-                                            <th>Data</th>
-                                            <th>Observação</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        {% for hist in historico_graus %}
-                                        <tr>
-                                            <td>
-                                                <span class="badge bg-secondary">{{ hist.grau }}º</span>
-                                                {% if hist.nome_grau %}
-                                                <br><small class="text-muted">{{ hist.nome_grau }}</small>
-                                                {% endif %}
-                                            </td>
-                                            <td>{{ hist.data.strftime('%d/%m/%Y') if hist.data else '-' }}</td>
-                                            <td>{{ hist.observacao or '-' }}</td>
-                                        </tr>
-                                        {% endfor %}
-                                    </tbody>
-                                </table>
-                            </div>
-                        {% else %}
-                            <div class="text-center text-muted py-4">
-                                <i class="bi bi-clock-history fs-1"></i>
-                                <p class="mb-0">Nenhum histórico de graus registrado</p>
-                            </div>
-                        {% endif %}
+                    <div class="card-body text-center">
+                        <i class="bi bi-people-fill fs-1 text-info"></i>
+                        <h2 class="mt-2 fw-bold">{{ familiares_count|default(0) }}</h2>
+                        <p class="text-muted">familiares cadastrados</p>
+                        <a href="/obreiros/{{ obreiro.id }}/familiares" class="btn btn-outline-info">
+                            <i class="bi bi-eye"></i> Gerenciar
+                        </a>
                     </div>
                 </div>
             </div>
 
-            <!-- Familiares e Condecorações -->
-            <div class="col-md-6">
-                <div class="row g-4">
-                    <div class="col-12">
-                        <div class="card shadow-sm h-100">
-                            <div class="card-header bg-info text-white">
-                                <h5 class="mb-0"><i class="bi bi-people"></i> Familiares</h5>
-                            </div>
-                            <div class="card-body text-center">
-                                <i class="bi bi-people fs-1 text-info"></i>
-                                <h3 class="mt-2">{{ familiares_count }}</h3>
-                                <p class="text-muted">familiares cadastrados</p>
-                                <a href="/obreiros/{{ obreiro.id }}/familiares" class="btn btn-outline-info">
-                                    <i class="bi bi-eye"></i> Gerenciar
-                                </a>
-                            </div>
-                        </div>
+            <!-- Condecorações -->
+            <div class="col-md-4">
+                <div class="card shadow-sm h-100">
+                    <div class="card-header bg-warning text-dark">
+                        <h5 class="mb-0"><i class="bi bi-award"></i> Condecorações</h5>
                     </div>
-                    <div class="col-12">
-                        <div class="card shadow-sm h-100">
-                            <div class="card-header bg-warning text-dark">
-                                <h5 class="mb-0"><i class="bi bi-award"></i> Condecorações</h5>
-                            </div>
-                            <div class="card-body text-center">
-                                <i class="bi bi-award fs-1 text-warning"></i>
-                                <h3 class="mt-2">{{ condecoracoes_count }}</h3>
-                                <p class="text-muted">condecorações recebidas</p>
-                                <div class="d-grid gap-2">
-                                    <a href="/obreiros/{{ obreiro.id }}/condecoracoes" class="btn btn-outline-warning">
-                                        <i class="bi bi-eye"></i> Ver Todas
-                                    </a>
-                                    {% if session.tipo == 'admin' %}
-                                    <a href="/obreiros/{{ obreiro.id }}/condecoracoes/nova" class="btn btn-warning">
-                                        <i class="bi bi-plus-circle"></i> Nova Condecoração
-                                    </a>
-                                    {% endif %}
-                                </div>
-                            </div>
+                    <div class="card-body text-center">
+                        <i class="bi bi-award fs-1 text-warning"></i>
+                        <h2 class="mt-2 fw-bold">{{ condecoracoes_count|default(0) }}</h2>
+                        <p class="text-muted">condecorações recebidas</p>
+                        <div class="d-grid gap-2">
+                            <a href="/obreiros/{{ obreiro.id }}/condecoracoes" class="btn btn-outline-warning">
+                                <i class="bi bi-eye"></i> Ver Todas
+                            </a>
+                            {% if session.tipo == 'admin' %}
+                            <a href="/obreiros/{{ obreiro.id }}/condecoracoes/nova" class="btn btn-warning">
+                                <i class="bi bi-plus-circle"></i> Nova Condecoração
+                            </a>
+                            {% endif %}
                         </div>
                     </div>
                 </div>
             </div>
-        </div>
 
-        <!-- Comunicados e Administração -->
-        <div class="row g-4">
-            <div class="col-md-6">
-                <div class="card shadow-sm">
+            <!-- Comunicados -->
+            <div class="col-md-4">
+                <div class="card shadow-sm h-100">
                     <div class="card-header bg-danger text-white">
                         <h5 class="mb-0"><i class="bi bi-envelope-paper"></i> Comunicados</h5>
                     </div>
                     <div class="card-body text-center">
                         <i class="bi bi-envelope-paper fs-1 text-danger"></i>
-                        <h3 class="mt-2">{{ comunicados_count|default(0) }}</h3>
+                        <h2 class="mt-2 fw-bold">{{ comunicados_count|default(0) }}</h2>
                         <p class="text-muted">comunicados registrados</p>
                         <a href="/obreiros/{{ obreiro.id }}/comunicados" class="btn btn-outline-danger">
                             <i class="bi bi-eye"></i> Ver Histórico
@@ -491,95 +437,8 @@
                     </div>
                 </div>
             </div>
-            
-            {% if session.tipo == 'admin' %}
-            <div class="col-md-6">
-                <div class="card shadow-sm">
-                    <div class="card-header bg-dark text-white">
-                        <h5 class="mb-0"><i class="bi bi-gear"></i> Administração</h5>
-                    </div>
-                    <div class="card-body">
-                        <div class="d-grid gap-2">
-                            <a href="/tipos_condecoracoes" class="btn btn-outline-light">
-                                <i class="bi bi-award"></i> Gerenciar Tipos de Condecoração
-                            </a>
-                            <a href="/tipos_condecoracoes/novo" class="btn btn-outline-light">
-                                <i class="bi bi-plus-circle"></i> Criar Novo Tipo de Condecoração
-                            </a>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            {% endif %}
         </div>
 
-        <!-- Adicionar novo cargo (apenas admin) - movido para uma seção separada -->
-        {% if session.tipo == 'admin' and cargos_disponiveis %}
-        <div class="card shadow-sm mt-4">
-            <div class="card-header bg-secondary text-white">
-                <h5 class="mb-0"><i class="bi bi-plus-circle"></i> Adicionar Novo Cargo</h5>
-            </div>
-            <div class="card-body">
-                <div class="alert alert-info small mb-3">
-                    <i class="bi bi-star-fill"></i>
-                    <strong>Grau atual do obreiro:</strong> 
-                    {% set grau_num = obreiro.grau_atual|int %}
-                    {% if grau_num == 1 %}
-                        Aprendiz (1º Grau)
-                    {% elif grau_num == 2 %}
-                        Companheiro (2º Grau)
-                    {% elif grau_num == 3 %}
-                        Mestre (3º Grau)
-                    {% elif grau_num >= 4 %}
-                        Grau {{ grau_num }}
-                    {% endif %}
-                </div>
-                
-                <form method="POST" action="/obreiros/{{ obreiro.id }}/vincular_cargo" class="row g-2" onsubmit="return validarCargo()">
-                    <div class="col-md-5">
-                        <select name="cargo_id" id="cargoSelect" class="form-select form-select-sm" required onchange="verificarGrauCargo()">
-                            <option value="">Selecione o cargo...</option>
-                            {% for cargo in cargos_disponiveis %}
-                            <option value="{{ cargo.id }}" 
-                                    data-grau-minimo="{{ cargo.grau_minimo or 3 }}"
-                                    data-cargo-nome="{{ cargo.nome }}">
-                                {{ cargo.nome }} ({{ cargo.sigla }})
-                                {% if cargo.grau_minimo %}
-                                    - Exige {{ cargo.grau_minimo }}º Grau
-                                {% else %}
-                                    - Exige 3º Grau
-                                {% endif %}
-                            </option>
-                            {% endfor %}
-                        </select>
-                    </div>
-                    <div class="col-md-3">
-                        <input type="date" name="data_inicio" id="dataInicio" class="form-control form-control-sm" 
-                               value="{{ now.strftime('%Y-%m-%d') }}" required>
-                    </div>
-                    <div class="col-md-3">
-                        <input type="text" name="gestao" id="gestao" class="form-control form-control-sm" 
-                               placeholder="Gestão (ex: 2024-2026)">
-                    </div>
-                    <div class="col-md-1">
-                        <button type="submit" class="btn btn-success btn-sm w-100" id="btnAtribuirCargo">
-                            <i class="bi bi-plus"></i>
-                        </button>
-                    </div>
-                </form>
-                
-                <div id="avisoGrauCargo" class="alert alert-warning small mt-2" style="display: none;">
-                    <i class="bi bi-exclamation-triangle-fill"></i>
-                    <span id="avisoGrauCargoTexto"></span>
-                </div>
-                
-                <small class="text-muted mt-2 d-block">
-                    <i class="bi bi-info-circle"></i> 
-                    Ao adicionar um novo cargo, o cargo anterior será mantido no histórico.
-                </small>
-            </div>
-        </div>
-        {% endif %}
     </div>
 </div>
 
@@ -631,7 +490,6 @@
 </div>
 
 <script>
-// Funções para gerenciamento de cargos
 function verificarGrauCargo() {
     const select = document.getElementById('cargoSelect');
     if (!select) return;
@@ -684,60 +542,9 @@ function validarCargo() {
     return confirm(`✅ Confirmar atribuição do cargo "${cargoNome}" ao obreiro?`);
 }
 
-// Funções para gerenciamento de graus
-function verificarGrau() {
-    const select = document.getElementById('grauSelect');
-    if (!select) return;
-    
-    const selectedOption = select.options[select.selectedIndex];
-    const avisoDiv = document.getElementById('avisoGrau');
-    const avisoTexto = document.getElementById('avisoGrauTexto');
-    const btnAtribuir = document.getElementById('btnAtribuirGrau');
-    
-    if (!selectedOption || !selectedOption.value) {
-        if (avisoDiv) avisoDiv.style.display = 'none';
-        if (btnAtribuir) btnAtribuir.disabled = false;
-        return;
-    }
-    
-    const nivelGrau = parseInt(selectedOption.dataset.nivel) || 1;
-    const nomeGrau = selectedOption.dataset.nome;
-    const grauAtual = {{ obreiro.grau_atual|default(1)|int }};
-    
-    if (nivelGrau <= grauAtual) {
-        if (avisoTexto) avisoTexto.innerHTML = `⚠️ O grau "${nomeGrau}" (${nivelGrau}º) é menor ou igual ao grau atual (${grauAtual}º). Apenas graus superiores podem ser atribuídos.`;
-        if (avisoDiv) avisoDiv.style.display = 'block';
-        if (btnAtribuir) btnAtribuir.disabled = true;
-    } else {
-        if (avisoDiv) avisoDiv.style.display = 'none';
-        if (btnAtribuir) btnAtribuir.disabled = false;
-    }
-}
+// Modal de exclusão
+let modalExclusaoDefinitiva;
 
-function validarGrau() {
-    const select = document.getElementById('grauSelect');
-    if (!select) return false;
-    
-    const selectedOption = select.options[select.selectedIndex];
-    
-    if (!selectedOption || !selectedOption.value) {
-        alert('❌ Selecione um grau!');
-        return false;
-    }
-    
-    const nivelGrau = parseInt(selectedOption.dataset.nivel) || 1;
-    const nomeGrau = selectedOption.dataset.nome;
-    const grauAtual = {{ obreiro.grau_atual|default(1)|int }};
-    
-    if (nivelGrau <= grauAtual) {
-        alert(`❌ O grau "${nomeGrau}" (${nivelGrau}º) é menor ou igual ao grau atual (${grauAtual}º). Apenas graus superiores podem ser atribuídos.`);
-        return false;
-    }
-    
-    return confirm(`✅ Confirmar elevação do obreiro para ${nomeGrau} (${nivelGrau}º Grau)?`);
-}
-
-// Inicializar verificações ao carregar a página
 document.addEventListener('DOMContentLoaded', function() {
     const cargoSelect = document.getElementById('cargoSelect');
     if (cargoSelect) {
@@ -745,19 +552,8 @@ document.addEventListener('DOMContentLoaded', function() {
         verificarGrauCargo();
     }
     
-    const grauSelect = document.getElementById('grauSelect');
-    if (grauSelect) {
-        grauSelect.addEventListener('change', verificarGrau);
-        verificarGrau();
-    }
-    
     carregarDocumentosVisualizacao();
-});
-
-// Modal de exclusão
-let modalExclusaoDefinitiva;
-
-document.addEventListener('DOMContentLoaded', function() {
+    
     modalExclusaoDefinitiva = new bootstrap.Modal(document.getElementById('modalConfirmExclusaoDefinitiva'));
     
     const confirmInput = document.getElementById('confirmExclusaoText');
