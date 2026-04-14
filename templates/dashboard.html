@@ -5,75 +5,41 @@
 {% block styles %}
 {{ super() }}
 <style>
-    /* VARIÁVEIS DO RITO BRASILEIRO - COR BORDÔ (VINHO) */
+    /* VARIÁVEIS DO RITO BRASILEIRO - COR BORDÔ (VINHO) - VERSÃO CLARA */
     :root {
         --bordo: #4A0E2E;
-        --bordo-escuro: #2E0518;
+        --bordo-escuro: #3A0A24;
         --bordo-claro: #6B1342;
-        --bordo-vibrante: #8B1A50;
+        --bordo-suave: #8B4A6B;
         --bordo-destaque: #A82265;
         --ouro: #D4AF37;
         --ouro-escuro: #996515;
         --ouro-claro: #F0D68A;
-        --bege-pergaminho: #E8DCC8;
-        --cinza-nobre: #2C2C2C;
-        --cinza-claro: #4A4A4A;
-        --branco-suave: #F5F0E8;
+        --bege-pergaminho: #F5F0E8;
+        --cinza-suave: #E8E0D8;
+        --cinza-texto: #4A4A4A;
+        --cinza-claro-texto: #6B6B6B;
+        --branco: #FFFFFF;
     }
 
-    /* FUNDO COM TEXTURA DE PERGAMINHO E SÍMBOLOS MAÇÔNICOS */
-    body {
-        background: linear-gradient(135deg, var(--bordo-escuro) 0%, #1A0A10 100%);
-        position: relative;
-    }
-    
-    body::before {
-        content: '';
-        position: fixed;
-        top: 0;
-        left: 0;
-        right: 0;
-        bottom: 0;
-        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 200 200' opacity='0.04'%3E%3Cpath fill='none' stroke='%23D4AF37' stroke-width='0.8' d='M100 20 L180 60 L180 140 L100 180 L20 140 L20 60 Z'/%3E%3Ccircle cx='100' cy='100' r='15' fill='%23D4AF37' opacity='0.2'/%3E%3Cpath d='M70 70 L130 70 L130 130 L70 130 Z' fill='none' stroke='%23D4AF37' stroke-width='0.5' opacity='0.3'/%3E%3C/svg%3E");
-        background-repeat: repeat;
-        background-size: 80px;
-        pointer-events: none;
-    }
-
-    /* CARDS DO RITO BRASILEIRO */
+    /* CARDS DO RITO BRASILEIRO - VERSÃO CLARA */
     .card-maconico {
-        background: linear-gradient(135deg, rgba(30, 10, 20, 0.92) 0%, rgba(20, 5, 12, 0.92) 100%);
-        backdrop-filter: blur(12px);
-        border: 1px solid rgba(212, 175, 55, 0.25);
+        background: var(--branco);
+        border: 1px solid rgba(74, 14, 46, 0.12);
         border-radius: 20px;
         transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
         position: relative;
         overflow: hidden;
-        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
-    }
-    
-    .card-maconico::before {
-        content: '';
-        position: absolute;
-        top: 0;
-        left: -100%;
-        width: 100%;
-        height: 100%;
-        background: linear-gradient(90deg, transparent, rgba(212, 175, 55, 0.08), transparent);
-        transition: left 0.6s;
-    }
-    
-    .card-maconico:hover::before {
-        left: 100%;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
     }
     
     .card-maconico:hover {
-        transform: translateY(-5px);
-        border-color: var(--ouro);
-        box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4), 0 0 25px rgba(212, 175, 55, 0.15);
+        transform: translateY(-4px);
+        border-color: var(--bordo);
+        box-shadow: 0 12px 24px rgba(0, 0, 0, 0.08);
     }
 
-    /* CABEÇALHO COM GRAVURA DO RITO BRASILEIRO */
+    /* CABEÇALHO DO RITO BRASILEIRO - VERSÃO CLARA */
     .header-maconico {
         background: linear-gradient(135deg, var(--bordo-escuro) 0%, var(--bordo) 100%);
         border-bottom: 2px solid var(--ouro);
@@ -92,50 +58,49 @@
         letter-spacing: 4px;
     }
 
-    /* ESTATÍSTICAS BORDÔ */
+    /* ESTATÍSTICAS BORDÔ - VERSÃO CLARA */
     .stat-maconico {
-        background: rgba(74, 14, 46, 0.7);
-        backdrop-filter: blur(5px);
-        border: 1px solid rgba(212, 175, 55, 0.2);
+        background: rgba(74, 14, 46, 0.04);
+        border: 1px solid rgba(74, 14, 46, 0.1);
         border-radius: 16px;
         transition: all 0.3s;
     }
     
     .stat-maconico:hover {
-        border-color: var(--ouro);
+        border-color: var(--bordo);
         transform: translateY(-3px);
-        background: rgba(107, 19, 66, 0.8);
+        background: rgba(74, 14, 46, 0.06);
     }
 
-    /* NÚMEROS COM EFEITO DOURADO */
-    .numero-ouro {
-        background: linear-gradient(135deg, var(--ouro) 0%, var(--ouro-claro) 100%);
+    /* NÚMEROS COM EFEITO BORDÔ */
+    .numero-bordo {
+        background: linear-gradient(135deg, var(--bordo) 0%, var(--bordo-claro) 100%);
         -webkit-background-clip: text;
         background-clip: text;
         color: transparent;
-        text-shadow: 0 2px 15px rgba(212, 175, 55, 0.25);
+        font-weight: 700;
     }
 
-    /* ÍCONES MAÇÔNICOS - RITO BRASILEIRO */
+    /* ÍCONES MAÇÔNICOS - RITO BRASILEIRO VERSÃO CLARA */
     .icone-maconico {
         width: 50px;
         height: 50px;
-        background: linear-gradient(135deg, var(--ouro), var(--ouro-claro));
+        background: linear-gradient(135deg, var(--bordo), var(--bordo-claro));
         border-radius: 50%;
         display: flex;
         align-items: center;
         justify-content: center;
-        color: var(--bordo-escuro);
+        color: white;
         font-size: 24px;
-        box-shadow: 0 0 20px rgba(212, 175, 55, 0.3);
+        box-shadow: 0 4px 12px rgba(74, 14, 46, 0.2);
     }
 
-    /* TÍTULOS DO RITO BRASILEIRO */
+    /* TÍTULOS DO RITO BRASILEIRO - VERSÃO CLARA */
     .titulo-maconico {
         font-family: 'Georgia', 'Times New Roman', serif;
         letter-spacing: 2px;
         text-transform: uppercase;
-        background: linear-gradient(135deg, var(--ouro), var(--ouro-claro));
+        background: linear-gradient(135deg, var(--bordo), var(--bordo-claro));
         -webkit-background-clip: text;
         background-clip: text;
         color: transparent;
@@ -151,14 +116,14 @@
         left: 0;
         width: 60px;
         height: 2px;
-        background: linear-gradient(90deg, var(--ouro), transparent);
+        background: linear-gradient(90deg, var(--bordo), transparent);
     }
 
-    /* BOTÕES DO RITO BRASILEIRO */
+    /* BOTÕES DO RITO BRASILEIRO - VERSÃO CLARA */
     .btn-maconico {
         background: linear-gradient(135deg, var(--bordo), var(--bordo-escuro));
-        border: 1px solid var(--ouro);
-        color: var(--ouro);
+        border: none;
+        color: white;
         border-radius: 30px;
         padding: 8px 24px;
         transition: all 0.3s;
@@ -166,70 +131,53 @@
     }
     
     .btn-maconico:hover {
-        background: var(--ouro);
-        color: var(--bordo-escuro);
+        background: linear-gradient(135deg, var(--bordo-claro), var(--bordo));
         transform: translateY(-2px);
-        box-shadow: 0 5px 20px rgba(212, 175, 55, 0.3);
-        border-color: var(--ouro);
+        box-shadow: 0 5px 15px rgba(74, 14, 46, 0.3);
+        color: white;
     }
 
-    /* PROGRESS BAR BORDÔ E DOURADO */
+    /* PROGRESS BAR BORDÔ - VERSÃO CLARA */
     .progress-maconico {
-        background: rgba(74, 14, 46, 0.6);
+        background: rgba(74, 14, 46, 0.1);
         border-radius: 30px;
         height: 10px;
         overflow: hidden;
     }
     
     .progress-maconico .progress-bar {
-        background: linear-gradient(90deg, var(--ouro), var(--ouro-claro));
+        background: linear-gradient(90deg, var(--bordo), var(--bordo-claro));
         border-radius: 30px;
         position: relative;
         overflow: hidden;
     }
-    
-    .progress-maconico .progress-bar::after {
-        content: '';
-        position: absolute;
-        top: 0;
-        left: 0;
-        right: 0;
-        bottom: 0;
-        background: linear-gradient(90deg, transparent, rgba(255,255,255,0.25), transparent);
-        animation: brilho 2s infinite;
-    }
-    
-    @keyframes brilho {
-        0% { transform: translateX(-100%); }
-        100% { transform: translateX(100%); }
-    }
 
-    /* TABELA DO RITO BRASILEIRO */
+    /* TABELA DO RITO BRASILEIRO - VERSÃO CLARA */
     .table-maconica {
-        background: rgba(74, 14, 46, 0.3);
+        background: var(--branco);
         border-radius: 16px;
         overflow: hidden;
     }
     
     .table-maconica thead {
-        background: linear-gradient(135deg, var(--bordo), var(--bordo-escuro));
-        color: var(--ouro);
+        background: rgba(74, 14, 46, 0.05);
+        color: var(--bordo);
     }
     
     .table-maconica tbody tr {
-        border-bottom: 1px solid rgba(212, 175, 55, 0.1);
+        border-bottom: 1px solid rgba(74, 14, 46, 0.08);
         transition: all 0.3s;
     }
     
     .table-maconica tbody tr:hover {
-        background: rgba(212, 175, 55, 0.05);
+        background: rgba(74, 14, 46, 0.02);
     }
 
     /* SÍMBOLOS DO RITO BRASILEIRO */
     .simbolo-maconico {
         font-size: 14px;
         letter-spacing: 6px;
-        color: var(--ouro);
+        color: var(--bordo);
         text-align: center;
         margin: 20px 0;
         font-family: monospace;
@@ -243,11 +191,11 @@
     }
     
     /* UTILITÁRIOS */
+    .text-bordo { color: var(--bordo) !important; }
+    .bg-bordo { background: var(--bordo) !important; }
+    .border-bordo { border-color: var(--bordo) !important; }
     .text-ouro { color: var(--ouro) !important; }
     .bg-ouro { background: var(--ouro) !important; }
-    .border-ouro { border-color: var(--ouro) !important; }
-    .text-light-80 { color: rgba(255, 255, 255, 0.8) !important; }
-    .bg-bordo { background: var(--bordo) !important; }
     
     @media (max-width: 768px) {
         .display-4 { font-size: 1.8rem; }
@@ -269,7 +217,7 @@
                     <div class="card-body py-4">
                         <div class="text-center">
                             <!-- Compasso e Esquadro lado a lado -->
-                            <div class="simbolo-maconico mb-2">
+                            <div class="simbolo-maconico mb-2" style="color: var(--ouro);">
                                 <i class="bi bi-easel fs-2 me-2"></i>
                                 <i class="bi bi-compass fs-2 ms-2"></i>
                             </div>
@@ -279,32 +227,32 @@
                                 LOJA BICENTENÁRIO: CEILÂNDIA
                             </h2>
                             
-                            <div class="simbolo-maconico my-2">
+                            <div class="simbolo-maconico my-2" style="color: var(--ouro);">
                                 ✦ ⌒ ✦ ⬜ ✦ ⌒ ✦
                             </div>
                             
-                            <h1 class="display-4 fw-bold titulo-maconico mb-3">
+                            <h1 class="display-4 fw-bold titulo-maconico mb-3" style="background: linear-gradient(135deg, var(--ouro), var(--ouro-claro)); -webkit-background-clip: text; background-clip: text; color: transparent;">
                                 Rito Brasileiro
                             </h1>
                             
-                            <p class="lead text-light-80 mb-2 fst-italic">
+                            <p class="lead text-white mb-2 fst-italic" style="opacity: 0.9;">
                                 "Do Caos à Luz - Pela Verdade e Justiça"
                             </p>
                             
-                            <p class="data-maconica text-light-80 small">
+                            <p class="data-maconica text-white-50 small">
                                 <i class="bi bi-calendar3 me-1"></i> 
                                 A∴L∴ {{ now.year + 4000 }} | {{ now.strftime('%d de %B de %Y') }} - {{ now.strftime('%H:%M') }}h
                             </p>
                             
                             <div class="mt-3 d-flex justify-content-center gap-3 flex-wrap">
-                                <span class="badge px-4 py-2 rounded-pill" style="background: var(--bordo); border: 1px solid var(--ouro); color: var(--ouro);">
+                                <span class="badge px-4 py-2 rounded-pill" style="background: rgba(255,255,255,0.15); border: 1px solid var(--ouro); color: var(--ouro);">
                                     <i class="bi bi-star-fill me-2"></i>
                                     {{ session.grau_atual|int }}º Grau - 
                                     {% if session.grau_atual|int == 1 %}Aprendiz
                                     {% elif session.grau_atual|int == 2 %}Companheiro
                                     {% else %}Mestre{% endif %}
                                 </span>
-                                <span class="badge px-4 py-2 rounded-pill" style="background: transparent; border: 1px solid var(--ouro); color: var(--ouro);">
+                                <span class="badge px-4 py-2 rounded-pill" style="background: rgba(255,255,255,0.15); border: 1px solid var(--ouro); color: var(--ouro);">
                                     <i class="bi bi-building me-2"></i>
                                     GOB - Constituição de 1973
                                 </span>
@@ -321,9 +269,9 @@
                 <div class="stat-maconico p-3">
                     <div class="d-flex justify-content-between align-items-center">
                         <div>
-                            <small class="text-ouro text-uppercase fw-bold">Aspirantes</small>
-                            <h2 class="display-5 fw-bold numero-ouro mb-0">{{ total_candidatos }}</h2>
-                            <small class="text-light-80">À Luz do Conhecimento</small>
+                            <small class="text-bordo text-uppercase fw-bold">Aspirantes</small>
+                            <h2 class="display-5 fw-bold numero-bordo mb-0">{{ total_candidatos }}</h2>
+                            <small class="text-muted">À Luz do Conhecimento</small>
                         </div>
                         <div class="icone-maconico">
                             <i class="bi bi-people"></i>
@@ -335,9 +283,9 @@
                 <div class="stat-maconico p-3">
                     <div class="d-flex justify-content-between align-items-center">
                         <div>
-                            <small class="text-ouro text-uppercase fw-bold">Sindicantes</small>
-                            <h2 class="display-5 fw-bold numero-ouro mb-0">{{ total_sindicantes }}</h2>
-                            <small class="text-light-80">Investigadores da Verdade</small>
+                            <small class="text-bordo text-uppercase fw-bold">Sindicantes</small>
+                            <h2 class="display-5 fw-bold numero-bordo mb-0">{{ total_sindicantes }}</h2>
+                            <small class="text-muted">Investigadores da Verdade</small>
                         </div>
                         <div class="icone-maconico">
                             <i class="bi bi-shield-check"></i>
@@ -349,9 +297,9 @@
                 <div class="stat-maconico p-3">
                     <div class="d-flex justify-content-between align-items-center">
                         <div>
-                            <small class="text-ouro text-uppercase fw-bold">Obreiros</small>
-                            <h2 class="display-5 fw-bold numero-ouro mb-0">{{ total_obreiros }}</h2>
-                            <small class="text-light-80">Na Oficina do Templo</small>
+                            <small class="text-bordo text-uppercase fw-bold">Obreiros</small>
+                            <h2 class="display-5 fw-bold numero-bordo mb-0">{{ total_obreiros }}</h2>
+                            <small class="text-muted">Na Oficina do Templo</small>
                         </div>
                         <div class="icone-maconico">
                             <i class="bi bi-gem"></i>
@@ -363,9 +311,9 @@
                 <div class="stat-maconico p-3">
                     <div class="d-flex justify-content-between align-items-center">
                         <div>
-                            <small class="text-ouro text-uppercase fw-bold">Trabalhos</small>
-                            <h2 class="display-5 fw-bold numero-ouro mb-0">{{ total_reunioes }}</h2>
-                            <small class="text-light-80">{{ reunioes_agendadas }} na Loja</small>
+                            <small class="text-bordo text-uppercase fw-bold">Trabalhos</small>
+                            <h2 class="display-5 fw-bold numero-bordo mb-0">{{ total_reunioes }}</h2>
+                            <small class="text-muted">{{ reunioes_agendadas }} na Loja</small>
                         </div>
                         <div class="icone-maconico">
                             <i class="bi bi-calendar-event"></i>
@@ -386,27 +334,27 @@
                         </h5>
                         <div class="row text-center g-3">
                             <div class="col-4">
-                                <div class="p-3 rounded-3" style="background: rgba(165, 42, 42, 0.3); border: 1px solid rgba(212, 175, 55, 0.2);">
+                                <div class="p-3 rounded-3" style="background: rgba(74, 14, 46, 0.05); border: 1px solid rgba(74, 14, 46, 0.1);">
                                     <i class="bi bi-arrow-up-short fs-1 text-secondary"></i>
-                                    <h3 class="fw-bold text-light mb-0 mt-2">{{ aprendizes }}</h3>
-                                    <small class="text-ouro">Aprendizes</small>
-                                    <div class="mt-1 small text-light-80">1º Grau</div>
+                                    <h3 class="fw-bold text-bordo mb-0 mt-2">{{ aprendizes }}</h3>
+                                    <small class="text-bordo">Aprendizes</small>
+                                    <div class="mt-1 small text-muted">1º Grau</div>
                                 </div>
                             </div>
                             <div class="col-4">
-                                <div class="p-3 rounded-3" style="background: rgba(165, 42, 42, 0.3); border: 1px solid rgba(212, 175, 55, 0.2);">
+                                <div class="p-3 rounded-3" style="background: rgba(74, 14, 46, 0.05); border: 1px solid rgba(74, 14, 46, 0.1);">
                                     <i class="bi bi-arrow-left-right fs-1 text-warning"></i>
-                                    <h3 class="fw-bold text-light mb-0 mt-2">{{ companheiros }}</h3>
-                                    <small class="text-ouro">Companheiros</small>
-                                    <div class="mt-1 small text-light-80">2º Grau</div>
+                                    <h3 class="fw-bold text-bordo mb-0 mt-2">{{ companheiros }}</h3>
+                                    <small class="text-bordo">Companheiros</small>
+                                    <div class="mt-1 small text-muted">2º Grau</div>
                                 </div>
                             </div>
                             <div class="col-4">
-                                <div class="p-3 rounded-3" style="background: rgba(165, 42, 42, 0.3); border: 1px solid rgba(212, 175, 55, 0.2);">
+                                <div class="p-3 rounded-3" style="background: rgba(74, 14, 46, 0.05); border: 1px solid rgba(74, 14, 46, 0.1);">
                                     <i class="bi bi-star-fill fs-1 text-success"></i>
-                                    <h3 class="fw-bold text-light mb-0 mt-2">{{ mestres }}</h3>
-                                    <small class="text-ouro">Mestres</small>
-                                    <div class="mt-1 small text-light-80">3º Grau</div>
+                                    <h3 class="fw-bold text-bordo mb-0 mt-2">{{ mestres }}</h3>
+                                    <small class="text-bordo">Mestres</small>
+                                    <div class="mt-1 small text-muted">3º Grau</div>
                                 </div>
                             </div>
                         </div>
@@ -417,7 +365,7 @@
                                 <div class="progress-bar" style="width: {{ (companheiros / total_graus * 100) if total_graus > 0 else 0 }}%"></div>
                                 <div class="progress-bar" style="width: {{ (mestres / total_graus * 100) if total_graus > 0 else 0 }}%"></div>
                             </div>
-                            <p class="text-center text-light-80 small mt-2">
+                            <p class="text-center text-muted small mt-2">
                                 <i class="bi bi-info-circle me-1"></i>
                                 Total de Obreiros: {{ total_graus }}
                             </p>
@@ -434,22 +382,22 @@
                             O Olho da Providência
                         </h5>
                         <div class="position-relative d-inline-block mb-3">
-                            <div class="rounded-circle d-flex align-items-center justify-content-center mx-auto" style="width: 150px; height: 150px; background: radial-gradient(circle, var(--ouro), var(--ouro-escuro));">
+                            <div class="rounded-circle d-flex align-items-center justify-content-center mx-auto" style="width: 150px; height: 150px; background: radial-gradient(circle, var(--bordo), var(--bordo-escuro));">
                                 <div class="text-center">
-                                    <i class="bi bi-eye-fill fs-1 text-dark"></i>
-                                    <h2 class="display-6 fw-bold text-dark mb-0 mt-2">{{ "%.0f"|format((reunioes_realizadas / total_reunioes * 100) if total_reunioes > 0 else 0) }}%</h2>
-                                    <small class="text-dark">Trabalhos Realizados</small>
+                                    <i class="bi bi-eye-fill fs-1 text-ouro"></i>
+                                    <h2 class="display-6 fw-bold text-ouro mb-0 mt-2">{{ "%.0f"|format((reunioes_realizadas / total_reunioes * 100) if total_reunioes > 0 else 0) }}%</h2>
+                                    <small class="text-ouro">Trabalhos Realizados</small>
                                 </div>
                             </div>
                         </div>
                         <div class="progress-maconico mt-3">
                             <div class="progress-bar" style="width: {{ (reunioes_realizadas / total_reunioes * 100) if total_reunioes > 0 else 0 }}%"></div>
                         </div>
-                        <p class="mt-3 text-light-80 small">
-                            <i class="bi bi-clock-history text-ouro me-1"></i> 
+                        <p class="mt-3 text-muted small">
+                            <i class="bi bi-clock-history text-bordo me-1"></i> 
                             {{ reunioes_realizadas }} de {{ total_reunioes }} sessões realizadas
                         </p>
-                        <p class="text-light-80 small mb-0 fst-italic">
+                        <p class="text-muted small mb-0 fst-italic">
                             "Trabalho, Reflexão e Sabedoria"
                         </p>
                     </div>
@@ -459,14 +407,14 @@
 
         <!-- ÁREA DE SINDICÂNCIA - RITO BRASILEIRO -->
         <div class="card-maconico mb-5">
-            <div class="card-header bg-transparent border-bottom border-ouro py-3">
+            <div class="card-header bg-transparent border-bottom py-3" style="border-color: rgba(74, 14, 46, 0.15) !important;">
                 <div class="d-flex justify-content-between align-items-center">
                     <div>
                         <h4 class="mb-0 fw-bold titulo-maconico">
                             <i class="bi bi-gavel me-2"></i>
                             Comissão de Sindicância
                         </h4>
-                        <p class="mb-0 mt-1 text-light-80">Investigação e Pareceres - Rito Brasileiro</p>
+                        <p class="mb-0 mt-1 text-muted">Investigação e Pareceres - Rito Brasileiro</p>
                     </div>
                     <div class="icone-maconico" style="width: 45px; height: 45px;">
                         <i class="bi bi-shield-check fs-5"></i>
@@ -478,30 +426,30 @@
                 <div class="row g-3 mb-4">
                     <div class="col-md-3 col-sm-6">
                         <div class="stat-maconico p-3 text-center">
-                            <i class="bi bi-hourglass-split fs-2 text-ouro"></i>
-                            <h2 class="fw-bold numero-ouro mb-0 mt-2">{{ em_analise }}</h2>
-                            <small class="text-light-80">Em Investigação</small>
+                            <i class="bi bi-hourglass-split fs-2 text-bordo"></i>
+                            <h2 class="fw-bold numero-bordo mb-0 mt-2">{{ em_analise }}</h2>
+                            <small class="text-muted">Em Investigação</small>
                         </div>
                     </div>
                     <div class="col-md-3 col-sm-6">
                         <div class="stat-maconico p-3 text-center">
                             <i class="bi bi-check-circle-fill fs-2 text-success"></i>
                             <h2 class="fw-bold text-success mb-0 mt-2">{{ aprovados }}</h2>
-                            <small class="text-light-80">Aprovados</small>
+                            <small class="text-muted">Aprovados</small>
                         </div>
                     </div>
                     <div class="col-md-3 col-sm-6">
                         <div class="stat-maconico p-3 text-center">
                             <i class="bi bi-x-circle-fill fs-2 text-danger"></i>
                             <h2 class="fw-bold text-danger mb-0 mt-2">{{ reprovados }}</h2>
-                            <small class="text-light-80">Reprovados</small>
+                            <small class="text-muted">Reprovados</small>
                         </div>
                     </div>
                     <div class="col-md-3 col-sm-6">
                         <div class="stat-maconico p-3 text-center">
                             <i class="bi bi-people-fill fs-2 text-info"></i>
                             <h2 class="fw-bold text-info mb-0 mt-2">{{ total_candidatos }}</h2>
-                            <small class="text-light-80">Total</small>
+                            <small class="text-muted">Total</small>
                         </div>
                     </div>
                 </div>
@@ -511,11 +459,11 @@
                 {% set percentual_pareceres = (pareceres_registrados / total_sindicantes * 100) if total_sindicantes > 0 else 0 %}
                 <div class="mb-4">
                     <div class="d-flex justify-content-between align-items-center mb-3">
-                        <h6 class="mb-0 fw-bold text-ouro">
+                        <h6 class="mb-0 fw-bold text-bordo">
                             <i class="bi bi-graph-up me-2"></i>
                             Progresso das Investigações
                         </h6>
-                        <span class="badge px-3 py-2 rounded-pill" style="background: var(--bordo); border: 1px solid var(--ouro); color: var(--ouro);">
+                        <span class="badge px-3 py-2 rounded-pill" style="background: rgba(74, 14, 46, 0.1); color: var(--bordo);">
                             {{ pareceres_registrados }}/{{ total_sindicantes }} Pareceres
                         </span>
                     </div>
@@ -529,20 +477,20 @@
                     {% if pendentes %}
                     <div class="col-md-6">
                         <div class="card-maconico">
-                            <div class="card-header bg-transparent border-bottom" style="border-color: var(--ouro) !important;">
-                                <h6 class="mb-0 text-ouro">
+                            <div class="card-header bg-transparent border-bottom" style="border-color: var(--bordo) !important;">
+                                <h6 class="mb-0 text-bordo">
                                     <i class="bi bi-exclamation-triangle-fill me-2"></i>
                                     Pendências Regimentais
                                 </h6>
                             </div>
                             <div class="card-body p-3">
                                 {% for p in pendentes[:3] %}
-                                <div class="mb-2 pb-2 border-bottom" style="border-color: rgba(212, 175, 55, 0.1);">
+                                <div class="mb-2 pb-2 border-bottom" style="border-color: rgba(74, 14, 46, 0.1);">
                                     <div class="d-flex justify-content-between align-items-center">
                                         <div>
-                                            <strong class="text-light">{{ p.candidato.nome }}</strong>
+                                            <strong class="text-bordo">{{ p.candidato.nome }}</strong>
                                             <br>
-                                            <small class="text-light-80">Falta: {{ p.faltam|join(', ') }}</small>
+                                            <small class="text-muted">Falta: {{ p.faltam|join(', ') }}</small>
                                         </div>
                                         <a href="/sindicancia/{{ p.candidato.id }}" class="btn-maconico btn-sm">
                                             Investigar
@@ -566,12 +514,12 @@
                             </div>
                             <div class="card-body p-3">
                                 {% for c in prazo_vencido[:3] %}
-                                <div class="mb-2 pb-2 border-bottom" style="border-color: rgba(212, 175, 55, 0.1);">
+                                <div class="mb-2 pb-2 border-bottom" style="border-color: rgba(74, 14, 46, 0.1);">
                                     <div class="d-flex justify-content-between align-items-center">
                                         <div>
-                                            <strong class="text-light">{{ c.nome }}</strong>
+                                            <strong class="text-bordo">{{ c.nome }}</strong>
                                             <br>
-                                            <small class="text-light-80">{{ ((now - c.data_criacao).days) }} dias em análise</small>
+                                            <small class="text-muted">{{ ((now - c.data_criacao).days) }} dias em análise</small>
                                         </div>
                                         <a href="/sindicancia/{{ c.id }}" class="btn-maconico btn-sm">
                                             Urgente
@@ -589,14 +537,14 @@
 
         <!-- MÉTRICAS E ATIVIDADES DO RITO BRASILEIRO -->
         <div class="card-maconico">
-            <div class="card-header bg-transparent border-bottom border-ouro py-3">
+            <div class="card-header bg-transparent border-bottom py-3" style="border-color: rgba(74, 14, 46, 0.15) !important;">
                 <div class="d-flex justify-content-between align-items-center">
                     <div>
                         <h4 class="mb-0 fw-bold titulo-maconico">
                             <i class="bi bi-bar-chart-steps me-2"></i>
                             Métricas da Oficina
                         </h4>
-                        <p class="mb-0 mt-1 text-light-80">Panorama dos Trabalhos</p>
+                        <p class="mb-0 mt-1 text-muted">Panorama dos Trabalhos</p>
                     </div>
                     <div class="icone-maconico" style="width: 45px; height: 45px;">
                         <i class="bi bi-graph-up fs-5"></i>
@@ -607,30 +555,30 @@
                 <div class="row g-4 mb-4">
                     <div class="col-md-3 col-sm-6">
                         <div class="stat-maconico p-3 text-center">
-                            <i class="bi bi-people fs-2 text-ouro"></i>
-                            <h3 class="fw-bold numero-ouro mb-0 mt-2">{{ total_familiares if total_familiares is defined else 0 }}</h3>
-                            <small class="text-light-80">Familiares</small>
+                            <i class="bi bi-people fs-2 text-bordo"></i>
+                            <h3 class="fw-bold numero-bordo mb-0 mt-2">{{ total_familiares if total_familiares is defined else 0 }}</h3>
+                            <small class="text-muted">Familiares</small>
                         </div>
                     </div>
                     <div class="col-md-3 col-sm-6">
                         <div class="stat-maconico p-3 text-center">
-                            <i class="bi bi-award fs-2 text-ouro"></i>
-                            <h3 class="fw-bold numero-ouro mb-0 mt-2">{{ total_condecoracoes if total_condecoracoes is defined else 0 }}</h3>
-                            <small class="text-light-80">Condecorações</small>
+                            <i class="bi bi-award fs-2 text-bordo"></i>
+                            <h3 class="fw-bold numero-bordo mb-0 mt-2">{{ total_condecoracoes if total_condecoracoes is defined else 0 }}</h3>
+                            <small class="text-muted">Condecorações</small>
                         </div>
                     </div>
                     <div class="col-md-3 col-sm-6">
                         <div class="stat-maconico p-3 text-center">
-                            <i class="bi bi-briefcase fs-2 text-ouro"></i>
-                            <h3 class="fw-bold numero-ouro mb-0 mt-2">{{ cargos_ocupados|length if cargos_ocupados else 0 }}</h3>
-                            <small class="text-light-80">Cargos na Loja</small>
+                            <i class="bi bi-briefcase fs-2 text-bordo"></i>
+                            <h3 class="fw-bold numero-bordo mb-0 mt-2">{{ cargos_ocupados|length if cargos_ocupados else 0 }}</h3>
+                            <small class="text-muted">Cargos na Loja</small>
                         </div>
                     </div>
                     <div class="col-md-3 col-sm-6">
                         <div class="stat-maconico p-3 text-center">
-                            <i class="bi bi-calendar-week fs-2 text-ouro"></i>
-                            <h3 class="fw-bold numero-ouro mb-0 mt-2">{{ proximas_reunioes|length if proximas_reunioes else 0 }}</h3>
-                            <small class="text-light-80">Próximos Trabalhos</small>
+                            <i class="bi bi-calendar-week fs-2 text-bordo"></i>
+                            <h3 class="fw-bold numero-bordo mb-0 mt-2">{{ proximas_reunioes|length if proximas_reunioes else 0 }}</h3>
+                            <small class="text-muted">Próximos Trabalhos</small>
                         </div>
                     </div>
                 </div>
@@ -638,8 +586,8 @@
                 <div class="row g-4">
                     <div class="col-md-6">
                         <div class="card-maconico h-100">
-                            <div class="card-header bg-transparent border-bottom border-ouro">
-                                <h6 class="mb-0 text-ouro">
+                            <div class="card-header bg-transparent border-bottom" style="border-color: rgba(74, 14, 46, 0.15) !important;">
+                                <h6 class="mb-0 text-bordo">
                                     <i class="bi bi-briefcase me-2"></i>
                                     Colunas da Loja
                                 </h6>
@@ -647,34 +595,34 @@
                             <div class="card-body p-3">
                                 {% if cargos_ocupados and cargos_ocupados|length > 0 %}
                                     {% for cargo in cargos_ocupados[:3] %}
-                                    <div class="mb-2 pb-2 border-bottom" style="border-color: rgba(212, 175, 55, 0.1);">
+                                    <div class="mb-2 pb-2 border-bottom" style="border-color: rgba(74, 14, 46, 0.1);">
                                         <div class="d-flex justify-content-between align-items-center">
                                             <div>
-                                                <strong class="text-light">{{ cargo.cargo_nome }}</strong>
+                                                <strong class="text-bordo">{{ cargo.cargo_nome }}</strong>
                                                 <br>
-                                                <small class="text-light-80">
+                                                <small class="text-muted">
                                                     <i class="bi bi-person-circle"></i> 
-                                                    <a href="/obreiros/{{ cargo.obreiro_id }}" class="text-ouro text-decoration-none">
+                                                    <a href="/obreiros/{{ cargo.obreiro_id }}" class="text-decoration-none" style="color: var(--bordo);">
                                                         {{ cargo.obreiro_nome }}
                                                     </a>
                                                 </small>
                                             </div>
-                                            <span class="badge px-3 py-1 rounded-pill" style="background: var(--bordo); border: 1px solid var(--ouro); color: var(--ouro);">
+                                            <span class="badge px-3 py-1 rounded-pill" style="background: rgba(74, 14, 46, 0.1); color: var(--bordo);">
                                                 Atual
                                             </span>
                                         </div>
                                     </div>
                                     {% endfor %}
                                 {% else %}
-                                    <p class="text-center text-light-80 py-3">Nenhum cargo ocupado</p>
+                                    <p class="text-center text-muted py-3">Nenhum cargo ocupado</p>
                                 {% endif %}
                             </div>
                         </div>
                     </div>
                     <div class="col-md-6">
                         <div class="card-maconico h-100">
-                            <div class="card-header bg-transparent border-bottom border-ouro">
-                                <h6 class="mb-0 text-ouro">
+                            <div class="card-header bg-transparent border-bottom" style="border-color: rgba(74, 14, 46, 0.15) !important;">
+                                <h6 class="mb-0 text-bordo">
                                     <i class="bi bi-calendar-week me-2"></i>
                                     Próximos Trabalhos na Oficina
                                 </h6>
@@ -683,23 +631,23 @@
                                 {% if proximas_reunioes and proximas_reunioes|length > 0 %}
                                     {% for r in proximas_reunioes[:3] %}
                                     <a href="/reunioes/{{ r.id }}" class="text-decoration-none">
-                                        <div class="mb-2 pb-2 border-bottom" style="border-color: rgba(212, 175, 55, 0.1);">
+                                        <div class="mb-2 pb-2 border-bottom" style="border-color: rgba(74, 14, 46, 0.1);">
                                             <div class="d-flex justify-content-between align-items-start">
                                                 <div>
-                                                    <strong class="text-light">{{ r.titulo }}</strong>
+                                                    <strong class="text-bordo">{{ r.titulo }}</strong>
                                                     <br>
-                                                    <small class="text-light-80">
+                                                    <small class="text-muted">
                                                         <i class="bi bi-calendar"></i> {{ r.data.strftime('%d/%m/%Y') if r.data else '-' }}
                                                         <i class="bi bi-clock ms-1"></i> {{ r.hora_inicio.strftime('%H:%M') if r.hora_inicio else '-' }}
                                                     </small>
                                                 </div>
-                                                <i class="bi bi-chevron-right text-ouro"></i>
+                                                <i class="bi bi-chevron-right text-bordo"></i>
                                             </div>
                                         </div>
                                     </a>
                                     {% endfor %}
                                 {% else %}
-                                    <p class="text-center text-light-80 py-3">Nenhum trabalho agendado</p>
+                                    <p class="text-center text-muted py-3">Nenhum trabalho agendado</p>
                                 {% endif %}
                             </div>
                         </div>
@@ -712,16 +660,16 @@
         <div class="simbolo-maconico mt-5 pt-3">
             <div class="row">
                 <div class="col-12 text-center">
-                    <i class="bi bi-compass fs-4 me-2"></i>
-                    <i class="bi bi-easel fs-4 me-2"></i>
-                    <i class="bi bi-gem fs-4"></i>
-                    <p class="mt-3 small text-light-80 fst-italic">
+                    <i class="bi bi-compass fs-4 me-2" style="color: var(--bordo);"></i>
+                    <i class="bi bi-easel fs-4 me-2" style="color: var(--bordo);"></i>
+                    <i class="bi bi-gem fs-4" style="color: var(--bordo);"></i>
+                    <p class="mt-3 small text-muted fst-italic">
                         "Pela Verdade e Justiça - Ordo Ab Chao"
                     </p>
-                    <p class="small text-light-80">
+                    <p class="small text-muted">
                         <i class="bi bi-c-circle"></i> {{ now.year }} - Loja Bicentenário: Ceilândia | Rito Brasileiro - GOB
                     </p>
-                    <p class="small text-light-80 mt-1">
+                    <p class="small text-muted mt-1">
                         <i class="bi bi-book me-1"></i> Anno Lucis {{ now.year + 4000 }}
                     </p>
                 </div>

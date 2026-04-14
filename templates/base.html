@@ -12,23 +12,26 @@
     <!-- FullCalendar CSS -->
     <link href="https://cdn.jsdelivr.net/npm/fullcalendar@5.11.3/main.min.css" rel="stylesheet">
     <!-- Google Fonts -->
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Georgia:wght@400;500;600;700&display=swap" rel="stylesheet">
     
     <style>
+        /* VARIÁVEIS DO RITO BRASILEIRO - COR BORDÔ (VINHO) */
         :root {
+            --bordo: #4A0E2E;
+            --bordo-escuro: #3A0A24;
+            --bordo-claro: #6B1342;
+            --bordo-suave: #8B4A6B;
+            --ouro: #D4AF37;
+            --ouro-escuro: #996515;
+            --ouro-claro: #F0D68A;
+            --bege-pergaminho: #F5F0E8;
+            --cinza-claro: #E8E0D8;
+            --cinza-suave: #D4CCC4;
+            --cinza-texto: #4A4A4A;
+            --cinza-claro-texto: #6B6B6B;
+            --branco-suave: #FFFFFF;
             --sidebar-width: 280px;
             --sidebar-collapsed-width: 80px;
-            --azul-bicentenario: #1a2c3e;
-            --dourado: #c9a03d;
-            --dourado-escuro: #b58c2a;
-            --cinza-texto: #2c3e50;
-            --light: #f8f9fa;
-            --border: #e2e8f0;
-            --success: #10b981;
-            --info: #3b82f6;
-            --warning: #f59e0b;
-            --danger: #ef4444;
-            --dark: #1f2937;
         }
         
         * {
@@ -39,9 +42,25 @@
         
         body {
             font-family: 'Inter', sans-serif;
-            background: #f3f4f6;
+            background: var(--bege-pergaminho);
+            position: relative;
             overflow-x: hidden;
             color: var(--cinza-texto);
+        }
+        
+        /* TEXTURA SUAVE DE PERGAMINHO */
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 200 200' opacity='0.03'%3E%3Cpath fill='none' stroke='%234A0E2E' stroke-width='0.5' d='M100 20 L180 60 L180 140 L100 180 L20 140 L20 60 Z'/%3E%3Ccircle cx='100' cy='100' r='15' fill='%234A0E2E' opacity='0.08'/%3E%3C/svg%3E");
+            background-repeat: repeat;
+            background-size: 80px;
+            pointer-events: none;
+            z-index: 0;
         }
         
         .mobile-menu-btn {
@@ -50,20 +69,20 @@
             top: 16px;
             left: 16px;
             z-index: 1001;
-            background: var(--azul-bicentenario);
+            background: var(--bordo);
             border: none;
             color: white;
             font-size: 1.4rem;
             padding: 10px 14px;
             border-radius: 12px;
             cursor: pointer;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
             transition: all 0.2s ease;
         }
         
         .mobile-menu-btn:hover {
-            background: var(--dourado);
-            color: var(--azul-bicentenario);
+            background: var(--ouro);
+            color: var(--bordo);
         }
         
         .sidebar-overlay {
@@ -73,22 +92,24 @@
             left: 0;
             right: 0;
             bottom: 0;
-            background: rgba(0,0,0,0.5);
+            background: rgba(0,0,0,0.3);
             backdrop-filter: blur(2px);
             z-index: 999;
         }
         
+        /* SIDEBAR DO RITO BRASILEIRO - CLARA */
         .sidebar {
             position: fixed;
             top: 0;
             left: 0;
             height: 100%;
             width: var(--sidebar-width);
-            background: var(--azul-bicentenario);
+            background: linear-gradient(180deg, #FFFFFF 0%, #F5F0E8 100%);
             transition: all 0.3s ease;
             z-index: 1000;
             overflow-y: auto;
-            box-shadow: 2px 0 20px rgba(0,0,0,0.08);
+            border-right: 1px solid rgba(74, 14, 46, 0.15);
+            box-shadow: 2px 0 10px rgba(0,0,0,0.05);
         }
         
         .sidebar::-webkit-scrollbar {
@@ -96,19 +117,33 @@
         }
         
         .sidebar::-webkit-scrollbar-track {
-            background: rgba(255,255,255,0.1);
+            background: var(--cinza-claro);
         }
         
         .sidebar::-webkit-scrollbar-thumb {
-            background: var(--dourado);
+            background: var(--bordo);
             border-radius: 4px;
         }
         
+        /* LOGO MAÇÔNICA */
         .logo-area {
             padding: 24px 20px;
             text-align: center;
-            border-bottom: 1px solid rgba(255,255,255,0.08);
+            border-bottom: 1px solid rgba(74, 14, 46, 0.1);
             margin-bottom: 16px;
+            position: relative;
+        }
+        
+        .logo-area::after {
+            content: '⌂ ⌂ ⊡';
+            position: absolute;
+            bottom: -12px;
+            right: 20px;
+            font-size: 18px;
+            color: var(--bordo);
+            opacity: 0.3;
+            font-family: serif;
+            letter-spacing: 2px;
         }
         
         .logo-area h3 {
@@ -118,30 +153,32 @@
             gap: 10px;
             font-size: 1.5rem;
             margin: 0;
-            color: white;
-            font-weight: 600;
-            letter-spacing: -0.3px;
+            color: var(--bordo);
+            font-weight: 700;
+            letter-spacing: 1px;
         }
         
         .logo-area h3 i {
             font-size: 1.6rem;
-            color: var(--dourado);
+            color: var(--ouro);
         }
         
         .logo-area .logo-sub {
             font-size: 0.7rem;
             margin: 6px 0 0;
-            color: rgba(255,255,255,0.6);
-            font-weight: 400;
-            letter-spacing: 0.5px;
+            color: var(--bordo-suave);
+            font-weight: 500;
+            letter-spacing: 2px;
+            text-transform: uppercase;
         }
         
+        /* NAVEGAÇÃO */
         .sidebar .nav {
             padding: 0 12px;
         }
         
         .sidebar .nav-link {
-            color: rgba(255,255,255,0.75);
+            color: var(--cinza-texto);
             padding: 10px 14px;
             transition: all 0.2s;
             border-radius: 10px;
@@ -150,17 +187,21 @@
             font-size: 0.85rem;
             display: flex;
             align-items: center;
+            border-left: 2px solid transparent;
         }
         
         .sidebar .nav-link:hover {
-            background: rgba(201,160,61,0.15);
-            color: var(--dourado);
-            transform: translateX(4px);
+            background: rgba(74, 14, 46, 0.08);
+            color: var(--bordo);
+            border-left-color: var(--bordo);
+            transform: translateX(2px);
         }
         
         .sidebar .nav-link.active {
-            background: var(--dourado);
-            color: var(--azul-bicentenario);
+            background: rgba(74, 14, 46, 0.1);
+            color: var(--bordo);
+            border-left-color: var(--bordo);
+            font-weight: 600;
         }
         
         .sidebar .nav-link i {
@@ -168,13 +209,15 @@
             font-size: 1.1rem;
             width: 24px;
             text-align: center;
+            color: var(--bordo);
         }
         
         .sidebar hr {
             margin: 16px 12px;
-            border-color: rgba(255,255,255,0.08);
+            border-color: rgba(74, 14, 46, 0.1);
         }
         
+        /* COLLAPSE SIDEBAR */
         @media (min-width: 769px) {
             .sidebar.collapsed {
                 width: var(--sidebar-collapsed-width);
@@ -203,12 +246,18 @@
                 justify-content: center;
             }
             
+            .sidebar.collapsed .logo-area::after {
+                display: none;
+            }
+            
             .main-content {
                 margin-left: var(--sidebar-width);
                 transition: margin-left 0.3s ease;
                 min-height: 100vh;
                 display: flex;
                 flex-direction: column;
+                position: relative;
+                z-index: 1;
             }
             
             .main-content.expanded {
@@ -216,6 +265,7 @@
             }
         }
         
+        /* MOBILE */
         @media (max-width: 768px) {
             .mobile-menu-btn {
                 display: block;
@@ -255,25 +305,27 @@
             }
         }
         
+        /* TOP BAR CLARA */
         .top-bar {
             background: white;
+            backdrop-filter: blur(10px);
             padding: 12px 24px;
             position: sticky;
             top: 0;
             z-index: 997;
-            border-bottom: 1px solid var(--border);
+            border-bottom: 1px solid rgba(74, 14, 46, 0.1);
             box-shadow: 0 1px 3px rgba(0,0,0,0.05);
         }
         
         .toggle-sidebar {
             background: transparent;
-            border: 1px solid var(--border);
-            font-size: 1rem;
+            border: 1px solid rgba(74, 14, 46, 0.2);
+            font-size: 0.85rem;
             cursor: pointer;
-            color: var(--azul-bicentenario);
+            color: var(--bordo);
             transition: all 0.2s;
             padding: 8px 16px;
-            border-radius: 10px;
+            border-radius: 30px;
             display: inline-flex;
             align-items: center;
             gap: 8px;
@@ -281,11 +333,12 @@
         }
         
         .toggle-sidebar:hover {
-            background: var(--azul-bicentenario);
+            background: var(--bordo);
             color: white;
-            border-color: transparent;
+            border-color: var(--bordo);
         }
         
+        /* USER INFO */
         .user-info {
             display: flex;
             align-items: center;
@@ -294,9 +347,9 @@
         }
         
         .user-info .badge-user {
-            background: #f1f5f9;
-            color: var(--azul-bicentenario);
-            font-size: 0.8rem;
+            background: rgba(74, 14, 46, 0.08);
+            color: var(--bordo);
+            font-size: 0.75rem;
             padding: 6px 14px;
             border-radius: 30px;
             font-weight: 500;
@@ -306,14 +359,15 @@
         }
         
         .user-info .badge-user i {
-            font-size: 0.9rem;
+            font-size: 0.85rem;
         }
         
         .user-info .badge-user:last-child {
-            background: var(--dourado);
-            color: var(--azul-bicentenario);
+            background: var(--bordo);
+            color: white;
         }
         
+        /* NOTIFICAÇÕES */
         .notificacoes-dropdown {
             position: relative;
             margin-left: 12px;
@@ -321,26 +375,25 @@
         
         .btn-notificacoes {
             background: transparent;
-            border: 1px solid var(--border);
+            border: 1px solid rgba(74, 14, 46, 0.2);
             border-radius: 40px;
             padding: 6px 14px;
             transition: all 0.2s;
             position: relative;
             cursor: pointer;
-            color: var(--cinza-texto);
+            color: var(--bordo);
         }
         
         .btn-notificacoes:hover {
-            background: var(--azul-bicentenario);
+            background: var(--bordo);
             color: white;
-            border-color: transparent;
         }
         
         .notificacao-badge {
             position: absolute;
             top: -6px;
             right: -6px;
-            background: var(--danger);
+            background: #dc3545;
             color: white;
             border-radius: 20px;
             padding: 2px 6px;
@@ -359,8 +412,8 @@
             overflow-y: auto;
             background: white;
             border-radius: 12px;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.12);
-            border: 1px solid var(--border);
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+            border: 1px solid rgba(74, 14, 46, 0.1);
             margin-top: 8px;
             z-index: 9999;
         }
@@ -376,7 +429,7 @@
         }
         
         .dropdown-header-notificacoes {
-            background: var(--azul-bicentenario);
+            background: var(--bordo);
             color: white;
             border-radius: 12px 12px 0 0;
             padding: 12px 16px;
@@ -387,169 +440,191 @@
         
         .notificacao-item {
             padding: 12px 16px;
-            border-bottom: 1px solid #f0f0f0;
+            border-bottom: 1px solid rgba(74, 14, 46, 0.08);
             transition: background 0.2s;
             cursor: pointer;
         }
         
         .notificacao-item:hover {
-            background: #fafafa;
+            background: rgba(74, 14, 46, 0.04);
         }
         
         .notificacao-item.nao-lida {
-            background: rgba(201,160,61,0.08);
-            border-left: 3px solid var(--dourado);
+            background: rgba(212, 175, 55, 0.08);
+            border-left: 3px solid var(--ouro);
         }
         
-        .notificacao-titulo {
-            font-weight: 600;
-            margin-bottom: 4px;
-            font-size: 0.85rem;
-        }
-        
-        .notificacao-mensagem {
-            font-size: 0.8rem;
-            color: #6c757d;
-            margin-bottom: 4px;
-        }
-        
-        .notificacao-data {
-            font-size: 0.7rem;
-            color: #adb5bd;
-        }
-        
-        .content-area {
-            flex: 1;
-            padding: 24px;
-        }
-        
-        .footer {
-            background: white;
-            padding: 16px 24px;
-            text-align: center;
-            border-top: 1px solid var(--border);
-            font-size: 0.75rem;
-            color: #8b8f9c;
-        }
-        
+        /* CARDS DO RITO BRASILEIRO */
         .card {
-            border-radius: 16px;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
-            transition: all 0.2s ease;
-            border: 1px solid var(--border);
             background: white;
+            border-radius: 16px;
+            border: 1px solid rgba(74, 14, 46, 0.1);
+            transition: all 0.3s ease;
+            overflow: hidden;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
         }
         
         .card:hover {
-            box-shadow: 0 8px 20px rgba(0,0,0,0.08);
-            transform: translateY(-2px);
+            transform: translateY(-4px);
+            border-color: var(--bordo);
+            box-shadow: 0 8px 25px rgba(0,0,0,0.08);
         }
         
         .card-header {
             background: white;
-            border-bottom: 1px solid var(--border);
+            border-bottom: 1px solid rgba(74, 14, 46, 0.1);
             font-weight: 600;
             padding: 1rem 1.25rem;
             border-radius: 16px 16px 0 0 !important;
+            color: var(--bordo);
         }
         
+        /* BOTÕES DO RITO BRASILEIRO */
         .btn-primary {
-            background: var(--azul-bicentenario);
+            background: var(--bordo);
             border: none;
             color: white;
             font-weight: 500;
-            border-radius: 10px;
-            padding: 8px 20px;
+            border-radius: 30px;
+            padding: 8px 24px;
             transition: all 0.2s;
         }
         
         .btn-primary:hover {
-            background: var(--dourado);
-            color: var(--azul-bicentenario);
-            transform: translateY(-1px);
+            background: var(--bordo-escuro);
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(74, 14, 46, 0.3);
         }
         
         .btn-outline-primary {
-            border: 1px solid var(--azul-bicentenario);
-            color: var(--azul-bicentenario);
-            border-radius: 10px;
-            font-weight: 500;
+            border: 1px solid var(--bordo);
+            color: var(--bordo);
+            border-radius: 30px;
+            background: transparent;
         }
         
         .btn-outline-primary:hover {
-            background: var(--azul-bicentenario);
+            background: var(--bordo);
             color: white;
         }
         
         .btn-success {
-            background: var(--success);
+            background: #1B4D3E;
             border: none;
-            border-radius: 10px;
+            border-radius: 30px;
         }
         
         .btn-danger {
-            background: var(--danger);
+            background: #dc3545;
             border: none;
-            border-radius: 10px;
+            border-radius: 30px;
         }
         
         .btn-warning {
-            background: var(--warning);
+            background: #f59e0b;
             border: none;
-            border-radius: 10px;
+            border-radius: 30px;
             color: white;
         }
         
+        /* TABELAS */
         .table {
+            color: var(--cinza-texto);
             border-collapse: separate;
             border-spacing: 0;
         }
         
         .table thead th {
-            background: #f8fafc;
-            border-bottom: 1px solid var(--border);
+            background: rgba(74, 14, 46, 0.05);
+            border-bottom: 1px solid rgba(74, 14, 46, 0.1);
             font-weight: 600;
             padding: 0.9rem 1rem;
-            color: var(--dark);
+            color: var(--bordo);
+            text-transform: uppercase;
+            font-size: 0.75rem;
+            letter-spacing: 1px;
+        }
+        
+        .table tbody tr {
+            border-bottom: 1px solid rgba(74, 14, 46, 0.05);
         }
         
         .table tbody tr:hover {
-            background: rgba(201,160,61,0.04);
+            background: rgba(74, 14, 46, 0.02);
         }
         
+        /* BADGES */
         .badge {
             padding: 0.35rem 0.8rem;
             border-radius: 30px;
             font-weight: 500;
         }
         
-        .toast-container-custom {
-            position: fixed;
-            bottom: 20px;
-            right: 20px;
-            z-index: 9999;
+        .bg-success {
+            background: #1B4D3E !important;
         }
         
-        .toast-custom {
-            min-width: 300px;
+        .bg-primary {
+            background: var(--bordo) !important;
+        }
+        
+        /* ALERTAS */
+        .alert {
             background: white;
+            border: 1px solid rgba(74, 14, 46, 0.1);
             border-radius: 12px;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.12);
-            margin-bottom: 10px;
-            animation: slideInRight 0.3s ease;
+            color: var(--cinza-texto);
         }
         
-        @keyframes slideInRight {
-            from {
-                transform: translateX(100%);
-                opacity: 0;
-            }
-            to {
-                transform: translateX(0);
-                opacity: 1;
-            }
+        .alert-success {
+            border-color: #1B4D3E;
+            color: #1B4D3E;
+            background: rgba(27, 77, 62, 0.05);
         }
         
+        .alert-danger {
+            border-color: #dc3545;
+            color: #dc3545;
+            background: rgba(220, 53, 69, 0.05);
+        }
+        
+        .alert-warning {
+            border-color: #f59e0b;
+            color: #f59e0b;
+            background: rgba(245, 158, 11, 0.05);
+        }
+        
+        /* PROGRESS BAR */
+        .progress {
+            background: rgba(74, 14, 46, 0.1);
+            border-radius: 30px;
+            height: 10px;
+        }
+        
+        .progress-bar {
+            background: linear-gradient(90deg, var(--bordo), var(--bordo-claro));
+            border-radius: 30px;
+        }
+        
+        /* CONTENT AREA */
+        .content-area {
+            flex: 1;
+            padding: 24px;
+            position: relative;
+            z-index: 1;
+        }
+        
+        /* FOOTER */
+        .footer {
+            background: white;
+            padding: 16px 24px;
+            text-align: center;
+            border-top: 1px solid rgba(74, 14, 46, 0.08);
+            font-size: 0.7rem;
+            color: var(--cinza-claro-texto);
+        }
+        
+        /* ANIMAÇÕES */
         .fade-in-up {
             animation: fadeInUp 0.4s ease-out;
         }
@@ -565,27 +640,74 @@
             }
         }
         
+        /* TOAST */
+        .toast-container-custom {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            z-index: 9999;
+        }
+        
+        .toast-custom {
+            min-width: 300px;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            margin-bottom: 10px;
+            animation: slideInRight 0.3s ease;
+            border: 1px solid rgba(74, 14, 46, 0.1);
+        }
+        
+        @keyframes slideInRight {
+            from {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+        
+        /* SCROLLBAR */
         ::-webkit-scrollbar {
             width: 6px;
             height: 6px;
         }
         
         ::-webkit-scrollbar-track {
-            background: #f1f1f1;
+            background: var(--cinza-claro);
         }
         
         ::-webkit-scrollbar-thumb {
-            background: var(--dourado);
+            background: var(--bordo);
             border-radius: 10px;
         }
         
+        /* LINKS */
+        a {
+            color: var(--bordo);
+            text-decoration: none;
+            transition: color 0.2s;
+        }
+        
+        a:hover {
+            color: var(--ouro-escuro);
+        }
+        
+        /* UTILITÁRIOS */
+        .text-bordo { color: var(--bordo) !important; }
+        .bg-bordo { background: var(--bordo) !important; }
+        .text-ouro { color: var(--ouro) !important; }
+        
+        /* RESPONSIVIDADE */
         @media (max-width: 768px) {
             .top-bar {
                 padding: 10px 16px;
             }
             
             .user-info .badge-user {
-                font-size: 0.7rem;
+                font-size: 0.65rem;
                 padding: 4px 10px;
             }
             
@@ -598,7 +720,7 @@
             }
             
             .btn {
-                font-size: 0.8rem;
+                font-size: 0.75rem;
                 padding: 6px 14px;
             }
         }
@@ -609,8 +731,8 @@
             }
             
             .user-info .badge-user {
-                font-size: 0.65rem;
-                padding: 4px 8px;
+                font-size: 0.6rem;
+                padding: 3px 8px;
             }
             
             .btn-notificacoes {
@@ -635,7 +757,7 @@
                 <i class="bi bi-compass-fill"></i>
                 <span class="logo-text">ARLS</span>
             </h3>
-            <p class="logo-sub">Bicentenário</p>
+            <p class="logo-sub">Bicentenário: Ceilândia</p>
         </div>
         
         <nav class="nav flex-column">
@@ -648,14 +770,12 @@
                 <i class="bi bi-person-workspace"></i> <span>Obreiros</span>
             </a>
             {% endif %}
-			{% if session.tipo == 'admin' %}
-			<li class="nav-item">
-				<a class="nav-link" href="/cargos">
-					<i class="bi bi-briefcase-fill me-2"></i>
-					<span>Gerenciar Cargos</span>
-				</a>
-			</li>
-			{% endif %}
+            
+            {% if session.tipo == 'admin' %}
+            <a class="nav-link" href="/cargos">
+                <i class="bi bi-briefcase-fill"></i> <span>Gerenciar Cargos</span>
+            </a>
+            {% endif %}
             
             {% if tem_permissao('reuniao.view') %}
             <a class="nav-link" href="/reunioes">
@@ -693,7 +813,6 @@
             </a>
             {% endif %}
             
-            <!-- Link para Visitantes -->
             <a class="nav-link" href="/visitante">
                 <i class="bi bi-person-badge"></i> <span>Visitantes</span>
             </a>
@@ -720,8 +839,8 @@
             </a>
             
             <a class="nav-link" href="/backups">
-				<i class="bi bi-database"></i> <span>Backup</span>
-			</a>
+                <i class="bi bi-database"></i> <span>Backup</span>
+            </a>
             
             <a class="nav-link" href="/auditoria">
                 <i class="bi bi-journal"></i> <span>Auditoria</span>
@@ -730,7 +849,7 @@
             
             <hr>
             
-              {% if session.tipo == 'admin' %}
+            {% if session.tipo == 'admin' %}
             <a class="nav-link" href="/configuracoes/notificacoes">
                 <i class="bi bi-bell"></i> <span>Notificações</span>
             </a>
@@ -744,8 +863,6 @@
                 <i class="bi bi-box-arrow-right"></i> <span>Sair</span>
             </a>
         </nav>
-
-       
     </div>
     
     <div class="main-content" id="mainContent">
@@ -768,7 +885,7 @@
                         {% else %}Obreiro{% endif %}
                     </span>
                     <span class="badge-user">
-                        <i class="bi bi-star-fill text-warning"></i>
+                        <i class="bi bi-star-fill"></i>
                         {{ get_grau_nome(session.grau_atual) }}
                     </span>
                     <span class="badge-user">
@@ -803,29 +920,31 @@
         </div>
         
         <div class="content-area fade-in-up">
-    {% with messages = get_flashed_messages(with_categories=true) %}
-        {% if messages %}
-            {% set unique_messages = {} %}
-            {% for category, message in messages %}
-                {% set key = category ~ '|' ~ message %}
-                {% if key not in unique_messages %}
-                    <div class="alert alert-{{ category if category != 'message' else 'info' }} alert-dismissible fade show mb-4" role="alert">
-                        <i class="bi bi-{% if category == 'success' %}check-circle{% elif category == 'danger' %}exclamation-triangle{% elif category == 'warning' %}exclamation-circle{% else %}info-circle{% endif %} me-2"></i>
-                        {{ message | safe }}
-                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-                    </div>
-                    {% set _ = unique_messages.update({key: True}) %}
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    {% set unique_messages = {} %}
+                    {% for category, message in messages %}
+                        {% set key = category ~ '|' ~ message %}
+                        {% if key not in unique_messages %}
+                            <div class="alert alert-{{ category if category != 'message' else 'info' }} alert-dismissible fade show mb-4" role="alert">
+                                <i class="bi bi-{% if category == 'success' %}check-circle{% elif category == 'danger' %}exclamation-triangle{% elif category == 'warning' %}exclamation-circle{% else %}info-circle{% endif %} me-2"></i>
+                                {{ message | safe }}
+                                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                            </div>
+                            {% set _ = unique_messages.update({key: True}) %}
+                        {% endif %}
+                    {% endfor %}
                 {% endif %}
-            {% endfor %}
-        {% endif %}
-    {% endwith %}
-    
-    {% block content %}{% endblock %}
-</div>
+            {% endwith %}
+            
+            {% block content %}{% endblock %}
+        </div>
         
         <div class="footer">
             <small>
-                &copy; {{ now.year }} ARLS Bicentenário - Sistema Maçônico
+                <i class="bi bi-compass me-1"></i>
+                &copy; {{ now.year }} - Loja Bicentenário: Ceilândia | Rito Brasileiro - GOB
+                <i class="bi bi-easel ms-1"></i>
             </small>
         </div>
     </div>
@@ -834,7 +953,6 @@
     
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/fullcalendar@5.11.3/main.min.css"></script>
     <script src="https://cdn.jsdelivr.net/npm/fullcalendar@5.11.3/main.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/fullcalendar@5.11.3/locales-all.min.js"></script>
     
@@ -1092,12 +1210,10 @@
         }
         
         document.addEventListener('DOMContentLoaded', () => {
-            // Inicializar avisos no sininho
             if (document.getElementById('btnNotificacoes')) {
                 window.avisosManager = new AvisosManager();
             }
             
-            // Auto-fade out de alerts
             setTimeout(() => {
                 document.querySelectorAll('.alert:not(.alert-custom)').forEach(alert => {
                     setTimeout(() => {
@@ -1107,7 +1223,6 @@
                 });
             }, 1000);
             
-            // Tooltips
             var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
             tooltipTriggerList.map(tooltipTriggerEl => new bootstrap.Tooltip(tooltipTriggerEl));
         });
