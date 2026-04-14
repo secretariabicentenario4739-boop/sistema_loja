@@ -506,23 +506,127 @@
                     </div>
                 </div>
 
-                <!-- Progresso da Sindicância -->
-                {% set pareceres_registrados = pareceres_conclusivos|length if pareceres_conclusivos else 0 %}
-                {% set percentual_pareceres = (pareceres_registrados / total_sindicantes * 100) if total_sindicantes > 0 else 0 %}
-                <div class="mb-4">
-                    <div class="d-flex justify-content-between align-items-center mb-3">
-                        <h6 class="mb-0 fw-bold text-bordo">
-                            <i class="bi bi-graph-up me-2"></i>
-                            Progresso das Investigações
-                        </h6>
-                        <span class="badge px-3 py-2 rounded-pill" style="background: rgba(74, 14, 46, 0.1); color: var(--bordo);">
-                            {{ pareceres_registrados }}/{{ total_sindicantes|default(0) }} Pareceres
-                        </span>
-                    </div>
-                    <div class="progress-maconico">
-                        <div class="progress-bar" style="width: {{ percentual_pareceres }}%"></div>
-                    </div>
+                <!-- Progresso da Sindicância - CORRIGIDO -->
+<div class="mb-4">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h6 class="mb-0 fw-bold text-bordo">
+            <i class="bi bi-graph-up me-2"></i>
+            Progresso da Sindicância
+        </h6>
+        <span class="badge px-3 py-2 rounded-pill" style="background: rgba(74, 14, 46, 0.1); color: var(--bordo);">
+            {{ total_candidatos|default(0) }} Candidatos
+        </span>
+    </div>
+    
+    {% if candidatos and candidatos|length > 0 %}
+        {% set candidatos_com_formulario = 0 %}
+        {% set candidatos_com_documentos = 0 %}
+        {% set candidatos_completos = 0 %}
+        
+        {% for c in candidatos %}
+            {% if c.cpf or c.rg or c.endereco_residencial %}
+                {% set candidatos_com_formulario = candidatos_com_formulario + 1 %}
+            {% endif %}
+            
+            {% set doc_status = documentos_status.get(c.id) if documentos_status else None %}
+            {% if doc_status and doc_status.enviados and doc_status.enviados > 0 %}
+                {% set candidatos_com_documentos = candidatos_com_documentos + 1 %}
+            {% endif %}
+            
+            {% if (c.cpf or c.rg or c.endereco_residencial) and doc_status and doc_status.enviados and doc_status.enviados > 0 %}
+                {% set candidatos_completos = candidatos_completos + 1 %}
+            {% endif %}
+        {% endfor %}
+        
+        {% set percentual_formulario = (candidatos_com_formulario / total_candidatos * 100) if total_candidatos > 0 else 0 %}
+        {% set percentual_documentos = (candidatos_com_documentos / total_candidatos * 100) if total_candidatos > 0 else 0 %}
+        {% set percentual_completo = (candidatos_completos / total_candidatos * 100) if total_candidatos > 0 else 0 %}
+        
+        <!-- Barra de Progresso - Formulários -->
+        <div class="mb-3">
+            <div class="d-flex justify-content-between mb-1">
+                <small class="text-muted">
+                    <i class="bi bi-file-text me-1"></i> Formulários Preenchidos
+                </small>
+                <small class="fw-bold">{{ candidatos_com_formulario }}/{{ total_candidatos }}</small>
+            </div>
+            <div class="progress-maconico" style="background: rgba(74, 14, 46, 0.1); border-radius: 30px; height: 8px; overflow: hidden;">
+                <div class="progress-bar" role="progressbar" 
+                     style="width: {{ percentual_formulario }}%; background: linear-gradient(90deg, #3b82f6, #60a5fa); border-radius: 30px; height: 100%;"
+                     aria-valuenow="{{ percentual_formulario }}" aria-valuemin="0" aria-valuemax="100">
                 </div>
+            </div>
+        </div>
+        
+        <!-- Barra de Progresso - Documentos -->
+        <div class="mb-3">
+            <div class="d-flex justify-content-between mb-1">
+                <small class="text-muted">
+                    <i class="bi bi-folder2-open me-1"></i> Documentos Enviados
+                </small>
+                <small class="fw-bold">{{ candidatos_com_documentos }}/{{ total_candidatos }}</small>
+            </div>
+            <div class="progress-maconico" style="background: rgba(74, 14, 46, 0.1); border-radius: 30px; height: 8px; overflow: hidden;">
+                <div class="progress-bar" role="progressbar" 
+                     style="width: {{ percentual_documentos }}%; background: linear-gradient(90deg, #10b981, #34d399); border-radius: 30px; height: 100%;"
+                     aria-valuenow="{{ percentual_documentos }}" aria-valuemin="0" aria-valuemax="100">
+                </div>
+            </div>
+        </div>
+        
+        <!-- Barra de Progresso - Completos -->
+        <div class="mb-2">
+            <div class="d-flex justify-content-between mb-1">
+                <small class="text-muted">
+                    <i class="bi bi-check-circle-fill me-1"></i> Candidatos Completos
+                </small>
+                <small class="fw-bold">{{ candidatos_completos }}/{{ total_candidatos }}</small>
+            </div>
+            <div class="progress-maconico" style="background: rgba(74, 14, 46, 0.1); border-radius: 30px; height: 10px; overflow: hidden;">
+                <div class="progress-bar" role="progressbar" 
+                     style="width: {{ percentual_completo }}%; background: linear-gradient(90deg, var(--bordo), var(--bordo-claro)); border-radius: 30px; height: 100%;"
+                     aria-valuenow="{{ percentual_completo }}" aria-valuemin="0" aria-valuemax="100">
+                </div>
+            </div>
+        </div>
+        
+        <!-- Legenda das cores -->
+        <div class="d-flex justify-content-center gap-3 mt-3">
+            <small class="text-muted">
+                <i class="bi bi-circle-fill text-primary" style="font-size: 0.7rem;"></i> Formulários
+            </small>
+            <small class="text-muted">
+                <i class="bi bi-circle-fill text-success" style="font-size: 0.7rem;"></i> Documentos
+            </small>
+            <small class="text-muted">
+                <i class="bi bi-circle-fill text-bordo" style="font-size: 0.7rem;"></i> Completos
+            </small>
+        </div>
+        
+        {% if candidatos_completos == total_candidatos and total_candidatos > 0 %}
+        <div class="alert alert-success text-center mt-3 mb-0">
+            <i class="bi bi-trophy-fill me-2"></i>
+            🎉 Todos os candidatos estão completos! Aguardando análise dos sindicantes.
+        </div>
+        {% elif candidatos_completos > 0 %}
+        <div class="alert alert-info text-center mt-3 mb-0">
+            <i class="bi bi-hourglass-split me-2"></i>
+            {{ candidatos_completos }} candidato(s) completo(s), aguardando os demais.
+        </div>
+        {% else %}
+        <div class="alert alert-warning text-center mt-3 mb-0">
+            <i class="bi bi-exclamation-triangle me-2"></i>
+            Nenhum candidato completo ainda. Preencha formulários e envie documentos.
+        </div>
+        {% endif %}
+        
+    {% else %}
+        <div class="alert alert-info text-center mb-0">
+            <i class="bi bi-info-circle me-2"></i>
+            Nenhum candidato cadastrado. Adicione candidatos para iniciar o processo.
+        </div>
+    {% endif %}
+</div>
 
                 <!-- Pendências -->
                 <div class="row g-4">

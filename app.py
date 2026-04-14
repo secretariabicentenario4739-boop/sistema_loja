@@ -2998,6 +2998,28 @@ def dashboard():
             """)
             candidatos = cursor.fetchall()
             
+            # ========== DOCUMENTOS STATUS PARA CADA CANDIDATO ==========
+            documentos_status = {}
+            for candidato in candidatos:
+                try:
+                    cursor.execute("""
+                        SELECT COUNT(*) as total
+                        FROM documentos_candidato 
+                        WHERE candidato_id = %s
+                    """, (candidato['id'],))
+                    result = cursor.fetchone()
+                    total = result['total'] if result else 0
+                    
+                    documentos_status[candidato['id']] = {
+                        'total': total,
+                        'enviados': total
+                    }
+                except:
+                    documentos_status[candidato['id']] = {
+                        'total': 0,
+                        'enviados': 0
+                    }
+            
             # ========== SINDICANTES ==========
             cursor.execute("""
                 SELECT id, usuario, nome_completo, cim_numero, loja_nome, loja_numero, loja_orient, ativo 
@@ -3041,14 +3063,6 @@ def dashboard():
                 LIMIT 5
             """, (usuario_id, usuario_grau))
             ultimos_avisos = cursor.fetchall()
-            
-            # ========== DEBUG (remova depois de testar) ==========
-            print(f"DEBUG DASHBOARD - Estatísticas de Graus:")
-            print(f"  Aprendizes: {aprendizes}")
-            print(f"  Companheiros: {companheiros}")
-            print(f"  Mestres (>=3): {mestres}")
-            print(f"  Total Obreiros: {total_obreiros}")
-            print(f"  Soma: {aprendizes + companheiros + mestres}")
             
             # ============================================
             # ADMIN VS NÃO-ADMIN
@@ -3149,6 +3163,8 @@ def dashboard():
             pendentes=pendentes,
             prazo_vencido=prazo_vencido,
             sindicantes=sindicantes,
+            candidatos=candidatos,  # <-- ADICIONADO
+            documentos_status=documentos_status,  # <-- ADICIONADO
             pareceres_conclusivos=pareceres_conclusivos,
             ultimos_avisos=ultimos_avisos,
             meu_cargo=meu_cargo,
