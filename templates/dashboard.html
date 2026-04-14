@@ -270,7 +270,7 @@
                     <div class="d-flex justify-content-between align-items-center">
                         <div>
                             <small class="text-bordo text-uppercase fw-bold">Aspirantes</small>
-                            <h2 class="display-5 fw-bold numero-bordo mb-0">{{ total_candidatos }}</h2>
+                            <h2 class="display-5 fw-bold numero-bordo mb-0">{{ total_candidatos|default(0) }}</h2>
                             <small class="text-muted">À Luz do Conhecimento</small>
                         </div>
                         <div class="icone-maconico">
@@ -284,7 +284,7 @@
                     <div class="d-flex justify-content-between align-items-center">
                         <div>
                             <small class="text-bordo text-uppercase fw-bold">Sindicantes</small>
-                            <h2 class="display-5 fw-bold numero-bordo mb-0">{{ total_sindicantes }}</h2>
+                            <h2 class="display-5 fw-bold numero-bordo mb-0">{{ total_sindicantes|default(0) }}</h2>
                             <small class="text-muted">Investigadores da Verdade</small>
                         </div>
                         <div class="icone-maconico">
@@ -298,7 +298,7 @@
                     <div class="d-flex justify-content-between align-items-center">
                         <div>
                             <small class="text-bordo text-uppercase fw-bold">Obreiros</small>
-                            <h2 class="display-5 fw-bold numero-bordo mb-0">{{ total_obreiros }}</h2>
+                            <h2 class="display-5 fw-bold numero-bordo mb-0">{{ total_obreiros|default(0) }}</h2>
                             <small class="text-muted">Na Oficina do Templo</small>
                         </div>
                         <div class="icone-maconico">
@@ -312,8 +312,8 @@
                     <div class="d-flex justify-content-between align-items-center">
                         <div>
                             <small class="text-bordo text-uppercase fw-bold">Trabalhos</small>
-                            <h2 class="display-5 fw-bold numero-bordo mb-0">{{ total_reunioes }}</h2>
-                            <small class="text-muted">{{ reunioes_agendadas }} na Loja</small>
+                            <h2 class="display-5 fw-bold numero-bordo mb-0">{{ total_reunioes|default(0) }}</h2>
+                            <small class="text-muted">{{ reunioes_agendadas|default(0) }} na Loja</small>
                         </div>
                         <div class="icone-maconico">
                             <i class="bi bi-calendar-event"></i>
@@ -323,7 +323,7 @@
             </div>
         </div>
 
-        <!-- DISTRIBUIÇÃO POR GRAU COM SÍMBOLOS -->
+        <!-- DISTRIBUIÇÃO POR GRAU COM SÍMBOLOS - CORRIGIDO -->
         <div class="row g-4 mb-5">
             <div class="col-md-6">
                 <div class="card-maconico">
@@ -336,7 +336,7 @@
                             <div class="col-4">
                                 <div class="p-3 rounded-3" style="background: rgba(74, 14, 46, 0.05); border: 1px solid rgba(74, 14, 46, 0.1);">
                                     <i class="bi bi-arrow-up-short fs-1 text-secondary"></i>
-                                    <h3 class="fw-bold text-bordo mb-0 mt-2">{{ aprendizes }}</h3>
+                                    <h3 class="fw-bold text-bordo mb-0 mt-2">{{ aprendizes|default(0) }}</h3>
                                     <small class="text-bordo">Aprendizes</small>
                                     <div class="mt-1 small text-muted">1º Grau</div>
                                 </div>
@@ -344,7 +344,7 @@
                             <div class="col-4">
                                 <div class="p-3 rounded-3" style="background: rgba(74, 14, 46, 0.05); border: 1px solid rgba(74, 14, 46, 0.1);">
                                     <i class="bi bi-arrow-left-right fs-1 text-warning"></i>
-                                    <h3 class="fw-bold text-bordo mb-0 mt-2">{{ companheiros }}</h3>
+                                    <h3 class="fw-bold text-bordo mb-0 mt-2">{{ companheiros|default(0) }}</h3>
                                     <small class="text-bordo">Companheiros</small>
                                     <div class="mt-1 small text-muted">2º Grau</div>
                                 </div>
@@ -352,57 +352,95 @@
                             <div class="col-4">
                                 <div class="p-3 rounded-3" style="background: rgba(74, 14, 46, 0.05); border: 1px solid rgba(74, 14, 46, 0.1);">
                                     <i class="bi bi-star-fill fs-1 text-success"></i>
-                                    <h3 class="fw-bold text-bordo mb-0 mt-2">{{ mestres }}</h3>
+                                    <h3 class="fw-bold text-bordo mb-0 mt-2">{{ mestres|default(0) }}</h3>
                                     <small class="text-bordo">Mestres</small>
                                     <div class="mt-1 small text-muted">3º Grau</div>
                                 </div>
                             </div>
                         </div>
+                        
+                        <!-- BARRA DE PROGRESSO CORRIGIDA -->
                         <div class="mt-4">
-                            <div class="progress-maconico">
-                                {% set total_graus = aprendizes + companheiros + mestres %}
-                                <div class="progress-bar" style="width: {{ (aprendizes / total_graus * 100) if total_graus > 0 else 0 }}%"></div>
-                                <div class="progress-bar" style="width: {{ (companheiros / total_graus * 100) if total_graus > 0 else 0 }}%"></div>
-                                <div class="progress-bar" style="width: {{ (mestres / total_graus * 100) if total_graus > 0 else 0 }}%"></div>
-                            </div>
-                            <p class="text-center text-muted small mt-2">
-                                <i class="bi bi-info-circle me-1"></i>
-                                Total de Obreiros: {{ total_graus }}
-                            </p>
+                            {% set total_graus = (aprendizes|default(0)) + (companheiros|default(0)) + (mestres|default(0)) %}
+                            {% if total_graus > 0 %}
+                                {% set percentual_aprendizes = (aprendizes / total_graus * 100) %}
+                                {% set percentual_companheiros = (companheiros / total_graus * 100) %}
+                                {% set percentual_mestres = (mestres / total_graus * 100) %}
+                                
+                                <div class="progress-maconico" style="display: flex; background: rgba(74, 14, 46, 0.1); border-radius: 30px; height: 12px; overflow: hidden;">
+                                    <div class="progress-bar" role="progressbar" 
+                                         style="width: {{ percentual_aprendizes }}%; background: #6c757d; height: 100%;"
+                                         title="Aprendizes: {{ percentual_aprendizes|round(1) }}%">
+                                    </div>
+                                    <div class="progress-bar" role="progressbar" 
+                                         style="width: {{ percentual_companheiros }}%; background: #f59e0b; height: 100%;"
+                                         title="Companheiros: {{ percentual_companheiros|round(1) }}%">
+                                    </div>
+                                    <div class="progress-bar" role="progressbar" 
+                                         style="width: {{ percentual_mestres }}%; background: #10b981; height: 100%;"
+                                         title="Mestres: {{ percentual_mestres|round(1) }}%">
+                                    </div>
+                                </div>
+                                <p class="text-center text-muted small mt-2">
+                                    <i class="bi bi-info-circle me-1"></i>
+                                    Total de Obreiros: {{ total_graus }}
+                                </p>
+                            {% else %}
+                                <div class="alert alert-warning text-center small mb-0">
+                                    <i class="bi bi-exclamation-triangle"></i>
+                                    Nenhum obreiro encontrado
+                                </div>
+                            {% endif %}
                         </div>
                     </div>
                 </div>
             </div>
             
             <div class="col-md-6">
-                <div class="card-maconico">
-                    <div class="card-body p-4 text-center">
-                        <h5 class="titulo-maconico mb-4">
-                            <i class="bi bi-eye-fill me-2"></i>
-                            O Olho da Providência
-                        </h5>
-                        <div class="position-relative d-inline-block mb-3">
-                            <div class="rounded-circle d-flex align-items-center justify-content-center mx-auto" style="width: 150px; height: 150px; background: radial-gradient(circle, var(--bordo), var(--bordo-escuro));">
-                                <div class="text-center">
-                                    <i class="bi bi-eye-fill fs-1 text-ouro"></i>
-                                    <h2 class="display-6 fw-bold text-ouro mb-0 mt-2">{{ "%.0f"|format((reunioes_realizadas / total_reunioes * 100) if total_reunioes > 0 else 0) }}%</h2>
-                                    <small class="text-ouro">Trabalhos Realizados</small>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="progress-maconico mt-3">
-                            <div class="progress-bar" style="width: {{ (reunioes_realizadas / total_reunioes * 100) if total_reunioes > 0 else 0 }}%"></div>
-                        </div>
-                        <p class="mt-3 text-muted small">
-                            <i class="bi bi-clock-history text-bordo me-1"></i> 
-                            {{ reunioes_realizadas }} de {{ total_reunioes }} sessões realizadas
-                        </p>
-                        <p class="text-muted small mb-0 fst-italic">
-                            "Trabalho, Reflexão e Sabedoria"
-                        </p>
+    <div class="card-maconico h-100">
+        <div class="card-body p-4 text-center">
+            <h5 class="titulo-maconico mb-4 text-center">
+                <i class="bi bi-eye-fill me-2"></i>
+                O Olho da Providência
+            </h5>
+            
+            <div class="d-flex justify-content-center mb-2">
+                <div class="rounded-circle d-flex align-items-center justify-content-center" style="width: 130px; height: 130px; background: radial-gradient(circle, var(--bordo), var(--bordo-escuro));">
+                    <div class="text-center">
+                        <i class="bi bi-eye-fill fs-2 text-ouro"></i>
+                        <h2 class="display-6 fw-bold text-ouro mb-0 mt-1">{{ "%.0f"|format((reunioes_realizadas / total_reunioes * 100) if total_reunioes > 0 else 0) }}%</h2>
                     </div>
                 </div>
             </div>
+            
+            <!-- Frase abaixo do círculo -->
+            <p class="text-ouro fw-semibold mb-3" style="font-size: 0.8rem;">
+                <i class="bi bi-check-circle-fill me-1"></i>
+                Trabalhos Realizados
+            </p>
+            
+            <!-- BARRA DE PROGRESSO CORRIGIDA -->
+            <div class="mt-3">
+                {% set percentual = (reunioes_realizadas / total_reunioes * 100) if total_reunioes > 0 else 0 %}
+                <div class="progress-maconico" style="background: rgba(74, 14, 46, 0.1); border-radius: 30px; height: 10px; overflow: hidden;">
+                    <div class="progress-bar" role="progressbar" 
+                         style="width: {{ percentual }}%; background: linear-gradient(90deg, var(--bordo), var(--bordo-claro)); border-radius: 30px; height: 100%;"
+                         aria-valuenow="{{ percentual }}" aria-valuemin="0" aria-valuemax="100">
+                    </div>
+                </div>
+            </div>
+            
+            <p class="mt-2 text-muted small">
+                <i class="bi bi-clock-history text-bordo me-1"></i> 
+                {{ reunioes_realizadas|default(0) }} de {{ total_reunioes|default(0) }} sessões realizadas
+            </p>
+            
+            <p class="text-muted small mb-0 fst-italic">
+                "Trabalho, Reflexão e Sabedoria"
+            </p>
+        </div>
+    </div>
+</div>
         </div>
 
         <!-- ÁREA DE SINDICÂNCIA - RITO BRASILEIRO -->
@@ -427,28 +465,28 @@
                     <div class="col-md-3 col-sm-6">
                         <div class="stat-maconico p-3 text-center">
                             <i class="bi bi-hourglass-split fs-2 text-bordo"></i>
-                            <h2 class="fw-bold numero-bordo mb-0 mt-2">{{ em_analise }}</h2>
+                            <h2 class="fw-bold numero-bordo mb-0 mt-2">{{ em_analise|default(0) }}</h2>
                             <small class="text-muted">Em Investigação</small>
                         </div>
                     </div>
                     <div class="col-md-3 col-sm-6">
                         <div class="stat-maconico p-3 text-center">
                             <i class="bi bi-check-circle-fill fs-2 text-success"></i>
-                            <h2 class="fw-bold text-success mb-0 mt-2">{{ aprovados }}</h2>
+                            <h2 class="fw-bold text-success mb-0 mt-2">{{ aprovados|default(0) }}</h2>
                             <small class="text-muted">Aprovados</small>
                         </div>
                     </div>
                     <div class="col-md-3 col-sm-6">
                         <div class="stat-maconico p-3 text-center">
                             <i class="bi bi-x-circle-fill fs-2 text-danger"></i>
-                            <h2 class="fw-bold text-danger mb-0 mt-2">{{ reprovados }}</h2>
+                            <h2 class="fw-bold text-danger mb-0 mt-2">{{ reprovados|default(0) }}</h2>
                             <small class="text-muted">Reprovados</small>
                         </div>
                     </div>
                     <div class="col-md-3 col-sm-6">
                         <div class="stat-maconico p-3 text-center">
                             <i class="bi bi-people-fill fs-2 text-info"></i>
-                            <h2 class="fw-bold text-info mb-0 mt-2">{{ total_candidatos }}</h2>
+                            <h2 class="fw-bold text-info mb-0 mt-2">{{ total_candidatos|default(0) }}</h2>
                             <small class="text-muted">Total</small>
                         </div>
                     </div>
@@ -464,7 +502,7 @@
                             Progresso das Investigações
                         </h6>
                         <span class="badge px-3 py-2 rounded-pill" style="background: rgba(74, 14, 46, 0.1); color: var(--bordo);">
-                            {{ pareceres_registrados }}/{{ total_sindicantes }} Pareceres
+                            {{ pareceres_registrados }}/{{ total_sindicantes|default(0) }} Pareceres
                         </span>
                     </div>
                     <div class="progress-maconico">
@@ -556,14 +594,14 @@
                     <div class="col-md-3 col-sm-6">
                         <div class="stat-maconico p-3 text-center">
                             <i class="bi bi-people fs-2 text-bordo"></i>
-                            <h3 class="fw-bold numero-bordo mb-0 mt-2">{{ total_familiares if total_familiares is defined else 0 }}</h3>
+                            <h3 class="fw-bold numero-bordo mb-0 mt-2">{{ total_familiares|default(0) }}</h3>
                             <small class="text-muted">Familiares</small>
                         </div>
                     </div>
                     <div class="col-md-3 col-sm-6">
                         <div class="stat-maconico p-3 text-center">
                             <i class="bi bi-award fs-2 text-bordo"></i>
-                            <h3 class="fw-bold numero-bordo mb-0 mt-2">{{ total_condecoracoes if total_condecoracoes is defined else 0 }}</h3>
+                            <h3 class="fw-bold numero-bordo mb-0 mt-2">{{ total_condecoracoes|default(0) }}</h3>
                             <small class="text-muted">Condecorações</small>
                         </div>
                     </div>

@@ -2941,15 +2941,15 @@ def dashboard():
             """)
             cargos_ocupados = cursor.fetchall()
             
-            # ========== ESTATÍSTICAS (TUDO EM UMA CONSULTA) ==========
+            # ========== ESTATÍSTICAS CORRIGIDAS (COM TIPO E GRAU >= 3) ==========
             cursor.execute("""
                 SELECT 
                     (SELECT COUNT(*) FROM familiares) as total_familiares,
                     (SELECT COUNT(*) FROM condecoracoes_obreiro) as total_condecoracoes,
-                    (SELECT COUNT(*) FROM usuarios WHERE tipo IN ('admin', 'sindicante', 'obreiro') AND ativo = 1) as total_obreiros,
-                    (SELECT COUNT(*) FROM usuarios WHERE grau_atual = 3 AND ativo = 1) as mestres,
-                    (SELECT COUNT(*) FROM usuarios WHERE grau_atual = 2 AND ativo = 1) as companheiros,
-                    (SELECT COUNT(*) FROM usuarios WHERE grau_atual = 1 AND ativo = 1) as aprendizes,
+                    (SELECT COUNT(*) FROM usuarios WHERE tipo IN ('admin', 'obreiro', 'sindicante') AND ativo = 1) as total_obreiros,
+                    (SELECT COUNT(*) FROM usuarios WHERE grau_atual >= 3 AND ativo = 1 AND tipo IN ('admin', 'obreiro', 'sindicante')) as mestres,
+                    (SELECT COUNT(*) FROM usuarios WHERE grau_atual = 2 AND ativo = 1 AND tipo IN ('admin', 'obreiro', 'sindicante')) as companheiros,
+                    (SELECT COUNT(*) FROM usuarios WHERE grau_atual = 1 AND ativo = 1 AND tipo IN ('admin', 'obreiro', 'sindicante')) as aprendizes,
                     (SELECT COUNT(*) FROM reunioes) as total_reunioes,
                     (SELECT COUNT(*) FROM reunioes WHERE status = 'realizada') as reunioes_realizadas,
                     (SELECT COUNT(*) FROM reunioes WHERE status = 'agendada') as reunioes_agendadas
@@ -3033,6 +3033,14 @@ def dashboard():
                 LIMIT 5
             """, (usuario_id, usuario_grau))
             ultimos_avisos = cursor.fetchall()
+            
+            # ========== DEBUG (remova depois de testar) ==========
+            print(f"DEBUG DASHBOARD - Estatísticas de Graus:")
+            print(f"  Aprendizes: {aprendizes}")
+            print(f"  Companheiros: {companheiros}")
+            print(f"  Mestres (>=3): {mestres}")
+            print(f"  Total Obreiros: {total_obreiros}")
+            print(f"  Soma: {aprendizes + companheiros + mestres}")
             
             # ============================================
             # ADMIN VS NÃO-ADMIN
@@ -3561,7 +3569,7 @@ def admin_visitantes():
     return render_template("visitante/cadastro.html", reunioes=reunioes)
     
 # =============================
-# ROTAS DE OBREIROS
+# ROTAS DE VISITANTES
 # =============================    
 
 @app.route("/visitante/certificado/<int:visitante_id>")

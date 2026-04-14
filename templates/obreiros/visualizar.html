@@ -6,8 +6,8 @@
 <div class="container-fluid py-4">
     <div class="container">
         <!-- Cabeçalho com botões de ação -->
-        <div class="d-flex justify-content-between align-items-center mb-4">
-            <h2>
+        <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+            <h2 class="mb-0">
                 <i class="bi bi-person-badge"></i> 
                 Visualizar Obreiro
             </h2>
@@ -46,55 +46,55 @@
         </div>
 
         <!-- Cards de Estatísticas -->
-        <div class="row mb-4">
-            <div class="col-md-3">
-                <div class="card bg-primary text-white shadow">
+        <div class="row g-3 mb-4">
+            <div class="col-md-3 col-sm-6">
+                <div class="card bg-primary text-white shadow-sm h-100">
                     <div class="card-body">
                         <div class="d-flex justify-content-between align-items-center">
                             <div>
                                 <h6 class="card-title mb-0">Cargos</h6>
                                 <h2 class="mb-0">{{ cargos|length if cargos else 0 }}</h2>
                             </div>
-                            <i class="bi bi-briefcase fs-1"></i>
+                            <i class="bi bi-briefcase fs-1 opacity-50"></i>
                         </div>
                     </div>
                 </div>
             </div>
-            <div class="col-md-3">
-                <div class="card bg-success text-white shadow">
+            <div class="col-md-3 col-sm-6">
+                <div class="card bg-success text-white shadow-sm h-100">
                     <div class="card-body">
                         <div class="d-flex justify-content-between align-items-center">
                             <div>
                                 <h6 class="card-title mb-0">Graus</h6>
                                 <h2 class="mb-0">{{ historico_graus|length if historico_graus else 0 }}</h2>
                             </div>
-                            <i class="bi bi-star-fill fs-1"></i>
+                            <i class="bi bi-star-fill fs-1 opacity-50"></i>
                         </div>
                     </div>
                 </div>
             </div>
-            <div class="col-md-3">
-                <div class="card bg-info text-white shadow">
+            <div class="col-md-3 col-sm-6">
+                <div class="card bg-info text-white shadow-sm h-100">
                     <div class="card-body">
                         <div class="d-flex justify-content-between align-items-center">
                             <div>
                                 <h6 class="card-title mb-0">Familiares</h6>
                                 <h2 class="mb-0">{{ familiares_count }}</h2>
                             </div>
-                            <i class="bi bi-people fs-1"></i>
+                            <i class="bi bi-people fs-1 opacity-50"></i>
                         </div>
                     </div>
                 </div>
             </div>
-            <div class="col-md-3">
-                <div class="card bg-warning text-dark shadow">
+            <div class="col-md-3 col-sm-6">
+                <div class="card bg-warning text-dark shadow-sm h-100">
                     <div class="card-body">
                         <div class="d-flex justify-content-between align-items-center">
                             <div>
                                 <h6 class="card-title mb-0">Condecorações</h6>
                                 <h2 class="mb-0">{{ condecoracoes_count }}</h2>
                             </div>
-                            <i class="bi bi-award fs-1"></i>
+                            <i class="bi bi-award fs-1 opacity-50"></i>
                         </div>
                     </div>
                 </div>
@@ -102,7 +102,7 @@
         </div>
 
         <!-- Perfil do Obreiro -->
-        <div class="card shadow mb-4">
+        <div class="card shadow-sm mb-4">
             <div class="card-header bg-primary text-white">
                 <h5 class="mb-0"><i class="bi bi-person-circle"></i> Perfil do Obreiro</h5>
             </div>
@@ -121,7 +121,6 @@
                         </div>
                         {% endif %}
                         
-                        <!-- Status e Tipo -->
                         <div class="mt-2">
                             <span class="badge {% if obreiro.ativo == 1 %}bg-success{% else %}bg-danger{% endif %} fs-6">
                                 {% if obreiro.ativo == 1 %}Ativo{% else %}Inativo{% endif %}
@@ -156,21 +155,17 @@
                                         <td>
                                             {% set grau_num = obreiro.grau_atual|int %}
                                             {% if grau_num == 1 %}
-                                                <span class="badge bg-secondary">Aprendiz</span>
+                                                <span class="badge bg-secondary">Aprendiz (1º)</span>
                                             {% elif grau_num == 2 %}
-                                                <span class="badge bg-primary">Companheiro</span>
+                                                <span class="badge bg-primary">Companheiro (2º)</span>
                                             {% elif grau_num == 3 %}
-                                                <span class="badge bg-success">Mestre</span>
-                                            {% elif grau_num == 4 %}
-                                                <span class="badge bg-info">Mestre Instalado</span>
-                                            {% elif grau_num == 5 %}
-                                                <span class="badge bg-info">Arquiteto Real</span>
-                                            {% elif grau_num >= 6 %}
-                                                <span class="badge bg-info">Grau Superior</span>
+                                                <span class="badge bg-success">Mestre (3º)</span>
+                                            {% elif grau_num >= 4 %}
+                                                <span class="badge bg-info">Grau {{ grau_num }}</span>
                                             {% else %}
                                                 <span class="badge bg-secondary">Grau {{ grau_num }}</span>
                                             {% endif %}
-                                        </td>
+                                         </td>
                                     </tr>
                                     <tr>
                                         <td class="text-muted">CIM Nº:</td>
@@ -184,11 +179,7 @@
                                             {% else %}
                                                 -
                                             {% endif %}
-                                        </td>
-                                    </tr>
-                                    <tr>
-                                        <td class="text-muted">Data Cadastro:</td>
-                                        <td>{{ obreiro.data_cadastro.strftime('%d/%m/%Y') if obreiro.data_cadastro else '-' }}</td>
+                                         </td>
                                     </tr>
                                 </table>
                             </div>
@@ -210,10 +201,6 @@
                                         <td class="text-muted">Loja:</td>
                                         <td>{{ obreiro.loja_nome or '-' }}</td>
                                     </tr>
-                                    <tr>
-                                        <td class="text-muted">Oriente:</td>
-                                        <td>{{ obreiro.loja_orient or '-' }}</td>
-                                    </tr>
                                 </table>
                             </div>
                         </div>
@@ -223,26 +210,26 @@
         </div>
 
         <!-- Datas Importantes -->
-        <div class="card shadow mb-4">
+        <div class="card shadow-sm mb-4">
             <div class="card-header bg-info text-white">
                 <h5 class="mb-0"><i class="bi bi-calendar-event"></i> Datas Importantes</h5>
             </div>
             <div class="card-body">
-                <div class="row text-center">
+                <div class="row g-3 text-center">
                     <div class="col-md-4">
-                        <div class="border rounded p-3">
+                        <div class="border rounded p-3 bg-light">
                             <small class="text-muted">Iniciação</small>
                             <div class="fw-bold fs-5">{{ obreiro.data_iniciacao.strftime('%d/%m/%Y') if obreiro.data_iniciacao else '-' }}</div>
                         </div>
                     </div>
                     <div class="col-md-4">
-                        <div class="border rounded p-3">
+                        <div class="border rounded p-3 bg-light">
                             <small class="text-muted">Elevação</small>
                             <div class="fw-bold fs-5">{{ obreiro.data_elevacao.strftime('%d/%m/%Y') if obreiro.data_elevacao else '-' }}</div>
                         </div>
                     </div>
                     <div class="col-md-4">
-                        <div class="border rounded p-3">
+                        <div class="border rounded p-3 bg-light">
                             <small class="text-muted">Exaltação</small>
                             <div class="fw-bold fs-5">{{ obreiro.data_exaltacao.strftime('%d/%m/%Y') if obreiro.data_exaltacao else '-' }}</div>
                         </div>
@@ -251,64 +238,288 @@
             </div>
         </div>
 
-     <!-- Cargos e Documentos -->
-<div class="row mb-4">
-    <div class="col-md-6">
-        <div class="card shadow h-100">
+        <!-- Cargos, Graus e Documentos em 3 colunas -->
+        <div class="row g-4 mb-4">
+            <!-- Coluna 1: Cargos Ocupados -->
+            <div class="col-md-4">
+                <div class="card shadow-sm h-100">
+                    <div class="card-header bg-secondary text-white">
+                        <h5 class="mb-0"><i class="bi bi-journal"></i> Cargos Ocupados</h5>
+                    </div>
+                    <div class="card-body">
+                        {% if cargos and cargos|length > 0 %}
+                            <div class="table-responsive">
+                                <table class="table table-sm table-hover">
+                                    <thead>
+                                        <tr>
+                                            <th>Cargo</th>
+                                            <th>Início</th>
+                                            <th>Ações</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for cargo in cargos %}
+                                        <tr>
+                                            <td>
+                                                <strong>{{ cargo.cargo_nome }}</strong>
+                                                {% if cargo.sigla %}
+                                                <br><small class="text-muted">{{ cargo.sigla }}</small>
+                                                {% endif %}
+                                            </td>
+                                            <td class="text-nowrap">{{ cargo.data_inicio.strftime('%d/%m/%Y') if cargo.data_inicio else '-' }}</td>
+                                            <td>
+                                                {% if session.tipo == 'admin' %}
+                                                <a href="/obreiros/cargo/{{ cargo.id }}/remover" 
+                                                   class="btn btn-sm btn-outline-danger"
+                                                   onclick="return confirm('Remover este cargo?')"
+                                                   title="Remover Cargo">
+                                                    <i class="bi bi-trash"></i>
+                                                </a>
+                                                {% endif %}
+                                            </td>
+                                        </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        {% else %}
+                            <div class="text-center text-muted py-4">
+                                <i class="bi bi-journal-x fs-1"></i>
+                                <p class="mb-0">Nenhum cargo ocupado</p>
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Coluna 2: Gerenciamento de Graus -->
+            <div class="col-md-4">
+                <div class="card shadow-sm h-100">
+                    <div class="card-header bg-success text-white">
+                        <h5 class="mb-0"><i class="bi bi-star-fill"></i> Gerenciar Graus</h5>
+                    </div>
+                    <div class="card-body">
+                        <!-- Grau Atual -->
+                        <div class="alert alert-info mb-3">
+                            <i class="bi bi-star-fill"></i>
+                            <strong>Grau Atual:</strong>
+                            {% set grau_num = obreiro.grau_atual|int %}
+                            {% if grau_num == 1 %}
+                                Aprendiz (1º Grau)
+                            {% elif grau_num == 2 %}
+                                Companheiro (2º Grau)
+                            {% elif grau_num == 3 %}
+                                Mestre (3º Grau)
+                            {% elif grau_num >= 4 %}
+                                Grau {{ grau_num }}
+                            {% endif %}
+                        </div>
+
+                        <!-- Formulário para atribuir novo grau (apenas admin) -->
+                        {% if session.tipo == 'admin' and graus_disponiveis %}
+                        <h6 class="mb-3"><i class="bi bi-plus-circle"></i> Atribuir Novo Grau</h6>
+                        <form method="POST" action="/obreiros/{{ obreiro.id }}/atribuir_grau" class="mb-3" onsubmit="return validarGrau()">
+                            <div class="mb-2">
+                                <select name="grau_id" id="grauSelect" class="form-select form-select-sm" required onchange="verificarGrau()">
+                                    <option value="">Selecione o grau...</option>
+                                    {% for grau in graus_disponiveis %}
+                                    <option value="{{ grau.id }}" 
+                                            data-nivel="{{ grau.nivel }}"
+                                            data-nome="{{ grau.nome }}">
+                                        {{ grau.nome }} ({{ grau.nivel }}º Grau)
+                                    </option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div class="mb-2">
+                                <input type="date" name="data_grau" class="form-control form-control-sm" 
+                                       value="{{ now.strftime('%Y-%m-%d') }}" required>
+                            </div>
+                            <div class="mb-2">
+                                <textarea name="observacao" class="form-control form-control-sm" 
+                                          rows="2" placeholder="Observação sobre a elevação de grau (opcional)"></textarea>
+                            </div>
+                            <button type="submit" class="btn btn-success btn-sm w-100" id="btnAtribuirGrau">
+                                <i class="bi bi-plus-circle"></i> Atribuir Grau
+                            </button>
+                        </form>
+                        
+                        <!-- Mensagem de aviso sobre grau -->
+                        <div id="avisoGrau" class="alert alert-warning small mt-2" style="display: none;">
+                            <i class="bi bi-exclamation-triangle-fill"></i>
+                            <span id="avisoGrauTexto"></span>
+                        </div>
+                        
+                        <small class="text-muted d-block">
+                            <i class="bi bi-info-circle"></i> 
+                            Ao atribuir um novo grau, será registrado no histórico e o grau atual será atualizado.
+                        </small>
+                        {% else %}
+                        <div class="text-center text-muted py-3">
+                            <i class="bi bi-lock fs-1"></i>
+                            <p class="mb-0">Apenas administradores podem gerenciar graus.</p>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Coluna 3: Documentos -->
+            <div class="col-md-4">
+                <div class="card shadow-sm h-100">
+                    <div class="card-header bg-info text-white">
+                        <h5 class="mb-0">
+                            <i class="bi bi-cloud-arrow-up"></i> Documentos
+                            <span class="badge bg-light text-dark ms-2" id="totalDocumentosVis">0</span>
+                        </h5>
+                    </div>
+                    <div class="card-body" style="max-height: 350px; overflow-y: auto;">
+                        <div id="listaDocumentosVis">
+                            <div class="text-center text-muted py-4" id="semDocumentosVis">
+                                <i class="bi bi-cloud-slash fs-1"></i>
+                                <p class="mb-0 mt-2">Nenhum documento enviado</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Histórico de Graus, Familiares e Condecorações -->
+        <div class="row g-4 mb-4">
+            <!-- Histórico de Graus -->
+            <div class="col-md-6">
+                <div class="card shadow-sm h-100">
+                    <div class="card-header bg-success text-white">
+                        <h5 class="mb-0"><i class="bi bi-clock-history"></i> Histórico de Graus</h5>
+                    </div>
+                    <div class="card-body">
+                        {% if historico_graus and historico_graus|length > 0 %}
+                            <div class="table-responsive">
+                                <table class="table table-sm table-hover">
+                                    <thead>
+                                        <tr>
+                                            <th>Grau</th>
+                                            <th>Data</th>
+                                            <th>Observação</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for hist in historico_graus %}
+                                        <tr>
+                                            <td>
+                                                <span class="badge bg-secondary">{{ hist.grau }}º</span>
+                                                {% if hist.nome_grau %}
+                                                <br><small class="text-muted">{{ hist.nome_grau }}</small>
+                                                {% endif %}
+                                            </td>
+                                            <td>{{ hist.data.strftime('%d/%m/%Y') if hist.data else '-' }}</td>
+                                            <td>{{ hist.observacao or '-' }}</td>
+                                        </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        {% else %}
+                            <div class="text-center text-muted py-4">
+                                <i class="bi bi-clock-history fs-1"></i>
+                                <p class="mb-0">Nenhum histórico de graus registrado</p>
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Familiares e Condecorações -->
+            <div class="col-md-6">
+                <div class="row g-4">
+                    <div class="col-12">
+                        <div class="card shadow-sm h-100">
+                            <div class="card-header bg-info text-white">
+                                <h5 class="mb-0"><i class="bi bi-people"></i> Familiares</h5>
+                            </div>
+                            <div class="card-body text-center">
+                                <i class="bi bi-people fs-1 text-info"></i>
+                                <h3 class="mt-2">{{ familiares_count }}</h3>
+                                <p class="text-muted">familiares cadastrados</p>
+                                <a href="/obreiros/{{ obreiro.id }}/familiares" class="btn btn-outline-info">
+                                    <i class="bi bi-eye"></i> Gerenciar
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-12">
+                        <div class="card shadow-sm h-100">
+                            <div class="card-header bg-warning text-dark">
+                                <h5 class="mb-0"><i class="bi bi-award"></i> Condecorações</h5>
+                            </div>
+                            <div class="card-body text-center">
+                                <i class="bi bi-award fs-1 text-warning"></i>
+                                <h3 class="mt-2">{{ condecoracoes_count }}</h3>
+                                <p class="text-muted">condecorações recebidas</p>
+                                <div class="d-grid gap-2">
+                                    <a href="/obreiros/{{ obreiro.id }}/condecoracoes" class="btn btn-outline-warning">
+                                        <i class="bi bi-eye"></i> Ver Todas
+                                    </a>
+                                    {% if session.tipo == 'admin' %}
+                                    <a href="/obreiros/{{ obreiro.id }}/condecoracoes/nova" class="btn btn-warning">
+                                        <i class="bi bi-plus-circle"></i> Nova Condecoração
+                                    </a>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Comunicados e Administração -->
+        <div class="row g-4">
+            <div class="col-md-6">
+                <div class="card shadow-sm">
+                    <div class="card-header bg-danger text-white">
+                        <h5 class="mb-0"><i class="bi bi-envelope-paper"></i> Comunicados</h5>
+                    </div>
+                    <div class="card-body text-center">
+                        <i class="bi bi-envelope-paper fs-1 text-danger"></i>
+                        <h3 class="mt-2">{{ comunicados_count|default(0) }}</h3>
+                        <p class="text-muted">comunicados registrados</p>
+                        <a href="/obreiros/{{ obreiro.id }}/comunicados" class="btn btn-outline-danger">
+                            <i class="bi bi-eye"></i> Ver Histórico
+                        </a>
+                    </div>
+                </div>
+            </div>
+            
+            {% if session.tipo == 'admin' %}
+            <div class="col-md-6">
+                <div class="card shadow-sm">
+                    <div class="card-header bg-dark text-white">
+                        <h5 class="mb-0"><i class="bi bi-gear"></i> Administração</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="d-grid gap-2">
+                            <a href="/tipos_condecoracoes" class="btn btn-outline-light">
+                                <i class="bi bi-award"></i> Gerenciar Tipos de Condecoração
+                            </a>
+                            <a href="/tipos_condecoracoes/novo" class="btn btn-outline-light">
+                                <i class="bi bi-plus-circle"></i> Criar Novo Tipo de Condecoração
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- Adicionar novo cargo (apenas admin) - movido para uma seção separada -->
+        {% if session.tipo == 'admin' and cargos_disponiveis %}
+        <div class="card shadow-sm mt-4">
             <div class="card-header bg-secondary text-white">
-                <h5 class="mb-0"><i class="bi bi-journal"></i> Cargos Ocupados</h5>
+                <h5 class="mb-0"><i class="bi bi-plus-circle"></i> Adicionar Novo Cargo</h5>
             </div>
             <div class="card-body">
-                {% if cargos and cargos|length > 0 %}
-                    <div class="table-responsive">
-                        <table class="table table-hover">
-                            <thead>
-                                <tr>
-                                    <th>Cargo</th>
-                                    <th>Início</th>
-                                    <th>Gestão</th>
-                                    <th>Ações</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {% for cargo in cargos %}
-                                <tr>
-                                    <td>
-                                        <strong>{{ cargo.cargo_nome }}</strong>
-                                        {% if cargo.sigla %}
-                                        <br><small class="text-muted">{{ cargo.sigla }}</small>
-                                        {% endif %}
-                                    </td>
-                                    <td class="text-nowrap">{{ cargo.data_inicio.strftime('%d/%m/%Y') if cargo.data_inicio else '-' }}</td>
-                                    <td>{{ cargo.gestao or '-' }}</td>
-                                    <td>
-                                        {% if session.tipo == 'admin' %}
-                                        <a href="/obreiros/cargo/{{ cargo.id }}/remover" 
-                                           class="btn btn-sm btn-outline-danger"
-                                           onclick="return confirm('Remover este cargo?')"
-                                           title="Remover Cargo">
-                                            <i class="bi bi-trash"></i>
-                                        </a>
-                                        {% endif %}
-                                    </td>
-                                </tr>
-                                {% endfor %}
-                            </tbody>
-                        </table>
-                    </div>
-                {% else %}
-                    <div class="text-center text-muted py-4">
-                        <i class="bi bi-journal-x fs-1"></i>
-                        <p class="mb-0">Nenhum cargo ocupado</p>
-                    </div>
-                {% endif %}
-
-                <!-- Formulário para adicionar novo cargo (apenas admin) -->
-                {% if session.tipo == 'admin' and cargos_disponiveis %}
-                <hr>
-                <h6 class="mb-3"><i class="bi bi-plus-circle"></i> Adicionar Novo Cargo</h6>
-                
-                <!-- Exibir grau do obreiro -->
                 <div class="alert alert-info small mb-3">
                     <i class="bi bi-star-fill"></i>
                     <strong>Grau atual do obreiro:</strong> 
@@ -357,211 +568,15 @@
                     </div>
                 </form>
                 
-                <!-- Mensagem de aviso sobre grau -->
-                <div id="avisoGrau" class="alert alert-warning small mt-2" style="display: none;">
+                <div id="avisoGrauCargo" class="alert alert-warning small mt-2" style="display: none;">
                     <i class="bi bi-exclamation-triangle-fill"></i>
-                    <span id="avisoGrauTexto"></span>
+                    <span id="avisoGrauCargoTexto"></span>
                 </div>
                 
                 <small class="text-muted mt-2 d-block">
                     <i class="bi bi-info-circle"></i> 
                     Ao adicionar um novo cargo, o cargo anterior será mantido no histórico.
                 </small>
-                {% endif %}
-            </div>
-        </div>
-    </div>
-
-    <div class="col-md-6">
-        <div class="card shadow h-100">
-            <div class="card-header bg-info text-white">
-                <h5 class="mb-0">
-                    <i class="bi bi-cloud-arrow-up"></i> Documentos
-                    <span class="badge bg-light text-dark ms-2" id="totalDocumentosVis">0</span>
-                </h5>
-            </div>
-            <div class="card-body" style="max-height: 400px; overflow-y: auto;">
-                <div id="listaDocumentosVis">
-                    <div class="text-center text-muted py-4" id="semDocumentosVis">
-                        <i class="bi bi-cloud-slash fs-1"></i>
-                        <p class="mb-0 mt-2">Nenhum documento enviado</p>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
-                <!-- Formulário para adicionar novo cargo (apenas admin) -->
-                {% if session.tipo == 'admin' and cargos_disponiveis %}
-                <hr>
-                <h6 class="mb-3"><i class="bi bi-plus-circle"></i> Adicionar Novo Cargo</h6>
-                <form method="POST" action="/obreiros/{{ obreiro.id }}/cargo" class="row g-2">
-                    <div class="col-md-5">
-                        <select name="cargo_id" class="form-select form-select-sm" required>
-                            <option value="">Selecione o cargo...</option>
-                            {% for cargo in cargos_disponiveis %}
-                            <option value="{{ cargo.id }}">{{ cargo.nome }}</option>
-                            {% endfor %}
-                        </select>
-                    </div>
-                    <div class="col-md-3">
-                        <input type="date" name="data_inicio" class="form-control form-control-sm" 
-                               value="{{ now.strftime('%Y-%m-%d') }}" required>
-                    </div>
-                    <div class="col-md-3">
-                        <input type="text" name="gestao" class="form-control form-control-sm" 
-                               placeholder="Gestão (ex: 2024-2026)">
-                    </div>
-                    <div class="col-md-1">
-                        <button type="submit" class="btn btn-success btn-sm w-100">
-                            <i class="bi bi-plus"></i>
-                        </button>
-                    </div>
-                </form>
-                <small class="text-muted mt-2 d-block">
-                    <i class="bi bi-info-circle"></i> 
-                    Ao adicionar um novo cargo, o cargo anterior será mantido no histórico.
-                </small>
-                {% endif %}
-            </div>
-        </div>
-    </div>
-
-    <div class="col-md-6">
-        <div class="card shadow h-100">
-            <div class="card-header bg-info text-white">
-                <h5 class="mb-0">
-                    <i class="bi bi-cloud-arrow-up"></i> Documentos
-                    <span class="badge bg-light text-dark ms-2" id="totalDocumentosVis">0</span>
-                </h5>
-            </div>
-            <div class="card-body" style="max-height: 400px; overflow-y: auto;">
-                <div id="listaDocumentosVis">
-                    <div class="text-center text-muted py-4" id="semDocumentosVis">
-                        <i class="bi bi-cloud-slash fs-1"></i>
-                        <p class="mb-0 mt-2">Nenhum documento enviado</p>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
-
-        <!-- Familiares, Condecorações e Comunicados -->
-        <div class="row mb-4">
-            <div class="col-md-4">
-                <div class="card shadow h-100">
-                    <div class="card-header bg-info text-white">
-                        <h5 class="mb-0"><i class="bi bi-people"></i> Familiares</h5>
-                    </div>
-                    <div class="card-body text-center py-4">
-                        <i class="bi bi-people fs-1 text-info"></i>
-                        <h3 class="mt-2">{{ familiares_count }}</h3>
-                        <p class="text-muted">familiares cadastrados</p>
-                        <a href="/obreiros/{{ obreiro.id }}/familiares" class="btn btn-outline-info">
-                            <i class="bi bi-eye"></i> Gerenciar
-                        </a>
-                    </div>
-                </div>
-            </div>
-            <div class="col-md-4">
-                <div class="card shadow h-100">
-                    <div class="card-header bg-warning text-dark">
-                        <h5 class="mb-0"><i class="bi bi-award"></i> Condecorações</h5>
-                    </div>
-                    <div class="card-body text-center py-4">
-                        <i class="bi bi-award fs-1 text-warning"></i>
-                        <h3 class="mt-2">{{ condecoracoes_count }}</h3>
-                        <p class="text-muted">condecorações recebidas</p>
-                        <div class="d-grid gap-2">
-                            <a href="/obreiros/{{ obreiro.id }}/condecoracoes" class="btn btn-outline-warning">
-                                <i class="bi bi-eye"></i> Ver Todas
-                            </a>
-                            {% if session.tipo == 'admin' %}
-                            <a href="/obreiros/{{ obreiro.id }}/condecoracoes/nova" class="btn btn-warning">
-                                <i class="bi bi-plus-circle"></i> Nova Condecoração
-                            </a>
-                            {% endif %}
-                        </div>
-                    </div>
-                </div>
-            </div>
-            <div class="col-md-4">
-                <div class="card shadow h-100">
-                    <div class="card-header bg-danger text-white">
-                        <h5 class="mb-0"><i class="bi bi-envelope-paper"></i> Comunicados</h5>
-                    </div>
-                    <div class="card-body text-center py-4">
-                        <i class="bi bi-envelope-paper fs-1 text-danger"></i>
-                        <h3 class="mt-2">{{ comunicados_count|default(0) }}</h3>
-                        <p class="text-muted">comunicados registrados</p>
-                        <a href="/obreiros/{{ obreiro.id }}/comunicados" class="btn btn-outline-danger">
-                            <i class="bi bi-eye"></i> Ver Histórico
-                        </a>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Histórico de Graus -->
-        {% if historico_graus and historico_graus|length > 0 %}
-        <div class="card shadow mb-4">
-            <div class="card-header bg-success text-white">
-                <h5 class="mb-0"><i class="bi bi-clock-history"></i> Histórico de Graus</h5>
-            </div>
-            <div class="card-body">
-                <div class="table-responsive">
-                    <table class="table table-hover">
-                        <thead>
-                            <tr>
-                                <th>Grau</th>
-                                <th>Data</th>
-                                <th>Observação</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% for hist in historico_graus %}
-                            <tr>
-                                <td>
-                                    <span class="badge bg-secondary">{{ hist.grau }}º</span>
-                                    {% if hist.nome_grau %}
-                                    <br><small class="text-muted">{{ hist.nome_grau }}</small>
-                                    {% endif %}
-                                 </td>
-                                <td>{{ hist.data.strftime('%d/%m/%Y') if hist.data else '-' }}</td>
-                                <td>{{ hist.observacao or '-' }}</td>
-                            </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-        </div>
-        {% endif %}
-        
-        <!-- Botão para Gerenciar Tipos de Condecoração (apenas admin) -->
-        {% if session.tipo == 'admin' %}
-        <div class="card shadow mb-4">
-            <div class="card-header bg-dark text-white">
-                <h5 class="mb-0"><i class="bi bi-gear"></i> Administração</h5>
-            </div>
-            <div class="card-body">
-                <div class="row">
-                    <div class="col-md-6">
-                        <div class="d-grid">
-                            <a href="/tipos_condecoracoes" class="btn btn-outline-light">
-                                <i class="bi bi-award"></i> Gerenciar Tipos de Condecoração
-                            </a>
-                        </div>
-                    </div>
-                    <div class="col-md-6">
-                        <div class="d-grid">
-                            <a href="/tipos_condecoracoes/novo" class="btn btn-outline-light">
-                                <i class="bi bi-plus-circle"></i> Criar Novo Tipo de Condecoração
-                            </a>
-                        </div>
-                    </div>
-                </div>
             </div>
         </div>
         {% endif %}
@@ -616,16 +631,19 @@
 </div>
 
 <script>
+// Funções para gerenciamento de cargos
 function verificarGrauCargo() {
     const select = document.getElementById('cargoSelect');
+    if (!select) return;
+    
     const selectedOption = select.options[select.selectedIndex];
-    const avisoDiv = document.getElementById('avisoGrau');
-    const avisoTexto = document.getElementById('avisoGrauTexto');
+    const avisoDiv = document.getElementById('avisoGrauCargo');
+    const avisoTexto = document.getElementById('avisoGrauCargoTexto');
     const btnAtribuir = document.getElementById('btnAtribuirCargo');
     
     if (!selectedOption || !selectedOption.value) {
-        avisoDiv.style.display = 'none';
-        btnAtribuir.disabled = false;
+        if (avisoDiv) avisoDiv.style.display = 'none';
+        if (btnAtribuir) btnAtribuir.disabled = false;
         return;
     }
     
@@ -634,17 +652,19 @@ function verificarGrauCargo() {
     const grauObreiro = {{ obreiro.grau_atual|default(3)|int }};
     
     if (grauObreiro < grauMinimo) {
-        avisoTexto.innerHTML = `⚠️ O cargo "${cargoNome}" exige ${grauMinimo}º Grau, mas o obreiro tem apenas ${grauObreiro}º Grau. Não é possível atribuir este cargo.`;
-        avisoDiv.style.display = 'block';
-        btnAtribuir.disabled = true;
+        if (avisoTexto) avisoTexto.innerHTML = `⚠️ O cargo "${cargoNome}" exige ${grauMinimo}º Grau, mas o obreiro tem apenas ${grauObreiro}º Grau. Não é possível atribuir este cargo.`;
+        if (avisoDiv) avisoDiv.style.display = 'block';
+        if (btnAtribuir) btnAtribuir.disabled = true;
     } else {
-        avisoDiv.style.display = 'none';
-        btnAtribuir.disabled = false;
+        if (avisoDiv) avisoDiv.style.display = 'none';
+        if (btnAtribuir) btnAtribuir.disabled = false;
     }
 }
 
 function validarCargo() {
     const select = document.getElementById('cargoSelect');
+    if (!select) return false;
+    
     const selectedOption = select.options[select.selectedIndex];
     
     if (!selectedOption || !selectedOption.value) {
@@ -664,15 +684,77 @@ function validarCargo() {
     return confirm(`✅ Confirmar atribuição do cargo "${cargoNome}" ao obreiro?`);
 }
 
-// Inicializar verificação ao carregar a página
+// Funções para gerenciamento de graus
+function verificarGrau() {
+    const select = document.getElementById('grauSelect');
+    if (!select) return;
+    
+    const selectedOption = select.options[select.selectedIndex];
+    const avisoDiv = document.getElementById('avisoGrau');
+    const avisoTexto = document.getElementById('avisoGrauTexto');
+    const btnAtribuir = document.getElementById('btnAtribuirGrau');
+    
+    if (!selectedOption || !selectedOption.value) {
+        if (avisoDiv) avisoDiv.style.display = 'none';
+        if (btnAtribuir) btnAtribuir.disabled = false;
+        return;
+    }
+    
+    const nivelGrau = parseInt(selectedOption.dataset.nivel) || 1;
+    const nomeGrau = selectedOption.dataset.nome;
+    const grauAtual = {{ obreiro.grau_atual|default(1)|int }};
+    
+    if (nivelGrau <= grauAtual) {
+        if (avisoTexto) avisoTexto.innerHTML = `⚠️ O grau "${nomeGrau}" (${nivelGrau}º) é menor ou igual ao grau atual (${grauAtual}º). Apenas graus superiores podem ser atribuídos.`;
+        if (avisoDiv) avisoDiv.style.display = 'block';
+        if (btnAtribuir) btnAtribuir.disabled = true;
+    } else {
+        if (avisoDiv) avisoDiv.style.display = 'none';
+        if (btnAtribuir) btnAtribuir.disabled = false;
+    }
+}
+
+function validarGrau() {
+    const select = document.getElementById('grauSelect');
+    if (!select) return false;
+    
+    const selectedOption = select.options[select.selectedIndex];
+    
+    if (!selectedOption || !selectedOption.value) {
+        alert('❌ Selecione um grau!');
+        return false;
+    }
+    
+    const nivelGrau = parseInt(selectedOption.dataset.nivel) || 1;
+    const nomeGrau = selectedOption.dataset.nome;
+    const grauAtual = {{ obreiro.grau_atual|default(1)|int }};
+    
+    if (nivelGrau <= grauAtual) {
+        alert(`❌ O grau "${nomeGrau}" (${nivelGrau}º) é menor ou igual ao grau atual (${grauAtual}º). Apenas graus superiores podem ser atribuídos.`);
+        return false;
+    }
+    
+    return confirm(`✅ Confirmar elevação do obreiro para ${nomeGrau} (${nivelGrau}º Grau)?`);
+}
+
+// Inicializar verificações ao carregar a página
 document.addEventListener('DOMContentLoaded', function() {
     const cargoSelect = document.getElementById('cargoSelect');
     if (cargoSelect) {
         cargoSelect.addEventListener('change', verificarGrauCargo);
-        verificarGrauCargo(); // Verificar se já tem um cargo selecionado
+        verificarGrauCargo();
     }
+    
+    const grauSelect = document.getElementById('grauSelect');
+    if (grauSelect) {
+        grauSelect.addEventListener('change', verificarGrau);
+        verificarGrau();
+    }
+    
+    carregarDocumentosVisualizacao();
 });
 
+// Modal de exclusão
 let modalExclusaoDefinitiva;
 
 document.addEventListener('DOMContentLoaded', function() {
@@ -691,8 +773,6 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
     }
-    
-    carregarDocumentosVisualizacao();
 });
 
 function confirmarExclusaoDefinitiva(obreiroId, obreiroNome) {
@@ -846,7 +926,7 @@ function escapeHtml(text) {
 
 <style>
     .card {
-        border-radius: 10px;
+        border-radius: 12px;
         overflow: hidden;
         transition: transform 0.2s ease;
     }
