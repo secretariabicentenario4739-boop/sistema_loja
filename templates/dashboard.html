@@ -1,105 +1,245 @@
 {% extends "base.html" %}
 
-{% block title %}Dashboard - Sistema Maçônico{% endblock %}
+{% block title %}Dashboard - Loja Maçônica{% endblock %}
 
 {% block styles %}
 {{ super() }}
 <style>
-    .bg-gradient-primary {
-        background: linear-gradient(135deg, #1a2c3e 0%, #2c4a6e 100%);
-    }
-    .bg-opacity-10 {
-        background-color: rgba(var(--bs-primary-rgb), 0.1);
-    }
-    .bg-warning.bg-opacity-10 {
-        background-color: rgba(255, 193, 7, 0.15);
-    }
-    .bg-success.bg-opacity-10 {
-        background-color: rgba(25, 135, 84, 0.15);
-    }
-    .bg-danger.bg-opacity-10 {
-        background-color: rgba(220, 53, 69, 0.15);
-    }
-    .bg-info.bg-opacity-10 {
-        background-color: rgba(13, 202, 240, 0.15);
-    }
-    .bg-secondary.bg-opacity-10 {
-        background-color: rgba(108, 117, 125, 0.15);
-    }
-    .bg-primary.bg-opacity-10 {
-        background-color: rgba(13, 110, 253, 0.15);
-    }
-    .rounded-4 {
-        border-radius: 1rem !important;
-    }
-    .card {
-        transition: transform 0.2s ease, box-shadow 0.2s ease;
-        border-radius: 20px !important;
-    }
-    .card:hover {
-        transform: translateY(-4px);
-        box-shadow: 0 1rem 2rem rgba(0,0,0,0.1) !important;
-    }
-    .btn {
-        transition: all 0.2s ease;
-    }
-    .btn:hover {
-        transform: translateY(-2px);
-    }
-    .table-hover tbody tr:hover {
-        background-color: rgba(13, 110, 253, 0.05);
-    }
-    
-    /* Estilo para a barra de progresso - IGUAL AOS OUTROS TEMPLATES */
-    .progress-custom {
-        height: 25px;
-        border-radius: 12px;
-        background: #e2e8f0;
-        overflow: hidden;
-        box-shadow: inset 0 1px 2px rgba(0,0,0,0.1);
+    /* VARIÁVEIS MAÇÔNICAS */
+    :root {
+        --ouro: #C5A028;
+        --ouro-escuro: #8B6914;
+        --azul-maconico: #1E3A5F;
+        --azul-claro: #2C5A8C;
+        --roxo-maconico: #4A0E4E;
+        --verde-esperanca: #1B4D3E;
+        --cinza-nobre: #2C2C2C;
+        --cinza-claro: #4A4A4A;
+        --bege: #D4C5A9;
     }
 
-    .progress-custom .progress-bar {
-        border-radius: 12px;
-        background: linear-gradient(90deg, #10b981, #34d399);
-        transition: width 0.5s ease;
-        font-size: 0.8rem;
-        font-weight: 600;
-        line-height: 25px;
-        text-align: center;
-        color: white;
-        text-shadow: 0 1px 1px rgba(0,0,0,0.2);
+    /* FUNDO COM TEXTURA MAÇÔNICA */
+    body {
+        background: linear-gradient(135deg, #0F172A 0%, #1E293B 100%);
+        position: relative;
+    }
+    
+    body::before {
+        content: '';
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100' opacity='0.03'%3E%3Cpath fill='none' stroke='%23C5A028' stroke-width='0.5' d='M50 5 L95 27.5 L95 72.5 L50 95 L5 72.5 L5 27.5 Z'/%3E%3Ccircle cx='50' cy='50' r='8' fill='%23C5A028' opacity='0.3'/%3E%3C/svg%3E");
+        background-repeat: repeat;
+        background-size: 60px;
+        pointer-events: none;
+    }
+
+    /* CARDS MAÇÔNICOS */
+    .card-maconico {
+        background: linear-gradient(135deg, rgba(30, 58, 95, 0.95) 0%, rgba(20, 40, 65, 0.95) 100%);
+        backdrop-filter: blur(10px);
+        border: 1px solid rgba(197, 160, 40, 0.3);
+        border-radius: 20px;
+        transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        position: relative;
+        overflow: hidden;
+    }
+    
+    .card-maconico::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: -100%;
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(90deg, transparent, rgba(197, 160, 40, 0.1), transparent);
+        transition: left 0.6s;
+    }
+    
+    .card-maconico:hover::before {
+        left: 100%;
+    }
+    
+    .card-maconico:hover {
+        transform: translateY(-8px);
+        border-color: var(--ouro);
+        box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3), 0 0 20px rgba(197, 160, 40, 0.2);
+    }
+
+    /* CABEÇALHO COM GRAVURA MAÇÔNICA */
+    .header-maconico {
+        background: linear-gradient(135deg, #0F172A 0%, #1E293B 100%);
+        border-bottom: 2px solid var(--ouro);
+        position: relative;
+    }
+    
+    .header-maconico::after {
+        content: '☥';
+        position: absolute;
+        bottom: -15px;
+        right: 20px;
+        font-size: 30px;
+        color: var(--ouro);
+        opacity: 0.3;
+        font-family: serif;
+    }
+
+    /* ESTATÍSTICAS MAÇÔNICAS */
+    .stat-maconico {
+        background: rgba(30, 58, 95, 0.6);
+        backdrop-filter: blur(5px);
+        border: 1px solid rgba(197, 160, 40, 0.2);
+        border-radius: 16px;
+        transition: all 0.3s;
+    }
+    
+    .stat-maconico:hover {
+        border-color: var(--ouro);
+        transform: translateY(-5px);
+    }
+
+    /* NÚMEROS COM EFEITO OURO */
+    .numero-ouro {
+        background: linear-gradient(135deg, var(--ouro) 0%, #FFD700 100%);
+        -webkit-background-clip: text;
+        background-clip: text;
+        color: transparent;
+        text-shadow: 0 2px 10px rgba(197, 160, 40, 0.3);
+    }
+
+    /* ÍCONES MAÇÔNICOS */
+    .icone-maconico {
+        width: 50px;
+        height: 50px;
+        background: linear-gradient(135deg, var(--ouro), #FFD700);
+        border-radius: 50%;
         display: flex;
         align-items: center;
         justify-content: center;
+        color: #1E293B;
+        font-size: 24px;
+        box-shadow: 0 0 20px rgba(197, 160, 40, 0.3);
     }
 
-    @media (max-width: 768px) {
-        .display-6 {
-            font-size: 1.5rem;
-        }
-        .card-header h4, .card-header h5 {
-            font-size: 1.1rem;
-        }
-        .progress-custom {
-            height: 20px;
-        }
-        .progress-custom .progress-bar {
-            font-size: 0.7rem;
-            line-height: 20px;
-        }
+    /* TÍTULOS MAÇÔNICOS */
+    .titulo-maconico {
+        font-family: 'Georgia', serif;
+        letter-spacing: 2px;
+        text-transform: uppercase;
+        background: linear-gradient(135deg, var(--ouro), #FFD700);
+        -webkit-background-clip: text;
+        background-clip: text;
+        color: transparent;
+        position: relative;
+        display: inline-block;
     }
     
-    /* Garantir bordas dos cards */
-    .card-header {
-        border-radius: 0 !important;
+    .titulo-maconico::after {
+        content: '';
+        position: absolute;
+        bottom: -5px;
+        left: 0;
+        width: 50%;
+        height: 2px;
+        background: linear-gradient(90deg, var(--ouro), transparent);
     }
-    .card-footer {
-        border-radius: 0 !important;
+
+    /* BOTÕES MAÇÔNICOS */
+    .btn-maconico {
+        background: linear-gradient(135deg, var(--azul-maconico), #0F172A);
+        border: 1px solid var(--ouro);
+        color: var(--ouro);
+        border-radius: 30px;
+        padding: 8px 20px;
+        transition: all 0.3s;
     }
-    .list-group-flush > .list-group-item:last-child {
-        border-bottom: 0;
-        margin-bottom: 0;
+    
+    .btn-maconico:hover {
+        background: var(--ouro);
+        color: var(--azul-maconico);
+        transform: translateY(-2px);
+        box-shadow: 0 5px 20px rgba(197, 160, 40, 0.3);
+    }
+
+    /* PROGRESS BAR MAÇÔNICA */
+    .progress-maconico {
+        background: rgba(30, 58, 95, 0.5);
+        border-radius: 30px;
+        height: 12px;
+        overflow: hidden;
+    }
+    
+    .progress-maconico .progress-bar {
+        background: linear-gradient(90deg, var(--ouro), #FFD700);
+        border-radius: 30px;
+        position: relative;
+        overflow: hidden;
+    }
+    
+    .progress-maconico .progress-bar::after {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+        animation: brilho 2s infinite;
+    }
+    
+    @keyframes brilho {
+        0% { transform: translateX(-100%); }
+        100% { transform: translateX(100%); }
+    }
+
+    /* Tabela Maçônica */
+    .table-maconica {
+        background: rgba(30, 58, 95, 0.4);
+        border-radius: 16px;
+        overflow: hidden;
+    }
+    
+    .table-maconica thead {
+        background: linear-gradient(135deg, var(--azul-maconico), #0F172A);
+        color: var(--ouro);
+    }
+    
+    .table-maconica tbody tr {
+        border-bottom: 1px solid rgba(197, 160, 40, 0.1);
+        transition: all 0.3s;
+    }
+    
+    .table-maconica tbody tr:hover {
+        background: rgba(197, 160, 40, 0.05);
+    }
+
+    /* Símbolo do Esquadro e Compasso */
+    .simbolo-maconico {
+        font-size: 14px;
+        letter-spacing: 4px;
+        color: var(--ouro);
+        text-align: center;
+        margin: 20px 0;
+    }
+    
+    /* Formatação da data */
+    .data-maconica {
+        font-size: 0.9rem;
+        letter-spacing: 1px;
+    }
+    
+    .text-ouro { color: var(--ouro) !important; }
+    .bg-ouro { background: var(--ouro) !important; }
+    .border-ouro { border-color: var(--ouro) !important; }
+    .text-light-50 { color: rgba(255, 255, 255, 0.7) !important; }
+    
+    @media (max-width: 768px) {
+        .display-4 { font-size: 2rem; }
+        .display-5 { font-size: 1.5rem; }
+        .icone-maconico { width: 40px; height: 40px; font-size: 20px; }
     }
 </style>
 {% endblock %}
@@ -108,30 +248,34 @@
 <div class="container-fluid py-4">
     <div class="container">
         
-        <!-- ============================================ -->
-        <!-- CABEÇALHO COM SAUDAÇÃO E DATA -->
-        <!-- ============================================ -->
-        <div class="row mb-4">
+        <!-- CABEÇALHO MAÇÔNICO -->
+        <div class="row mb-5">
             <div class="col-12">
-                <div class="card bg-gradient-primary text-white shadow-lg border-0">
-                    <div class="card-body py-4">
-                        <div class="d-flex justify-content-between align-items-center">
-                            <div>
-                                <h1 class="display-6 fw-bold mb-0">
-                                    <i class="bi bi-compass-fill me-2"></i>
-                                    Olá, {{ session.nome_completo or session.usuario }}
-                                </h1>
-                                <p class="mb-0 mt-2 opacity-75">
-                                    <i class="bi bi-calendar3 me-1"></i> 
-                                    {% set dias_semana = {'Monday': 'Segunda-feira', 'Tuesday': 'Terça-feira', 'Wednesday': 'Quarta-feira', 'Thursday': 'Quinta-feira', 'Friday': 'Sexta-feira', 'Saturday': 'Sábado', 'Sunday': 'Domingo'} %}
-                                    {% set meses = {'January': 'Janeiro', 'February': 'Fevereiro', 'March': 'Março', 'April': 'Abril', 'May': 'Maio', 'June': 'Junho', 'July': 'Julho', 'August': 'Agosto', 'September': 'Setembro', 'October': 'Outubro', 'November': 'Novembro', 'December': 'Dezembro'} %}
-                                    {{ dias_semana[now.strftime('%A')] }}, {{ now.strftime('%d') }} de {{ meses[now.strftime('%B')] }} de {{ now.strftime('%Y') }} - {{ now.strftime('%H:%M') }}h
-                                </p>
+                <div class="card-maconico header-maconico">
+                    <div class="card-body py-5">
+                        <div class="text-center">
+                            <div class="simbolo-maconico mb-3">
+                                ✦ ⬜ ✦ ⌒ ✦ 🔺 ✦
                             </div>
-                            <div class="text-end">
-                                <div class="bg-white bg-opacity-25 rounded-circle p-3 d-inline-block">
-                                    <i class="bi bi-gem fs-1"></i>
-                                </div>
+                            <h1 class="display-4 fw-bold titulo-maconico mb-3">
+                                <i class="bi bi-compass-fill me-3"></i>
+                                Ordem Maçônica
+                            </h1>
+                            <p class="lead text-light mb-2">
+                                "Ordo Ab Chao" - Ordem do Caos
+                            </p>
+                            <p class="data-maconica text-light-50">
+                                <i class="bi bi-calendar3 me-1"></i> 
+                                {{ now.strftime('%A, %d de %B de %Y - %H:%M') }}h
+                            </p>
+                            <div class="mt-3">
+                                <span class="badge bg-ouro text-dark px-4 py-2 rounded-pill">
+                                    <i class="bi bi-star-fill me-2"></i>
+                                    {{ session.grau_atual|int }}º Grau - 
+                                    {% if session.grau_atual|int == 1 %}Aprendiz
+                                    {% elif session.grau_atual|int == 2 %}Companheiro
+                                    {% else %}Mestre{% endif %}
+                                </span>
                             </div>
                         </div>
                     </div>
@@ -139,192 +283,134 @@
             </div>
         </div>
 
-        <!-- ============================================ -->
-        <!-- CARDS DE ESTATÍSTICAS PRINCIPAIS -->
-        <!-- ============================================ -->
-        <div class="row g-4 mb-4">
+        <!-- CARDS DE ESTATÍSTICAS MAÇÔNICAS -->
+        <div class="row g-4 mb-5">
             <div class="col-md-3 col-sm-6">
-                <div class="card border-0 shadow-sm rounded-4 bg-primary text-white h-100">
-                    <div class="card-body">
-                        <div class="d-flex justify-content-between align-items-center">
-                            <div>
-                                <p class="mb-1 opacity-75">Candidatos</p>
-                                <h2 class="mb-0 fw-bold">{{ total_candidatos }}</h2>
-                            </div>
-                            <div class="bg-white bg-opacity-25 rounded-circle p-3">
-                                <i class="bi bi-people fs-1"></i>
-                            </div>
+                <div class="stat-maconico p-3">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <small class="text-ouro text-uppercase fw-bold">Candidatos</small>
+                            <h2 class="display-5 fw-bold numero-ouro mb-0">{{ total_candidatos }}</h2>
+                            <small class="text-light-50">Aguardando iniciação</small>
                         </div>
-                        <div class="mt-3 small opacity-75">
-                            <i class="bi bi-person-plus"></i> Aguardando sindicância
+                        <div class="icone-maconico">
+                            <i class="bi bi-people"></i>
                         </div>
                     </div>
                 </div>
             </div>
             <div class="col-md-3 col-sm-6">
-                <div class="card border-0 shadow-sm rounded-4 bg-success text-white h-100">
-                    <div class="card-body">
-                        <div class="d-flex justify-content-between align-items-center">
-                            <div>
-                                <p class="mb-1 opacity-75">Sindicantes</p>
-                                <h2 class="mb-0 fw-bold">{{ total_sindicantes }}</h2>
-                            </div>
-                            <div class="bg-white bg-opacity-25 rounded-circle p-3">
-                                <i class="bi bi-person-badge fs-1"></i>
-                            </div>
+                <div class="stat-maconico p-3">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <small class="text-ouro text-uppercase fw-bold">Sindicantes</small>
+                            <h2 class="display-5 fw-bold numero-ouro mb-0">{{ total_sindicantes }}</h2>
+                            <small class="text-light-50">Investigadores</small>
                         </div>
-                        <div class="mt-3 small opacity-75">
-                            <i class="bi bi-shield-check"></i> Ativos na loja
+                        <div class="icone-maconico">
+                            <i class="bi bi-shield-check"></i>
                         </div>
                     </div>
                 </div>
             </div>
             <div class="col-md-3 col-sm-6">
-                <div class="card border-0 shadow-sm rounded-4 bg-info text-white h-100">
-                    <div class="card-body">
-                        <div class="d-flex justify-content-between align-items-center">
-                            <div>
-                                <p class="mb-1 opacity-75">Obreiros</p>
-                                <h2 class="mb-0 fw-bold">{{ total_obreiros }}</h2>
-                            </div>
-                            <div class="bg-white bg-opacity-25 rounded-circle p-3">
-                                <i class="bi bi-person-workspace fs-1"></i>
-                            </div>
+                <div class="stat-maconico p-3">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <small class="text-ouro text-uppercase fw-bold">Obreiros</small>
+                            <h2 class="display-5 fw-bold numero-ouro mb-0">{{ total_obreiros }}</h2>
+                            <small class="text-light-50">Irmãos ativos</small>
                         </div>
-                        <div class="mt-3 small opacity-75">
-                            <i class="bi bi-star-fill"></i> Membros ativos
+                        <div class="icone-maconico">
+                            <i class="bi bi-gem"></i>
                         </div>
                     </div>
                 </div>
             </div>
             <div class="col-md-3 col-sm-6">
-                <div class="card border-0 shadow-sm rounded-4 bg-warning text-dark h-100">
-                    <div class="card-body">
-                        <div class="d-flex justify-content-between align-items-center">
-                            <div>
-                                <p class="mb-1 opacity-75">Reuniões</p>
-                                <h2 class="mb-0 fw-bold">{{ total_reunioes }}</h2>
-                            </div>
-                            <div class="bg-white bg-opacity-25 rounded-circle p-3">
-                                <i class="bi bi-calendar-event fs-1"></i>
-                            </div>
+                <div class="stat-maconico p-3">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <small class="text-ouro text-uppercase fw-bold">Reuniões</small>
+                            <h2 class="display-5 fw-bold numero-ouro mb-0">{{ total_reunioes }}</h2>
+                            <small class="text-light-50">{{ reunioes_agendadas }} agendadas</small>
                         </div>
-                        <div class="mt-3 small opacity-75">
-                            <i class="bi bi-clock-history"></i> {{ reunioes_agendadas }} agendadas
+                        <div class="icone-maconico">
+                            <i class="bi bi-calendar-event"></i>
                         </div>
                     </div>
                 </div>
             </div>
         </div>
 
-        <!-- ============================================ -->
-        <!-- SEÇÃO: ESTATÍSTICAS DE GRAUS E REUNIÕES -->
-        <!-- ============================================ -->
-        <div class="row g-4 mb-4">
-            <div class="col-md-4">
-                <div class="card border-0 shadow-sm rounded-4 h-100">
-                    <div class="card-header bg-transparent border-0 pt-4 pb-0">
-                        <h5 class="mb-0 fw-bold">
-                            <i class="bi bi-star-fill text-warning me-2"></i>
-                            Distribuição por Grau
+        <!-- DISTRIBUIÇÃO POR GRAU COM SÍMBOLOS -->
+        <div class="row g-4 mb-5">
+            <div class="col-md-6">
+                <div class="card-maconico">
+                    <div class="card-body p-4">
+                        <h5 class="titulo-maconico mb-4">
+                            <i class="bi bi-star-fill me-2"></i>
+                            Hierarquia dos Graus
                         </h5>
-                    </div>
-                    <div class="card-body">
                         <div class="row text-center g-3">
                             <div class="col-4">
-                                <div class="bg-secondary bg-opacity-10 rounded-4 p-3">
-                                    <h3 class="text-secondary mb-0 fw-bold">{{ aprendizes }}</h3>
-                                    <small class="text-muted">Aprendizes</small>
+                                <div class="p-3 rounded-3" style="background: rgba(108, 117, 125, 0.2);">
+                                    <i class="bi bi-star fs-1 text-secondary"></i>
+                                    <h3 class="fw-bold text-light mb-0">{{ aprendizes }}</h3>
+                                    <small class="text-ouro">Aprendizes</small>
+                                    <div class="mt-2 small text-light-50">1º Grau</div>
                                 </div>
                             </div>
                             <div class="col-4">
-                                <div class="bg-primary bg-opacity-10 rounded-4 p-3">
-                                    <h3 class="text-primary mb-0 fw-bold">{{ companheiros }}</h3>
-                                    <small class="text-muted">Companheiros</small>
+                                <div class="p-3 rounded-3" style="background: rgba(13, 110, 253, 0.2);">
+                                    <i class="bi bi-star-half fs-1 text-primary"></i>
+                                    <h3 class="fw-bold text-light mb-0">{{ companheiros }}</h3>
+                                    <small class="text-ouro">Companheiros</small>
+                                    <div class="mt-2 small text-light-50">2º Grau</div>
                                 </div>
                             </div>
                             <div class="col-4">
-                                <div class="bg-success bg-opacity-10 rounded-4 p-3">
-                                    <h3 class="text-success mb-0 fw-bold">{{ mestres }}</h3>
-                                    <small class="text-muted">Mestres</small>
+                                <div class="p-3 rounded-3" style="background: rgba(25, 135, 84, 0.2);">
+                                    <i class="bi bi-star-fill fs-1 text-success"></i>
+                                    <h3 class="fw-bold text-light mb-0">{{ mestres }}</h3>
+                                    <small class="text-ouro">Mestres</small>
+                                    <div class="mt-2 small text-light-50">3º Grau</div>
                                 </div>
                             </div>
                         </div>
                         <div class="mt-4">
-                            <div class="progress" style="height: 12px; border-radius: 10px;">
+                            <div class="progress-maconico">
                                 {% set total_graus = aprendizes + companheiros + mestres %}
-                                {% if total_graus > 0 %}
-                                <div class="progress-bar bg-secondary" style="width: {{ (aprendizes / total_graus * 100) }}%"></div>
-                                <div class="progress-bar bg-primary" style="width: {{ (companheiros / total_graus * 100) }}%"></div>
-                                <div class="progress-bar bg-success" style="width: {{ (mestres / total_graus * 100) }}%"></div>
-                                {% endif %}
-                            </div>
-                            <div class="d-flex justify-content-between mt-2 small text-muted">
-                                <span>Aprendiz</span>
-                                <span>Companheiro</span>
-                                <span>Mestre</span>
+                                <div class="progress-bar" style="width: {{ (aprendizes / total_graus * 100) if total_graus > 0 else 0 }}%"></div>
+                                <div class="progress-bar bg-primary" style="width: {{ (companheiros / total_graus * 100) if total_graus > 0 else 0 }}%"></div>
+                                <div class="progress-bar bg-success" style="width: {{ (mestres / total_graus * 100) if total_graus > 0 else 0 }}%"></div>
                             </div>
                         </div>
                     </div>
                 </div>
             </div>
-            <div class="col-md-4">
-                <div class="card border-0 shadow-sm rounded-4 h-100">
-                    <div class="card-header bg-transparent border-0 pt-4 pb-0">
-                        <h5 class="mb-0 fw-bold">
-                            <i class="bi bi-calendar-check text-primary me-2"></i>
-                            Reuniões
+            
+            <div class="col-md-6">
+                <div class="card-maconico">
+                    <div class="card-body p-4 text-center">
+                        <h5 class="titulo-maconico mb-4">
+                            <i class="bi bi-eyeglasses me-2"></i>
+                            O Olho que Tudo Vê
                         </h5>
-                    </div>
-                    <div class="card-body text-center">
-                        <div class="row g-3">
-                            <div class="col-6">
-                                <div class="bg-success bg-opacity-10 rounded-4 p-3">
-                                    <h3 class="text-success mb-0 fw-bold">{{ reunioes_realizadas }}</h3>
-                                    <small class="text-muted">Realizadas</small>
-                                </div>
-                            </div>
-                            <div class="col-6">
-                                <div class="bg-warning bg-opacity-10 rounded-4 p-3">
-                                    <h3 class="text-warning mb-0 fw-bold">{{ reunioes_agendadas }}</h3>
-                                    <small class="text-muted">Agendadas</small>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="mt-4">
-                            <div class="progress" style="height: 12px; border-radius: 10px;">
-                                {% set total_reunioes_count = reunioes_realizadas + reunioes_agendadas %}
-                                {% if total_reunioes_count > 0 %}
-                                <div class="progress-bar bg-success" style="width: {{ (reunioes_realizadas / total_reunioes_count * 100) }}%"></div>
-                                <div class="progress-bar bg-warning" style="width: {{ (reunioes_agendadas / total_reunioes_count * 100) }}%"></div>
-                                {% endif %}
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            <div class="col-md-4">
-                <div class="card border-0 shadow-sm rounded-4 h-100">
-                    <div class="card-header bg-transparent border-0 pt-4 pb-0">
-                        <h5 class="mb-0 fw-bold">
-                            <i class="bi bi-graph-up text-info me-2"></i>
-                            Taxa de Presença
-                        </h5>
-                    </div>
-                    <div class="card-body text-center">
                         <div class="position-relative d-inline-block mb-3">
-                            <div class="rounded-circle bg-info bg-opacity-10 d-flex align-items-center justify-content-center mx-auto" style="width: 140px; height: 140px;">
+                            <div class="rounded-circle d-flex align-items-center justify-content-center mx-auto" style="width: 160px; height: 160px; background: linear-gradient(135deg, var(--ouro), #FFD700);">
                                 <div class="text-center">
-                                    <h1 class="display-5 fw-bold text-info mb-0">{{ "%.0f"|format((reunioes_realizadas / total_reunioes * 100) if total_reunioes > 0 else 0) }}%</h1>
-                                    <small class="text-muted">de reuniões</small>
+                                    <i class="bi bi-eye-fill fs-1 text-dark"></i>
+                                    <h2 class="display-6 fw-bold text-dark mb-0">{{ "%.0f"|format((reunioes_realizadas / total_reunioes * 100) if total_reunioes > 0 else 0) }}%</h2>
+                                    <small class="text-dark">Realizadas</small>
                                 </div>
                             </div>
                         </div>
-                        <div class="progress" style="height: 10px; border-radius: 10px;">
-                            <div class="progress-bar bg-info" style="width: {{ (reunioes_realizadas / total_reunioes * 100) if total_reunioes > 0 else 0 }}%"></div>
+                        <div class="progress-maconico mt-3">
+                            <div class="progress-bar" style="width: {{ (reunioes_realizadas / total_reunioes * 100) if total_reunioes > 0 else 0 }}%"></div>
                         </div>
-                        <p class="mt-3 text-muted small">
-                            <i class="bi bi-info-circle"></i> 
+                        <p class="mt-3 text-light-50 small">
+                            <i class="bi bi-info-circle-fill text-ouro me-1"></i> 
                             {{ reunioes_realizadas }} de {{ total_reunioes }} reuniões realizadas
                         </p>
                     </div>
@@ -332,21 +418,19 @@
             </div>
         </div>
 
-        <!-- ============================================ -->
-        <!-- SEÇÃO: SINDICÂNCIA (CARD UNIFICADO) -->
-        <!-- ============================================ -->
-        <div class="card border-0 shadow-lg rounded-4 mb-4 overflow-hidden">
-            <div class="card-header bg-danger text-white py-3 border-0">
+        <!-- ÁREA DE SINDICÂNCIA COM ESTILO MAÇÔNICO -->
+        <div class="card-maconico mb-5">
+            <div class="card-header bg-transparent border-bottom border-ouro py-3">
                 <div class="d-flex justify-content-between align-items-center">
                     <div>
-                        <h4 class="mb-0 fw-bold">
+                        <h4 class="mb-0 fw-bold titulo-maconico">
                             <i class="bi bi-gavel me-2"></i>
                             Área de Sindicância
                         </h4>
-                        <p class="mb-0 mt-1 opacity-75">Gestão de candidatos e pareceres</p>
+                        <p class="mb-0 mt-1 text-light-50">Investigação e Pareceres</p>
                     </div>
-                    <div class="bg-white bg-opacity-25 rounded-circle p-2 px-3">
-                        <i class="bi bi-people fs-4"></i>
+                    <div class="icone-maconico" style="width: 45px; height: 45px;">
+                        <i class="bi bi-people fs-5"></i>
                     </div>
                 </div>
             </div>
@@ -354,134 +438,79 @@
                 <!-- Estatísticas da Sindicância -->
                 <div class="row g-3 mb-4">
                     <div class="col-md-3 col-sm-6">
-                        <div class="card border-0 bg-warning bg-opacity-10 rounded-4 h-100">
-                            <div class="card-body text-center">
-                                <i class="bi bi-hourglass-split fs-1 text-warning"></i>
-                                <h2 class="fw-bold text-warning mb-0 mt-2">{{ em_analise }}</h2>
-                                <p class="text-dark fw-semibold mb-0">Em Análise</p>
-                                <small class="text-muted">Aguardando parecer</small>
-                            </div>
+                        <div class="stat-maconico p-3 text-center">
+                            <i class="bi bi-hourglass-split fs-2 text-ouro"></i>
+                            <h2 class="fw-bold numero-ouro mb-0 mt-2">{{ em_analise }}</h2>
+                            <small class="text-light-50">Em Análise</small>
                         </div>
                     </div>
                     <div class="col-md-3 col-sm-6">
-                        <div class="card border-0 bg-success bg-opacity-10 rounded-4 h-100">
-                            <div class="card-body text-center">
-                                <i class="bi bi-check-circle-fill fs-1 text-success"></i>
-                                <h2 class="fw-bold text-success mb-0 mt-2">{{ aprovados }}</h2>
-                                <p class="text-dark fw-semibold mb-0">Aprovados</p>
-                                <small class="text-muted">Parecer positivo</small>
-                            </div>
+                        <div class="stat-maconico p-3 text-center">
+                            <i class="bi bi-check-circle-fill fs-2 text-success"></i>
+                            <h2 class="fw-bold text-success mb-0 mt-2">{{ aprovados }}</h2>
+                            <small class="text-light-50">Aprovados</small>
                         </div>
                     </div>
                     <div class="col-md-3 col-sm-6">
-                        <div class="card border-0 bg-danger bg-opacity-10 rounded-4 h-100">
-                            <div class="card-body text-center">
-                                <i class="bi bi-x-circle-fill fs-1 text-danger"></i>
-                                <h2 class="fw-bold text-danger mb-0 mt-2">{{ reprovados }}</h2>
-                                <p class="text-dark fw-semibold mb-0">Reprovados</p>
-                                <small class="text-muted">Parecer negativo</small>
-                            </div>
+                        <div class="stat-maconico p-3 text-center">
+                            <i class="bi bi-x-circle-fill fs-2 text-danger"></i>
+                            <h2 class="fw-bold text-danger mb-0 mt-2">{{ reprovados }}</h2>
+                            <small class="text-light-50">Reprovados</small>
                         </div>
                     </div>
                     <div class="col-md-3 col-sm-6">
-                        <div class="card border-0 bg-info bg-opacity-10 rounded-4 h-100">
-                            <div class="card-body text-center">
-                                <i class="bi bi-people-fill fs-1 text-info"></i>
-                                <h2 class="fw-bold text-info mb-0 mt-2">{{ total_candidatos }}</h2>
-                                <p class="text-dark fw-semibold mb-0">Total</p>
-                                <small class="text-muted">Candidatos cadastrados</small>
-                            </div>
+                        <div class="stat-maconico p-3 text-center">
+                            <i class="bi bi-people-fill fs-2 text-info"></i>
+                            <h2 class="fw-bold text-info mb-0 mt-2">{{ total_candidatos }}</h2>
+                            <small class="text-light-50">Total</small>
                         </div>
                     </div>
                 </div>
 
-               <!-- Barra de Progresso da Sindicância - Baseada nos Pareceres Conclusivos -->
-<div class="mb-4">
-    <div class="d-flex justify-content-between align-items-center mb-3">
-        <h6 class="mb-0 fw-bold">
-            <i class="bi bi-check-circle-fill text-success me-2"></i>
-            Progresso da Sindicância
-        </h6>
-        <span class="badge bg-primary rounded-pill px-3 py-2">
-            {% set pareceres_registrados = pareceres_conclusivos|length if pareceres_conclusivos else 0 %}
-            {{ pareceres_registrados }}/{{ total_sindicantes }} Pareceres
-        </span>
-    </div>
-    
-    <div class="mb-2">
-        <div class="d-flex justify-content-between mb-1">
-            <small class="text-muted">
-                <i class="bi bi-file-text me-1"></i> Sindicantes que já emitiram parecer conclusivo
-            </small>
-            <small class="fw-bold">
+                <!-- Progresso da Sindicância -->
+                {% set pareceres_registrados = pareceres_conclusivos|length if pareceres_conclusivos else 0 %}
                 {% set percentual_pareceres = (pareceres_registrados / total_sindicantes * 100) if total_sindicantes > 0 else 0 %}
-                {{ "%.0f"|format(percentual_pareceres) }}%
-            </small>
-        </div>
-        <div class="progress-custom">
-            <div class="progress-bar bg-success" role="progressbar" 
-                 style="width: {{ percentual_pareceres }}%">
-                {{ "%.0f"|format(percentual_pareceres) }}%
-            </div>
-        </div>
-    </div>
-    
-    <div class="text-center mt-3">
-        {% if percentual_pareceres == 100 %}
-            <span class="badge bg-success bg-opacity-10 text-success px-3 py-2">
-                <i class="bi bi-trophy-fill me-1"></i> 
-                🎉 Todos os sindicantes já emitiram seus pareceres conclusivos!
-            </span>
-        {% elif pareceres_registrados > 0 %}
-            <span class="badge bg-warning bg-opacity-10 text-warning px-3 py-2">
-                <i class="bi bi-hourglass-split me-1"></i> 
-                ⏳ Aguardando {{ total_sindicantes - pareceres_registrados }} sindicante(s) emitirem parecer
-            </span>
-        {% else %}
-            <span class="badge bg-secondary bg-opacity-10 text-secondary px-3 py-2">
-                <i class="bi bi-info-circle me-1"></i> 
-                📊 Nenhum parecer conclusivo emitido ainda
-            </span>
-        {% endif %}
-    </div>
-</div>
-                <!-- Pendências e Prazo Vencido -->
-                <div class="row g-4 mb-4">
+                <div class="mb-4">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h6 class="mb-0 fw-bold text-ouro">
+                            <i class="bi bi-graph-up me-2"></i>
+                            Progresso das Investigações
+                        </h6>
+                        <span class="badge bg-ouro text-dark rounded-pill px-3 py-2">
+                            {{ pareceres_registrados }}/{{ total_sindicantes }} Pareceres
+                        </span>
+                    </div>
+                    <div class="progress-maconico">
+                        <div class="progress-bar" style="width: {{ percentual_pareceres }}%"></div>
+                    </div>
+                </div>
+
+                <!-- Pendências -->
+                <div class="row g-4">
                     {% if pendentes %}
                     <div class="col-md-6">
-                        <div class="card border-warning shadow-sm">
-                            <div class="card-header bg-warning bg-opacity-10 border-warning">
-                                <h6 class="mb-0 fw-bold text-warning">
+                        <div class="card-maconico">
+                            <div class="card-header bg-transparent border-bottom border-warning">
+                                <h6 class="mb-0 text-warning">
                                     <i class="bi bi-exclamation-triangle-fill me-2"></i>
-                                    Pendências de Sindicância
-                                    <span class="badge bg-warning ms-2">{{ pendentes|length }}</span>
+                                    Pendências
                                 </h6>
                             </div>
-                            <div class="card-body">
-                                <div class="list-group list-group-flush">
-                                    {% for p in pendentes %}
-                                    <div class="list-group-item px-0">
-                                        <div class="d-flex justify-content-between align-items-start">
-                                            <div class="flex-grow-1">
-                                                <h6 class="mb-1 fw-bold">{{ p.candidato.nome }}</h6>
-                                                <small class="text-muted d-block">
-                                                    <i class="bi bi-person-badge"></i> 
-                                                    Faltam: {{ p.faltam|join(', ') }}
-                                                </small>
-                                            </div>
-                                            <a href="/sindicancia/{{ p.candidato.id }}" class="btn btn-sm btn-warning ms-2">
-                                                <i class="bi bi-eye"></i> Ver
-                                            </a>
+                            <div class="card-body p-3">
+                                {% for p in pendentes[:3] %}
+                                <div class="mb-2 pb-2 border-bottom border-light">
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <div>
+                                            <strong class="text-light">{{ p.candidato.nome }}</strong>
+                                            <br>
+                                            <small class="text-light-50">Falta: {{ p.faltam|join(', ') }}</small>
                                         </div>
+                                        <a href="/sindicancia/{{ p.candidato.id }}" class="btn-maconico btn-sm">
+                                            Investigar
+                                        </a>
                                     </div>
-                                    {% endfor %}
                                 </div>
-                            </div>
-                            <div class="card-footer bg-light border-top">
-                                <small class="text-muted">
-                                    <i class="bi bi-info-circle"></i> 
-                                    Total de pendências: {{ pendentes|length }}
-                                </small>
+                                {% endfor %}
                             </div>
                         </div>
                     </div>
@@ -489,283 +518,168 @@
 
                     {% if prazo_vencido %}
                     <div class="col-md-6">
-                        <div class="card border-danger shadow-sm">
-                            <div class="card-header bg-danger bg-opacity-10 border-danger">
-                                <h6 class="mb-0 fw-bold text-danger">
+                        <div class="card-maconico">
+                            <div class="card-header bg-transparent border-bottom border-danger">
+                                <h6 class="mb-0 text-danger">
                                     <i class="bi bi-clock-history me-2"></i>
-                                    Sindicâncias com Prazo Vencido
-                                    <span class="badge bg-danger ms-2">{{ prazo_vencido|length }}</span>
+                                    Prazos Vencidos
                                 </h6>
                             </div>
-                            <div class="card-body">
-                                <div class="list-group list-group-flush">
-                                    {% for c in prazo_vencido %}
-                                    <div class="list-group-item px-0">
-                                        <div class="d-flex justify-content-between align-items-start">
-                                            <div class="flex-grow-1">
-                                                <h6 class="mb-1 fw-bold">{{ c.nome }}</h6>
-                                                <small class="text-muted d-block">
-                                                    <i class="bi bi-calendar-x"></i> 
-                                                    {% set data_criacao = c.data_criacao %}
-                                                    {% if data_criacao %}
-                                                        {{ ((now - data_criacao).days) }} dias em análise
-                                                    {% endif %}
-                                                </small>
-                                            </div>
-                                            <a href="/sindicancia/{{ c.id }}" class="btn btn-sm btn-danger ms-2">
-                                                <i class="bi bi-eye"></i> Ver
-                                            </a>
-                                        </div>
-                                    </div>
-                                    {% endfor %}
-                                </div>
-                            </div>
-                            <div class="card-footer bg-light border-top">
-                                <small class="text-muted">
-                                    <i class="bi bi-info-circle"></i> 
-                                    Total de sindicâncias vencidas: {{ prazo_vencido|length }}
-                                </small>
-                            </div>
-                        </div>
-                    </div>
-                    {% endif %}
-                </div>
-
-                <!-- Pareceres Conclusivos Recentes -->
-                {% if pareceres_conclusivos %}
-                <div class="mt-4">
-                    <div class="card border-info shadow-sm">
-                        <div class="card-header bg-info bg-opacity-10 border-info">
-                            <h6 class="mb-0 fw-bold text-info">
-                                <i class="bi bi-file-text me-2"></i>
-                                Pareceres Conclusivos Recentes
-                            </h6>
-                        </div>
-                        <div class="card-body p-0">
-                            <div class="list-group list-group-flush">
-                                {% for pc in pareceres_conclusivos %}
-                                <div class="list-group-item">
+                            <div class="card-body p-3">
+                                {% for c in prazo_vencido[:3] %}
+                                <div class="mb-2 pb-2 border-bottom border-light">
                                     <div class="d-flex justify-content-between align-items-center">
                                         <div>
-                                            <h6 class="mb-1">{{ pc.candidato_nome }}</h6>
-                                            <small class="text-muted">
-                                                <i class="bi bi-person-badge"></i> {{ pc.sindicante_nome }}
-                                            </small>
+                                            <strong class="text-light">{{ c.nome }}</strong>
+                                            <br>
+                                            <small class="text-light-50">{{ ((now - c.data_criacao).days) }} dias em análise</small>
                                         </div>
-                                        <span class="badge {% if pc.conclusao == 'APROVADO' %}bg-success{% else %}bg-danger{% endif %}">
-                                            {% if pc.conclusao == 'APROVADO' %}
-                                                <i class="bi bi-check-circle"></i> Aprovado
-                                            {% else %}
-                                                <i class="bi bi-x-circle"></i> Reprovado
-                                            {% endif %}
-                                        </span>
+                                        <a href="/sindicancia/{{ c.id }}" class="btn-maconico btn-sm">
+                                            Urgente
+                                        </a>
                                     </div>
                                 </div>
                                 {% endfor %}
                             </div>
                         </div>
                     </div>
-                </div>
-                {% endif %}
-
-                <!-- Sindicantes Ativos (dentro da área de sindicância) -->
-                {% if session.tipo == 'admin' %}
-                <div class="mt-4 pt-3 border-top">
-                    <div class="d-flex justify-content-between align-items-center mb-3">
-                        <h5 class="mb-0 fw-bold text-success">
-                            <i class="bi bi-person-badge me-2"></i>
-                            Sindicantes Ativos
-                        </h5>
-                        <a href="/sindicantes" class="btn btn-sm btn-outline-success rounded-pill">
-                            <i class="bi bi-arrow-right"></i> Gerenciar
-                        </a>
-                    </div>
-                    {% if sindicantes %}
-                        <div class="table-responsive">
-                            <table class="table table-hover mb-0">
-                                <thead class="table-light">
-                                    <tr>
-                                        <th>Usuário</th>
-                                        <th>Nome</th>
-                                        <th>Loja</th>
-                                        <th>CIM</th>
-                                        <th>Telefone</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {% for s in sindicantes %}
-                                    <tr>
-                                        <td class="fw-bold">{{ s.usuario }}</td>
-                                        <td>{{ s.nome_completo or s.usuario }}</td>
-                                        <td>{{ s.loja_nome or '-' }}</td>
-                                        <td>{{ s.cim_numero or '-' }}</td>
-                                        <td>{{ s.telefone or '-' }}</td>
-                                    </tr>
-                                    {% endfor %}
-                                </tbody>
-                            </table>
-                        </div>
-                    {% else %}
-                        <div class="text-center py-4">
-                            <i class="bi bi-person-x fs-1 text-muted"></i>
-                            <p class="mt-2 text-muted mb-0">Nenhum sindicante ativo cadastrado</p>
-                            <a href="/sindicantes" class="btn btn-success btn-sm mt-2">
-                                <i class="bi bi-plus-circle"></i> Cadastrar Sindicante
-                            </a>
-                        </div>
                     {% endif %}
                 </div>
-                {% endif %}
             </div>
         </div>
 
-        <!-- ============================================ -->
-        <!-- SEÇÃO: MÉTRICAS INTEGRADAS -->
-        <!-- ============================================ -->
-        <div class="card border-0 shadow-lg rounded-4 mb-4 overflow-hidden">
-            <div class="card-header bg-dark text-white py-3 border-0">
+        <!-- MÉTRICAS E ATIVIDADES - VERDE ESCURO MAÇÔNICO -->
+        <div class="card-maconico">
+            <div class="card-header bg-transparent border-bottom border-ouro py-3">
                 <div class="d-flex justify-content-between align-items-center">
                     <div>
-                        <h4 class="mb-0 fw-bold">
+                        <h4 class="mb-0 fw-bold titulo-maconico">
                             <i class="bi bi-bar-chart-steps me-2"></i>
                             Métricas e Atividades
                         </h4>
-                        <p class="mb-0 mt-1 opacity-75">Visão geral da loja</p>
+                        <p class="mb-0 mt-1 text-light-50">Panorama da Oficina</p>
                     </div>
-                    <div class="bg-white bg-opacity-25 rounded-circle p-2 px-3">
-                        <i class="bi bi-graph-up fs-4"></i>
+                    <div class="icone-maconico" style="width: 45px; height: 45px;">
+                        <i class="bi bi-graph-up fs-5"></i>
                     </div>
                 </div>
             </div>
             <div class="card-body p-4">
                 <div class="row g-4 mb-4">
                     <div class="col-md-3 col-sm-6">
-                        <div class="card border-0 bg-info bg-opacity-10 rounded-4 h-100">
-                            <div class="card-body text-center">
-                                <i class="bi bi-people fs-2 text-info"></i>
-                                <h3 class="fw-bold text-info mb-0 mt-2">{{ total_familiares if total_familiares is defined else 0 }}</h3>
-                                <p class="text-muted mb-0">Familiares</p>
-                                <small class="text-muted">cadastrados</small>
-                            </div>
+                        <div class="stat-maconico p-3 text-center">
+                            <i class="bi bi-people fs-2 text-ouro"></i>
+                            <h3 class="fw-bold numero-ouro mb-0 mt-2">{{ total_familiares if total_familiares is defined else 0 }}</h3>
+                            <small class="text-light-50">Familiares</small>
                         </div>
                     </div>
                     <div class="col-md-3 col-sm-6">
-                        <div class="card border-0 bg-warning bg-opacity-10 rounded-4 h-100">
-                            <div class="card-body text-center">
-                                <i class="bi bi-award fs-2 text-warning"></i>
-                                <h3 class="fw-bold text-warning mb-0 mt-2">{{ total_condecoracoes if total_condecoracoes is defined else 0 }}</h3>
-                                <p class="text-muted mb-0">Condecorações</p>
-                                <small class="text-muted">concedidas</small>
-                            </div>
+                        <div class="stat-maconico p-3 text-center">
+                            <i class="bi bi-award fs-2 text-ouro"></i>
+                            <h3 class="fw-bold numero-ouro mb-0 mt-2">{{ total_condecoracoes if total_condecoracoes is defined else 0 }}</h3>
+                            <small class="text-light-50">Condecorações</small>
                         </div>
                     </div>
                     <div class="col-md-3 col-sm-6">
-                        <div class="card border-0 bg-secondary bg-opacity-10 rounded-4 h-100">
-                            <div class="card-body text-center">
-                                <i class="bi bi-briefcase fs-2 text-secondary"></i>
-                                <h3 class="fw-bold text-secondary mb-0 mt-2">{{ cargos_ocupados|length if cargos_ocupados else 0 }}</h3>
-                                <p class="text-muted mb-0">Cargos Ocupados</p>
-                                <small class="text-muted">ativamente</small>
-                            </div>
+                        <div class="stat-maconico p-3 text-center">
+                            <i class="bi bi-briefcase fs-2 text-ouro"></i>
+                            <h3 class="fw-bold numero-ouro mb-0 mt-2">{{ cargos_ocupados|length if cargos_ocupados else 0 }}</h3>
+                            <small class="text-light-50">Cargos</small>
                         </div>
                     </div>
                     <div class="col-md-3 col-sm-6">
-                        <div class="card border-0 bg-primary bg-opacity-10 rounded-4 h-100">
-                            <div class="card-body text-center">
-                                <i class="bi bi-calendar-week fs-2 text-primary"></i>
-                                <h3 class="fw-bold text-primary mb-0 mt-2">{{ proximas_reunioes|length if proximas_reunioes else 0 }}</h3>
-                                <p class="text-muted mb-0">Próximas Reuniões</p>
-                                <small class="text-muted">agendadas</small>
-                            </div>
+                        <div class="stat-maconico p-3 text-center">
+                            <i class="bi bi-calendar-week fs-2 text-ouro"></i>
+                            <h3 class="fw-bold numero-ouro mb-0 mt-2">{{ proximas_reunioes|length if proximas_reunioes else 0 }}</h3>
+                            <small class="text-light-50">Reuniões</small>
                         </div>
                     </div>
                 </div>
 
                 <div class="row g-4">
                     <div class="col-md-6">
-                        <div class="card border-0 shadow-sm h-100">
-                            <div class="card-header bg-secondary bg-opacity-10 border-0">
-                                <h6 class="mb-0 fw-bold">
+                        <div class="card-maconico h-100">
+                            <div class="card-header bg-transparent border-bottom border-ouro">
+                                <h6 class="mb-0 text-ouro">
                                     <i class="bi bi-briefcase me-2"></i>
                                     Cargos Ocupados
-                                    <span class="badge bg-secondary ms-2">{{ cargos_ocupados|length if cargos_ocupados else 0 }}</span>
                                 </h6>
                             </div>
-                            <div class="card-body">
+                            <div class="card-body p-3">
                                 {% if cargos_ocupados and cargos_ocupados|length > 0 %}
-                                    <div class="list-group list-group-flush">
-                                        {% for cargo in cargos_ocupados[:3] %}
-                                        <div class="list-group-item border-0 px-0 py-2">
-                                            <div class="d-flex justify-content-between align-items-center">
-                                                <div>
-                                                    <span class="fw-bold">{{ cargo.cargo_nome }}</span>
-                                                    <br>
-                                                    <small class="text-muted">
-                                                        <i class="bi bi-person-circle"></i> 
-                                                        <a href="/obreiros/{{ cargo.obreiro_id }}">{{ cargo.obreiro_nome }}</a>
-                                                    </small>
-                                                </div>
-                                                <span class="badge bg-success rounded-pill">Atual</span>
+                                    {% for cargo in cargos_ocupados[:3] %}
+                                    <div class="mb-2 pb-2 border-bottom border-light">
+                                        <div class="d-flex justify-content-between align-items-center">
+                                            <div>
+                                                <strong class="text-light">{{ cargo.cargo_nome }}</strong>
+                                                <br>
+                                                <small class="text-light-50">
+                                                    <i class="bi bi-person-circle"></i> 
+                                                    <a href="/obreiros/{{ cargo.obreiro_id }}" class="text-ouro text-decoration-none">
+                                                        {{ cargo.obreiro_nome }}
+                                                    </a>
+                                                </small>
                                             </div>
+                                            <span class="badge bg-ouro text-dark rounded-pill">Atual</span>
                                         </div>
-                                        {% endfor %}
                                     </div>
-                                    {% if cargos_ocupados|length > 3 %}
-                                    <div class="text-center mt-2">
-                                        <small class="text-muted">+ {{ cargos_ocupados|length - 3 }} outro(s) cargo(s)</small>
-                                    </div>
-                                    {% endif %}
+                                    {% endfor %}
                                 {% else %}
-                                    <div class="text-center py-3">
-                                        <i class="bi bi-briefcase fs-2 text-muted"></i>
-                                        <p class="mt-2 text-muted mb-0">Nenhum cargo ocupado</p>
-                                    </div>
+                                    <p class="text-center text-light-50 py-3">Nenhum cargo ocupado</p>
                                 {% endif %}
                             </div>
                         </div>
                     </div>
                     <div class="col-md-6">
-                        <div class="card border-0 shadow-sm h-100">
-                            <div class="card-header bg-primary bg-opacity-10 border-0">
-                                <h6 class="mb-0 fw-bold">
+                        <div class="card-maconico h-100">
+                            <div class="card-header bg-transparent border-bottom border-ouro">
+                                <h6 class="mb-0 text-ouro">
                                     <i class="bi bi-calendar-week me-2"></i>
-                                    Próximas Reuniões
-                                    <span class="badge bg-primary ms-2">{{ proximas_reunioes|length if proximas_reunioes else 0 }}</span>
+                                    Próximos Trabalhos
                                 </h6>
                             </div>
-                            <div class="card-body">
+                            <div class="card-body p-3">
                                 {% if proximas_reunioes and proximas_reunioes|length > 0 %}
-                                    <div class="list-group list-group-flush">
-                                        {% for r in proximas_reunioes[:3] %}
-                                        <a href="/reunioes/{{ r.id }}" class="list-group-item list-group-item-action border-0 px-0 py-2">
+                                    {% for r in proximas_reunioes[:3] %}
+                                    <a href="/reunioes/{{ r.id }}" class="text-decoration-none">
+                                        <div class="mb-2 pb-2 border-bottom border-light">
                                             <div class="d-flex justify-content-between align-items-start">
                                                 <div>
-                                                    <span class="fw-bold">{{ r.titulo }}</span>
+                                                    <strong class="text-light">{{ r.titulo }}</strong>
                                                     <br>
-                                                    <small class="text-muted">
+                                                    <small class="text-light-50">
                                                         <i class="bi bi-calendar"></i> {{ r.data.strftime('%d/%m/%Y') if r.data else '-' }}
                                                         <i class="bi bi-clock ms-1"></i> {{ r.hora_inicio.strftime('%H:%M') if r.hora_inicio else '-' }}
                                                     </small>
                                                 </div>
-                                                <i class="bi bi-chevron-right text-muted"></i>
+                                                <i class="bi bi-chevron-right text-ouro"></i>
                                             </div>
-                                        </a>
-                                        {% endfor %}
-                                    </div>
-                                    {% if proximas_reunioes|length > 3 %}
-                                    <div class="text-center mt-2">
-                                        <small class="text-muted">+ {{ proximas_reunioes|length - 3 }} outra(s) reunião(ões)</small>
-                                    </div>
-                                    {% endif %}
+                                        </div>
+                                    </a>
+                                    {% endfor %}
                                 {% else %}
-                                    <div class="text-center py-3">
-                                        <i class="bi bi-calendar-x fs-2 text-muted"></i>
-                                        <p class="mt-2 text-muted mb-0">Nenhuma reunião agendada</p>
-                                    </div>
+                                    <p class="text-center text-light-50 py-3">Nenhuma reunião agendada</p>
                                 {% endif %}
                             </div>
                         </div>
                     </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- RODAPÉ MAÇÔNICO -->
+        <div class="simbolo-maconico mt-5 pt-3">
+            <div class="row">
+                <div class="col-12 text-center">
+                    <i class="bi bi-compass fs-4 me-2"></i>
+                    <i class="bi bi-easel fs-4 me-2"></i>
+                    <i class="bi bi-gem fs-4"></i>
+                    <p class="mt-3 small text-light-50">
+                        "Deus e a Humanidade" - Ordem, Progresso e Fraternidade
+                    </p>
+                    <p class="small text-light-50">
+                        <i class="bi bi-c-circle"></i> {{ now.year }} - Loja Maçônica
+                    </p>
                 </div>
             </div>
         </div>

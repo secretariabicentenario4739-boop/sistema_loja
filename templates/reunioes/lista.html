@@ -5,7 +5,7 @@
 {% block content %}
 <div class="container-fluid py-4">
     <div class="container">
-        <!-- Cabeçalho com botão Nova Reunião e Voltar -->
+        <!-- Cabeçalho -->
         <div class="d-flex justify-content-between align-items-center mb-4">
             <h2>
                 <i class="bi bi-calendar-week"></i> 
@@ -169,15 +169,9 @@
                         <label class="form-label">Status</label>
                         <select class="form-select" name="status">
                             <option value="">Todos</option>
-                            <option value="realizada" {% if filtros.status == 'realizada' %}selected{% endif %}>
-                                <i class="bi bi-check-circle"></i> Realizada
-                            </option>
-                            <option value="agendada" {% if filtros.status == 'agendada' %}selected{% endif %}>
-                                <i class="bi bi-calendar-check"></i> Agendada
-                            </option>
-                            <option value="cancelada" {% if filtros.status == 'cancelada' %}selected{% endif %}>
-                                <i class="bi bi-x-circle"></i> Cancelada
-                            </option>
+                            <option value="realizada" {% if filtros.status == 'realizada' %}selected{% endif %}>Realizada</option>
+                            <option value="agendada" {% if filtros.status == 'agendada' %}selected{% endif %}>Agendada</option>
+                            <option value="cancelada" {% if filtros.status == 'cancelada' %}selected{% endif %}>Cancelada</option>
                         </select>
                     </div>
                     <div class="col-md-2">
@@ -186,15 +180,10 @@
                             <option value="">Todos</option>
                             {% for g in graus %}
                             <option value="{{ g.grau }}" {% if filtros.grau == g.grau|string %}selected{% endif %}>
-                                {% if g.grau == 3 %}
-                                    <i class="bi bi-star-fill text-warning"></i> Mestre
-                                {% elif g.grau == 2 %}
-                                    <i class="bi bi-star text-primary"></i> Companheiro
-                                {% elif g.grau == 1 %}
-                                    <i class="bi bi-star text-secondary"></i> Aprendiz
-                                {% else %}
-                                    Grau {{ g.grau }}
-                                {% endif %}
+                                {% if g.grau == 3 %}Mestre
+                                {% elif g.grau == 2 %}Companheiro
+                                {% elif g.grau == 1 %}Aprendiz
+                                {% else %}Grau {{ g.grau }}{% endif %}
                             </option>
                             {% endfor %}
                         </select>
@@ -285,100 +274,92 @@
                                 </td>
                                 <td>
                                     {% if reuniao.status == 'realizada' %}
-                                        <span class="badge bg-success">
-                                            <i class="bi bi-check-circle"></i> Realizada
-                                        </span>
+                                        <span class="badge bg-success">Realizada</span>
                                     {% elif reuniao.status == 'agendada' %}
-                                        <span class="badge bg-warning">
-                                            <i class="bi bi-calendar-check"></i> Agendada
-                                        </span>
+                                        <span class="badge bg-warning">Agendada</span>
                                     {% elif reuniao.status == 'cancelada' %}
-                                        <span class="badge bg-danger">
-                                            <i class="bi bi-x-circle"></i> Cancelada
-                                        </span>
+                                        <span class="badge bg-danger">Cancelada</span>
                                     {% else %}
                                         <span class="badge bg-secondary">{{ reuniao.status }}</span>
                                     {% endif %}
                                 </td>
-                               <td class="text-center" style="min-width: 100px;">
-    {% if reuniao.total_obreiros and reuniao.total_obreiros > 0 %}
-        {% set percentual = (reuniao.presentes_confirmados / reuniao.total_obreiros * 100) if reuniao.total_obreiros and reuniao.total_obreiros > 0 else 0 %}
-        <div class="progress" style="height: 20px;">
-            <div class="progress-bar bg-success" role="progressbar" 
-                 style="width: {{ percentual }}%"
-                 title="{{ reuniao.presentes_confirmados or 0 }} presentes">
-                {{ "%.0f"|format(percentual) }}%
-            </div>
-        </div>
-        <small class="text-muted">
-            {{ reuniao.presentes_confirmados or 0 }}/{{ reuniao.total_obreiros or 0 }}
-        </small>
-    {% else %}
-        <span class="text-muted">-</span>
-    {% endif %}
-</td>
-                               <td>
-    <div class="btn-group btn-group-sm" role="group">
-        <!-- Botão Visualizar - Todos podem ver -->
-        <a href="/reunioes/{{ reuniao.id }}" class="btn btn-info" title="Visualizar">
-            <i class="bi bi-eye"></i>
-        </a>
-        
-        <!-- Ações apenas para ADMIN -->
-        {% if session.tipo == 'admin' %}
-            <!-- Botão Editar - Apenas para reuniões não realizadas e não canceladas -->
-            {% if reuniao.status != 'realizada' and reuniao.status != 'cancelada' %}
-            <a href="/reunioes/{{ reuniao.id }}/editar" class="btn btn-warning" title="Editar">
-                <i class="bi bi-pencil"></i>
-            </a>
-            {% endif %}
-            
-            <!-- Botão Excluir - Apenas para reuniões não realizadas e não canceladas -->
-            {% if reuniao.status != 'realizada' and reuniao.status != 'cancelada' %}
-            <a href="/reunioes/{{ reuniao.id }}/excluir" class="btn btn-danger" 
-               title="Excluir" onclick="return confirm('Tem certeza que deseja excluir esta reunião?')">
-                <i class="bi bi-trash"></i>
-            </a>
-            {% endif %}
-            
-            <!-- Botão Cancelar - Apenas para reuniões realizadas -->
-            {% if reuniao.status == 'realizada' %}
-            <form method="POST" action="/reunioes/{{ reuniao.id }}/cancelar" style="display: inline;">
-                <button type="submit" class="btn btn-secondary" 
-                        onclick="return confirm('⚠️ ATENÇÃO!\n\nDeseja CANCELAR esta reunião realizada?\n\nA reunião será marcada como CANCELADA.\n\nEsta ação pode ser desfeita.\n\nDeseja continuar?')" 
-                        title="Cancelar Reunião">
-                    <i class="bi bi-x-circle"></i>
-                </button>
-            </form>
-            {% endif %}
-            
-            <!-- Botão Criar Ata - Apenas para reuniões realizadas E que NÃO têm ata -->
-            {% if reuniao.status == 'realizada' and not reuniao.tem_ata %}
-            <a href="/atas/nova/{{ reuniao.id }}" class="btn btn-success" title="Criar Ata">
-                <i class="bi bi-file-text"></i>
-            </a>
-            {% endif %}
-            
-            <!-- Botão Visualizar Ata - Se já existe ata -->
-            {% if reuniao.status == 'realizada' and reuniao.tem_ata and reuniao.ata_id %}
-            <a href="/atas/{{ reuniao.ata_id }}" class="btn btn-info" title="Visualizar Ata">
-                <i class="bi bi-file-text-fill"></i>
-            </a>
-            {% endif %}
-            
-            <!-- Botão Reativar - Apenas para reuniões canceladas -->
-            {% if reuniao.status == 'cancelada' %}
-            <form method="POST" action="/reunioes/{{ reuniao.id }}/reativar" style="display: inline;">
-                <button type="submit" class="btn btn-warning" 
-                        onclick="return confirm('Deseja REATIVAR esta reunião cancelada?\n\nEla voltará ao status AGENDADA.')" 
-                        title="Reativar Reunião">
-                    <i class="bi bi-arrow-repeat"></i>
-                </button>
-            </form>
-            {% endif %}
-        {% endif %}
-    </div>
-</td>
+                                <td class="text-center" style="min-width: 100px;">
+                                    {% if reuniao.total_obreiros and reuniao.total_obreiros > 0 %}
+                                        <div class="progress" style="height: 20px;">
+                                            <div class="progress-bar bg-success" role="progressbar" 
+                                                 style="width: {{ reuniao.percentual_presenca }}%"
+                                                 title="{{ reuniao.presentes_confirmados or 0 }} presentes">
+                                                {{ "%.0f"|format(reuniao.percentual_presenca) }}%
+                                            </div>
+                                        </div>
+                                        <small class="text-muted">
+                                            {{ reuniao.presentes_confirmados or 0 }}/{{ reuniao.total_obreiros or 0 }}
+                                        </small>
+                                    {% else %}
+                                        -
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <div class="btn-group btn-group-sm" role="group">
+                                        <!-- Visualizar - Todos podem -->
+                                        <a href="/reunioes/{{ reuniao.id }}" class="btn btn-info" title="Visualizar">
+                                            <i class="bi bi-eye"></i>
+                                        </a>
+                                        
+                                        {% if session.tipo == 'admin' %}
+                                            <!-- Editar -->
+                                            {% if reuniao.status != 'realizada' and reuniao.status != 'cancelada' %}
+                                            <a href="/reunioes/{{ reuniao.id }}/editar" class="btn btn-warning" title="Editar">
+                                                <i class="bi bi-pencil"></i>
+                                            </a>
+                                            {% endif %}
+                                            
+                                            <!-- Excluir -->
+                                            {% if reuniao.status != 'realizada' and reuniao.status != 'cancelada' %}
+                                            <a href="/reunioes/{{ reuniao.id }}/excluir" class="btn btn-danger" 
+                                               title="Excluir" onclick="return confirm('Tem certeza que deseja excluir esta reunião?')">
+                                                <i class="bi bi-trash"></i>
+                                            </a>
+                                            {% endif %}
+                                            
+                                            <!-- Cancelar -->
+                                            {% if reuniao.status == 'realizada' %}
+                                            <form method="POST" action="/reunioes/{{ reuniao.id }}/cancelar" style="display: inline;">
+                                                <button type="submit" class="btn btn-secondary" 
+                                                        onclick="return confirm('Cancelar esta reunião?')" 
+                                                        title="Cancelar">
+                                                    <i class="bi bi-x-circle"></i>
+                                                </button>
+                                            </form>
+                                            {% endif %}
+                                            
+                                            <!-- Criar Ata (só se não tem ata) -->
+                                            {% if reuniao.status == 'realizada' and not reuniao.tem_ata %}
+                                            <a href="/atas/nova/{{ reuniao.id }}" class="btn btn-success" title="Criar Ata">
+                                                <i class="bi bi-file-text"></i>
+                                            </a>
+                                            {% endif %}
+                                            
+                                            <!-- Visualizar Ata (se já existe) -->
+                                            {% if reuniao.status == 'realizada' and reuniao.tem_ata and reuniao.ata_id %}
+                                            <a href="/atas/{{ reuniao.ata_id }}" class="btn btn-info" title="Visualizar Ata">
+                                                <i class="bi bi-file-text-fill"></i>
+                                            </a>
+                                            {% endif %}
+                                            
+                                            <!-- Reativar -->
+                                            {% if reuniao.status == 'cancelada' %}
+                                            <form method="POST" action="/reunioes/{{ reuniao.id }}/reativar" style="display: inline;">
+                                                <button type="submit" class="btn btn-warning" 
+                                                        onclick="return confirm('Reativar esta reunião?')" 
+                                                        title="Reativar">
+                                                    <i class="bi bi-arrow-repeat"></i>
+                                                </button>
+                                            </form>
+                                            {% endif %}
+                                        {% endif %}
+                                    </div>
+                                </td>
                             </tr>
                             {% else %}
                             <tr>
@@ -410,7 +391,7 @@
                     <div class="col-md-3">
                         <span class="badge bg-success">Verde</span> = Realizada<br>
                         <span class="badge bg-warning">Amarelo</span> = Agendada<br>
-                        <span class="badge bg-danger">Vermelho</span> = Cancelada / Atrasada
+                        <span class="badge bg-danger">Vermelho</span> = Cancelada
                     </div>
                     <div class="col-md-3">
                         <i class="bi bi-star-fill text-warning"></i> = Mestre<br>
@@ -418,89 +399,45 @@
                         <i class="bi bi-star text-secondary"></i> = Aprendiz
                     </div>
                     <div class="col-md-3">
+                        <i class="bi bi-eye"></i> = Visualizar<br>
+                        {% if session.tipo == 'admin' %}
+                        <i class="bi bi-pencil"></i> = Editar<br>
+                        <i class="bi bi-file-text"></i> = Criar Ata
+                        {% endif %}
+                    </div>
+                    <div class="col-md-3">
                         <i class="bi bi-check-circle text-success"></i> = Realizada<br>
                         <i class="bi bi-calendar-check text-warning"></i> = Agendada<br>
                         <i class="bi bi-x-circle text-danger"></i> = Cancelada
                     </div>
-                    <div class="col-md-3">
-                        <i class="bi bi-eye"></i> = Visualizar (todos)<br>
-                        {% if session.tipo == 'admin' %}
-                        <i class="bi bi-pencil"></i> = Editar (admin)<br>
-                        <i class="bi bi-file-text"></i> = Criar Ata (admin)
-                        {% endif %}
-                    </div>
                 </div>
                 <hr>
-                <div class="row">
-                    <div class="col-12">
-                        <small class="text-muted">
-                            <i class="bi bi-info-circle"></i> 
-                            <strong>Dica:</strong> 
-                            {% if session.tipo == 'admin' %}
-                                Administradores podem criar, editar, excluir e gerenciar atas.
-                            {% else %}
-                                Você está visualizando as reuniões como {{ session.tipo|capitalize }}. 
-                                Apenas administradores podem gerenciar reuniões e atas.
-                            {% endif %}
-                        </small>
-                    </div>
-                </div>
+                <small class="text-muted">
+                    <i class="bi bi-info-circle"></i> 
+                    {% if session.tipo == 'admin' %}
+                        Administradores têm acesso total.
+                    {% else %}
+                        Você está visualizando como {{ session.tipo|capitalize }}. Apenas administradores podem gerenciar.
+                    {% endif %}
+                </small>
             </div>
         </div>
     </div>
 </div>
 
 <style>
-    .card {
-        border-radius: 10px;
-        overflow: hidden;
-        transition: transform 0.2s ease;
-    }
-    .card:hover {
-        transform: translateY(-4px);
-    }
-    .card-header {
-        font-weight: 600;
-    }
-    .progress {
-        border-radius: 10px;
-        overflow: hidden;
-        margin-bottom: 5px;
-    }
-    .progress-bar {
-        transition: width 0.3s ease;
-        font-size: 10px;
-        line-height: 20px;
-    }
-    .table-hover tbody tr:hover {
-        cursor: pointer;
-        background-color: rgba(0, 123, 255, 0.05);
-    }
-    .badge {
-        font-size: 0.8rem;
-        padding: 0.4rem 0.6rem;
-    }
-    .btn-group-sm .btn {
-        padding: 0.25rem 0.5rem;
-    }
+    .card { border-radius: 10px; overflow: hidden; transition: transform 0.2s ease; }
+    .card:hover { transform: translateY(-4px); }
+    .progress { border-radius: 10px; height: 20px; }
+    .progress-bar { transition: width 0.3s ease; font-size: 10px; line-height: 20px; }
+    .table-hover tbody tr:hover { background-color: rgba(0, 123, 255, 0.05); cursor: pointer; }
+    .badge { font-size: 0.75rem; padding: 0.3rem 0.5rem; }
     @media (max-width: 768px) {
-        .btn-group {
-            flex-direction: column;
-        }
-        .btn-group .btn {
-            margin-bottom: 5px;
-        }
-        .table-responsive {
-            font-size: 0.85rem;
-        }
-        .progress {
-            height: 15px;
-        }
-        .progress-bar {
-            font-size: 8px;
-            line-height: 15px;
-        }
+        .btn-group { flex-direction: column; }
+        .btn-group .btn { margin-bottom: 5px; }
+        .table-responsive { font-size: 0.8rem; }
+        .progress { height: 15px; }
+        .progress-bar { font-size: 8px; line-height: 15px; }
     }
 </style>
-
 {% endblock %}
