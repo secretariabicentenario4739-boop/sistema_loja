@@ -12213,67 +12213,106 @@ def enviar_email_resend(destinatario, assunto, conteudo_html, conteudo_texto=Non
     except Exception as e:
         return {'success': False, 'message': str(e)}
 
-def enviar_email_reuniao(destinatario, nome_destinatario, dados_reuniao):
-    """Envia e-mail de convocação para reunião via Resend usando templates"""
-    from flask import render_template
+@app.route("/config/email/testar", methods=["POST"])
+@admin_required
+def testar_email():
+    email_teste = request.form.get("email_teste")
     
-    reuniao_id = dados_reuniao.get('id', '')
-    assunto = f"📅 Convite: {dados_reuniao.get('titulo', 'Nova Reunião')} - ARLS Bicentenário"
+    if not email_teste:
+        flash("Informe um e-mail para teste", "danger")
+        return redirect("/config/email")
     
-    # Formatar horário
-    hora_termino = dados_reuniao.get('hora_termino')
-    horario = dados_reuniao.get('hora_inicio')
-    if hora_termino:
-        horario = f"{dados_reuniao.get('hora_inicio')} às {hora_termino}"
+    # Buscar configuração ativa
+    cursor, conn = get_db()
+    cursor.execute("SELECT * FROM email_settings WHERE active = 1 ORDER BY id DESC LIMIT 1")
+    config = cursor.fetchone()
+    return_connection(conn)
     
-    # Adicionar horário formatado aos dados
-    dados_reuniao['horario_formatado'] = horario
+    # Usar configuração do banco ou valores padrão
+    remetente = config['sender'] if config else EMAIL_FROM_DEFAULT
+    nome_remetente = config['sender_name'] if config else "Sistema Maçônico"
     
-    # Link para visualização
-    link_reuniao = f"https://www.juramelo.com.br/reunioes/{reuniao_id}" if reuniao_id else "#"
-    dados_reuniao['link_reuniao'] = link_reuniao
+    # Verificar se Resend está configurado
+    if not RESEND_API_KEY:
+        flash("Resend não configurado. Adicione RESEND_API_KEY nas variáveis de ambiente do Render.", "danger")
+        return redirect("/config/email")
     
-    # Carrega o template HTML que você criou
+    # Preparar e-mail de teste usando template
+    assunto = "✅ Teste de Configuração - ARLS Bicentenário"
+    
+    # Dados para o template
+    dados_template = {
+        'nome': 'Irmão',
+        'remetente': remetente,
+        'nome_remetente': nome_remetente,
+        'data_hora': datetime.now().strftime('%d/%m/%Y %H:%M:%S'),
+        'ano': datetime.now().year
+    }
+    
+    conteudo_html = None
+    
+    # Tentar carregar o template
     try:
-        html_content = render_template('email/reuniao_agendada.html', 
-                                       nome=nome_destinatario, 
-                                       reuniao=dados_reuniao)
+        from flask import render_template_string
+        
+        # Verificar se o arquivo do template existe
+        template_path = os.path.join('templates', 'email', 'teste.html')
+        if os.path.exists(template_path):
+            conteudo_html = render_template('email/teste.html', **dados_template)
+            print(f"✅ Template carregado com sucesso! Tamanho: {len(conteudo_html)} caracteres")
+        else:
+            print(f"❌ Template não encontrado em: {template_path}")
+            # Usar HTML inline como fallback
+            conteudo_html = f"""
+            <!DOCTYPE html>
+            <html>
+            <head><meta charset="UTF-8"></head>
+            <body style="font-family: Arial, sans-serif;">
+                <div style="max-width: 600px; margin: 0 auto; padding: 20px;">
+                    <div style="background: linear-gradient(135deg, #2E0518, #4A0E2E); padding: 20px; text-align: center;">
+                        <h1 style="color: #D4AF37;">⚜️ ARLS Bicentenário</h1>
+                    </div>
+                    <div style="padding: 20px;">
+                        <h2>✅ Teste de E-mail</h2>
+                        <p>Olá,</p>
+                        <p>Esta é uma mensagem de teste do Sistema Maçônico.</p>
+                        <p>Se você está recebendo este e-mail, a configuração está funcionando corretamente!</p>
+                        <p><strong>Remetente:</strong> {nome_remetente} &lt;{remetente}&gt;</p>
+                        <p><strong>Data e hora do teste:</strong> {dados_template['data_hora']}</p>
+                        <p><strong>Plataforma:</strong> Resend (servidor em São Paulo)</p>
+                    </div>
+                    <div style="background: #F5F0E8; padding: 15px; text-align: center; font-size: 12px;">
+                        <p>"Pela Verdade e Justiça - Ordo Ab Chao"</p>
+                        <p>EQNM 36/38 área especial 08, St. M-Norte, Brasília - DF</p>
+                    </div>
+                </div>
+            </body>
+            </html>
+            """
     except Exception as e:
-        print(f"Erro ao carregar template HTML: {e}")
-        # Fallback: usa o HTML embutido
-        html_content = gerar_html_fallback(nome_destinatario, dados_reuniao)
+        print(f"❌ Erro ao carregar template: {e}")
+        import traceback
+        traceback.print_exc()
+        conteudo_html = f"<h2>Teste de E-mail</h2><p>Olá, esta é uma mensagem de teste.</p><p>Data: {dados_template['data_hora']}</p>"
     
-    # Carrega o template texto (opcional, mas bom ter)
-    try:
-        text_content = render_template('email/reuniao_agendada.txt', 
-                                       nome=nome_destinatario, 
-                                       reuniao=dados_reuniao)
-    except Exception as e:
-        print(f"Erro ao carregar template texto: {e}")
-        text_content = None
+    # Verificar se o conteúdo HTML não está vazio
+    if not conteudo_html:
+        flash("Erro ao gerar conteúdo do e-mail", "danger")
+        return redirect("/config/email")
     
-    # Envia o e-mail via Resend
-    return enviar_email_resend(destinatario, assunto, html_content, text_content)
-
-
-def gerar_html_fallback(nome_destinatario, dados_reuniao):
-    """Fallback em caso de erro no template"""
-    return f"""
-    <!DOCTYPE html>
-    <html>
-    <head><meta charset="UTF-8"></head>
-    <body>
-        <h2>Olá {nome_destinatario},</h2>
-        <p>Você foi convidado para uma reunião:</p>
-        <p><strong>{dados_reuniao.get('titulo')}</strong></p>
-        <p>📅 Data: {dados_reuniao.get('data')}</p>
-        <p>⏰ Horário: {dados_reuniao.get('horario_formatado')}</p>
-        <p>📍 Local: {dados_reuniao.get('local')}</p>
-        <p>🔗 Link: <a href="{dados_reuniao.get('link_reuniao')}">Ver detalhes</a></p>
-        <p>Atenciosamente,<br>Secretaria do Sistema Maçônico</p>
-    </body>
-    </html>
-    """
+    # Enviar via Resend
+    resultado = enviar_email_resend(
+        destinatario=email_teste,
+        assunto=assunto,
+        conteudo_html=conteudo_html
+    )
+    
+    if resultado['success']:
+        flash(f"✅ E-mail de teste enviado com sucesso para {email_teste}!", "success")
+    else:
+        flash(f"❌ Falha ao enviar e-mail: {resultado['message']}", "danger")
+    
+    return redirect("/config/email")
 # =============================
 # ROTA: CONFIGURAÇÃO DE E-MAIL
 # =============================
