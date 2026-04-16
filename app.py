@@ -12326,15 +12326,12 @@ def testar_email():
         flash("Informe um e-mail para teste", "danger")
         return redirect("/config/email")
     
-    # Verificar se Resend está configurado
     if not RESEND_API_KEY:
         flash("Resend não configurado. Adicione RESEND_API_KEY nas variáveis de ambiente.", "danger")
         return redirect("/config/email")
     
-    # Preparar e-mail de teste usando o template
     assunto = "✅ Teste de Configuração - ARLS Bicentenário"
     
-    # Dados para o template
     dados_template = {
         'nome': 'Irmão',
         'remetente': 'contato@juramelo.com.br',
@@ -12343,13 +12340,21 @@ def testar_email():
         'ano': datetime.now().year
     }
     
-    # Usar o template teste.html
+    # DEBUG: Verificar se o arquivo do template existe
+    import os
+    template_path = os.path.join('templates', 'email', 'teste.html')
+    print(f"🔍 Verificando template em: {template_path}")
+    print(f"📁 Arquivo existe? {os.path.exists(template_path)}")
+    
     try:
         conteudo_html = render_template('email/teste.html', **dados_template)
         print(f"✅ Template carregado com sucesso! Tamanho: {len(conteudo_html)} caracteres")
+        print(f"📧 Primeiros 200 caracteres do HTML: {conteudo_html[:200]}...")
     except Exception as e:
         print(f"❌ Erro ao carregar template: {e}")
-        # Fallback em caso de erro
+        import traceback
+        traceback.print_exc()
+        # Fallback
         conteudo_html = f"""
         <!DOCTYPE html>
         <html>
@@ -12357,13 +12362,11 @@ def testar_email():
         <body>
             <h2>✅ Teste de E-mail</h2>
             <p>Olá, esta é uma mensagem de teste do Sistema Maçônico.</p>
-            <p>Remetente: ARLS Bicentenário &lt;contato@juramelo.com.br&gt;</p>
             <p>Data: {dados_template['data_hora']}</p>
         </body>
         </html>
         """
     
-    # Enviar via Resend
     resultado = enviar_email_resend(
         destinatario=email_teste,
         assunto=assunto,
