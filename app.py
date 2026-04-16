@@ -12331,63 +12331,37 @@ def testar_email():
         flash("Resend não configurado. Adicione RESEND_API_KEY nas variáveis de ambiente.", "danger")
         return redirect("/config/email")
     
-    # Preparar e-mail de teste
+    # Preparar e-mail de teste usando o template
     assunto = "✅ Teste de Configuração - ARLS Bicentenário"
     
     # Dados para o template
     dados_template = {
         'nome': 'Irmão',
-        'remetente': 'contato@juramelo.com.br',  # Domínio verificado
+        'remetente': 'contato@juramelo.com.br',
         'nome_remetente': 'ARLS Bicentenário',
         'data_hora': datetime.now().strftime('%d/%m/%Y %H:%M:%S'),
         'ano': datetime.now().year
     }
     
-    # HTML do e-mail (inline para garantir)
-    conteudo_html = f"""
-    <!DOCTYPE html>
-    <html>
-    <head>
-        <meta charset="UTF-8">
-        <title>Teste de E-mail - ARLS Bicentenário</title>
-        <style>
-            body {{ font-family: 'Georgia', serif; background-color: #F5F0E8; margin: 0; padding: 0; }}
-            .container {{ max-width: 600px; margin: 20px auto; background: white; border-radius: 20px; overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.1); }}
-            .header {{ background: linear-gradient(135deg, #2E0518 0%, #4A0E2E 100%); padding: 30px; text-align: center; border-bottom: 2px solid #D4AF37; }}
-            .header h1 {{ color: #D4AF37; margin: 0; font-size: 24px; }}
-            .content {{ padding: 30px; background: white; }}
-            .info-box {{ background: #F5F0E8; padding: 20px; border-radius: 12px; margin: 20px 0; border-left: 4px solid #D4AF37; }}
-            .footer {{ background: #F5F0E8; padding: 20px; text-align: center; font-size: 12px; color: #666; }}
-            .simbolo {{ text-align: center; font-size: 14px; letter-spacing: 4px; color: #D4AF37; margin: 15px 0; }}
-        </style>
-    </head>
-    <body>
-        <div class="container">
-            <div class="header">
-                <h1>⚜️ ARLS Bicentenário</h1>
-                <p>Rito Brasileiro - Grande Oriente do Brasil</p>
-            </div>
-            <div class="content">
-                <div class="info-box">
-                    <h2>✅ Teste de E-mail</h2>
-                    <p>Olá,</p>
-                    <p>Esta é uma mensagem de teste do Sistema Maçônico da ARLS Bicentenário.</p>
-                    <p>Se você está recebendo este e-mail, a configuração está funcionando <strong>corretamente</strong>!</p>
-                </div>
-                <div class="simbolo">✦ ⌒ ✦ ⬜ ✦ ⌒ ✦</div>
-                <p><strong>📧 Remetente:</strong> ARLS Bicentenário &lt;contato@juramelo.com.br&gt;</p>
-                <p><strong>📅 Data e hora do teste:</strong> {dados_template['data_hora']}</p>
-                <p><strong>🚀 Plataforma:</strong> Resend (servidor em São Paulo)</p>
-                <p>Fraternalmente,<br><strong>Secretaria da ARLS Bicentenário</strong></p>
-            </div>
-            <div class="footer">
-                <p>"Pela Verdade e Justiça - Ordo Ab Chao"</p>
-                <p>EQNM 36/38 área especial 08, St. M-Norte, Brasília - DF</p>
-            </div>
-        </div>
-    </body>
-    </html>
-    """
+    # Usar o template teste.html
+    try:
+        conteudo_html = render_template('email/teste.html', **dados_template)
+        print(f"✅ Template carregado com sucesso! Tamanho: {len(conteudo_html)} caracteres")
+    except Exception as e:
+        print(f"❌ Erro ao carregar template: {e}")
+        # Fallback em caso de erro
+        conteudo_html = f"""
+        <!DOCTYPE html>
+        <html>
+        <head><meta charset="UTF-8"></head>
+        <body>
+            <h2>✅ Teste de E-mail</h2>
+            <p>Olá, esta é uma mensagem de teste do Sistema Maçônico.</p>
+            <p>Remetente: ARLS Bicentenário &lt;contato@juramelo.com.br&gt;</p>
+            <p>Data: {dados_template['data_hora']}</p>
+        </body>
+        </html>
+        """
     
     # Enviar via Resend
     resultado = enviar_email_resend(
