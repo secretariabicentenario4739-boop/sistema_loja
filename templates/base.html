@@ -869,51 +869,44 @@
             <a class="nav-link" href="/lojas">
                 <i class="bi bi-building"></i> <span>Lojas</span>
             </a>
-            {% endif %}
-            
-            <a class="nav-link" href="/visitante">
-                <i class="bi bi-person-badge"></i> <span>Visitantes</span>
-            </a>
-                       
-            {% if tem_permissao('sugestoes.view') %}
-            <a class="nav-link" href="/sugestoes">
-                <i class="bi bi-lightbulb"></i> <span>Sugestões</span>
-            </a>
-            {% endif %}
-            
+            {% endif %}                            
+                    
             <hr>
             
             <!-- MENU ADMINISTRATIVO - DROPDOWN -->
-            {% if session.tipo == 'admin' %}
-            <div class="nav-dropdown" id="adminDropdown">
-                <a class="nav-link dropdown-toggle" onclick="toggleAdminDropdown(event)">
-                    <i class="bi bi-shield-lock"></i> <span>Administrativo</span>
-                </a>
-                <div class="dropdown-menu">
-                    <a class="nav-link" href="/cargos">
-                        <i class="bi bi-briefcase-fill"></i> <span>Gerenciar Cargos</span>
-                    </a>
-                    <a class="nav-link" href="/config/email">
-                        <i class="bi bi-envelope"></i> <span>Config. E-mail</span>
-                    </a>
-                    <a class="nav-link" href="/config/whatsapp">
-                        <i class="bi bi-whatsapp"></i> <span>WhatsApp</span>
-                    </a>
-                    <a class="nav-link" href="/admin/permissoes">
-                        <i class="bi bi-shield-lock"></i> <span>Permissões</span>
-                    </a>
-                    <a class="nav-link" href="/backups">
-                        <i class="bi bi-database"></i> <span>Backup</span>
-                    </a>
-                    <a class="nav-link" href="/auditoria">
-                        <i class="bi bi-journal"></i> <span>Auditoria</span>
-                    </a>
-                    <a class="nav-link" href="/configuracoes/notificacoes">
-                        <i class="bi bi-bell"></i> <span>Notificações</span>
-                    </a>
-                </div>
-            </div>
-            {% endif %}
+{% if session.tipo == 'admin' %}
+<div class="nav-dropdown" id="adminDropdown">
+    <a class="nav-link dropdown-toggle" href="javascript:void(0)" onclick="toggleAdminDropdown(event)">
+        <i class="bi bi-shield-lock"></i> <span>Administrativo</span>
+    </a>
+    <div class="dropdown-menu" id="adminDropdownMenu">
+        <a class="nav-link" href="/cargos">
+            <i class="bi bi-briefcase-fill"></i> <span>Gerenciar Cargos</span>
+        </a>
+        <a class="nav-link" href="/admin/permissoes">
+            <i class="bi bi-shield-lock"></i> <span>Permissões</span>
+        </a>
+        <a class="nav-link" href="/backups">
+            <i class="bi bi-database"></i> <span>Backup</span>
+        </a>
+        <a class="nav-link" href="/auditoria">
+            <i class="bi bi-journal"></i> <span>Auditoria</span>
+        </a>
+		<a class="nav-link" href="/config/email">
+            <i class="bi bi-envelope"></i> <span>Config. E-mail</span>
+        </a>
+        <a class="nav-link" href="/config/whatsapp">
+            <i class="bi bi-whatsapp"></i> <span>WhatsApp</span>
+        </a>
+        <a class="nav-link" href="/configuracoes/notificacoes">
+            <i class="bi bi-bell"></i> <span>Notificações</span>
+        </a>
+		<a class="nav-link" href="/sugestoes">
+            <i class="bi bi-bell"></i> <span>Sugestões</span>
+        </a>
+    </div>
+</div>
+{% endif %}
             
             <hr>
             
@@ -1123,23 +1116,42 @@
             }
         });
         
-        // ========== FUNÇÃO PARA TOGGLE DO DROPDOWN ADMIN ==========
-        function toggleAdminDropdown(event) {
-            event.preventDefault();
-            event.stopPropagation();
-            const dropdown = document.getElementById('adminDropdown');
-            if (dropdown) {
-                dropdown.classList.toggle('open');
-            }
-        }
-        
-        // Fechar dropdown ao clicar fora
-        document.addEventListener('click', function(event) {
-            const dropdown = document.getElementById('adminDropdown');
-            if (dropdown && !dropdown.contains(event.target)) {
-                dropdown.classList.remove('open');
-            }
+        // ========== FUNÇÃO PARA TOGGLE DO DROPDOWN ADMIN - CORRIGIDA ==========
+function toggleAdminDropdown(event) {
+    event.preventDefault();
+    event.stopPropagation();
+    
+    const dropdown = document.getElementById('adminDropdown');
+    if (dropdown) {
+        dropdown.classList.toggle('open');
+    }
+}
+
+// Fechar dropdown ao clicar fora
+document.addEventListener('click', function(event) {
+    const dropdown = document.getElementById('adminDropdown');
+    if (dropdown && !dropdown.contains(event.target)) {
+        dropdown.classList.remove('open');
+    }
+});
+
+// Para mobile, garantir que o dropdown funcione corretamente
+if (window.innerWidth <= 768) {
+    const adminDropdownMenu = document.getElementById('adminDropdownMenu');
+    if (adminDropdownMenu) {
+        adminDropdownMenu.addEventListener('click', function(e) {
+            e.stopPropagation();
         });
+    }
+}
+
+// Reavaliar ao redimensionar a tela
+window.addEventListener('resize', function() {
+    const dropdown = document.getElementById('adminDropdown');
+    if (window.innerWidth > 768 && dropdown) {
+        dropdown.classList.remove('open');
+    }
+});
         
         // ========== AVISOS NO SININHO ==========
         class AvisosManager {

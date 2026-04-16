@@ -12167,51 +12167,51 @@ else:
     print("⚠️ RESEND_API_KEY não configurada - e-mails não serão enviados")
 
 def enviar_email_resend(destinatario, assunto, conteudo_html, conteudo_texto=None):
-    """
-    Função auxiliar para enviar e-mails via Resend
-    """
+    """Envia e-mail usando a API do Resend"""
+    api_key = os.environ.get('RESEND_API_KEY', '')
+    
+    if not api_key:
+        print("❌ RESEND_API_KEY não configurada")
+        return {'success': False, 'message': 'API key não configurada'}
+    
+    url = "https://api.resend.com/emails"
+    
+    headers = {
+        "Authorization": f"Bearer {api_key}",
+        "Content-Type": "application/json"
+    }
+    
+    # Extrair nome do remetente das configurações
+    cursor, conn = get_db()
+    cursor.execute("SELECT sender, sender_name FROM email_settings WHERE active = 1 ORDER BY id DESC LIMIT 1")
+    config = cursor.fetchone()
+    return_connection(conn)
+    
+    remetente = config['sender'] if config else "contato@juramelo.com.br"
+    nome_remetente = config['sender_name'] if config else "ARLS Bicentenário"
+    
+    from_email = f"{nome_remetente} <{remetente}>"
+    
+    data = {
+        "from": from_email,
+        "to": [destinatario],
+        "subject": assunto,
+        "html": conteudo_html
+    }
+    
+    # Adicionar texto plano se fornecido
+    if conteudo_texto:
+        data["text"] = conteudo_texto
+    
     try:
-        if not RESEND_API_KEY:
-            return {
-                'success': False,
-                'message': 'Resend não configurado. Adicione RESEND_API_KEY nas variáveis de ambiente do Render.'
-            }
-        
-        # Garantir que destinatário é uma lista
-        if isinstance(destinatario, str):
-            destinatario_lista = [destinatario]
+        response = requests.post(url, headers=headers, json=data)
+        if response.status_code == 200:
+            result = response.json()
+            return {'success': True, 'message': 'E-mail enviado com sucesso', 'id': result.get('id')}
         else:
-            destinatario_lista = destinatario
-        
-        params = {
-            "from": f"Sistema Maçônico <{EMAIL_FROM_DEFAULT}>",
-            "to": destinatario_lista,
-            "subject": assunto,
-            "html": conteudo_html,
-        }
-        
-        if conteudo_texto:
-            params["text"] = conteudo_texto
-        
-        print(f"📧 Enviando e-mail para: {destinatario_lista}")
-        print(f"📧 Assunto: {assunto}")
-        
-        email = resend.Emails.send(params)
-        print(f"✅ E-mail enviado para {destinatario} - ID: {email}")
-        return {
-            'success': True,
-            'message': 'E-mail enviado com sucesso!',
-            'id': email
-        }
-        
+            return {'success': False, 'message': f'Erro {response.status_code}: {response.text}'}
     except Exception as e:
-        print(f"❌ Erro ao enviar e-mail: {e}")
-        import traceback
-        traceback.print_exc()
-        return {
-            'success': False,
-            'message': str(e)
-        }
+        return {'success': False, 'message': str(e)}
 
 def enviar_email_reuniao(destinatario, nome_destinatario, dados_reuniao):
     """Envia e-mail de convocação para reunião via Resend usando templates"""
@@ -12350,45 +12350,37 @@ def testar_email():
         flash("Resend não configurado. Adicione RESEND_API_KEY nas variáveis de ambiente do Render.", "danger")
         return redirect("/config/email")
     
-    # Preparar e-mail de teste
-    assunto = "Teste de Configuração - Sistema Maçônico"
+    # Preparar e-mail de teste usando template
+    assunto = "✅ Teste de Configuração - ARLS Bicentenário"
     
-    conteudo_html = f"""
-    <!DOCTYPE html>
-    <html>
-    <head>
-        <meta charset="UTF-8">
-        <style>
-            body {{ font-family: 'Segoe UI', Arial, sans-serif; line-height: 1.6; color: #333; }}
-            .container {{ max-width: 600px; margin: 0 auto; padding: 20px; }}
-            .header {{ background: linear-gradient(135deg, #1a472a, #0a2a1a); color: #ffd700; padding: 30px 20px; text-align: center; border-radius: 10px 10px 0 0; }}
-            .content {{ padding: 30px 20px; background: #fff; }}
-            .footer {{ background: #f5f5f5; padding: 20px; text-align: center; font-size: 12px; color: #666; border-radius: 0 0 10px 10px; }}
-            .success {{ color: #4CAF50; font-size: 48px; }}
-        </style>
-    </head>
-    <body>
-        <div class="container">
-            <div class="header">
-                <h1>✅ Teste de E-mail</h1>
-            </div>
-            <div class="content">
-                <p style="text-align: center; font-size: 48px;">📧</p>
-                <p>Olá,</p>
-                <p>Esta é uma mensagem de teste do <strong>Sistema Maçônico</strong>.</p>
-                <p>Se você está recebendo este e-mail, a configuração está funcionando corretamente!</p>
-                <p><strong>Remetente:</strong> {nome_remetente} &lt;{remetente}&gt;</p>
-                <p><strong>Data e hora do teste:</strong> {datetime.now().strftime('%d/%m/%Y %H:%M:%S')}</p>
-                <p><strong>Plataforma:</strong> Resend (servidor em São Paulo)</p>
-            </div>
-            <div class="footer">
-                <p>Sistema Maçônico - www.juramelo.com.br</p>
-                <p>Este é um e-mail automático de teste, por favor não responda.</p>
-            </div>
-        </div>
-    </body>
-    </html>
-    """
+    # Dados para o template
+    dados_template = {
+        'nome': 'Irmão',
+        'remetente': remetente,
+        'nome_remetente': nome_remetente,
+        'data_hora': datetime.now().strftime('%d/%m/%Y %H:%M:%S'),
+        'ano': datetime.now().year
+    }
+    
+    try:
+        # Usar o template HTML que criamos
+        conteudo_html = render_template('email/teste.html', **dados_template)
+    except Exception as e:
+        print(f"Erro ao carregar template: {e}")
+        # Fallback em caso de erro no template
+        conteudo_html = f"""
+        <!DOCTYPE html>
+        <html>
+        <head><meta charset="UTF-8"></head>
+        <body>
+            <h2>✅ Teste de E-mail</h2>
+            <p>Olá,</p>
+            <p>Esta é uma mensagem de teste do Sistema Maçônico.</p>
+            <p>Remetente: {nome_remetente} &lt;{remetente}&gt;</p>
+            <p>Data: {datetime.now().strftime('%d/%m/%Y %H:%M:%S')}</p>
+        </body>
+        </html>
+        """
     
     # Enviar via Resend
     resultado = enviar_email_resend(
@@ -12398,7 +12390,7 @@ def testar_email():
     )
     
     if resultado['success']:
-        flash(f"✅ E-mail de teste enviado com sucesso para {email_teste}! ID: {resultado['id']}", "success")
+        flash(f"✅ E-mail de teste enviado com sucesso para {email_teste}!", "success")
     else:
         flash(f"❌ Falha ao enviar e-mail: {resultado['message']}", "danger")
     
