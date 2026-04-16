@@ -12134,6 +12134,7 @@ def exportar_logs():
 # =============================
 import json
 import os
+import requests  # <-- IMPORT ADICIONADO!
 import resend
 from datetime import datetime
 from flask import render_template, request, flash, redirect, jsonify
@@ -12151,10 +12152,6 @@ if RESEND_API_KEY:
     print(f"Tamanho da chave: {len(RESEND_API_KEY)}")
 else:
     print("⚠️ RESEND_API_KEY NÃO ENCONTRADA no ambiente!")
-    print("Variáveis de ambiente disponíveis:")
-    for key in os.environ.keys():
-        if 'RESEND' in key or 'EMAIL' in key:
-            print(f"  - {key}")
 print("=" * 50)
 
 if RESEND_API_KEY:
@@ -12166,6 +12163,10 @@ if RESEND_API_KEY:
 else:
     print("⚠️ RESEND_API_KEY não configurada - e-mails não serão enviados")
 
+
+# =============================
+# FUNÇÃO PRINCIPAL DE ENVIO (ÚNICA)
+# =============================
 def enviar_email_resend(destinatario, assunto, conteudo_html, conteudo_texto=None):
     """Envia e-mail usando a API do Resend"""
     api_key = os.environ.get('RESEND_API_KEY', '')
@@ -12173,6 +12174,10 @@ def enviar_email_resend(destinatario, assunto, conteudo_html, conteudo_texto=Non
     if not api_key:
         print("❌ RESEND_API_KEY não configurada")
         return {'success': False, 'message': 'API key não configurada'}
+    
+    # Verificar se o conteúdo HTML não está vazio
+    if not conteudo_html:
+        conteudo_html = "<p>Conteúdo do e-mail não disponível.</p>"
     
     url = "https://api.resend.com/emails"
     
@@ -12182,13 +12187,17 @@ def enviar_email_resend(destinatario, assunto, conteudo_html, conteudo_texto=Non
     }
     
     # Extrair nome do remetente das configurações
-    cursor, conn = get_db()
-    cursor.execute("SELECT sender, sender_name FROM email_settings WHERE active = 1 ORDER BY id DESC LIMIT 1")
-    config = cursor.fetchone()
-    return_connection(conn)
-    
-    remetente = config['sender'] if config else "contato@juramelo.com.br"
-    nome_remetente = config['sender_name'] if config else "ARLS Bicentenário"
+    try:
+        cursor, conn = get_db()
+        cursor.execute("SELECT sender, sender_name FROM email_settings WHERE active = 1 ORDER BY id DESC LIMIT 1")
+        config = cursor.fetchone()
+        return_connection(conn)
+        
+        remetente = config['sender'] if config else "contato@juramelo.com.br"
+        nome_remetente = config['sender_name'] if config else "ARLS Bicentenário"
+    except:
+        remetente = "contato@juramelo.com.br"
+        nome_remetente = "ARLS Bicentenário"
     
     from_email = f"{nome_remetente} <{remetente}>"
     
@@ -12199,7 +12208,6 @@ def enviar_email_resend(destinatario, assunto, conteudo_html, conteudo_texto=Non
         "html": conteudo_html
     }
     
-    # Adicionar texto plano se fornecido
     if conteudo_texto:
         data["text"] = conteudo_texto
     
@@ -12211,108 +12219,62 @@ def enviar_email_resend(destinatario, assunto, conteudo_html, conteudo_texto=Non
         else:
             return {'success': False, 'message': f'Erro {response.status_code}: {response.text}'}
     except Exception as e:
+        print(f"❌ Exceção: {e}")
         return {'success': False, 'message': str(e)}
 
-@app.route("/config/email/testar", methods=["POST"])
-@admin_required
-def testar_email():
-    email_teste = request.form.get("email_teste")
+
+# =============================
+# FUNÇÃO DE ENVIO PARA REUNIÕES (ÚNICA)
+# =============================
+def enviar_email_reuniao(destinatario, nome_destinatario, dados_reuniao):
+    """Envia e-mail de convocação para reunião via Resend usando templates"""
     
-    if not email_teste:
-        flash("Informe um e-mail para teste", "danger")
-        return redirect("/config/email")
+    reuniao_id = dados_reuniao.get('id', '')
+    assunto = f"📅 Convite: {dados_reuniao.get('titulo', 'Nova Reunião')} - ARLS Bicentenário"
     
-    # Buscar configuração ativa
-    cursor, conn = get_db()
-    cursor.execute("SELECT * FROM email_settings WHERE active = 1 ORDER BY id DESC LIMIT 1")
-    config = cursor.fetchone()
-    return_connection(conn)
+    # Formatar horário
+    hora_termino = dados_reuniao.get('hora_termino')
+    horario = dados_reuniao.get('hora_inicio')
+    if hora_termino:
+        horario = f"{dados_reuniao.get('hora_inicio')} às {hora_termino}"
     
-    # Usar configuração do banco ou valores padrão
-    remetente = config['sender'] if config else EMAIL_FROM_DEFAULT
-    nome_remetente = config['sender_name'] if config else "Sistema Maçônico"
+    dados_reuniao['horario_formatado'] = horario
+    link_reuniao = f"https://www.juramelo.com.br/reunioes/{reuniao_id}" if reuniao_id else "#"
+    dados_reuniao['link_reuniao'] = link_reuniao
     
-    # Verificar se Resend está configurado
-    if not RESEND_API_KEY:
-        flash("Resend não configurado. Adicione RESEND_API_KEY nas variáveis de ambiente do Render.", "danger")
-        return redirect("/config/email")
-    
-    # Preparar e-mail de teste usando template
-    assunto = "✅ Teste de Configuração - ARLS Bicentenário"
-    
-    # Dados para o template
-    dados_template = {
-        'nome': 'Irmão',
-        'remetente': remetente,
-        'nome_remetente': nome_remetente,
-        'data_hora': datetime.now().strftime('%d/%m/%Y %H:%M:%S'),
-        'ano': datetime.now().year
-    }
-    
-    conteudo_html = None
-    
-    # Tentar carregar o template
+    # Carrega o template HTML
     try:
-        from flask import render_template_string
-        
-        # Verificar se o arquivo do template existe
-        template_path = os.path.join('templates', 'email', 'teste.html')
-        if os.path.exists(template_path):
-            conteudo_html = render_template('email/teste.html', **dados_template)
-            print(f"✅ Template carregado com sucesso! Tamanho: {len(conteudo_html)} caracteres")
-        else:
-            print(f"❌ Template não encontrado em: {template_path}")
-            # Usar HTML inline como fallback
-            conteudo_html = f"""
-            <!DOCTYPE html>
-            <html>
-            <head><meta charset="UTF-8"></head>
-            <body style="font-family: Arial, sans-serif;">
-                <div style="max-width: 600px; margin: 0 auto; padding: 20px;">
-                    <div style="background: linear-gradient(135deg, #2E0518, #4A0E2E); padding: 20px; text-align: center;">
-                        <h1 style="color: #D4AF37;">⚜️ ARLS Bicentenário</h1>
-                    </div>
-                    <div style="padding: 20px;">
-                        <h2>✅ Teste de E-mail</h2>
-                        <p>Olá,</p>
-                        <p>Esta é uma mensagem de teste do Sistema Maçônico.</p>
-                        <p>Se você está recebendo este e-mail, a configuração está funcionando corretamente!</p>
-                        <p><strong>Remetente:</strong> {nome_remetente} &lt;{remetente}&gt;</p>
-                        <p><strong>Data e hora do teste:</strong> {dados_template['data_hora']}</p>
-                        <p><strong>Plataforma:</strong> Resend (servidor em São Paulo)</p>
-                    </div>
-                    <div style="background: #F5F0E8; padding: 15px; text-align: center; font-size: 12px;">
-                        <p>"Pela Verdade e Justiça - Ordo Ab Chao"</p>
-                        <p>EQNM 36/38 área especial 08, St. M-Norte, Brasília - DF</p>
-                    </div>
-                </div>
-            </body>
-            </html>
-            """
+        html_content = render_template('email/reuniao_agendada.html', 
+                                       nome=nome_destinatario, 
+                                       reuniao=dados_reuniao)
     except Exception as e:
-        print(f"❌ Erro ao carregar template: {e}")
-        import traceback
-        traceback.print_exc()
-        conteudo_html = f"<h2>Teste de E-mail</h2><p>Olá, esta é uma mensagem de teste.</p><p>Data: {dados_template['data_hora']}</p>"
+        print(f"Erro ao carregar template HTML: {e}")
+        html_content = gerar_html_fallback(nome_destinatario, dados_reuniao)
     
-    # Verificar se o conteúdo HTML não está vazio
-    if not conteudo_html:
-        flash("Erro ao gerar conteúdo do e-mail", "danger")
-        return redirect("/config/email")
-    
-    # Enviar via Resend
-    resultado = enviar_email_resend(
-        destinatario=email_teste,
-        assunto=assunto,
-        conteudo_html=conteudo_html
-    )
-    
-    if resultado['success']:
-        flash(f"✅ E-mail de teste enviado com sucesso para {email_teste}!", "success")
-    else:
-        flash(f"❌ Falha ao enviar e-mail: {resultado['message']}", "danger")
-    
-    return redirect("/config/email")
+    # Envia o e-mail via Resend
+    return enviar_email_resend(destinatario, assunto, html_content)
+
+
+def gerar_html_fallback(nome_destinatario, dados_reuniao):
+    """Fallback em caso de erro no template"""
+    return f"""
+    <!DOCTYPE html>
+    <html>
+    <head><meta charset="UTF-8"></head>
+    <body>
+        <h2>Olá {nome_destinatario},</h2>
+        <p>Você foi convidado para uma reunião:</p>
+        <p><strong>{dados_reuniao.get('titulo')}</strong></p>
+        <p>📅 Data: {dados_reuniao.get('data')}</p>
+        <p>⏰ Horário: {dados_reuniao.get('horario_formatado')}</p>
+        <p>📍 Local: {dados_reuniao.get('local')}</p>
+        <p>🔗 Link: <a href="{dados_reuniao.get('link_reuniao')}">Ver detalhes</a></p>
+        <p>Atenciosamente,<br>Secretaria do Sistema Maçônico</p>
+    </body>
+    </html>
+    """
+
+
 # =============================
 # ROTA: CONFIGURAÇÃO DE E-MAIL
 # =============================
@@ -12322,26 +12284,22 @@ def config_email():
     cursor, conn = get_db()
     
     if request.method == "POST":
-        # Coletar dados do formulário
-        server = request.form.get("server", "")  # Mantido para compatibilidade
-        port = request.form.get("port", "")      # Mantido para compatibilidade
+        server = request.form.get("server", "")
+        port = request.form.get("port", "")
         use_tls = 1 if request.form.get("use_tls") else 0
-        username = request.form.get("username", "")  # Mantido para compatibilidade
-        password = request.form.get("password", "")  # Mantido para compatibilidade
+        username = request.form.get("username", "")
+        password = request.form.get("password", "")
         sender = request.form.get("sender", EMAIL_FROM_DEFAULT)
         sender_name = request.form.get("sender_name", "Sistema Maçônico")
         active = 1 if request.form.get("active") else 0
         
-        # Validar campos obrigatórios (apenas sender é obrigatório agora)
         if not sender:
             flash("Preencha o e-mail remetente", "danger")
         else:
             try:
-                # Desativar outras configurações se esta for ativa
                 if active:
                     cursor.execute("UPDATE email_settings SET active = 0")
                 
-                # Inserir nova configuração (compatível com estrutura existente)
                 cursor.execute("""
                     INSERT INTO email_settings 
                     (server, port, use_tls, username, password, sender, sender_name, active)
@@ -12350,17 +12308,16 @@ def config_email():
                 
                 conn.commit()
                 flash("Configuração de e-mail salva com sucesso! (Usando Resend)", "success")
-                
             except Exception as e:
                 flash(f"Erro ao salvar configuração: {str(e)}", "danger")
                 conn.rollback()
     
-    # Buscar configuração ativa
     cursor.execute("SELECT * FROM email_settings WHERE active = 1 ORDER BY id DESC LIMIT 1")
     config = cursor.fetchone()
-    
     return_connection(conn)
+    
     return render_template("admin/config_email.html", config=config)
+
 
 # =============================
 # ROTA: TESTAR E-MAIL (VIA RESEND)
@@ -12374,25 +12331,20 @@ def testar_email():
         flash("Informe um e-mail para teste", "danger")
         return redirect("/config/email")
     
-    # Buscar configuração ativa
     cursor, conn = get_db()
     cursor.execute("SELECT * FROM email_settings WHERE active = 1 ORDER BY id DESC LIMIT 1")
     config = cursor.fetchone()
     return_connection(conn)
     
-    # Usar configuração do banco ou valores padrão
     remetente = config['sender'] if config else EMAIL_FROM_DEFAULT
     nome_remetente = config['sender_name'] if config else "Sistema Maçônico"
     
-    # Verificar se Resend está configurado
     if not RESEND_API_KEY:
-        flash("Resend não configurado. Adicione RESEND_API_KEY nas variáveis de ambiente do Render.", "danger")
+        flash("Resend não configurado. Adicione RESEND_API_KEY nas variáveis de ambiente.", "danger")
         return redirect("/config/email")
     
-    # Preparar e-mail de teste usando template
     assunto = "✅ Teste de Configuração - ARLS Bicentenário"
     
-    # Dados para o template
     dados_template = {
         'nome': 'Irmão',
         'remetente': remetente,
@@ -12402,26 +12354,22 @@ def testar_email():
     }
     
     try:
-        # Usar o template HTML que criamos
         conteudo_html = render_template('email/teste.html', **dados_template)
     except Exception as e:
         print(f"Erro ao carregar template: {e}")
-        # Fallback em caso de erro no template
         conteudo_html = f"""
         <!DOCTYPE html>
         <html>
         <head><meta charset="UTF-8"></head>
         <body>
             <h2>✅ Teste de E-mail</h2>
-            <p>Olá,</p>
-            <p>Esta é uma mensagem de teste do Sistema Maçônico.</p>
+            <p>Olá, esta é uma mensagem de teste do Sistema Maçônico.</p>
             <p>Remetente: {nome_remetente} &lt;{remetente}&gt;</p>
             <p>Data: {datetime.now().strftime('%d/%m/%Y %H:%M:%S')}</p>
         </body>
         </html>
         """
     
-    # Enviar via Resend
     resultado = enviar_email_resend(
         destinatario=email_teste,
         assunto=assunto,
@@ -12435,21 +12383,20 @@ def testar_email():
     
     return redirect("/config/email")
 
+
 # =============================
 # ROTA: STATUS DO RESEND (DIAGNÓSTICO)
 # =============================
 @app.route("/config/email/status")
 @admin_required
 def email_status():
-    """Endpoint para verificar status da configuração de e-mail"""
     status = {
         "resend_configurado": bool(RESEND_API_KEY),
         "email_from": EMAIL_FROM_DEFAULT,
         "dominio_verificado": "juramelo.com.br",
-        "metodo_envio": "Resend API (SMTP alternativo)"
+        "metodo_envio": "Resend API"
     }
     
-    # Tentar obter configuração ativa do banco
     try:
         cursor, conn = get_db()
         cursor.execute("SELECT * FROM email_settings WHERE active = 1 ORDER BY id DESC LIMIT 1")
@@ -12459,273 +12406,14 @@ def email_status():
         if config:
             status["configuracao_ativa"] = {
                 "remetente": config['sender'],
-                "nome_remetente": config['sender_name'],
-                "server": config['server'] or "Resend API (não usado)",
-                "port": config['port'] or "N/A"
+                "nome_remetente": config['sender_name']
             }
         else:
             status["configuracao_ativa"] = "Nenhuma configuração ativa no banco"
-            
     except Exception as e:
         status["erro_busca_config"] = str(e)
     
     return jsonify(status)
-
-# =============================
-# FUNÇÕES DE ENVIO PARA O SISTEMA
-# =============================
-
-def enviar_email_bem_vindo(usuario_nome, usuario_email):
-    """Envia e-mail de boas-vindas"""
-    assunto = "Bem-vindo ao Sistema Maçônico"
-    
-    conteudo_html = f"""
-    <!DOCTYPE html>
-    <html>
-    <head>
-        <meta charset="UTF-8">
-        <style>
-            body {{ font-family: 'Segoe UI', Arial, sans-serif; line-height: 1.6; color: #333; }}
-            .container {{ max-width: 600px; margin: 0 auto; padding: 20px; }}
-            .header {{ background: linear-gradient(135deg, #1a472a, #0a2a1a); color: #ffd700; padding: 30px 20px; text-align: center; border-radius: 10px 10px 0 0; }}
-            .content {{ padding: 30px 20px; background: #fff; }}
-            .button {{ display: inline-block; padding: 12px 30px; background: linear-gradient(135deg, #1a472a, #0a2a1a); color: #ffd700; text-decoration: none; border-radius: 5px; margin: 20px 0; }}
-        </style>
-    </head>
-    <body>
-        <div class="container">
-            <div class="header">
-                <h1>Sistema Maçônico</h1>
-                <p>Bem-vindo à Loja</p>
-            </div>
-            <div class="content">
-                <h2>Olá {usuario_nome},</h2>
-                <p>É com grande satisfação que damos as boas-vindas ao <strong>Sistema Maçônico</strong>.</p>
-                <p>Seu cadastro foi realizado com sucesso e agora você já pode acessar todas as funcionalidades do sistema.</p>
-                <p style="text-align: center;">
-                    <a href="https://www.juramelo.com.br" class="button">Acessar Sistema</a>
-                </p>
-                <p>Fraternalmente,<br><strong>Equipe do Sistema Maçônico</strong></p>
-            </div>
-        </div>
-    </body>
-    </html>
-    """
-    
-    return enviar_email_resend(usuario_email, assunto, conteudo_html)
-
-def enviar_email_recuperacao_senha(usuario_nome, usuario_email, token_recuperacao):
-    """Envia e-mail de recuperação de senha"""
-    assunto = "Recuperação de Senha - Sistema Maçônico"
-    
-    link_recuperacao = f"https://www.juramelo.com.br/resetar-senha?token={token_recuperacao}"
-    
-    conteudo_html = f"""
-    <!DOCTYPE html>
-    <html>
-    <head>
-        <meta charset="UTF-8">
-        <style>
-            body {{ font-family: 'Segoe UI', Arial, sans-serif; line-height: 1.6; color: #333; }}
-            .container {{ max-width: 600px; margin: 0 auto; padding: 20px; }}
-            .header {{ background: linear-gradient(135deg, #ff9800, #e65100); color: white; padding: 30px 20px; text-align: center; border-radius: 10px 10px 0 0; }}
-            .button {{ display: inline-block; padding: 12px 30px; background: #ff9800; color: white; text-decoration: none; border-radius: 5px; margin: 20px 0; }}
-        </style>
-    </head>
-    <body>
-        <div class="container">
-            <div class="header">
-                <h1>Recuperação de Senha</h1>
-            </div>
-            <div class="content">
-                <p>Olá <strong>{usuario_nome}</strong>,</p>
-                <p>Recebemos uma solicitação para redefinir sua senha no Sistema Maçônico.</p>
-                <p style="text-align: center;">
-                    <a href="{link_recuperacao}" class="button">Redefinir Senha</a>
-                </p>
-                <p>Se você não solicitou essa alteração, ignore este e-mail.</p>
-                <p><strong>Este link expira em 24 horas.</strong></p>
-                <p>Atenciosamente,<br><strong>Equipe do Sistema Maçônico</strong></p>
-            </div>
-        </div>
-    </body>
-    </html>
-    """
-    
-    return enviar_email_resend(usuario_email, assunto, conteudo_html)
-
-# =============================
-# ENVIO DE E-MAIL PARA REUNIÕES
-# =============================
-
-def enviar_email_reuniao(destinatario, nome_destinatario, dados_reuniao):
-    """
-    Envia e-mail de convocação para reunião
-    
-    Args:
-        destinatario: E-mail do destinatário
-        nome_destinatario: Nome do destinatário
-        dados_reuniao: Dict com dados da reunião (titulo, data, hora, local, descricao, etc)
-    """
-    assunto = f"📅 Convite: {dados_reuniao.get('titulo', 'Nova Reunião')} - Sistema Maçônico"
-    
-    # Formatar data e hora
-    data_reuniao = dados_reuniao.get('data', '')
-    hora_reuniao = dados_reuniao.get('hora', '')
-    local = dados_reuniao.get('local', 'A definir')
-    descricao = dados_reuniao.get('descricao', '')
-    
-    conteudo_html = f"""
-    <!DOCTYPE html>
-    <html>
-    <head>
-        <meta charset="UTF-8">
-        <style>
-            body {{ font-family: 'Segoe UI', Arial, sans-serif; line-height: 1.6; color: #333; }}
-            .container {{ max-width: 600px; margin: 0 auto; padding: 20px; }}
-            .header {{ background: linear-gradient(135deg, #1a472a, #0a2a1a); color: #ffd700; padding: 30px 20px; text-align: center; border-radius: 10px 10px 0 0; }}
-            .content {{ padding: 30px 20px; background: #fff; }}
-            .info-card {{ background: #f8f9fa; border-left: 4px solid #1a472a; padding: 15px; margin: 20px 0; border-radius: 8px; }}
-            .info-row {{ display: flex; margin-bottom: 10px; }}
-            .info-label {{ font-weight: bold; width: 80px; color: #1a472a; }}
-            .info-value {{ flex: 1; }}
-            .button {{ display: inline-block; padding: 12px 30px; background: linear-gradient(135deg, #1a472a, #0a2a1a); color: #ffd700; text-decoration: none; border-radius: 5px; margin: 20px 0; }}
-            .footer {{ background: #f5f5f5; padding: 20px; text-align: center; font-size: 12px; color: #666; border-radius: 0 0 10px 10px; }}
-        </style>
-    </head>
-    <body>
-        <div class="container">
-            <div class="header">
-                <h1>📅 Convite para Reunião</h1>
-                <p>Sistema Maçônico</p>
-            </div>
-            <div class="content">
-                <h2>Olá {nome_destinatario},</h2>
-                <p>Você foi convidado para uma reunião:</p>
-                
-                <div class="info-card">
-                    <h3 style="color: #1a472a; margin-bottom: 15px;">{dados_reuniao.get('titulo', 'Nova Reunião')}</h3>
-                    
-                    <div class="info-row">
-                        <div class="info-label">📅 Data:</div>
-                        <div class="info-value">{data_reuniao}</div>
-                    </div>
-                    <div class="info-row">
-                        <div class="info-label">⏰ Hora:</div>
-                        <div class="info-value">{hora_reuniao}</div>
-                    </div>
-                    <div class="info-row">
-                        <div class="info-label">📍 Local:</div>
-                        <div class="info-value">{local}</div>
-                    </div>
-                    {f'<div class="info-row"><div class="info-label">📝 Descrição:</div><div class="info-value">{descricao}</div></div>' if descricao else ''}
-                </div>
-                
-                <p style="text-align: center;">
-                    <a href="https://www.juramelo.com.br/reunioes" class="button">Ver Detalhes</a>
-                </p>
-                
-                <p>Por favor, confirme sua presença através do sistema.</p>
-                <p>Atenciosamente,<br><strong>Secretaria do Sistema Maçônico</strong></p>
-            </div>
-            <div class="footer">
-                <p>Sistema Maçônico - www.juramelo.com.br</p>
-                <p>Este é um e-mail automático, por favor não responda.</p>
-            </div>
-        </div>
-    </body>
-    </html>
-    """
-    
-    return enviar_email_resend(destinatario, assunto, conteudo_html)
-
-
-def enviar_lembrete_reuniao(destinatario, nome_destinatario, dados_reuniao):
-    """
-    Envia e-mail de lembrete para reunião (24h antes)
-    """
-    assunto = f"⏰ Lembrete: {dados_reuniao.get('titulo', 'Reunião')} - Amanhã!"
-    
-    data_reuniao = dados_reuniao.get('data', '')
-    hora_reuniao = dados_reuniao.get('hora', '')
-    local = dados_reuniao.get('local', 'A definir')
-    
-    conteudo_html = f"""
-    <!DOCTYPE html>
-    <html>
-    <head>
-        <meta charset="UTF-8">
-        <style>
-            body {{ font-family: 'Segoe UI', Arial, sans-serif; line-height: 1.6; color: #333; }}
-            .container {{ max-width: 600px; margin: 0 auto; padding: 20px; }}
-            .header {{ background: linear-gradient(135deg, #ff9800, #e65100); color: white; padding: 30px 20px; text-align: center; border-radius: 10px 10px 0 0; }}
-            .content {{ padding: 30px 20px; background: #fff; }}
-            .info-card {{ background: #f8f9fa; border-left: 4px solid #ff9800; padding: 15px; margin: 20px 0; border-radius: 8px; }}
-            .button {{ display: inline-block; padding: 12px 30px; background: #ff9800; color: white; text-decoration: none; border-radius: 5px; margin: 20px 0; }}
-            .footer {{ background: #f5f5f5; padding: 20px; text-align: center; font-size: 12px; color: #666; border-radius: 0 0 10px 10px; }}
-        </style>
-    </head>
-    <body>
-        <div class="container">
-            <div class="header">
-                <h1>⏰ Lembrete de Reunião</h1>
-                <p>Sistema Maçônico</p>
-            </div>
-            <div class="content">
-                <h2>Olá {nome_destinatario},</h2>
-                <p>Este é um lembrete da reunião que acontecerá amanhã:</p>
-                
-                <div class="info-card">
-                    <h3 style="color: #ff9800;">{dados_reuniao.get('titulo', 'Reunião')}</h3>
-                    <p><strong>📅 Data:</strong> {data_reuniao}</p>
-                    <p><strong>⏰ Hora:</strong> {hora_reuniao}</p>
-                    <p><strong>📍 Local:</strong> {local}</p>
-                </div>
-                
-                <p style="text-align: center;">
-                    <a href="https://www.juramelo.com.br/reunioes" class="button">Confirmar Presença</a>
-                </p>
-                
-                <p>Confirme sua presença no sistema.</p>
-                <p>Atenciosamente,<br><strong>Secretaria do Sistema Maçônico</strong></p>
-            </div>
-            <div class="footer">
-                <p>Sistema Maçônico - www.juramelo.com.br</p>
-            </div>
-        </div>
-    </body>
-    </html>
-    """
-    
-    return enviar_email_resend(destinatario, assunto, conteudo_html)
-
-@app.route('/admin/testar-email-reuniao-completo')
-@admin_required
-def testar_email_reuniao_completo():
-    """Teste completo do envio de e-mail de reunião"""
-    try:
-        email_teste = request.args.get('email')
-        if not email_teste:
-            return jsonify({"erro": "Informe um e-mail: ?email=seu@email.com"}), 400
-        
-        dados_teste = {
-            'titulo': 'Reunião de Teste - Loja Maçônica',
-            'data': '27/03/2026',
-            'hora': '19:30',
-            'local': 'Templo Maçônico - Rua Principal, 123',
-            'descricao': 'Pauta: Assuntos administrativos e planejamento de atividades.'
-        }
-        
-        resultado = enviar_email_reuniao(
-            destinatario=email_teste,
-            nome_destinatario="Irmão Teste",
-            dados_reuniao=dados_teste
-        )
-        
-        return jsonify(resultado)
-        
-    except Exception as e:
-        return jsonify({"erro": str(e)}), 500    
     
 # =============================
 # ROTAS DE WHATSAPP
