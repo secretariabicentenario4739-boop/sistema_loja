@@ -1,6 +1,6 @@
 # app.py - Sistema Maçônico com PostgreSQL (VERSÃO COMPLETA COM BIBLIOTECA)
 # -*- coding: utf-8 -*-
-
+import requests
 import os
 import cloudinary
 import cloudinary.uploader
