@@ -7229,6 +7229,7 @@ def gerar_pdf_ata_oficial(id):
     from flask import render_template, url_for, Response
     import pdfkit
     import os
+    import base64
     
     cursor, conn = get_db()
     
@@ -7313,6 +7314,23 @@ def gerar_pdf_ata_oficial(id):
         'local': ata['reuniao_local'] or 'Templo Maçônico'
     }
     
+    # ============================================
+    # CONVERTER LOGO PARA BASE64
+    # ============================================
+    logo_base64 = None
+    logo_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'static', 'images', 'Logo.png')
+    
+    if os.path.exists(logo_path):
+        try:
+            with open(logo_path, 'rb') as image_file:
+                image_data = image_file.read()
+                logo_base64 = base64.b64encode(image_data).decode('utf-8')
+                print(f"✅ Logo convertida para base64! Tamanho: {len(logo_base64)} caracteres")
+        except Exception as e:
+            print(f"❌ Erro ao converter logo: {e}")
+    else:
+        print(f"❌ Logo não encontrada em: {logo_path}")
+    
     # Renderizar HTML para PDF
     html = render_template("atas/pdf_ata.html",
                           ata=ata,
@@ -7321,7 +7339,7 @@ def gerar_pdf_ata_oficial(id):
                           ausentes=ausentes,
                           numero_ata=ata['numero_ata'],
                           ano_ata=ata['ano_ata'],
-                          conteudo=ata['conteudo'],  # Conteúdo da ata
+                          conteudo=ata['conteudo'],
                           assinatura_veneravel=ata['assinatura_veneravel'],
                           assinatura_orador=ata['assinatura_orador'],
                           assinatura_secretario=ata['assinatura_secretario'],
@@ -7334,6 +7352,7 @@ def gerar_pdf_ata_oficial(id):
                           loja_nome=ata.get('loja_nombre', 'ARLS Bicentenário'),
                           loja_numero=ata.get('loja_numero', '4739'),
                           loja_oriente=ata.get('loja_oriente', 'Ceilândia - DF'),
+                          logo_base64=logo_base64,
                           now=datetime.now())
     
     # Configurar opções do PDF
@@ -7344,7 +7363,8 @@ def gerar_pdf_ata_oficial(id):
         'margin-left': '15mm',
         'margin-right': '15mm',
         'encoding': 'UTF-8',
-        'no-outline': None
+        'no-outline': None,
+        'enable-local-file-access': None
     }
     
     try:
@@ -7365,7 +7385,6 @@ def gerar_pdf_ata_oficial(id):
         
     except Exception as e:
         print(f"Erro ao gerar PDF: {e}")
-        # Fallback: retornar HTML formatado para impressão
         return html
 
 

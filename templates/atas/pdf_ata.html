@@ -12,38 +12,59 @@
             padding: 20px;
         }
         .header {
-            text-align: center;
-            margin-bottom: 30px;
+            margin-bottom: 20px;
             border-bottom: 2px solid #000;
             padding-bottom: 10px;
         }
+        .header-content {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 30px;
+            flex-wrap: wrap;
+        }
+        .logo-container {
+            flex-shrink: 0;
+            text-align: center;
+        }
         .logo {
             max-width: 100px;
-            margin-bottom: 10px;
+            height: auto;
         }
-        .titulo-ata {
-            font-size: 18px;
+        .header-text {
+            text-align: left;
+            font-size: 12px;
+            line-height: 1.4;
+        }
+        .header-text .gloria {
+            font-size: 12px;
             font-weight: bold;
-            text-align: center;
-            margin: 20px 0;
+            margin-bottom: 5px;
         }
-        .info-ata {
-            margin-bottom: 20px;
+        .header-text .rito {
+            font-size: 12px;
+            margin-bottom: 5px;
         }
-        .info-ata table {
-            width: 100%;
+        .header-text .loja-info {
+            font-size: 12px;
+            margin-bottom: 3px;
+        }
+        .header-text .endereco {
+            font-size: 12px;
+            color: #333;
         }
         .conteudo {
-            margin: 30px 0;
+            margin: 20px 0;
             text-align: justify;
+            line-height: 1.6;
         }
         .assinaturas {
-            margin-top: 50px;
+            margin-top: 40px;
             page-break-inside: avoid;
         }
         .assinaturas table {
             width: 100%;
-            margin-top: 30px;
+            margin-top: 20px;
         }
         .assinatura {
             text-align: center;
@@ -55,10 +76,24 @@
             margin: 20px auto 5px auto;
         }
         .footer {
-            margin-top: 50px;
+            margin-top: 40px;
             text-align: center;
             font-size: 10px;
             color: #666;
+        }
+        .lista-presenca {
+            margin-top: 20px;
+        }
+        .lista-presenca table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        .lista-presenca th, .lista-presenca td {
+            border: 1px solid #000;
+            padding: 5px;
+        }
+        .lista-presenca th {
+            background-color: #f0f0f0;
         }
         @media print {
             body {
@@ -72,58 +107,38 @@
     </style>
 </head>
 <body>
+    <!-- CABEÇALHO COM LOGO E TEXTO CENTRALIZADOS -->
     <div class="header">
-        <h2>{{ loja_nome }} - Nº {{ loja_numero }}</h2>
-        <h3>{{ loja_oriente }}</h3>
-        <hr>
+        <div class="header-content">
+            <!-- Logo -->
+            <div class="logo-container">
+                {% if logo_base64 %}
+                    <img src="data:image/png;base64,{{ logo_base64 }}" class="logo" alt="Logo ARLS Bicentenário">
+                {% else %}
+                    <h2>⚜️</h2>
+                {% endif %}
+            </div>
+            
+            <!-- Texto à direita da logo -->
+            <div class="header-text">
+                <div class="gloria">À Glória do S∴A∴D∴U∴!</div>
+                <div class="rito">Rito Brasileiro</div>
+                <div class="loja-info">ARLS BICENTENÁRIO Nº 4.739 - Fundada em 16/07/2022 - CNPJ 51.685.525/0001-49</div>
+                <div class="endereco">EQNM 36/38, Área Especial nº 08, Setor M-Norte - Oriente de Ceilândia/DF</div>
+            </div>
+        </div>
     </div>
 
-    <div class="titulo-ata">
-        ATA DA REUNIÃO {{ reuniao.tipo|upper }}
-        <br>
-        Nº {{ "%03d"|format(numero_ata|int) }}/{{ ano_ata }}
-    </div>
-
-    <div class="info-ata">
-        <table>
-            <tr>
-                <td width="20%"><strong>Data:</strong></td>
-                <td>{{ reuniao.data.strftime('%d/%m/%Y') if reuniao.data else '-' }}</td>
-            </tr>
-            <tr>
-                <td><strong>Horário:</strong></td>
-                <td>{{ reuniao.hora_inicio.strftime('%H:%M') if reuniao.hora_inicio else '-' }}h às {{ reuniao.hora_termino.strftime('%H:%M') if reuniao.hora_termino else '-' }}h</td>
-            </tr>
-            <tr>
-                <td><strong>Local:</strong></td>
-                <td>{{ reuniao.local }}</td>
-            </tr>
-            <tr>
-                <td><strong>Tipo:</strong></td>
-                <td>{{ reuniao.tipo }}</td>
-            </tr>
-            {% if reuniao.grau %}
-            <tr>
-                <td><strong>Grau:</strong></td>
-                <td>
-                    {% if reuniao.grau == 3 %}Mestre
-                    {% elif reuniao.grau == 2 %}Companheiro
-                    {% elif reuniao.grau == 1 %}Aprendiz
-                    {% else %}Grau {{ reuniao.grau }}{% endif %}
-                </td>
-            </tr>
-            {% endif %}
-        </table>
-    </div>
-
+    <!-- CORPO DA ATA (CONTEÚDO PRINCIPAL) -->
     <div class="conteudo">
         {{ conteudo|safe }}
     </div>
 
+    <!-- LISTA DE PRESENÇA (SE HOUVER) -->
     {% if presentes %}
     <div class="lista-presenca">
         <h4>Lista de Presença</h4>
-        <table border="1" cellpadding="5" cellspacing="0" style="width: 100%; border-collapse: collapse;">
+        <table>
             <thead>
                 <tr>
                     <th>Obreiro</th>
@@ -148,6 +163,7 @@
     </div>
     {% endif %}
 
+    <!-- ASSINATURAS -->
     <div class="assinaturas">
         <h4>Assinaturas</h4>
         <table>
@@ -180,6 +196,7 @@
         </table>
     </div>
 
+    <!-- RODAPÉ -->
     <div class="footer">
         <p>Documento gerado eletronicamente pelo Sistema Maçônico - ARLS Bicentenário</p>
         <p>Data de emissão: {{ now.strftime('%d/%m/%Y %H:%M') }}</p>
