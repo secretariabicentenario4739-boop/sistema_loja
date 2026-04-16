@@ -241,22 +241,14 @@
                                     {% endif %}
                                 </td>
                                 <td>
-    <i class="bi bi-calendar"></i> 
-    {{ reuniao.data.strftime('%d/%m/%Y') if reuniao.data else '-' }}
-    
-    <!-- Badge de status baseado na data e status da reunião -->
-    {% if reuniao.data %}
-        {% if reuniao.status == 'realizada' %}
-            <!-- Se for realizada, NÃO mostra atrasada -->
-        {% elif reuniao.status == 'cancelada' %}
-            <!-- Se for cancelada, NÃO mostra atrasada -->
-        {% elif reuniao.data < now.date() %}
-            <br><span class="badge bg-danger">Atrasada</span>
-        {% elif reuniao.data == now.date() %}
-            <br><span class="badge bg-warning">Hoje</span>
-        {% endif %}
-    {% endif %}
-</td>
+                                    <i class="bi bi-calendar"></i> 
+                                    {{ reuniao.data.strftime('%d/%m/%Y') if reuniao.data else '-' }}
+                                    {% if reuniao.data and reuniao.data < now.date() %}
+                                    <br><span class="badge bg-danger">Atrasada</span>
+                                    {% elif reuniao.data and reuniao.data == now.date() %}
+                                    <br><span class="badge bg-warning">Hoje</span>
+                                    {% endif %}
+                                </td>
                                 <td>
                                     {% if reuniao.hora_inicio %}
                                         <i class="bi bi-clock"></i> 
