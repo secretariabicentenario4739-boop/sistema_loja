@@ -13,3 +13,4 @@ email-validator==2.0.0
 gunicorn
 resend
 pdfkit
+requests==2.31.0

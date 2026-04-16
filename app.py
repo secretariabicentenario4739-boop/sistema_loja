@@ -12132,7 +12132,7 @@ def exportar_logs():
 # =============================
 # ROTAS DE CONFIGURAÇÃO DE E-MAIL
 # =============================
-
+import json
 import os
 import resend
 from datetime import datetime
