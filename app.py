@@ -12165,7 +12165,7 @@ else:
 
 
 # =============================
-# FUNÇÃO PRINCIPAL DE ENVIO (ÚNICA)
+# FUNÇÃO PRINCIPAL DE ENVIO
 # =============================
 def enviar_email_resend(destinatario, assunto, conteudo_html, conteudo_texto=None):
     """Envia e-mail usando a API do Resend"""
@@ -12186,20 +12186,9 @@ def enviar_email_resend(destinatario, assunto, conteudo_html, conteudo_texto=Non
         "Content-Type": "application/json"
     }
     
-    # Extrair nome do remetente das configurações
-    try:
-        cursor, conn = get_db()
-        cursor.execute("SELECT sender, sender_name FROM email_settings WHERE active = 1 ORDER BY id DESC LIMIT 1")
-        config = cursor.fetchone()
-        return_connection(conn)
-        
-        remetente = config['sender'] if config else "contato@juramelo.com.br"
-        nome_remetente = config['sender_name'] if config else "ARLS Bicentenário"
-    except:
-        remetente = "contato@juramelo.com.br"
-        nome_remetente = "ARLS Bicentenário"
-    
-    from_email = f"{nome_remetente} <{remetente}>"
+    # IMPORTANTE: Usar domínio verificado (juramelo.com.br)
+    # NÃO usar gmail.com, hotmail.com, etc.
+    from_email = "ARLS Bicentenário <contato@juramelo.com.br>"
     
     data = {
         "from": from_email,
@@ -12211,8 +12200,14 @@ def enviar_email_resend(destinatario, assunto, conteudo_html, conteudo_texto=Non
     if conteudo_texto:
         data["text"] = conteudo_texto
     
+    print(f"📧 Enviando e-mail para: {destinatario}")
+    print(f"📧 Assunto: {assunto}")
+    print(f"📧 From: {from_email}")
+    
     try:
         response = requests.post(url, headers=headers, json=data)
+        print(f"📧 Resposta Status: {response.status_code}")
+        
         if response.status_code == 200:
             result = response.json()
             return {'success': True, 'message': 'E-mail enviado com sucesso', 'id': result.get('id')}
@@ -12331,45 +12326,70 @@ def testar_email():
         flash("Informe um e-mail para teste", "danger")
         return redirect("/config/email")
     
-    cursor, conn = get_db()
-    cursor.execute("SELECT * FROM email_settings WHERE active = 1 ORDER BY id DESC LIMIT 1")
-    config = cursor.fetchone()
-    return_connection(conn)
-    
-    remetente = config['sender'] if config else EMAIL_FROM_DEFAULT
-    nome_remetente = config['sender_name'] if config else "Sistema Maçônico"
-    
+    # Verificar se Resend está configurado
     if not RESEND_API_KEY:
         flash("Resend não configurado. Adicione RESEND_API_KEY nas variáveis de ambiente.", "danger")
         return redirect("/config/email")
     
+    # Preparar e-mail de teste
     assunto = "✅ Teste de Configuração - ARLS Bicentenário"
     
+    # Dados para o template
     dados_template = {
         'nome': 'Irmão',
-        'remetente': remetente,
-        'nome_remetente': nome_remetente,
+        'remetente': 'contato@juramelo.com.br',  # Domínio verificado
+        'nome_remetente': 'ARLS Bicentenário',
         'data_hora': datetime.now().strftime('%d/%m/%Y %H:%M:%S'),
         'ano': datetime.now().year
     }
     
-    try:
-        conteudo_html = render_template('email/teste.html', **dados_template)
-    except Exception as e:
-        print(f"Erro ao carregar template: {e}")
-        conteudo_html = f"""
-        <!DOCTYPE html>
-        <html>
-        <head><meta charset="UTF-8"></head>
-        <body>
-            <h2>✅ Teste de E-mail</h2>
-            <p>Olá, esta é uma mensagem de teste do Sistema Maçônico.</p>
-            <p>Remetente: {nome_remetente} &lt;{remetente}&gt;</p>
-            <p>Data: {datetime.now().strftime('%d/%m/%Y %H:%M:%S')}</p>
-        </body>
-        </html>
-        """
+    # HTML do e-mail (inline para garantir)
+    conteudo_html = f"""
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <meta charset="UTF-8">
+        <title>Teste de E-mail - ARLS Bicentenário</title>
+        <style>
+            body {{ font-family: 'Georgia', serif; background-color: #F5F0E8; margin: 0; padding: 0; }}
+            .container {{ max-width: 600px; margin: 20px auto; background: white; border-radius: 20px; overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.1); }}
+            .header {{ background: linear-gradient(135deg, #2E0518 0%, #4A0E2E 100%); padding: 30px; text-align: center; border-bottom: 2px solid #D4AF37; }}
+            .header h1 {{ color: #D4AF37; margin: 0; font-size: 24px; }}
+            .content {{ padding: 30px; background: white; }}
+            .info-box {{ background: #F5F0E8; padding: 20px; border-radius: 12px; margin: 20px 0; border-left: 4px solid #D4AF37; }}
+            .footer {{ background: #F5F0E8; padding: 20px; text-align: center; font-size: 12px; color: #666; }}
+            .simbolo {{ text-align: center; font-size: 14px; letter-spacing: 4px; color: #D4AF37; margin: 15px 0; }}
+        </style>
+    </head>
+    <body>
+        <div class="container">
+            <div class="header">
+                <h1>⚜️ ARLS Bicentenário</h1>
+                <p>Rito Brasileiro - Grande Oriente do Brasil</p>
+            </div>
+            <div class="content">
+                <div class="info-box">
+                    <h2>✅ Teste de E-mail</h2>
+                    <p>Olá,</p>
+                    <p>Esta é uma mensagem de teste do Sistema Maçônico da ARLS Bicentenário.</p>
+                    <p>Se você está recebendo este e-mail, a configuração está funcionando <strong>corretamente</strong>!</p>
+                </div>
+                <div class="simbolo">✦ ⌒ ✦ ⬜ ✦ ⌒ ✦</div>
+                <p><strong>📧 Remetente:</strong> ARLS Bicentenário &lt;contato@juramelo.com.br&gt;</p>
+                <p><strong>📅 Data e hora do teste:</strong> {dados_template['data_hora']}</p>
+                <p><strong>🚀 Plataforma:</strong> Resend (servidor em São Paulo)</p>
+                <p>Fraternalmente,<br><strong>Secretaria da ARLS Bicentenário</strong></p>
+            </div>
+            <div class="footer">
+                <p>"Pela Verdade e Justiça - Ordo Ab Chao"</p>
+                <p>EQNM 36/38 área especial 08, St. M-Norte, Brasília - DF</p>
+            </div>
+        </div>
+    </body>
+    </html>
+    """
     
+    # Enviar via Resend
     resultado = enviar_email_resend(
         destinatario=email_teste,
         assunto=assunto,
@@ -12382,7 +12402,6 @@ def testar_email():
         flash(f"❌ Falha ao enviar e-mail: {resultado['message']}", "danger")
     
     return redirect("/config/email")
-
 
 # =============================
 # ROTA: STATUS DO RESEND (DIAGNÓSTICO)
