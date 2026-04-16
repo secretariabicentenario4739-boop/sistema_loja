@@ -3,14 +3,15 @@
 {% block title %}ARLS Bicentenário - Loja Maçônica{% endblock %}
 
 {% block styles %}
+{{ super() }}
 <style>
-    /* ========== KnightOne Layout Adaptado ========== */
+    /* ========== KnightOne Layout Adaptado para Rito Brasileiro ========== */
     
     /* Hero Section */
     .hero {
         position: relative;
         min-height: 100vh;
-        background: linear-gradient(135deg, #1a2c3e 0%, #0f1a24 100%);
+        background: linear-gradient(135deg, var(--bordo-escuro) 0%, var(--bordo) 100%);
         display: flex;
         align-items: center;
         overflow: hidden;
@@ -23,8 +24,8 @@
         left: 0;
         right: 0;
         bottom: 0;
-        background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><path fill="rgba(201,160,61,0.05)" d="M50,10 L60,40 L90,40 L70,60 L80,90 L50,70 L20,90 L30,60 L10,40 L40,40 Z"/></svg>') repeat;
-        opacity: 0.3;
+        background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><path fill="rgba(212,175,55,0.08)" d="M50,10 L60,40 L90,40 L70,60 L80,90 L50,70 L20,90 L30,60 L10,40 L40,40 Z"/><circle cx="50" cy="50" r="15" fill="rgba(212,175,55,0.05)"/></svg>') repeat;
+        opacity: 0.5;
     }
     
     .hero .container {
@@ -37,12 +38,16 @@
         font-weight: 700;
         margin-bottom: 20px;
         animation: fadeInUp 1s ease;
+        color: white;
+        font-family: 'Georgia', serif;
+        letter-spacing: 2px;
     }
     
     .hero .lead {
         font-size: 1.2rem;
         margin-bottom: 30px;
         animation: fadeInUp 1s ease 0.2s both;
+        color: rgba(255,255,255,0.9);
     }
     
     .hero .btn-group {
@@ -50,36 +55,39 @@
     }
     
     .hero .btn-primary {
-        background: var(--dourado);
+        background: var(--ouro);
         border: none;
         padding: 12px 30px;
         border-radius: 50px;
         font-weight: 600;
         transition: all 0.3s;
+        color: var(--bordo-escuro);
     }
     
     .hero .btn-primary:hover {
-        background: #b58c2a;
+        background: var(--ouro-claro);
         transform: translateY(-3px);
-        box-shadow: 0 10px 20px rgba(0,0,0,0.2);
+        box-shadow: 0 10px 20px rgba(212, 175, 55, 0.3);
     }
     
     .hero .btn-outline-light {
-        border: 2px solid white;
+        border: 2px solid var(--ouro);
+        color: var(--ouro);
         padding: 12px 30px;
         border-radius: 50px;
         transition: all 0.3s;
+        background: transparent;
     }
     
     .hero .btn-outline-light:hover {
-        background: white;
-        color: var(--azul-bicentenario);
+        background: var(--ouro);
+        color: var(--bordo-escuro);
         transform: translateY(-3px);
     }
     
     /* Stats Section */
     .stats {
-        background: white;
+        background: var(--branco);
         padding: 60px 0;
         position: relative;
         margin-top: -50px;
@@ -89,21 +97,26 @@
     .stat-card {
         text-align: center;
         padding: 30px;
-        border-radius: 15px;
+        border-radius: 20px;
         transition: all 0.3s;
-        background: white;
+        background: var(--branco);
         box-shadow: 0 5px 20px rgba(0,0,0,0.05);
+        border: 1px solid rgba(74, 14, 46, 0.1);
     }
     
     .stat-card:hover {
         transform: translateY(-10px);
         box-shadow: 0 15px 30px rgba(0,0,0,0.1);
+        border-color: var(--ouro);
     }
     
     .stat-number {
         font-size: 2.5rem;
         font-weight: 700;
-        color: var(--dourado);
+        background: linear-gradient(135deg, var(--bordo), var(--bordo-claro));
+        -webkit-background-clip: text;
+        background-clip: text;
+        color: transparent;
         margin-bottom: 10px;
     }
     
@@ -112,12 +125,13 @@
         color: var(--cinza-texto);
         text-transform: uppercase;
         letter-spacing: 1px;
+        font-weight: 600;
     }
     
     /* About Section */
     .about {
         padding: 80px 0;
-        background: var(--light);
+        background: var(--bege-pergaminho);
     }
     
     .about-content {
@@ -128,6 +142,8 @@
         font-size: 2.5rem;
         margin-bottom: 20px;
         position: relative;
+        font-family: 'Georgia', serif;
+        color: var(--bordo);
     }
     
     .about-content h2:after {
@@ -137,7 +153,7 @@
         left: 0;
         width: 60px;
         height: 3px;
-        background: var(--dourado);
+        background: var(--ouro);
     }
     
     .about-image {
@@ -149,7 +165,26 @@
     /* Services Section */
     .services {
         padding: 80px 0;
-        background: white;
+        background: var(--branco);
+    }
+    
+    .section-header {
+        text-align: center;
+        margin-bottom: 50px;
+    }
+    
+    .section-header h2 {
+        font-size: 2.2rem;
+        font-family: 'Georgia', serif;
+        color: var(--bordo);
+        margin-bottom: 15px;
+    }
+    
+    .section-header .simbolo-maconico {
+        margin: 15px 0;
+        font-size: 12px;
+        letter-spacing: 6px;
+        color: var(--ouro);
     }
     
     .service-card {
@@ -157,19 +192,21 @@
         padding: 40px 30px;
         border-radius: 20px;
         transition: all 0.3s;
-        background: white;
+        background: var(--branco);
         box-shadow: 0 5px 20px rgba(0,0,0,0.05);
+        border: 1px solid rgba(74, 14, 46, 0.08);
     }
     
     .service-card:hover {
         transform: translateY(-10px);
         box-shadow: 0 15px 30px rgba(0,0,0,0.1);
+        border-color: var(--ouro);
     }
     
     .service-icon {
         width: 80px;
         height: 80px;
-        background: rgba(201,160,61,0.1);
+        background: rgba(74, 14, 46, 0.08);
         border-radius: 50%;
         display: flex;
         align-items: center;
@@ -179,48 +216,51 @@
     }
     
     .service-card:hover .service-icon {
-        background: var(--dourado);
+        background: linear-gradient(135deg, var(--bordo), var(--bordo-claro));
     }
     
     .service-icon i {
         font-size: 2rem;
-        color: var(--dourado);
+        color: var(--bordo);
         transition: all 0.3s;
     }
     
     .service-card:hover .service-icon i {
-        color: white;
+        color: var(--ouro);
     }
     
     .service-card h3 {
         font-size: 1.3rem;
         margin-bottom: 15px;
+        color: var(--bordo);
     }
     
     /* Events Section */
     .events {
         padding: 80px 0;
-        background: var(--light);
+        background: var(--bege-pergaminho);
     }
     
     .event-card {
         display: flex;
-        background: white;
+        background: var(--branco);
         border-radius: 15px;
         overflow: hidden;
         box-shadow: 0 5px 20px rgba(0,0,0,0.05);
         transition: all 0.3s;
         margin-bottom: 30px;
+        border: 1px solid rgba(74, 14, 46, 0.08);
     }
     
     .event-card:hover {
         transform: translateX(10px);
         box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+        border-color: var(--ouro);
     }
     
     .event-date {
-        background: var(--dourado);
-        color: var(--azul-bicentenario);
+        background: linear-gradient(135deg, var(--bordo), var(--bordo-escuro));
+        color: var(--ouro);
         min-width: 100px;
         display: flex;
         flex-direction: column;
@@ -248,60 +288,58 @@
     
     .event-info h4 {
         margin-bottom: 10px;
+        color: var(--bordo);
     }
     
     .event-info p {
         margin-bottom: 5px;
-        color: var(--gray);
+        color: var(--cinza-texto);
     }
     
     .event-info i {
         margin-right: 8px;
-        color: var(--dourado);
+        color: var(--ouro);
     }
     
     /* CTA Section */
     .cta {
         padding: 80px 0;
-        background: linear-gradient(135deg, var(--azul-bicentenario) 0%, #0f1a24 100%);
+        background: linear-gradient(135deg, var(--bordo-escuro) 0%, var(--bordo) 100%);
         color: white;
         text-align: center;
+        position: relative;
+    }
+    
+    .cta::before {
+        content: '⌂ ⌂ ⊡';
+        position: absolute;
+        top: -12px;
+        left: 50%;
+        transform: translateX(-50%);
+        font-size: 20px;
+        color: var(--ouro);
+        opacity: 0.4;
+        font-family: serif;
+        letter-spacing: 4px;
+        background: var(--bege-pergaminho);
+        padding: 0 20px;
     }
     
     .cta h2 {
         font-size: 2.5rem;
         margin-bottom: 20px;
+        font-family: 'Georgia', serif;
     }
     
     .cta .btn-primary {
-        background: var(--dourado);
+        background: var(--ouro);
+        color: var(--bordo-escuro);
         padding: 12px 40px;
         font-size: 1.1rem;
     }
     
-    /* Contact Section */
-    .contact {
-        padding: 80px 0;
-        background: white;
-    }
-    
-    .contact-info {
-        padding: 30px;
-        background: var(--light);
-        border-radius: 15px;
-        margin-bottom: 30px;
-        transition: all 0.3s;
-    }
-    
-    .contact-info:hover {
-        transform: translateY(-5px);
-        box-shadow: 0 10px 20px rgba(0,0,0,0.05);
-    }
-    
-    .contact-info i {
-        font-size: 2rem;
-        color: var(--dourado);
-        margin-bottom: 15px;
+    .cta .btn-primary:hover {
+        background: var(--ouro-claro);
     }
     
     /* Animations */
@@ -359,6 +397,10 @@
     <div class="container">
         <div class="row">
             <div class="col-lg-8">
+                <div class="simbolo-maconico mb-3" style="color: var(--ouro);">
+                    <i class="bi bi-easel fs-2 me-2"></i>
+                    <i class="bi bi-compass fs-2 ms-2"></i>
+                </div>
                 <h1>ARLS Bicentenário</h1>
                 <p class="lead">Loja Maçônica fundada em 16 de julho de 2022, sob os auspícios do Grande Oriente do Brasil, dedicada à busca do conhecimento, fraternidade e evolução espiritual.</p>
                 <div class="btn-group">
@@ -402,5 +444,112 @@
     </div>
 </section>
 
+<!-- About Section -->
+<section class="about">
+    <div class="container">
+        <div class="row align-items-center">
+            <div class="col-lg-6">
+                <div class="about-content">
+                    <h2>Nossa História</h2>
+                    <div class="simbolo-maconico" style="text-align: left;">
+                        ✦ ⌒ ✦ ⬜ ✦ ⌒ ✦
+                    </div>
+                    <p class="mb-3">A ARLS Bicentenário foi fundada em 16 de julho de 2022, com o propósito de propagar os ideais maçônicos de liberdade, igualdade e fraternidade, sempre pautada nos princípios da verdade e justiça.</p>
+                    <p class="mb-4">Sob os auspícios do Grande Oriente do Brasil - GOB, nossa loja segue o Rito Brasileiro, valorizando as tradições nacionais e contribuindo para o engrandecimento da Ordem Maçônica em nossa região.</p>
+                    <a href="/sobre" class="btn-primary">Leia mais <i class="bi bi-arrow-right ms-2"></i></a>
+                </div>
+            </div>
+            <div class="col-lg-6">
+                <div class="about-image">
+                    <img src="/static/images/templo.jpg" alt="Templo Maçônico" class="img-fluid" onerror="this.src='https://via.placeholder.com/600x400?text=ARLS+Bicentenário'">
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
 
+<!-- Services Section -->
+<section class="services">
+    <div class="container">
+        <div class="section-header">
+            <h2>Nossos Trabalhos</h2>
+            <div class="simbolo-maconico">✦ ⌒ ✦ ⬜ ✦ ⌒ ✦</div>
+            <p class="text-muted">Atividades e propósitos da nossa Loja</p>
+        </div>
+        <div class="row g-4">
+            <div class="col-md-4">
+                <div class="service-card">
+                    <div class="service-icon">
+                        <i class="bi bi-book"></i>
+                    </div>
+                    <h3>Estudos Maçônicos</h3>
+                    <p class="text-muted">Aprofundamento nos conhecimentos filosóficos e simbólicos da Maçonaria.</p>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="service-card">
+                    <div class="service-icon">
+                        <i class="bi bi-heart-handshake"></i>
+                    </div>
+                    <h3>Ações Sociais</h3>
+                    <p class="text-muted">Projetos beneficentes e assistenciais para a comunidade.</p>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="service-card">
+                    <div class="service-icon">
+                        <i class="bi bi-people"></i>
+                    </div>
+                    <h3>Formação de Obreiros</h3>
+                    <p class="text-muted">Preparação e aperfeiçoamento dos irmãos na arte real.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Events Section -->
+<section class="events">
+    <div class="container">
+        <div class="section-header">
+            <h2>Próximos Eventos</h2>
+            <div class="simbolo-maconico">✦ ⌒ ✦ ⬜ ✦ ⌒ ✦</div>
+            <p class="text-muted">Participe das nossas atividades</p>
+        </div>
+        
+        {% if proximos_eventos %}
+            {% for evento in proximos_eventos %}
+            <div class="event-card">
+                <div class="event-date">
+                    <span class="day">{{ evento.data_evento.strftime('%d') }}</span>
+                    <span class="month">{{ evento.data_evento.strftime('%b').upper() }}</span>
+                </div>
+                <div class="event-info">
+                    <h4>{{ evento.titulo }}</h4>
+                    <p><i class="bi bi-clock"></i> {{ evento.hora_evento.strftime('%H:%M') if evento.hora_evento else 'Horário a confirmar' }}</p>
+                    <p><i class="bi bi-geo-alt"></i> {{ evento.local or 'Templo Maçônico' }}</p>
+                    <p class="small text-muted">{{ evento.descricao|truncate(120) if evento.descricao else '' }}</p>
+                </div>
+            </div>
+            {% endfor %}
+        {% else %}
+            <div class="text-center">
+                <p class="text-muted">Nenhum evento agendado no momento. Acompanhe nosso calendário.</p>
+            </div>
+        {% endif %}
+        
+        <div class="text-center mt-4">
+            <a href="/calendario" class="btn-primary">Ver calendário completo</a>
+        </div>
+    </div>
+</section>
+
+<!-- CTA Section -->
+<section class="cta">
+    <div class="container">
+        <h2>Faça parte da nossa história</h2>
+        <p class="mb-4">A Maçonaria está aberta a homens livres e de bons costumes que buscam a verdade e o aperfeiçoamento moral.</p>
+        <a href="/secretaria.bicentenario4739@gmail.com" class="btn-primary">Entre em contato</a>
+    </div>
+</section>
 {% endblock %}

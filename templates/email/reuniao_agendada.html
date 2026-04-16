@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Convite para Reunião - ARLS Bicentenário</title>
+    <style>
+        body {
+            font-family: 'Georgia', 'Times New Roman', serif;
+            background-color: #f5f0e8;
+            margin: 0;
+            padding: 0;
+        }
+        .container {
+            max-width: 600px;
+            margin: 20px auto;
+            background: white;
+            border-radius: 20px;
+            overflow: hidden;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+        }
+        .header {
+            background: linear-gradient(135deg, #2E0518 0%, #4A0E2E 100%);
+            padding: 30px;
+            text-align: center;
+            border-bottom: 2px solid #D4AF37;
+        }
+        .header h1 {
+            color: #D4AF37;
+            margin: 0;
+            font-size: 24px;
+        }
+        .header p {
+            color: rgba(255,255,255,0.8);
+            margin: 10px 0 0;
+        }
+        .content {
+            padding: 30px;
+            background: white;
+        }
+        .info-box {
+            background: #f5f0e8;
+            padding: 20px;
+            border-radius: 15px;
+            margin: 20px 0;
+            border-left: 4px solid #D4AF37;
+        }
+        .info-box p {
+            margin: 8px 0;
+        }
+        .btn {
+            display: inline-block;
+            background: #4A0E2E;
+            color: white;
+            padding: 12px 30px;
+            text-decoration: none;
+            border-radius: 50px;
+            margin: 20px 0;
+        }
+        .footer {
+            background: #f5f0e8;
+            padding: 20px;
+            text-align: center;
+            font-size: 12px;
+            color: #666;
+        }
+        .simbolo {
+            text-align: center;
+            font-size: 14px;
+            letter-spacing: 4px;
+            color: #D4AF37;
+            margin: 15px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>⚜️ ARLS Bicentenário</h1>
+            <p>Rito Brasileiro - Grande Oriente do Brasil</p>
+        </div>
+        
+        <div class="content">
+            <h2>Olá, {{ nome }}!</h2>
+            <p>Você foi convidado para uma reunião em nossa Loja:</p>
+            
+            <div class="info-box">
+                <p><strong>📌 Título:</strong> {{ reuniao.titulo }}</p>
+                <p><strong>📅 Data:</strong> {{ reuniao.data }}</p>
+                <p><strong>⏰ Horário:</strong> {{ reuniao.horario_formatado or reuniao.hora_inicio }}</p>
+                <p><strong>📍 Local:</strong> {{ reuniao.local }}</p>
+                {% if reuniao.tipo %}
+                <p><strong>📋 Tipo:</strong> {{ reuniao.tipo }}</p>
+                {% endif %}
+                {% if reuniao.pauta %}
+                <p><strong>📖 Pauta:</strong> {{ reuniao.pauta }}</p>
+                {% endif %}
+                {% if reuniao.observacoes %}
+                <p><strong>📝 Observações:</strong> {{ reuniao.observacoes }}</p>
+                {% endif %}
+            </div>
+            
+            <div style="text-align: center;">
+                <a href="{{ reuniao.link_reuniao }}" class="btn">
+                    Ver detalhes da reunião
+                </a>
+            </div>
+            
+            <div class="simbolo">
+                ✦ ⌒ ✦ ⬜ ✦ ⌒ ✦
+            </div>
+            
+            <p>Por favor, confirme sua presença através do sistema.</p>
+            <p>Fraternalmente,<br>
+            <strong>Secretaria da ARLS Bicentenário</strong></p>
+        </div>
+        
+        <div class="footer">
+            <p>"Pela Verdade e Justiça - Ordo Ab Chao"</p>
+            <p>EQNM 36/38 área especial 08, St. M-Norte, Brasília - DF</p>
+            <p>Este é um e-mail automático, por favor não responda.</p>
+        </div>
+    </div>
+</body>
+</html>

@@ -2,84 +2,198 @@
 
 {% block title %}Login - Sistema Maçônico{% endblock %}
 
-{% block content %}
-<div class="container py-5">
-    <div class="row justify-content-center">
-        <div class="col-md-6 col-lg-5">
-            <div class="card shadow">
-                <div class="card-header bg-primary text-white text-center py-3">
-                    <h4 class="mb-0">
-                        <i class="bi bi-box-arrow-in-right"></i> Acesso ao Sistema
-                    </h4>
-                </div>
-                <div class="card-body p-4">
-                    <!-- ============================================ -->
-                    <!-- BLOCO DE MENSAGENS FLASH - REINSERIDO -->
-                    <!-- ============================================ -->
-                    {% with messages = get_flashed_messages(with_categories=true) %}
-                        {% if messages %}
-                            {% for category, message in messages %}
-                                <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
-                                    <i class="bi bi-{% if category == 'success' %}check-circle-fill{% elif category == 'danger' %}exclamation-triangle-fill{% else %}info-circle-fill{% endif %} me-2"></i>
-                                    {{ message|safe }}
-                                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-                                </div>
-                            {% endfor %}
-                        {% endif %}
-                    {% endwith %}
-                    
-                    <form method="POST">
-                        <div class="mb-3">
-                            <label class="form-label">Usuário</label>
-                            <div class="input-group">
-                                <span class="input-group-text"><i class="bi bi-person"></i></span>
-                                <input type="text" class="form-control" name="usuario" required autofocus>
-                            </div>
-                        </div>
-                        <div class="mb-4">
-                            <label class="form-label">Senha</label>
-                            <div class="input-group">
-                                <span class="input-group-text"><i class="bi bi-lock"></i></span>
-                                <input type="password" class="form-control" name="senha" required>
-                            </div>
-                        </div>
-                        <button type="submit" class="btn btn-primary w-100 py-2">
-                            <i class="bi bi-box-arrow-in-right"></i> Entrar no Sistema
-                        </button>
-                    </form>
-                    
-                    <hr class="my-4">
-                    
-                    <div class="text-center mb-3">
-                        <a href="/recuperar-senha" class="text-decoration-none small">
-                            <i class="bi bi-key"></i> Esqueceu sua senha?
-                        </a>
-                    </div>
-					                    
-                    <div class="text-center">
-                        <small class="text-muted">
-                            <i class="bi bi-shield-lock"></i> Área restrita aos obreiros da loja
-                        </small>
-                    </div>
-                </div>
-            </div>
-            
-            <div class="text-center mt-3">
-                <a href="/" class="text-decoration-none">
-                    <i class="bi bi-arrow-left"></i> Voltar para o site
-                </a>
-            </div>
-        </div>
-    </div>
-</div>
-
+{% block styles %}
+{{ super() }}
 <style>
-    .alert {
-        border-radius: 10px;
+    /* Container de Login */
+    .login-container {
+        min-height: calc(100vh - 200px);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 40px 0;
+    }
+    
+    /* Card de Login - Estilo Rito Brasileiro */
+    .card-login {
+        background: var(--branco);
+        border: 1px solid rgba(74, 14, 46, 0.12);
+        border-radius: 24px;
+        overflow: hidden;
+        box-shadow: 0 20px 40px rgba(0, 0, 0, 0.08);
+        transition: all 0.3s ease;
+    }
+    
+    .card-login:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 30px 50px rgba(0, 0, 0, 0.12);
+    }
+    
+    /* Header do Card */
+    .card-header-login {
+        background: linear-gradient(135deg, var(--bordo-escuro) 0%, var(--bordo) 100%);
+        padding: 30px 20px;
+        text-align: center;
+        border-bottom: 2px solid var(--ouro);
+        position: relative;
+    }
+    
+    .card-header-login::after {
+        content: '⌂ ⌂ ⊡';
+        position: absolute;
+        bottom: -12px;
+        left: 50%;
+        transform: translateX(-50%);
+        font-size: 20px;
+        color: var(--ouro);
+        opacity: 0.5;
+        font-family: serif;
+        letter-spacing: 4px;
+        background: var(--branco);
+        padding: 0 15px;
+    }
+    
+    .card-header-login h4 {
+        font-size: 1.5rem;
+        font-weight: 700;
+        font-family: 'Georgia', serif;
+        letter-spacing: 1px;
+    }
+    
+    .card-header-login i {
+        font-size: 2rem;
+        margin-bottom: 10px;
+        display: inline-block;
+        color: var(--ouro);
+    }
+    
+    /* Corpo do Card */
+    .card-body-login {
+        padding: 35px 30px;
+    }
+    
+    /* Formulário */
+    .form-label {
+        font-weight: 600;
+        color: var(--bordo);
+        margin-bottom: 8px;
+        font-size: 0.85rem;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+    
+    .input-group-text {
+        background: rgba(74, 14, 46, 0.05);
+        border: 1px solid rgba(74, 14, 46, 0.15);
+        border-right: none;
+        color: var(--bordo);
+    }
+    
+    .form-control {
+        border: 1px solid rgba(74, 14, 46, 0.15);
+        border-left: none;
+        padding: 12px 15px;
+        font-size: 0.95rem;
+        transition: all 0.3s;
+    }
+    
+    .form-control:focus {
+        border-color: var(--ouro);
+        box-shadow: 0 0 0 3px rgba(212, 175, 55, 0.1);
+    }
+    
+    .form-control:focus + .input-group-text {
+        border-color: var(--ouro);
+    }
+    
+    /* Botão Login */
+    .btn-login {
+        background: linear-gradient(135deg, var(--bordo), var(--bordo-escuro));
+        border: none;
+        color: white;
+        font-weight: 700;
+        border-radius: 50px;
+        padding: 12px 24px;
+        transition: all 0.3s;
+        font-size: 1rem;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+    }
+    
+    .btn-login:hover {
+        background: linear-gradient(135deg, var(--bordo-claro), var(--bordo));
+        transform: translateY(-2px);
+        box-shadow: 0 5px 20px rgba(74, 14, 46, 0.3);
+    }
+    
+    /* Links */
+    .link-forgot {
+        color: var(--bordo);
+        text-decoration: none;
+        transition: all 0.3s;
+        font-size: 0.85rem;
+    }
+    
+    .link-forgot:hover {
+        color: var(--ouro);
+        text-decoration: underline;
+    }
+    
+    .link-back {
+        color: var(--cinza-texto);
+        text-decoration: none;
+        transition: all 0.3s;
+        font-size: 0.85rem;
+    }
+    
+    .link-back:hover {
+        color: var(--bordo);
+    }
+    
+    /* Separador */
+    .separator {
+        position: relative;
+        text-align: center;
+        margin: 25px 0;
+    }
+    
+    .separator::before {
+        content: '';
+        position: absolute;
+        top: 50%;
+        left: 0;
+        right: 0;
+        height: 1px;
+        background: linear-gradient(90deg, transparent, rgba(74, 14, 46, 0.2), transparent);
+    }
+    
+    .separator span {
+        background: var(--branco);
+        padding: 0 15px;
+        position: relative;
+        z-index: 1;
+        color: var(--cinza-texto);
+        font-size: 0.8rem;
+    }
+    
+    /* Símbolo Maçônico */
+    .simbolo-maconico {
+        font-size: 11px;
+        letter-spacing: 5px;
+        color: var(--ouro);
+        text-align: center;
+        margin: 15px 0;
+        font-family: monospace;
+    }
+    
+    /* Alertas personalizados para o login */
+    .alert-login {
+        border-radius: 12px;
         padding: 12px 16px;
         margin-bottom: 20px;
-        font-size: 0.9rem;
+        font-size: 0.85rem;
         animation: slideDown 0.3s ease-out;
+        border-left: 4px solid;
     }
     
     @keyframes slideDown {
@@ -93,46 +207,108 @@
         }
     }
     
-    .alert-success {
-        background-color: #d4edda;
-        border-color: #c3e6cb;
-        color: #155724;
-        border-left: 4px solid #28a745;
-    }
-    
-    .alert-danger {
-        background-color: #f8d7da;
-        border-color: #f5c6cb;
-        color: #721c24;
-        border-left: 4px solid #dc3545;
-    }
-    
-    .alert-warning {
-        background-color: #fff3cd;
-        border-color: #ffeeba;
-        color: #856404;
-        border-left: 4px solid #ffc107;
-    }
-    
-    .alert-info {
-        background-color: #d1ecf1;
-        border-color: #bee5eb;
-        color: #0c5460;
-        border-left: 4px solid #17a2b8;
-    }
-    
-    .btn-close {
-        font-size: 0.7rem;
+    /* Responsividade */
+    @media (max-width: 768px) {
+        .card-body-login {
+            padding: 25px 20px;
+        }
+        
+        .card-header-login h4 {
+            font-size: 1.3rem;
+        }
+        
+        .btn-login {
+            padding: 10px 20px;
+            font-size: 0.9rem;
+        }
     }
 </style>
+{% endblock %}
+
+{% block content %}
+<div class="login-container">
+    <div class="container">
+        <div class="row justify-content-center">
+            <div class="col-md-6 col-lg-5">
+                
+                <!-- Card de Login -->
+                <div class="card-login">
+                    <div class="card-header-login">
+                        <i class="bi bi-shield-lock-fill"></i>
+                        <h4 class="mb-0">Área Restrita</h4>
+                        <div class="simbolo-maconico mt-2">
+                            ✦ ⌒ ✦ ⬜ ✦ ⌒ ✦
+                        </div>
+                    </div>
+                    
+                    <div class="card-body-login">
+                        <!-- Formulário de Login -->
+                        <form method="POST">
+                            <div class="mb-4">
+                                <label class="form-label">
+                                    <i class="bi bi-person me-1"></i> Usuário
+                                </label>
+                                <div class="input-group">
+                                    <span class="input-group-text"><i class="bi bi-person"></i></span>
+                                    <input type="text" class="form-control" name="usuario" placeholder="Digite seu usuário" required autofocus>
+                                </div>
+                            </div>
+                            
+                            <div class="mb-4">
+                                <label class="form-label">
+                                    <i class="bi bi-lock me-1"></i> Senha
+                                </label>
+                                <div class="input-group">
+                                    <span class="input-group-text"><i class="bi bi-lock"></i></span>
+                                    <input type="password" class="form-control" name="senha" placeholder="Digite sua senha" required>
+                                </div>
+                            </div>
+                            
+                            <button type="submit" class="btn btn-login w-100">
+                                <i class="bi bi-box-arrow-in-right me-2"></i> Entrar no Sistema
+                            </button>
+                        </form>
+                        
+                        <div class="separator mt-4">
+                            <span>• • •</span>
+                        </div>
+                        
+                        <div class="text-center mb-3">
+                            <a href="/recuperar-senha" class="link-forgot">
+                                <i class="bi bi-key me-1"></i> Esqueceu sua senha?
+                            </a>
+                        </div>
+                        
+                        <div class="text-center">
+                            <small class="text-muted">
+                                <i class="bi bi-shield-check me-1"></i> 
+                                Área restrita aos obreiros da loja
+                            </small>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Link Voltar -->
+                <div class="text-center mt-4">
+                    <a href="/" class="link-back">
+                        <i class="bi bi-arrow-left me-1"></i> Voltar para o site
+                    </a>
+                </div>
+                
+            </div>
+        </div>
+    </div>
+</div>
 
 <script>
     // Auto-fechar alertas após 5 segundos
     document.addEventListener('DOMContentLoaded', function() {
         setTimeout(function() {
             document.querySelectorAll('.alert').forEach(function(alert) {
-                const bsAlert = new bootstrap.Alert(alert);
-                bsAlert.close();
+                const bsAlert = bootstrap.Alert.getInstance(alert);
+                if (bsAlert) {
+                    bsAlert.close();
+                }
             });
         }, 5000);
     });

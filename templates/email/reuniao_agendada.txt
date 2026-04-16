@@ -1,0 +1,26 @@
+⚜️ ARLS Bicentenário - Rito Brasileiro
+===========================================
+
+Olá, {{ nome }}!
+
+Você foi convidado para uma reunião em nossa Loja:
+
+📌 Título: {{ reuniao.titulo }}
+📅 Data: {{ reuniao.data }}
+⏰ Horário: {{ reuniao.horario_formatado or reuniao.hora_inicio }}
+📍 Local: {{ reuniao.local }}
+{% if reuniao.tipo %}📋 Tipo: {{ reuniao.tipo }}{% endif %}
+{% if reuniao.pauta %}📖 Pauta: {{ reuniao.pauta }}{% endif %}
+{% if reuniao.observacoes %}📝 Observações: {{ reuniao.observacoes }}{% endif %}
+
+Para mais detalhes, acesse:
+{{ reuniao.link_reuniao }}
+
+Por favor, confirme sua presença através do sistema.
+
+Fraternalmente,
+Secretaria da ARLS Bicentenário
+
+"Pela Verdade e Justiça - Ordo Ab Chao"
+===========================================
+EQNM 36/38 área especial 08, St. M-Norte, Brasília - DF

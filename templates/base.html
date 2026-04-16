@@ -212,6 +212,61 @@
             color: var(--bordo);
         }
         
+        /* ESTILO PARA DROPDOWN DO MENU */
+        .nav-dropdown {
+            position: relative;
+        }
+        
+        .nav-dropdown .dropdown-toggle {
+            cursor: pointer;
+            position: relative;
+        }
+        
+        .nav-dropdown .dropdown-toggle::after {
+            content: '\f282';
+            font-family: 'bootstrap-icons';
+            border: none;
+            position: absolute;
+            right: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            font-size: 0.8rem;
+            transition: transform 0.3s;
+        }
+        
+        .nav-dropdown.open .dropdown-toggle::after {
+            transform: translateY(-50%) rotate(180deg);
+        }
+        
+        .nav-dropdown .dropdown-menu {
+            position: static;
+            float: none;
+            width: 100%;
+            background: rgba(74, 14, 46, 0.05);
+            border: none;
+            border-radius: 8px;
+            padding: 5px 0;
+            margin-top: 5px;
+            margin-bottom: 5px;
+            box-shadow: none;
+            display: none;
+        }
+        
+        .nav-dropdown.open .dropdown-menu {
+            display: block;
+        }
+        
+        .nav-dropdown .dropdown-menu .nav-link {
+            padding-left: 48px;
+            font-size: 0.8rem;
+            margin: 0;
+        }
+        
+        .nav-dropdown .dropdown-menu .nav-link i {
+            margin-right: 10px;
+            font-size: 0.9rem;
+        }
+        
         .sidebar hr {
             margin: 16px 12px;
             border-color: rgba(74, 14, 46, 0.1);
@@ -248,6 +303,15 @@
             
             .sidebar.collapsed .logo-area::after {
                 display: none;
+            }
+            
+            /* Dropdown collapsed */
+            .sidebar.collapsed .nav-dropdown .dropdown-toggle::after {
+                display: none;
+            }
+            
+            .sidebar.collapsed .nav-dropdown .dropdown-menu {
+                display: none !important;
             }
             
             .main-content {
@@ -771,12 +835,6 @@
             </a>
             {% endif %}
             
-            {% if session.tipo == 'admin' %}
-            <a class="nav-link" href="/cargos">
-                <i class="bi bi-briefcase-fill"></i> <span>Gerenciar Cargos</span>
-            </a>
-            {% endif %}
-            
             {% if tem_permissao('reuniao.view') %}
             <a class="nav-link" href="/reunioes">
                 <i class="bi bi-calendar-event"></i> <span>Reuniões</span>
@@ -825,35 +883,39 @@
             
             <hr>
             
+            <!-- MENU ADMINISTRATIVO - DROPDOWN -->
             {% if session.tipo == 'admin' %}
-            <a class="nav-link" href="/config/email">
-                <i class="bi bi-envelope"></i> <span>Config. E-mail</span>
-            </a>
-            
-            <a class="nav-link" href="/config/whatsapp">
-                <i class="bi bi-whatsapp"></i> <span>WhatsApp</span>
-            </a>
-            
-            <a class="nav-link" href="/admin/permissoes">
-                <i class="bi bi-shield-lock"></i> <span>Permissões</span>
-            </a>
-            
-            <a class="nav-link" href="/backups">
-                <i class="bi bi-database"></i> <span>Backup</span>
-            </a>
-            
-            <a class="nav-link" href="/auditoria">
-                <i class="bi bi-journal"></i> <span>Auditoria</span>
-            </a>
+            <div class="nav-dropdown" id="adminDropdown">
+                <a class="nav-link dropdown-toggle" onclick="toggleAdminDropdown(event)">
+                    <i class="bi bi-shield-lock"></i> <span>Administrativo</span>
+                </a>
+                <div class="dropdown-menu">
+                    <a class="nav-link" href="/cargos">
+                        <i class="bi bi-briefcase-fill"></i> <span>Gerenciar Cargos</span>
+                    </a>
+                    <a class="nav-link" href="/config/email">
+                        <i class="bi bi-envelope"></i> <span>Config. E-mail</span>
+                    </a>
+                    <a class="nav-link" href="/config/whatsapp">
+                        <i class="bi bi-whatsapp"></i> <span>WhatsApp</span>
+                    </a>
+                    <a class="nav-link" href="/admin/permissoes">
+                        <i class="bi bi-shield-lock"></i> <span>Permissões</span>
+                    </a>
+                    <a class="nav-link" href="/backups">
+                        <i class="bi bi-database"></i> <span>Backup</span>
+                    </a>
+                    <a class="nav-link" href="/auditoria">
+                        <i class="bi bi-journal"></i> <span>Auditoria</span>
+                    </a>
+                    <a class="nav-link" href="/configuracoes/notificacoes">
+                        <i class="bi bi-bell"></i> <span>Notificações</span>
+                    </a>
+                </div>
+            </div>
             {% endif %}
             
             <hr>
-            
-            {% if session.tipo == 'admin' %}
-            <a class="nav-link" href="/configuracoes/notificacoes">
-                <i class="bi bi-bell"></i> <span>Notificações</span>
-            </a>
-            {% endif %}
             
             <a class="nav-link" href="/perfil">
                 <i class="bi bi-person-circle"></i> <span>Meu Perfil</span>
@@ -1058,6 +1120,24 @@
                 }
             } else {
                 closeMobileMenu();
+            }
+        });
+        
+        // ========== FUNÇÃO PARA TOGGLE DO DROPDOWN ADMIN ==========
+        function toggleAdminDropdown(event) {
+            event.preventDefault();
+            event.stopPropagation();
+            const dropdown = document.getElementById('adminDropdown');
+            if (dropdown) {
+                dropdown.classList.toggle('open');
+            }
+        }
+        
+        // Fechar dropdown ao clicar fora
+        document.addEventListener('click', function(event) {
+            const dropdown = document.getElementById('adminDropdown');
+            if (dropdown && !dropdown.contains(event.target)) {
+                dropdown.classList.remove('open');
             }
         });
         

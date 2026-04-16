@@ -3,12 +3,15 @@
 {% block title %}Sobre a ARLS Bicentenário{% endblock %}
 
 {% block styles %}
+{{ super() }}
 <style>
+    /* Page Header - Estilo Rito Brasileiro */
     .page-header {
-        background: linear-gradient(135deg, var(--azul-bicentenario) 0%, #0f1a24 100%);
+        background: linear-gradient(135deg, var(--bordo-escuro) 0%, var(--bordo) 100%);
         color: white;
         padding: 120px 0 60px;
         position: relative;
+        overflow: hidden;
     }
     
     .page-header::before {
@@ -18,8 +21,21 @@
         left: 0;
         right: 0;
         bottom: 0;
-        background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><path fill="rgba(201,160,61,0.05)" d="M50,10 L60,40 L90,40 L70,60 L80,90 L50,70 L20,90 L30,60 L10,40 L40,40 Z"/></svg>') repeat;
+        background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><path fill="rgba(212,175,55,0.08)" d="M50,10 L60,40 L90,40 L70,60 L80,90 L50,70 L20,90 L30,60 L10,40 L40,40 Z"/><circle cx="50" cy="50" r="15" fill="rgba(212,175,55,0.05)"/></svg>') repeat;
+        opacity: 0.4;
+    }
+    
+    .page-header::after {
+        content: '⌂ ⌂ ⊡';
+        position: absolute;
+        bottom: -12px;
+        left: 50%;
+        transform: translateX(-50%);
+        font-size: 24px;
+        color: var(--ouro);
         opacity: 0.3;
+        font-family: serif;
+        letter-spacing: 4px;
     }
     
     .page-header .container {
@@ -31,6 +47,8 @@
         font-size: 3rem;
         font-weight: 700;
         margin-bottom: 20px;
+        font-family: 'Georgia', serif;
+        letter-spacing: 2px;
     }
     
     .page-header .lead {
@@ -42,24 +60,45 @@
         display: inline-flex;
         align-items: center;
         gap: 8px;
-        background: rgba(255,255,255,0.2);
+        background: rgba(212, 175, 55, 0.15);
         backdrop-filter: blur(10px);
         padding: 10px 20px;
         border-radius: 50px;
-        color: white;
+        color: var(--ouro);
         text-decoration: none;
         transition: all 0.3s;
         margin-bottom: 20px;
-        border: 1px solid rgba(255,255,255,0.3);
+        border: 1px solid rgba(212, 175, 55, 0.3);
     }
     
     .btn-back:hover {
-        background: var(--dourado);
-        color: var(--azul-bicentenario);
+        background: var(--ouro);
+        color: var(--bordo-escuro);
         transform: translateX(-5px);
         border-color: transparent;
     }
     
+    /* Section Title */
+    .section-title {
+        font-size: 2.2rem;
+        font-family: 'Georgia', serif;
+        color: var(--bordo);
+        margin-bottom: 20px;
+        position: relative;
+        display: inline-block;
+    }
+    
+    .section-title::after {
+        content: '';
+        position: absolute;
+        bottom: -10px;
+        left: 0;
+        width: 60px;
+        height: 3px;
+        background: var(--ouro);
+    }
+    
+    /* Timeline */
     .history-timeline {
         position: relative;
         padding-left: 30px;
@@ -72,7 +111,7 @@
         top: 0;
         bottom: 0;
         width: 2px;
-        background: var(--dourado);
+        background: var(--ouro);
     }
     
     .timeline-item {
@@ -88,17 +127,18 @@
         width: 12px;
         height: 12px;
         border-radius: 50%;
-        background: var(--dourado);
-        border: 2px solid var(--azul-bicentenario);
+        background: var(--ouro);
+        border: 2px solid var(--bordo);
     }
     
     .timeline-year {
         font-size: 1.2rem;
         font-weight: 700;
-        color: var(--dourado);
+        color: var(--ouro);
         margin-bottom: 10px;
     }
     
+    /* Values Grid */
     .values-grid {
         display: grid;
         grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
@@ -109,38 +149,52 @@
     .value-card {
         text-align: center;
         padding: 30px;
-        background: white;
+        background: var(--branco);
         border-radius: 20px;
         box-shadow: 0 5px 20px rgba(0,0,0,0.05);
         transition: all 0.3s;
+        border: 1px solid rgba(74, 14, 46, 0.08);
     }
     
     .value-card:hover {
         transform: translateY(-10px);
         box-shadow: 0 15px 30px rgba(0,0,0,0.1);
+        border-color: var(--ouro);
     }
     
     .value-icon {
         width: 80px;
         height: 80px;
-        background: rgba(201,160,61,0.1);
+        background: rgba(74, 14, 46, 0.08);
         border-radius: 50%;
         display: flex;
         align-items: center;
         justify-content: center;
         margin: 0 auto 20px;
+        transition: all 0.3s;
+    }
+    
+    .value-card:hover .value-icon {
+        background: linear-gradient(135deg, var(--bordo), var(--bordo-claro));
     }
     
     .value-icon i {
         font-size: 2rem;
-        color: var(--dourado);
+        color: var(--bordo);
+        transition: all 0.3s;
+    }
+    
+    .value-card:hover .value-icon i {
+        color: var(--ouro);
     }
     
     .value-card h3 {
         font-size: 1.3rem;
         margin-bottom: 15px;
+        color: var(--bordo);
     }
     
+    /* Directors Grid */
     .directors-grid {
         display: grid;
         grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
@@ -149,47 +203,115 @@
     }
     
     .director-card {
-        background: white;
+        background: var(--branco);
         border-radius: 20px;
         overflow: hidden;
         box-shadow: 0 5px 20px rgba(0,0,0,0.05);
         transition: all 0.3s;
         text-align: center;
         padding: 30px;
+        border: 1px solid rgba(74, 14, 46, 0.08);
     }
     
     .director-card:hover {
         transform: translateY(-10px);
         box-shadow: 0 15px 30px rgba(0,0,0,0.1);
+        border-color: var(--ouro);
     }
     
     .director-avatar {
         width: 120px;
         height: 120px;
-        background: var(--light);
+        background: rgba(74, 14, 46, 0.05);
         border-radius: 50%;
         display: flex;
         align-items: center;
         justify-content: center;
         margin: 0 auto 20px;
-        border: 3px solid var(--dourado);
+        border: 3px solid var(--ouro);
+        transition: all 0.3s;
+    }
+    
+    .director-card:hover .director-avatar {
+        border-color: var(--bordo);
+        background: rgba(212, 175, 55, 0.05);
     }
     
     .director-avatar i {
         font-size: 3rem;
-        color: var(--dourado);
+        color: var(--bordo);
+        transition: all 0.3s;
+    }
+    
+    .director-card:hover .director-avatar i {
+        color: var(--ouro);
     }
     
     .director-card h4 {
         margin-bottom: 5px;
+        color: var(--bordo);
     }
     
     .director-card .position {
-        color: var(--dourado);
+        color: var(--ouro);
         font-weight: 600;
         margin-bottom: 15px;
     }
     
+    /* Cards */
+    .card {
+        border-radius: 20px;
+        border: 1px solid rgba(74, 14, 46, 0.1);
+        transition: all 0.3s;
+    }
+    
+    .card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 15px 30px rgba(0,0,0,0.1);
+        border-color: var(--ouro);
+    }
+    
+    /* Botões */
+    .btn-primary {
+        background: linear-gradient(135deg, var(--bordo), var(--bordo-escuro));
+        border: none;
+        color: white;
+        font-weight: 600;
+        border-radius: 30px;
+        padding: 12px 24px;
+        transition: all 0.3s;
+    }
+    
+    .btn-primary:hover {
+        background: linear-gradient(135deg, var(--bordo-claro), var(--bordo));
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(74, 14, 46, 0.3);
+    }
+    
+    .btn-outline-secondary {
+        border: 1px solid var(--bordo);
+        color: var(--bordo);
+        border-radius: 30px;
+        transition: all 0.3s;
+    }
+    
+    .btn-outline-secondary:hover {
+        background: var(--bordo);
+        color: white;
+        transform: translateY(-2px);
+    }
+    
+    /* Simbolo */
+    .simbolo-maconico {
+        font-size: 12px;
+        letter-spacing: 6px;
+        color: var(--ouro);
+        text-align: center;
+        margin: 20px 0;
+        font-family: monospace;
+    }
+    
+    /* Responsive */
     @media (max-width: 768px) {
         .page-header {
             padding: 100px 0 40px;
@@ -202,6 +324,10 @@
         .values-grid,
         .directors-grid {
             grid-template-columns: 1fr;
+        }
+        
+        .section-title {
+            font-size: 1.6rem;
         }
     }
 </style>
@@ -216,6 +342,9 @@
         </a>
         <h1>Sobre a ARLS Bicentenário</h1>
         <p class="lead">Conheça nossa história, valores e compromissos</p>
+        <div class="simbolo-maconico" style="text-align: left;">
+            ✦ ⌒ ✦ ⬜ ✦ ⌒ ✦
+        </div>
     </div>
 </section>
 
@@ -225,7 +354,7 @@
         <div class="row">
             <div class="col-lg-6">
                 <h2 class="section-title">Nossa História</h2>
-                <div class="history-timeline">
+                <div class="history-timeline mt-4">
                     <div class="timeline-item">
                         <div class="timeline-year">2022</div>
                         <h4>Fundação</h4>
@@ -245,10 +374,10 @@
             </div>
             <div class="col-lg-6">
                 <div class="card shadow-sm p-4">
-                    <h4>Nossa Missão</h4>
+                    <h4 class="text-bordo">Nossa Missão</h4>
                     <p class="lead">Promover a evolução moral e espiritual de seus membros, contribuindo para uma sociedade mais justa e fraterna.</p>
-                    <hr>
-                    <h4>Nossa Visão</h4>
+                    <hr class="my-3" style="border-color: var(--ouro);">
+                    <h4 class="text-bordo">Nossa Visão</h4>
                     <p>Ser reconhecida como uma loja de excelência, comprometida com os valores maçônicos e com a transformação positiva da comunidade.</p>
                 </div>
             </div>
@@ -261,6 +390,7 @@
     <div class="container">
         <div class="text-center mb-5">
             <h2 class="section-title">Nossos Valores</h2>
+            <div class="simbolo-maconico">✦ ⌒ ✦ ⬜ ✦ ⌒ ✦</div>
             <p class="lead">Princípios que norteiam nossas ações</p>
         </div>
         <div class="values-grid">
@@ -315,6 +445,7 @@
     <div class="container">
         <div class="text-center mb-5">
             <h2 class="section-title">Diretoria</h2>
+            <div class="simbolo-maconico">✦ ⌒ ✦ ⬜ ✦ ⌒ ✦</div>
             <p class="lead">Conheça os responsáveis pela condução da loja</p>
         </div>
         <div class="directors-grid">
@@ -376,41 +507,41 @@
         <div class="row">
             <div class="col-lg-6">
                 <h2 class="section-title">Informações da Loja</h2>
-                <div class="card shadow-sm p-4">
+                <div class="card shadow-sm p-4 mt-4">
                     <div class="mb-3">
-                        <strong><i class="bi bi-calendar-heart text-warning"></i> Data de Fundação:</strong>
-                        <p>16 de julho de 2022</p>
+                        <strong class="text-bordo"><i class="bi bi-calendar-heart me-2" style="color: var(--ouro);"></i> Data de Fundação:</strong>
+                        <p class="mt-1">16 de julho de 2022</p>
                     </div>
                     <div class="mb-3">
-                        <strong><i class="bi bi-building text-warning"></i> Jurisdição:</strong>
-                        <p>Grande Oriente do Brasil - GOB<br>Grande Oriente do Distrito Federal - GODF</p>
+                        <strong class="text-bordo"><i class="bi bi-building me-2" style="color: var(--ouro);"></i> Jurisdição:</strong>
+                        <p class="mt-1">Grande Oriente do Brasil - GOB<br>Grande Oriente do Distrito Federal - GODF</p>
                     </div>
                     <div class="mb-3">
-                        <strong><i class="bi bi-compass text-warning"></i> Rito:</strong>
-                        <p>Rito Brasileiro</p>
+                        <strong class="text-bordo"><i class="bi bi-compass me-2" style="color: var(--ouro);"></i> Rito:</strong>
+                        <p class="mt-1">Rito Brasileiro</p>
                     </div>
                     <div class="mb-3">
-                        <strong><i class="bi bi-calendar-week text-warning"></i> Dias de Trabalho:</strong>
-                        <p>Segundo e quarto sábados de cada mês, às 9:00h</p>
+                        <strong class="text-bordo"><i class="bi bi-calendar-week me-2" style="color: var(--ouro);"></i> Dias de Trabalho:</strong>
+                        <p class="mt-1">Segundo e quarto sábados de cada mês, às 9:00h</p>
                     </div>
                     <div>
-                        <strong><i class="bi bi-geo-alt text-warning"></i> Local:</strong>
-                        <p>Templo da Loja Maçônica Estrela D'Alva N°16<br>EQNM 36/38 área especial 08, St. M-Norte, Brasília - DF, 72145-510</p>
+                        <strong class="text-bordo"><i class="bi bi-geo-alt me-2" style="color: var(--ouro);"></i> Local:</strong>
+                        <p class="mt-1">Templo da Loja Maçônica Estrela D'Alva N°16<br>EQNM 36/38 área especial 08, St. M-Norte, Brasília - DF, 72145-510</p>
                     </div>
                 </div>
             </div>
             <div class="col-lg-6">
                 <div class="card shadow-sm p-4">
-                    <h4>Entre em Contato</h4>
+                    <h4 class="text-bordo">Entre em Contato</h4>
                     <p>Dúvidas sobre a loja ou sobre a Maçonaria? Entre em contato conosco!</p>
-                    <a href="#" class="btn btn-primary mt-3">
+                    <a href="/contato" class="btn-primary mt-3">
                         <i class="bi bi-envelope"></i> Fale Conosco
                     </a>
-                    <hr>
-                    <h5>Horário de Atendimento</h5>
-                    <p><i class="bi bi-clock"></i> Segunda a Sexta: 14h às 18h<br>Sábados: 9h às 12h</p>
-                    <div class="mt-3">
-                        <a href="/" class="btn btn-outline-secondary">
+                    <hr class="my-4" style="border-color: rgba(74, 14, 46, 0.1);">
+                    <h5 class="text-bordo">Horário de Atendimento</h5>
+                    <p><i class="bi bi-clock me-2" style="color: var(--ouro);"></i> Segunda a Sexta: 14h às 18h<br>Sábados: 9h às 12h</p>
+                    <div class="mt-4">
+                        <a href="/" class="btn-outline-secondary">
                             <i class="bi bi-arrow-left"></i> Voltar ao Início
                         </a>
                     </div>

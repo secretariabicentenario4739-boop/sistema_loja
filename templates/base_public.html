@@ -2,42 +2,79 @@
 <html lang="pt-br">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
     <title>ARLS Bicentenário - {% block title %}Loja Maçônica{% endblock %}</title>
     
+    <!-- Bootstrap 5 CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Bootstrap Icons -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Georgia:wght@400;500;600;700&display=swap" rel="stylesheet">
     
     <style>
+        /* VARIÁVEIS DO RITO BRASILEIRO - COR BORDÔ (VINHO) */
         :root {
-            --azul-bicentenario: #0a1a2f;
-            --dourado: #d4af37;
-            --dourado-escuro: #b8960c;
-            --azul-claro: #3498db;
-            --cinza-texto: #2c3e50;
-            --light: #f8f9fa;
-            --gradiente-dourado: linear-gradient(135deg, var(--dourado) 0%, #ffd700 100%);
-            --gradiente-azul: linear-gradient(135deg, var(--azul-bicentenario) 0%, #1a3650 100%);
+            --bordo: #4A0E2E;
+            --bordo-escuro: #2E0518;
+            --bordo-claro: #6B1342;
+            --bordo-suave: #8B4A6B;
+            --bordo-destaque: #A82265;
+            --ouro: #D4AF37;
+            --ouro-escuro: #996515;
+            --ouro-claro: #F0D68A;
+            --bege-pergaminho: #F5F0E8;
+            --cinza-suave: #E8E0D8;
+            --cinza-texto: #4A4A4A;
+            --cinza-claro-texto: #6B6B6B;
+            --branco: #FFFFFF;
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
         }
         
         body {
             font-family: 'Inter', sans-serif;
+            background: var(--bege-pergaminho);
             color: var(--cinza-texto);
             overflow-x: hidden;
-            background: #fafafa;
+            position: relative;
         }
         
-        /* Navbar moderna */
+        /* TEXTURA SUAVE DE PERGAMINHO */
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 200 200' opacity='0.03'%3E%3Cpath fill='none' stroke='%234A0E2E' stroke-width='0.5' d='M100 20 L180 60 L180 140 L100 180 L20 140 L20 60 Z'/%3E%3Ccircle cx='100' cy='100' r='15' fill='%234A0E2E' opacity='0.08'/%3E%3C/svg%3E");
+            background-repeat: repeat;
+            background-size: 80px;
+            pointer-events: none;
+            z-index: 0;
+        }
+        
+        /* NAVBAR MAÇÔNICA */
         .navbar {
-            background: var(--azul-bicentenario);
+            background: linear-gradient(135deg, var(--bordo-escuro) 0%, var(--bordo) 100%);
             padding: 1rem 0;
             transition: all 0.3s ease;
             position: fixed;
             top: 0;
             width: 100%;
             z-index: 1000;
+            border-bottom: 1px solid rgba(212, 175, 55, 0.3);
             box-shadow: 0 2px 20px rgba(0,0,0,0.1);
+        }
+        
+        .navbar.scrolled {
+            background: linear-gradient(135deg, var(--bordo-escuro) 0%, var(--bordo) 100%);
+            box-shadow: 0 4px 20px rgba(0,0,0,0.15);
         }
         
         .navbar-brand {
@@ -45,15 +82,22 @@
             font-size: 1.5rem;
             color: white !important;
             letter-spacing: -0.5px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
         }
         
-        .navbar-brand img {
-            height: 45px;
-            margin-right: 12px;
-            filter: brightness(0) invert(1);
+        .navbar-brand i {
+            color: var(--ouro);
+            font-size: 1.8rem;
         }
         
-        /* Links sempre visíveis e estilizados */
+        .navbar-brand span {
+            font-family: 'Georgia', serif;
+            letter-spacing: 1px;
+        }
+        
+        /* Links de navegação */
         .nav-link {
             color: rgba(255,255,255,0.9) !important;
             font-weight: 600;
@@ -65,7 +109,7 @@
         }
         
         .nav-link:hover {
-            color: var(--dourado) !important;
+            color: var(--ouro) !important;
             background: rgba(212, 175, 55, 0.1);
             transform: translateY(-2px);
         }
@@ -77,7 +121,7 @@
             left: 50%;
             width: 0;
             height: 2px;
-            background: var(--dourado);
+            background: var(--ouro);
             transition: all 0.3s;
             transform: translateX(-50%);
         }
@@ -87,18 +131,62 @@
         }
         
         /* Botão área restrita */
-        .btn-area-restrita {
-            background: var(--dourado);
-            color: var(--azul-bicentenario) !important;
-            border-radius: 50px;
-            padding: 8px 24px !important;
-            font-weight: 700;
-            margin-left: 16px;
-            transition: all 0.3s;
-        }
+.btn-area-restrita {
+    background: linear-gradient(135deg, var(--ouro), var(--ouro-claro));
+    color: var(--bordo-escuro) !important;
+    border-radius: 50px;
+    padding: 8px 20px !important;
+    font-weight: 700;
+    transition: all 0.3s;
+    border: none;
+    white-space: nowrap;
+}
+
+.btn-area-restrita:hover {
+    background: linear-gradient(135deg, var(--ouro-claro), var(--ouro));
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(212, 175, 55, 0.3);
+}
+
+.btn-area-restrita::after {
+    display: none;
+}
+
+.btn-area-restrita i {
+    margin-right: 6px;
+}
+
+/* Responsividade - manter na mesma linha */
+@media (max-width: 992px) {
+    .btn-area-restrita {
+        margin-left: 8px;
+        padding: 8px 16px !important;
+        white-space: nowrap;
+    }
+}
+
+@media (max-width: 768px) {
+    .navbar-nav {
+        display: flex;
+        flex-direction: column;
+        width: 100%;
+    }
+    
+    .nav-item {
+        width: 100%;
+    }
+    
+    .btn-area-restrita {
+        margin-left: 0;
+        margin-top: 10px;
+        text-align: center;
+        white-space: normal;
+        display: block;
+    }
+}
         
         .btn-area-restrita:hover {
-            background: var(--dourado-escuro);
+            background: linear-gradient(135deg, var(--ouro-claro), var(--ouro));
             transform: translateY(-2px);
             box-shadow: 0 4px 12px rgba(212, 175, 55, 0.3);
         }
@@ -107,18 +195,96 @@
             display: none;
         }
         
-        /* Footer moderno */
+        .btn-area-restrita i {
+            margin-right: 6px;
+        }
+        
+        /* CARDS PÚBLICOS */
+        .card-maconico {
+            background: var(--branco);
+            border: 1px solid rgba(74, 14, 46, 0.12);
+            border-radius: 20px;
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+        }
+        
+        .card-maconico:hover {
+            transform: translateY(-4px);
+            border-color: var(--bordo);
+            box-shadow: 0 12px 24px rgba(0, 0, 0, 0.08);
+        }
+        
+        .card-maconico .card-header {
+            background: linear-gradient(135deg, var(--bordo), var(--bordo-escuro));
+            color: white;
+            border: none;
+            padding: 1rem 1.25rem;
+            font-weight: 600;
+        }
+        
+        /* BOTÕES PÚBLICOS */
+        .btn-primary {
+            background: linear-gradient(135deg, var(--bordo), var(--bordo-escuro));
+            border: none;
+            color: white;
+            font-weight: 600;
+            border-radius: 30px;
+            padding: 10px 24px;
+            transition: all 0.3s;
+        }
+        
+        .btn-primary:hover {
+            background: linear-gradient(135deg, var(--bordo-claro), var(--bordo));
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(74, 14, 46, 0.3);
+        }
+        
+        .btn-outline-primary {
+            border: 1px solid var(--bordo);
+            color: var(--bordo);
+            border-radius: 30px;
+            background: transparent;
+            transition: all 0.3s;
+        }
+        
+        .btn-outline-primary:hover {
+            background: var(--bordo);
+            color: white;
+            transform: translateY(-2px);
+        }
+        
+        /* FOOTER MAÇÔNICO */
         .footer {
-            background: var(--gradiente-azul);
+            background: linear-gradient(135deg, var(--bordo-escuro) 0%, var(--bordo) 100%);
             color: white;
             padding: 60px 0 30px;
             margin-top: 60px;
+            position: relative;
+            border-top: 1px solid rgba(212, 175, 55, 0.3);
+        }
+        
+        .footer::before {
+            content: '⌂ ⌂ ⊡';
+            position: absolute;
+            top: -12px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 20px;
+            color: var(--ouro);
+            opacity: 0.4;
+            font-family: serif;
+            letter-spacing: 4px;
+            background: var(--bege-pergaminho);
+            padding: 0 20px;
         }
         
         .footer h5 {
-            color: var(--dourado);
+            color: var(--ouro);
             font-weight: 700;
             margin-bottom: 20px;
+            font-family: 'Georgia', serif;
         }
         
         .footer a {
@@ -128,7 +294,7 @@
         }
         
         .footer a:hover {
-            color: var(--dourado);
+            color: var(--ouro);
             transform: translateX(5px);
             display: inline-block;
         }
@@ -139,54 +305,101 @@
             justify-content: center;
             width: 40px;
             height: 40px;
-            background: rgba(255,255,255,0.1);
+            background: rgba(212, 175, 55, 0.15);
             border-radius: 50%;
             margin: 0 5px;
             transition: all 0.3s;
-            color: white;
+            color: var(--ouro);
             font-size: 1.2rem;
+            border: 1px solid rgba(212, 175, 55, 0.3);
         }
         
         .social-icons a:hover {
-            background: var(--dourado);
+            background: var(--ouro);
             transform: translateY(-3px);
-            color: var(--azul-bicentenario);
+            color: var(--bordo-escuro);
+            border-color: var(--ouro);
         }
         
-        /* Cards modernos */
-        .card {
-            border-radius: 20px;
-            overflow: hidden;
-            border: none;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.08);
-            transition: all 0.3s;
+        /* UTILITÁRIOS */
+        .bg-dourado {
+            background: var(--ouro) !important;
+            color: var(--bordo-escuro) !important;
         }
         
-        .card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 20px 40px rgba(0,0,0,0.12);
+        .text-dourado {
+            color: var(--ouro) !important;
         }
         
-        /* Botões */
-        .btn-primary {
-            background: var(--gradiente-dourado);
-            border: none;
-            color: var(--azul-bicentenario);
-            font-weight: 700;
-            border-radius: 50px;
-            padding: 12px 30px;
-            transition: all 0.3s;
+        .text-bordo {
+            color: var(--bordo) !important;
         }
         
-        .btn-primary:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 8px 20px rgba(212, 175, 55, 0.3);
+        /* ANIMAÇÕES */
+        .fade-in-up {
+            animation: fadeInUp 0.4s ease-out;
         }
         
-        /* Alertas */
-        .alert {
-            border-radius: 12px;
-            border: none;
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(15px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        /* SCROLLBAR */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        
+        ::-webkit-scrollbar-track {
+            background: var(--cinza-suave);
+        }
+        
+        ::-webkit-scrollbar-thumb {
+            background: var(--bordo);
+            border-radius: 10px;
+        }
+        
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--bordo-claro);
+        }
+        
+        /* TOAST FLUTUANTE */
+        .toast-flutuante {
+            position: fixed;
+            top: 90px;
+            right: 20px;
+            z-index: 9999;
+            min-width: 320px;
+            max-width: 450px;
+            animation: slideInRight 0.3s ease-out;
+        }
+        
+        @keyframes slideInRight {
+            from {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+        
+        @keyframes fadeOut {
+            from {
+                opacity: 1;
+            }
+            to {
+                opacity: 0;
+                visibility: hidden;
+            }
         }
         
         @media (max-width: 768px) {
@@ -203,6 +416,27 @@
                 margin-top: 10px;
                 text-align: center;
             }
+            
+            .navbar-brand span {
+                font-size: 1rem;
+            }
+            
+            .toast-flutuante {
+                top: 80px;
+                right: 10px;
+                left: 10px;
+                min-width: auto;
+            }
+        }
+        
+        @media (max-width: 480px) {
+            .navbar-brand i {
+                font-size: 1.3rem;
+            }
+            
+            .navbar-brand span {
+                font-size: 0.85rem;
+            }
         }
     </style>
     
@@ -212,7 +446,7 @@
     <nav class="navbar navbar-expand-lg" id="navbar">
         <div class="container">
             <a class="navbar-brand" href="/">
-                <img src="/static/images/logo_loja.png" alt="Logo" onerror="this.style.display='none'">
+                <i class="bi bi-compass-fill"></i>
                 <span>⚜️ ARLS Bicentenário</span>
             </a>
             <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
@@ -222,37 +456,37 @@
                 <ul class="navbar-nav ms-auto">
                     <li class="nav-item">
                         <a class="nav-link" href="/">
-                            <i class="bi bi-house-door"></i> Início
+                            <i class="bi bi-house-door me-1"></i> Início
                         </a>
                     </li>
                     <li class="nav-item">
                         <a class="nav-link" href="/sobre">
-                            <i class="bi bi-info-circle"></i> Sobre
+                            <i class="bi bi-info-circle me-1"></i> Sobre
                         </a>
                     </li>
                     <li class="nav-item">
                         <a class="nav-link" href="/calendario">
-                            <i class="bi bi-calendar3"></i> Calendário
+                            <i class="bi bi-calendar3 me-1"></i> Calendário
                         </a>
                     </li>
                     <li class="nav-item">
                         <a class="nav-link" href="/noticias">
-                            <i class="bi bi-newspaper"></i> Notícias
+                            <i class="bi bi-newspaper me-1"></i> Notícias
                         </a>
                     </li>
                     <li class="nav-item">
                         <a class="nav-link" href="/galeria">
-                            <i class="bi bi-images"></i> Galeria
+                            <i class="bi bi-images me-1"></i> Galeria
                         </a>
                     </li>
                     <li class="nav-item">
                         <a class="nav-link" href="/contato">
-                            <i class="bi bi-envelope"></i> Contato
+                            <i class="bi bi-envelope me-1"></i> Contato
                         </a>
                     </li>
                     <li class="nav-item">
                         <a class="nav-link btn-area-restrita" href="/login">
-                            <i class="bi bi-box-arrow-in-right"></i> Área Restrita
+                            <i class="bi bi-box-arrow-in-right me-1"></i> Área Restrita
                         </a>
                     </li>
                 </ul>
@@ -260,7 +494,7 @@
         </div>
     </nav>
     
-    <main style="margin-top: 80px;">
+    <main class="main-content" style="margin-top: 80px; position: relative; z-index: 1;">
         {% block content %}{% endblock %}
     </main>
     
@@ -268,34 +502,34 @@
         <div class="container">
             <div class="row">
                 <div class="col-md-4 mb-4">
-                    <h5><i class="bi bi-compass-fill"></i> ARLS Bicentenário</h5>
-                    <p class="text-white-50">Loja Maçônica fundada em 16 de julho de 2022, sob os auspícios do Grande Oriente do Brasil.</p>
+                    <h5><i class="bi bi-compass-fill me-2"></i> ARLS Bicentenário</h5>
+                    <p class="text-white-50">Loja Maçônica fundada sob os auspícios do Grande Oriente do Brasil, dedicada à busca da verdade, justiça e fraternidade.</p>
                     <div class="mt-3">
                         <span class="badge bg-dourado">⚜️ Regular</span>
                         <span class="badge bg-dourado ms-2">📜 Reconhecida</span>
                     </div>
                 </div>
                 <div class="col-md-4 mb-4">
-                    <h5><i class="bi bi-geo-alt"></i> Localização</h5>
+                    <h5><i class="bi bi-geo-alt me-2"></i> Localização</h5>
                     <p class="text-white-50">
                         EQNM 36/38 área especial 08<br>
                         St. M-Norte, Brasília - DF<br>
                         CEP: 72145-510
                     </p>
                     <p class="text-white-50">
-                        <i class="bi bi-envelope"></i> secretaria.bicentenario4739@gmail.com<br>
-                        <i class="bi bi-telephone"></i> (61) 99368-1248
+                        <i class="bi bi-envelope me-2"></i> secretaria.bicentenario4739@gmail.com<br>
+                        <i class="bi bi-telephone me-2"></i> (61) 99368-1248
                     </p>
                 </div>
                 <div class="col-md-4 mb-4">
-                    <h5><i class="bi bi-share"></i> Redes Sociais</h5>
+                    <h5><i class="bi bi-share me-2"></i> Redes Sociais</h5>
                     <div class="social-icons">
                         <a href="#"><i class="bi bi-facebook"></i></a>
                         <a href="#"><i class="bi bi-instagram"></i></a>
                         <a href="#"><i class="bi bi-youtube"></i></a>
                     </div>
                     <div class="mt-4">
-                        <h5><i class="bi bi-clock"></i> Horário de Funcionamento</h5>
+                        <h5><i class="bi bi-clock me-2"></i> Horário de Funcionamento</h5>
                         <p class="text-white-50 small">
                             Segunda a Sexta: 9h às 18h<br>
                             Sábado: 9h às 12h
@@ -305,7 +539,9 @@
             </div>
             <hr class="bg-secondary opacity-25">
             <div class="text-center text-white-50 small">
-                &copy; 2024 ARLS Bicentenário - Todos os direitos reservados
+                <i class="bi bi-c-circle me-1"></i> {{ now.year if now else 2024 }} ARLS Bicentenário - Rito Brasileiro - GOB
+                <br>
+                <span class="small">"Pela Verdade e Justiça - Ordo Ab Chao"</span>
             </div>
         </div>
     </footer>
@@ -316,34 +552,82 @@
         window.addEventListener('scroll', function() {
             const navbar = document.getElementById('navbar');
             if (window.scrollY > 50) {
-                navbar.style.background = '#0a1a2f';
-                navbar.style.boxShadow = '0 4px 20px rgba(0,0,0,0.15)';
+                navbar.classList.add('scrolled');
             } else {
-                navbar.style.background = '#0a1a2f';
+                navbar.classList.remove('scrolled');
             }
         });
-        
-        // Fechar alerts automaticamente após 5 segundos
-        setTimeout(function() {
-            document.querySelectorAll('.alert').forEach(function(alert) {
-                setTimeout(function() {
-                    alert.classList.remove('show');
-                    setTimeout(function() {
-                        alert.remove();
-                    }, 150);
-                }, 5000);
-            });
-        }, 1000);
         
         // Adicionar classe active ao link atual
         const currentPath = window.location.pathname;
         document.querySelectorAll('.nav-link').forEach(link => {
-            if (link.getAttribute('href') === currentPath) {
-                link.style.color = '#d4af37 !important';
+            const href = link.getAttribute('href');
+            if (href && href !== '#' && (currentPath === href || (href !== '/' && currentPath.startsWith(href)))) {
+                link.style.color = '#d4af37';
                 link.style.fontWeight = '700';
             }
         });
+        
+        // ========== FUNÇÃO PARA EXIBIR TOAST FLUTUANTE ==========
+        function mostrarToast(mensagem, tipo = 'success') {
+            // Remove toasts existentes
+            const toastsAntigos = document.querySelectorAll('.toast-flutuante');
+            toastsAntigos.forEach(toast => toast.remove());
+            
+            const toastId = 'toast_' + Date.now();
+            const iconClass = tipo === 'success' ? 'bi-check-circle-fill' :
+                             tipo === 'danger' ? 'bi-exclamation-triangle-fill' :
+                             tipo === 'warning' ? 'bi-exclamation-circle-fill' : 'bi-info-circle-fill';
+            
+            const toastHtml = `
+                <div id="${toastId}" class="toast-flutuante">
+                    <div style="background: linear-gradient(135deg, #2E0518 0%, #4A0E2E 100%); border-left: 4px solid #D4AF37; border-radius: 12px; padding: 14px 20px; display: flex; align-items: center; gap: 12px; box-shadow: 0 8px 25px rgba(0,0,0,0.15); color: white;">
+                        <i class="bi ${iconClass}" style="font-size: 1.3rem; color: #D4AF37;"></i>
+                        <span style="flex: 1; font-size: 0.85rem;">${mensagem}</span>
+                        <button onclick="fecharToast('${toastId}')" style="background: none; border: none; color: rgba(255,255,255,0.7); font-size: 1.2rem; cursor: pointer; padding: 0 5px;">×</button>
+                    </div>
+                </div>
+            `;
+            
+            document.body.insertAdjacentHTML('beforeend', toastHtml);
+            
+            // Auto-fechar após 5 segundos
+            setTimeout(() => {
+                fecharToast(toastId);
+            }, 5000);
+        }
+        
+        function fecharToast(toastId) {
+            const toast = document.getElementById(toastId);
+            if (toast) {
+                toast.style.animation = 'fadeOut 0.5s ease-out forwards';
+                setTimeout(() => {
+                    toast.remove();
+                }, 500);
+            }
+        }
+        
+        // Capturar mensagens flash da página
+        document.addEventListener('DOMContentLoaded', function() {
+            // Procurar por mensagens flash no DOM
+            const flashMessages = document.querySelectorAll('.alert');
+            if (flashMessages.length > 0) {
+                flashMessages.forEach(function(alert) {
+                    let tipo = 'success';
+                    if (alert.classList.contains('alert-danger')) tipo = 'danger';
+                    else if (alert.classList.contains('alert-warning')) tipo = 'warning';
+                    else if (alert.classList.contains('alert-info')) tipo = 'info';
+                    
+                    const texto = alert.innerText.trim();
+                    if (texto) {
+                        mostrarToast(texto, tipo);
+                    }
+                    alert.remove();
+                });
+            }
+        });
     </script>
+    
     {% block scripts %}{% endblock %}
 </body>
 </html>

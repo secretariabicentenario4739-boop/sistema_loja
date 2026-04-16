@@ -2096,6 +2096,7 @@ def galeria():
 # =============================
 @app.route("/login", methods=["GET", "POST"])
 def login():
+    session.pop('_flashes', None)
     if request.method == "POST":
         usuario = request.form.get("usuario")
         senha = request.form.get("senha")
@@ -2136,6 +2137,7 @@ def login():
 @app.route("/logout")
 @login_required
 def logout():
+    session.pop('_flashes', None)
     """Faz logout do usuário"""
     session.clear()
     flash("Você saiu do sistema com sucesso!", "success")
@@ -12126,6 +12128,7 @@ def exportar_logs():
     registrar_log("exportar_logs", "auditoria", None, dados_novos={"periodo": f"{data_ini} a {data_fim}"})
     return Response(output.getvalue(), mimetype="text/csv; charset=utf-8",
                    headers={"Content-Disposition": f"attachment;filename=logs_auditoria_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv"})
+
 # =============================
 # ROTAS DE CONFIGURAÇÃO DE E-MAIL
 # =============================
@@ -12211,9 +12214,11 @@ def enviar_email_resend(destinatario, assunto, conteudo_html, conteudo_texto=Non
         }
 
 def enviar_email_reuniao(destinatario, nome_destinatario, dados_reuniao):
-    """Envia e-mail de convocação para reunião via Resend"""
+    """Envia e-mail de convocação para reunião via Resend usando templates"""
+    from flask import render_template
+    
     reuniao_id = dados_reuniao.get('id', '')
-    assunto = f"📅 Convite: {dados_reuniao.get('titulo', 'Nova Reunião')} - Sistema Maçônico"
+    assunto = f"📅 Convite: {dados_reuniao.get('titulo', 'Nova Reunião')} - ARLS Bicentenário"
     
     # Formatar horário
     hora_termino = dados_reuniao.get('hora_termino')
@@ -12221,97 +12226,54 @@ def enviar_email_reuniao(destinatario, nome_destinatario, dados_reuniao):
     if hora_termino:
         horario = f"{dados_reuniao.get('hora_inicio')} às {hora_termino}"
     
-    # Formatar pauta
-    pauta_html = ""
-    if dados_reuniao.get('pauta'):
-        pauta_html = f"""
-        <div class="info-row">
-            <div class="info-label">📋 Pauta:</div>
-            <div class="info-value">{dados_reuniao.get('pauta')}</div>
-        </div>
-        """
+    # Adicionar horário formatado aos dados
+    dados_reuniao['horario_formatado'] = horario
     
-    # Formatar observações
-    observacoes_html = ""
-    if dados_reuniao.get('observacoes'):
-        observacoes_html = f"""
-        <div class="info-row">
-            <div class="info-label">📝 Observações:</div>
-            <div class="info-value">{dados_reuniao.get('observacoes')}</div>
-        </div>
-        """
+    # Link para visualização
+    link_reuniao = f"https://www.juramelo.com.br/reunioes/{reuniao_id}" if reuniao_id else "#"
+    dados_reuniao['link_reuniao'] = link_reuniao
     
-    # Link para confirmação (ajuste conforme sua rota)
-    link_confirmacao = f"https://www.juramelo.com.br/reunioes/{reuniao_id}" if reuniao_id else "#"
+    # Carrega o template HTML que você criou
+    try:
+        html_content = render_template('email/reuniao_agendada.html', 
+                                       nome=nome_destinatario, 
+                                       reuniao=dados_reuniao)
+    except Exception as e:
+        print(f"Erro ao carregar template HTML: {e}")
+        # Fallback: usa o HTML embutido
+        html_content = gerar_html_fallback(nome_destinatario, dados_reuniao)
     
-    conteudo_html = f"""
+    # Carrega o template texto (opcional, mas bom ter)
+    try:
+        text_content = render_template('email/reuniao_agendada.txt', 
+                                       nome=nome_destinatario, 
+                                       reuniao=dados_reuniao)
+    except Exception as e:
+        print(f"Erro ao carregar template texto: {e}")
+        text_content = None
+    
+    # Envia o e-mail via Resend
+    return enviar_email_resend(destinatario, assunto, html_content, text_content)
+
+
+def gerar_html_fallback(nome_destinatario, dados_reuniao):
+    """Fallback em caso de erro no template"""
+    return f"""
     <!DOCTYPE html>
     <html>
-    <head>
-        <meta charset="UTF-8">
-        <style>
-            body {{ font-family: 'Segoe UI', Arial, sans-serif; line-height: 1.6; color: #333; }}
-            .container {{ max-width: 600px; margin: 0 auto; padding: 20px; }}
-            .header {{ background: linear-gradient(135deg, #1a472a, #0a2a1a); color: #ffd700; padding: 30px 20px; text-align: center; border-radius: 10px 10px 0 0; }}
-            .content {{ padding: 30px 20px; background: #fff; }}
-            .info-card {{ background: #f8f9fa; border-left: 4px solid #1a472a; padding: 15px; margin: 20px 0; border-radius: 8px; }}
-            .info-row {{ margin-bottom: 10px; }}
-            .info-label {{ font-weight: bold; color: #1a472a; display: inline-block; width: 100px; }}
-            .info-value {{ display: inline-block; }}
-            .button {{ display: inline-block; padding: 12px 30px; background: linear-gradient(135deg, #1a472a, #0a2a1a); color: #ffd700; text-decoration: none; border-radius: 5px; margin: 20px 0; }}
-            .footer {{ background: #f5f5f5; padding: 20px; text-align: center; font-size: 12px; color: #666; border-radius: 0 0 10px 10px; }}
-        </style>
-    </head>
+    <head><meta charset="UTF-8"></head>
     <body>
-        <div class="container">
-            <div class="header">
-                <h1>📅 Convite para Reunião</h1>
-                <p>Sistema Maçônico</p>
-            </div>
-            <div class="content">
-                <h2>Olá {nome_destinatario},</h2>
-                <p>Você foi convidado para uma reunião:</p>
-                
-                <div class="info-card">
-                    <h3 style="color: #1a472a; margin-bottom: 15px;">{dados_reuniao.get('titulo')}</h3>
-                    
-                    <div class="info-row">
-                        <div class="info-label">📌 Tipo:</div>
-                        <div class="info-value">{dados_reuniao.get('tipo', 'Não informado')}</div>
-                    </div>
-                    <div class="info-row">
-                        <div class="info-label">📅 Data:</div>
-                        <div class="info-value">{dados_reuniao.get('data')}</div>
-                    </div>
-                    <div class="info-row">
-                        <div class="info-label">⏰ Horário:</div>
-                        <div class="info-value">{horario}</div>
-                    </div>
-                    <div class="info-row">
-                        <div class="info-label">📍 Local:</div>
-                        <div class="info-value">{dados_reuniao.get('local')}</div>
-                    </div>
-                    {pauta_html}
-                    {observacoes_html}
-                </div>
-                
-                <p style="text-align: center;">
-                    <a href="{link_confirmacao}" class="button">Ver Detalhes</a>
-                </p>
-                
-                <p>Por favor, confirme sua presença através do sistema.</p>
-                <p>Atenciosamente,<br><strong>Secretaria do Sistema Maçônico</strong></p>
-            </div>
-            <div class="footer">
-                <p>Sistema Maçônico - www.juramelo.com.br</p>
-                <p>Este é um e-mail automático, por favor não responda.</p>
-            </div>
-        </div>
+        <h2>Olá {nome_destinatario},</h2>
+        <p>Você foi convidado para uma reunião:</p>
+        <p><strong>{dados_reuniao.get('titulo')}</strong></p>
+        <p>📅 Data: {dados_reuniao.get('data')}</p>
+        <p>⏰ Horário: {dados_reuniao.get('horario_formatado')}</p>
+        <p>📍 Local: {dados_reuniao.get('local')}</p>
+        <p>🔗 Link: <a href="{dados_reuniao.get('link_reuniao')}">Ver detalhes</a></p>
+        <p>Atenciosamente,<br>Secretaria do Sistema Maçônico</p>
     </body>
     </html>
     """
-    
-    return enviar_email_resend(destinatario, assunto, conteudo_html)
 # =============================
 # ROTA: CONFIGURAÇÃO DE E-MAIL
 # =============================
