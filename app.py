@@ -2091,6 +2091,7 @@ def galeria():
     return render_template("public/galeria.html")
 
 
+
 # =============================
 # ROTAS DE AUTENTICAÇÃO
 # =============================
@@ -9926,6 +9927,7 @@ def listar_documentos_candidato(candidato_id):
                           percentual=percentual,
                           documentos_pendentes=documentos_pendentes,
                           documentos_opcionais_count=documentos_opcionais_count)
+                          
 @app.route("/candidatos/<int:candidato_id>/documentos/upload/<int:tipo_id>", methods=["POST"])
 @login_required
 def upload_documento_candidato(candidato_id, tipo_id):
@@ -9934,34 +9936,22 @@ def upload_documento_candidato(candidato_id, tipo_id):
     
     # Verificar permissão
     if session.get('tipo') not in ['admin', 'sindicante']:
-        if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
-            return jsonify({'success': False, 'error': 'Permissão negada!'}), 403
-        flash("Permissão negada!", "danger")
-        return redirect(f"/candidatos/{candidato_id}/documentos")
+        return jsonify({'success': False, 'error': 'Permissão negada!'}), 403
     
     if 'arquivo' not in request.files:
-        if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
-            return jsonify({'success': False, 'error': 'Nenhum arquivo selecionado!'}), 400
-        flash("Nenhum arquivo selecionado!", "danger")
-        return redirect(f"/candidatos/{candidato_id}/documentos")
+        return jsonify({'success': False, 'error': 'Nenhum arquivo selecionado!'}), 400
     
     arquivo = request.files['arquivo']
     
     if arquivo.filename == '':
-        if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
-            return jsonify({'success': False, 'error': 'Nenhum arquivo selecionado!'}), 400
-        flash("Nenhum arquivo selecionado!", "danger")
-        return redirect(f"/candidatos/{candidato_id}/documentos")
+        return jsonify({'success': False, 'error': 'Nenhum arquivo selecionado!'}), 400
     
     # Validar tipo de arquivo
     extensao = arquivo.filename.rsplit('.', 1)[1].lower() if '.' in arquivo.filename else ''
     allowed_extensions = ['pdf', 'jpg', 'jpeg', 'png']
     
     if extensao not in allowed_extensions:
-        if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
-            return jsonify({'success': False, 'error': f'Tipo de arquivo não permitido. Use: {", ".join(allowed_extensions)}'}), 400
-        flash(f"Tipo de arquivo não permitido. Use: {', '.join(allowed_extensions)}", "danger")
-        return redirect(f"/candidatos/{candidato_id}/documentos")
+        return jsonify({'success': False, 'error': f'Tipo de arquivo não permitido. Use: {", ".join(allowed_extensions)}'}), 400
     
     try:
         import cloudinary.uploader
@@ -9972,18 +9962,13 @@ def upload_documento_candidato(candidato_id, tipo_id):
         tipo_doc = cursor.fetchone()
         
         if not tipo_doc:
-            if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
-                return jsonify({'success': False, 'error': 'Tipo de documento inválido!'}), 400
-            flash("Tipo de documento inválido!", "danger")
-            return redirect(f"/candidatos/{candidato_id}/documentos")
+            return jsonify({'success': False, 'error': 'Tipo de documento inválido!'}), 400
         
         # Definir resource_type baseado na extensão
         if extensao == 'pdf':
             resource_type = "raw"
-        elif extensao in ['jpg', 'jpeg', 'png']:
-            resource_type = "image"
         else:
-            resource_type = "auto"
+            resource_type = "image"
         
         # Upload para Cloudinary
         nome_arquivo = secure_filename(arquivo.filename)
@@ -10028,8 +10013,6 @@ def upload_documento_candidato(candidato_id, tipo_id):
                     aprovado_por = NULL
                 WHERE id = %s
             """, (public_id, url_arquivo, extensao, tamanho, session['user_id'], existing['id']))
-            
-            mensagem = f"Documento '{tipo_doc['nome']}' atualizado com sucesso!"
         else:
             cursor.execute("""
                 INSERT INTO documentos_candidato 
@@ -10037,8 +10020,6 @@ def upload_documento_candidato(candidato_id, tipo_id):
                  tipo_arquivo, tamanho, enviado_por)
                 VALUES (%s, %s, %s, %s, %s, %s, %s)
             """, (candidato_id, tipo_id, public_id, url_arquivo, extensao, tamanho, session['user_id']))
-            
-            mensagem = f"Documento '{tipo_doc['nome']}' enviado com sucesso!"
         
         conn.commit()
         
@@ -10046,31 +10027,20 @@ def upload_documento_candidato(candidato_id, tipo_id):
         registrar_log("upload_documento", "documentos_candidato", candidato_id,
                      dados_novos={"tipo_documento": tipo_doc['nome'], "candidato_id": candidato_id})
         
-        # Retorno para AJAX
-        if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
-            return jsonify({'success': True, 'message': mensagem})
-        
-        flash(mensagem, "success")
+        return jsonify({'success': True, 'message': f'Documento {tipo_doc["nome"]} enviado com sucesso!'})
         
     except Exception as e:
         print(f"Erro no upload: {e}")
         import traceback
         traceback.print_exc()
         
-        if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
-            return jsonify({'success': False, 'error': str(e)}), 500
-        
-        flash(f"Erro ao enviar documento: {str(e)}", "danger")
         if conn:
             conn.rollback()
+        
+        return jsonify({'success': False, 'error': str(e)}), 500
     
-    return_connection(conn)
-    
-    if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
-        return jsonify({'success': True})
-    
-    return redirect(f"/candidatos/{candidato_id}/documentos")
-    
+    finally:
+        return_connection(conn)
 
 
 @app.route("/api/documentos-candidato/<int:doc_id>/aprovar", methods=["POST"])

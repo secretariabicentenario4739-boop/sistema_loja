@@ -19,18 +19,7 @@
             </div>
         </div>
 
-        {% with messages = get_flashed_messages(with_categories=true) %}
-            {% if messages %}
-                {% for category, message in messages %}
-                    <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
-                        {{ message }}
-                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-                    </div>
-                {% endfor %}
-            {% endif %}
-        {% endwith %}
-
-        <!-- Status das Assinaturas (apenas para atas aprovadas) -->
+               <!-- Status das Assinaturas (apenas para atas aprovadas) -->
         {% if ata_aprovada %}
         <div class="card shadow mb-4">
             <div class="card-header bg-primary text-white">
