@@ -5329,7 +5329,7 @@ def recuperar_senha():
         
         try:
             cursor, conn = get_db()
-            cursor.execute("SELECT id, nome_completo FROM usuarios WHERE email = %s", (email,))
+            cursor.execute("SELECT id, nome_completo, email FROM usuarios WHERE email = %s", (email,))
             usuario = cursor.fetchone()
             
             if usuario:
@@ -5345,11 +5345,54 @@ def recuperar_senha():
                 conn.commit()
                 
                 # Construir link de recuperação
-                link_recuperacao = f"https://www.juramelo.com.br/redefinir-senha?token={token}"
+                link_recuperacao = url_for('redefinir_senha', token=token, _external=True)
                 
-                # TODO: Enviar e-mail com o link
-                # Por enquanto, mostrar link no flash (apenas para teste)
-                flash(f"Link de recuperação (modo teste): {link_recuperacao}", "info")
+                # Enviar e-mail
+                try:
+                    msg = Message(
+                        subject='Recuperação de Senha',
+                        recipients=[email],
+                        html=f"""
+                        <!DOCTYPE html>
+                        <html>
+                        <head>
+                            <meta charset="UTF-8">
+                            <title>Recuperação de Senha</title>
+                        </head>
+                        <body style="font-family: Arial, sans-serif;">
+                            <div style="max-width: 600px; margin: 0 auto; padding: 20px;">
+                                <h2 style="color: #333;">Recuperação de Senha</h2>
+                                <p>Olá, <strong>{usuario['nome_completo']}</strong>!</p>
+                                <p>Recebemos uma solicitação para redefinir sua senha.</p>
+                                <p>Clique no botão abaixo para criar uma nova senha:</p>
+                                <div style="text-align: center; margin: 30px 0;">
+                                    <a href="{link_recuperacao}" 
+                                       style="background-color: #ffc107; 
+                                              color: #000; 
+                                              padding: 12px 30px; 
+                                              text-decoration: none; 
+                                              border-radius: 5px;
+                                              display: inline-block;">
+                                        Redefinir Minha Senha
+                                    </a>
+                                </div>
+                                <p>Este link é válido por <strong>1 hora</strong>.</p>
+                                <p>Se você não solicitou esta alteração, ignore este e-mail.</p>
+                                <hr style="margin: 20px 0;">
+                                <small style="color: #666;">
+                                    Este é um e-mail automático, por favor não responda.
+                                </small>
+                            </div>
+                        </body>
+                        </html>
+                        """
+                    )
+                    mail.send(msg)
+                    flash("✅ Link de recuperação enviado para seu e-mail!", "success")
+                    
+                except Exception as e:
+                    print(f"Erro ao enviar e-mail: {e}")
+                    flash("Erro ao enviar e-mail. Tente novamente.", "danger")
                 
                 registrar_log("solicitou_recuperacao_senha", "usuarios", usuario['id'])
             else:
@@ -5366,7 +5409,7 @@ def recuperar_senha():
         
         return redirect("/login")
     
-    return render_template("recuperar_senha.html")    
+    return render_template("recuperar_senha.html")
 
 @app.route("/redefinir-senha", methods=["GET", "POST"])
 def redefinir_senha():
