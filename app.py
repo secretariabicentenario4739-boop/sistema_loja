@@ -5423,8 +5423,9 @@ def recuperar_senha():
             return redirect("/recuperar-senha")
         
         try:
+            # Usar sua função get_db() corretamente
             conn = get_db()
-            cursor = conn.cursor(cursor_factory=RealDictCursor)
+            cursor = conn.cursor()
             
             cursor.execute("SELECT id, nome_completo, email FROM usuarios WHERE email = %s", (email,))
             usuario = cursor.fetchone()
@@ -5433,9 +5434,9 @@ def recuperar_senha():
                 # Gerar token
                 import secrets
                 token = secrets.token_urlsafe(32)
-                expira_em = datetime.utcnow() + timedelta(hours=1)  # CORRETO
+                expira_em = datetime.utcnow() + timedelta(hours=1)
                 
-                # Criar tabela se não existir
+                # Criar tabela se não existir (usando SQL compatível com PostgreSQL)
                 cursor.execute("""
                     CREATE TABLE IF NOT EXISTS password_reset_tokens (
                         id SERIAL PRIMARY KEY,
@@ -5452,7 +5453,7 @@ def recuperar_senha():
                 cursor.execute("""
                     INSERT INTO password_reset_tokens (usuario_id, token, expira_em, usado)
                     VALUES (%s, %s, %s, FALSE)
-                """, (usuario['id'], token, expira_em))
+                """, (usuario[0], token, expira_em))
                 conn.commit()
                 
                 # Construir link de recuperação
@@ -5471,7 +5472,7 @@ def recuperar_senha():
                 <body style="font-family: Arial, sans-serif;">
                     <div style="max-width: 600px; margin: 0 auto; padding: 20px;">
                         <h2>🔐 Recuperação de Senha</h2>
-                        <p>Olá, <strong>{usuario['nome_completo']}</strong>!</p>
+                        <p>Olá, <strong>{usuario[1]}</strong>!</p>
                         <p>Clique no link abaixo para redefinir sua senha:</p>
                         <p><a href="{link_recuperacao}">{link_recuperacao}</a></p>
                         <p>Este link é válido por 1 hora.</p>
@@ -5485,7 +5486,7 @@ def recuperar_senha():
                 texto_alternativo = f"""
                 Recuperação de Senha - ARLS Bicentenário
                 
-                Olá {usuario['nome_completo']}!
+                Olá {usuario[1]}!
                 
                 Para redefinir sua senha, acesse:
                 {link_recuperacao}
@@ -5534,7 +5535,7 @@ def redefinir_senha():
     
     try:
         conn = get_db()
-        cursor = conn.cursor(cursor_factory=RealDictCursor)
+        cursor = conn.cursor()
         
         cursor.execute("""
             SELECT usuario_id FROM password_reset_tokens 
@@ -5550,7 +5551,7 @@ def redefinir_senha():
             flash("Link inválido ou expirado! Solicite uma nova recuperação.", "danger")
             return redirect("/recuperar-senha")
         
-        usuario_id = result['usuario_id']
+        usuario_id = result[0]
         
         if request.method == "POST":
             nova_senha = request.form.get("nova_senha")
