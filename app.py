@@ -1456,6 +1456,7 @@ def gerar_pdf_certificado(visitante):
     doc.build(story)
     buffer.seek(0)
     return buffer
+    
 def enviar_certificado_email(visitante):
     """Envia o certificado de visita por e-mail"""
     if not visitante.get('email'):
@@ -1789,6 +1790,37 @@ def enviar_email_aniversario_familiar(email, obreiro_nome, familiar_nome, parent
     
     if 'enviar_email_resend' in globals():
         enviar_email_resend(email, assunto, conteudo_html)
+        
+def get_email_config():
+    """Busca a configuração de e-mail ativa do banco"""
+    try:
+        cursor, conn = get_db()
+        cursor.execute("""
+            SELECT sender, sender_name, active 
+            FROM email_config 
+            WHERE active = 1 
+            LIMIT 1
+        """)
+        config = cursor.fetchone()
+        return_connection(conn)
+        
+        if config:
+            return {
+                'sender': config['sender'],
+                'sender_name': config['sender_name'] or 'Sistema Maçônico'
+            }
+        else:
+            # Configuração padrão
+            return {
+                'sender': 'contato@juramelo.com.br',
+                'sender_name': 'Sistema Maçônico'
+            }
+    except Exception as e:
+        print(f"Erro ao buscar config de e-mail: {e}")
+        return {
+            'sender': 'contato@juramelo.com.br',
+            'sender_name': 'Sistema Maçônico'
+        }        
 
 def executar_rotinas_diarias():
     """Executa todas as rotinas diárias (aniversários e lembretes)"""
@@ -5344,15 +5376,25 @@ def recuperar_senha():
                 """, (usuario['id'], token, expira_em))
                 conn.commit()
                 
+                # Buscar configuração de e-mail
+                email_config = get_email_config()
+                
                 # Construir link de recuperação
                 link_recuperacao = url_for('redefinir_senha', token=token, _external=True)
                 
-                # Enviar e-mail
+                # Enviar e-mail com Resend usando a configuração
                 try:
-                    msg = Message(
-                        subject='Recuperação de Senha',
-                        recipients=[email],
-                        html=f"""
+                    import resend
+                    
+                    # Configurar Resend (se não estiver configurado globalmente)
+                    if not resend.api_key:
+                        resend.api_key = os.environ.get("RESEND_API_KEY")
+                    
+                    params = {
+                        "from": f"{email_config['sender_name']} <{email_config['sender']}>",
+                        "to": [email],
+                        "subject": "Recuperação de Senha - Sistema Maçônico",
+                        "html": f"""
                         <!DOCTYPE html>
                         <html>
                         <head>
@@ -5360,7 +5402,7 @@ def recuperar_senha():
                             <title>Recuperação de Senha</title>
                         </head>
                         <body style="font-family: Arial, sans-serif;">
-                            <div style="max-width: 600px; margin: 0 auto; padding: 20px;">
+                            <div style="max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e0e0e0; border-radius: 10px;">
                                 <h2 style="color: #333;">Recuperação de Senha</h2>
                                 <p>Olá, <strong>{usuario['nome_completo']}</strong>!</p>
                                 <p>Recebemos uma solicitação para redefinir sua senha.</p>
@@ -5372,7 +5414,8 @@ def recuperar_senha():
                                               padding: 12px 30px; 
                                               text-decoration: none; 
                                               border-radius: 5px;
-                                              display: inline-block;">
+                                              display: inline-block;
+                                              font-weight: bold;">
                                         Redefinir Minha Senha
                                     </a>
                                 </div>
@@ -5386,13 +5429,23 @@ def recuperar_senha():
                         </body>
                         </html>
                         """
-                    )
-                    mail.send(msg)
+                    }
+                    
+                    # Enviar e-mail
+                    email_response = resend.Emails.send(params)
+                    print(f"E-mail enviado para {email}. ID: {email_response['id']}")
                     flash("✅ Link de recuperação enviado para seu e-mail!", "success")
+                    
+                    # Registrar log do envio
+                    cursor.execute("""
+                        INSERT INTO email_logs (usuario_id, tipo, destinatario, status, mensagem_id)
+                        VALUES (%s, 'recuperacao_senha', %s, 'enviado', %s)
+                    """, (usuario['id'], email, email_response.get('id')))
+                    conn.commit()
                     
                 except Exception as e:
                     print(f"Erro ao enviar e-mail: {e}")
-                    flash("Erro ao enviar e-mail. Tente novamente.", "danger")
+                    flash("Erro ao enviar e-mail. Tente novamente mais tarde.", "danger")
                 
                 registrar_log("solicitou_recuperacao_senha", "usuarios", usuario['id'])
             else:
@@ -5410,7 +5463,6 @@ def recuperar_senha():
         return redirect("/login")
     
     return render_template("recuperar_senha.html")
-
 @app.route("/redefinir-senha", methods=["GET", "POST"])
 def redefinir_senha():
     """Redefine a senha usando token de recuperação"""
