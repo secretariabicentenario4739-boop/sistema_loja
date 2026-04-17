@@ -2399,7 +2399,72 @@ def candidato_upload_documento_externo(candidato_id, tipo_id):
 # =============================
 # ROTAS DA BIBLIOTECA
 # =============================
-
+@app.route("/biblioteca/material/<int:material_id>/arquivo")
+@login_required
+@permissao_required('material.view_one')
+def servir_arquivo_material(material_id):
+    """Serve o arquivo do material para visualização"""
+    try:
+        cursor, conn = get_db()
+        
+        # Buscar informações do material
+        cursor.execute("""
+            SELECT m.id, m.arquivo_url, m.formato, m.grau_acesso, m.titulo, m.tipo
+            FROM materiais m
+            WHERE m.id = %s AND m.publicado = true
+        """, (material_id,))
+        material = cursor.fetchone()
+        
+        if not material:
+            return_connection(conn)
+            return jsonify({'error': 'Material não encontrado'}), 404
+        
+        # Verificar permissão por grau
+        usuario_grau = session.get('grau_atual', 0)
+        grau_acesso = material.get('grau_acesso', 1)
+        
+        if usuario_grau < grau_acesso and session.get('tipo') != 'admin':
+            return_connection(conn)
+            return jsonify({'error': 'Permissão negada'}), 403
+        
+        arquivo_url = material.get('arquivo_url')
+        
+        if not arquivo_url:
+            return_connection(conn)
+            return jsonify({'error': 'Arquivo não disponível'}), 404
+        
+        # Se for URL do Cloudinary, retornar a URL diretamente
+        if 'cloudinary.com' in arquivo_url or 'res.cloudinary.com' in arquivo_url:
+            return_connection(conn)
+            # Adicionar parâmetro para forçar visualização no navegador
+            if '?' in arquivo_url:
+                arquivo_url += '&fl_attachment=0'
+            else:
+                arquivo_url += '?fl_attachment=0'
+            return redirect(arquivo_url)
+        
+        # Se for arquivo local
+        import os
+        if os.path.exists(arquivo_url):
+            return_connection(conn)
+            return send_file(
+                arquivo_url, 
+                conditional=True,
+                download_name=material.get('titulo', 'documento.pdf')
+            )
+        
+        return_connection(conn)
+        return jsonify({'error': 'Arquivo não encontrado no servidor'}), 404
+        
+    except Exception as e:
+        print(f"❌ Erro ao servir arquivo: {e}")
+        import traceback
+        traceback.print_exc()
+        if 'conn' in locals():
+            return_connection(conn)
+        return jsonify({'error': str(e)}), 500
+        
+        
 @app.route("/biblioteca/admin/upload", methods=['GET', 'POST'])
 @login_required
 @permissao_required('material.create')
