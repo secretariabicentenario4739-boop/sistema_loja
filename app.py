@@ -2403,11 +2403,10 @@ def candidato_upload_documento_externo(candidato_id, tipo_id):
 @login_required
 @permissao_required('material.view_one')
 def servir_arquivo_material(material_id):
-    """Serve o arquivo do material para visualização"""
+    """Serve o arquivo do material para visualização (proxy para Cloudinary privado)"""
     try:
         cursor, conn = get_db()
         
-        # Buscar informações do material
         cursor.execute("""
             SELECT m.id, m.arquivo_url, m.formato, m.grau_acesso, m.titulo, m.tipo
             FROM materiais m
@@ -2419,7 +2418,6 @@ def servir_arquivo_material(material_id):
             return_connection(conn)
             return jsonify({'error': 'Material não encontrado'}), 404
         
-        # Verificar permissão por grau
         usuario_grau = session.get('grau_atual', 0)
         grau_acesso = material.get('grau_acesso', 1)
         
@@ -2433,52 +2431,35 @@ def servir_arquivo_material(material_id):
             return_connection(conn)
             return jsonify({'error': 'Arquivo não disponível'}), 404
         
-        # Se for URL do Cloudinary, usar proxy com autenticação
-        if 'cloudinary.com' in arquivo_url or 'res.cloudinary.com' in arquivo_url:
-            return_connection(conn)
+        # Configurar autenticação do Cloudinary
+        auth = ('231643853831969', 'a6UQfWtibAvnRrb63v5CvxQlsXo')
+        
+        try:
+            response = requests.get(arquivo_url, auth=auth, stream=True)
             
-            # Fazer download do arquivo com autenticação
-            try:
-                # Adicionar autenticação básica com API Key e Secret
-                auth = (cloudinary.config().api_key, cloudinary.config().api_secret)
+            if response.status_code == 200:
+                content_type = response.headers.get('content-type', 'application/pdf')
                 
-                # Fazer request para o Cloudinary
-                response = requests.get(arquivo_url, auth=auth, stream=True)
+                return Response(
+                    stream_with_context(response.iter_content(chunk_size=8192)),
+                    status=200,
+                    headers={
+                        'Content-Type': content_type,
+                        'Content-Disposition': f'inline; filename="{material.get("titulo", "documento")}.pdf"',
+                        'Cache-Control': 'no-cache, no-store, must-revalidate'
+                    }
+                )
+            else:
+                return_connection(conn)
+                return jsonify({'error': f'Erro ao acessar arquivo: {response.status_code}'}), 404
                 
-                if response.status_code == 200:
-                    # Retornar o arquivo como se fosse do seu servidor
-                    return Response(
-                        stream_with_context(response.iter_content(chunk_size=8192)),
-                        status=200,
-                        headers={
-                            'Content-Type': response.headers.get('content-type', 'application/pdf'),
-                            'Content-Disposition': f'inline; filename="{material.get("titulo", "documento")}.pdf"'
-                        }
-                    )
-                else:
-                    return jsonify({'error': f'Erro ao acessar arquivo: {response.status_code}'}), 404
-                    
-            except Exception as e:
-                print(f"Erro no proxy: {e}")
-                return jsonify({'error': str(e)}), 500
-        
-        # Se for arquivo local
-        import os
-        if os.path.exists(arquivo_url):
+        except Exception as e:
+            print(f"Erro: {e}")
             return_connection(conn)
-            return send_file(
-                arquivo_url, 
-                conditional=True,
-                download_name=material.get('titulo', 'documento.pdf')
-            )
-        
-        return_connection(conn)
-        return jsonify({'error': 'Arquivo não encontrado no servidor'}), 404
-        
+            return jsonify({'error': str(e)}), 500
+            
     except Exception as e:
-        print(f"❌ Erro ao servir arquivo: {e}")
-        import traceback
-        traceback.print_exc()
+        print(f"❌ Erro: {e}")
         if 'conn' in locals():
             return_connection(conn)
         return jsonify({'error': str(e)}), 500
