@@ -328,7 +328,7 @@ function debugLog(mensagem, tipo = 'info') {
         if (viewerContainer) {
             const debugDiv = document.createElement('div');
             debugDiv.id = 'debugContainer';
-            debugDiv.style.cssText = 'position: fixed; bottom: 10px; right: 10px; background: rgba(0,0,0,0.8); color: #0f0; padding: 10px; font-size: 12px; z-index: 9999; max-width: 400px; border-radius: 5px; font-family: monospace;';
+            debugDiv.style.cssText = 'position: fixed; bottom: 10px; right: 10px; background: rgba(0,0,0,0.8); color: #0f0; padding: 10px; font-size: 12px; z-index: 9999; max-width: 400px; border-radius: 5px; font-family: monospace; z-index: 10000;';
             document.body.appendChild(debugDiv);
             debugContainer = debugDiv;
         }
@@ -347,121 +347,67 @@ function debugLog(mensagem, tipo = 'info') {
     }
 }
 
-// Carregar informações do material primeiro
+// Carregar usando a URL do Cloudinary diretamente
 document.addEventListener('DOMContentLoaded', async function() {
-    debugLog('Página carregada, buscando informações do material...');
+    debugLog('=== INICIANDO CARREGAMENTO DO DOCUMENTO ===');
     
-    const materialId = {{ material.id }};
-    debugLog(`Material ID: ${materialId}`);
+    // PEGAR A URL DIRETAMENTE DO TEMPLATE
+    const arquivoCloudinary = "{{ material.arquivo_url }}";
+    debugLog(`URL original do Cloudinary: ${arquivoCloudinary}`);
     
-    try {
-        // Buscar informações do material
-        const infoResponse = await fetch(`/biblioteca/material/${materialId}/info`);
-        const materialInfo = await infoResponse.json();
-        
-        debugLog(`Informações recebidas: ${JSON.stringify(materialInfo)}`);
-        
-        if (materialInfo.error) {
-            debugLog(`Erro: ${materialInfo.error}`, 'error');
-            mostrarErro(`Erro ao buscar informações: ${materialInfo.error}`);
-            return;
-        }
-        
-        const arquivoUrl = materialInfo.url_visualizacao || materialInfo.arquivo_url;
-        const formato = (materialInfo.formato || materialInfo.tipo || '').toLowerCase();
-        
-        debugLog(`URL do arquivo: ${arquivoUrl}`);
-        debugLog(`Formato: ${formato}`);
-        
-        if (!arquivoUrl) {
-            debugLog('URL do arquivo não encontrada!', 'error');
-            mostrarErro('URL do arquivo não disponível');
-            return;
-        }
-        
-        // Testar se o arquivo está acessível
-        debugLog('Testando acesso ao arquivo...');
-        try {
-            const testResponse = await fetch(arquivoUrl, { method: 'HEAD' });
-            debugLog(`Status do arquivo: ${testResponse.status} ${testResponse.statusText}`);
-            
-            if (!testResponse.ok) {
-                debugLog(`Arquivo não acessível! Status: ${testResponse.status}`, 'error');
-                mostrarErro(`Arquivo não encontrado (Status: ${testResponse.status})`);
-                return;
-            }
-            
-            const contentType = testResponse.headers.get('content-type');
-            debugLog(`Content-Type: ${contentType}`);
-            
-        } catch (fetchError) {
-            debugLog(`Erro ao testar arquivo: ${fetchError.message}`, 'error');
-            mostrarErro(`Erro de rede ao acessar arquivo: ${fetchError.message}`);
-            return;
-        }
-        
-        // Determinar o tipo do arquivo
-        if (formato === 'pdf' || arquivoUrl.toLowerCase().includes('.pdf')) {
-            debugLog('Detectado como PDF, iniciando carregamento...');
-            await carregarPDF(arquivoUrl);
-        } else if (['jpg', 'jpeg', 'png', 'gif', 'webp'].some(ext => formato.includes(ext) || arquivoUrl.toLowerCase().includes(ext))) {
-            debugLog('Detectado como imagem, iniciando carregamento...');
-            carregarImagem(arquivoUrl);
-        } else {
-            debugLog(`Formato não suportado: ${formato}`, 'error');
-            mostrarMensagemNaoSuportado();
-        }
-        
-    } catch (error) {
-        debugLog(`Erro na inicialização: ${error.message}`, 'error');
-        console.error(error);
-        mostrarErro(`Erro ao carregar informações: ${error.message}`);
+    if (!arquivoCloudinary) {
+        debugLog('ERRO: URL do Cloudinary não encontrada!', 'error');
+        mostrarErro('URL do arquivo não disponível');
+        return;
+    }
+    
+    // Adicionar parâmetros para visualização
+    let urlVisualizacao = arquivoCloudinary;
+    if (urlVisualizacao.includes('cloudinary')) {
+        // Parâmetros do Cloudinary para visualização
+        urlVisualizacao = urlVisualizacao.replace('/upload/', '/upload/fl_attachment=0,dl=0/');
+        debugLog(`URL com parâmetros: ${urlVisualizacao}`);
+    }
+    
+    debugLog(`URL final para carregar: ${urlVisualizacao}`);
+    
+    // Verificar extensão do arquivo
+    const extensao = arquivoCloudinary.split('.').pop().toLowerCase();
+    debugLog(`Extensão do arquivo: ${extensao}`);
+    
+    if (extensao === 'pdf') {
+        debugLog('Arquivo PDF detectado, carregando...');
+        await carregarPDF(urlVisualizacao);
+    } else if (['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(extensao)) {
+        debugLog('Imagem detectada, carregando...');
+        carregarImagem(urlVisualizacao);
+    } else {
+        debugLog(`Formato não suportado: ${extensao}`, 'error');
+        mostrarMensagemNaoSuportado();
     }
 });
 
-// Substitua a parte do carregamento do PDF com este código:
-
 async function carregarPDF(url) {
-    debugLog(`Iniciando carregamento do PDF: ${url}`);
+    debugLog(`Carregando PDF: ${url}`);
     
     try {
         // Mostrar loading
         const viewerContainer = document.getElementById('documentViewer');
         viewerContainer.innerHTML = `
-            <div class="d-flex align-items-center justify-content-center h-100" style="min-height: 80vh;">
+            <div class="d-flex align-items-center justify-content-center" style="min-height: 80vh;">
                 <div class="text-center">
                     <div class="spinner-border text-primary" role="status">
                         <span class="visually-hidden">Carregando...</span>
                     </div>
                     <p class="mt-3">Carregando PDF...</p>
-                    <p class="text-muted small" id="debugUrl">${url}</p>
+                    <p class="text-muted small" style="word-break: break-all; max-width: 500px;">${url}</p>
                 </div>
             </div>
         `;
         
-        // Se a URL for do Cloudinary, usar diretamente
-        let pdfUrl = url;
-        if (url.includes('/biblioteca/material/')) {
-            // Buscar a URL real do Cloudinary via API
-            debugLog('Obtendo URL real do Cloudinary...');
-            const response = await fetch(url);
-            if (response.redirected) {
-                pdfUrl = response.url;
-                debugLog(`Redirecionado para: ${pdfUrl}`);
-            } else {
-                const data = await response.json();
-                if (data.error) {
-                    throw new Error(data.error);
-                }
-                pdfUrl = data.url || url;
-            }
-        }
-        
-        debugLog(`URL final do PDF: ${pdfUrl}`);
-        
-        // Configurar opções para PDF.js
+        // Carregar o PDF diretamente do Cloudinary
         const loadingTask = pdfjsLib.getDocument({
-            url: pdfUrl,
+            url: url,
             withCredentials: false,
             disableRange: true,
             disableStream: true,
@@ -471,7 +417,7 @@ async function carregarPDF(url) {
         
         pdfDoc = await loadingTask.promise;
         
-        debugLog(`PDF carregado com sucesso! Páginas: ${pdfDoc.numPages}`, 'success');
+        debugLog(`PDF carregado! Páginas: ${pdfDoc.numPages}`, 'success');
         
         // Mostrar controles
         const pdfControls = document.getElementById('pdfControls');
@@ -493,21 +439,60 @@ async function carregarPDF(url) {
         await renderPage(1);
         
     } catch (error) {
-        debugLog(`Erro ao carregar PDF: ${error.message}`, 'error');
+        debugLog(`ERRO ao carregar PDF: ${error.message}`, 'error');
         console.error('Erro detalhado:', error);
         
-        let mensagemErro = 'Não foi possível carregar o PDF. ';
-        if (error.message.includes('404')) {
-            mensagemErro += 'Arquivo não encontrado.';
-        } else if (error.message.includes('CORS')) {
-            mensagemErro += 'Problema de CORS. Contate o administrador.';
-        } else if (error.message.includes('network')) {
-            mensagemErro += 'Erro de rede. Verifique sua conexão.';
+        // Tentar carregar sem os parâmetros especiais
+        if (url.includes('fl_attachment')) {
+            debugLog('Tentando carregar sem parâmetros especiais...');
+            const urlLimpa = "{{ material.arquivo_url }}";
+            await carregarPDFSimples(urlLimpa);
         } else {
-            mensagemErro += error.message;
+            mostrarErro(`Não foi possível carregar o PDF: ${error.message}`);
+        }
+    }
+}
+
+async function carregarPDFSimples(url) {
+    debugLog(`Tentativa 2 - Carregando PDF simples: ${url}`);
+    
+    try {
+        const viewerContainer = document.getElementById('documentViewer');
+        viewerContainer.innerHTML = `
+            <div class="d-flex align-items-center justify-content-center" style="min-height: 80vh;">
+                <div class="text-center">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Carregando...</span>
+                    </div>
+                    <p class="mt-3">Tentando carregar PDF (modo alternativo)...</p>
+                </div>
+            </div>
+        `;
+        
+        const loadingTask = pdfjsLib.getDocument(url);
+        pdfDoc = await loadingTask.promise;
+        
+        debugLog(`PDF carregado com sucesso na segunda tentativa! Páginas: ${pdfDoc.numPages}`, 'success');
+        
+        const pdfControls = document.getElementById('pdfControls');
+        if (pdfControls) {
+            pdfControls.style.display = 'inline-flex';
+            document.getElementById('pageCount').textContent = pdfDoc.numPages;
         }
         
-        mostrarErro(mensagemErro);
+        viewerContainer.innerHTML = `
+            <div class="pdf-viewer-container" style="height: 80vh; overflow: auto; background: #525659;">
+                <div id="pdfCanvasContainer" class="d-flex flex-column align-items-center py-3">
+                    <canvas id="pdfCanvas" style="box-shadow: 0 2px 10px rgba(0,0,0,0.1);"></canvas>
+                </div>
+            </div>
+        `;
+        
+        await renderPage(1);
+        
+    } catch (error) {
+        debugLog(`ERRO na segunda tentativa: ${error.message}`, 'error');
+        mostrarErro(`Não foi possível carregar o PDF. Verifique se o arquivo existe e está acessível.`);
     }
 }
 
@@ -540,9 +525,8 @@ async function renderPage(num) {
         
         await page.render(renderContext).promise;
         
-        debugLog(`Página ${num} renderizada com sucesso`, 'success');
+        debugLog(`Página ${num} renderizada`, 'success');
         
-        // Atualizar contador
         const pageNumSpan = document.getElementById('pageNum');
         if (pageNumSpan) pageNumSpan.textContent = num;
         
@@ -559,7 +543,7 @@ function carregarImagem(url) {
         <div class="d-flex align-items-center justify-content-center" style="min-height: 80vh; background: #f5f5f5;">
             <img src="${url}" alt="{{ material.titulo }}" style="max-width: 100%; max-height: 80vh; object-fit: contain;" 
                  onload="debugLog('Imagem carregada com sucesso', 'success')"
-                 onerror="debugLog('Erro ao carregar imagem', 'error'); this.parentElement.innerHTML='<div class=\\\'text-center text-danger\\\'><i class=\\\'bi bi-image\\\' style=\\\'font-size: 4rem;\\\'></i><h5 class=\\\'mt-3\\\'>Erro ao carregar imagem</h5><p>URL: ${url}</p></div>'">
+                 onerror="debugLog('Erro ao carregar imagem', 'error'); this.parentElement.innerHTML='<div class=\\\'text-center text-danger\\\'><i class=\\\'bi bi-image\\\' style=\\\'font-size: 4rem;\\\'></i><h5 class=\\\'mt-3\\\'>Erro ao carregar imagem</h5></div>'">
         </div>
     `;
     
@@ -645,7 +629,7 @@ function baixarMaterial() {
     window.location.href = `/biblioteca/material/{{ material.id }}/download`;
 }
 
-// Funções existentes (favoritarMaterial, avaliações, etc.)
+// Funções existentes de favoritar e avaliações...
 async function favoritarMaterial() {
     try {
         const response = await fetch(`/biblioteca/material/{{ material.id }}/favoritar`, {
