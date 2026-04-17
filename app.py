@@ -2649,37 +2649,102 @@ def editar_material(material_id):
 @login_required
 @permissao_required('material.delete')
 def excluir_material(material_id):
-    """Excluir um material"""
-    cursor, conn = get_db()
-    
+    """Excluir um material da biblioteca"""
     try:
-        # Buscar material para log
-        cursor.execute("SELECT titulo FROM materiais WHERE id = %s", (material_id,))
+        cursor, conn = get_db()
+        
+        # Buscar dados do material antes de excluir (para log)
+        cursor.execute("""
+            SELECT id, titulo, subtitulo, autor, editora, ano_publicacao, 
+                   isbn, num_paginas, descricao, tags, categoria_id, 
+                   grau_acesso, arquivo_url, capa_url, formato
+            FROM materiais 
+            WHERE id = %s
+        """, (material_id,))
         material = cursor.fetchone()
         
         if not material:
             flash('Material não encontrado', 'danger')
+            return_connection(conn)
             return redirect(url_for('listar_materiais'))
         
-        # Excluir registros relacionados
-        cursor.execute("DELETE FROM downloads_material WHERE material_id = %s", (material_id,))
+        # Verificar permissão (apenas admin)
+        if session.get('tipo') != 'admin':
+            flash('Você não tem permissão para excluir este material', 'danger')
+            return_connection(conn)
+            return redirect(url_for('listar_materiais'))
+        
+        titulo_material = material.get('titulo')
+        
+        # Salvar dados para o log (convertendo para dict)
+        dados_material = dict(material)
+        
+        # 1. Remover dos favoritos
         cursor.execute("DELETE FROM favoritos_material WHERE material_id = %s", (material_id,))
+        
+        # 2. Remover avaliações
         cursor.execute("DELETE FROM avaliacoes_material WHERE material_id = %s", (material_id,))
         
-        # Excluir material
+        # 3. Remover registros de download
+        cursor.execute("DELETE FROM downloads_material WHERE material_id = %s", (material_id,))
+        
+        # 4. Remover o material
         cursor.execute("DELETE FROM materiais WHERE id = %s", (material_id,))
+        
         conn.commit()
         
-        registrar_log("excluir", "material", material_id, dados_antigos={"titulo": material['titulo']})
-        flash(f'Material "{material["titulo"]}" excluído com sucesso!', 'success')
+        # Tentar remover arquivos do Cloudinary se existirem
+        arquivo_url = material.get('arquivo_url')
+        capa_url = material.get('capa_url')
+        
+        if arquivo_url and 'cloudinary' in arquivo_url:
+            try:
+                # Extrair public_id do Cloudinary
+                import re
+                # Exemplo: https://res.cloudinary.com/xxxx/image/upload/v1234567890/pasta/arquivo.pdf
+                match = re.search(r'/upload/v\d+/(.+)\.', arquivo_url)
+                if match:
+                    public_id = match.group(1)
+                    from cloudinary.uploader import destroy
+                    destroy(public_id, resource_type='raw')
+                    print(f"Arquivo removido do Cloudinary: {public_id}")
+            except Exception as e:
+                print(f"Erro ao remover arquivo do Cloudinary: {e}")
+        
+        if capa_url and 'cloudinary' in capa_url:
+            try:
+                import re
+                match = re.search(r'/upload/v\d+/(.+)\.', capa_url)
+                if match:
+                    public_id = match.group(1)
+                    from cloudinary.uploader import destroy
+                    destroy(public_id, resource_type='image')
+                    print(f"Capa removida do Cloudinary: {public_id}")
+            except Exception as e:
+                print(f"Erro ao remover capa do Cloudinary: {e}")
+        
+        # Registrar log usando os parâmetros corretos
+        registrar_log(
+            acao='excluir_material',
+            entidade='materiais',
+            entidade_id=material_id,
+            dados_anteriores=dados_material,  # ← agora é dados_anteriores, não dados_antigos
+            dados_novos=None  # Não há dados novos pois foi excluído
+        )
+        
+        return_connection(conn)
+        
+        flash(f'Material "{titulo_material}" excluído com sucesso!', 'success')
+        return redirect(url_for('listar_materiais'))
         
     except Exception as e:
-        print(f"Erro ao excluir: {e}")
-        conn.rollback()
-        flash(f'Erro ao excluir: {str(e)}', 'danger')
-    
-    return_connection(conn)
-    return redirect(url_for('listar_materiais'))
+        print(f"❌ Erro ao excluir material: {e}")
+        import traceback
+        traceback.print_exc()
+        if 'conn' in locals():
+            return_connection(conn)
+        flash(f'Erro ao excluir material: {str(e)}', 'danger')
+        return redirect(url_for('listar_materiais'))
     
 @app.route("/biblioteca/categoria/<int:categoria_id>")
 @login_required
