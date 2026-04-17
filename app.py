@@ -2399,103 +2399,7 @@ def candidato_upload_documento_externo(candidato_id, tipo_id):
 # =============================
 # ROTAS DA BIBLIOTECA
 # =============================
-@app.route("/biblioteca/material/<int:material_id>/arquivo")
-@login_required
-@permissao_required('material.view_one')
-def servir_arquivo_material(material_id):
-    """Serve o arquivo do material para visualização (proxy para Cloudinary privado)"""
-    try:
-        cursor, conn = get_db()
-        
-        cursor.execute("""
-            SELECT m.id, m.arquivo_url, m.formato, m.grau_acesso, m.titulo, m.tipo
-            FROM materiais m
-            WHERE m.id = %s AND m.publicado = true
-        """, (material_id,))
-        material = cursor.fetchone()
-        
-        if not material:
-            return_connection(conn)
-            return jsonify({'error': 'Material não encontrado'}), 404
-        
-        usuario_grau = session.get('grau_atual', 0)
-        grau_acesso = material.get('grau_acesso', 1)
-        
-        if usuario_grau < grau_acesso and session.get('tipo') != 'admin':
-            return_connection(conn)
-            return jsonify({'error': 'Permissão negada'}), 403
-        
-        arquivo_url = material.get('arquivo_url')
-        
-        if not arquivo_url:
-            return_connection(conn)
-            return jsonify({'error': 'Arquivo não disponível'}), 404
-        
-        # Configurar autenticação do Cloudinary
-        auth = ('231643853831969', 'a6UQfWtibAvnRrb63v5CvxQlsXo')
-        
-        try:
-            response = requests.get(arquivo_url, auth=auth, stream=True)
-            
-            if response.status_code == 200:
-                content_type = response.headers.get('content-type', 'application/pdf')
-                
-                return Response(
-                    stream_with_context(response.iter_content(chunk_size=8192)),
-                    status=200,
-                    headers={
-                        'Content-Type': content_type,
-                        'Content-Disposition': f'inline; filename="{material.get("titulo", "documento")}.pdf"',
-                        'Cache-Control': 'no-cache, no-store, must-revalidate'
-                    }
-                )
-            else:
-                return_connection(conn)
-                return jsonify({'error': f'Erro ao acessar arquivo: {response.status_code}'}), 404
-                
-        except Exception as e:
-            print(f"Erro: {e}")
-            return_connection(conn)
-            return jsonify({'error': str(e)}), 500
-            
-    except Exception as e:
-        print(f"❌ Erro: {e}")
-        if 'conn' in locals():
-            return_connection(conn)
-        return jsonify({'error': str(e)}), 500
-        
-@app.route("/biblioteca/material/<int:material_id>/info")
-@login_required
-def material_info(material_id):
-    """Retorna informações do material para debug"""
-    try:
-        cursor, conn = get_db()
-        
-        cursor.execute("""
-            SELECT id, titulo, arquivo_url, formato, tipo, publicado
-            FROM materiais 
-            WHERE id = %s
-        """, (material_id,))
-        material = cursor.fetchone()
-        
-        if not material:
-            return_connection(conn)
-            return jsonify({'error': 'Material não encontrado'}), 404
-        
-        return_connection(conn)
-        
-        return jsonify({
-            'id': material['id'],
-            'titulo': material['titulo'],
-            'arquivo_url': material['arquivo_url'],
-            'formato': material['formato'],
-            'tipo': material['tipo'],
-            'publicado': material['publicado'],
-            'url_visualizacao': f"/biblioteca/material/{material_id}/arquivo"
-        })
-    except Exception as e:
-        return jsonify({'error': str(e)}), 500
-        
+
 @app.route("/biblioteca/admin/upload", methods=['GET', 'POST'])
 @login_required
 @permissao_required('material.create')
@@ -2745,102 +2649,37 @@ def editar_material(material_id):
 @login_required
 @permissao_required('material.delete')
 def excluir_material(material_id):
-    """Excluir um material da biblioteca"""
+    """Excluir um material"""
+    cursor, conn = get_db()
+    
     try:
-        cursor, conn = get_db()
-        
-        # Buscar dados do material antes de excluir (para log)
-        cursor.execute("""
-            SELECT id, titulo, subtitulo, autor, editora, ano_publicacao, 
-                   isbn, num_paginas, descricao, tags, categoria_id, 
-                   grau_acesso, arquivo_url, capa_url, formato
-            FROM materiais 
-            WHERE id = %s
-        """, (material_id,))
+        # Buscar material para log
+        cursor.execute("SELECT titulo FROM materiais WHERE id = %s", (material_id,))
         material = cursor.fetchone()
         
         if not material:
             flash('Material não encontrado', 'danger')
-            return_connection(conn)
             return redirect(url_for('listar_materiais'))
         
-        # Verificar permissão (apenas admin)
-        if session.get('tipo') != 'admin':
-            flash('Você não tem permissão para excluir este material', 'danger')
-            return_connection(conn)
-            return redirect(url_for('listar_materiais'))
-        
-        titulo_material = material.get('titulo')
-        
-        # Salvar dados para o log (convertendo para dict)
-        dados_material = dict(material)
-        
-        # 1. Remover dos favoritos
+        # Excluir registros relacionados
+        cursor.execute("DELETE FROM downloads_material WHERE material_id = %s", (material_id,))
         cursor.execute("DELETE FROM favoritos_material WHERE material_id = %s", (material_id,))
-        
-        # 2. Remover avaliações
         cursor.execute("DELETE FROM avaliacoes_material WHERE material_id = %s", (material_id,))
         
-        # 3. Remover registros de download
-        cursor.execute("DELETE FROM downloads_material WHERE material_id = %s", (material_id,))
-        
-        # 4. Remover o material
+        # Excluir material
         cursor.execute("DELETE FROM materiais WHERE id = %s", (material_id,))
-        
         conn.commit()
         
-        # Tentar remover arquivos do Cloudinary se existirem
-        arquivo_url = material.get('arquivo_url')
-        capa_url = material.get('capa_url')
-        
-        if arquivo_url and 'cloudinary' in arquivo_url:
-            try:
-                # Extrair public_id do Cloudinary
-                import re
-                # Exemplo: https://res.cloudinary.com/xxxx/image/upload/v1234567890/pasta/arquivo.pdf
-                match = re.search(r'/upload/v\d+/(.+)\.', arquivo_url)
-                if match:
-                    public_id = match.group(1)
-                    from cloudinary.uploader import destroy
-                    destroy(public_id, resource_type='raw')
-                    print(f"Arquivo removido do Cloudinary: {public_id}")
-            except Exception as e:
-                print(f"Erro ao remover arquivo do Cloudinary: {e}")
-        
-        if capa_url and 'cloudinary' in capa_url:
-            try:
-                import re
-                match = re.search(r'/upload/v\d+/(.+)\.', capa_url)
-                if match:
-                    public_id = match.group(1)
-                    from cloudinary.uploader import destroy
-                    destroy(public_id, resource_type='image')
-                    print(f"Capa removida do Cloudinary: {public_id}")
-            except Exception as e:
-                print(f"Erro ao remover capa do Cloudinary: {e}")
-        
-        # Registrar log usando os parâmetros corretos
-        registrar_log(
-            acao='excluir_material',
-            entidade='materiais',
-            entidade_id=material_id,
-            dados_anteriores=dados_material,  # ← agora é dados_anteriores, não dados_antigos
-            dados_novos=None  # Não há dados novos pois foi excluído
-        )
-        
-        return_connection(conn)
-        
-        flash(f'Material "{titulo_material}" excluído com sucesso!', 'success')
-        return redirect(url_for('listar_materiais'))
+        registrar_log("excluir", "material", material_id, dados_antigos={"titulo": material['titulo']})
+        flash(f'Material "{material["titulo"]}" excluído com sucesso!', 'success')
         
     except Exception as e:
-        print(f"❌ Erro ao excluir material: {e}")
-        import traceback
-        traceback.print_exc()
-        if 'conn' in locals():
-            return_connection(conn)
-        flash(f'Erro ao excluir material: {str(e)}', 'danger')
-        return redirect(url_for('listar_materiais'))
+        print(f"Erro ao excluir: {e}")
+        conn.rollback()
+        flash(f'Erro ao excluir: {str(e)}', 'danger')
+    
+    return_connection(conn)
+    return redirect(url_for('listar_materiais'))
     
 @app.route("/biblioteca/categoria/<int:categoria_id>")
 @login_required
@@ -3041,59 +2880,6 @@ def visualizar_material(material_id):
             return_connection(conn)
         flash('Erro ao carregar o material', 'danger')
         return redirect(url_for('listar_materiais'))
-        
-@app.route("/biblioteca/material/<int:material_id>/visualizar-arquivo")
-@login_required
-@permissao_required('material.view_one')
-def visualizar_arquivo_material(material_id):
-    """Serve o arquivo para visualização no navegador"""
-    try:
-        cursor, conn = get_db()
-        
-        cursor.execute("""
-            SELECT arquivo_url, formato, grau_acesso, titulo
-            FROM materiais 
-            WHERE id = %s AND publicado = true
-        """, (material_id,))
-        material = cursor.fetchone()
-        
-        if not material:
-            return_connection(conn)
-            return jsonify({'error': 'Material não encontrado'}), 404
-        
-        # Verificar permissão por grau
-        usuario_grau = session.get('grau_atual', 0)
-        grau_acesso = material.get('grau_acesso', 1)
-        
-        if usuario_grau < grau_acesso and session.get('tipo') != 'admin':
-            return_connection(conn)
-            return jsonify({'error': 'Permissão negada'}), 403
-        
-        arquivo_url = material.get('arquivo_url')
-        
-        if not arquivo_url:
-            return_connection(conn)
-            return jsonify({'error': 'Arquivo não disponível'}), 404
-        
-        # Se for URL do Cloudinary, redirecionar diretamente
-        if 'cloudinary' in arquivo_url or 'res.cloudinary.com' in arquivo_url:
-            return_connection(conn)
-            return redirect(arquivo_url)
-        
-        # Se for arquivo local, servir com send_file
-        import os
-        if os.path.exists(arquivo_url):
-            return_connection(conn)
-            return send_file(arquivo_url, conditional=True)
-        
-        return_connection(conn)
-        return jsonify({'error': 'Arquivo não encontrado'}), 404
-        
-    except Exception as e:
-        print(f"❌ Erro ao servir arquivo: {e}")
-        if 'conn' in locals():
-            return_connection(conn)
-        return jsonify({'error': str(e)}), 500        
 
 
 @app.route("/biblioteca/material/<int:material_id>/download")
@@ -3105,8 +2891,10 @@ def download_material(material_id):
         cursor, conn = get_db()
         
         cursor.execute("""
-            SELECT * FROM materiais 
-            WHERE id = %s AND publicado = true
+            SELECT m.*, c.nome as categoria_nome
+            FROM materiais m
+            LEFT JOIN categorias_material c ON m.categoria_id = c.id
+            WHERE m.id = %s AND m.publicado = true
         """, (material_id,))
         material = cursor.fetchone()
         
@@ -3114,6 +2902,18 @@ def download_material(material_id):
             flash('Arquivo não encontrado', 'danger')
             return_connection(conn)
             return redirect(url_for('listar_materiais'))
+        
+        # Verificar permissão por grau
+        usuario_grau = session.get('grau_atual', 0)
+        grau_acesso = material.get('grau_acesso', 1)
+        
+        if usuario_grau < grau_acesso and session.get('tipo') != 'admin':
+            flash('Você não tem permissão para baixar este material', 'danger')
+            return_connection(conn)
+            return redirect(url_for('listar_materiais'))
+        
+        arquivo_url = material.get('arquivo_url')
+        titulo = material.get('titulo', 'documento')
         
         # Registrar download
         cursor.execute("""
@@ -3130,20 +2930,48 @@ def download_material(material_id):
         
         return_connection(conn)
         
-        # Se for URL externa, redirecionar
-        if material['arquivo_url'].startswith('http'):
-            return redirect(material['arquivo_url'])
-        
-        flash('Download iniciado!', 'success')
-        return redirect(url_for('visualizar_material', material_id=material_id))
+        # IMPORTANTE: Redirecionar diretamente para a URL do Cloudinary
+        # Isso funciona se os arquivos forem públicos
+        return redirect(arquivo_url)
     
     except Exception as e:
         print(f"Erro no download: {e}")
+        import traceback
         traceback.print_exc()
         if 'conn' in locals():
             return_connection(conn)
         flash('Erro ao baixar o arquivo', 'danger')
         return redirect(url_for('visualizar_material', material_id=material_id))
+        
+@app.route("/biblioteca/material/<int:material_id>/registrar-download", methods=['POST'])
+@login_required
+def registrar_download_material(material_id):
+    """Registra download sem redirecionar (AJAX)"""
+    try:
+        cursor, conn = get_db()
+        
+        # Registrar download
+        cursor.execute("""
+            INSERT INTO downloads_material (material_id, usuario_id, data_download, ip)
+            VALUES (%s, %s, CURRENT_TIMESTAMP, %s)
+        """, (material_id, session['user_id'], request.remote_addr))
+        
+        # Incrementar contador
+        cursor.execute("""
+            UPDATE materiais SET downloads_count = COALESCE(downloads_count, 0) + 1 
+            WHERE id = %s
+        """, (material_id,))
+        conn.commit()
+        
+        return_connection(conn)
+        return jsonify({'success': True})
+        
+    except Exception as e:
+        print(f"Erro ao registrar download: {e}")
+        if 'conn' in locals():
+            return_connection(conn)
+        return jsonify({'success': False, 'error': str(e)}), 500
+        
 # =============================
 # ROTAS DO DASHBOARD OTIMIZADO
 # =============================
