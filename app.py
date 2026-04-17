@@ -5415,11 +5415,8 @@ def excluir_documento(id):
 def recuperar_senha():
     """Página para solicitar recuperação de senha"""
     
-    print("=== ROTA RECUPERAR SENHA ACESSADA ===")  # LOG
-    
     if request.method == "POST":
         email = request.form.get("email")
-        print(f"E-mail recebido: {email}")  # LOG
         
         if not email:
             flash("Digite seu e-mail!", "danger")
@@ -5430,14 +5427,23 @@ def recuperar_senha():
             cursor.execute("SELECT id, nome_completo, email FROM usuarios WHERE email = %s", (email,))
             usuario = cursor.fetchone()
             
-            print(f"Usuário encontrado: {usuario is not None}")  # LOG
-            
             if usuario:
                 # Gerar token
                 token = secrets.token_urlsafe(32)
                 expira_em = datetime.datetime.utcnow() + datetime.timedelta(hours=1)
                 
-                print(f"Token gerado: {token}")  # LOG
+                # Criar tabela se não existir
+                cursor.execute("""
+                    CREATE TABLE IF NOT EXISTS password_reset_tokens (
+                        id INT PRIMARY KEY AUTO_INCREMENT,
+                        usuario_id INT NOT NULL,
+                        token VARCHAR(255) NOT NULL UNIQUE,
+                        expira_em TIMESTAMP NOT NULL,
+                        usado BOOLEAN DEFAULT FALSE,
+                        criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                    )
+                """)
+                conn.commit()
                 
                 # Salvar token no banco
                 cursor.execute("""
@@ -5446,42 +5452,41 @@ def recuperar_senha():
                 """, (usuario['id'], token, expira_em))
                 conn.commit()
                 
-                print("Token salvo no banco")  # LOG
-                
-                # Buscar configuração de e-mail
-                email_config = get_email_config()
-                print(f"Config de e-mail: {email_config}")  # LOG
-                
                 # Construir link de recuperação
                 link_recuperacao = url_for('redefinir_senha', token=token, _external=True)
-                print(f"Link de recuperação: {link_recuperacao}")  # LOG
                 
-                # Enviar e-mail com Resend
-                try:
-                    import resend
-                    import os
-                    
-                    # Configurar Resend
-                    resend.api_key = os.environ.get("RESEND_API_KEY")
-                    print(f"API Key configurada: {resend.api_key is not None}")  # LOG
-                    
-                    params = {
-                        "from": f"{email_config['sender_name']} <{email_config['sender']}>",
-                        "to": [email],
-                        "subject": "Recuperação de Senha - Sistema Maçônico",
-                        "html": f"""
-                        <!DOCTYPE html>
-                        <html>
-                        <head>
-                            <meta charset="UTF-8">
-                            <title>Recuperação de Senha</title>
-                        </head>
-                        <body style="font-family: Arial, sans-serif;">
-                            <div style="max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e0e0e0; border-radius: 10px;">
-                                <h2 style="color: #333;">Recuperação de Senha</h2>
-                                <p>Olá, <strong>{usuario['nome_completo']}</strong>!</p>
-                                <p>Recebemos uma solicitação para redefinir sua senha.</p>
-                                <p>Clique no botão abaixo para criar uma nova senha:</p>
+                # Preparar o conteúdo HTML do e-mail
+                assunto = "🔐 Recuperação de Senha - ARLS Bicentenário"
+                
+                # Criar HTML do e-mail
+                html_content = f"""
+                <!DOCTYPE html>
+                <html>
+                <head>
+                    <meta charset="UTF-8">
+                    <title>Recuperação de Senha</title>
+                </head>
+                <body style="font-family: Arial, sans-serif; background-color: #f5f5f5; margin: 0; padding: 0;">
+                    <div style="max-width: 600px; margin: 0 auto; padding: 20px;">
+                        <div style="background-color: #ffffff; border-radius: 10px; padding: 30px; box-shadow: 0 2px 10px rgba(0,0,0,0.1);">
+                            
+                            <!-- Cabeçalho -->
+                            <div style="text-align: center; margin-bottom: 30px;">
+                                <h1 style="color: #333; margin: 0;">🔐 Recuperação de Senha</h1>
+                                <p style="color: #666; margin-top: 10px;">ARLS Bicentenário</p>
+                            </div>
+                            
+                            <!-- Conteúdo -->
+                            <div style="margin-bottom: 30px;">
+                                <p style="font-size: 16px; line-height: 1.5;">Olá, <strong>{usuario['nome_completo']}</strong>!</p>
+                                <p style="font-size: 16px; line-height: 1.5; color: #555;">
+                                    Recebemos uma solicitação para redefinir sua senha no sistema da ARLS Bicentenário.
+                                </p>
+                                <p style="font-size: 16px; line-height: 1.5; color: #555;">
+                                    Clique no botão abaixo para criar uma nova senha:
+                                </p>
+                                
+                                <!-- Botão -->
                                 <div style="text-align: center; margin: 30px 0;">
                                     <a href="{link_recuperacao}" 
                                        style="background-color: #ffc107; 
@@ -5490,44 +5495,82 @@ def recuperar_senha():
                                               text-decoration: none; 
                                               border-radius: 5px;
                                               display: inline-block;
-                                              font-weight: bold;">
+                                              font-weight: bold;
+                                              font-size: 16px;">
                                         Redefinir Minha Senha
                                     </a>
                                 </div>
-                                <p>Este link é válido por <strong>1 hora</strong>.</p>
-                                <p>Se você não solicitou esta alteração, ignore este e-mail.</p>
-                                <hr style="margin: 20px 0;">
-                                <small style="color: #666;">
-                                    Este é um e-mail automático, por favor não responda.
-                                </small>
+                                
+                                <p style="font-size: 14px; color: #999; text-align: center;">
+                                    Ou copie e cole o link abaixo no seu navegador:<br>
+                                    <span style="word-break: break-all;">{link_recuperacao}</span>
+                                </p>
+                                
+                                <div style="background-color: #f8f9fa; padding: 15px; border-radius: 5px; margin: 20px 0;">
+                                    <p style="margin: 0; font-size: 14px; color: #666;">
+                                        <strong>⚠️ Importante:</strong>
+                                    </p>
+                                    <ul style="margin: 10px 0 0 0; padding-left: 20px; font-size: 14px; color: #666;">
+                                        <li>Este link é válido por <strong>1 hora</strong></li>
+                                        <li>Se você não solicitou esta alteração, ignore este e-mail</li>
+                                        <li>Por segurança, não compartilhe este link com ninguém</li>
+                                    </ul>
+                                </div>
                             </div>
-                        </body>
-                        </html>
-                        """
-                    }
-                    
-                    print(f"Parâmetros do e-mail: {params}")  # LOG
-                    
-                    # Enviar e-mail
-                    email_response = resend.Emails.send(params)
-                    print(f"E-mail enviado! Resposta: {email_response}")  # LOG
-                    flash("✅ Link de recuperação enviado para seu e-mail!", "success")
-                    
-                except Exception as e:
-                    print(f"❌ ERRO AO ENVIAR E-MAIL: {e}")  # LOG
-                    import traceback
-                    traceback.print_exc()
-                    flash(f"Erro ao enviar e-mail: {str(e)}", "danger")
+                            
+                            <!-- Rodapé -->
+                            <div style="border-top: 1px solid #e0e0e0; padding-top: 20px; text-align: center; font-size: 12px; color: #999;">
+                                <p>Este é um e-mail automático, por favor não responda.</p>
+                                <p>ARLS Bicentenário | {datetime.datetime.now().year}</p>
+                            </div>
+                        </div>
+                    </div>
+                </body>
+                </html>
+                """
                 
-                registrar_log("solicitou_recuperacao_senha", "usuarios", usuario['id'])
+                # Texto alternativo (para clientes de e-mail que não suportam HTML)
+                texto_alternativo = f"""
+                Recuperação de Senha - ARLS Bicentenário
+                
+                Olá {usuario['nome_completo']}!
+                
+                Recebemos uma solicitação para redefinir sua senha.
+                
+                Para criar uma nova senha, acesse o link abaixo:
+                {link_recuperacao}
+                
+                Este link é válido por 1 hora.
+                
+                Se você não solicitou esta alteração, ignore este e-mail.
+                
+                ---
+                ARLS Bicentenário
+                """
+                
+                # Enviar e-mail usando a função que funciona
+                resultado = enviar_email_resend(
+                    destinatario=email,
+                    assunto=assunto,
+                    conteudo_html=html_content,
+                    conteudo_texto=texto_alternativo
+                )
+                
+                if resultado['success']:
+                    flash("✅ Link de recuperação enviado para seu e-mail! Verifique sua caixa de entrada.", "success")
+                    print(f"✅ E-mail de recuperação enviado para {email} - ID: {resultado.get('id')}")
+                else:
+                    flash(f"❌ Erro ao enviar e-mail: {resultado['message']}", "danger")
+                    print(f"❌ Erro ao enviar: {resultado['message']}")
+                
             else:
-                print("E-mail não encontrado no banco")  # LOG
+                # Por segurança, não informar que o e-mail não existe
                 flash("Se o e-mail estiver cadastrado, você receberá as instruções.", "info")
             
             return_connection(conn)
             
         except Exception as e:
-            print(f"❌ ERRO GERAL: {e}")  # LOG
+            print(f"❌ Erro na recuperação: {e}")
             import traceback
             traceback.print_exc()
             if 'conn' in locals():
@@ -5537,6 +5580,7 @@ def recuperar_senha():
         return redirect("/login")
     
     return render_template("recuperar_senha.html")
+    
 @app.route("/redefinir-senha", methods=["GET", "POST"])
 def redefinir_senha():
     """Redefine a senha usando token de recuperação"""
