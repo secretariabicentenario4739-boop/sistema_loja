@@ -22,9 +22,16 @@
         --bordo: #4A0E2E;
         --bordo-escuro: #3A0A24;
         --bordo-claro: #6B1342;
+        --bordo-suave: #8B4A6B;
+        --bordo-destaque: #A82265;
         --ouro: #D4AF37;
+        --ouro-escuro: #996515;
+        --ouro-claro: #F0D68A;
         --bege-pergaminho: #F5F0E8;
+        --cinza-suave: #E8E0D8;
         --cinza-texto: #4A4A4A;
+        --cinza-claro-texto: #6B6B6B;
+        --branco: #FFFFFF;
         --sidebar-width: 280px;
         --sidebar-collapsed-width: 80px;
     }
@@ -35,33 +42,188 @@
         color: var(--cinza-texto);
     }
     
-    /* NAVBAR BORDÔ */
-    .navbar {
+    /* ============================================
+       ESTILOS DO DASHBOARD (UNIFICADOS)
+       ============================================ */
+    
+    /* CARDS DO RITO BRASILEIRO */
+    .card-maconico {
+        background: var(--branco);
+        border: 1px solid rgba(74, 14, 46, 0.12);
+        border-radius: 20px;
+        transition: all 0.3s ease;
+        position: relative;
+        overflow: hidden;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+    }
+    
+    .card-maconico:hover {
+        transform: translateY(-4px);
+        border-color: var(--bordo);
+        box-shadow: 0 12px 24px rgba(0, 0, 0, 0.08);
+    }
+
+    /* CABEÇALHO DO RITO BRASILEIRO */
+    .header-maconico {
         background: linear-gradient(135deg, var(--bordo-escuro) 0%, var(--bordo) 100%);
-        padding: 1rem 0;
-        border-bottom: 1px solid rgba(212, 175, 55, 0.3);
-        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        border-bottom: 2px solid var(--ouro);
+        position: relative;
     }
     
-    .navbar-brand {
-        font-weight: 700;
-        color: white !important;
-    }
-    
-    .navbar-brand i {
+    .header-maconico::after {
+        content: '⌂ ⌂ ⊡';
+        position: absolute;
+        bottom: -12px;
+        right: 25px;
+        font-size: 24px;
         color: var(--ouro);
-        font-size: 1.8rem;
+        opacity: 0.4;
+        font-family: serif;
+        letter-spacing: 4px;
+    }
+
+    /* ESTATÍSTICAS BORDÔ */
+    .stat-maconico {
+        background: rgba(74, 14, 46, 0.04);
+        border: 1px solid rgba(74, 14, 46, 0.1);
+        border-radius: 16px;
+        transition: all 0.3s ease;
     }
     
-    .nav-link {
-        color: rgba(255,255,255,0.9) !important;
+    .stat-maconico:hover {
+        border-color: var(--bordo);
+        transform: translateY(-3px);
+        background: rgba(74, 14, 46, 0.06);
+    }
+
+    /* NÚMEROS COM EFEITO BORDÔ */
+    .numero-bordo {
+        background: linear-gradient(135deg, var(--bordo) 0%, var(--bordo-claro) 100%);
+        -webkit-background-clip: text;
+        background-clip: text;
+        color: transparent;
+        font-weight: 700;
+    }
+
+    /* ÍCONES MAÇÔNICOS */
+    .icone-maconico {
+        width: 50px;
+        height: 50px;
+        background: linear-gradient(135deg, var(--bordo), var(--bordo-claro));
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-size: 24px;
+        box-shadow: 0 4px 12px rgba(74, 14, 46, 0.2);
+    }
+
+    /* TÍTULOS DO RITO BRASILEIRO */
+    .titulo-maconico {
+        font-family: 'Georgia', 'Times New Roman', serif;
+        letter-spacing: 2px;
+        text-transform: uppercase;
+        background: linear-gradient(135deg, var(--bordo), var(--bordo-claro));
+        -webkit-background-clip: text;
+        background-clip: text;
+        color: transparent;
+        position: relative;
+        display: inline-block;
+        font-weight: 600;
+    }
+    
+    .titulo-maconico::after {
+        content: '';
+        position: absolute;
+        bottom: -6px;
+        left: 0;
+        width: 60px;
+        height: 2px;
+        background: linear-gradient(90deg, var(--bordo), transparent);
+    }
+
+    /* BOTÕES DO RITO BRASILEIRO */
+    .btn-maconico {
+        background: linear-gradient(135deg, var(--bordo), var(--bordo-escuro));
+        border: none;
+        color: white;
+        border-radius: 30px;
+        padding: 8px 24px;
+        transition: all 0.3s ease;
         font-weight: 500;
-        transition: all 0.3s;
     }
     
-    .nav-link:hover {
-        color: var(--ouro) !important;
+    .btn-maconico:hover {
+        background: linear-gradient(135deg, var(--bordo-claro), var(--bordo));
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(74, 14, 46, 0.3);
+        color: white;
     }
+
+    /* PROGRESS BAR BORDÔ */
+    .progress-maconico {
+        background: rgba(74, 14, 46, 0.1);
+        border-radius: 30px;
+        height: 10px;
+        overflow: hidden;
+    }
+    
+    .progress-maconico .progress-bar {
+        background: linear-gradient(90deg, var(--bordo), var(--bordo-claro));
+        border-radius: 30px;
+        position: relative;
+        overflow: hidden;
+    }
+
+    /* TABELA DO RITO BRASILEIRO */
+    .table-maconica {
+        background: var(--branco);
+        border-radius: 16px;
+        overflow: hidden;
+    }
+    
+    .table-maconica thead {
+        background: rgba(74, 14, 46, 0.05);
+        color: var(--bordo);
+    }
+    
+    .table-maconica tbody tr {
+        border-bottom: 1px solid rgba(74, 14, 46, 0.08);
+        transition: all 0.3s ease;
+    }
+    
+    .table-maconica tbody tr:hover {
+        background: rgba(74, 14, 46, 0.02);
+    }
+
+    /* SÍMBOLOS DO RITO BRASILEIRO */
+    .simbolo-maconico {
+        font-size: 14px;
+        letter-spacing: 6px;
+        color: var(--bordo);
+        text-align: center;
+        margin: 20px 0;
+        font-family: monospace;
+    }
+    
+    /* FORMAÇÃO DA DATA MAÇÔNICA */
+    .data-maconica {
+        font-size: 0.9rem;
+        letter-spacing: 1px;
+        font-family: monospace;
+    }
+    
+    /* UTILITÁRIOS */
+    .text-bordo { color: var(--bordo) !important; }
+    .bg-bordo { background: var(--bordo) !important; }
+    .border-bordo { border-color: var(--bordo) !important; }
+    .text-ouro { color: var(--ouro) !important; }
+    .bg-ouro { background: var(--ouro) !important; }
+    
+    /* ============================================
+       SIDEBAR STYLES - SISTEMA DE SELEÇÃO UNIFICADO
+       ============================================ */
     
     /* SIDEBAR */
     .sidebar {
@@ -82,7 +244,8 @@
         width: var(--sidebar-collapsed-width);
     }
     
-    .sidebar.collapsed .nav-link span {
+    .sidebar.collapsed .nav-link span,
+    .sidebar.collapsed .dropdown-title span {
         display: none;
     }
     
@@ -91,6 +254,10 @@
     }
     
     .sidebar.collapsed .logo-area small {
+        display: none;
+    }
+    
+    .sidebar.collapsed .dropdown-header .dropdown-icon {
         display: none;
     }
     
@@ -122,18 +289,12 @@
     }
     
     /* ============================================
-       ESTILO UNIFICADO PARA TODOS OS LINKS DA SIDEBAR
+       ESTILO BASE PARA TODOS OS LINKS
+       Transição suave e discreta
        ============================================ */
     
-    /* Links normais do menu */
     .sidebar .nav-link,
-    .sidebar .nav-link span,
-    .sidebar .nav-link i {
-        color: #333333 !important;
-        transition: all 0.2s ease-in-out !important;
-    }
-    
-    .sidebar .nav-link {
+    .dropdown-content .nav-link {
         padding: 10px 12px;
         border-radius: 10px;
         margin: 2px 0;
@@ -141,114 +302,138 @@
         align-items: center;
         gap: 12px;
         font-size: 0.85rem;
+        text-decoration: none;
+        transition: all 0.2s ease;
+        position: relative;
     }
     
-    .sidebar .nav-link i {
+    /* Cores padrão */
+    .sidebar .nav-link,
+    .sidebar .nav-link span,
+    .sidebar .nav-link i,
+    .dropdown-content .nav-link,
+    .dropdown-content .nav-link span,
+    .dropdown-content .nav-link i {
+        color: #5a5a5a !important;
+        transition: color 0.2s ease;
+    }
+    
+    /* EFEITO HOVER */
+    .sidebar .nav-link:hover,
+    .sidebar .nav-link:hover span,
+    .sidebar .nav-link:hover i,
+    .dropdown-content .nav-link:hover,
+    .dropdown-content .nav-link:hover span,
+    .dropdown-content .nav-link:hover i {
+        color: var(--bordo) !important;
+        background-color: #e8e0d8 !important;
+    }
+    
+    /* EFEITO ACTIVE - MESMA COR DO HOVER */
+    .sidebar .nav-link.active,
+    .sidebar .nav-link.active span,
+    .sidebar .nav-link.active i,
+    .dropdown-content .nav-link.active,
+    .dropdown-content .nav-link.active span,
+    .dropdown-content .nav-link.active i {
+        color: var(--bordo) !important;
+        background-color: #e0d6cc !important;
+        font-weight: 600 !important;
+    }
+    
+    /* Ícones dentro dos links */
+    .sidebar .nav-link i,
+    .dropdown-content .nav-link i {
         width: 24px;
         font-size: 1.1rem;
     }
     
-    .sidebar .nav-link:hover,
-    .sidebar .nav-link:hover span,
-    .sidebar .nav-link:hover i {
-        color: #4A0E2E !important;
-        background-color: #e8e0d8 !important;
+    /* ============================================
+       MENU DROPDOWN - SEM TRANSIÇÃO IMPACTANTE
+       ============================================ */
+    
+    .menu-dropdown {
+        margin: 4px 0;
+        position: relative;
     }
     
-    .sidebar .nav-link.active,
-    .sidebar .nav-link.active span,
-    .sidebar .nav-link.active i {
-        color: #4A0E2E !important;
-        background-color: rgba(74, 14, 46, 0.1) !important;
-        font-weight: 600 !important;
+    .dropdown-header {
+        padding: 10px 12px;
+        border-radius: 10px;
+        cursor: pointer;
+        transition: background 0.2s ease;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        color: #5a5a5a;
+        font-size: 0.85rem;
+    }
+    
+    .dropdown-header:hover {
+        background-color: #e8e0d8;
+        color: var(--bordo);
+    }
+    
+    .dropdown-header i:first-child {
+        width: 24px;
+        font-size: 1.1rem;
+        margin-right: 12px;
+    }
+    
+    .dropdown-header .dropdown-title {
+        flex: 1;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+    }
+    
+    .dropdown-header .dropdown-icon {
+        transition: transform 0.2s ease;
+        font-size: 0.8rem;
+        color: #999;
+    }
+    
+    .menu-dropdown.open .dropdown-header .dropdown-icon {
+        transform: rotate(180deg);
+    }
+    
+    /* ESTILO PARA DROPDOWN COM ITEM ATIVO */
+    .menu-dropdown.has-active .dropdown-header {
+        color: var(--bordo);
+        font-weight: 600;
+    }
+    
+    .menu-dropdown.has-active .dropdown-header i:first-child {
+        color: var(--bordo);
+    }
+    
+    /* Conteúdo do dropdown - transição suave e discreta */
+    .dropdown-content {
+        max-height: 0;
+        overflow: hidden;
+        transition: max-height 0.25s ease-out;
+        padding-left: 0;
+    }
+    
+    .menu-dropdown.open .dropdown-content {
+        max-height: 500px;
+        transition: max-height 0.3s ease-in;
+    }
+    
+    /* Links dentro do dropdown - indentação */
+    .dropdown-content .nav-link {
+        padding: 8px 12px 8px 44px !important;
+        font-size: 0.8rem;
+    }
+    
+    .dropdown-content .nav-link i {
+        width: 20px;
+        font-size: 0.9rem;
     }
     
     .sidebar hr {
         margin: 12px 8px;
         border-color: rgba(74, 14, 46, 0.1);
-    }
-    
-    /* ============================================
-       DROPDOWN ADMIN - MESMO ESTILO
-       ============================================ */
-    .sidebar #adminDropdown,
-    #adminDropdown,
-    div#adminDropdown {
-        position: relative !important;
-    }
-    
-    .sidebar #adminDropdown .dropdown-toggle,
-    #adminDropdown .dropdown-toggle {
-        display: flex !important;
-        justify-content: space-between !important;
-        align-items: center !important;
-        cursor: pointer !important;
-        color: #333333 !important;
-        padding: 10px 12px !important;
-        border-radius: 10px !important;
-    }
-    
-    .sidebar #adminDropdown .dropdown-toggle:hover,
-    #adminDropdown .dropdown-toggle:hover {
-        color: #4A0E2E !important;
-        background-color: #e8e0d8 !important;
-    }
-    
-    .sidebar #adminDropdown .dropdown-toggle::after,
-    #adminDropdown .dropdown-toggle::after {
-        content: "▼" !important;
-        border: none !important;
-        margin-left: auto !important;
-        font-size: 10px !important;
-    }
-    
-    .sidebar #adminDropdown.open .dropdown-toggle::after,
-    #adminDropdown.open .dropdown-toggle::after {
-        transform: rotate(180deg) !important;
-    }
-    
-    .sidebar #adminDropdown .dropdown-menu,
-    #adminDropdown .dropdown-menu {
-        display: none !important;
-        background: white !important;
-        border: 1px solid #ddd !important;
-        border-radius: 8px !important;
-        padding: 5px 0 !important;
-        margin: 5px 0 !important;
-        box-shadow: 0 2px 5px rgba(0,0,0,0.1) !important;
-        position: relative !important;
-        width: 100% !important;
-    }
-    
-    .sidebar #adminDropdown.open .dropdown-menu,
-    #adminDropdown.open .dropdown-menu {
-        display: block !important;
-    }
-    
-    .sidebar #adminDropdown .dropdown-menu a,
-    #adminDropdown .dropdown-menu a {
-        color: #333333 !important;
-        background: white !important;
-        padding: 8px 15px !important;
-        display: block !important;
-        text-decoration: none !important;
-        font-size: 0.85rem !important;
-    }
-    
-    .sidebar #adminDropdown .dropdown-menu a:hover,
-    #adminDropdown .dropdown-menu a:hover {
-        background: #e8e0d8 !important;
-        color: #4A0E2E !important;
-    }
-    
-    /* ============================================
-       EFEITO HOVER PARA LINKS DE DROPDOWNS
-       ============================================ */
-    .sidebar .dropdown-menu .nav-link:hover,
-    .sidebar .submenu a:hover,
-    .sidebar .nav-dropdown .dropdown-menu .nav-link:hover {
-        background-color: #e8e0d8 !important;
-        color: #4A0E2E !important;
     }
     
     /* MAIN CONTENT */
@@ -280,7 +465,7 @@
         border-radius: 30px;
         padding: 8px 16px;
         color: var(--bordo);
-        transition: all 0.2s;
+        transition: all 0.2s ease;
     }
     
     .toggle-sidebar:hover {
@@ -303,33 +488,6 @@
     .badge-user:last-child {
         background: var(--bordo);
         color: white;
-    }
-    
-    /* CARDS */
-    .card {
-        border-radius: 16px;
-        border: 1px solid rgba(74, 14, 46, 0.1);
-        box-shadow: 0 1px 3px rgba(0,0,0,0.05);
-        background: white;
-    }
-    
-    .card-header {
-        background: white;
-        border-bottom: 1px solid rgba(74, 14, 46, 0.1);
-        color: var(--bordo);
-        font-weight: 600;
-    }
-    
-    /* BOTÕES */
-    .btn-primary {
-        background: var(--bordo);
-        border: none;
-        border-radius: 30px;
-        padding: 8px 24px;
-    }
-    
-    .btn-primary:hover {
-        background: var(--bordo-escuro);
     }
     
     /* FOOTER */
@@ -427,6 +585,14 @@
     .modal-backdrop {
         z-index: 1050;
     }
+    
+    /* RESPONSIVO DASHBOARD */
+    @media (max-width: 768px) {
+        .display-4 { font-size: 1.8rem; }
+        .display-5 { font-size: 1.3rem; }
+        .icone-maconico { width: 40px; height: 40px; font-size: 20px; }
+        .simbolo-maconico { letter-spacing: 3px; font-size: 10px; }
+    }
 </style>
     
     {% block styles %}{% endblock %}
@@ -448,6 +614,7 @@
         </div>
         
         <nav class="nav flex-column">
+            <!-- Menu Principal -->
             <a class="nav-link" href="/dashboard">
                 <i class="bi bi-speedometer2"></i> <span>Dashboard</span>
             </a>
@@ -463,7 +630,13 @@
                 <i class="bi bi-calendar-event"></i> <span>Reuniões</span>
             </a>
             {% endif %}
-            
+			
+            {% if tem_permissao('biblioteca.view') %}
+            <a class="nav-link" href="/biblioteca">
+                <i class="bi bi-calendar-event"></i> <span>Biblioteca</span>
+            </a>
+            {% endif %}
+			
             {% if tem_permissao('ata.view') %}
             <a class="nav-link" href="/atas">
                 <i class="bi bi-file-text"></i> <span>Atas</span>
@@ -484,58 +657,47 @@
             
             <hr>
             
-            <!-- MENU ADMINISTRATIVO - VERSÃO SIMPLES SEM CSS COMPLEXO -->
-{% if session.tipo == 'admin' %}
-<div style="margin-top: 10px;">
-    <div onclick="toggleSubmenu(this)" style="cursor: pointer; padding: 10px 12px; display: flex; justify-content: space-between; align-items: center; background: transparent; border-radius: 8px;">
-        <span><i class="bi bi-shield-lock" style="margin-right: 12px;"></i> Administrativo</span>
-        <span class="arrow">▼</span>
-    </div>
-    <div class="submenu" style="display: none; padding-left: 35px; margin-top: 5px;">
-        <a href="/cargos" style="display: block; padding: 8px 12px; color: #333; text-decoration: none; font-size: 0.85rem;">
-            <i class="bi bi-briefcase-fill" style="margin-right: 10px;"></i> Gerenciar Cargos
-        </a>
-        <a href="/admin/permissoes" style="display: block; padding: 8px 12px; color: #333; text-decoration: none; font-size: 0.85rem;">
-            <i class="bi bi-shield-lock" style="margin-right: 10px;"></i> Permissões
-        </a>
-        <a href="/backups" style="display: block; padding: 8px 12px; color: #333; text-decoration: none; font-size: 0.85rem;">
-            <i class="bi bi-database" style="margin-right: 10px;"></i> Backup
-        </a>
-        <a href="/auditoria" style="display: block; padding: 8px 12px; color: #333; text-decoration: none; font-size: 0.85rem;">
-            <i class="bi bi-journal" style="margin-right: 10px;"></i> Auditoria
-        </a>
-        <a href="/config/email" style="display: block; padding: 8px 12px; color: #333; text-decoration: none; font-size: 0.85rem;">
-            <i class="bi bi-envelope" style="margin-right: 10px;"></i> Config. E-mail
-        </a>
-        <a href="/config/whatsapp" style="display: block; padding: 8px 12px; color: #333; text-decoration: none; font-size: 0.85rem;">
-            <i class="bi bi-whatsapp" style="margin-right: 10px;"></i> WhatsApp
-        </a>
-        <a href="/configuracoes/notificacoes" style="display: block; padding: 8px 12px; color: #333; text-decoration: none; font-size: 0.85rem;">
-            <i class="bi bi-bell" style="margin-right: 10px;"></i> Notificações
-        </a>
-        <a href="/sugestoes" style="display: block; padding: 8px 12px; color: #333; text-decoration: none; font-size: 0.85rem;">
-            <i class="bi bi-lightbulb" style="margin-right: 10px;"></i> Sugestões
-        </a>
-    </div>
-</div>
-
-<script>
-function toggleSubmenu(element) {
-    var submenu = element.nextElementSibling;
-    var arrow = element.querySelector('.arrow');
-    if (submenu.style.display === 'none') {
-        submenu.style.display = 'block';
-        arrow.innerHTML = '▲';
-    } else {
-        submenu.style.display = 'none';
-        arrow.innerHTML = '▼';
-    }
-}
-</script>
-{% endif %}
-            
+            <!-- MENU ADMINISTRATIVO -->
+            {% if session.tipo == 'admin' %}
+            <div class="menu-dropdown" id="adminMenu">
+                <div class="dropdown-header" onclick="toggleDropdown('adminMenu')">
+                    <div class="dropdown-title">
+                        <i class="bi bi-shield-lock"></i>
+                        <span>Administrativo</span>
+                    </div>
+                    <i class="bi bi-chevron-down dropdown-icon"></i>
+                </div>
+                <div class="dropdown-content">
+                    <a class="nav-link" href="/cargos">
+                        <i class="bi bi-briefcase-fill"></i> <span>Gerenciar Cargos</span>
+                    </a>
+                    <a class="nav-link" href="/admin/permissoes">
+                        <i class="bi bi-shield-lock"></i> <span>Permissões</span>
+                    </a>
+                    <a class="nav-link" href="/backups">
+                        <i class="bi bi-database"></i> <span>Backup</span>
+                    </a>
+                    <a class="nav-link" href="/auditoria">
+                        <i class="bi bi-journal"></i> <span>Auditoria</span>
+                    </a>
+                    <a class="nav-link" href="/config/email">
+                        <i class="bi bi-envelope"></i> <span>Config. E-mail</span>
+                    </a>
+                    <a class="nav-link" href="/config/whatsapp">
+                        <i class="bi bi-whatsapp"></i> <span>WhatsApp</span>
+                    </a>
+                    <a class="nav-link" href="/configuracoes/notificacoes">
+                        <i class="bi bi-bell"></i> <span>Notificações</span>
+                    </a>
+                    <a class="nav-link" href="/sugestoes">
+                        <i class="bi bi-lightbulb"></i> <span>Sugestões</span>
+                    </a>
+                </div>
+            </div>
             <hr>
+            {% endif %}
             
+            <!-- Menu do Usuário -->
             <a class="nav-link" href="/perfil">
                 <i class="bi bi-person-circle"></i> <span>Meu Perfil</span>
             </a>
@@ -647,35 +809,75 @@ function toggleSubmenu(element) {
             sidebarOverlay.addEventListener('click', closeMobileMenu);
         }
         
-        document.querySelectorAll('.sidebar .nav-link').forEach(link => {
-            link.addEventListener('click', () => {
-                if (isMobile()) closeMobileMenu();
+        // Função para atualizar links ativos
+        function updateActiveLinks() {
+            const currentPath = window.location.pathname;
+            
+            // Remove active de todos os links
+            document.querySelectorAll('.sidebar .nav-link').forEach(link => {
+                link.classList.remove('active');
+            });
+            
+            // Remove has-active de todos os dropdowns
+            document.querySelectorAll('.menu-dropdown').forEach(dropdown => {
+                dropdown.classList.remove('has-active');
+            });
+            
+            // Adiciona active ao link correspondente
+            document.querySelectorAll('.sidebar .nav-link').forEach(link => {
+                const href = link.getAttribute('href');
+                if (href && href !== '#' && (currentPath === href || (href !== '/' && currentPath.startsWith(href)))) {
+                    link.classList.add('active');
+                    
+                    // Se o link estiver dentro de um dropdown, marca o dropdown
+                    const parentDropdown = link.closest('.menu-dropdown');
+                    if (parentDropdown) {
+                        parentDropdown.classList.add('has-active');
+                    }
+                }
+            });
+        }
+        
+        // Função para toggle dos dropdowns
+        function toggleDropdown(menuId) {
+            const menu = document.getElementById(menuId);
+            if (!menu) return;
+            
+            // Alterna o menu atual
+            menu.classList.toggle('open');
+        }
+        
+        // Executar ao carregar
+        document.addEventListener('DOMContentLoaded', function() {
+            updateActiveLinks();
+        });
+        
+        // Atualiza quando a navegação ocorre
+        window.addEventListener('load', function() {
+            updateActiveLinks();
+        });
+        
+        // Para links dentro do dropdown
+        document.querySelectorAll('.dropdown-content .nav-link').forEach(link => {
+            link.addEventListener('click', function() {
+                if (isMobile()) {
+                    setTimeout(() => {
+                        closeMobileMenu();
+                    }, 150);
+                }
+                setTimeout(() => {
+                    updateActiveLinks();
+                }, 100);
             });
         });
         
-        const currentPath = window.location.pathname;
-        document.querySelectorAll('.sidebar .nav-link').forEach(link => {
-            const href = link.getAttribute('href');
-            if (href && (currentPath === href || (href !== '/' && currentPath.startsWith(href)))) {
-                link.classList.add('active');
-            }
-        });
-        
-        // Dropdown admin
-        function toggleAdminDropdown(event) {
-            event.preventDefault();
-            event.stopPropagation();
-            const dropdown = document.getElementById('adminDropdown');
-            if (dropdown) {
-                dropdown.classList.toggle('open');
-            }
-        }
-        
-        document.addEventListener('click', function(event) {
-            const dropdown = document.getElementById('adminDropdown');
-            if (dropdown && !dropdown.contains(event.target)) {
-                dropdown.classList.remove('open');
-            }
+        // Links normais
+        document.querySelectorAll('.sidebar > .nav > .nav-link').forEach(link => {
+            link.addEventListener('click', function() {
+                setTimeout(() => {
+                    updateActiveLinks();
+                }, 100);
+            });
         });
     </script>
     
