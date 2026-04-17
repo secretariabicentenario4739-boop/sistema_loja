@@ -5423,20 +5423,18 @@ def recuperar_senha():
             return redirect("/recuperar-senha")
         
         try:
-            # Usar sua função get_db() corretamente
-            conn = get_db()
-            cursor = conn.cursor()
+            # get_db() retorna (cursor, conn)
+            cursor, conn = get_db()
             
             cursor.execute("SELECT id, nome_completo, email FROM usuarios WHERE email = %s", (email,))
             usuario = cursor.fetchone()
             
             if usuario:
-                # Gerar token
                 import secrets
                 token = secrets.token_urlsafe(32)
                 expira_em = datetime.utcnow() + timedelta(hours=1)
                 
-                # Criar tabela se não existir (usando SQL compatível com PostgreSQL)
+                # Criar tabela se não existir
                 cursor.execute("""
                     CREATE TABLE IF NOT EXISTS password_reset_tokens (
                         id SERIAL PRIMARY KEY,
@@ -5453,11 +5451,14 @@ def recuperar_senha():
                 cursor.execute("""
                     INSERT INTO password_reset_tokens (usuario_id, token, expira_em, usado)
                     VALUES (%s, %s, %s, FALSE)
-                """, (usuario[0], token, expira_em))
+                """, (usuario['id'], token, expira_em))
                 conn.commit()
                 
                 # Construir link de recuperação
                 link_recuperacao = url_for('redefinir_senha', token=token, _external=True)
+                
+                # Mostrar link na tela para teste
+                flash(f"🔗 LINK DE TESTE: {link_recuperacao}", "info")
                 
                 # Preparar e-mail
                 assunto = "🔐 Recuperação de Senha - ARLS Bicentenário"
@@ -5472,7 +5473,7 @@ def recuperar_senha():
                 <body style="font-family: Arial, sans-serif;">
                     <div style="max-width: 600px; margin: 0 auto; padding: 20px;">
                         <h2>🔐 Recuperação de Senha</h2>
-                        <p>Olá, <strong>{usuario[1]}</strong>!</p>
+                        <p>Olá, <strong>{usuario['nome_completo']}</strong>!</p>
                         <p>Clique no link abaixo para redefinir sua senha:</p>
                         <p><a href="{link_recuperacao}">{link_recuperacao}</a></p>
                         <p>Este link é válido por 1 hora.</p>
@@ -5486,7 +5487,7 @@ def recuperar_senha():
                 texto_alternativo = f"""
                 Recuperação de Senha - ARLS Bicentenário
                 
-                Olá {usuario[1]}!
+                Olá {usuario['nome_completo']}!
                 
                 Para redefinir sua senha, acesse:
                 {link_recuperacao}
@@ -5523,6 +5524,7 @@ def recuperar_senha():
     
     return render_template("recuperar_senha.html")
     
+    
 @app.route("/redefinir-senha", methods=["GET", "POST"])
 def redefinir_senha():
     """Redefine a senha usando token de recuperação"""
@@ -5534,8 +5536,7 @@ def redefinir_senha():
         return redirect("/login")
     
     try:
-        conn = get_db()
-        cursor = conn.cursor()
+        cursor, conn = get_db()
         
         cursor.execute("""
             SELECT usuario_id FROM password_reset_tokens 
@@ -5551,7 +5552,7 @@ def redefinir_senha():
             flash("Link inválido ou expirado! Solicite uma nova recuperação.", "danger")
             return redirect("/recuperar-senha")
         
-        usuario_id = result[0]
+        usuario_id = result['usuario_id']
         
         if request.method == "POST":
             nova_senha = request.form.get("nova_senha")
