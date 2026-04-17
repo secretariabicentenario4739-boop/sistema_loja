@@ -5415,8 +5415,11 @@ def excluir_documento(id):
 def recuperar_senha():
     """Página para solicitar recuperação de senha"""
     
+    print("=== ROTA RECUPERAR SENHA ACESSADA ===")  # LOG
+    
     if request.method == "POST":
         email = request.form.get("email")
+        print(f"E-mail recebido: {email}")  # LOG
         
         if not email:
             flash("Digite seu e-mail!", "danger")
@@ -5427,10 +5430,14 @@ def recuperar_senha():
             cursor.execute("SELECT id, nome_completo, email FROM usuarios WHERE email = %s", (email,))
             usuario = cursor.fetchone()
             
+            print(f"Usuário encontrado: {usuario is not None}")  # LOG
+            
             if usuario:
                 # Gerar token
                 token = secrets.token_urlsafe(32)
                 expira_em = datetime.datetime.utcnow() + datetime.timedelta(hours=1)
+                
+                print(f"Token gerado: {token}")  # LOG
                 
                 # Salvar token no banco
                 cursor.execute("""
@@ -5439,19 +5446,24 @@ def recuperar_senha():
                 """, (usuario['id'], token, expira_em))
                 conn.commit()
                 
+                print("Token salvo no banco")  # LOG
+                
                 # Buscar configuração de e-mail
                 email_config = get_email_config()
+                print(f"Config de e-mail: {email_config}")  # LOG
                 
                 # Construir link de recuperação
                 link_recuperacao = url_for('redefinir_senha', token=token, _external=True)
+                print(f"Link de recuperação: {link_recuperacao}")  # LOG
                 
-                # Enviar e-mail com Resend usando a configuração
+                # Enviar e-mail com Resend
                 try:
                     import resend
+                    import os
                     
-                    # Configurar Resend (se não estiver configurado globalmente)
-                    if not resend.api_key:
-                        resend.api_key = os.environ.get("RESEND_API_KEY")
+                    # Configurar Resend
+                    resend.api_key = os.environ.get("RESEND_API_KEY")
+                    print(f"API Key configurada: {resend.api_key is not None}")  # LOG
                     
                     params = {
                         "from": f"{email_config['sender_name']} <{email_config['sender']}>",
@@ -5494,31 +5506,30 @@ def recuperar_senha():
                         """
                     }
                     
+                    print(f"Parâmetros do e-mail: {params}")  # LOG
+                    
                     # Enviar e-mail
                     email_response = resend.Emails.send(params)
-                    print(f"E-mail enviado para {email}. ID: {email_response['id']}")
+                    print(f"E-mail enviado! Resposta: {email_response}")  # LOG
                     flash("✅ Link de recuperação enviado para seu e-mail!", "success")
                     
-                    # Registrar log do envio
-                    cursor.execute("""
-                        INSERT INTO email_logs (usuario_id, tipo, destinatario, status, mensagem_id)
-                        VALUES (%s, 'recuperacao_senha', %s, 'enviado', %s)
-                    """, (usuario['id'], email, email_response.get('id')))
-                    conn.commit()
-                    
                 except Exception as e:
-                    print(f"Erro ao enviar e-mail: {e}")
-                    flash("Erro ao enviar e-mail. Tente novamente mais tarde.", "danger")
+                    print(f"❌ ERRO AO ENVIAR E-MAIL: {e}")  # LOG
+                    import traceback
+                    traceback.print_exc()
+                    flash(f"Erro ao enviar e-mail: {str(e)}", "danger")
                 
                 registrar_log("solicitou_recuperacao_senha", "usuarios", usuario['id'])
             else:
-                # Por segurança, não informar que o e-mail não existe
+                print("E-mail não encontrado no banco")  # LOG
                 flash("Se o e-mail estiver cadastrado, você receberá as instruções.", "info")
             
             return_connection(conn)
             
         except Exception as e:
-            print(f"Erro na recuperação: {e}")
+            print(f"❌ ERRO GERAL: {e}")  # LOG
+            import traceback
+            traceback.print_exc()
             if 'conn' in locals():
                 return_connection(conn)
             flash("Erro ao processar solicitação. Tente novamente.", "danger")
