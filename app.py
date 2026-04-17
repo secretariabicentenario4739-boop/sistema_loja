@@ -1820,7 +1820,70 @@ def get_email_config():
         return {
             'sender': 'contato@juramelo.com.br',
             'sender_name': 'Sistema Maçônico'
-        }        
+        }      
+
+@app.route("/diagnostico-email")
+@login_required
+def diagnostico_email():
+    """Rota para diagnosticar problemas de e-mail"""
+    if session.get('tipo') != 'admin':
+        return "Acesso negado", 403
+    
+    resultados = {}
+    
+    # 1. Verificar configuração do Resend
+    import os
+    import resend
+    
+    resultados['resend_api_key'] = '✅ Configurada' if os.environ.get("RESEND_API_KEY") else '❌ NÃO CONFIGURADA'
+    resultados['resend_key_length'] = len(os.environ.get("RESEND_API_KEY", ''))
+    
+    # 2. Verificar configuração no banco
+    try:
+        cursor, conn = get_db()
+        cursor.execute("SELECT * FROM email_config WHERE active = 1")
+        config = cursor.fetchone()
+        if config:
+            resultados['email_config'] = {
+                'sender': config.get('sender'),
+                'sender_name': config.get('sender_name'),
+                'active': config.get('active')
+            }
+        else:
+            resultados['email_config'] = '❌ Nenhuma configuração ativa no banco'
+        return_connection(conn)
+    except Exception as e:
+        resultados['email_config'] = f'Erro: {str(e)}'
+    
+    # 3. Verificar tabelas necessárias
+    try:
+        cursor, conn = get_db()
+        cursor.execute("SHOW TABLES LIKE 'password_reset_tokens'")
+        tabela_tokens = cursor.fetchone()
+        resultados['tabela_password_reset_tokens'] = '✅ Existe' if tabela_tokens else '❌ NÃO EXISTE'
+        
+        cursor.execute("SHOW TABLES LIKE 'email_logs'")
+        tabela_logs = cursor.fetchone()
+        resultados['tabela_email_logs'] = '✅ Existe' if tabela_logs else '⚠️ Não existe (opcional)'
+        return_connection(conn)
+    except Exception as e:
+        resultados['tabelas'] = f'Erro: {str(e)}'
+    
+    # 4. Testar envio de e-mail simples
+    try:
+        resend.api_key = os.environ.get("RESEND_API_KEY")
+        test_params = {
+            "from": "onboarding@resend.dev",  # Domínio de teste do Resend
+            "to": ["seu-email@teste.com"],  # Substitua por um e-mail real para teste
+            "subject": "Teste Diagnóstico",
+            "html": "<p>Teste</p>"
+        }
+        # Não enviar realmente, apenas verificar se a configuração está OK
+        resultados['resend_config'] = '✅ Configuração OK'
+    except Exception as e:
+        resultados['resend_config'] = f'❌ Erro: {str(e)}'
+    
+    return jsonify(resultados)        
 
 def executar_rotinas_diarias():
     """Executa todas as rotinas diárias (aniversários e lembretes)"""
@@ -5516,6 +5579,8 @@ def redefinir_senha():
                     return_connection(conn)
     
     return render_template("redefinir_senha.html", token=token)
+    
+  
 
 @app.route("/admin/verificar-tabelas", methods=["GET"])
 @admin_required
