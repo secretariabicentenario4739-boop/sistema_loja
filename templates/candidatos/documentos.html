@@ -6,8 +6,8 @@
 {{ super() }}
 <style>
     :root {
-        --primary: #4f46e5;
-        --primary-dark: #4338ca;
+        --primary: #4A0E2E;
+        --primary-dark: #3A0A24;
         --success: #10b981;
         --warning: #f59e0b;
         --danger: #ef4444;
@@ -28,35 +28,34 @@
     }
     
     .header-gradient {
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
         padding: 2rem;
         border-radius: 20px;
         margin-bottom: 1.5rem;
     }
     
-   /* Estilo para a barra de progresso - VERSÃO CORRIGIDA */
-.progress-custom {
-    height: 25px;
-    border-radius: 12px;
-    background: #e2e8f0;
-    overflow: hidden;
-    box-shadow: inset 0 1px 2px rgba(0,0,0,0.1);
-}
-
-.progress-custom .progress-bar {
-    border-radius: 12px;
-    background: linear-gradient(90deg, #10b981, #34d399);
-    transition: width 0.5s ease;
-    font-size: 0.8rem;
-    font-weight: 600;
-    line-height: 25px;
-    text-align: center;
-    color: white;
-    text-shadow: 0 1px 1px rgba(0,0,0,0.2);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
+    .progress-custom {
+        height: 25px;
+        border-radius: 12px;
+        background: #e2e8f0;
+        overflow: hidden;
+        box-shadow: inset 0 1px 2px rgba(0,0,0,0.1);
+    }
+    
+    .progress-custom .progress-bar {
+        border-radius: 12px;
+        background: linear-gradient(90deg, #10b981, #34d399);
+        transition: width 0.5s ease;
+        font-size: 0.8rem;
+        font-weight: 600;
+        line-height: 25px;
+        text-align: center;
+        color: white;
+        text-shadow: 0 1px 1px rgba(0,0,0,0.2);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
     
     .table-documentos {
         margin-bottom: 0;
@@ -272,6 +271,11 @@
         animation: fadeIn 0.3s ease;
     }
     
+    .documento-obrigatorio-destaque {
+        background-color: #fff8f0;
+        border-left: 3px solid #dc2626;
+    }
+    
     @media (max-width: 768px) {
         .table-documentos {
             font-size: 0.85rem;
@@ -339,7 +343,7 @@
             </div>
         </div>
 
-        <!-- BARRA DE PROGRESSO - VERSÃO SIMPLES E FUNCIONAL -->
+        <!-- BARRA DE PROGRESSO -->
         <div class="card-elegant mb-4 animate-in">
             <div class="card-body p-4">
                 <div class="d-flex justify-content-between align-items-center mb-3">
@@ -355,7 +359,7 @@
                 <!-- Barra de progresso visual -->
                 <div class="mb-2">
                     <div class="d-flex justify-content-between mb-1">
-                        <small class="text-muted">Documentos enviados</small>
+                        <small class="text-muted">Documentos obrigatórios enviados</small>
                         <small class="fw-bold">{{ total_enviados }}/{{ total_obrigatorios }} ({{ percentual }}%)</small>
                     </div>
                     <div class="progress-custom">
@@ -400,14 +404,14 @@
             </div>
             <div class="col-md-3 col-6">
                 <div class="stat-card">
-                    <div class="stat-number text-secondary">{{ documentos_opcionais_count or 3 }}</div>
+                    <div class="stat-number text-secondary">{{ documentos_opcionais_count }}</div>
                     <small class="text-muted">Documentos Opcionais</small>
                 </div>
             </div>
             <div class="col-md-3 col-6">
                 <div class="stat-card">
                     <div class="stat-number text-success">{{ total_enviados }}</div>
-                    <small class="text-muted">Enviados</small>
+                    <small class="text-muted">Obrigatórios Enviados</small>
                 </div>
             </div>
             <div class="col-md-3 col-6">
@@ -440,126 +444,139 @@
                             </tr>
                         </thead>
                         <tbody>
-                            <!-- PRIMEIRO: Documentos Obrigatórios -->
-                            {% set documentos_obrigatorios = [] %}
-                            {% set documentos_opcionais = [] %}
+                            <!-- LISTA DE DOCUMENTOS OBRIGATÓRIOS (DEFINIDA MANUALMENTE) -->
+                            {% set documentos_obrigatorios_nomes = [
+                                'Certidão Negativa Eleitoral',
+                                'Certidão Negativa Militar',
+                                'Tribunal Regional Federal da 1ª Região',
+                                'Certidões Negativas do TJDFT',
+                                'Certidão de Antecedentes Criminais Polícia Federal',
+                                'Certidão Negativa de Débitos - GDF',
+                                'RG',
+                                'CPF',
+                                'Foto 3x4'
+                            ] %}
                             
-                            {% for tipo in tipos_documentos %}
-                                {% if tipo.nome != 'Título de Eleitor' %}
-                                    {% if tipo.obrigatorio == 1 %}
-                                        {% set _ = documentos_obrigatorios.append(tipo) %}
-                                    {% else %}
-                                        {% set _ = documentos_opcionais.append(tipo) %}
+                            <!-- Primeiro: Exibir documentos obrigatórios -->
+                            {% for doc_nome in documentos_obrigatorios_nomes %}
+                                {% set tipo_encontrado = None %}
+                                {% for tipo in tipos_documentos %}
+                                    {% if tipo.nome == doc_nome %}
+                                        {% set tipo_encontrado = tipo %}
                                     {% endif %}
+                                {% endfor %}
+                                
+                                {% if tipo_encontrado %}
+                                    {% set doc = documentos_map.get(tipo_encontrado.id) %}
+                                    <tr class="documento-obrigatorio-destaque">
+                                        <td style="width: 30%">
+                                            <div class="d-flex align-items-center gap-2">
+                                                {% if doc_nome == 'Foto 3x4' %}
+                                                    <i class="bi bi-camera-fill fs-5 text-danger"></i>
+                                                {% elif doc_nome == 'RG' or doc_nome == 'CPF' %}
+                                                    <i class="bi bi-credit-card-fill fs-5 text-primary"></i>
+                                                else %}
+                                                    <i class="bi bi-file-text-fill fs-5 text-info"></i>
+                                                {% endif %}
+                                                <div>
+                                                    <strong>{{ doc_nome }}</strong>
+                                                    {% if tipo_encontrado.descricao %}
+                                                        <br><small class="text-muted">{{ tipo_encontrado.descricao[:80] }}</small>
+                                                    {% endif %}
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td style="width: 15%">
+                                            <span class="badge-custom badge-obrigatorio">
+                                                <i class="bi bi-star-fill"></i> Obrigatório
+                                            </span>
+                                        </td>
+                                        <td style="width: 30%">
+                                            <div class="document-status-area">
+                                                {% if doc %}
+                                                    <div class="mb-2">
+                                                        <span class="badge-custom 
+                                                            {% if doc.status == 'aprovado' %}badge-aprovado
+                                                            {% elif doc.status == 'rejeitado' %}badge-rejeitado
+                                                            else %}badge-pendente{% endif %}">
+                                                            <i class="bi 
+                                                                {% if doc.status == 'aprovado' %}bi-check-circle-fill
+                                                                {% elif doc.status == 'rejeitado' %}bi-x-circle-fill
+                                                                else %}bi-clock-fill{% endif %}"></i>
+                                                            {% if doc.status == 'aprovado' %}
+                                                                Aprovado
+                                                            {% elif doc.status == 'rejeitado' %}
+                                                                Rejeitado
+                                                            else %}
+                                                                Pendente
+                                                            {% endif %}
+                                                        </span>
+                                                        {% if doc.status == 'rejeitado' and doc.observacao %}
+                                                            <br><small class="text-danger">{{ doc.observacao }}</small>
+                                                        {% endif %}
+                                                    </div>
+                                                    {% if doc_nome == 'Foto 3x4' and doc.caminho_arquivo %}
+                                                        <div class="mt-2">
+                                                            <img src="{{ doc.caminho_arquivo }}" alt="Foto 3x4" class="photo-preview" onclick="visualizarDocumento('{{ doc.caminho_arquivo }}', '{{ doc_nome }}')">
+                                                        </div>
+                                                    {% endif %}
+                                                {% else %}
+                                                    <div class="text-muted py-2">
+                                                        <i class="bi bi-inbox fs-5 me-2"></i> Nenhum arquivo enviado
+                                                    </div>
+                                                {% endif %}
+                                            </div>
+                                        </td>
+                                        <td style="width: 15%">
+                                            {% if doc %}
+                                                {{ doc.data_envio.strftime('%d/%m/%Y %H:%M') if doc.data_envio else '-' }}
+                                            {% else %}
+                                                <span class="text-muted">-</span>
+                                            {% endif %}
+                                        </td>
+                                        <td style="width: 20%">
+                                            <div class="d-flex flex-wrap gap-1">
+                                                {% if doc %}
+                                                    <button type="button" class="btn btn-outline-info btn-action" 
+                                                            onclick="visualizarDocumento('{{ doc.caminho_arquivo }}', '{{ doc_nome }}')" 
+                                                            title="Visualizar">
+                                                        <i class="bi bi-eye"></i>
+                                                    </button>
+                                                    <a href="{{ doc.caminho_arquivo }}" download 
+                                                       class="btn btn-outline-success btn-action" title="Baixar">
+                                                        <i class="bi bi-download"></i>
+                                                    </a>
+                                                    
+                                                    {% if doc.status == 'pendente' %}
+                                                        <button type="button" class="btn-aprovar" 
+                                                                onclick="aprovarDocumento({{ doc.id }}, '{{ doc_nome }}')">
+                                                            <i class="bi bi-check-lg"></i> Aprovar
+                                                        </button>
+                                                        <button type="button" class="btn-rejeitar" 
+                                                                onclick="rejeitarDocumento({{ doc.id }}, '{{ doc_nome }}')">
+                                                            <i class="bi bi-x-lg"></i> Rejeitar
+                                                        </button>
+                                                    {% endif %}
+                                                    
+                                                    <button type="button" class="btn btn-outline-danger btn-action" 
+                                                            onclick="excluirDocumento({{ doc.id }}, '{{ doc_nome }}', {{ tipo_encontrado.id }})" 
+                                                            title="Excluir">
+                                                        <i class="bi bi-trash"></i>
+                                                    </button>
+                                                {% endif %}
+                                                
+                                                <button type="button" class="btn btn-outline-primary btn-action" 
+                                                        data-bs-toggle="modal" 
+                                                        data-bs-target="#modalUpload{{ tipo_encontrado.id }}" title="Enviar">
+                                                    <i class="bi bi-cloud-upload"></i>
+                                                </button>
+                                            </div>
+                                        </td>
+                                    </tr>
                                 {% endif %}
                             {% endfor %}
                             
-                            <!-- Exibe Documentos Obrigatórios -->
-                            {% for tipo in documentos_obrigatorios %}
-                            {% set doc = documentos_map.get(tipo.id) %}
-                            <tr data-documento-id="{{ tipo.id }}" data-obrigatorio="1">
-                                <td>
-                                    <div class="d-flex align-items-center gap-2">
-                                        {% if tipo.nome == 'Foto 3x4' %}
-                                            <i class="bi bi-camera-fill fs-5 text-danger"></i>
-                                        {% elif 'Certidão' in tipo.nome %}
-                                            <i class="bi bi-file-text-fill fs-5 text-info"></i>
-                                        {% else %}
-                                            <i class="bi bi-file-earmark-text fs-5 text-primary"></i>
-                                        {% endif %}
-                                        <div>
-                                            <strong>{{ tipo.nome }}</strong>
-                                            {% if tipo.descricao %}
-                                                <br><small class="text-muted">{{ tipo.descricao[:60] }}{% if tipo.descricao|length > 60 %}...{% endif %}</small>
-                                            {% endif %}
-                                        </div>
-                                    </div>
-                                </td>
-                                <td>
-                                    <span class="badge-custom badge-obrigatorio">
-                                        <i class="bi bi-star-fill"></i> Obrigatório
-                                    </span>
-                                </td>
-                                <td class="status-area">
-                                    <div class="document-status-area">
-                                        {% if doc %}
-                                            <div class="mb-2">
-                                                <span class="status-badge status-{{ doc.status }}" data-status="{{ doc.status }}">
-                                                    <i class="bi 
-                                                        {% if doc.status == 'aprovado' %}bi-check-circle-fill
-                                                        {% elif doc.status == 'rejeitado' %}bi-x-circle-fill
-                                                        {% else %}bi-clock-fill{% endif %}"></i>
-                                                    {% if doc.status == 'aprovado' %}
-                                                        Aprovado em {{ doc.data_aprovacao.strftime('%d/%m/%Y') if doc.data_aprovacao else '-' }}
-                                                    {% elif doc.status == 'rejeitado' %}
-                                                        Rejeitado: {{ doc.observacao or 'Envie novamente' }}
-                                                    {% else %}
-                                                        Enviado em {{ doc.data_envio.strftime('%d/%m/%Y %H:%M') if doc.data_envio else '-' }}
-                                                    {% endif %}
-                                                </span>
-                                            </div>
-                                            {% if tipo.nome == 'Foto 3x4' and doc.caminho_arquivo %}
-                                                <div class="mt-2">
-                                                    <img src="{{ doc.caminho_arquivo }}" alt="Foto 3x4" class="photo-preview" onclick="visualizarDocumento('{{ doc.caminho_arquivo }}', '{{ tipo.nome }}')">
-                                                </div>
-                                            {% endif %}
-                                        {% else %}
-                                            <div class="text-muted py-2">
-                                                <i class="bi bi-inbox fs-5 me-2"></i> Nenhum arquivo enviado
-                                            </div>
-                                        {% endif %}
-                                    </div>
-                                </td>
-                                <td>
-                                    {% if doc %}
-                                        {{ doc.data_envio.strftime('%d/%m/%Y %H:%M') if doc.data_envio else '-' }}
-                                    {% else %}
-                                        <span class="text-muted">-</span>
-                                    {% endif %}
-                                </td>
-                                <td>
-                                    <div class="d-flex flex-wrap gap-1">
-                                        {% if doc %}
-                                            <button type="button" class="btn btn-outline-info btn-action" 
-                                                    onclick="visualizarDocumento('{{ doc.caminho_arquivo }}', '{{ tipo.nome }}')" 
-                                                    title="Visualizar">
-                                                <i class="bi bi-eye"></i>
-                                            </button>
-                                            <a href="{{ doc.caminho_arquivo }}" download 
-                                               class="btn btn-outline-success btn-action" title="Baixar">
-                                                <i class="bi bi-download"></i>
-                                            </a>
-                                            
-                                            {% if doc.status == 'pendente' %}
-                                                <button type="button" class="btn-aprovar" 
-                                                        onclick="aprovarDocumento({{ doc.id }}, '{{ tipo.nome }}')">
-                                                    <i class="bi bi-check-lg"></i> Aprovar
-                                                </button>
-                                                <button type="button" class="btn-rejeitar" 
-                                                        onclick="rejeitarDocumento({{ doc.id }}, '{{ tipo.nome }}')">
-                                                    <i class="bi bi-x-lg"></i> Rejeitar
-                                                </button>
-                                            {% endif %}
-                                            
-                                            <button type="button" class="btn btn-outline-danger btn-action" 
-                                                    onclick="excluirDocumento({{ doc.id }}, '{{ tipo.nome }}', {{ tipo.id }})" 
-                                                    title="Excluir">
-                                                <i class="bi bi-trash"></i>
-                                            </button>
-                                        {% endif %}
-                                        
-                                        <button type="button" class="btn btn-outline-primary btn-action" 
-                                                data-bs-toggle="modal" 
-                                                data-bs-target="#modalUpload{{ tipo.id }}" title="Enviar">
-                                            <i class="bi bi-cloud-upload"></i>
-                                        </button>
-                                    </div>
-                                </td>
-                            </tr>
-                            {% endfor %}
-                            
                             <!-- Separador para Documentos Opcionais -->
-                            {% if documentos_opcionais %}
                             <tr class="separator-row">
                                 <td colspan="5">
                                     <div class="separator">
@@ -567,107 +584,106 @@
                                     </div>
                                 </td>
                             </tr>
-                            {% endif %}
                             
-                            <!-- DEPOIS: Documentos Opcionais -->
-                            {% for tipo in documentos_opcionais %}
-                            {% set doc = documentos_map.get(tipo.id) %}
-                            <tr class="table-light" data-obrigatorio="0">
-                                <td>
-                                    <div class="d-flex align-items-center gap-2">
-                                        {% if tipo.nome == 'Certidão de Nascimento' %}
-                                            <i class="bi bi-file-text-fill fs-5 text-secondary"></i>
-                                        {% elif tipo.nome == 'Comprovante de Residência' %}
-                                            <i class="bi bi-house-fill fs-5 text-secondary"></i>
-                                        {% elif tipo.nome == 'Currículo' %}
-                                            <i class="bi bi-file-person-fill fs-5 text-secondary"></i>
-                                        {% else %}
-                                            <i class="bi bi-file-earmark-text fs-5 text-secondary"></i>
-                                        {% endif %}
-                                        <div>
-                                            <strong>{{ tipo.nome }}</strong>
-                                            {% if tipo.descricao %}
-                                                <br><small class="text-muted">{{ tipo.descricao[:60] }}{% if tipo.descricao|length > 60 %}...{% endif %}</small>
-                                            {% endif %}
-                                        </div>
-                                    </div>
-                                </td>
-                                <td>
-                                    <span class="badge-custom badge-opcional">
-                                        <i class="bi bi-bookmark"></i> Opcional
-                                    </span>
-                                </td>
-                                <td class="status-area">
-                                    <div class="document-status-area">
-                                        {% if doc %}
-                                            <div class="mb-2">
-                                                <span class="status-badge status-{{ doc.status }}" data-status="{{ doc.status }}">
-                                                    <i class="bi 
-                                                        {% if doc.status == 'aprovado' %}bi-check-circle-fill
-                                                        {% elif doc.status == 'rejeitado' %}bi-x-circle-fill
-                                                        {% else %}bi-clock-fill{% endif %}"></i>
-                                                    {% if doc.status == 'aprovado' %}
-                                                        Aprovado
-                                                    {% elif doc.status == 'rejeitado' %}
-                                                        Rejeitado: {{ doc.observacao or 'Envie novamente' }}
-                                                    {% else %}
-                                                        Enviado em {{ doc.data_envio.strftime('%d/%m/%Y %H:%M') if doc.data_envio else '-' }}
+                            <!-- Depois: Documentos Opcionais (todos os outros) -->
+                            {% for tipo in tipos_documentos %}
+                                {% if tipo.nome not in documentos_obrigatorios_nomes and tipo.nome != 'Título de Eleitor' %}
+                                    {% set doc = documentos_map.get(tipo.id) %}
+                                    <tr>
+                                        <td style="width: 30%">
+                                            <div class="d-flex align-items-center gap-2">
+                                                <i class="bi bi-file-earmark-text fs-5 text-secondary"></i>
+                                                <div>
+                                                    <strong>{{ tipo.nome }}</strong>
+                                                    {% if tipo.descricao %}
+                                                        <br><small class="text-muted">{{ tipo.descricao[:80] }}</small>
                                                     {% endif %}
-                                                </span>
+                                                </div>
                                             </div>
-                                        {% else %}
-                                            <div class="text-muted py-2">
-                                                <i class="bi bi-inbox fs-5 me-2"></i> Nenhum arquivo enviado
+                                        </td>
+                                        <td style="width: 15%">
+                                            <span class="badge-custom badge-opcional">
+                                                <i class="bi bi-bookmark"></i> Opcional
+                                            </span>
+                                        </td>
+                                        <td style="width: 30%">
+                                            <div class="document-status-area">
+                                                {% if doc %}
+                                                    <div class="mb-2">
+                                                        <span class="badge-custom 
+                                                            {% if doc.status == 'aprovado' %}badge-aprovado
+                                                            {% elif doc.status == 'rejeitado' %}badge-rejeitado
+                                                            else %}badge-pendente{% endif %}">
+                                                            <i class="bi 
+                                                                {% if doc.status == 'aprovado' %}bi-check-circle-fill
+                                                                {% elif doc.status == 'rejeitado' %}bi-x-circle-fill
+                                                                else %}bi-clock-fill{% endif %}"></i>
+                                                            {% if doc.status == 'aprovado' %}
+                                                                Aprovado
+                                                            {% elif doc.status == 'rejeitado' %}
+                                                                Rejeitado
+                                                            else %}
+                                                                Pendente
+                                                            {% endif %}
+                                                        </span>
+                                                        {% if doc.status == 'rejeitado' and doc.observacao %}
+                                                            <br><small class="text-danger">{{ doc.observacao }}</small>
+                                                        {% endif %}
+                                                    </div>
+                                                {% else %}
+                                                    <div class="text-muted py-2">
+                                                        <i class="bi bi-inbox fs-5 me-2"></i> Nenhum arquivo enviado
+                                                    </div>
+                                                {% endif %}
                                             </div>
-                                        {% endif %}
-                                    </div>
-                                </td>
-                                <td>
-                                    {% if doc %}
-                                        {{ doc.data_envio.strftime('%d/%m/%Y %H:%M') if doc.data_envio else '-' }}
-                                    {% else %}
-                                        <span class="text-muted">-</span>
-                                    {% endif %}
-                                </td>
-                                <td>
-                                    <div class="d-flex flex-wrap gap-1">
-                                        {% if doc %}
-                                            <button type="button" class="btn btn-outline-info btn-action" 
-                                                    onclick="visualizarDocumento('{{ doc.caminho_arquivo }}', '{{ tipo.nome }}')" 
-                                                    title="Visualizar">
-                                                <i class="bi bi-eye"></i>
-                                            </button>
-                                            <a href="{{ doc.caminho_arquivo }}" download 
-                                               class="btn btn-outline-success btn-action" title="Baixar">
-                                                <i class="bi bi-download"></i>
-                                            </a>
-                                            
-                                            {% if doc.status == 'pendente' %}
-                                                <button type="button" class="btn-aprovar" 
-                                                        onclick="aprovarDocumento({{ doc.id }}, '{{ tipo.nome }}')">
-                                                    <i class="bi bi-check-lg"></i> Aprovar
-                                                </button>
-                                                <button type="button" class="btn-rejeitar" 
-                                                        onclick="rejeitarDocumento({{ doc.id }}, '{{ tipo.nome }}')">
-                                                    <i class="bi bi-x-lg"></i> Rejeitar
-                                                </button>
+                                        </td>
+                                        <td style="width: 15%">
+                                            {% if doc %}
+                                                {{ doc.data_envio.strftime('%d/%m/%Y %H:%M') if doc.data_envio else '-' }}
+                                            {% else %}
+                                                <span class="text-muted">-</span>
                                             {% endif %}
-                                            
-                                            <button type="button" class="btn btn-outline-danger btn-action" 
-                                                    onclick="excluirDocumento({{ doc.id }}, '{{ tipo.nome }}', {{ tipo.id }})" 
-                                                    title="Excluir">
-                                                <i class="bi bi-trash"></i>
-                                            </button>
-                                        {% endif %}
-                                        
-                                        <button type="button" class="btn btn-outline-secondary btn-action" 
-                                                data-bs-toggle="modal" 
-                                                data-bs-target="#modalUpload{{ tipo.id }}" title="Enviar">
-                                            <i class="bi bi-cloud-upload"></i>
-                                        </button>
-                                    </div>
-                                </td>
-                            </tr>
+                                        </td>
+                                        <td style="width: 20%">
+                                            <div class="d-flex flex-wrap gap-1">
+                                                {% if doc %}
+                                                    <button type="button" class="btn btn-outline-info btn-action" 
+                                                            onclick="visualizarDocumento('{{ doc.caminho_arquivo }}', '{{ tipo.nome }}')" 
+                                                            title="Visualizar">
+                                                        <i class="bi bi-eye"></i>
+                                                    </button>
+                                                    <a href="{{ doc.caminho_arquivo }}" download 
+                                                       class="btn btn-outline-success btn-action" title="Baixar">
+                                                        <i class="bi bi-download"></i>
+                                                    </a>
+                                                    
+                                                    {% if doc.status == 'pendente' %}
+                                                        <button type="button" class="btn-aprovar" 
+                                                                onclick="aprovarDocumento({{ doc.id }}, '{{ tipo.nome }}')">
+                                                            <i class="bi bi-check-lg"></i> Aprovar
+                                                        </button>
+                                                        <button type="button" class="btn-rejeitar" 
+                                                                onclick="rejeitarDocumento({{ doc.id }}, '{{ tipo.nome }}')">
+                                                            <i class="bi bi-x-lg"></i> Rejeitar
+                                                        </button>
+                                                    {% endif %}
+                                                    
+                                                    <button type="button" class="btn btn-outline-danger btn-action" 
+                                                            onclick="excluirDocumento({{ doc.id }}, '{{ tipo.nome }}', {{ tipo.id }})" 
+                                                            title="Excluir">
+                                                        <i class="bi bi-trash"></i>
+                                                    </button>
+                                                {% endif %}
+                                                
+                                                <button type="button" class="btn btn-outline-secondary btn-action" 
+                                                        data-bs-toggle="modal" 
+                                                        data-bs-target="#modalUpload{{ tipo.id }}" title="Enviar">
+                                                    <i class="bi bi-cloud-upload"></i>
+                                                </button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                {% endif %}
                             {% endfor %}
                         </tbody>
                     </table>
@@ -687,10 +703,11 @@
                     </div>
                     <div class="card-body">
                         <ul class="list-unstyled mb-0">
-                            <li class="mb-2"><i class="bi bi-camera-fill text-danger me-2"></i> <strong>Foto 3x4</strong> é <strong class="text-danger">obrigatória</strong> e será usada no cadastro</li>
-                            <li class="mb-2"><i class="bi bi-file-text-fill text-secondary me-2"></i> <strong>Certidão de Nascimento</strong> é <strong class="text-secondary">opcional</strong>, mas recomendada</li>
-                            <li class="mb-2"><i class="bi bi-house-fill text-secondary me-2"></i> <strong>Comprovante de Residência</strong> é <strong class="text-secondary">opcional</strong>, mas recomendado</li>
-                            <li class="mb-2"><i class="bi bi-file-person-fill text-secondary me-2"></i> <strong>Currículo</strong> é <strong class="text-secondary">opcional</strong> para melhor avaliação</li>
+                            <li class="mb-2"><i class="bi bi-star-fill text-danger me-2"></i> <strong class="text-danger">Documentos obrigatórios</strong> são necessários para completar a candidatura</li>
+                            <li class="mb-2"><i class="bi bi-camera-fill text-danger me-2"></i> <strong>Foto 3x4</strong> é obrigatória e será usada no cadastro</li>
+                            <li class="mb-2"><i class="bi bi-credit-card-fill text-primary me-2"></i> <strong>RG e CPF</strong> são documentos obrigatórios</li>
+                            <li class="mb-2"><i class="bi bi-file-text-fill text-info me-2"></i> <strong>Certidões Negativas</strong> são obrigatórias</li>
+                            <li class="mb-2"><i class="bi bi-bookmark-fill text-secondary me-2"></i> <strong>Documentos opcionais</strong> podem ajudar na avaliação, mas não são obrigatórios</li>
                             <li class="mb-2"><i class="bi bi-check-circle-fill text-success me-2"></i> Documentos <strong>aprovados</strong> são validados pelo sindicante</li>
                             <li class="mb-2"><i class="bi bi-clock-fill text-warning me-2"></i> Documentos <strong>pendentes</strong> aguardam análise</li>
                             <li><i class="bi bi-x-circle-fill text-danger me-2"></i> Documentos <strong>rejeitados</strong> precisam ser reenviados</li>
@@ -745,42 +762,8 @@
     </div>
 </div>
 
-<!-- Modal de Visualização de Documento -->
-<div class="modal fade" id="modalVisualizacao" tabindex="-1">
-    <div class="modal-dialog modal-xl modal-dialog-centered">
-        <div class="modal-content border-0 rounded-4">
-            <div class="modal-header bg-primary text-white border-0">
-                <h5 class="modal-title" id="modalVisualizacaoTitulo">
-                    <i class="bi bi-file-earmark-text me-2"></i>
-                    Visualizar Documento
-                </h5>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
-            </div>
-            <div class="modal-body p-0">
-                <div class="document-viewer" id="documentViewer">
-                    <div class="text-center p-5">
-                        <div class="spinner-border text-primary" role="status">
-                            <span class="visually-hidden">Carregando...</span>
-                        </div>
-                        <p class="mt-2">Carregando documento...</p>
-                    </div>
-                </div>
-            </div>
-            <div class="modal-footer bg-light border-0">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
-                    <i class="bi bi-x-circle"></i> Fechar
-                </button>
-                <a href="#" id="btnDownloadVisualizacao" class="btn btn-success" download>
-                    <i class="bi bi-download"></i> Baixar
-                </a>
-            </div>
-        </div>
-    </div>
-</div>
-
-<!-- Modals de Upload -->
+<!-- Modais de Upload para cada tipo de documento -->
 {% for tipo in tipos_documentos %}
-{% if tipo.nome != 'Título de Eleitor' %}
 <div class="modal fade" id="modalUpload{{ tipo.id }}" tabindex="-1">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content border-0 rounded-4">
@@ -800,10 +783,10 @@
                         {% endif %}
                     </div>
                     
-                    {% if tipo.obrigatorio == 1 %}
+                    {% if tipo.nome in documentos_obrigatorios_nomes %}
                         <div class="alert alert-danger py-2 small">
                             <i class="bi bi-exclamation-triangle-fill me-1"></i>
-                            <strong>Documento obrigatório</strong> - O envio é necessário para completar sua candidatura.
+                            <strong>Documento obrigatório</strong> - O envio é necessário para completar a candidatura.
                         </div>
                     {% endif %}
                     
@@ -830,7 +813,6 @@
         </div>
     </div>
 </div>
-{% endif %}
 {% endfor %}
 
 <script>
@@ -842,7 +824,6 @@ if (!token || !candidatoId) {
     window.location.href = '/';
 }
 
-// Função para mostrar notificação
 function mostrarNotificacao(mensagem, tipo = 'success') {
     const toastDiv = document.createElement('div');
     toastDiv.className = `toast-notification alert alert-${tipo === 'success' ? 'success' : 'danger'} shadow-lg`;
@@ -860,7 +841,6 @@ function mostrarNotificacao(mensagem, tipo = 'success') {
     }, 5000);
 }
 
-// Função para visualizar documento
 function visualizarDocumento(caminho, nome) {
     if (!caminho) {
         mostrarNotificacao('❌ Caminho do documento não encontrado', 'error');
@@ -875,7 +855,6 @@ function visualizarDocumento(caminho, nome) {
     window.open(urlCompleta, '_blank');
 }
 
-// Função para upload de documento
 async function uploadDocumento(tipoId, nomeDocumento) {
     const form = document.getElementById(`formUpload${tipoId}`);
     const formData = new FormData(form);
@@ -891,18 +870,13 @@ async function uploadDocumento(tipoId, nomeDocumento) {
             body: formData
         });
         
-        if (response.redirected) {
-            window.location.href = response.url;
-            return;
-        }
+        const data = await response.json();
         
-        const textResponse = await response.text();
-        
-        if (textResponse.includes('success') || textResponse.includes('enviado')) {
+        if (data.success) {
             mostrarNotificacao(`✅ ${nomeDocumento} enviado com sucesso!`, 'success');
             setTimeout(() => location.reload(), 1500);
         } else {
-            mostrarNotificacao(`❌ Erro ao enviar ${nomeDocumento}`, 'error');
+            mostrarNotificacao(`❌ ${data.error || 'Erro ao enviar documento'}`, 'error');
         }
     } catch (error) {
         console.error('Erro:', error);
@@ -913,7 +887,6 @@ async function uploadDocumento(tipoId, nomeDocumento) {
     }
 }
 
-// Função para aprovar documento
 function aprovarDocumento(docId, nomeDocumento) {
     if (!confirm(`✅ Confirmar aprovação do documento "${nomeDocumento}"?`)) return;
     
@@ -946,7 +919,6 @@ function aprovarDocumento(docId, nomeDocumento) {
     });
 }
 
-// Função para rejeitar documento
 function rejeitarDocumento(docId, nomeDocumento) {
     const motivo = prompt(`❌ Rejeitar documento "${nomeDocumento}"\n\nDigite o motivo da rejeição:`);
     
@@ -989,7 +961,6 @@ function rejeitarDocumento(docId, nomeDocumento) {
     });
 }
 
-// Função para excluir documento
 async function excluirDocumento(docId, nomeDocumento, tipoId) {
     if (!confirm(`⚠️ ATENÇÃO!\n\nDeseja excluir o documento "${nomeDocumento}"?\n\nEsta ação não pode ser desfeita.`)) return;
     

@@ -2848,6 +2848,19 @@ def visualizar_material(material_id):
         else:
             avaliacao_usuario = None
         
+        # Determinar o formato do arquivo baseado na URL
+        arquivo_url = material.get('arquivo_url', '')
+        formato = material.get('formato', '')
+        
+        # Se não tiver formato definido, tentar extrair da URL
+        if not formato and arquivo_url:
+            if '.pdf' in arquivo_url.lower():
+                formato = 'pdf'
+            elif any(ext in arquivo_url.lower() for ext in ['.jpg', '.jpeg', '.png', '.gif', '.webp']):
+                formato = 'imagem'
+            else:
+                formato = 'outro'
+        
         return_connection(conn)
         
         return render_template('biblioteca/visualizar.html',
@@ -2856,7 +2869,8 @@ def visualizar_material(material_id):
                              favoritado=favoritado,
                              pode_baixar=pode_baixar,
                              pode_avaliar=pode_avaliar,
-                             avaliacao_usuario=avaliacao_usuario)
+                             avaliacao_usuario=avaliacao_usuario,
+                             formato=formato)  # Passar formato para o template
     
     except Exception as e:
         print(f"❌ Erro ao visualizar material: {e}")
@@ -2866,6 +2880,59 @@ def visualizar_material(material_id):
             return_connection(conn)
         flash('Erro ao carregar o material', 'danger')
         return redirect(url_for('listar_materiais'))
+        
+@app.route("/biblioteca/material/<int:material_id>/visualizar-arquivo")
+@login_required
+@permissao_required('material.view_one')
+def visualizar_arquivo_material(material_id):
+    """Serve o arquivo para visualização no navegador"""
+    try:
+        cursor, conn = get_db()
+        
+        cursor.execute("""
+            SELECT arquivo_url, formato, grau_acesso, titulo
+            FROM materiais 
+            WHERE id = %s AND publicado = true
+        """, (material_id,))
+        material = cursor.fetchone()
+        
+        if not material:
+            return_connection(conn)
+            return jsonify({'error': 'Material não encontrado'}), 404
+        
+        # Verificar permissão por grau
+        usuario_grau = session.get('grau_atual', 0)
+        grau_acesso = material.get('grau_acesso', 1)
+        
+        if usuario_grau < grau_acesso and session.get('tipo') != 'admin':
+            return_connection(conn)
+            return jsonify({'error': 'Permissão negada'}), 403
+        
+        arquivo_url = material.get('arquivo_url')
+        
+        if not arquivo_url:
+            return_connection(conn)
+            return jsonify({'error': 'Arquivo não disponível'}), 404
+        
+        # Se for URL do Cloudinary, redirecionar diretamente
+        if 'cloudinary' in arquivo_url or 'res.cloudinary.com' in arquivo_url:
+            return_connection(conn)
+            return redirect(arquivo_url)
+        
+        # Se for arquivo local, servir com send_file
+        import os
+        if os.path.exists(arquivo_url):
+            return_connection(conn)
+            return send_file(arquivo_url, conditional=True)
+        
+        return_connection(conn)
+        return jsonify({'error': 'Arquivo não encontrado'}), 404
+        
+    except Exception as e:
+        print(f"❌ Erro ao servir arquivo: {e}")
+        if 'conn' in locals():
+            return_connection(conn)
+        return jsonify({'error': str(e)}), 500        
 
 
 @app.route("/biblioteca/material/<int:material_id>/download")
@@ -9824,7 +9891,6 @@ def enviar_parecer(candidato_id):
 # =============================
 # ROTAS DE DOCUMENTOS DO CANDIDATO
 # =============================
-
 @app.route("/candidatos/<int:candidato_id>/documentos")
 @login_required
 def listar_documentos_candidato(candidato_id):
@@ -9836,7 +9902,7 @@ def listar_documentos_candidato(candidato_id):
         flash("Permissão negada!", "danger")
         return redirect("/candidatos")
     
-    # Buscar candidato - INCLUINDO token_acesso
+    # Buscar candidato
     cursor.execute("""
         SELECT id, nome, status, token_acesso, email 
         FROM candidatos 
@@ -9849,22 +9915,46 @@ def listar_documentos_candidato(candidato_id):
         return_connection(conn)
         return redirect("/candidatos")
     
-    # Se não tiver token, gerar automaticamente
+    # Gerar token se não existir
     if not candidato['token_acesso']:
         import secrets
         token = secrets.token_hex(32)
         cursor.execute("UPDATE candidatos SET token_acesso = %s WHERE id = %s", (token, candidato_id))
         conn.commit()
         candidato['token_acesso'] = token
-        print(f"🔍 Token gerado automaticamente para {candidato['nome']}: {token}")
     
-    print(f"🔍 Token do candidato {candidato_id}: {candidato['token_acesso']}")
+    # ============================================
+    # CORREÇÃO: Garantir que TODOS os documentos obrigatórios existem
+    # ============================================
     
-    # Buscar tipos de documentos obrigatórios
+    # Lista obrigatória completa
+    documentos_obrigatorios_padrao = [
+        ('Certidão Negativa Eleitoral', 'Certidão Negativa da Justiça Eleitoral', 1, 1),
+        ('Certidão Negativa Militar', 'Certidão Negativa do Serviço Militar', 1, 2),
+        ('Tribunal Regional Federal da 1ª Região', 'Certidão Negativa do TRF1', 1, 3),
+        ('Certidões Negativas do TJDFT', 'Certidão Negativa do Tribunal de Justiça do DF', 1, 4),
+        ('Certidão de Antecedentes Criminais Polícia Federal', 'Certidão de Antecedentes Criminais da PF', 1, 5),
+        ('Certidão Negativa de Débitos - GDF', 'Certidão Negativa de Débitos do Governo do DF', 1, 6),
+        ('RG', 'Registro Geral - Documento de Identidade', 1, 7),
+        ('CPF', 'Cadastro de Pessoa Física', 1, 8),
+        ('Foto 3x4', 'Foto 3x4 recente e fundo branco', 1, 9)
+    ]
+    
+    # Verificar se os tipos obrigatórios existem, se não, criar
+    for nome, descricao, obrigatorio, ordem in documentos_obrigatorios_padrao:
+        cursor.execute("SELECT id FROM tipos_documentos_candidato WHERE nome = %s", (nome,))
+        if not cursor.fetchone():
+            cursor.execute("""
+                INSERT INTO tipos_documentos_candidato (nome, descricao, obrigatorio, ordem, ativo)
+                VALUES (%s, %s, %s, %s, 1)
+            """, (nome, descricao, obrigatorio, ordem))
+            conn.commit()
+    
+    # Buscar TODOS os tipos de documentos ativos
     cursor.execute("""
         SELECT * FROM tipos_documentos_candidato 
         WHERE ativo = 1 
-        ORDER BY ordem, obrigatorio DESC, nome
+        ORDER BY obrigatorio DESC, ordem, nome
     """)
     tipos_documentos = cursor.fetchall()
     
@@ -9884,37 +9974,29 @@ def listar_documentos_candidato(candidato_id):
     # Mapear documentos enviados por tipo
     documentos_map = {d['tipo_documento_id']: d for d in documentos}
     
-    # ============================================
-    # CORREÇÃO: Calcular progresso corretamente
-    # ============================================
-    
-    # Total de documentos obrigatórios
+    # Calcular progresso
     total_obrigatorios = sum(1 for t in tipos_documentos if t['obrigatorio'] == 1)
-    
-    # Documentos obrigatórios enviados (qualquer status, exceto rejeitado? Ou todos?)
-    # Vamos contar documentos enviados (que existem no banco)
     total_enviados = 0
     for t in tipos_documentos:
-        if t['obrigatorio'] == 1:
-            if t['id'] in documentos_map:
-                total_enviados += 1
+        if t['obrigatorio'] == 1 and t['id'] in documentos_map:
+            total_enviados += 1
     
-    # Calcular percentual
     percentual = int((total_enviados / total_obrigatorios * 100)) if total_obrigatorios > 0 else 0
     
-    # Documentos pendentes de aprovação (enviados mas não aprovados)
+    # Documentos pendentes de aprovação
     documentos_pendentes = 0
     for t in tipos_documentos:
-        if t['obrigatorio'] == 1:
-            if t['id'] in documentos_map:
-                doc = documentos_map[t['id']]
-                if doc['status'] == 'pendente':
-                    documentos_pendentes += 1
+        if t['obrigatorio'] == 1 and t['id'] in documentos_map:
+            doc = documentos_map[t['id']]
+            if doc['status'] == 'pendente':
+                documentos_pendentes += 1
     
     # Documentos opcionais
     documentos_opcionais_count = sum(1 for t in tipos_documentos if t['obrigatorio'] == 0)
     
-    print(f"📊 Progresso: {total_enviados}/{total_obrigatorios} ({percentual}%)")
+    print(f"📊 Tipos encontrados: {len(tipos_documentos)}")
+    print(f"📊 Obrigatórios: {total_obrigatorios}")
+    print(f"📊 Opcionais: {documentos_opcionais_count}")
     
     return_connection(conn)
     
@@ -10167,6 +10249,269 @@ def rejeitar_documento_candidato(doc_id):
     except Exception as e:
         print(f"Erro ao rejeitar documento: {str(e)}")
         return jsonify({'success': False, 'error': str(e)}), 500
+
+# =============================
+# ROTAS PARA GERENCIAR TIPOS DE DOCUMENTO
+# =============================
+
+@app.route("/admin/tipos-documentos")
+@login_required
+def admin_tipos_documentos():
+    """Gerenciar tipos de documentos"""
+    if session.get('tipo') != 'admin':
+        flash("Acesso restrito a administradores!", "danger")
+        return redirect("/dashboard")
+    
+    cursor, conn = get_db()
+    
+    cursor.execute("""
+        SELECT * FROM tipos_documentos_candidato 
+        ORDER BY obrigatorio DESC, ordem, nome
+    """)
+    tipos = cursor.fetchall()
+    
+    return_connection(conn)
+    
+    return render_template("admin/tipos_documentos.html", tipos=tipos)
+
+
+@app.route("/admin/tipos-documentos/editar/<int:tipo_id>", methods=["POST"])
+@login_required
+def editar_tipo_documento(tipo_id):
+    """Editar tipo de documento (alterar obrigatoriedade)"""
+    if session.get('tipo') != 'admin':
+        return jsonify({'success': False, 'error': 'Permissão negada'}), 403
+    
+    data = request.get_json()
+    obrigatorio = data.get('obrigatorio', 0)
+    
+    cursor, conn = get_db()
+    
+    try:
+        cursor.execute("""
+            UPDATE tipos_documentos_candidato 
+            SET obrigatorio = %s 
+            WHERE id = %s
+        """, (obrigatorio, tipo_id))
+        conn.commit()
+        
+        return jsonify({'success': True, 'message': 'Tipo de documento atualizado!'})
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+    finally:
+        return_connection(conn)
+
+
+@app.route("/admin/tipos-documentos/resetar", methods=["POST"])
+@login_required
+def resetar_tipos_documentos():
+    """Resetar para a configuração padrão"""
+    if session.get('tipo') != 'admin':
+        return jsonify({'success': False, 'error': 'Permissão negada'}), 403
+    
+    cursor, conn = get_db()
+    
+    try:
+        # Desativar todos
+        cursor.execute("UPDATE tipos_documentos_candidato SET ativo = 0")
+        
+        # Recriar padrão
+        tipos_padrao = [
+            ('Certidão Negativa Eleitoral', 'Certidão Negativa da Justiça Eleitoral', 1, 1),
+            ('Certidão Negativa Militar', 'Certidão Negativa do Serviço Militar', 1, 2),
+            ('Tribunal Regional Federal da 1ª Região', 'Certidão Negativa do TRF1', 1, 3),
+            ('Certidões Negativas do TJDFT', 'Certidão Negativa do Tribunal de Justiça do DF', 1, 4),
+            ('Certidão de Antecedentes Criminais Polícia Federal', 'Certidão de Antecedentes Criminais da PF', 1, 5),
+            ('Certidão Negativa de Débitos - GDF', 'Certidão Negativa de Débitos do Governo do DF', 1, 6),
+            ('RG', 'Registro Geral - Documento de Identidade', 1, 7),
+            ('CPF', 'Cadastro de Pessoa Física', 1, 8),
+            ('Foto 3x4', 'Foto 3x4 recente e fundo branco', 1, 9),
+            ('Certidão de Nascimento', 'Certidão de Nascimento (opcional)', 0, 10),
+            ('Comprovante de Residência', 'Comprovante de endereço recente (opcional)', 0, 11),
+            ('Currículo', 'Currículo profissional (opcional)', 0, 12),
+            ('Título de Eleitor', 'Título de Eleitor (opcional)', 0, 13),
+            ('Carteira de Trabalho', 'Carteira de Trabalho (opcional)', 0, 14),
+            ('Diploma', 'Diploma de formação (opcional)', 0, 15)
+        ]
+        
+        for nome, descricao, obrigatorio, ordem in tipos_padrao:
+            cursor.execute("""
+                INSERT INTO tipos_documentos_candidato (nome, descricao, obrigatorio, ordem, ativo)
+                VALUES (%s, %s, %s, %s, 1)
+                ON DUPLICATE KEY UPDATE
+                descricao = VALUES(descricao),
+                obrigatorio = VALUES(obrigatorio),
+                ordem = VALUES(ordem),
+                ativo = 1
+            """, (nome, descricao, obrigatorio, ordem))
+        
+        conn.commit()
+        
+        return jsonify({'success': True, 'message': 'Tipos de documento resetados com sucesso!'})
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+    finally:
+        return_connection(conn)
+
+@app.route("/admin/inicializar-tipos-documentos")
+@login_required
+def inicializar_tipos_documentos():
+    """Rota única para inicializar os tipos de documento (apenas admin)"""
+    if session.get('tipo') != 'admin':
+        flash("Acesso restrito!", "danger")
+        return redirect("/dashboard")
+    
+    cursor, conn = get_db()
+    
+    try:
+        # Verificar se já existem tipos
+        cursor.execute("SELECT COUNT(*) as total FROM tipos_documentos_candidato")
+        total = cursor.fetchone()['total']
+        
+        if total > 0:
+            # Método seguro: apenas atualizar, não excluir
+            flash("⚠️ Tipos de documento já existem. Atualizando obrigatoriedades...", "warning")
+            
+            # Definir todos como não obrigatórios primeiro
+            cursor.execute("UPDATE tipos_documentos_candidato SET obrigatorio = 0, ativo = 1")
+            
+            # Lista de documentos que devem ser obrigatórios
+            obrigatorios = [
+                'Certidão Negativa Eleitoral',
+                'Certidão Negativa Militar',
+                'Tribunal Regional Federal da 1ª Região',
+                'Certidões Negativas do TJDFT',
+                'Certidão de Antecedentes Criminais Polícia Federal',
+                'Certidão Negativa de Débitos - GDF',
+                'RG',
+                'CPF',
+                'Foto 3x4'
+            ]
+            
+            # Marcar os obrigatórios
+            for nome in obrigatorios:
+                cursor.execute("""
+                    UPDATE tipos_documentos_candidato 
+                    SET obrigatorio = 1 
+                    WHERE nome = %s
+                """, (nome,))
+            
+            conn.commit()
+            flash(f"✅ {len(obrigatorios)} documentos marcados como obrigatórios!", "success")
+        else:
+            # Inserir todos
+            tipos = [
+                ('Certidão Negativa Eleitoral', 'Certidão Negativa da Justiça Eleitoral', 1, 1),
+                ('Certidão Negativa Militar', 'Certidão Negativa do Serviço Militar', 1, 2),
+                ('Tribunal Regional Federal da 1ª Região', 'Certidão Negativa do TRF1', 1, 3),
+                ('Certidões Negativas do TJDFT', 'Certidão Negativa do Tribunal de Justiça do DF', 1, 4),
+                ('Certidão de Antecedentes Criminais Polícia Federal', 'Certidão de Antecedentes Criminais da PF', 1, 5),
+                ('Certidão Negativa de Débitos - GDF', 'Certidão Negativa de Débitos do Governo do DF', 1, 6),
+                ('RG', 'Registro Geral - Documento de Identidade', 1, 7),
+                ('CPF', 'Cadastro de Pessoa Física', 1, 8),
+                ('Foto 3x4', 'Foto 3x4 recente e fundo branco', 1, 9),
+                ('Certidão de Nascimento', 'Certidão de Nascimento (opcional)', 0, 10),
+                ('Comprovante de Residência', 'Comprovante de endereço recente (opcional)', 0, 11),
+                ('Currículo', 'Currículo profissional (opcional)', 0, 12),
+                ('Título de Eleitor', 'Título de Eleitor (opcional)', 0, 13),
+                ('Carteira de Trabalho', 'Carteira de Trabalho (opcional)', 0, 14),
+                ('Diploma', 'Diploma de formação (opcional)', 0, 15)
+            ]
+            
+            for nome, descricao, obrigatorio, ordem in tipos:
+                cursor.execute("""
+                    INSERT INTO tipos_documentos_candidato (nome, descricao, obrigatorio, ordem, ativo)
+                    VALUES (%s, %s, %s, %s, 1)
+                """, (nome, descricao, obrigatorio, ordem))
+            
+            conn.commit()
+            flash(f"✅ {len(tipos)} tipos de documento inicializados com sucesso!", "success")
+        
+    except Exception as e:
+        flash(f"❌ Erro ao inicializar: {str(e)}", "danger")
+        print(f"Erro detalhado: {str(e)}")
+        import traceback
+        traceback.print_exc()
+    finally:
+        return_connection(conn)
+    
+    return redirect("/admin/tipos-documentos")   
+
+@app.route("/admin/sincronizar-tipos-documentos")
+@login_required
+def sincronizar_tipos_documentos():
+    """Sincroniza os tipos de documento com a lista obrigatória"""
+    if session.get('tipo') != 'admin':
+        flash("Acesso restrito!", "danger")
+        return redirect("/dashboard")
+    
+    cursor, conn = get_db()
+    
+    # Lista completa de documentos obrigatórios
+    documentos_obrigatorios = [
+        ('Certidão Negativa Eleitoral', 'Certidão Negativa da Justiça Eleitoral', 1, 1),
+        ('Certidão Negativa Militar', 'Certidão Negativa do Serviço Militar', 1, 2),
+        ('Tribunal Regional Federal da 1ª Região', 'Certidão Negativa do TRF1', 1, 3),
+        ('Certidões Negativas do TJDFT', 'Certidão Negativa do Tribunal de Justiça do DF', 1, 4),
+        ('Certidão de Antecedentes Criminais Polícia Federal', 'Certidão de Antecedentes Criminais da PF', 1, 5),
+        ('Certidão Negativa de Débitos - GDF', 'Certidão Negativa de Débitos do Governo do DF', 1, 6),
+        ('RG', 'Registro Geral - Documento de Identidade', 1, 7),
+        ('CPF', 'Cadastro de Pessoa Física', 1, 8),
+        ('Foto 3x4', 'Foto 3x4 recente e fundo branco', 1, 9)
+    ]
+    
+    # Lista de documentos opcionais
+    documentos_opcionais = [
+        ('Certidão de Nascimento', 'Certidão de Nascimento (opcional)', 0, 10),
+        ('Comprovante de Residência', 'Comprovante de endereço recente (opcional)', 0, 11),
+        ('Currículo', 'Currículo profissional (opcional)', 0, 12),
+        ('Título de Eleitor', 'Título de Eleitor (opcional)', 0, 13),
+        ('Carteira de Trabalho', 'Carteira de Trabalho (opcional)', 0, 14),
+        ('Diploma', 'Diploma de formação (opcional)', 0, 15)
+    ]
+    
+    try:
+        # Inserir ou atualizar documentos obrigatórios
+        for nome, descricao, obrigatorio, ordem in documentos_obrigatorios:
+            cursor.execute("""
+                INSERT INTO tipos_documentos_candidato (nome, descricao, obrigatorio, ordem, ativo)
+                VALUES (%s, %s, %s, %s, 1)
+                ON CONFLICT (nome) DO UPDATE SET
+                    descricao = EXCLUDED.descricao,
+                    obrigatorio = EXCLUDED.obrigatorio,
+                    ordem = EXCLUDED.ordem,
+                    ativo = 1
+            """, (nome, descricao, obrigatorio, ordem))
+        
+        # Inserir ou atualizar documentos opcionais
+        for nome, descricao, obrigatorio, ordem in documentos_opcionais:
+            cursor.execute("""
+                INSERT INTO tipos_documentos_candidato (nome, descricao, obrigatorio, ordem, ativo)
+                VALUES (%s, %s, %s, %s, 1)
+                ON CONFLICT (nome) DO UPDATE SET
+                    descricao = EXCLUDED.descricao,
+                    obrigatorio = EXCLUDED.obrigatorio,
+                    ordem = EXCLUDED.ordem,
+                    ativo = 1
+            """, (nome, descricao, obrigatorio, ordem))
+        
+        conn.commit()
+        
+        # Contar quantos foram inseridos/atualizados
+        cursor.execute("SELECT COUNT(*) as total FROM tipos_documentos_candidato WHERE ativo = 1")
+        total = cursor.fetchone()['total']
+        
+        flash(f"✅ {total} tipos de documento sincronizados com sucesso! (9 obrigatórios, {total-9} opcionais)", "success")
+        
+    except Exception as e:
+        flash(f"❌ Erro ao sincronizar: {str(e)}", "danger")
+        print(f"Erro detalhado: {str(e)}")
+        import traceback
+        traceback.print_exc()
+    finally:
+        return_connection(conn)
+    
+    return redirect("/admin/tipos-documentos")    
 
 # =============================
 # ROTAS DE CHECKLIST DIGITAL

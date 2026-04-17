@@ -197,11 +197,69 @@
     .text-ouro { color: var(--ouro) !important; }
     .bg-ouro { background: var(--ouro) !important; }
     
+    /* ESTILO PARA LISTA DE CARGOS COM ROLAGEM */
+    .cargos-lista {
+        max-height: 400px;
+        overflow-y: auto;
+        padding-right: 5px;
+    }
+    
+    .cargos-lista::-webkit-scrollbar {
+        width: 6px;
+    }
+    
+    .cargos-lista::-webkit-scrollbar-track {
+        background: rgba(74, 14, 46, 0.05);
+        border-radius: 10px;
+    }
+    
+    .cargos-lista::-webkit-scrollbar-thumb {
+        background: var(--bordo);
+        border-radius: 10px;
+    }
+    
+    .cargos-lista::-webkit-scrollbar-thumb:hover {
+        background: var(--bordo-claro);
+    }
+    
+    .cargo-item {
+        transition: all 0.2s ease;
+    }
+    
+    .cargo-item:hover {
+        background: rgba(74, 14, 46, 0.03);
+        transform: translateX(5px);
+    }
+    
+    /* Badge para cargo vago */
+    .badge-vago {
+        background: rgba(108, 117, 125, 0.15);
+        color: #6c757d;
+        font-size: 0.7rem;
+        padding: 4px 10px;
+        border-radius: 20px;
+    }
+    
+    /* Debug panel */
+    .debug-panel {
+        background: #f8f9fa;
+        border: 1px solid #dee2e6;
+        border-radius: 8px;
+        padding: 10px;
+        margin-bottom: 15px;
+        font-size: 12px;
+        max-height: 200px;
+        overflow: auto;
+    }
+    
     @media (max-width: 768px) {
         .display-4 { font-size: 1.8rem; }
         .display-5 { font-size: 1.3rem; }
         .icone-maconico { width: 40px; height: 40px; font-size: 20px; }
         .simbolo-maconico { letter-spacing: 3px; font-size: 10px; }
+        .cargos-lista {
+            max-height: 300px;
+        }
     }
 </style>
 {% endblock %}
@@ -216,13 +274,11 @@
                 <div class="card-maconico header-maconico">
                     <div class="card-body py-4">
                         <div class="text-center">
-                            <!-- Compasso e Esquadro lado a lado -->
                             <div class="simbolo-maconico mb-2" style="color: var(--ouro);">
                                 <i class="bi bi-easel fs-2 me-2"></i>
                                 <i class="bi bi-compass fs-2 ms-2"></i>
                             </div>
                             
-                            <!-- Frase principal solicitada -->
                             <h2 class="fw-bold text-ouro mb-2" style="font-family: 'Georgia', serif; letter-spacing: 3px;">
                                 LOJA BICENTENÁRIO - CEILÂNDIA
                             </h2>
@@ -240,23 +296,23 @@
                             </p>
                             
                            <p class="data-maconica text-white-50 small">
-    <i class="bi bi-calendar3 me-1"></i> 
-    A∴L∴ {{ now.year + 4000 }} | 
-    {{ now.day }} de 
-    {% if now.month == 1 %}Janeiro
-    {% elif now.month == 2 %}Fevereiro
-    {% elif now.month == 3 %}Março
-    {% elif now.month == 4 %}Abril
-    {% elif now.month == 5 %}Maio
-    {% elif now.month == 6 %}Junho
-    {% elif now.month == 7 %}Julho
-    {% elif now.month == 8 %}Agosto
-    {% elif now.month == 9 %}Setembro
-    {% elif now.month == 10 %}Outubro
-    {% elif now.month == 11 %}Novembro
-    {% else %}Dezembro{% endif %}
-    de {{ now.year }} - {{ now.strftime('%H:%M') }}h
-</p>
+                                <i class="bi bi-calendar3 me-1"></i> 
+                                A∴L∴ {{ now.year + 4000 }} | 
+                                {{ now.day }} de 
+                                {% if now.month == 1 %}Janeiro
+                                {% elif now.month == 2 %}Fevereiro
+                                {% elif now.month == 3 %}Março
+                                {% elif now.month == 4 %}Abril
+                                {% elif now.month == 5 %}Maio
+                                {% elif now.month == 6 %}Junho
+                                {% elif now.month == 7 %}Julho
+                                {% elif now.month == 8 %}Agosto
+                                {% elif now.month == 9 %}Setembro
+                                {% elif now.month == 10 %}Outubro
+                                {% elif now.month == 11 %}Novembro
+                                {% else %}Dezembro{% endif %}
+                                de {{ now.year }} - {{ now.strftime('%H:%M') }}h
+                            </p>
                             
                             <div class="mt-3 d-flex justify-content-center gap-3 flex-wrap">
                                 <span class="badge px-4 py-2 rounded-pill" style="background: rgba(255,255,255,0.15); border: 1px solid var(--ouro); color: var(--ouro);">
@@ -277,7 +333,7 @@
             </div>
         </div>
 
-        <!-- CARDS DE ESTATÍSTICAS DO RITO BRASILEIRO -->
+        <!-- CARDS DE ESTATÍSTICAS -->
         <div class="row g-4 mb-5">
             <div class="col-md-3 col-sm-6">
                 <div class="stat-maconico p-3">
@@ -337,7 +393,7 @@
             </div>
         </div>
 
-        <!-- DISTRIBUIÇÃO POR GRAU COM SÍMBOLOS - CORRIGIDO -->
+        <!-- DISTRIBUIÇÃO POR GRAU -->
         <div class="row g-4 mb-5">
             <div class="col-md-6">
                 <div class="card-maconico">
@@ -373,7 +429,6 @@
                             </div>
                         </div>
                         
-                        <!-- BARRA DE PROGRESSO CORRIGIDA -->
                         <div class="mt-4">
                             {% set total_graus = (aprendizes|default(0)) + (companheiros|default(0)) + (mestres|default(0)) %}
                             {% if total_graus > 0 %}
@@ -411,53 +466,51 @@
             </div>
             
             <div class="col-md-6">
-    <div class="card-maconico h-100">
-        <div class="card-body p-4 text-center">
-            <h5 class="titulo-maconico mb-4 text-center">
-                <i class="bi bi-eye-fill me-2"></i>
-                O Olho da Providência
-            </h5>
-            
-            <div class="d-flex justify-content-center mb-2">
-                <div class="rounded-circle d-flex align-items-center justify-content-center" style="width: 130px; height: 130px; background: radial-gradient(circle, var(--bordo), var(--bordo-escuro));">
-                    <div class="text-center">
-                        <i class="bi bi-eye-fill fs-2 text-ouro"></i>
-                        <h2 class="display-6 fw-bold text-ouro mb-0 mt-1">{{ "%.0f"|format((reunioes_realizadas / total_reunioes * 100) if total_reunioes > 0 else 0) }}%</h2>
+                <div class="card-maconico h-100">
+                    <div class="card-body p-4 text-center">
+                        <h5 class="titulo-maconico mb-4 text-center">
+                            <i class="bi bi-eye-fill me-2"></i>
+                            O Olho da Providência
+                        </h5>
+                        
+                        <div class="d-flex justify-content-center mb-2">
+                            <div class="rounded-circle d-flex align-items-center justify-content-center" style="width: 130px; height: 130px; background: radial-gradient(circle, var(--bordo), var(--bordo-escuro));">
+                                <div class="text-center">
+                                    <i class="bi bi-eye-fill fs-2 text-ouro"></i>
+                                    <h2 class="display-6 fw-bold text-ouro mb-0 mt-1">{{ "%.0f"|format((reunioes_realizadas / total_reunioes * 100) if total_reunioes > 0 else 0) }}%</h2>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <p class="text-ouro fw-semibold mb-3" style="font-size: 0.8rem;">
+                            <i class="bi bi-check-circle-fill me-1"></i>
+                            Trabalhos Realizados
+                        </p>
+                        
+                        <div class="mt-3">
+                            {% set percentual = (reunioes_realizadas / total_reunioes * 100) if total_reunioes > 0 else 0 %}
+                            <div class="progress-maconico" style="background: rgba(74, 14, 46, 0.1); border-radius: 30px; height: 10px; overflow: hidden;">
+                                <div class="progress-bar" role="progressbar" 
+                                     style="width: {{ percentual }}%; background: linear-gradient(90deg, var(--bordo), var(--bordo-claro)); border-radius: 30px; height: 100%;"
+                                     aria-valuenow="{{ percentual }}" aria-valuemin="0" aria-valuemax="100">
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <p class="mt-2 text-muted small">
+                            <i class="bi bi-clock-history text-bordo me-1"></i> 
+                            {{ reunioes_realizadas|default(0) }} de {{ total_reunioes|default(0) }} sessões realizadas
+                        </p>
+                        
+                        <p class="text-muted small mb-0 fst-italic">
+                            "Trabalho, Reflexão e Sabedoria"
+                        </p>
                     </div>
                 </div>
             </div>
-            
-            <!-- Frase abaixo do círculo -->
-            <p class="text-ouro fw-semibold mb-3" style="font-size: 0.8rem;">
-                <i class="bi bi-check-circle-fill me-1"></i>
-                Trabalhos Realizados
-            </p>
-            
-            <!-- BARRA DE PROGRESSO CORRIGIDA -->
-            <div class="mt-3">
-                {% set percentual = (reunioes_realizadas / total_reunioes * 100) if total_reunioes > 0 else 0 %}
-                <div class="progress-maconico" style="background: rgba(74, 14, 46, 0.1); border-radius: 30px; height: 10px; overflow: hidden;">
-                    <div class="progress-bar" role="progressbar" 
-                         style="width: {{ percentual }}%; background: linear-gradient(90deg, var(--bordo), var(--bordo-claro)); border-radius: 30px; height: 100%;"
-                         aria-valuenow="{{ percentual }}" aria-valuemin="0" aria-valuemax="100">
-                    </div>
-                </div>
-            </div>
-            
-            <p class="mt-2 text-muted small">
-                <i class="bi bi-clock-history text-bordo me-1"></i> 
-                {{ reunioes_realizadas|default(0) }} de {{ total_reunioes|default(0) }} sessões realizadas
-            </p>
-            
-            <p class="text-muted small mb-0 fst-italic">
-                "Trabalho, Reflexão e Sabedoria"
-            </p>
-        </div>
-    </div>
-</div>
         </div>
 
-        <!-- ÁREA DE SINDICÂNCIA - RITO BRASILEIRO -->
+        <!-- ÁREA DE SINDICÂNCIA -->
         <div class="card-maconico mb-5">
             <div class="card-header bg-transparent border-bottom py-3" style="border-color: rgba(74, 14, 46, 0.15) !important;">
                 <div class="d-flex justify-content-between align-items-center">
@@ -474,207 +527,179 @@
                 </div>
             </div>
             <div class="card-body p-4">
-               <!-- Estatísticas da Sindicância -->
-<div class="row g-3 mb-4">
-    <div class="col-md-3 col-sm-6">
-        <div class="stat-maconico p-3 text-center">
-            <i class="bi bi-hourglass-split fs-2 text-bordo"></i>
-            <h2 class="fw-bold numero-bordo mb-0 mt-2">{{ em_analise|default(0) }}</h2>
-            <small class="text-muted">Em Andamento</small>
-            <div class="small text-muted mt-1">
-                <i class="bi bi-info-circle"></i> Aguardando análise
-            </div>
-        </div>
-    </div>
-    <div class="col-md-3 col-sm-6">
-        <div class="stat-maconico p-3 text-center">
-            <i class="bi bi-check-circle-fill fs-2 text-success"></i>
-            <h2 class="fw-bold text-success mb-0 mt-2">{{ aprovados|default(0) }}</h2>
-            <small class="text-muted">Aprovados</small>
-            <div class="small text-muted mt-1">
-                <i class="bi bi-check-lg"></i> Parecer positivo
-            </div>
-        </div>
-    </div>
-    <div class="col-md-3 col-sm-6">
-        <div class="stat-maconico p-3 text-center">
-            <i class="bi bi-x-circle-fill fs-2 text-danger"></i>
-            <h2 class="fw-bold text-danger mb-0 mt-2">{{ reprovados|default(0) }}</h2>
-            <small class="text-muted">Reprovados</small>
-            <div class="small text-muted mt-1">
-                <i class="bi bi-x-lg"></i> Parecer negativo
-            </div>
-        </div>
-    </div>
-    <div class="col-md-3 col-sm-6">
-        <div class="stat-maconico p-3 text-center">
-            <i class="bi bi-people-fill fs-2 text-info"></i>
-            <h2 class="fw-bold text-info mb-0 mt-2">{{ total_candidatos|default(0) }}</h2>
-            <small class="text-muted">Total de Candidatos</small>
-            <div class="small text-muted mt-1">
-                <i class="bi bi-person-plus"></i> Cadastrados no sistema
-            </div>
-        </div>
-    </div>
-</div>
-
- <!-- Progresso da Sindicância - CORRIGIDO -->
-<div class="mb-4">
-    <div class="d-flex justify-content-between align-items-center mb-3">
-        <h6 class="mb-0 fw-bold text-bordo">
-            <i class="bi bi-graph-up me-2"></i>
-            Progresso da Sindicância
-        </h6>
-        <span class="badge px-3 py-2 rounded-pill" style="background: rgba(74, 14, 46, 0.1); color: var(--bordo);">
-            {{ total_candidatos|default(0) }} Candidatos
-        </span>
-    </div>
-    
-    {% if total_candidatos|default(0) > 0 %}
-        <!-- Contagem via JavaScript para evitar problemas com Jinja2 -->
-        <div id="progressoContainer">
-            <div class="text-center py-3">
-                <div class="spinner-border spinner-border-sm text-primary" role="status">
-                    <span class="visually-hidden">Calculando...</span>
+                <div class="row g-3 mb-4">
+                    <div class="col-md-3 col-sm-6">
+                        <div class="stat-maconico p-3 text-center">
+                            <i class="bi bi-hourglass-split fs-2 text-bordo"></i>
+                            <h2 class="fw-bold numero-bordo mb-0 mt-2">{{ em_analise|default(0) }}</h2>
+                            <small class="text-muted">Em Andamento</small>
+                            <div class="small text-muted mt-1">
+                                <i class="bi bi-info-circle"></i> Aguardando análise
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3 col-sm-6">
+                        <div class="stat-maconico p-3 text-center">
+                            <i class="bi bi-check-circle-fill fs-2 text-success"></i>
+                            <h2 class="fw-bold text-success mb-0 mt-2">{{ aprovados|default(0) }}</h2>
+                            <small class="text-muted">Aprovados</small>
+                            <div class="small text-muted mt-1">
+                                <i class="bi bi-check-lg"></i> Parecer positivo
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3 col-sm-6">
+                        <div class="stat-maconico p-3 text-center">
+                            <i class="bi bi-x-circle-fill fs-2 text-danger"></i>
+                            <h2 class="fw-bold text-danger mb-0 mt-2">{{ reprovados|default(0) }}</h2>
+                            <small class="text-muted">Reprovados</small>
+                            <div class="small text-muted mt-1">
+                                <i class="bi bi-x-lg"></i> Parecer negativo
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3 col-sm-6">
+                        <div class="stat-maconico p-3 text-center">
+                            <i class="bi bi-people-fill fs-2 text-info"></i>
+                            <h2 class="fw-bold text-info mb-0 mt-2">{{ total_candidatos|default(0) }}</h2>
+                            <small class="text-muted">Total de Candidatos</small>
+                            <div class="small text-muted mt-1">
+                                <i class="bi bi-person-plus"></i> Cadastrados no sistema
+                            </div>
+                        </div>
+                    </div>
                 </div>
-                <p class="mt-2 small text-muted">Calculando progresso...</p>
-            </div>
-        </div>
-    {% else %}
-        <div class="alert alert-info text-center mb-0">
-            <i class="bi bi-info-circle me-2"></i>
-            Nenhum candidato cadastrado. Adicione candidatos para iniciar o processo.
-        </div>
-    {% endif %}
-</div>
 
-<script>
-// Função para calcular o progresso da sindicância via JavaScript
-function calcularProgressoSindicancia() {
-    const candidatos = {{ candidatos|tojson|safe }};
-    const documentosStatus = {{ documentos_status|tojson|safe }};
-    const totalCandidatos = {{ total_candidatos|default(0) }};
-    
-    console.log("Candidatos:", candidatos);
-    console.log("Documentos Status:", documentosStatus);
-    console.log("Total:", totalCandidatos);
-    
-    // Lista de documentos obrigatórios
-    const documentosObrigatorios = [
-        'CIM',
-        'RG',
-        'CPF',
-        'Comprovante de Residência',
-        'Certidão de Nascimento',
-        'Certificado de Grau'
-    ];
-    
-    let comFormulario = 0;
-    let comDocumentosCompletos = 0;
-    let totalDocumentosEnviados = 0;
-    let totalDocumentosEsperados = 0;
-    
-    for (const c of candidatos) {
-        // Verificar se tem formulário preenchido (CPF, RG ou endereço)
-        if (c.cpf || c.rg || c.endereco_residencial) {
-            comFormulario++;
-        }
-        
-        // Verificar documentos
-        const docStatus = documentosStatus[c.id.toString()] || documentosStatus[c.id];
-        const enviados = docStatus ? docStatus.enviados : 0;
-        const total = docStatus ? docStatus.total : 0;
-        
-        totalDocumentosEnviados += enviados;
-        
-        // Considera que tem documentos completos se enviou pelo menos 3 documentos
-        // OU se enviou todos os documentos que o candidato tem disponíveis
-        if (enviados >= 3) {
-            comDocumentosCompletos++;
-        }
-    }
-    
-    const percentualForm = totalCandidatos > 0 ? (comFormulario / totalCandidatos * 100) : 0;
-    const percentualDoc = totalCandidatos > 0 ? (comDocumentosCompletos / totalCandidatos * 100) : 0;
-    
-    // Determinar mensagem baseada no status
-    let mensagemStatus = '';
-    let mensagemClasse = 'alert-warning';
-    let mensagemIcone = 'bi-exclamation-triangle';
-    let mensagemTexto = 'Nenhum candidato completo ainda. Preencha formulários e envie documentos.';
-    
-    if (comFormulario === totalCandidatos && comDocumentosCompletos === totalCandidatos && totalCandidatos > 0) {
-        mensagemClasse = 'alert-success';
-        mensagemIcone = 'bi-trophy-fill';
-        mensagemTexto = '🎉 Todos os candidatos estão completos! Aguardando análise dos sindicantes.';
-    } else if (comDocumentosCompletos > 0 || comFormulario > 0) {
-        mensagemClasse = 'alert-info';
-        mensagemIcone = 'bi-hourglass-split';
-        mensagemTexto = `${comFormulario} candidato(s) com formulário, ${comDocumentosCompletos} com documentos suficientes (mínimo 3 documentos).`;
-    }
-    
-    const html = `
-        <div class="mb-3">
-            <div class="d-flex justify-content-between mb-1">
-                <small class="text-muted">
-                    <i class="bi bi-file-text me-1"></i> Formulários Preenchidos
-                </small>
-                <small class="fw-bold">${comFormulario}/${totalCandidatos}</small>
-            </div>
-            <div class="progress-maconico" style="background: rgba(74, 14, 46, 0.1); border-radius: 30px; height: 8px; overflow: hidden;">
-                <div class="progress-bar" role="progressbar" 
-                     style="width: ${percentualForm}%; background: linear-gradient(90deg, #3b82f6, #60a5fa); border-radius: 30px; height: 100%;">
+                <div class="mb-4">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h6 class="mb-0 fw-bold text-bordo">
+                            <i class="bi bi-graph-up me-2"></i>
+                            Progresso da Sindicância
+                        </h6>
+                        <span class="badge px-3 py-2 rounded-pill" style="background: rgba(74, 14, 46, 0.1); color: var(--bordo);">
+                            {{ total_candidatos|default(0) }} Candidatos
+                        </span>
+                    </div>
+                    
+                    {% if total_candidatos|default(0) > 0 %}
+                        <div id="progressoContainer">
+                            <div class="text-center py-3">
+                                <div class="spinner-border spinner-border-sm text-primary" role="status">
+                                    <span class="visually-hidden">Calculando...</span>
+                                </div>
+                                <p class="mt-2 small text-muted">Calculando progresso...</p>
+                            </div>
+                        </div>
+                    {% else %}
+                        <div class="alert alert-info text-center mb-0">
+                            <i class="bi bi-info-circle me-2"></i>
+                            Nenhum candidato cadastrado. Adicione candidatos para iniciar o processo.
+                        </div>
+                    {% endif %}
                 </div>
-            </div>
-        </div>
-        
-        <div class="mb-3">
-            <div class="d-flex justify-content-between mb-1">
-                <small class="text-muted">
-                    <i class="bi bi-folder2-open me-1"></i> Candidatos com Documentos (mín. 3)
-                </small>
-                <small class="fw-bold">${comDocumentosCompletos}/${totalCandidatos}</small>
-            </div>
-            <div class="progress-maconico" style="background: rgba(74, 14, 46, 0.1); border-radius: 30px; height: 8px; overflow: hidden;">
-                <div class="progress-bar" role="progressbar" 
-                     style="width: ${percentualDoc}%; background: linear-gradient(90deg, #10b981, #34d399); border-radius: 30px; height: 100%;">
-                </div>
-            </div>
-        </div>
-        
-        <div class="small text-muted mb-2">
-            <i class="bi bi-info-circle me-1"></i>
-            Total de documentos enviados: ${totalDocumentosEnviados}
-        </div>
-        
-        <div class="d-flex justify-content-center gap-3 mt-3">
-            <small class="text-muted">
-                <i class="bi bi-circle-fill text-primary" style="font-size: 0.7rem;"></i> Formulários
-            </small>
-            <small class="text-muted">
-                <i class="bi bi-circle-fill text-success" style="font-size: 0.7rem;"></i> Documentos (≥3)
-            </small>
-        </div>
-        
-        <div class="${mensagemClasse} text-center mt-3 mb-0">
-            <i class="bi ${mensagemIcone} me-2"></i>
-            ${mensagemTexto}
-        </div>
-    `;
-    
-    const container = document.getElementById('progressoContainer');
-    if (container) {
-        container.innerHTML = html;
-    }
-}
 
-// Executar quando a página carregar
-document.addEventListener('DOMContentLoaded', function() {
-    calcularProgressoSindicancia();
-});
-</script>
+                <script>
+                function calcularProgressoSindicancia() {
+                    const candidatos = {{ candidatos|tojson|safe }};
+                    const documentosStatus = {{ documentos_status|tojson|safe }};
+                    const totalCandidatos = {{ total_candidatos|default(0) }};
+                    
+                    let comFormulario = 0;
+                    let comDocumentosCompletos = 0;
+                    let totalDocumentosEnviados = 0;
+                    
+                    for (const c of candidatos) {
+                        if (c.cpf || c.rg || c.endereco_residencial) {
+                            comFormulario++;
+                        }
+                        
+                        const docStatus = documentosStatus[c.id.toString()] || documentosStatus[c.id];
+                        const enviados = docStatus ? docStatus.enviados : 0;
+                        
+                        totalDocumentosEnviados += enviados;
+                        
+                        if (enviados >= 3) {
+                            comDocumentosCompletos++;
+                        }
+                    }
+                    
+                    const percentualForm = totalCandidatos > 0 ? (comFormulario / totalCandidatos * 100) : 0;
+                    const percentualDoc = totalCandidatos > 0 ? (comDocumentosCompletos / totalCandidatos * 100) : 0;
+                    
+                    let mensagemClasse = 'alert-warning';
+                    let mensagemIcone = 'bi-exclamation-triangle';
+                    let mensagemTexto = 'Nenhum candidato completo ainda. Preencha formulários e envie documentos.';
+                    
+                    if (comFormulario === totalCandidatos && comDocumentosCompletos === totalCandidatos && totalCandidatos > 0) {
+                        mensagemClasse = 'alert-success';
+                        mensagemIcone = 'bi-trophy-fill';
+                        mensagemTexto = '🎉 Todos os candidatos estão completos! Aguardando análise dos sindicantes.';
+                    } else if (comDocumentosCompletos > 0 || comFormulario > 0) {
+                        mensagemClasse = 'alert-info';
+                        mensagemIcone = 'bi-hourglass-split';
+                        mensagemTexto = `${comFormulario} candidato(s) com formulário, ${comDocumentosCompletos} com documentos suficientes (mínimo 3 documentos).`;
+                    }
+                    
+                    const html = `
+                        <div class="mb-3">
+                            <div class="d-flex justify-content-between mb-1">
+                                <small class="text-muted">
+                                    <i class="bi bi-file-text me-1"></i> Formulários Preenchidos
+                                </small>
+                                <small class="fw-bold">${comFormulario}/${totalCandidatos}</small>
+                            </div>
+                            <div class="progress-maconico" style="background: rgba(74, 14, 46, 0.1); border-radius: 30px; height: 8px; overflow: hidden;">
+                                <div class="progress-bar" role="progressbar" 
+                                     style="width: ${percentualForm}%; background: linear-gradient(90deg, #3b82f6, #60a5fa); border-radius: 30px; height: 100%;">
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <div class="d-flex justify-content-between mb-1">
+                                <small class="text-muted">
+                                    <i class="bi bi-folder2-open me-1"></i> Candidatos com Documentos (mín. 3)
+                                </small>
+                                <small class="fw-bold">${comDocumentosCompletos}/${totalCandidatos}</small>
+                            </div>
+                            <div class="progress-maconico" style="background: rgba(74, 14, 46, 0.1); border-radius: 30px; height: 8px; overflow: hidden;">
+                                <div class="progress-bar" role="progressbar" 
+                                     style="width: ${percentualDoc}%; background: linear-gradient(90deg, #10b981, #34d399); border-radius: 30px; height: 100%;">
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="small text-muted mb-2">
+                            <i class="bi bi-info-circle me-1"></i>
+                            Total de documentos enviados: ${totalDocumentosEnviados}
+                        </div>
+                        
+                        <div class="d-flex justify-content-center gap-3 mt-3">
+                            <small class="text-muted">
+                                <i class="bi bi-circle-fill text-primary" style="font-size: 0.7rem;"></i> Formulários
+                            </small>
+                            <small class="text-muted">
+                                <i class="bi bi-circle-fill text-success" style="font-size: 0.7rem;"></i> Documentos (≥3)
+                            </small>
+                        </div>
+                        
+                        <div class="${mensagemClasse} text-center mt-3 mb-0">
+                            <i class="bi ${mensagemIcone} me-2"></i>
+                            ${mensagemTexto}
+                        </div>
+                    `;
+                    
+                    const container = document.getElementById('progressoContainer');
+                    if (container) {
+                        container.innerHTML = html;
+                    }
+                }
+                
+                document.addEventListener('DOMContentLoaded', function() {
+                    calcularProgressoSindicancia();
+                });
+                </script>
 
-                <!-- Pendências -->
                 <div class="row g-4">
                     {% if pendentes %}
                     <div class="col-md-6">
@@ -795,29 +820,16 @@ document.addEventListener('DOMContentLoaded', function() {
                                 </h6>
                             </div>
                             <div class="card-body p-3">
-                                {% if cargos_ocupados and cargos_ocupados|length > 0 %}
-                                    {% for cargo in cargos_ocupados[:3] %}
-                                    <div class="mb-2 pb-2 border-bottom" style="border-color: rgba(74, 14, 46, 0.1);">
-                                        <div class="d-flex justify-content-between align-items-center">
-                                            <div>
-                                                <strong class="text-bordo">{{ cargo.cargo_nome }}</strong>
-                                                <br>
-                                                <small class="text-muted">
-                                                    <i class="bi bi-person-circle"></i> 
-                                                    <a href="/obreiros/{{ cargo.obreiro_id }}" class="text-decoration-none" style="color: var(--bordo);">
-                                                        {{ cargo.obreiro_nome }}
-                                                    </a>
-                                                </small>
-                                            </div>
-                                            <span class="badge px-3 py-1 rounded-pill" style="background: rgba(74, 14, 46, 0.1); color: var(--bordo);">
-                                                Atual
-                                            </span>
+                                                                
+                                <!-- Container que será preenchido via JavaScript -->
+                                <div id="cargosContainer" class="cargos-lista">
+                                    <div class="text-center py-3">
+                                        <div class="spinner-border spinner-border-sm text-primary" role="status">
+                                            <span class="visually-hidden">Carregando...</span>
                                         </div>
+                                        <p class="mt-2 small text-muted">Carregando cargos...</p>
                                     </div>
-                                    {% endfor %}
-                                {% else %}
-                                    <p class="text-center text-muted py-3">Nenhum cargo ocupado</p>
-                                {% endif %}
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -831,7 +843,7 @@ document.addEventListener('DOMContentLoaded', function() {
                             </div>
                             <div class="card-body p-3">
                                 {% if proximas_reunioes and proximas_reunioes|length > 0 %}
-                                    {% for r in proximas_reunioes[:3] %}
+                                    {% for r in proximas_reunioes[:5] %}
                                     <a href="/reunioes/{{ r.id }}" class="text-decoration-none">
                                         <div class="mb-2 pb-2 border-bottom" style="border-color: rgba(74, 14, 46, 0.1);">
                                             <div class="d-flex justify-content-between align-items-start">
@@ -858,7 +870,7 @@ document.addEventListener('DOMContentLoaded', function() {
             </div>
         </div>
 
-        <!-- RODAPÉ MAÇÔNICO - RITO BRASILEIRO -->
+        <!-- RODAPÉ MAÇÔNICO -->
         <div class="simbolo-maconico mt-5 pt-3">
             <div class="row">
                 <div class="col-12 text-center">
@@ -880,4 +892,138 @@ document.addEventListener('DOMContentLoaded', function() {
 
     </div>
 </div>
+
+<script>
+// Lista de cargos em ordem
+const cargosOrdem = [
+    'Venerável Mestre',
+    'Orador',
+    'Secretário',
+    '1º Vigilante',
+    '2º Vigilante',
+    'Tesoureiro',
+    'Mestre de Cerimônias',
+    '1º Diácono',
+    '2º Diácono',
+    'Mestre de Harmonia',
+    'Hospedeiro',
+    'Cobridor',
+    'Porta Bandeira',
+    'Mestre de Banquete',
+    'Arquiteto',
+    'Guarda do Templo'
+];
+
+// Dados dos cargos vindos do backend
+const cargosData = {{ cargos_ocupados|tojson|safe }};
+
+// Função para normalizar nomes (remover acentos, converter para minúsculo)
+function normalizeString(str) {
+    if (!str) return '';
+    return str.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim();
+}
+
+// Função para extrair nome do cargo de qualquer estrutura
+function getCargoName(cargo) {
+    if (!cargo) return '';
+    // Tenta diferentes formas de acessar o nome do cargo
+    return cargo.cargo_nome || cargo.nome || cargo.cargo || cargo.descricao || cargo.titulo || '';
+}
+
+// Função para extrair nome do obreiro
+function getObreiroName(cargo) {
+    if (!cargo) return '';
+    // Tenta diferentes formas de acessar o nome do obreiro
+    return cargo.obreiro_nome || cargo.nome_obreiro || cargo.obreiro || cargo.nome || '';
+}
+
+// Função para extrair ID do obreiro
+function getObreiroId(cargo) {
+    if (!cargo) return '#';
+    // Tenta diferentes formas de acessar o ID do obreiro
+    return cargo.obreiro_id || cargo.id_obreiro || cargo.obreiroId || cargo.id || '#';
+}
+
+// Função para renderizar a lista de cargos
+function renderizarCargos() {
+    const container = document.getElementById('cargosContainer');
+    if (!container) return;
+    
+    // Criar um mapa de cargos por nome normalizado
+    const cargosMap = new Map();
+    
+    console.log('Dados recebidos do backend:', cargosData);
+    
+    // Mostrar debug panel (remova depois que funcionar)
+    const debugPanel = document.getElementById('debugPanel');
+    const debugContent = document.getElementById('debugContent');
+    if (debugPanel && debugContent) {
+        debugPanel.style.display = 'block';
+        debugContent.textContent = JSON.stringify(cargosData, null, 2);
+    }
+    
+    // Processar cada cargo do backend
+    if (cargosData && Array.isArray(cargosData)) {
+        for (const cargo of cargosData) {
+            const nomeCargo = getCargoName(cargo);
+            if (nomeCargo) {
+                const nomeNormalizado = normalizeString(nomeCargo);
+                cargosMap.set(nomeNormalizado, {
+                    nome: nomeCargo,
+                    obreiro_nome: getObreiroName(cargo),
+                    obreiro_id: getObreiroId(cargo)
+                });
+                console.log(`Cargo mapeado: "${nomeCargo}" -> Normalizado: "${nomeNormalizado}"`);
+            }
+        }
+    }
+    
+    // Gerar HTML para cada cargo da ordem
+    let html = '';
+    
+    for (const cargoNome of cargosOrdem) {
+        const cargoNormalizado = normalizeString(cargoNome);
+        const cargoInfo = cargosMap.get(cargoNormalizado);
+        const temOcupante = cargoInfo && cargoInfo.obreiro_nome && cargoInfo.obreiro_nome !== '';
+        
+        html += `
+            <div class="cargo-item mb-2 pb-2 border-bottom" style="border-color: rgba(74, 14, 46, 0.08);">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div class="flex-grow-1">
+                        <div class="d-flex align-items-center gap-2">
+                            <i class="bi bi-briefcase-fill" style="color: var(--bordo); font-size: 0.9rem;"></i>
+                            <strong class="text-bordo">${cargoNome}</strong>
+                        </div>
+                        ${temOcupante ? `
+                            <small class="text-muted d-block mt-1">
+                                <i class="bi bi-person-circle"></i> 
+                                <a href="/obreiros/${cargoInfo.obreiro_id}" class="text-decoration-none" style="color: var(--bordo);">
+                                    ${cargoInfo.obreiro_nome}
+                                </a>
+                            </small>
+                        ` : `
+                            <small class="text-muted d-block mt-1">
+                                <i class="bi bi-person-x"></i> 
+                                <span class="badge-vago">Cargo Vago</span>
+                            </small>
+                        `}
+                    </div>
+                    ${temOcupante ? `
+                        <span class="badge px-3 py-1 rounded-pill" style="background: rgba(74, 14, 46, 0.1); color: var(--bordo); font-size: 0.7rem;">
+                            Atual
+                        </span>
+                    ` : ''}
+                </div>
+            </div>
+        `;
+    }
+    
+    container.innerHTML = html;
+}
+
+// Executar quando a página carregar
+document.addEventListener('DOMContentLoaded', function() {
+    renderizarCargos();
+});
+</script>
 {% endblock %}
