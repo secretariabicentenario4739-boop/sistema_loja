@@ -419,6 +419,8 @@ document.addEventListener('DOMContentLoaded', async function() {
     }
 });
 
+// Substitua a parte do carregamento do PDF com este código:
+
 async function carregarPDF(url) {
     debugLog(`Iniciando carregamento do PDF: ${url}`);
     
@@ -437,11 +439,29 @@ async function carregarPDF(url) {
             </div>
         `;
         
-        debugLog('Chamando pdfjsLib.getDocument...');
+        // Se a URL for do Cloudinary, usar diretamente
+        let pdfUrl = url;
+        if (url.includes('/biblioteca/material/')) {
+            // Buscar a URL real do Cloudinary via API
+            debugLog('Obtendo URL real do Cloudinary...');
+            const response = await fetch(url);
+            if (response.redirected) {
+                pdfUrl = response.url;
+                debugLog(`Redirecionado para: ${pdfUrl}`);
+            } else {
+                const data = await response.json();
+                if (data.error) {
+                    throw new Error(data.error);
+                }
+                pdfUrl = data.url || url;
+            }
+        }
         
-        // Configurar opções para evitar problemas de CORS
+        debugLog(`URL final do PDF: ${pdfUrl}`);
+        
+        // Configurar opções para PDF.js
         const loadingTask = pdfjsLib.getDocument({
-            url: url,
+            url: pdfUrl,
             withCredentials: false,
             disableRange: true,
             disableStream: true,
@@ -474,7 +494,6 @@ async function carregarPDF(url) {
         
     } catch (error) {
         debugLog(`Erro ao carregar PDF: ${error.message}`, 'error');
-        debugLog(`Erro completo: ${JSON.stringify(error)}`, 'error');
         console.error('Erro detalhado:', error);
         
         let mensagemErro = 'Não foi possível carregar o PDF. ';

@@ -2433,14 +2433,16 @@ def servir_arquivo_material(material_id):
             return_connection(conn)
             return jsonify({'error': 'Arquivo não disponível'}), 404
         
-        # Se for URL do Cloudinary, retornar a URL diretamente
+        # Se for URL do Cloudinary, redirecionar diretamente
         if 'cloudinary.com' in arquivo_url or 'res.cloudinary.com' in arquivo_url:
             return_connection(conn)
-            # Adicionar parâmetro para forçar visualização no navegador
+            # Adicionar parâmetros para visualização
             if '?' in arquivo_url:
-                arquivo_url += '&fl_attachment=0'
+                arquivo_url += '&fl_attachment=0&dl=0'
             else:
-                arquivo_url += '?fl_attachment=0'
+                arquivo_url += '?fl_attachment=0&dl=0'
+            
+            # Redirecionar diretamente para o Cloudinary
             return redirect(arquivo_url)
         
         # Se for arquivo local
