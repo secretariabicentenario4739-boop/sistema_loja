@@ -2464,6 +2464,37 @@ def servir_arquivo_material(material_id):
             return_connection(conn)
         return jsonify({'error': str(e)}), 500
         
+@app.route("/biblioteca/material/<int:material_id>/info")
+@login_required
+def material_info(material_id):
+    """Retorna informações do material para debug"""
+    try:
+        cursor, conn = get_db()
+        
+        cursor.execute("""
+            SELECT id, titulo, arquivo_url, formato, tipo, publicado
+            FROM materiais 
+            WHERE id = %s
+        """, (material_id,))
+        material = cursor.fetchone()
+        
+        if not material:
+            return_connection(conn)
+            return jsonify({'error': 'Material não encontrado'}), 404
+        
+        return_connection(conn)
+        
+        return jsonify({
+            'id': material['id'],
+            'titulo': material['titulo'],
+            'arquivo_url': material['arquivo_url'],
+            'formato': material['formato'],
+            'tipo': material['tipo'],
+            'publicado': material['publicado'],
+            'url_visualizacao': f"/biblioteca/material/{material_id}/arquivo"
+        })
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
         
 @app.route("/biblioteca/admin/upload", methods=['GET', 'POST'])
 @login_required
