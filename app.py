@@ -2433,17 +2433,34 @@ def servir_arquivo_material(material_id):
             return_connection(conn)
             return jsonify({'error': 'Arquivo não disponível'}), 404
         
-        # Se for URL do Cloudinary, redirecionar diretamente
+        # Se for URL do Cloudinary, usar proxy com autenticação
         if 'cloudinary.com' in arquivo_url or 'res.cloudinary.com' in arquivo_url:
             return_connection(conn)
-            # Adicionar parâmetros para visualização
-            if '?' in arquivo_url:
-                arquivo_url += '&fl_attachment=0&dl=0'
-            else:
-                arquivo_url += '?fl_attachment=0&dl=0'
             
-            # Redirecionar diretamente para o Cloudinary
-            return redirect(arquivo_url)
+            # Fazer download do arquivo com autenticação
+            try:
+                # Adicionar autenticação básica com API Key e Secret
+                auth = (cloudinary.config().api_key, cloudinary.config().api_secret)
+                
+                # Fazer request para o Cloudinary
+                response = requests.get(arquivo_url, auth=auth, stream=True)
+                
+                if response.status_code == 200:
+                    # Retornar o arquivo como se fosse do seu servidor
+                    return Response(
+                        stream_with_context(response.iter_content(chunk_size=8192)),
+                        status=200,
+                        headers={
+                            'Content-Type': response.headers.get('content-type', 'application/pdf'),
+                            'Content-Disposition': f'inline; filename="{material.get("titulo", "documento")}.pdf"'
+                        }
+                    )
+                else:
+                    return jsonify({'error': f'Erro ao acessar arquivo: {response.status_code}'}), 404
+                    
+            except Exception as e:
+                print(f"Erro no proxy: {e}")
+                return jsonify({'error': str(e)}), 500
         
         # Se for arquivo local
         import os
