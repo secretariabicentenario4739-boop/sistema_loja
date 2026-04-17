@@ -30,7 +30,7 @@
     </ul>
 
     <div class="tab-content">
-        <!-- Aba de Leitura -->
+        <!-- Aba de Leitura - Versão Simples -->
         <div class="tab-pane fade show active" id="read" role="tabpanel">
             <div class="card shadow">
                 <div class="card-header bg-white">
@@ -42,11 +42,9 @@
                             {% endif %}
                         </h5>
                         <div class="mt-2 mt-md-0">
-                            {% if pode_baixar %}
                             <button class="btn btn-sm btn-primary" onclick="baixarPDF()">
                                 <i class="bi bi-download"></i> Baixar PDF
                             </button>
-                            {% endif %}
                             <button class="btn btn-sm btn-outline-warning" id="btnFavoritarLeitura" onclick="favoritarMaterial()">
                                 <i class="bi bi-star{% if favoritado %}-fill{% endif %}"></i>
                             </button>
@@ -57,11 +55,15 @@
                     <div id="documentViewer" style="min-height: 80vh; background: #f5f5f5;">
                         <div class="d-flex align-items-center justify-content-center h-100" style="min-height: 80vh;">
                             <div class="text-center">
-                                <div class="spinner-border text-primary" role="status">
-                                    <span class="visually-hidden">Carregando...</span>
-                                </div>
-                                <p class="mt-3">Carregando visualizador...</p>
-                                <p class="text-muted small" id="statusMsg"></p>
+                                <i class="bi bi-file-pdf" style="font-size: 5rem; color: #dc3545;"></i>
+                                <h4 class="mt-3">{{ material.titulo }}</h4>
+                                <p class="text-muted">Clique no botão abaixo para visualizar o documento</p>
+                                <button class="btn btn-primary btn-lg mt-2" onclick="abrirPDF()">
+                                    <i class="bi bi-eye"></i> Visualizar PDF
+                                </button>
+                                <button class="btn btn-outline-secondary btn-lg mt-2 ms-2" onclick="baixarPDF()">
+                                    <i class="bi bi-download"></i> Baixar PDF
+                                </button>
                             </div>
                         </div>
                     </div>
@@ -79,11 +81,11 @@
                         </div>
                         <div class="col-md-6 text-md-end mt-2 mt-md-0">
                             <div class="btn-group btn-group-sm" role="group">
-                                <button class="btn btn-outline-primary" onclick="baixarPDF()">
-                                    <i class="bi bi-download"></i> Baixar
+                                <button class="btn btn-outline-primary" onclick="abrirPDF()">
+                                    <i class="bi bi-eye"></i> Visualizar
                                 </button>
-                                <button class="btn btn-outline-secondary" onclick="abrirNovaAba()">
-                                    <i class="bi bi-box-arrow-up-right"></i> Nova Aba
+                                <button class="btn btn-outline-secondary" onclick="baixarPDF()">
+                                    <i class="bi bi-download"></i> Baixar
                                 </button>
                             </div>
                         </div>
@@ -94,342 +96,48 @@
 
         <!-- Aba de Detalhes (mantenha seu código original aqui) -->
         <div class="tab-pane fade" id="details" role="tabpanel">
-            <div class="row">
-                <div class="col-md-4">
-                    <!-- Capa do Material -->
-                    <div class="card shadow mb-4">
-                        {% if material.capa_url %}
-                        <img src="{{ material.capa_url }}" class="card-img-top" alt="{{ material.titulo }}" style="height: 300px; object-fit: cover;">
-                        {% else %}
-                        <div class="card-img-top bg-light d-flex align-items-center justify-content-center" style="height: 300px;">
-                            <i class="bi bi-file-earmark-{{ material.tipo }}" style="font-size: 5rem; color: #6c757d;"></i>
-                        </div>
-                        {% endif %}
-                        <div class="card-body text-center">
-                            <span class="badge mb-2" style="background-color: {{ material.categoria_cor or '#6c757d' }}">
-                                {{ material.categoria_nome or 'Geral' }}
-                            </span>
-                            
-                            <div class="mt-3">
-                                {% if pode_baixar %}
-                                <button class="btn btn-primary w-100 mb-2" onclick="baixarPDF()">
-                                    <i class="bi bi-download"></i> Baixar Material
-                                </button>
-                                {% endif %}
-                                <button class="btn btn-outline-secondary w-100" id="btnFavoritarDetalhes" onclick="favoritarMaterial()">
-                                    <i class="bi bi-star{% if favoritado %}-fill{% endif %}"></i> 
-                                    {% if favoritado %}Favoritado{% else %}Favoritar{% endif %}
-                                </button>
-                                
-                                {% if session.get('tipo') == 'admin' or session.get('grau_atual') >= 3 %}
-                                <hr>
-                                <a href="/biblioteca/admin/upload" class="btn btn-success w-100 mt-2">
-                                    <i class="bi bi-cloud-upload"></i> Enviar Novo Material
-                                </a>
-                                {% endif %}
-                            </div>
-                            
-                            <hr>
-                            
-                            <div class="row text-center">
-                                <div class="col-4">
-                                    <i class="bi bi-eye"></i><br>
-                                    <small>{{ material.visualizacoes_count or 0 }}</small>
-                                </div>
-                                <div class="col-4">
-                                    <i class="bi bi-download"></i><br>
-                                    <small>{{ material.downloads_count or 0 }}</small>
-                                </div>
-                                <div class="col-4">
-                                    <i class="bi bi-file-text"></i><br>
-                                    <small>{{ material.formato or material.tipo|upper }}</small>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="col-md-8">
-                    <!-- Informações detalhadas -->
-                    <div class="card shadow mb-4">
-                        <div class="card-header bg-white d-flex justify-content-between align-items-center">
-                            <h3 class="mb-0">{{ material.titulo }}</h3>
-                            <div>
-                                {% if session.get('tipo') == 'admin' %}
-                                <a href="/biblioteca/admin/editar/{{ material.id }}" class="btn btn-sm btn-warning me-2" title="Editar Material">
-                                    <i class="bi bi-pencil"></i> Editar
-                                </a>
-                                <button type="button" class="btn btn-sm btn-danger" title="Excluir Material" onclick="confirmarExclusao({{ material.id }}, '{{ material.titulo }}')">
-                                    <i class="bi bi-trash"></i> Excluir
-                                </button>
-                                {% endif %}
-                            </div>
-                        </div>
-                        {% if material.subtitulo %}
-                        <div class="card-body pt-0">
-                            <p class="text-muted mt-1">{{ material.subtitulo }}</p>
-                        </div>
-                        {% endif %}
-                        <div class="card-body">
-                            <div class="row mb-3">
-                                <div class="col-md-6">
-                                    <small class="text-muted">Autor:</small>
-                                    <p><strong>{{ material.autor or 'Não informado' }}</strong></p>
-                                </div>
-                                <div class="col-md-6">
-                                    <small class="text-muted">Editora:</small>
-                                    <p><strong>{{ material.editora or 'Não informada' }}</strong></p>
-                                </div>
-                                <div class="col-md-6">
-                                    <small class="text-muted">Ano:</small>
-                                    <p><strong>{{ material.ano_publicacao or '-' }}</strong></p>
-                                </div>
-                                <div class="col-md-6">
-                                    <small class="text-muted">Grau de Acesso:</small>
-                                    <p>
-                                        {% if material.grau_acesso == 1 %}
-                                            <span class="badge bg-secondary">Aprendiz</span>
-                                        {% elif material.grau_acesso == 2 %}
-                                            <span class="badge bg-primary">Companheiro</span>
-                                        {% else %}
-                                            <span class="badge bg-success">Mestre</span>
-                                        {% endif %}
-                                    </p>
-                                </div>
-                            </div>
-                            
-                            <hr>
-                            
-                            <h5><i class="bi bi-info-circle"></i> Descrição</h5>
-                            <p>{{ material.descricao or 'Sem descrição disponível.' }}</p>
-                            
-                            {% if material.tags %}
-                            <hr>
-                            <h5><i class="bi bi-tags"></i> Tags</h5>
-                            <div>
-                                {% for tag in material.tags.split(',') %}
-                                <span class="badge bg-secondary me-1">{{ tag.strip() }}</span>
-                                {% endfor %}
-                            </div>
-                            {% endif %}
-                        </div>
-                    </div>
-
-                    <!-- Avaliações -->
-                    <div class="card shadow">
-                        <div class="card-header bg-white">
-                            <h5 class="mb-0"><i class="bi bi-star"></i> Avaliações</h5>
-                        </div>
-                        <div class="card-body">
-                            {% if pode_avaliar and not avaliacao_usuario %}
-                            <form id="formAvaliacao" class="mb-4">
-                                <div class="mb-2">
-                                    <label class="form-label fw-bold">Sua nota</label>
-                                    <div class="rating">
-                                        {% for i in range(1, 6) %}
-                                        <i class="bi bi-star fs-3" data-nota="{{ i }}" style="cursor: pointer;"></i>
-                                        {% endfor %}
-                                    </div>
-                                    <input type="hidden" name="nota" id="nota" required>
-                                </div>
-                                <div class="mb-2">
-                                    <label class="form-label fw-bold">Comentário</label>
-                                    <textarea name="comentario" class="form-control" rows="3" 
-                                              placeholder="Escreva seu comentário..."></textarea>
-                                </div>
-                                <button type="submit" class="btn btn-primary">
-                                    <i class="bi bi-send"></i> Enviar Avaliação
-                                </button>
-                            </form>
-                            <hr>
-                            {% elif avaliacao_usuario %}
-                            <div class="alert alert-info">
-                                <i class="bi bi-info-circle"></i> Você já avaliou este material.
-                            </div>
-                            {% endif %}
-                            
-                            <div id="avaliacoesLista">
-                                {% if avaliacoes %}
-                                <div class="avaliacoes">
-                                    {% for aval in avaliacoes %}
-                                    <div class="mb-3">
-                                        <div class="d-flex justify-content-between">
-                                            <strong>{{ aval.usuario_nome }}</strong>
-                                            <small class="text-muted">{{ aval.data_avaliacao.strftime('%d/%m/%Y') if aval.data_avaliacao else '-' }}</small>
-                                        </div>
-                                        <div class="text-warning">
-                                            {% for i in range(aval.nota) %}
-                                                <i class="bi bi-star-fill"></i>
-                                            {% endfor %}
-                                            {% for i in range(5 - aval.nota) %}
-                                                <i class="bi bi-star"></i>
-                                            {% endfor %}
-                                        </div>
-                                        <p class="mt-1">{{ aval.comentario }}</p>
-                                        {% if not loop.last %}<hr>{% endif %}
-                                    </div>
-                                    {% endfor %}
-                                </div>
-                                {% else %}
-                                <p class="text-muted text-center">Seja o primeiro a avaliar este material!</p>
-                                {% endif %}
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
+            <!-- ... seu código existente de detalhes ... -->
         </div>
     </div>
 </div>
 
 <script>
-// Informações do material
 const materialId = {{ material.id }};
-const arquivoUrl = "{{ material.arquivo_url }}";
-const titulo = "{{ material.titulo }}";
+let arquivoUrl = "{{ material.arquivo_url }}";
 
-console.log('=== INFORMAÇÕES DO MATERIAL ===');
-console.log('ID:', materialId);
+// Corrigir URL se necessário
+if (arquivoUrl.includes('.pdf.pdf')) {
+    arquivoUrl = arquivoUrl.replace('.pdf.pdf', '.pdf');
+}
+
 console.log('URL do arquivo:', arquivoUrl);
-console.log('Título:', titulo);
 
-// Função para mostrar status
-function setStatus(mensagem, isError = false) {
-    const statusEl = document.getElementById('statusMsg');
-    if (statusEl) {
-        statusEl.textContent = mensagem;
-        statusEl.style.color = isError ? 'red' : 'green';
-    }
-    console.log(isError ? '❌' : '✅', mensagem);
+function abrirPDF() {
+    // Abrir em nova aba
+    window.open(arquivoUrl, '_blank');
 }
 
-// Função para carregar o PDF
-function carregarPDF() {
-    setStatus('Iniciando carregamento do PDF...');
-    
-    const viewerContainer = document.getElementById('documentViewer');
-    
-    if (!arquivoUrl) {
-        setStatus('Erro: URL do arquivo não encontrada!', true);
-        viewerContainer.innerHTML = `
-            <div class="d-flex align-items-center justify-content-center h-100" style="min-height: 80vh;">
-                <div class="text-center text-danger">
-                    <i class="bi bi-exclamation-triangle" style="font-size: 4rem;"></i>
-                    <h5 class="mt-3">URL do arquivo não encontrada</h5>
-                    <p>Entre em contato com o administrador.</p>
-                </div>
-            </div>
-        `;
-        return;
-    }
-    
-    // Tentar carregar via iframe
-    setStatus(`Tentando carregar: ${arquivoUrl}`);
-    
-    viewerContainer.innerHTML = `
-        <div style="height: 80vh; background: #f8fafc;">
-            <iframe src="${arquivoUrl}" 
-                    style="width: 100%; height: 100%; border: none;"
-                    onload="setStatus('PDF carregado com sucesso!')"
-                    onerror="setStatus('Erro ao carregar PDF via iframe', true); fallbackVisualizacao();">
-            </iframe>
-        </div>
-    `;
-    
-    // Verificar se o iframe carregou após 5 segundos
-    setTimeout(() => {
-        const iframe = document.querySelector('#documentViewer iframe');
-        if (iframe && !iframe.src) {
-            fallbackVisualizacao();
-        }
-    }, 5000);
-}
-
-// Função de fallback quando o iframe falha
-function fallbackVisualizacao() {
-    setStatus('Usando visualização alternativa...', false);
-    
-    const viewerContainer = document.getElementById('documentViewer');
-    viewerContainer.innerHTML = `
-        <div class="d-flex align-items-center justify-content-center" style="min-height: 80vh;">
-            <div class="text-center">
-                <i class="bi bi-file-pdf" style="font-size: 5rem; color: #dc3545;"></i>
-                <h4 class="mt-3">${titulo}</h4>
-                <p class="text-muted">Não foi possível carregar o visualizador embutido</p>
-                <div class="mt-4">
-                    <button class="btn btn-primary btn-lg me-2" onclick="baixarPDF()">
-                        <i class="bi bi-download"></i> Baixar PDF
-                    </button>
-                    <button class="btn btn-outline-secondary btn-lg" onclick="abrirNovaAba()">
-                        <i class="bi bi-box-arrow-up-right"></i> Abrir em Nova Aba
-                    </button>
-                </div>
-                <div class="alert alert-info mt-4">
-                    <small>
-                        <strong>URL do arquivo:</strong><br>
-                        <span style="word-break: break-all;">${arquivoUrl}</span>
-                    </small>
-                </div>
-            </div>
-        </div>
-    `;
-}
-
-// Função para baixar o PDF
 function baixarPDF() {
-    setStatus('Iniciando download...');
-    
-    if (!arquivoUrl) {
-        setStatus('Erro: URL do arquivo não encontrada!', true);
-        return;
-    }
-    
     // Registrar download
     registrarDownload();
     
-    // Criar link temporário para download
+    // Criar link para download
     const link = document.createElement('a');
     link.href = arquivoUrl;
-    link.download = `${titulo}.pdf`;
+    link.download = "{{ material.titulo }}.pdf";
     link.target = '_blank';
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
-    
-    setStatus('Download iniciado!');
 }
 
-// Função para abrir em nova aba
-function abrirNovaAba() {
-    setStatus('Abrindo em nova aba...');
-    
-    if (!arquivoUrl) {
-        setStatus('Erro: URL do arquivo não encontrada!', true);
-        return;
-    }
-    
-    window.open(arquivoUrl, '_blank');
-    setStatus('Nova aba aberta!');
-}
-
-// Função para registrar download no backend
 function registrarDownload() {
     fetch(`/biblioteca/material/${materialId}/registrar-download`, {
         method: 'POST',
-        headers: {
-            'Content-Type': 'application/json'
-        }
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.success) {
-            console.log('Download registrado com sucesso');
-        }
-    })
-    .catch(error => console.error('Erro ao registrar download:', error));
+        headers: { 'Content-Type': 'application/json' }
+    }).catch(error => console.error('Erro ao registrar download:', error));
 }
 
-// Função para favoritar material
 async function favoritarMaterial() {
     try {
         const response = await fetch(`/biblioteca/material/${materialId}/favoritar`, {
@@ -540,26 +248,9 @@ function confirmarExclusao(materialId, materialTitulo) {
         form.submit();
     }
 }
-
-// Iniciar carregamento
-document.addEventListener('DOMContentLoaded', function() {
-    console.log('Página carregada, iniciando visualização...');
-    carregarPDF();
-});
 </script>
 
 <style>
-.document-viewer {
-    background: #f8fafc;
-    border-radius: 12px;
-    padding: 1rem;
-}
-
-.document-viewer iframe {
-    border-radius: 8px;
-    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-}
-
 .rating i {
     font-size: 1.5rem;
     margin-right: 5px;

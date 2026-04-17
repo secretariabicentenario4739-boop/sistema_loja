@@ -2972,6 +2972,55 @@ def registrar_download_material(material_id):
             return_connection(conn)
         return jsonify({'success': False, 'error': str(e)}), 500
         
+
+@app.route("/admin/corrigir-urls-materiais")
+@login_required
+def corrigir_urls_materiais():
+    """Corrige URLs duplicadas .pdf.pdf no banco de dados"""
+    if session.get('tipo') != 'admin':
+        return "Acesso negado", 403
+    
+    try:
+        cursor, conn = get_db()
+        
+        cursor.execute("""
+            SELECT id, arquivo_url
+            FROM materiais 
+            WHERE arquivo_url LIKE '%.pdf.pdf%'
+        """)
+        materiais = cursor.fetchall()
+        
+        corrigidos = []
+        
+        for material in materiais:
+            url_original = material['arquivo_url']
+            url_corrigida = url_original.replace('.pdf.pdf', '.pdf')
+            
+            cursor.execute("""
+                UPDATE materiais 
+                SET arquivo_url = %s 
+                WHERE id = %s
+            """, (url_corrigida, material['id']))
+            conn.commit()
+            
+            corrigidos.append({
+                'id': material['id'],
+                'antes': url_original,
+                'depois': url_corrigida
+            })
+        
+        return_connection(conn)
+        
+        return jsonify({
+            'total': len(materiais),
+            'corrigidos': corrigidos
+        })
+        
+    except Exception as e:
+        if 'conn' in locals():
+            return_connection(conn)
+        return jsonify({'error': str(e)}), 500        
+        
 # =============================
 # ROTAS DO DASHBOARD OTIMIZADO
 # =============================
@@ -5265,6 +5314,59 @@ def excluir_documento(id):
         flash(f"Erro ao excluir documento: {str(e)}", "danger")
     return_connection(conn)
     return redirect(f"/obreiros/{doc['obreiro_id']}/documentos")
+    
+
+@app.route("/recuperar-senha", methods=["GET", "POST"])
+def recuperar_senha():
+    """Página para solicitar recuperação de senha"""
+    
+    if request.method == "POST":
+        email = request.form.get("email")
+        
+        if not email:
+            flash("Digite seu e-mail!", "danger")
+            return redirect("/recuperar-senha")
+        
+        try:
+            cursor, conn = get_db()
+            cursor.execute("SELECT id, nome_completo FROM usuarios WHERE email = %s", (email,))
+            usuario = cursor.fetchone()
+            
+            if usuario:
+                # Gerar token
+                token = secrets.token_urlsafe(32)
+                expira_em = datetime.datetime.utcnow() + datetime.timedelta(hours=1)
+                
+                # Salvar token no banco
+                cursor.execute("""
+                    INSERT INTO password_reset_tokens (usuario_id, token, expira_em, usado)
+                    VALUES (%s, %s, %s, FALSE)
+                """, (usuario['id'], token, expira_em))
+                conn.commit()
+                
+                # Construir link de recuperação
+                link_recuperacao = f"https://www.juramelo.com.br/redefinir-senha?token={token}"
+                
+                # TODO: Enviar e-mail com o link
+                # Por enquanto, mostrar link no flash (apenas para teste)
+                flash(f"Link de recuperação (modo teste): {link_recuperacao}", "info")
+                
+                registrar_log("solicitou_recuperacao_senha", "usuarios", usuario['id'])
+            else:
+                # Por segurança, não informar que o e-mail não existe
+                flash("Se o e-mail estiver cadastrado, você receberá as instruções.", "info")
+            
+            return_connection(conn)
+            
+        except Exception as e:
+            print(f"Erro na recuperação: {e}")
+            if 'conn' in locals():
+                return_connection(conn)
+            flash("Erro ao processar solicitação. Tente novamente.", "danger")
+        
+        return redirect("/login")
+    
+    return render_template("recuperar_senha.html")    
 
 @app.route("/redefinir-senha", methods=["GET", "POST"])
 def redefinir_senha():
