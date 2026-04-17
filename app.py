@@ -5415,44 +5415,31 @@ def excluir_documento(id):
 def recuperar_senha():
     """Página para solicitar recuperação de senha"""
     
-    print("=" * 50)
-    print("🔍 ROTA RECUPERAR-SENHA ACESSADA")
-    print(f"📌 Método: {request.method}")
-    print("=" * 50)
-    
     if request.method == "POST":
         email = request.form.get("email")
-        print(f"📧 E-mail recebido: {email}")
         
         if not email:
-            print("❌ E-mail vazio")
             flash("Digite seu e-mail!", "danger")
             return redirect("/recuperar-senha")
         
         try:
-            cursor, conn = get_db()
-            print("🔍 Buscando usuário no banco...")
+            conn = get_db()
+            cursor = conn.cursor(cursor_factory=RealDictCursor)
+            
             cursor.execute("SELECT id, nome_completo, email FROM usuarios WHERE email = %s", (email,))
             usuario = cursor.fetchone()
             
-            print(f"👤 Usuário encontrado: {usuario is not None}")
-            
             if usuario:
-                print(f"✅ Usuário ID: {usuario['id']}")
-                print(f"✅ Nome: {usuario['nome_completo']}")
-                
                 # Gerar token
+                import secrets
                 token = secrets.token_urlsafe(32)
-                expira_em = datetime.datetime.utcnow() + datetime.timedelta(hours=1)
-                print(f"🔑 Token gerado: {token[:20]}...")
-                print(f"⏰ Expira em: {expira_em}")
+                expira_em = datetime.utcnow() + timedelta(hours=1)  # CORRETO
                 
                 # Criar tabela se não existir
-                print("📋 Verificando/criando tabela password_reset_tokens...")
                 cursor.execute("""
                     CREATE TABLE IF NOT EXISTS password_reset_tokens (
-                        id INT PRIMARY KEY AUTO_INCREMENT,
-                        usuario_id INT NOT NULL,
+                        id SERIAL PRIMARY KEY,
+                        usuario_id INTEGER NOT NULL,
                         token VARCHAR(255) NOT NULL UNIQUE,
                         expira_em TIMESTAMP NOT NULL,
                         usado BOOLEAN DEFAULT FALSE,
@@ -5460,22 +5447,18 @@ def recuperar_senha():
                     )
                 """)
                 conn.commit()
-                print("✅ Tabela verificada")
                 
                 # Salvar token no banco
-                print("💾 Salvando token no banco...")
                 cursor.execute("""
                     INSERT INTO password_reset_tokens (usuario_id, token, expira_em, usado)
                     VALUES (%s, %s, %s, FALSE)
                 """, (usuario['id'], token, expira_em))
                 conn.commit()
-                print("✅ Token salvo")
                 
                 # Construir link de recuperação
                 link_recuperacao = url_for('redefinir_senha', token=token, _external=True)
-                print(f"🔗 Link de recuperação: {link_recuperacao}")
                 
-                # Preparar o conteúdo HTML do e-mail
+                # Preparar e-mail
                 assunto = "🔐 Recuperação de Senha - ARLS Bicentenário"
                 
                 html_content = f"""
@@ -5511,7 +5494,6 @@ def recuperar_senha():
                 """
                 
                 # Enviar e-mail
-                print("📧 Enviando e-mail...")
                 resultado = enviar_email_resend(
                     destinatario=email,
                     assunto=assunto,
@@ -5519,24 +5501,18 @@ def recuperar_senha():
                     conteudo_texto=texto_alternativo
                 )
                 
-                print(f"📧 Resultado do envio: {resultado}")
-                
                 if resultado['success']:
-                    print("✅ E-mail enviado com sucesso!")
                     flash("✅ Link de recuperação enviado para seu e-mail! Verifique sua caixa de entrada.", "success")
                 else:
-                    print(f"❌ Falha no envio: {resultado['message']}")
                     flash(f"❌ Erro ao enviar e-mail: {resultado['message']}", "danger")
                 
             else:
-                print("❌ E-mail não encontrado no banco")
                 flash("Se o e-mail estiver cadastrado, você receberá as instruções.", "info")
             
             return_connection(conn)
             
         except Exception as e:
-            print(f"❌ ERRO GERAL: {e}")
-            import traceback
+            print(f"❌ Erro na recuperação: {e}")
             traceback.print_exc()
             if 'conn' in locals():
                 return_connection(conn)
@@ -5550,56 +5526,66 @@ def recuperar_senha():
 def redefinir_senha():
     """Redefine a senha usando token de recuperação"""
     
-    # Buscar token da URL (GET) ou do formulário (POST)
     token = request.args.get("token") or request.form.get("token")
     
     if not token:
         flash("Token inválido!", "danger")
         return redirect("/login")
     
-    # Verificar token
-    usuario_id = verificar_token_recuperacao(token)
-    
-    if not usuario_id:
-        flash("Link inválido ou expirado! Solicite uma nova recuperação.", "danger")
-        return redirect("/recuperar-senha")
-    
-    if request.method == "POST":
-        nova_senha = request.form.get("nova_senha")
-        confirmar_senha = request.form.get("confirmar_senha")
+    try:
+        conn = get_db()
+        cursor = conn.cursor(cursor_factory=RealDictCursor)
         
-        # Validações
-        if not nova_senha or len(nova_senha) < 6:
-            flash("A senha deve ter no mínimo 6 caracteres!", "danger")
-        elif nova_senha != confirmar_senha:
-            flash("As senhas não coincidem!", "danger")
-        else:
-            try:
-                from werkzeug.security import generate_password_hash
-                
+        cursor.execute("""
+            SELECT usuario_id FROM password_reset_tokens 
+            WHERE token = %s 
+            AND expira_em > NOW()
+            AND usado = FALSE
+        """, (token,))
+        
+        result = cursor.fetchone()
+        
+        if not result:
+            return_connection(conn)
+            flash("Link inválido ou expirado! Solicite uma nova recuperação.", "danger")
+            return redirect("/recuperar-senha")
+        
+        usuario_id = result['usuario_id']
+        
+        if request.method == "POST":
+            nova_senha = request.form.get("nova_senha")
+            confirmar_senha = request.form.get("confirmar_senha")
+            
+            if not nova_senha or len(nova_senha) < 6:
+                flash("A senha deve ter no mínimo 6 caracteres!", "danger")
+            elif nova_senha != confirmar_senha:
+                flash("As senhas não coincidem!", "danger")
+            else:
                 # Gerar novo hash
                 senha_hash = generate_password_hash(nova_senha)
                 
-                cursor, conn = get_db()
+                # Atualizar senha
                 cursor.execute("UPDATE usuarios SET senha_hash = %s WHERE id = %s", (senha_hash, usuario_id))
-                conn.commit()
                 
                 # Marcar token como usado
-                usar_token_recuperacao(token)
+                cursor.execute("UPDATE password_reset_tokens SET usado = TRUE WHERE token = %s", (token,))
+                conn.commit()
+                
                 return_connection(conn)
                 
-                registrar_log("redefinir_senha", "usuario", usuario_id)
                 flash("✅ Senha redefinida com sucesso! Faça login com sua nova senha.", "success")
                 return redirect("/login")
-                
-            except Exception as e:
-                print(f"Erro ao redefinir senha: {e}")
-                flash(f"Erro ao redefinir senha: {str(e)}", "danger")
-                if conn:
-                    return_connection(conn)
-    
-    return render_template("redefinir_senha.html", token=token)
-    
+        
+        return_connection(conn)
+        return render_template("redefinir_senha.html", token=token)
+        
+    except Exception as e:
+        print(f"Erro ao redefinir senha: {e}")
+        traceback.print_exc()
+        if 'conn' in locals():
+            return_connection(conn)
+        flash("Erro ao processar solicitação. Tente novamente.", "danger")
+        return redirect("/login")
   
 
 @app.route("/admin/verificar-tabelas", methods=["GET"])

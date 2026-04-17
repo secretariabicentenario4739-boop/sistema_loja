@@ -7,9 +7,9 @@
     <div class="row justify-content-center">
         <div class="col-md-5">
             <div class="card shadow">
-                <div class="card-header bg-success text-white text-center py-3">
+                <div class="card-header bg-warning text-dark text-center py-3">
                     <h4 class="mb-0">
-                        <i class="bi bi-lock"></i> Redefinir Senha
+                        <i class="bi bi-key-fill"></i> Redefinir Senha
                     </h4>
                 </div>
                 <div class="card-body p-4">
@@ -24,28 +24,42 @@
                         {% endif %}
                     {% endwith %}
                     
+                    <p class="text-muted text-center mb-4">
+                        Crie uma nova senha para sua conta.
+                    </p>
+                    
                     <form method="POST">
+                        <input type="hidden" name="token" value="{{ token }}">
+                        
                         <div class="mb-3">
                             <label class="form-label">Nova Senha</label>
                             <div class="input-group">
                                 <span class="input-group-text"><i class="bi bi-lock"></i></span>
-                                <input type="password" class="form-control" name="nova_senha" required minlength="6">
+                                <input type="password" 
+                                       class="form-control" 
+                                       name="nova_senha" 
+                                       required 
+                                       minlength="6">
                             </div>
-                            <small class="text-muted">Mínimo de 6 caracteres</small>
+                            <div class="form-text">
+                                A senha deve ter no mínimo 6 caracteres.
+                            </div>
                         </div>
                         
                         <div class="mb-4">
                             <label class="form-label">Confirmar Nova Senha</label>
                             <div class="input-group">
-                                <span class="input-group-text"><i class="bi bi-check-circle"></i></span>
-                                <input type="password" class="form-control" name="confirmar_senha" required>
+                                <span class="input-group-text"><i class="bi bi-lock-fill"></i></span>
+                                <input type="password" 
+                                       class="form-control" 
+                                       name="confirmar_senha" 
+                                       required 
+                                       minlength="6">
                             </div>
                         </div>
                         
-                        <input type="hidden" name="token" value="{{ token }}">
-                        
-                        <button type="submit" class="btn btn-success w-100 py-2">
-                            <i class="bi bi-save"></i> Redefinir Senha
+                        <button type="submit" class="btn btn-warning w-100 py-2">
+                            <i class="bi bi-check-circle"></i> Redefinir Senha
                         </button>
                     </form>
                     
