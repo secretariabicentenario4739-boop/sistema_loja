@@ -10065,6 +10065,183 @@ def verificar_tabelas_sistema():
         
     except Exception as e:
         return f"❌ Erro: {str(e)}"
+        
+@app.route("/admin/criar-tabelas-sistema")
+@login_required
+def criar_tabelas_sistema():
+    """Cria apenas as tabelas necessárias para o sistema"""
+    if session.get('tipo') != 'admin':
+        return "Acesso negado", 403
+    
+    try:
+        cursor, conn = get_db()
+        
+        comandos = []
+        
+        # 1. Verificar se a tabela sindicantes_candidato existe
+        comandos.append("""
+            CREATE TABLE IF NOT EXISTS sindicantes_candidato (
+                id SERIAL PRIMARY KEY,
+                candidato_id INTEGER NOT NULL REFERENCES candidatos(id) ON DELETE CASCADE,
+                sindicante_id INTEGER NOT NULL REFERENCES usuarios(id) ON DELETE CASCADE,
+                data_designacao DATE NOT NULL,
+                data_conclusao DATE,
+                recomendacao VARCHAR(20),
+                status VARCHAR(20) DEFAULT 'designado',
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        """)
+        
+        # 2. Verificar se a tabela placet_iniciacao existe
+        comandos.append("""
+            CREATE TABLE IF NOT EXISTS placet_iniciacao (
+                id SERIAL PRIMARY KEY,
+                candidato_id INTEGER NOT NULL REFERENCES candidatos(id) ON DELETE CASCADE,
+                numero_placet VARCHAR(50) UNIQUE NOT NULL,
+                data_emissao DATE NOT NULL,
+                data_iniciacao DATE,
+                loja_id INTEGER REFERENCES lojas(id),
+                status VARCHAR(20) DEFAULT 'emitido',
+                observacoes TEXT,
+                emitido_por INTEGER REFERENCES usuarios(id),
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        """)
+        
+        # 3. Verificar se a tabela fluxo_iniciacao existe
+        comandos.append("""
+            CREATE TABLE IF NOT EXISTS fluxo_iniciacao (
+                id SERIAL PRIMARY KEY,
+                candidato_id INTEGER NOT NULL REFERENCES candidatos(id) ON DELETE CASCADE,
+                etapa VARCHAR(50) NOT NULL,
+                status VARCHAR(20) DEFAULT 'pendente',
+                data_entrada TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                data_saida TIMESTAMP,
+                observacoes TEXT,
+                usuario_id INTEGER REFERENCES usuarios(id),
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        """)
+        
+        # 4. Verificar se a tabela votacao_candidato existe
+        comandos.append("""
+            CREATE TABLE IF NOT EXISTS votacao_candidato (
+                id SERIAL PRIMARY KEY,
+                candidato_id INTEGER NOT NULL REFERENCES candidatos(id) ON DELETE CASCADE,
+                data_votacao DATE NOT NULL,
+                votos_favoraveis INTEGER DEFAULT 0,
+                votos_contrarios INTEGER DEFAULT 0,
+                votos_brancos INTEGER DEFAULT 0,
+                resultado VARCHAR(20),
+                observacoes TEXT,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        """)
+        
+        # 5. Verificar se a tabela leituras_loja existe
+        comandos.append("""
+            CREATE TABLE IF NOT EXISTS leituras_loja (
+                id SERIAL PRIMARY KEY,
+                candidato_id INTEGER NOT NULL REFERENCES candidatos(id) ON DELETE CASCADE,
+                tipo_documento VARCHAR(20) NOT NULL,
+                numero_leitura INTEGER NOT NULL,
+                data_leitura DATE NOT NULL,
+                observacoes TEXT,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        """)
+        
+        # 6. Verificar se a tabela historico_graus existe
+        comandos.append("""
+            CREATE TABLE IF NOT EXISTS historico_graus (
+                id SERIAL PRIMARY KEY,
+                obreiro_id INTEGER NOT NULL REFERENCES usuarios(id) ON DELETE CASCADE,
+                grau INTEGER NOT NULL,
+                data DATE NOT NULL,
+                motivo TEXT,
+                autorizado_por INTEGER REFERENCES usuarios(id),
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        """)
+        
+        # 7. Verificar se a tabela password_reset_tokens existe
+        comandos.append("""
+            CREATE TABLE IF NOT EXISTS password_reset_tokens (
+                id SERIAL PRIMARY KEY,
+                usuario_id INTEGER NOT NULL REFERENCES usuarios(id) ON DELETE CASCADE,
+                token VARCHAR(255) NOT NULL UNIQUE,
+                expira_em TIMESTAMP NOT NULL,
+                usado BOOLEAN DEFAULT FALSE,
+                criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        """)
+        
+        # 8. Verificar se a tabela email_logs existe
+        comandos.append("""
+            CREATE TABLE IF NOT EXISTS email_logs (
+                id SERIAL PRIMARY KEY,
+                usuario_id INTEGER REFERENCES usuarios(id) ON DELETE SET NULL,
+                tipo VARCHAR(50),
+                destinatario VARCHAR(255),
+                status VARCHAR(50),
+                mensagem_id VARCHAR(255),
+                erro TEXT,
+                data_envio TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        """)
+        
+        # Executar comandos
+        for cmd in comandos:
+            cursor.execute(cmd)
+            conn.commit()
+        
+        # Criar índices
+        indices = [
+            "CREATE INDEX IF NOT EXISTS idx_placet_candidato ON placet_iniciacao(candidato_id)",
+            "CREATE INDEX IF NOT EXISTS idx_sindicantes_candidato ON sindicantes_candidato(candidato_id)",
+            "CREATE INDEX IF NOT EXISTS idx_fluxo_candidato ON fluxo_iniciacao(candidato_id)",
+            "CREATE INDEX IF NOT EXISTS idx_votacao_candidato ON votacao_candidato(candidato_id)"
+        ]
+        
+        for idx in indices:
+            try:
+                cursor.execute(idx)
+                conn.commit()
+            except:
+                pass
+        
+        return_connection(conn)
+        
+        return """
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <title>Tabelas Criadas</title>
+            <style>
+                body { font-family: Arial, sans-serif; margin: 20px; }
+                .success { color: green; }
+            </style>
+        </head>
+        <body>
+            <h1>✅ Tabelas do sistema criadas com sucesso!</h1>
+            <ul>
+                <li class="success">✅ sindicantes_candidato</li>
+                <li class="success">✅ placet_iniciacao</li>
+                <li class="success">✅ fluxo_iniciacao</li>
+                <li class="success">✅ votacao_candidato</li>
+                <li class="success">✅ leituras_loja</li>
+                <li class="success">✅ historico_graus</li>
+                <li class="success">✅ password_reset_tokens</li>
+                <li class="success">✅ email_logs</li>
+            </ul>
+            <p><a href="/admin/verificar-tabelas-sistema">Verificar novamente</a></p>
+            <p><a href="/dashboard">Voltar ao Dashboard</a></p>
+        </body>
+        </html>
+        """
+        
+    except Exception as e:
+        return f"❌ Erro ao criar tabelas: {str(e)}"        
 
 # =============================
 # ROTAS DE CANDIDATOS E SINDICÂNCIA
