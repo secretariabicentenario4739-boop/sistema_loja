@@ -9946,125 +9946,107 @@ def verificar_tabelas_sistema():
     if session.get('tipo') != 'admin':
         return "Acesso negado", 403
     
+    html = """
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <title>Verificação de Tabelas do Sistema</title>
+        <style>
+            body { font-family: Arial, sans-serif; margin: 20px; }
+            .existe { color: green; font-weight: bold; }
+            .nao-existe { color: red; font-weight: bold; }
+            table { border-collapse: collapse; width: 100%; margin-top: 20px; }
+            th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+            th { background-color: #f2f2f2; }
+        </style>
+    </head>
+    <body>
+        <h1>Verificação de Tabelas do Sistema</h1>
+    """
+    
     try:
         cursor, conn = get_db()
         
         # Tabelas que realmente precisamos
-        tabelas = {
-            'candidatos': 'Tabela principal de candidatos',
-            'usuarios': 'Tabela de usuários/obreiros',
-            'lojas': 'Tabela de lojas',
-            'pareceres_conclusivos': 'Pareceres dos sindicantes',
-            'sindicantes_candidato': 'Designação de sindicantes',
-            'placet_iniciacao': 'Placets de iniciação',
-            'fluxo_iniciacao': 'Fluxo do processo',
-            'votacao_candidato': 'Votação dos candidatos',
-            'leituras_loja': 'Leituras em loja',
-            'historico_graus': 'Histórico de graus',
-            'password_reset_tokens': 'Tokens de recuperação de senha',
-            'email_logs': 'Logs de e-mail'
-        }
+        tabelas = [
+            'candidatos',
+            'usuarios', 
+            'lojas',
+            'pareceres_conclusivos',
+            'sindicantes_candidato',
+            'placet_iniciacao',
+            'fluxo_iniciacao',
+            'votacao_candidato',
+            'leituras_loja',
+            'historico_graus',
+            'password_reset_tokens',
+            'email_logs'
+        ]
         
-        resultados = []
+        html += '<table>'
+        html += '<tr><th>Tabela</th><th>Status</th><th>Registros</th></tr>'
         
-        for tabela, descricao in tabelas.items():
-            # Verificar se a tabela existe
-            cursor.execute("""
-                SELECT EXISTS (
-                    SELECT FROM information_schema.tables 
-                    WHERE table_schema = 'public' 
-                    AND table_name = %s
-                )
-            """, (tabela,))
-            existe = cursor.fetchone()[0]
-            
-            # Contar registros se existir
-            registros = 0
-            if existe:
-                try:
-                    cursor.execute(f"SELECT COUNT(*) as total FROM {tabela}")
-                    registros = cursor.fetchone()[0]
-                except:
-                    registros = 0
-            
-            resultados.append({
-                'tabela': tabela,
-                'descricao': descricao,
-                'existe': existe,
-                'registros': registros
-            })
+        for tabela in tabelas:
+            try:
+                # Verificar se a tabela existe
+                cursor.execute("""
+                    SELECT EXISTS (
+                        SELECT FROM information_schema.tables 
+                        WHERE table_schema = 'public' 
+                        AND table_name = %s
+                    )
+                """, (tabela,))
+                existe = cursor.fetchone()[0]
+                
+                # Contar registros se existir
+                registros = 0
+                if existe:
+                    try:
+                        cursor.execute(f"SELECT COUNT(*) as total FROM {tabela}")
+                        result = cursor.fetchone()
+                        registros = result[0] if result else 0
+                    except Exception as e:
+                        registros = f"Erro: {str(e)[:30]}"
+                
+                status = "✅ Existe" if existe else "❌ NÃO EXISTE"
+                status_class = "existe" if existe else "nao-existe"
+                
+                html += f"""
+                    <tr>
+                        <td><strong>{tabela}</strong></td>
+                        <td class="{status_class}">{status}</td>
+                        <td>{registros}</td>
+                    </tr>
+                """
+            except Exception as e:
+                html += f"""
+                    <tr>
+                        <td><strong>{tabela}</strong></td>
+                        <td class="nao-existe">❌ Erro ao verificar</td>
+                        <td>{str(e)[:50]}</td>
+                    </tr>
+                """
+        
+        html += '</table>'
+        
+        # Verificar tabelas faltantes
+        html += """
+        <div style="margin-top: 30px;">
+            <h3>Ações:</h3>
+            <ul>
+                <li><a href="/admin/criar-tabelas-sistema">Criar tabelas faltantes</a></li>
+                <li><a href="/dashboard">Voltar ao Dashboard</a></li>
+            </ul>
+        </div>
+        """
         
         return_connection(conn)
         
-        # Gerar HTML
-        html = """
-        <!DOCTYPE html>
-        <html>
-        <head>
-            <title>Verificação de Tabelas do Sistema</title>
-            <style>
-                body { font-family: Arial, sans-serif; margin: 20px; }
-                .existe { color: green; font-weight: bold; }
-                .nao-existe { color: red; font-weight: bold; }
-                table { border-collapse: collapse; width: 100%; margin-top: 20px; }
-                th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
-                th { background-color: #f2f2f2; }
-                .descricao { color: #666; font-size: 0.9em; }
-            </style>
-        </head>
-        <body>
-            <h1>Verificação de Tabelas do Sistema</h1>
-            <p>Executado em: """ + datetime.now().strftime('%d/%m/%Y %H:%M:%S') + """</p>
-            <table>
-                <tr>
-                    <th>Tabela</th>
-                    <th>Descrição</th>
-                    <th>Status</th>
-                    <th>Registros</th>
-                </tr>
-        """
-        
-        for r in resultados:
-            status = "✅ Existe" if r['existe'] else "❌ NÃO EXISTE"
-            status_class = "existe" if r['existe'] else "nao-existe"
-            html += f"""
-                <tr>
-                    <td><strong>{r['tabela']}</strong></td>
-                    <td class="descricao">{r['descricao']}</td>
-                    <td class="{status_class}">{status}</td>
-                    <td>{r['registros']}</td>
-                </tr>
-            """
-        
-        html += """
-            </table>
-            
-            <div style="margin-top: 30px;">
-                <h3>Ações necessárias:</h3>
-                <ul>
-        """
-        
-        # Verificar quais tabelas faltam
-        faltantes = [r['tabela'] for r in resultados if not r['existe']]
-        if faltantes:
-            html += f"<li><strong style='color:red'>❌ Tabelas faltando: {', '.join(faltantes)}</strong></li>"
-            html += f"<li><a href='/admin/criar-tabelas-sistema'>Clique aqui para criar as tabelas faltantes</a></li>"
-        else:
-            html += "<li><strong style='color:green'>✅ Todas as tabelas necessárias existem!</strong></li>"
-        
-        html += """
-                </ul>
-            </div>
-            
-            <p><a href="/dashboard">Voltar ao Dashboard</a></p>
-        </body>
-        </html>
-        """
-        
-        return html
-        
     except Exception as e:
-        return f"❌ Erro: {str(e)}"
+        html += f'<p style="color:red">❌ Erro na conexão: {str(e)}</p>'
+    
+    html += '</body></html>'
+    return html
         
 @app.route("/admin/criar-tabelas-sistema")
 @login_required
