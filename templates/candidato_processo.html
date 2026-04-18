@@ -5,50 +5,162 @@
 {% block content %}
 <div class="container-fluid py-4">
     <div class="container">
+        <!-- Cabeçalho -->
         <div class="d-flex justify-content-between align-items-center mb-4">
-            <h2>
-                <i class="bi bi-folder2-open text-primary me-2"></i>
-                Processo do Candidato: {{ candidato.nome }}
-            </h2>
             <div>
+                <h2 class="fw-bold mb-1">
+                    <i class="bi bi-folder2-open text-primary me-2"></i>
+                    Processo do Candidato
+                </h2>
+                <p class="text-muted mb-0">{{ candidato.nome }}</p>
+            </div>
+            <div>
+                {% if candidato.obreiro_id %}
+                <a href="/obreiros/{{ candidato.obreiro_id }}" class="btn btn-outline-success me-2">
+                    <i class="bi bi-person-badge"></i> Ver Obreiro
+                </a>
+                {% endif %}
                 <a href="/candidatos" class="btn btn-outline-secondary">
                     <i class="bi bi-arrow-left"></i> Voltar
                 </a>
             </div>
         </div>
 
-        <!-- Dados do Candidato -->
+        <!-- Resumo do Candidato -->
         <div class="card shadow-sm mb-4">
             <div class="card-header bg-primary text-white">
-                <h5 class="mb-0">Dados do Candidato</h5>
+                <h5 class="mb-0"><i class="bi bi-person"></i> Dados do Candidato</h5>
             </div>
             <div class="card-body">
                 <div class="row">
                     <div class="col-md-6">
-                        <p><strong>Nome:</strong> {{ candidato.nome }}</p>
-                        <p><strong>CPF:</strong> {{ candidato.cpf or '-' }}</p>
-                        <p><strong>Email:</strong> {{ candidato.email or '-' }}</p>
+                        <table class="table table-sm table-borderless">
+                            <tr>
+                                <td class="text-muted" style="width: 140px;">Nome:</td>
+                                <td><strong>{{ candidato.nome }}</strong></td>
+                            </tr>
+                            <tr>
+                                <td class="text-muted">CPF:</td>
+                                <td>{{ candidato.cpf or '-' }}</td>
+                            </tr>
+                            <tr>
+                                <td class="text-muted">Email:</td>
+                                <td>{{ candidato.email or '-' }}</td>
+                            </tr>
+                            <tr>
+                                <td class="text-muted">Telefone:</td>
+                                <td>{{ candidato.celular or candidato.telefone or '-' }}</td>
+                            </tr>
+                        </table>
                     </div>
                     <div class="col-md-6">
-                        <p><strong>Status:</strong> 
-                            {% if candidato.fechado == 1 %}
-                                {% if candidato.status == 'Aprovado' %}
-                                    <span class="badge bg-success">Aprovado</span>
-                                {% else %}
-                                    <span class="badge bg-danger">Reprovado</span>
-                                {% endif %}
-                            {% else %}
-                                <span class="badge bg-warning">Em análise</span>
+                        <table class="table table-sm table-borderless">
+                            <tr>
+                                <td class="text-muted" style="width: 140px;">Status:</td>
+                                <td>
+                                    {% if candidato.fechado == 1 %}
+                                        {% if candidato.status == 'Aprovado' %}
+                                            <span class="badge bg-success">✓ Aprovado</span>
+                                        {% else %}
+                                            <span class="badge bg-danger">✗ Reprovado</span>
+                                        {% endif %}
+                                    {% else %}
+                                        <span class="badge bg-warning">Em análise</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            <tr>
+                                <td class="text-muted">Data Cadastro:</td>
+                                <td>{{ candidato.data_criacao.strftime('%d/%m/%Y %H:%M') if candidato.data_criacao else '-' }}</td>
+                            </tr>
+                            <tr>
+                                <td class="text-muted">Data Encerramento:</td>
+                                <td>{{ candidato.data_fechamento.strftime('%d/%m/%Y') if candidato.data_fechamento else '-' }}</td>
+                            </tr>
+                            {% if candidato.numero_placet %}
+                            <tr>
+                                <td class="text-muted">Placet:</td>
+                                <td><code>{{ candidato.numero_placet }}</code></td>
+                            </tr>
                             {% endif %}
-                        </p>
-                        <p><strong>Data Cadastro:</strong> {{ candidato.data_criacao.strftime('%d/%m/%Y') if candidato.data_criacao else '-' }}</p>
-                        {% if candidato.numero_placet %}
-                        <p><strong>Placet:</strong> <code>{{ candidato.numero_placet }}</code></p>
-                        {% endif %}
+                        </table>
                     </div>
                 </div>
             </div>
         </div>
+
+        <!-- Fluxo de Iniciação -->
+        {% if fluxo %}
+        <div class="card shadow-sm mb-4">
+            <div class="card-header bg-info text-white">
+                <h5 class="mb-0"><i class="bi bi-diagram-3"></i> Fluxo de Iniciação</h5>
+            </div>
+            <div class="card-body">
+                <div class="timeline">
+                    {% for etapa in fluxo %}
+                    <div class="timeline-item">
+                        <div class="timeline-badge">
+                            {% if etapa.status == 'concluido' %}
+                                <i class="bi bi-check-circle-fill text-success"></i>
+                            {% elif etapa.status == 'em_andamento' %}
+                                <i class="bi bi-hourglass-split text-warning"></i>
+                            {% else %}
+                                <i class="bi bi-circle text-secondary"></i>
+                            {% endif %}
+                        </div>
+                        <div class="timeline-content">
+                            <h6>{{ etapa.etapa|replace('_', ' ')|title }}</h6>
+                            <small class="text-muted">
+                                {{ etapa.data_entrada.strftime('%d/%m/%Y %H:%M') if etapa.data_entrada else '-' }}
+                                {% if etapa.data_saida %}
+                                → {{ etapa.data_saida.strftime('%d/%m/%Y %H:%M') }}
+                                {% endif %}
+                            </small>
+                            {% if etapa.observacoes %}
+                            <p class="mb-0 small">{{ etapa.observacoes }}</p>
+                            {% endif %}
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Leituras em Loja -->
+        {% if leituras %}
+        <div class="card shadow-sm mb-4">
+            <div class="card-header bg-secondary text-white">
+                <h5 class="mb-0"><i class="bi bi-book"></i> Leituras em Loja</h5>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-sm mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Documento</th>
+                                <th>Leitura</th>
+                                <th>Data</th>
+                                <th>Observações</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for leitura in leituras %}
+                            <tr>
+                                <td>{{ leitura.tipo_documento }}</td>
+                                <td>{{ leitura.numero_leitura }}ª Leitura</td>
+                                <td>{{ leitura.data_leitura.strftime('%d/%m/%Y') if leitura.data_leitura else '-' }}</td>
+                                <td>{{ leitura.observacoes or '-' }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Sindicantes Designados - REMOVIDO conforme solicitado -->
 
         <!-- Pareceres dos Sindicantes -->
         {% if pareceres %}
@@ -71,11 +183,22 @@
                             </span>
                         </div>
                         <small class="text-muted">
+                            CIM: {{ parecer.sindicante_cim or '-' }} | 
                             Data: {{ parecer.data_parecer.strftime('%d/%m/%Y') if parecer.data_parecer else '-' }}
                         </small>
                     </div>
                     <div class="card-body">
                         <p class="card-text">{{ parecer.parecer_texto }}</p>
+                        {% if parecer.fontes %}
+                        <hr>
+                        <small class="text-muted">Fontes:</small>
+                        <ul class="small mb-0">
+                            {% set fontes = parecer.fontes|from_json %}
+                            {% for fonte in fontes %}
+                            <li><strong>{{ fonte.nome }}:</strong> {{ fonte.informacao }}</li>
+                            {% endfor %}
+                        </ul>
+                        {% endif %}
                         {% if parecer.observacoes %}
                         <hr>
                         <small class="text-muted">Observações: {{ parecer.observacoes }}</small>
@@ -87,42 +210,42 @@
         </div>
         {% endif %}
 
-        <!-- Sindicantes Designados -->
-        {% if sindicantes_designados %}
+        <!-- Votação -->
+        {% if votacao %}
         <div class="card shadow-sm mb-4">
-            <div class="card-header bg-warning text-dark">
-                <h5 class="mb-0"><i class="bi bi-people"></i> Sindicantes Designados</h5>
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0"><i class="bi bi-bar-chart"></i> Votação</h5>
             </div>
-            <div class="card-body p-0">
-                <div class="table-responsive">
-                    <table class="table table-sm mb-0">
-                        <thead class="table-light">
-                            <tr>
-                                <th>Sindicante</th>
-                                <th>Designação</th>
-                                <th>Conclusão</th>
-                                <th>Recomendação</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% for s in sindicantes_designados %}
-                            <tr>
-                                <td>{{ s.sindicante_nome }}</td>
-                                <td>{{ s.data_designacao.strftime('%d/%m/%Y') if s.data_designacao else '-' }}</td>
-                                <td>{{ s.data_conclusao.strftime('%d/%m/%Y') if s.data_conclusao else 'Pendente' }}</td>
-                                <td>
-                                    {% if s.recomendacao == 'favoravel' %}
-                                        <span class="badge bg-success">Favorável</span>
-                                    {% elif s.recomendacao == 'desfavoravel' %}
-                                        <span class="badge bg-danger">Desfavorável</span>
-                                    {% else %}
-                                        <span class="badge bg-secondary">-</span>
-                                    {% endif %}
-                                </td>
-                            </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
+            <div class="card-body">
+                <div class="row text-center">
+                    <div class="col-md-4">
+                        <div class="border rounded p-3">
+                            <h3 class="text-success mb-0">{{ votacao.votos_favoraveis or 0 }}</h3>
+                            <small class="text-muted">Votos Favoráveis</small>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="border rounded p-3">
+                            <h3 class="text-danger mb-0">{{ votacao.votos_contrarios or 0 }}</h3>
+                            <small class="text-muted">Votos Contrários</small>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="border rounded p-3">
+                            <h3 class="text-secondary mb-0">{{ votacao.votos_brancos or 0 }}</h3>
+                            <small class="text-muted">Votos Brancos</small>
+                        </div>
+                    </div>
+                </div>
+                <div class="mt-3 text-center">
+                    <strong>Resultado:</strong>
+                    {% if votacao.resultado == 'aprovado' %}
+                        <span class="badge bg-success fs-6">APROVADO</span>
+                    {% else %}
+                        <span class="badge bg-danger fs-6">REPROVADO</span>
+                    {% endif %}
+                    <br>
+                    <small class="text-muted">Data: {{ votacao.data_votacao.strftime('%d/%m/%Y') if votacao.data_votacao else '-' }}</small>
                 </div>
             </div>
         </div>
@@ -174,4 +297,32 @@
         {% endif %}
     </div>
 </div>
+
+<style>
+.timeline {
+    position: relative;
+    padding-left: 30px;
+}
+.timeline-item {
+    position: relative;
+    margin-bottom: 20px;
+}
+.timeline-badge {
+    position: absolute;
+    left: -30px;
+    top: 0;
+    width: 20px;
+    text-align: center;
+}
+.timeline-badge i {
+    font-size: 1.2rem;
+}
+.timeline-content {
+    padding-left: 10px;
+    border-left: 2px solid #dee2e6;
+}
+.timeline-item:last-child .timeline-content {
+    border-left-color: transparent;
+}
+</style>
 {% endblock %}
