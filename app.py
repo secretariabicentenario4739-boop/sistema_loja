@@ -7297,7 +7297,10 @@ def excluir_reuniao(id):
         # Registrar log antes de excluir
         registrar_log("excluir", "reuniao", id, dados_anteriores={"titulo": reuniao['titulo'], "data": reuniao['data']})
         
-        # Excluir presenças primeiro
+        # Excluir visitantes primeiro (FALTAVA ESTA LINHA!)
+        cursor.execute("DELETE FROM visitantes WHERE reuniao_id = %s", (id,))
+        
+        # Excluir presenças
         cursor.execute("DELETE FROM presenca WHERE reuniao_id = %s", (id,))
         
         # Excluir a reunião
@@ -7313,7 +7316,7 @@ def excluir_reuniao(id):
     
     return_connection(conn)
     return redirect("/reunioes")
-
+    
 @app.route("/reunioes/<int:id>/presenca", methods=["POST"])
 @admin_required
 def registrar_presenca(id):
