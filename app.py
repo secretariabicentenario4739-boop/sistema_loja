@@ -9939,174 +9939,132 @@ def visualizar_processo_candidato(candidato_id):
 
 #atualizar o banco
 
-@app.route("/admin/criar-tabelas")
+@app.route("/admin/verificar-tabelas-sistema")
 @login_required
-def criar_tabelas():
-    """Cria todas as tabelas necessárias no banco"""
+def verificar_tabelas_sistema():
+    """Verifica apenas as tabelas do sistema de candidatos/obreiros"""
     if session.get('tipo') != 'admin':
         return "Acesso negado", 403
     
     try:
         cursor, conn = get_db()
         
-        # Criar tabela placet_iniciacao
-        cursor.execute("""
-            CREATE TABLE IF NOT EXISTS placet_iniciacao (
-                id SERIAL PRIMARY KEY,
-                candidato_id INTEGER NOT NULL REFERENCES candidatos(id) ON DELETE CASCADE,
-                numero_placet VARCHAR(50) UNIQUE NOT NULL,
-                data_emissao DATE NOT NULL,
-                data_iniciacao DATE,
-                loja_id INTEGER REFERENCES lojas(id),
-                status VARCHAR(20) DEFAULT 'emitido',
-                observacoes TEXT,
-                emitido_por INTEGER REFERENCES usuarios(id),
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-            )
-        """)
-        conn.commit()
+        # Tabelas que realmente precisamos
+        tabelas = {
+            'candidatos': 'Tabela principal de candidatos',
+            'usuarios': 'Tabela de usuários/obreiros',
+            'lojas': 'Tabela de lojas',
+            'pareceres_conclusivos': 'Pareceres dos sindicantes',
+            'sindicantes_candidato': 'Designação de sindicantes',
+            'placet_iniciacao': 'Placets de iniciação',
+            'fluxo_iniciacao': 'Fluxo do processo',
+            'votacao_candidato': 'Votação dos candidatos',
+            'leituras_loja': 'Leituras em loja',
+            'historico_graus': 'Histórico de graus',
+            'password_reset_tokens': 'Tokens de recuperação de senha',
+            'email_logs': 'Logs de e-mail'
+        }
         
-        # Criar tabela sindicantes_candidato
-        cursor.execute("""
-            CREATE TABLE IF NOT EXISTS sindicantes_candidato (
-                id SERIAL PRIMARY KEY,
-                candidato_id INTEGER NOT NULL REFERENCES candidatos(id) ON DELETE CASCADE,
-                sindicante_id INTEGER NOT NULL REFERENCES usuarios(id) ON DELETE CASCADE,
-                data_designacao DATE NOT NULL,
-                data_conclusao DATE,
-                recomendacao VARCHAR(20),
-                status VARCHAR(20) DEFAULT 'designado',
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-            )
-        """)
-        conn.commit()
+        resultados = []
         
-        # Criar tabela fluxo_iniciacao
-        cursor.execute("""
-            CREATE TABLE IF NOT EXISTS fluxo_iniciacao (
-                id SERIAL PRIMARY KEY,
-                candidato_id INTEGER NOT NULL REFERENCES candidatos(id) ON DELETE CASCADE,
-                etapa VARCHAR(50) NOT NULL,
-                status VARCHAR(20) DEFAULT 'pendente',
-                data_entrada TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                data_saida TIMESTAMP,
-                observacoes TEXT,
-                usuario_id INTEGER REFERENCES usuarios(id),
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-            )
-        """)
-        conn.commit()
-        
-        # Criar tabela votacao_candidato
-        cursor.execute("""
-            CREATE TABLE IF NOT EXISTS votacao_candidato (
-                id SERIAL PRIMARY KEY,
-                candidato_id INTEGER NOT NULL REFERENCES candidatos(id) ON DELETE CASCADE,
-                data_votacao DATE NOT NULL,
-                votos_favoraveis INTEGER DEFAULT 0,
-                votos_contrarios INTEGER DEFAULT 0,
-                votos_brancos INTEGER DEFAULT 0,
-                resultado VARCHAR(20),
-                observacoes TEXT,
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-            )
-        """)
-        conn.commit()
-        
-        # Criar tabela leituras_loja
-        cursor.execute("""
-            CREATE TABLE IF NOT EXISTS leituras_loja (
-                id SERIAL PRIMARY KEY,
-                candidato_id INTEGER NOT NULL REFERENCES candidatos(id) ON DELETE CASCADE,
-                tipo_documento VARCHAR(20) NOT NULL,
-                numero_leitura INTEGER NOT NULL,
-                data_leitura DATE NOT NULL,
-                observacoes TEXT,
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-            )
-        """)
-        conn.commit()
-        
-        # Criar tabela historico_graus
-        cursor.execute("""
-            CREATE TABLE IF NOT EXISTS historico_graus (
-                id SERIAL PRIMARY KEY,
-                obreiro_id INTEGER NOT NULL REFERENCES usuarios(id) ON DELETE CASCADE,
-                grau INTEGER NOT NULL,
-                data DATE NOT NULL,
-                motivo TEXT,
-                autorizado_por INTEGER REFERENCES usuarios(id),
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-            )
-        """)
-        conn.commit()
-        
-        # Criar tabela password_reset_tokens
-        cursor.execute("""
-            CREATE TABLE IF NOT EXISTS password_reset_tokens (
-                id SERIAL PRIMARY KEY,
-                usuario_id INTEGER NOT NULL REFERENCES usuarios(id) ON DELETE CASCADE,
-                token VARCHAR(255) NOT NULL UNIQUE,
-                expira_em TIMESTAMP NOT NULL,
-                usado BOOLEAN DEFAULT FALSE,
-                criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-            )
-        """)
-        conn.commit()
-        
-        # Criar tabela email_logs
-        cursor.execute("""
-            CREATE TABLE IF NOT EXISTS email_logs (
-                id SERIAL PRIMARY KEY,
-                usuario_id INTEGER REFERENCES usuarios(id) ON DELETE SET NULL,
-                tipo VARCHAR(50),
-                destinatario VARCHAR(255),
-                status VARCHAR(50),
-                mensagem_id VARCHAR(255),
-                erro TEXT,
-                data_envio TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-            )
-        """)
-        conn.commit()
-        
-        # Criar índices
-        cursor.execute("CREATE INDEX IF NOT EXISTS idx_placet_candidato ON placet_iniciacao(candidato_id)")
-        cursor.execute("CREATE INDEX IF NOT EXISTS idx_sindicantes_candidato ON sindicantes_candidato(candidato_id)")
-        cursor.execute("CREATE INDEX IF NOT EXISTS idx_fluxo_candidato ON fluxo_iniciacao(candidato_id)")
-        cursor.execute("CREATE INDEX IF NOT EXISTS idx_votacao_candidato ON votacao_candidato(candidato_id)")
-        conn.commit()
+        for tabela, descricao in tabelas.items():
+            # Verificar se a tabela existe
+            cursor.execute("""
+                SELECT EXISTS (
+                    SELECT FROM information_schema.tables 
+                    WHERE table_schema = 'public' 
+                    AND table_name = %s
+                )
+            """, (tabela,))
+            existe = cursor.fetchone()[0]
+            
+            # Contar registros se existir
+            registros = 0
+            if existe:
+                try:
+                    cursor.execute(f"SELECT COUNT(*) as total FROM {tabela}")
+                    registros = cursor.fetchone()[0]
+                except:
+                    registros = 0
+            
+            resultados.append({
+                'tabela': tabela,
+                'descricao': descricao,
+                'existe': existe,
+                'registros': registros
+            })
         
         return_connection(conn)
         
-        return """
+        # Gerar HTML
+        html = """
         <!DOCTYPE html>
         <html>
         <head>
-            <title>Tabelas Criadas</title>
+            <title>Verificação de Tabelas do Sistema</title>
             <style>
                 body { font-family: Arial, sans-serif; margin: 20px; }
-                .success { color: green; }
+                .existe { color: green; font-weight: bold; }
+                .nao-existe { color: red; font-weight: bold; }
+                table { border-collapse: collapse; width: 100%; margin-top: 20px; }
+                th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+                th { background-color: #f2f2f2; }
+                .descricao { color: #666; font-size: 0.9em; }
             </style>
         </head>
         <body>
-            <h1>✅ Todas as tabelas foram criadas com sucesso!</h1>
-            <ul>
-                <li class="success">✅ placet_iniciacao</li>
-                <li class="success">✅ sindicantes_candidato</li>
-                <li class="success">✅ fluxo_iniciacao</li>
-                <li class="success">✅ votacao_candidato</li>
-                <li class="success">✅ leituras_loja</li>
-                <li class="success">✅ historico_graus</li>
-                <li class="success">✅ password_reset_tokens</li>
-                <li class="success">✅ email_logs</li>
-            </ul>
+            <h1>Verificação de Tabelas do Sistema</h1>
+            <p>Executado em: """ + datetime.now().strftime('%d/%m/%Y %H:%M:%S') + """</p>
+            <table>
+                <tr>
+                    <th>Tabela</th>
+                    <th>Descrição</th>
+                    <th>Status</th>
+                    <th>Registros</th>
+                </tr>
+        """
+        
+        for r in resultados:
+            status = "✅ Existe" if r['existe'] else "❌ NÃO EXISTE"
+            status_class = "existe" if r['existe'] else "nao-existe"
+            html += f"""
+                <tr>
+                    <td><strong>{r['tabela']}</strong></td>
+                    <td class="descricao">{r['descricao']}</td>
+                    <td class="{status_class}">{status}</td>
+                    <td>{r['registros']}</td>
+                </tr>
+            """
+        
+        html += """
+            </table>
+            
+            <div style="margin-top: 30px;">
+                <h3>Ações necessárias:</h3>
+                <ul>
+        """
+        
+        # Verificar quais tabelas faltam
+        faltantes = [r['tabela'] for r in resultados if not r['existe']]
+        if faltantes:
+            html += f"<li><strong style='color:red'>❌ Tabelas faltando: {', '.join(faltantes)}</strong></li>"
+            html += f"<li><a href='/admin/criar-tabelas-sistema'>Clique aqui para criar as tabelas faltantes</a></li>"
+        else:
+            html += "<li><strong style='color:green'>✅ Todas as tabelas necessárias existem!</strong></li>"
+        
+        html += """
+                </ul>
+            </div>
+            
             <p><a href="/dashboard">Voltar ao Dashboard</a></p>
         </body>
         </html>
         """
         
+        return html
+        
     except Exception as e:
-        return f"❌ Erro ao criar tabelas: {str(e)}"
+        return f"❌ Erro: {str(e)}"
 
 # =============================
 # ROTAS DE CANDIDATOS E SINDICÂNCIA
