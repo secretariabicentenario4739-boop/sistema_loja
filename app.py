@@ -1061,6 +1061,29 @@ def allowed_foto(filename):
 
 from datetime import datetime
 
+def is_veneravel_mestre(usuario_id):
+    """Verifica se o usuário é o Venerável Mestre da loja"""
+    try:
+        cursor, conn = get_db()
+        
+        cursor.execute("""
+            SELECT 1 FROM ocupacao_cargos oc
+            JOIN cargos c ON oc.cargo_id = c.id
+            WHERE oc.obreiro_id = %s 
+            AND oc.ativo = 1 
+            AND c.nome ILIKE '%venerável%mestre%'
+        """, (usuario_id,))
+        
+        result = cursor.fetchone()
+        return_connection(conn)
+        return result is not None
+        
+    except Exception as e:
+        print(f"Erro ao verificar VM: {e}")
+        if 'conn' in locals():
+            return_connection(conn)
+        return False
+
 # ============================================
 # FUNÇÃO AUXILIAR - NOME DOS GRAUS
 # ============================================
@@ -10298,8 +10321,16 @@ def historico_candidatos():
 @login_required
 def designar_sindicantes_candidato(candidato_id):
     """Designar sindicantes para um candidato específico"""
-    if session.get('tipo') != 'admin':
-        flash("Acesso negado!", "danger")
+    # Verificar permissão: admin ou Venerável Mestre
+    pode_designar = False
+    
+    if session.get('tipo') == 'admin':
+        pode_designar = True
+    elif is_veneravel_mestre(session.get('user_id')):
+        pode_designar = True
+    
+    if not pode_designar:
+        flash("Acesso negado! Apenas Administrador ou Venerável Mestre podem designar sindicantes.", "danger")
         return redirect("/candidatos")
     
     try:
@@ -10327,7 +10358,7 @@ def designar_sindicantes_candidato(candidato_id):
             return_connection(conn)
         flash(f"Erro ao designar sindicantes: {str(e)}", "danger")
     
-    return redirect("/candidatos")                          
+    return redirect("/candidatos")  
 
 @app.route("/admin/designar-sindicantes", methods=["GET", "POST"])
 @login_required
