@@ -187,18 +187,16 @@
                             Data: {{ parecer.data_parecer.strftime('%d/%m/%Y') if parecer.data_parecer else '-' }}
                         </small>
                     </div>
-                    <div class="card-body">
-                        <p class="card-text">{{ parecer.parecer_texto }}</p>
-                        {% if parecer.fontes %}
-                        <hr>
-                        <small class="text-muted">Fontes:</small>
-                        <ul class="small mb-0">
-                            {% set fontes = parecer.fontes|from_json %}
-                            {% for fonte in fontes %}
-                            <li><strong>{{ fonte.nome }}:</strong> {{ fonte.informacao }}</li>
-                            {% endfor %}
-                        </ul>
-                        {% endif %}
+					<div class="card-body">
+					<p class="card-text">{{ parecer.parecer_texto }}</p>
+					{% if parecer.fontes and parecer.fontes != '[]' and parecer.fontes != 'null' %}
+						<hr>
+						<small class="text-muted">Fontes:</small>
+						<ul class="small mb-0">
+							{# O filtro from_json não está disponível, mostrando apenas texto #}
+							<li><small>{{ parecer.fontes|truncate(200) }}</small></li>
+						</ul>
+						{% endif %}
                         {% if parecer.observacoes %}
                         <hr>
                         <small class="text-muted">Observações: {{ parecer.observacoes }}</small>
