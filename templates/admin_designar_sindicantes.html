@@ -1,0 +1,105 @@
+{% extends "base.html" %}
+
+{% block title %}Designar Sindicantes{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="container">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h2>
+                <i class="bi bi-person-plus"></i> 
+                Designar Sindicantes por Candidato
+            </h2>
+            <div>
+                <a href="/candidatos" class="btn btn-outline-secondary">
+                    <i class="bi bi-arrow-left"></i> Voltar
+                </a>
+            </div>
+        </div>
+
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+                        {{ message }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
+        <div class="alert alert-info">
+            <i class="bi bi-info-circle-fill me-2"></i>
+            <strong>Instruções:</strong>
+            <ul class="mb-0 mt-2">
+                <li>Selecione os sindicantes que serão responsáveis por cada candidato</li>
+                <li>Cada candidato pode ter <strong>múltiplos sindicantes</strong></li>
+                <li>Os sindicantes selecionados poderão emitir parecer conclusivo</li>
+                <li>Quando todos os sindicantes votarem, o resultado será calculado automaticamente</li>
+            </ul>
+        </div>
+
+        <form method="POST">
+            <div class="row">
+                {% for candidato in candidatos %}
+                <div class="col-md-6 mb-4">
+                    <div class="card shadow h-100">
+                        <div class="card-header bg-primary text-white">
+                            <h5 class="mb-0">
+                                <i class="bi bi-person"></i> {{ candidato.nome }}
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            <label class="form-label fw-bold">Sindicantes:</label>
+                            <div class="row">
+                                {% for sindicante in sindicantes %}
+                                <div class="col-md-12 mb-2">
+                                    <div class="form-check">
+                                        <input class="form-check-input" 
+                                               type="checkbox" 
+                                               name="sindicantes_{{ candidato.id }}" 
+                                               value="{{ sindicante.id }}"
+                                               id="cand{{ candidato.id }}_sind{{ sindicante.id }}"
+                                               {% if sindicante.id in designados.get(candidato.id, []) %}checked{% endif %}>
+                                        <label class="form-check-label" for="cand{{ candidato.id }}_sind{{ sindicante.id }}">
+                                            <i class="bi bi-person-badge"></i>
+                                            {{ sindicante.nome_completo }} ({{ sindicante.usuario }})
+                                        </label>
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            
+            <div class="text-center mt-4">
+                <button type="submit" class="btn btn-primary btn-lg px-5">
+                    <i class="bi bi-save"></i> Salvar Designações
+                </button>
+                <a href="/candidatos" class="btn btn-secondary btn-lg px-5">
+                    <i class="bi bi-x-circle"></i> Cancelar
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<style>
+    .card {
+        transition: transform 0.2s;
+    }
+    .card:hover {
+        transform: translateY(-3px);
+    }
+    .form-check {
+        padding: 5px 0 5px 1.5rem;
+    }
+    .form-check:hover {
+        background-color: #f8f9fa;
+        border-radius: 5px;
+    }
+</style>
+{% endblock %}

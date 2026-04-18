@@ -65,6 +65,11 @@
         background: #fed7aa;
         color: #92400e;
     }
+    
+    .badge-obreiro {
+        background: #dbeafe;
+        color: #1e40af;
+    }
 
     .btn-icon {
         width: 34px;
@@ -81,7 +86,6 @@
         transform: translateY(-2px);
     }
 
-    /* Estilo para a barra de progresso */
     .progress-custom {
         height: 25px;
         border-radius: 12px;
@@ -321,6 +325,11 @@
                                                 {% if c.celular %}
                                                     <small class="text-muted"><i class="bi bi-whatsapp text-success me-1"></i> {{ c.celular }}</small>
                                                 {% endif %}
+                                                {% if c.obreiro_id %}
+                                                    <small class="text-success mt-1">
+                                                        <i class="bi bi-person-badge"></i> Já é Obreiro
+                                                    </small>
+                                                {% endif %}
                                                 {% if c.fechado == 1 %}
                                                     <small class="text-muted mt-1">
                                                         <i class="bi bi-calendar-check me-1"></i> Encerrada: {{ c.data_fechamento.strftime('%d/%m/%Y') if c.data_fechamento else '-' }}
@@ -338,15 +347,29 @@
                                                     <span class="badge-status badge-aprovado">
                                                         <i class="bi bi-check-circle-fill"></i> Aprovado
                                                     </span>
-                                                {% else %}
+                                                {% elif c.status == 'Reprovado' %}
                                                     <span class="badge-status badge-reprovado">
                                                         <i class="bi bi-x-circle-fill"></i> Reprovado
                                                     </span>
+                                                {% else %}
+                                                    <span class="badge-status badge-analise">
+                                                        <i class="bi bi-clock-fill"></i> {{ c.status_calculado }}
+                                                    </span>
                                                 {% endif %}
                                             {% else %}
-                                                <span class="badge-status badge-analise">
-                                                    <i class="bi bi-clock-fill"></i> Em análise
-                                                </span>
+                                                {% if c.votos_positivos > c.votos_negativos and c.total_votos >= c.total_sindicantes %}
+                                                    <span class="badge-status badge-aprovado">
+                                                        <i class="bi bi-check-circle-fill"></i> Aprovado
+                                                    </span>
+                                                {% elif c.votos_negativos >= c.votos_positivos and c.total_votos >= c.total_sindicantes %}
+                                                    <span class="badge-status badge-reprovado">
+                                                        <i class="bi bi-x-circle-fill"></i> Reprovado
+                                                    </span>
+                                                {% else %}
+                                                    <span class="badge-status badge-analise">
+                                                        <i class="bi bi-clock-fill"></i> Em análise ({{ c.total_votos }}/{{ c.total_sindicantes }})
+                                                    </span>
+                                                {% endif %}
                                             {% endif %}
                                         </td>
                                         <td style="min-width: 220px;">
@@ -406,43 +429,61 @@
                                             </div>
                                         </td>
                                         <td class="text-center">
-    <div class="d-flex flex-wrap gap-1 justify-content-center">
-        <!-- Visualizar Sindicância - Todos podem ver -->
-        <a href="/sindicancia/{{ c.id }}" class="btn btn-info btn-icon" title="Visualizar Sindicância">
-            <i class="bi bi-eye"></i>
-        </a>
-        
-        <!-- Checklist - Todos podem ver -->
-        <a href="/candidatos/{{ c.id }}/checklist" class="btn btn-success btn-icon" title="Checklist de Iniciação">
-            <i class="bi bi-check2-square"></i>
-        </a>
-        
-        <!-- Documentos - Todos podem ver -->
-        <a href="/candidatos/{{ c.id }}/documentos" class="btn btn-outline-primary btn-icon" title="Gerenciar Documentos">
-            <i class="bi bi-folder2-open"></i>
-        </a>
-        
-        <!-- APENAS ADMIN pode encerrar sindicância -->
-        {% if session.tipo == 'admin' and not c.fechado %}
-            <a href="/fechar_sindicancia/{{ c.id }}" class="btn btn-warning btn-icon" 
-               onclick="return confirm('Encerrar sindicância deste candidato? Esta ação não pode ser desfeita!')" 
-               title="Encerrar Sindicância">
-                <i class="bi bi-check2-circle"></i>
-            </a>
-        {% endif %}
-        
-        <!-- APENAS ADMIN pode excluir candidato -->
-        {% if session.tipo == 'admin' %}
-            <form action="/candidatos/excluir/{{ c.id }}" method="POST" style="display:inline;">
-                <button type="submit" class="btn btn-danger btn-icon" 
-                        onclick="return confirm('Excluir este candidato? Esta ação não pode ser desfeita!')" 
-                        title="Excluir Candidato">
-                    <i class="bi bi-trash"></i>
-                </button>
-            </form>
-        {% endif %}
-    </div>
-</td>
+                                            <div class="d-flex flex-wrap gap-1 justify-content-center">
+                                                <!-- Visualizar Sindicância -->
+                                                <a href="/sindicancia/{{ c.id }}" class="btn btn-info btn-icon" title="Visualizar Sindicância">
+                                                    <i class="bi bi-eye"></i>
+                                                </a>
+                                                
+                                                <!-- Checklist -->
+                                                <a href="/candidatos/{{ c.id }}/checklist" class="btn btn-success btn-icon" title="Checklist de Iniciação">
+                                                    <i class="bi bi-check2-square"></i>
+                                                </a>
+                                                
+                                                <!-- Documentos -->
+                                                <a href="/candidatos/{{ c.id }}/documentos" class="btn btn-outline-primary btn-icon" title="Gerenciar Documentos">
+                                                    <i class="bi bi-folder2-open"></i>
+                                                </a>
+                                                
+                                                <!-- Botão Designar Sindicantes -->
+                                                {% if session.tipo == 'admin' %}
+                                                <button type="button" class="btn btn-outline-secondary btn-icon" 
+                                                        onclick="abrirModalDesignarSindicantes({{ c.id }}, '{{ c.nome|replace("'", "\\'") }}')"
+                                                        title="Designar Sindicantes para este candidato">
+                                                    <i class="bi bi-person-plus"></i>
+                                                </button>
+                                                {% endif %}
+                                                
+                                                <!-- Botão Emitir Placet -->
+                                                {% if session.tipo == 'admin' and c.fechado == 1 and c.status == 'Aprovado' and not c.obreiro_id %}
+                                                <button type="button" class="btn btn-primary btn-icon" 
+                                                        onclick="abrirModalEmitirPlacet({{ c.id }}, '{{ c.nome|replace("'", "\\'") }}')"
+                                                        title="Emitir Placet de Iniciação">
+                                                    <i class="bi bi-file-text"></i>
+                                                </button>
+                                                {% endif %}
+                                                
+                                                <!-- Encerrar sindicância -->
+                                                {% if session.tipo == 'admin' and not c.fechado %}
+                                                <a href="/fechar_sindicancia/{{ c.id }}" class="btn btn-warning btn-icon" 
+                                                   onclick="return confirm('Encerrar sindicância deste candidato? Esta ação não pode ser desfeita!')" 
+                                                   title="Encerrar Sindicância">
+                                                    <i class="bi bi-check2-circle"></i>
+                                                </a>
+                                                {% endif %}
+                                                
+                                                <!-- Excluir candidato -->
+                                                {% if session.tipo == 'admin' %}
+                                                <form action="/candidatos/excluir/{{ c.id }}" method="POST" style="display:inline;">
+                                                    <button type="submit" class="btn btn-danger btn-icon" 
+                                                            onclick="return confirm('Excluir este candidato? Esta ação não pode ser desfeita!')" 
+                                                            title="Excluir Candidato">
+                                                        <i class="bi bi-trash"></i>
+                                                    </button>
+                                                </form>
+                                                {% endif %}
+                                            </div>
+                                        </td>
                                     </tr>
                                     {% endfor %}
                                 </tbody>
@@ -517,46 +558,6 @@
         </div>
         {% endif %}
 
-        <!-- Candidatos com formulário pendente - APENAS ADMIN -->
-        {% if session.tipo == 'admin' %}
-            {% set pendentes = candidatos|selectattr('cpf', 'equalto', None)|list %}
-            {% if pendentes %}
-            <div class="row">
-                <div class="col-md-12 mb-4">
-                    <div class="card-modern border-warning">
-                        <div class="card-header" style="background: #fef3c7; border-bottom: 1px solid #fde68a;">
-                            <h5 class="mb-0 fw-bold text-warning">
-                                <i class="bi bi-exclamation-triangle-fill me-2"></i> Formulários Pendentes
-                                <span class="ms-2 badge bg-warning text-dark rounded-pill">{{ pendentes|length }}</span>
-                            </h5>
-                        </div>
-                        <div class="card-body p-0">
-                            <div class="list-group list-group-flush">
-                                {% for c in pendentes %}
-                                <div class="list-group-item d-flex justify-content-between align-items-center">
-                                    <div>
-                                        <strong><i class="bi bi-person me-2"></i> {{ c.nome }}</strong>
-                                        <br>
-                                        <small class="text-muted"><i class="bi bi-calendar me-1"></i> Cadastrado em: {{ c.data_criacao.strftime('%d/%m/%Y') }}</small>
-                                    </div>
-                                    <div>
-                                        <a href="/candidato/formulario/{{ c.id }}" class="btn btn-sm btn-warning me-2">
-                                            <i class="bi bi-file-text me-1"></i> Formulário
-                                        </a>
-                                        <a href="/candidatos/{{ c.id }}/documentos" class="btn btn-sm btn-outline-info">
-                                            <i class="bi bi-folder2-open me-1"></i> Documentos
-                                        </a>
-                                    </div>
-                                </div>
-                                {% endfor %}
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            {% endif %}
-        {% endif %}
-
         <!-- Guia de Processo -->
         <div class="row">
             <div class="col-md-12">
@@ -620,6 +621,7 @@
                                 <li>Clique no ícone <i class="bi bi-folder2-open"></i> para gerenciar os documentos do candidato</li>
                                 <li>Quanto mais informações e documentos, melhor para a análise dos sindicantes</li>
                                 <li>A barra de progresso mostra quantos documentos já foram enviados</li>
+                                <li>Candidatos aprovados podem receber o <strong>Placet de Iniciação</strong> e se tornar Obreiros</li>
                             </ul>
                         </div>
                     </div>
@@ -628,4 +630,218 @@
         </div>
     </div>
 </div>
+
+<!-- ============================================ -->
+<!-- MODAL GENÉRICO PARA DESIGNAR SINDICANTES -->
+<!-- ============================================ -->
+{% if session.tipo == 'admin' %}
+<div class="modal fade" id="modalDesignarSindicantes" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title">
+                    <i class="bi bi-person-plus me-2"></i>
+                    Designar Sindicantes
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="POST" id="formDesignarSindicantes">
+                <div class="modal-body">
+                    <div class="alert alert-info">
+                        <i class="bi bi-info-circle-fill me-2"></i>
+                        <strong>Designação de Sindicantes</strong><br>
+                        Selecione os sindicantes que serão responsáveis por avaliar este candidato.
+                    </div>
+                    
+                    <div id="sindicantesList"></div>
+                    
+                    <div id="semSindicantesMsg" class="alert alert-warning" style="display: none;">
+                        <i class="bi bi-exclamation-triangle me-2"></i>
+                        Nenhum sindicante disponível. <a href="/sindicantes">Cadastre sindicantes primeiro</a>.
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-primary" id="btnSalvarDesignacoes">
+                        <i class="bi bi-save"></i> Salvar Designações
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- ============================================ -->
+<!-- MODAL GENÉRICO PARA EMITIR PLACET -->
+<!-- ============================================ -->
+<div class="modal fade" id="modalEmitirPlacet" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title">
+                    <i class="bi bi-file-text me-2"></i>
+                    Emitir Placet de Iniciação
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="POST" id="formEmitirPlacet">
+                <div class="modal-body">
+                    <div class="alert alert-info">
+                        <i class="bi bi-info-circle-fill me-2"></i>
+                        <strong>Placet de Iniciação</strong><br>
+                        Documento oficial emitido pelo GOB autorizando a iniciação do candidato.
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Número do Placet <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control" name="numero_placet" required 
+                                   placeholder="Ex: PLACET/GOB/2024/001">
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Data de Emissão <span class="text-danger">*</span></label>
+                            <input type="date" class="form-control" name="data_emissao" required 
+                                   value="{{ datetime.now().strftime('%Y-%m-%d') if datetime else '' }}">
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Data da Iniciação</label>
+                            <input type="date" class="form-control" name="data_iniciacao">
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Loja de Iniciação <span class="text-danger">*</span></label>
+                            <select class="form-control" name="loja_id" required>
+                                <option value="">Selecione a Loja</option>
+                                {% for loja in lojas %}
+                                <option value="{{ loja.id }}">
+                                    {{ loja.nome }} {% if loja.numero %}(Nº {{ loja.numero }}){% endif %}
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Observações</label>
+                        <textarea class="form-control" name="observacoes" rows="3"></textarea>
+                    </div>
+                    
+                    <div class="alert alert-warning mt-3">
+                        <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                        <strong>Após emitir o Placet:</strong>
+                        <ul class="mb-0 mt-2">
+                            <li>O candidato será transformado em Obreiro</li>
+                            <li>Será gerado um CIM automaticamente</li>
+                            <li>Um e-mail de confirmação será enviado</li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-primary">Emitir Placet</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<script>
+    // Variáveis globais
+    let currentCandidatoId = null;
+    let currentCandidatoNome = null;
+
+    // ============================================
+    // ABRIR MODAL DESIGNAR SINDICANTES
+    // ============================================
+    function abrirModalDesignarSindicantes(candidatoId, candidatoNome) {
+        currentCandidatoId = candidatoId;
+        currentCandidatoNome = candidatoNome;
+        
+        // Atualizar título do modal
+        document.querySelector('#modalDesignarSindicantes .modal-title').innerHTML = 
+            '<i class="bi bi-person-plus me-2"></i> Designar Sindicantes - ' + candidatoNome;
+        
+        // Atualizar action do form
+        document.getElementById('formDesignarSindicantes').action = '/designar-sindicantes/' + candidatoId;
+        
+        // Buscar sindicantes disponíveis e designações via AJAX
+        fetch('/api/sindicantes-disponiveis/' + candidatoId)
+            .then(response => response.json())
+            .then(data => {
+                const container = document.getElementById('sindicantesList');
+                const semSindicantesMsg = document.getElementById('semSindicantesMsg');
+                
+                if (data.sindicantes && data.sindicantes.length > 0) {
+                    semSindicantesMsg.style.display = 'none';
+                    
+                    let html = '<div class="row">';
+                    data.sindicantes.forEach(sindicante => {
+                        const isChecked = data.designados.includes(sindicante.id);
+                        html += `
+                            <div class="col-md-6 mb-2">
+                                <div class="form-check">
+                                    <input class="form-check-input" 
+                                           type="checkbox" 
+                                           name="sindicantes_ids" 
+                                           value="${sindicante.id}"
+                                           id="sind_${sindicante.id}"
+                                           ${isChecked ? 'checked' : ''}>
+                                    <label class="form-check-label" for="sind_${sindicante.id}">
+                                        <i class="bi bi-person-badge"></i>
+                                        ${sindicante.nome_completo || sindicante.usuario}
+                                        ${sindicante.cim_numero ? `<small class="text-muted">(CIM: ${sindicante.cim_numero})</small>` : ''}
+                                    </label>
+                                </div>
+                            </div>
+                        `;
+                    });
+                    html += '</div>';
+                    container.innerHTML = html;
+                } else {
+                    semSindicantesMsg.style.display = 'block';
+                    container.innerHTML = '';
+                }
+            })
+            .catch(error => {
+                console.error('Erro:', error);
+                document.getElementById('sindicantesList').innerHTML = '<div class="alert alert-danger">Erro ao carregar sindicantes</div>';
+            });
+        
+        // Abrir o modal
+        new bootstrap.Modal(document.getElementById('modalDesignarSindicantes')).show();
+    }
+
+    // ============================================
+    // ABRIR MODAL EMITIR PLACET
+    // ============================================
+    function abrirModalEmitirPlacet(candidatoId, candidatoNome) {
+        currentCandidatoId = candidatoId;
+        currentCandidatoNome = candidatoNome;
+        
+        // Atualizar título do modal
+        document.querySelector('#modalEmitirPlacet .modal-title').innerHTML = 
+            '<i class="bi bi-file-text me-2"></i> Emitir Placet de Iniciação - ' + candidatoNome;
+        
+        // Atualizar action do form
+        document.getElementById('formEmitirPlacet').action = '/emitir-placet/' + candidatoId;
+        
+        // Abrir o modal
+        new bootstrap.Modal(document.getElementById('modalEmitirPlacet')).show();
+    }
+
+    // Auto-fechar alerts após 5 segundos
+    setTimeout(function() {
+        document.querySelectorAll('.alert').forEach(function(alert) {
+            setTimeout(function() {
+                alert.classList.remove('show');
+                setTimeout(function() {
+                    alert.remove();
+                }, 150);
+            }, 5000);
+        });
+    }, 1000);
+</script>
 {% endblock %}

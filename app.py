@@ -1105,6 +1105,40 @@ def get_nome_grau(grau):
     return graus_map.get(grau, f"Grau {grau}")
 
 # =============================
+# FUNÇÃO AUX. ENVIO DE EMAIL INICIAÇÃO
+# =============================
+
+def enviar_email_iniciacao(email, nome, numero_placet, cim_numero):
+    """Envia e-mail de confirmação de iniciação"""
+    assunto = "🎉 Bem-vindo à ARLS Bicentenário - Sua Iniciação foi Registrada!"
+    
+    html_content = f"""
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <meta charset="UTF-8">
+        <title>Iniciação Registrada</title>
+    </head>
+    <body style="font-family: Arial, sans-serif;">
+        <div style="max-width: 600px; margin: 0 auto; padding: 20px;">
+            <h2 style="color: #4f46e5;">🎉 Parabéns, {nome}!</h2>
+            <p>Sua iniciação foi registrada com sucesso na ARLS Bicentenário.</p>
+            <div style="background: #f3f4f6; padding: 15px; border-radius: 10px; margin: 20px 0;">
+                <p><strong>📄 Placet de Iniciação:</strong> {numero_placet}</p>
+                <p><strong>🆔 CIM (Carteira de Identidade Maçônica):</strong> {cim_numero}</p>
+            </div>
+            <p>Agora você é oficialmente um Obreiro da nossa Loja, no Grau de <strong>Aprendiz</strong>.</p>
+            <p>Em breve você receberá mais informações sobre as próximas sessões.</p>
+            <hr>
+            <small>ARLS Bicentenário - Loja Maçônica</small>
+        </div>
+    </body>
+    </html>
+    """
+    
+    return enviar_email_resend(email, assunto, html_content)
+
+# =============================
 # FUNÇÃO DE LOG DE AUDITORIA
 # =============================
 import json
@@ -1263,6 +1297,39 @@ def verificar_permissao(usuario_id, permissao_chave):
     
     return_connection(conn)
     return tem_permissao
+    
+def enviar_email_iniciacao_com_senha(email, nome, numero_placet, cim_numero, usuario, senha):
+    """Envia e-mail de confirmação de iniciação com dados de acesso"""
+    assunto = "🎉 Bem-vindo à ARLS Bicentenário - Sua Iniciação foi Registrada!"
+    
+    html_content = f"""
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <meta charset="UTF-8">
+        <title>Iniciação Registrada</title>
+    </head>
+    <body style="font-family: Arial, sans-serif;">
+        <div style="max-width: 600px; margin: 0 auto; padding: 20px;">
+            <h2 style="color: #4f46e5;">🎉 Parabéns, {nome}!</h2>
+            <p>Sua iniciação foi registrada com sucesso na ARLS Bicentenário.</p>
+            <div style="background: #f3f4f6; padding: 15px; border-radius: 10px; margin: 20px 0;">
+                <p><strong>📄 Placet de Iniciação:</strong> {numero_placet}</p>
+                <p><strong>🆔 CIM (Carteira de Identidade Maçônica):</strong> {cim_numero}</p>
+                <p><strong>👤 Usuário:</strong> {usuario}</p>
+                <p><strong>🔑 Senha temporária:</strong> {senha}</p>
+            </div>
+            <p>Agora você é oficialmente um Obreiro da nossa Loja, no Grau de <strong>Aprendiz</strong>.</p>
+            <p>Recomendamos que você acesse o sistema e altere sua senha no primeiro acesso.</p>
+            <p>Em breve você receberá mais informações sobre as próximas sessões.</p>
+            <hr>
+            <small>ARLS Bicentenário - Loja Maçônica</small>
+        </div>
+    </body>
+    </html>
+    """
+    
+    return enviar_email_resend(email, assunto, html_content)    
 
 def get_grau_efetivo(grau_atual):
     """Retorna o grau efetivo para permissões (1, 2 ou 3)"""
@@ -4903,6 +4970,39 @@ def visualizar_obreiro(id):
             return redirect("/obreiros")
         
         # ============================================
+        # BUSCAR HISTÓRICO DO CANDIDATO (ORIGEM)
+        # ============================================
+        cursor.execute("""
+            SELECT 
+                c.id as candidato_id,
+                c.nome as candidato_nome,
+                c.cpf,
+                c.data_criacao,
+                c.status,
+                c.data_fechamento as data_aprovacao,
+                c.numero_placet,
+                c.data_transformacao,
+                c.data_iniciacao,
+                COALESCE(pc.total_votos, 0) as total_votos,
+                COALESCE(pc.votos_positivos, 0) as votos_positivos,
+                COALESCE(pc.votos_negativos, 0) as votos_negativos,
+                (SELECT parecer_texto FROM pareceres_conclusivos 
+                 WHERE candidato_id = c.id LIMIT 1) as parecer_final
+            FROM candidatos c
+            LEFT JOIN (
+                SELECT 
+                    candidato_id,
+                    COUNT(*) as total_votos,
+                    COUNT(CASE WHEN conclusao = 'APROVADO' THEN 1 END) as votos_positivos,
+                    COUNT(CASE WHEN conclusao = 'REPROVADO' THEN 1 END) as votos_negativos
+                FROM pareceres_conclusivos
+                GROUP BY candidato_id
+            ) pc ON c.id = pc.candidato_id
+            WHERE c.obreiro_id = %s
+        """, (id,))
+        historico_candidato = cursor.fetchone()
+        
+        # ============================================
         # BUSCAR CARGO ATUAL DO OBREIRO (ativo)
         # ============================================
         cursor.execute("""
@@ -4949,27 +5049,16 @@ def visualizar_obreiro(id):
         historico_graus = cursor.fetchall()
         
         # ============================================
-        # CONTAR FAMILIARES - CORRIGIDO (tabela: familiares)
+        # CONTAR FAMILIARES
         # ============================================
-        # Verificar qual tabela existe primeiro
         familiares_count = 0
         try:
-            # Tentar com tabela 'familiares'
             cursor.execute("SELECT COUNT(*) as total FROM familiares WHERE obreiro_id = %s", (id,))
             result = cursor.fetchone()
             if result:
                 familiares_count = result["total"]
-            else:
-                # Se não, tentar com 'dependentes'
-                cursor.execute("SELECT COUNT(*) as total FROM dependentes WHERE obreiro_id = %s", (id,))
-                result = cursor.fetchone()
-                if result:
-                    familiares_count = result["total"]
         except Exception as e:
             print(f"Erro ao contar familiares: {e}")
-            familiares_count = 0
-        
-        print(f"DEBUG: Obreiro ID {id} tem {familiares_count} familiares")
         
         # ============================================
         # CONTAR CONDECORAÇÕES
@@ -5026,7 +5115,8 @@ def visualizar_obreiro(id):
                               familiares_count=familiares_count,
                               condecoracoes_count=condecoracoes_count,
                               comunicados_count=comunicados_count,
-                              pode_editar=pode_editar)
+                              pode_editar=pode_editar,
+                              historico_candidato=historico_candidato)  # ← NOVO
         
     except Exception as e:
         print(f"❌ Erro ao visualizar obreiro {id}: {e}")
@@ -5457,9 +5547,7 @@ def recuperar_senha():
                 # Construir link de recuperação
                 link_recuperacao = url_for('redefinir_senha', token=token, _external=True)
                 
-                # Mostrar link na tela para teste
-                flash(f"🔗 LINK DE TESTE: {link_recuperacao}", "info")
-                
+                               
                 # Preparar e-mail
                 assunto = "🔐 Recuperação de Senha - ARLS Bicentenário"
                 
@@ -9306,9 +9394,8 @@ def api_marcar_aviso_visto(id):
         return_connection(conn)    
 
 # =============================
-# ROTAS DE CANDIDATOS E SINDICÂNCIA
+# ROTAS DE CANDIDATOS PLACET E OBREIRO
 # =============================
-
 @app.route("/candidatos", methods=["GET", "POST"])
 @login_required
 @permissao_required('candidato.view')
@@ -9326,7 +9413,6 @@ def gerenciar_candidatos():
                 conn.commit()
                 candidato_id = cursor.lastrowid
                 
-                # Registrar log com tratamento de erro
                 try:
                     registrar_log("criar", "candidato", candidato_id, dados_novos={"nome": nome})
                 except Exception as log_err:
@@ -9335,7 +9421,7 @@ def gerenciar_candidatos():
                 flash(f"Candidato '{nome}' adicionado com sucesso!", "success")
                 
             except Exception as e:
-                conn.rollback()  # IMPORTANTE: rollback em caso de erro
+                conn.rollback()
                 print(f"Erro ao inserir: {str(e)}")
                 flash(f"Erro ao adicionar candidato: {str(e)}", "danger")
         else:
@@ -9345,10 +9431,9 @@ def gerenciar_candidatos():
         return redirect("/candidatos")
     
     # ============================================
-    # GET - Buscar candidatos
+    # GET - Buscar candidatos (APENAS NÃO OBREIROS)
     # ============================================
     
-    # IMPORTANTE: Fazer rollback antes de começar uma nova transação
     try:
         conn.rollback()
     except:
@@ -9356,14 +9441,27 @@ def gerenciar_candidatos():
     
     try:
         cursor.execute("""
-            SELECT c.*,
-                   (SELECT COUNT(*) FROM sindicancias WHERE candidato_id = c.id) as total_votos,
-                   (SELECT COUNT(*) FROM sindicancias WHERE candidato_id = c.id AND parecer = 'positivo') as votos_positivos,
-                   (SELECT COUNT(*) FROM sindicancias WHERE candidato_id = c.id AND parecer = 'negativo') as votos_negativos
+            SELECT 
+                c.*,
+                COALESCE(pc.total_votos, 0) as total_votos,
+                COALESCE(pc.votos_positivos, 0) as votos_positivos,
+                COALESCE(pc.votos_negativos, 0) as votos_negativos,
+                (SELECT COUNT(*) FROM usuarios WHERE tipo = 'sindicante' AND ativo = 1) as total_sindicantes
             FROM candidatos c
+            LEFT JOIN (
+                SELECT 
+                    candidato_id,
+                    COUNT(*) as total_votos,
+                    COUNT(CASE WHEN conclusao = 'APROVADO' THEN 1 END) as votos_positivos,
+                    COUNT(CASE WHEN conclusao = 'REPROVADO' THEN 1 END) as votos_negativos
+                FROM pareceres_conclusivos
+                GROUP BY candidato_id
+            ) pc ON c.id = pc.candidato_id
+            WHERE c.obreiro_id IS NULL
             ORDER BY c.data_criacao DESC
         """)
         candidatos = cursor.fetchall()
+        
     except Exception as e:
         print(f"Erro ao buscar candidatos: {str(e)}")
         conn.rollback()
@@ -9376,12 +9474,10 @@ def gerenciar_candidatos():
     documentos_status = {}
     
     try:
-        # Primeiro, buscar total de tipos de documentos obrigatórios
         cursor.execute("SELECT COUNT(*) as total FROM tipos_documentos_candidato WHERE obrigatorio = 1")
         result = cursor.fetchone()
         total_tipos_obrigatorios = result['total'] if result else 0
         
-        # Buscar documentos enviados por candidato
         cursor.execute("""
             SELECT 
                 d.candidato_id,
@@ -9394,7 +9490,6 @@ def gerenciar_candidatos():
         """)
         docs_enviados = cursor.fetchall()
         
-        # Montar dicionário com status dos documentos
         for doc in docs_enviados:
             documentos_status[doc['candidato_id']] = {
                 'total': total_tipos_obrigatorios,
@@ -9405,7 +9500,6 @@ def gerenciar_candidatos():
                 'rejeitados': doc['rejeitados'] or 0
             }
         
-        # Para candidatos que não têm nenhum documento
         for candidato in candidatos:
             if candidato['id'] not in documentos_status:
                 documentos_status[candidato['id']] = {
@@ -9419,7 +9513,6 @@ def gerenciar_candidatos():
     except Exception as e:
         print(f"Erro ao buscar status dos documentos: {str(e)}")
         conn.rollback()
-        # Fallback: status vazio para todos os candidatos
         for candidato in candidatos:
             documentos_status[candidato['id']] = {
                 'total': 0,
@@ -9446,12 +9539,741 @@ def gerenciar_candidatos():
         conn.rollback()
         sindicantes = []
     
+    # Buscar lojas para o modal do Placet
+    try:
+        cursor.execute("SELECT id, nome, numero FROM lojas WHERE ativo = 1 ORDER BY nome")
+        lojas = cursor.fetchall()
+    except Exception as e:
+        print(f"Erro ao buscar lojas: {str(e)}")
+        lojas = []
+    
+    # Buscar sindicantes disponíveis (para o modal de designação)
+    try:
+        cursor.execute("""
+            SELECT id, usuario, nome_completo, cim_numero 
+            FROM usuarios 
+            WHERE tipo = 'sindicante' AND ativo = 1
+            ORDER BY nome_completo
+        """)
+        sindicantes_disponiveis = cursor.fetchall()
+    except Exception as e:
+        print(f"Erro ao buscar sindicantes disponíveis: {str(e)}")
+        sindicantes_disponiveis = []
+    
+    # Buscar designações existentes por candidato
+    try:
+        cursor.execute("""
+            SELECT candidato_id, sindicante_id 
+            FROM sindicantes_candidato
+        """)
+        designacoes = cursor.fetchall()
+        
+        designados_por_candidato = {}
+        for d in designacoes:
+            if d['candidato_id'] not in designados_por_candidato:
+                designados_por_candidato[d['candidato_id']] = []
+            designados_por_candidato[d['candidato_id']].append(d['sindicante_id'])
+    except Exception as e:
+        print(f"Erro ao buscar designações: {str(e)}")
+        designados_por_candidato = {}
+    
     return_connection(conn)
     
     return render_template("candidatos.html", 
                           candidatos=candidatos, 
                           sindicantes=sindicantes, 
                           documentos_status=documentos_status,
+                          lojas=lojas,
+                          sindicantes_disponiveis=sindicantes_disponiveis,
+                          designados_por_candidato=designados_por_candidato,
+                          tipo=session.get("tipo", "admin"))
+
+@app.route("/emitir-placet/<int:candidato_id>", methods=["POST"])
+@login_required
+def emitir_placet(candidato_id):
+    """Emitir placet de iniciação e transformar candidato em obreiro"""
+    if session.get('tipo') != 'admin':
+        flash("Acesso negado! Apenas administradores podem emitir placet.", "danger")
+        return redirect("/candidatos")
+    
+    try:
+        cursor, conn = get_db()
+        
+        # 1. Buscar candidato aprovado
+        cursor.execute("""
+            SELECT c.*, u.id as usuario_id 
+            FROM candidatos c
+            LEFT JOIN usuarios u ON u.cpf = c.cpf
+            WHERE c.id = %s AND c.fechado = 1 AND c.status = 'Aprovado'
+        """, (candidato_id,))
+        candidato = cursor.fetchone()
+        
+        if not candidato:
+            flash("Candidato não encontrado ou não está aprovado!", "danger")
+            return redirect("/candidatos")
+        
+        # 2. Coletar dados do formulário
+        numero_placet = request.form.get("numero_placet")
+        data_emissao = request.form.get("data_emissao")
+        data_iniciacao = request.form.get("data_iniciacao")
+        loja_id = request.form.get("loja_id") or None
+        observacoes = request.form.get("observacoes")
+        
+        if not numero_placet or not data_emissao:
+            flash("Número do Placet e Data de Emissão são obrigatórios!", "danger")
+            return redirect("/candidatos")
+        
+        # 3. Verificar se o placet já existe
+        cursor.execute("SELECT id FROM placet_iniciacao WHERE numero_placet = %s", (numero_placet,))
+        if cursor.fetchone():
+            flash(f"Placet número {numero_placet} já está cadastrado!", "danger")
+            return redirect("/candidatos")
+        
+        # 4. Verificar se o candidato já virou obreiro
+        if candidato.get('obreiro_id'):
+            flash("Este candidato já foi transformado em obreiro!", "warning")
+            return redirect("/candidatos")
+        
+        # 5. Buscar dados da loja
+        loja_nome = None
+        loja_numero = None
+        loja_orient = None
+        if loja_id:
+            cursor.execute("SELECT nome, numero, oriente FROM lojas WHERE id = %s", (loja_id,))
+            loja = cursor.fetchone()
+            if loja:
+                loja_nome = loja['nome']
+                loja_numero = loja['numero']
+                loja_orient = loja['oriente']
+        
+        # 6. Gerar CIM
+        import hashlib
+        import secrets
+        import re
+        from werkzeug.security import generate_password_hash
+        from datetime import datetime
+        
+        cim_base = f"{candidato['cpf']}{candidato['id']}{secrets.token_hex(4)}"
+        cim_numero = hashlib.md5(cim_base.encode()).hexdigest()[:12].upper()
+        cim_numero = f"GOB-{cim_numero[:4]}-{cim_numero[4:]}"
+        
+        # 7. Gerar nome de usuário (login) - GARANTIR QUE NÃO SEJA NULL
+        nome_original = candidato['nome']
+        nome_usuario = nome_original.lower()
+        nome_usuario = re.sub(r'[^a-z0-9]', '.', nome_usuario)
+        nome_usuario = re.sub(r'\.+', '.', nome_usuario)
+        nome_usuario = nome_usuario.strip('.')
+        nome_usuario = nome_usuario[:30]
+        
+        # Se ficar vazio, usar um padrão
+        if not nome_usuario or len(nome_usuario) < 3:
+            nome_usuario = f"obreiro_{candidato['id']}"
+        
+        # Verificar se o nome de usuário já existe e adicionar sufixo se necessário
+        cursor.execute("SELECT id FROM usuarios WHERE usuario = %s", (nome_usuario,))
+        if cursor.fetchone():
+            nome_usuario = f"{nome_usuario}_{secrets.token_hex(3)}"
+        
+        # 8. Gerar senha temporária
+        senha_temporaria = secrets.token_urlsafe(8)
+        senha_hash = generate_password_hash(senha_temporaria)
+        
+        # 9. Processar data de iniciação
+        data_iniciacao_date = None
+        if data_iniciacao:
+            data_iniciacao_date = datetime.strptime(data_iniciacao, '%Y-%m-%d').date()
+        else:
+            data_iniciacao_date = datetime.now().date()
+        
+        # 10. Verificar se o candidato já tem usuário (pelo CPF)
+        cursor.execute("SELECT id FROM usuarios WHERE cpf = %s", (candidato['cpf'],))
+        usuario_existente = cursor.fetchone()
+        
+        if usuario_existente:
+            # Usuário já existe, apenas atualizar
+            obreiro_id = usuario_existente['id']
+            cursor.execute("""
+                UPDATE usuarios 
+                SET tipo = 'obreiro',
+                    cim_numero = %s,
+                    data_iniciacao = %s,
+                    grau_atual = 1,
+                    status_membro = 'ativo',
+                    ativo = 1,
+                    loja_nome = %s,
+                    loja_numero = %s,
+                    loja_orient = %s,
+                    nome_completo = %s
+                WHERE id = %s
+            """, (cim_numero, data_iniciacao_date, loja_nome, loja_numero, loja_orient, candidato['nome'], obreiro_id))
+        else:
+            # Criar novo usuário (obreiro) - COM TODOS OS CAMPOS OBRIGATÓRIOS
+            cursor.execute("""
+                INSERT INTO usuarios (
+                    usuario, senha_hash, tipo, data_cadastro,
+                    nome_completo, cim_numero, grau_atual, data_iniciacao,
+                    telefone, email, loja_nome, loja_numero, loja_orient,
+                    cpf, status_membro, ativo, nome_maconico, endereco
+                )
+                VALUES (%s, %s, %s, NOW(), %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, 1, %s, %s)
+                RETURNING id
+            """, (
+                nome_usuario,
+                senha_hash,
+                'obreiro',
+                candidato['nome'],
+                cim_numero,
+                1,  # Aprendiz
+                data_iniciacao_date,
+                candidato.get('telefone') or candidato.get('celular'),
+                candidato.get('email'),
+                loja_nome,
+                loja_numero,
+                loja_orient,
+                candidato['cpf'],
+                'ativo',
+                candidato['nome'],  # nome_maconico (pode ser igual ao nome)
+                candidato.get('endereco_residencial') or candidato.get('endereco')
+            ))
+            obreiro_id = cursor.fetchone()['id']
+        
+        # 11. Registrar Placet
+        cursor.execute("""
+            INSERT INTO placet_iniciacao (
+                candidato_id, numero_placet, data_emissao, 
+                data_iniciacao, loja_id, status, observacoes, emitido_por
+            )
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+            RETURNING id
+        """, (
+            candidato_id, numero_placet, data_emissao,
+            data_iniciacao if data_iniciacao else None,
+            loja_id, 'emitido', observacoes, session['user_id']
+        ))
+        placet_id = cursor.fetchone()['id']
+        
+        # 12. Registrar fluxo de iniciação
+        cursor.execute("""
+            INSERT INTO fluxo_iniciacao (
+                candidato_id, etapa, status, data_entrada, usuario_id
+            )
+            VALUES (%s, %s, %s, %s, %s)
+        """, (candidato_id, 'iniciado', 'concluido', datetime.now(), session['user_id']))
+        
+        # 13. Atualizar candidato
+        cursor.execute("""
+            UPDATE candidatos 
+            SET obreiro_id = %s, 
+                data_transformacao = NOW(),
+                numero_placet = %s,
+                placet_emitido = TRUE,
+                data_iniciacao = %s,
+                status_processo = 'iniciado'
+            WHERE id = %s
+        """, (obreiro_id, numero_placet, data_iniciacao_date, candidato_id))
+        
+        conn.commit()
+        
+        # 14. Registrar log
+        registrar_log(
+            acao=f"emitir_placet_{placet_id}",
+            entidade="placet_iniciacao",
+            entidade_id=placet_id,
+            dados_anteriores=None,
+            dados_novos={'candidato': candidato['nome'], 'placet': numero_placet, 'obreiro_id': obreiro_id}
+        )
+        
+        flash(f"✅ Placet {numero_placet} emitido com sucesso!", "success")
+        flash(f"📝 Usuário criado: {nome_usuario} | Senha temporária: {senha_temporaria}", "info")
+        
+        # 15. Enviar e-mail de confirmação com senha
+        if candidato.get('email'):
+            try:
+                enviar_email_iniciacao_com_senha(
+                    candidato['email'], 
+                    candidato['nome'], 
+                    numero_placet, 
+                    cim_numero,
+                    nome_usuario,
+                    senha_temporaria
+                )
+            except Exception as e:
+                print(f"Erro ao enviar e-mail: {e}")
+        
+        return_connection(conn)
+        return redirect("/candidatos")
+        
+    except Exception as e:
+        print(f"Erro ao emitir placet: {e}")
+        import traceback
+        traceback.print_exc()
+        if 'conn' in locals():
+            return_connection(conn)
+        flash(f"Erro ao emitir placet: {str(e)}", "danger")
+        return redirect("/candidatos")
+
+@app.route("/candidato/<int:candidato_id>/processo")
+@login_required
+@permissao_required('candidato.view')
+def visualizar_processo_candidato(candidato_id):
+    """Visualizar o processo completo de um candidato"""
+    try:
+        cursor, conn = get_db()
+        
+        # 1. Buscar candidato
+        cursor.execute("""
+            SELECT c.*, u.id as obreiro_id, u.nome_completo as obreiro_nome
+            FROM candidatos c
+            LEFT JOIN usuarios u ON c.obreiro_id = u.id
+            WHERE c.id = %s
+        """, (candidato_id,))
+        candidato = cursor.fetchone()
+        
+        if not candidato:
+            flash("Candidato não encontrado!", "danger")
+            return redirect("/candidatos")
+        
+        # 2. Buscar pareceres (tratar erro)
+        pareceres = []
+        try:
+            cursor.execute("""
+                SELECT pc.*, u.nome_completo as sindicante_nome
+                FROM pareceres_conclusivos pc
+                JOIN usuarios u ON pc.sindicante = u.usuario
+                WHERE pc.candidato_id = %s
+                ORDER BY pc.data_envio DESC
+            """, (candidato_id,))
+            pareceres = cursor.fetchall()
+            print(f"✅ Encontrados {len(pareceres)} pareceres")
+        except Exception as e:
+            print(f"⚠️ Erro ao buscar pareceres: {e}")
+        
+        # 3. Buscar sindicantes designados
+        sindicantes_designados = []
+        try:
+            cursor.execute("""
+                SELECT sc.*, u.nome_completo as sindicante_nome
+                FROM sindicantes_candidato sc
+                JOIN usuarios u ON sc.sindicante_id = u.id
+                WHERE sc.candidato_id = %s
+            """, (candidato_id,))
+            sindicantes_designados = cursor.fetchall()
+            print(f"✅ Encontrados {len(sindicantes_designados)} sindicantes designados")
+        except Exception as e:
+            print(f"⚠️ Erro ao buscar sindicantes: {e}")
+        
+        # 4. Buscar votação
+        votacao = None
+        try:
+            cursor.execute("""
+                SELECT * FROM votacao_candidato 
+                WHERE candidato_id = %s
+                ORDER BY data_votacao DESC
+                LIMIT 1
+            """, (candidato_id,))
+            votacao = cursor.fetchone()
+            print(f"✅ Votação encontrada: {votacao is not None}")
+        except Exception as e:
+            print(f"⚠️ Erro ao buscar votação: {e}")
+        
+        # 5. Buscar leituras
+        leituras = []
+        try:
+            cursor.execute("""
+                SELECT * FROM leituras_loja 
+                WHERE candidato_id = %s
+                ORDER BY data_leitura ASC
+            """, (candidato_id,))
+            leituras = cursor.fetchall()
+            print(f"✅ Encontradas {len(leituras)} leituras")
+        except Exception as e:
+            print(f"⚠️ Erro ao buscar leituras: {e}")
+        
+        # 6. Buscar fluxo
+        fluxo = []
+        try:
+            cursor.execute("""
+                SELECT * FROM fluxo_iniciacao 
+                WHERE candidato_id = %s
+                ORDER BY data_entrada ASC
+            """, (candidato_id,))
+            fluxo = cursor.fetchall()
+            print(f"✅ Encontradas {len(fluxo)} etapas no fluxo")
+        except Exception as e:
+            print(f"⚠️ Erro ao buscar fluxo: {e}")
+        
+        # 7. Buscar documentos
+        documentos = []
+        try:
+            cursor.execute("""
+                SELECT d.*, t.nome as tipo_nome
+                FROM documentos_candidato d
+                LEFT JOIN tipos_documentos_candidato t ON d.tipo_documento_id = t.id
+                WHERE d.candidato_id = %s
+                ORDER BY d.data_upload DESC
+            """, (candidato_id,))
+            documentos = cursor.fetchall()
+            print(f"✅ Encontrados {len(documentos)} documentos")
+        except Exception as e:
+            print(f"⚠️ Erro ao buscar documentos: {e}")
+        
+        return_connection(conn)
+        
+        return render_template("candidato_processo.html", 
+                              candidato=candidato,
+                              pareceres=pareceres,
+                              sindicantes_designados=sindicantes_designados,
+                              votacao=votacao,
+                              leituras=leituras,
+                              fluxo=fluxo,
+                              documentos=documentos)
+        
+    except Exception as e:
+        print(f"❌ Erro geral: {e}")
+        import traceback
+        traceback.print_exc()
+        if 'conn' in locals():
+            return_connection(conn)
+        flash(f"Erro ao carregar processo: {str(e)}", "danger")
+        return redirect("/candidatos")
+
+#atualizar o banco
+
+@app.route("/admin/atualizar-banco")
+@login_required
+def atualizar_banco():
+    """Rota temporária para atualizar o banco de dados"""
+    if session.get('tipo') != 'admin':
+        return "Acesso negado", 403
+    
+    try:
+        cursor, conn = get_db()
+        
+        # Lista de comandos SQL
+        comandos = [
+            # Adicionar colunas na tabela candidatos
+            """
+            DO $$ 
+            BEGIN
+                IF NOT EXISTS (SELECT 1 FROM information_schema.columns 
+                               WHERE table_name='candidatos' AND column_name='obreiro_id') THEN
+                    ALTER TABLE candidatos ADD COLUMN obreiro_id INTEGER REFERENCES usuarios(id);
+                END IF;
+                IF NOT EXISTS (SELECT 1 FROM information_schema.columns 
+                               WHERE table_name='candidatos' AND column_name='numero_placet') THEN
+                    ALTER TABLE candidatos ADD COLUMN numero_placet VARCHAR(50);
+                END IF;
+                IF NOT EXISTS (SELECT 1 FROM information_schema.columns 
+                               WHERE table_name='candidatos' AND column_name='placet_emitido') THEN
+                    ALTER TABLE candidatos ADD COLUMN placet_emitido BOOLEAN DEFAULT FALSE;
+                END IF;
+                IF NOT EXISTS (SELECT 1 FROM information_schema.columns 
+                               WHERE table_name='candidatos' AND column_name='data_transformacao') THEN
+                    ALTER TABLE candidatos ADD COLUMN data_transformacao TIMESTAMP;
+                END IF;
+            END $$;
+            """,
+            
+            # Criar tabela placet_iniciacao
+            """
+            CREATE TABLE IF NOT EXISTS placet_iniciacao (
+                id SERIAL PRIMARY KEY,
+                candidato_id INTEGER NOT NULL REFERENCES candidatos(id) ON DELETE CASCADE,
+                numero_placet VARCHAR(50) UNIQUE NOT NULL,
+                data_emissao DATE NOT NULL,
+                data_iniciacao DATE,
+                loja_id INTEGER REFERENCES lojas(id),
+                status VARCHAR(20) DEFAULT 'emitido',
+                observacoes TEXT,
+                emitido_por INTEGER REFERENCES usuarios(id),
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            );
+            """,
+            
+            # Criar tabela sindicantes_candidato
+            """
+            CREATE TABLE IF NOT EXISTS sindicantes_candidato (
+                id SERIAL PRIMARY KEY,
+                candidato_id INTEGER NOT NULL REFERENCES candidatos(id) ON DELETE CASCADE,
+                sindicante_id INTEGER NOT NULL REFERENCES usuarios(id) ON DELETE CASCADE,
+                data_designacao DATE NOT NULL,
+                data_conclusao DATE,
+                recomendacao VARCHAR(20),
+                status VARCHAR(20) DEFAULT 'designado',
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            );
+            """,
+            
+            # Criar tabela fluxo_iniciacao
+            """
+            CREATE TABLE IF NOT EXISTS fluxo_iniciacao (
+                id SERIAL PRIMARY KEY,
+                candidato_id INTEGER NOT NULL REFERENCES candidatos(id) ON DELETE CASCADE,
+                etapa VARCHAR(50) NOT NULL,
+                status VARCHAR(20) DEFAULT 'pendente',
+                data_entrada TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                data_saida TIMESTAMP,
+                observacoes TEXT,
+                usuario_id INTEGER REFERENCES usuarios(id)
+            );
+            """
+        ]
+        
+        for cmd in comandos:
+            cursor.execute(cmd)
+            conn.commit()
+            print(f"✅ Comando executado com sucesso")
+        
+        return_connection(conn)
+        
+        return "✅ Banco de dados atualizado com sucesso!"
+        
+    except Exception as e:
+        print(f"Erro: {e}")
+        if 'conn' in locals():
+            return_connection(conn)
+        return f"❌ Erro: {str(e)}"
+
+# =============================
+# ROTAS DE CANDIDATOS E SINDICÂNCIA
+# =============================
+
+@app.route("/candidatos/historico")
+@login_required
+@permissao_required('candidato.view')
+def historico_candidatos():
+    """Lista de candidatos que já foram transformados em obreiros"""
+    try:
+        cursor, conn = get_db()
+        
+        cursor.execute("""
+            SELECT 
+                c.id,
+                c.nome as candidato_nome,
+                c.cpf,
+                c.data_criacao,
+                c.status,
+                c.data_fechamento,
+                c.numero_placet,
+                c.data_transformacao,
+                c.data_iniciacao as candidato_data_iniciacao,
+                u.id as obreiro_id,
+                u.nome_completo as obreiro_nome,
+                u.usuario as obreiro_usuario,
+                u.cim_numero as obreiro_cim,
+                u.grau_atual as obreiro_grau,
+                u.data_iniciacao as obreiro_data_iniciacao,
+                u.loja_nome,
+                u.loja_numero
+            FROM candidatos c
+            INNER JOIN usuarios u ON c.obreiro_id = u.id
+            WHERE c.obreiro_id IS NOT NULL
+            ORDER BY c.data_transformacao DESC
+        """)
+        historico = cursor.fetchall()
+        
+        return_connection(conn)
+        
+        return render_template("candidatos_historico.html", historico=historico)
+        
+    except Exception as e:
+        print(f"Erro ao carregar histórico: {e}")
+        import traceback
+        traceback.print_exc()
+        if 'conn' in locals():
+            return_connection(conn)
+        flash("Erro ao carregar histórico", "danger")
+        return redirect("/candidatos")
+                          
+@app.route("/designar-sindicantes/<int:candidato_id>", methods=["POST"])
+@login_required
+def designar_sindicantes_candidato(candidato_id):
+    """Designar sindicantes para um candidato específico"""
+    if session.get('tipo') != 'admin':
+        flash("Acesso negado!", "danger")
+        return redirect("/candidatos")
+    
+    try:
+        cursor, conn = get_db()
+        
+        # Remover designações anteriores
+        cursor.execute("DELETE FROM sindicantes_candidato WHERE candidato_id = %s", (candidato_id,))
+        
+        # Adicionar novas designações
+        sindicantes_ids = request.form.getlist("sindicantes_ids")
+        
+        for sindicante_id in sindicantes_ids:
+            cursor.execute("""
+                INSERT INTO sindicantes_candidato (candidato_id, sindicante_id, data_designacao, status)
+                VALUES (%s, %s, NOW(), 'designado')
+            """, (candidato_id, sindicante_id))
+        
+        conn.commit()
+        
+        flash(f"Designações salvas com sucesso! {len(sindicantes_ids)} sindicante(s) designado(s).", "success")
+        
+    except Exception as e:
+        print(f"Erro: {e}")
+        if 'conn' in locals():
+            return_connection(conn)
+        flash(f"Erro ao designar sindicantes: {str(e)}", "danger")
+    
+    return redirect("/candidatos")                          
+
+@app.route("/admin/designar-sindicantes", methods=["GET", "POST"])
+@login_required
+def admin_designar_sindicantes():
+    """Página para designar sindicantes aos candidatos"""
+    if session.get('tipo') != 'admin':
+        flash("Acesso negado!", "danger")
+        return redirect("/dashboard")
+    
+    try:
+        cursor, conn = get_db()
+        
+        if request.method == "POST":
+            # Buscar todos os candidatos
+            cursor.execute("SELECT id, nome FROM candidatos WHERE fechado = 0")
+            candidatos = cursor.fetchall()
+            
+            # Limpar designações existentes
+            cursor.execute("DELETE FROM sindicantes_candidato")
+            
+            # Para cada candidato, verificar quais sindicantes foram marcados
+            for candidato in candidatos:
+                sindicantes_ids = request.form.getlist(f'sindicantes_{candidato["id"]}')
+                
+                for sindicante_id in sindicantes_ids:
+                    cursor.execute("""
+                        INSERT INTO sindicantes_candidato (candidato_id, sindicante_id, data_designacao, status)
+                        VALUES (%s, %s, NOW(), 'designado')
+                    """, (candidato['id'], sindicante_id))
+            
+            conn.commit()
+            flash("Designações salvas com sucesso!", "success")
+            return redirect("/candidatos")
+        
+        # GET - Buscar dados para o formulário
+        cursor.execute("SELECT id, nome FROM candidatos WHERE fechado = 0 ORDER BY data_criacao DESC")
+        candidatos = cursor.fetchall()
+        
+        cursor.execute("SELECT id, usuario, nome_completo FROM usuarios WHERE tipo = 'sindicante' AND ativo = 1 ORDER BY nome_completo")
+        sindicantes = cursor.fetchall()
+        
+        # Buscar designações existentes
+        cursor.execute("SELECT candidato_id, sindicante_id FROM sindicantes_candidato")
+        designacoes = cursor.fetchall()
+        
+        # Criar dicionário para fácil consulta
+        designados = {}
+        for d in designacoes:
+            if d['candidato_id'] not in designados:
+                designados[d['candidato_id']] = []
+            designados[d['candidato_id']].append(d['sindicante_id'])
+        
+        return_connection(conn)
+        
+        return render_template("admin_designar_sindicantes.html", 
+                               candidatos=candidatos,
+                               sindicantes=sindicantes,
+                               designados=designados)
+        
+    except Exception as e:
+        print(f"Erro: {e}")
+        if 'conn' in locals():
+            return_connection(conn)
+        flash(f"Erro: {str(e)}", "danger")
+        return redirect("/candidatos")        
+    
+    
+    
+    # ============================================
+    # BUSCAR STATUS DOS DOCUMENTOS POR CANDIDATO
+    # ============================================
+    
+    documentos_status = {}
+    
+    try:
+        cursor.execute("SELECT COUNT(*) as total FROM tipos_documentos_candidato WHERE obrigatorio = 1")
+        result = cursor.fetchone()
+        total_tipos_obrigatorios = result['total'] if result else 0
+        
+        cursor.execute("""
+            SELECT 
+                d.candidato_id,
+                COUNT(d.id) as enviados,
+                SUM(CASE WHEN d.status = 'aprovado' THEN 1 ELSE 0 END) as aprovados,
+                SUM(CASE WHEN d.status = 'pendente' THEN 1 ELSE 0 END) as pendentes,
+                SUM(CASE WHEN d.status = 'rejeitado' THEN 1 ELSE 0 END) as rejeitados
+            FROM documentos_candidato d
+            GROUP BY d.candidato_id
+        """)
+        docs_enviados = cursor.fetchall()
+        
+        for doc in docs_enviados:
+            documentos_status[doc['candidato_id']] = {
+                'total': total_tipos_obrigatorios,
+                'enviados': doc['enviados'],
+                'faltantes': max(0, total_tipos_obrigatorios - doc['enviados']),
+                'aprovados': doc['aprovados'] or 0,
+                'pendentes': doc['pendentes'] or 0,
+                'rejeitados': doc['rejeitados'] or 0
+            }
+        
+        for candidato in candidatos:
+            if candidato['id'] not in documentos_status:
+                documentos_status[candidato['id']] = {
+                    'total': total_tipos_obrigatorios,
+                    'enviados': 0,
+                    'faltantes': total_tipos_obrigatorios,
+                    'aprovados': 0,
+                    'pendentes': 0,
+                    'rejeitados': 0
+                }
+    except Exception as e:
+        print(f"Erro ao buscar status dos documentos: {str(e)}")
+        conn.rollback()
+        for candidato in candidatos:
+            documentos_status[candidato['id']] = {
+                'total': 0,
+                'enviados': 0,
+                'faltantes': 0,
+                'aprovados': 0,
+                'pendentes': 0,
+                'rejeitados': 0
+            }
+    
+    # Buscar sindicantes
+    try:
+        cursor.execute("""
+            SELECT id, usuario, nome_completo, cim_numero, 
+                   loja_nome, loja_numero, loja_orient, ativo,
+                   telefone
+            FROM usuarios 
+            WHERE tipo = 'sindicante' AND ativo = 1 AND grau_atual >= 3
+            ORDER BY nome_completo
+        """)
+        sindicantes = cursor.fetchall()
+    except Exception as e:
+        print(f"Erro ao buscar sindicantes: {str(e)}")
+        conn.rollback()
+        sindicantes = []
+    
+    # Buscar lojas para o modal do Placet
+    try:
+        cursor.execute("SELECT id, nome, numero FROM lojas WHERE ativo = 1 ORDER BY nome")
+        lojas = cursor.fetchall()
+    except Exception as e:
+        print(f"Erro ao buscar lojas: {str(e)}")
+        lojas = []
+    
+    return_connection(conn)
+    
+    return render_template("candidatos.html", 
+                          candidatos=candidatos, 
+                          sindicantes=sindicantes, 
+                          documentos_status=documentos_status,
+                          lojas=lojas,
                           tipo=session.get("tipo", "admin"))
 
 @app.route("/candidatos/excluir/<int:id>", methods=["POST"])
@@ -9575,84 +10397,119 @@ def formulario_candidato(candidato_id):
                           filhos=filhos,
                           usuario=usuario)
                           
-@app.route("/sindicancia/<int:id>", methods=["GET"])
+@app.route("/sindicancia/<int:candidato_id>")
 @login_required
-def visualizar_sindicancia(id):
-    if session["tipo"] == "admin":
-        flash("Administradores não podem emitir pareceres", "warning")
-        return redirect("/candidatos")
-    
-    cursor, conn = get_db()
-    
+def visualizar_sindicancia(candidato_id):
+    """Visualizar sindicância do candidato"""
     try:
-        conn.rollback()
+        cursor, conn = get_db()
         
-        # GET - Buscar dados para exibir
         # Buscar candidato
-        cursor.execute("SELECT * FROM candidatos WHERE id = %s", (id,))
+        cursor.execute("SELECT * FROM candidatos WHERE id = %s", (candidato_id,))
         candidato = cursor.fetchone()
         
         if not candidato:
             flash("Candidato não encontrado", "danger")
             return redirect("/candidatos")
         
-        # Buscar filhos
-        cursor.execute("SELECT * FROM filhos_candidato WHERE candidato_id = %s ORDER BY data_nascimento", (id,))
-        filhos = cursor.fetchall()
+        # Verificar se usuário é sindicante designado para este candidato
+        user_is_sindicante = False
+        if session.get('tipo') == 'sindicante':
+            cursor.execute("""
+                SELECT id FROM sindicantes_candidato 
+                WHERE candidato_id = %s AND sindicante_id = %s
+            """, (candidato_id, session.get('user_id')))
+            user_is_sindicante = cursor.fetchone() is not None
         
-        # Buscar pareceres conclusivos (votos dos sindicantes)
+        # Buscar todos os pareceres conclusivos (apenas para admin)
+        pareceres = []
+        if session.get('tipo') == 'admin':
+            cursor.execute("""
+                SELECT * FROM pareceres_conclusivos 
+                WHERE candidato_id = %s 
+                ORDER BY data_envio DESC
+            """, (candidato_id,))
+            pareceres = cursor.fetchall()
+        
+        # Calcular votos
         cursor.execute("""
-            SELECT pc.*, u.usuario, u.nome_completo
-            FROM pareceres_conclusivos pc
-            JOIN usuarios u ON pc.sindicante = u.usuario
-            WHERE pc.candidato_id = %s
-            ORDER BY pc.data_envio DESC
-        """, (id,))
-        registros = cursor.fetchall()
+            SELECT 
+                COUNT(*) as total,
+                COUNT(CASE WHEN conclusao = 'APROVADO' THEN 1 END) as positivos,
+                COUNT(CASE WHEN conclusao = 'REPROVADO' THEN 1 END) as negativos
+            FROM pareceres_conclusivos 
+            WHERE candidato_id = %s
+        """, (candidato_id,))
+        votos = cursor.fetchone()
         
-        # Buscar meu parecer conclusivo
-        usuario_nome = session.get("usuario")
-        cursor.execute("""
-            SELECT * FROM pareceres_conclusivos 
-            WHERE candidato_id = %s AND sindicante = %s
-        """, (id, usuario_nome))
-        meu_parecer = cursor.fetchone()
+        # Total de sindicantes ativos
+        cursor.execute("SELECT COUNT(*) as total FROM usuarios WHERE tipo = 'sindicante' AND ativo = 1")
+        total_sindicantes = cursor.fetchone()['total']
         
-        # Contar votos baseado na conclusão do parecer
-        total_votos = len(registros)
-        votos_positivos = sum(1 for r in registros if r["conclusao"] == "APROVADO")
-        votos_negativos = total_votos - votos_positivos
+        votos_recebidos = votos['total'] if votos else 0
+        votos_positivos = votos['positivos'] if votos else 0
+        votos_negativos = votos['negativos'] if votos else 0
         
-        # Verificar se já existe parecer conclusivo
-        parecer_conclusivo_existente = meu_parecer is not None
+        percentual_votos = (votos_recebidos / total_sindicantes * 100) if total_sindicantes > 0 else 0
         
-        # Verificar se a sindicância está bloqueada (já encerrada)
-        bloqueado = candidato["fechado"] == 1
-        
-        return render_template("sindicancia.html", 
-                              candidato=candidato, 
-                              filhos=filhos, 
-                              registros=registros,
-                              meu_parecer=meu_parecer,
-                              parecer_conclusivo_existente=parecer_conclusivo_existente,
-                              total_votos=total_votos, 
-                              votos_positivos=votos_positivos, 
-                              votos_negativos=votos_negativos,
-                              bloqueado=bloqueado, 
-                              tipo=session["tipo"], 
-                              usuario_atual=usuario_nome)
-        
-    except Exception as e:
-        conn.rollback()
-        print(f"Erro na visualização da sindicância: {str(e)}")
-        import traceback
-        traceback.print_exc()
-        flash(f"Erro ao carregar página: {str(e)}", "danger")
-        return redirect("/candidatos")
-    
-    finally:
         return_connection(conn)
         
+        return render_template("sindicancia.html", 
+                               candidato=candidato,
+                               pareceres=pareceres,
+                               user_is_sindicante=user_is_sindicante,
+                               total_sindicantes=total_sindicantes,
+                               votos_recebidos=votos_recebidos,
+                               votos_positivos=votos_positivos,
+                               votos_negativos=votos_negativos,
+                               percentual_votos=percentual_votos)
+        
+    except Exception as e:
+        print(f"Erro: {e}")
+        import traceback
+        traceback.print_exc()
+        if 'conn' in locals():
+            return_connection(conn)
+        flash("Erro ao carregar sindicância", "danger")
+        return redirect("/candidatos")
+        
+@app.route("/api/sindicantes-disponiveis/<int:candidato_id>")
+@login_required
+def api_sindicantes_disponiveis(candidato_id):
+    """API para buscar sindicantes disponíveis e designações existentes"""
+    if session.get('tipo') != 'admin':
+        return jsonify({'error': 'Acesso negado'}), 403
+    
+    try:
+        cursor, conn = get_db()
+        
+        cursor.execute("""
+            SELECT id, usuario, nome_completo, cim_numero 
+            FROM usuarios 
+            WHERE tipo = 'sindicante' AND ativo = 1
+            ORDER BY nome_completo
+        """)
+        sindicantes = cursor.fetchall()
+        
+        cursor.execute("""
+            SELECT sindicante_id 
+            FROM sindicantes_candidato 
+            WHERE candidato_id = %s
+        """, (candidato_id,))
+        designados = [row['sindicante_id'] for row in cursor.fetchall()]
+        
+        return_connection(conn)
+        
+        return jsonify({
+            'sindicantes': [dict(s) for s in sindicantes],
+            'designados': designados
+        })
+        
+    except Exception as e:
+        print(f"Erro: {e}")
+        if 'conn' in locals():
+            return_connection(conn)
+        return jsonify({'error': str(e)}), 500        
 
         
 

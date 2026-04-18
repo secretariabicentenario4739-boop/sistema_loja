@@ -1,0 +1,177 @@
+{% extends "base.html" %}
+
+{% block title %}Processo do Candidato - {{ candidato.nome }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="container">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h2>
+                <i class="bi bi-folder2-open text-primary me-2"></i>
+                Processo do Candidato: {{ candidato.nome }}
+            </h2>
+            <div>
+                <a href="/candidatos" class="btn btn-outline-secondary">
+                    <i class="bi bi-arrow-left"></i> Voltar
+                </a>
+            </div>
+        </div>
+
+        <!-- Dados do Candidato -->
+        <div class="card shadow-sm mb-4">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0">Dados do Candidato</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <p><strong>Nome:</strong> {{ candidato.nome }}</p>
+                        <p><strong>CPF:</strong> {{ candidato.cpf or '-' }}</p>
+                        <p><strong>Email:</strong> {{ candidato.email or '-' }}</p>
+                    </div>
+                    <div class="col-md-6">
+                        <p><strong>Status:</strong> 
+                            {% if candidato.fechado == 1 %}
+                                {% if candidato.status == 'Aprovado' %}
+                                    <span class="badge bg-success">Aprovado</span>
+                                {% else %}
+                                    <span class="badge bg-danger">Reprovado</span>
+                                {% endif %}
+                            {% else %}
+                                <span class="badge bg-warning">Em análise</span>
+                            {% endif %}
+                        </p>
+                        <p><strong>Data Cadastro:</strong> {{ candidato.data_criacao.strftime('%d/%m/%Y') if candidato.data_criacao else '-' }}</p>
+                        {% if candidato.numero_placet %}
+                        <p><strong>Placet:</strong> <code>{{ candidato.numero_placet }}</code></p>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Pareceres dos Sindicantes -->
+        {% if pareceres %}
+        <div class="card shadow-sm mb-4">
+            <div class="card-header bg-success text-white">
+                <h5 class="mb-0"><i class="bi bi-chat-text"></i> Pareceres Conclusivos</h5>
+            </div>
+            <div class="card-body">
+                {% for parecer in pareceres %}
+                <div class="card mb-3">
+                    <div class="card-header">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <strong>{{ parecer.sindicante_nome }}</strong>
+                            <span>
+                                {% if parecer.conclusao == 'APROVADO' %}
+                                    <span class="badge bg-success">✓ APROVADO</span>
+                                {% else %}
+                                    <span class="badge bg-danger">✗ REPROVADO</span>
+                                {% endif %}
+                            </span>
+                        </div>
+                        <small class="text-muted">
+                            Data: {{ parecer.data_parecer.strftime('%d/%m/%Y') if parecer.data_parecer else '-' }}
+                        </small>
+                    </div>
+                    <div class="card-body">
+                        <p class="card-text">{{ parecer.parecer_texto }}</p>
+                        {% if parecer.observacoes %}
+                        <hr>
+                        <small class="text-muted">Observações: {{ parecer.observacoes }}</small>
+                        {% endif %}
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Sindicantes Designados -->
+        {% if sindicantes_designados %}
+        <div class="card shadow-sm mb-4">
+            <div class="card-header bg-warning text-dark">
+                <h5 class="mb-0"><i class="bi bi-people"></i> Sindicantes Designados</h5>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-sm mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Sindicante</th>
+                                <th>Designação</th>
+                                <th>Conclusão</th>
+                                <th>Recomendação</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for s in sindicantes_designados %}
+                            <tr>
+                                <td>{{ s.sindicante_nome }}</td>
+                                <td>{{ s.data_designacao.strftime('%d/%m/%Y') if s.data_designacao else '-' }}</td>
+                                <td>{{ s.data_conclusao.strftime('%d/%m/%Y') if s.data_conclusao else 'Pendente' }}</td>
+                                <td>
+                                    {% if s.recomendacao == 'favoravel' %}
+                                        <span class="badge bg-success">Favorável</span>
+                                    {% elif s.recomendacao == 'desfavoravel' %}
+                                        <span class="badge bg-danger">Desfavorável</span>
+                                    {% else %}
+                                        <span class="badge bg-secondary">-</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Documentos -->
+        {% if documentos %}
+        <div class="card shadow-sm mb-4">
+            <div class="card-header bg-info text-white">
+                <h5 class="mb-0"><i class="bi bi-files"></i> Documentos do Candidato</h5>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-sm mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Documento</th>
+                                <th>Data Upload</th>
+                                <th>Status</th>
+                                <th>Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for doc in documentos %}
+                            <tr>
+                                <td>{{ doc.tipo_nome }}</td>
+                                <td>{{ doc.data_upload.strftime('%d/%m/%Y') if doc.data_upload else '-' }}</td>
+                                <td>
+                                    {% if doc.status == 'aprovado' %}
+                                        <span class="badge bg-success">Aprovado</span>
+                                    {% elif doc.status == 'rejeitado' %}
+                                        <span class="badge bg-danger">Rejeitado</span>
+                                    {% else %}
+                                        <span class="badge bg-warning">Pendente</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <a href="{{ doc.caminho_arquivo }}" target="_blank" class="btn btn-sm btn-outline-primary">
+                                        <i class="bi bi-eye"></i>
+                                    </a>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
