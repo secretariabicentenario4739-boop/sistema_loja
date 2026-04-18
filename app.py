@@ -9939,99 +9939,86 @@ def visualizar_processo_candidato(candidato_id):
 
 #atualizar o banco
 
-@app.route("/admin/atualizar-banco")
+@app.route("/admin/verificar-tabelas")
 @login_required
-def atualizar_banco():
-    """Rota temporária para atualizar o banco de dados"""
+def verificar_tabelas():
+    """Verifica quais tabelas existem no banco"""
     if session.get('tipo') != 'admin':
         return "Acesso negado", 403
     
     try:
         cursor, conn = get_db()
         
-        # Lista de comandos SQL
-        comandos = [
-            # Adicionar colunas na tabela candidatos
-            """
-            DO $$ 
-            BEGIN
-                IF NOT EXISTS (SELECT 1 FROM information_schema.columns 
-                               WHERE table_name='candidatos' AND column_name='obreiro_id') THEN
-                    ALTER TABLE candidatos ADD COLUMN obreiro_id INTEGER REFERENCES usuarios(id);
-                END IF;
-                IF NOT EXISTS (SELECT 1 FROM information_schema.columns 
-                               WHERE table_name='candidatos' AND column_name='numero_placet') THEN
-                    ALTER TABLE candidatos ADD COLUMN numero_placet VARCHAR(50);
-                END IF;
-                IF NOT EXISTS (SELECT 1 FROM information_schema.columns 
-                               WHERE table_name='candidatos' AND column_name='placet_emitido') THEN
-                    ALTER TABLE candidatos ADD COLUMN placet_emitido BOOLEAN DEFAULT FALSE;
-                END IF;
-                IF NOT EXISTS (SELECT 1 FROM information_schema.columns 
-                               WHERE table_name='candidatos' AND column_name='data_transformacao') THEN
-                    ALTER TABLE candidatos ADD COLUMN data_transformacao TIMESTAMP;
-                END IF;
-            END $$;
-            """,
-            
-            # Criar tabela placet_iniciacao
-            """
-            CREATE TABLE IF NOT EXISTS placet_iniciacao (
-                id SERIAL PRIMARY KEY,
-                candidato_id INTEGER NOT NULL REFERENCES candidatos(id) ON DELETE CASCADE,
-                numero_placet VARCHAR(50) UNIQUE NOT NULL,
-                data_emissao DATE NOT NULL,
-                data_iniciacao DATE,
-                loja_id INTEGER REFERENCES lojas(id),
-                status VARCHAR(20) DEFAULT 'emitido',
-                observacoes TEXT,
-                emitido_por INTEGER REFERENCES usuarios(id),
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-            );
-            """,
-            
-            # Criar tabela sindicantes_candidato
-            """
-            CREATE TABLE IF NOT EXISTS sindicantes_candidato (
-                id SERIAL PRIMARY KEY,
-                candidato_id INTEGER NOT NULL REFERENCES candidatos(id) ON DELETE CASCADE,
-                sindicante_id INTEGER NOT NULL REFERENCES usuarios(id) ON DELETE CASCADE,
-                data_designacao DATE NOT NULL,
-                data_conclusao DATE,
-                recomendacao VARCHAR(20),
-                status VARCHAR(20) DEFAULT 'designado',
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-            );
-            """,
-            
-            # Criar tabela fluxo_iniciacao
-            """
-            CREATE TABLE IF NOT EXISTS fluxo_iniciacao (
-                id SERIAL PRIMARY KEY,
-                candidato_id INTEGER NOT NULL REFERENCES candidatos(id) ON DELETE CASCADE,
-                etapa VARCHAR(50) NOT NULL,
-                status VARCHAR(20) DEFAULT 'pendente',
-                data_entrada TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                data_saida TIMESTAMP,
-                observacoes TEXT,
-                usuario_id INTEGER REFERENCES usuarios(id)
-            );
-            """
+        # Lista de tabelas necessárias
+        tabelas_necessarias = [
+            'fluxo_iniciacao',
+            'placet_iniciacao', 
+            'votacao_candidato',
+            'sindicantes_candidato',
+            'leituras_loja',
+            'historico_graus',
+            'password_reset_tokens',
+            'email_logs'
         ]
         
-        for cmd in comandos:
-            cursor.execute(cmd)
-            conn.commit()
-            print(f"✅ Comando executado com sucesso")
+        resultados = {}
+        
+        for tabela in tabelas_necessarias:
+            cursor.execute("""
+                SELECT EXISTS (
+                    SELECT FROM information_schema.tables 
+                    WHERE table_schema = 'public' 
+                    AND table_name = %s
+                )
+            """, (tabela,))
+            existe = cursor.fetchone()[0]
+            resultados[tabela] = "✅ Existe" if existe else "❌ NÃO EXISTE"
         
         return_connection(conn)
         
-        return "✅ Banco de dados atualizado com sucesso!"
+        # Retornar HTML
+        html = """
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <title>Verificação de Tabelas</title>
+            <style>
+                body { font-family: Arial, sans-serif; margin: 20px; }
+                .existe { color: green; }
+                .nao-existe { color: red; font-weight: bold; }
+                table { border-collapse: collapse; width: 100%; margin-top: 20px; }
+                th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+                th { background-color: #f2f2f2; }
+            </style>
+        </head>
+        <body>
+            <h1>Verificação de Tabelas no Banco de Dados</h1>
+            <table>
+                <tr>
+                    <th>Tabela</th>
+                    <th>Status</th>
+                </tr>
+        """
+        
+        for tabela, status in resultados.items():
+            classe = "existe" if "✅" in status else "nao-existe"
+            html += f"""
+                <tr>
+                    <td>{tabela}</td>
+                    <td class="{classe}">{status}</td>
+                </tr>
+            """
+        
+        html += """
+            </table>
+            <p><a href="/dashboard">Voltar ao Dashboard</a></p>
+        </body>
+        </html>
+        """
+        
+        return html
         
     except Exception as e:
-        print(f"Erro: {e}")
-        if 'conn' in locals():
-            return_connection(conn)
         return f"❌ Erro: {str(e)}"
 
 # =============================
