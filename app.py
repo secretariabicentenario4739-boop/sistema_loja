@@ -9760,17 +9760,15 @@ def emitir_placet(candidato_id):
             VALUES (%s, %s, %s, %s, %s)
         """, (candidato_id, 'iniciado', 'concluido', datetime.now(), session['user_id']))
         
-        # 13. Atualizar candidato
+        # 13. Atualizar candidato (SEM data_iniciacao e status_processo - apenas colunas que existem)
         cursor.execute("""
             UPDATE candidatos 
             SET obreiro_id = %s, 
                 data_transformacao = NOW(),
                 numero_placet = %s,
-                placet_emitido = TRUE,
-                data_iniciacao = %s,
-                status_processo = 'iniciado'
+                placet_emitido = TRUE
             WHERE id = %s
-        """, (obreiro_id, numero_placet, data_iniciacao_date, candidato_id))
+        """, (obreiro_id, numero_placet, candidato_id))
         
         conn.commit()
         
