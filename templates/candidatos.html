@@ -749,37 +749,60 @@
 {% endif %}
 
 <script>
-    // Variáveis globais
-    let currentCandidatoId = null;
-    let currentCandidatoNome = null;
+   // Variáveis globais
+let currentCandidatoId = null;
+let currentCandidatoNome = null;
 
-    // ============================================
-    // ABRIR MODAL DESIGNAR SINDICANTES
-    // ============================================
-    function abrirModalDesignarSindicantes(candidatoId, candidatoNome) {
-        currentCandidatoId = candidatoId;
-        currentCandidatoNome = candidatoNome;
-        
-        // Atualizar título do modal
-        document.querySelector('#modalDesignarSindicantes .modal-title').innerHTML = 
-            '<i class="bi bi-person-plus me-2"></i> Designar Sindicantes - ' + candidatoNome;
-        
-        // Atualizar action do form
-        document.getElementById('formDesignarSindicantes').action = '/designar-sindicantes/' + candidatoId;
-        
-        // Buscar sindicantes disponíveis e designações via AJAX
-        fetch('/api/sindicantes-disponiveis/' + candidatoId)
-            .then(response => response.json())
-            .then(data => {
-                const container = document.getElementById('sindicantesList');
-                const semSindicantesMsg = document.getElementById('semSindicantesMsg');
-                
+// ============================================
+// ABRIR MODAL DESIGNAR SINDICANTES
+// ============================================
+function abrirModalDesignarSindicantes(candidatoId, candidatoNome) {
+    currentCandidatoId = candidatoId;
+    currentCandidatoNome = candidatoNome;
+    
+    // Atualizar título do modal
+    const modalTitle = document.querySelector('#modalDesignarSindicantes .modal-title');
+    if (modalTitle) {
+        modalTitle.innerHTML = '<i class="bi bi-person-plus me-2"></i> Designar Sindicantes - ' + candidatoNome;
+    }
+    
+    // Atualizar action do form
+    const form = document.getElementById('formDesignarSindicantes');
+    if (form) {
+        form.action = '/designar-sindicantes/' + candidatoId;
+    }
+    
+    // Mostrar loading
+    const container = document.getElementById('sindicantesList');
+    const semSindicantesMsg = document.getElementById('semSindicantesMsg');
+    
+    if (container) {
+        container.innerHTML = '<div class="text-center py-3"><div class="spinner-border spinner-border-sm text-primary" role="status"></div><p class="mt-2 small text-muted">Carregando sindicantes...</p></div>';
+    }
+    if (semSindicantesMsg) {
+        semSindicantesMsg.style.display = 'none';
+    }
+    
+    // Buscar sindicantes disponíveis e designações via AJAX
+    fetch('/api/sindicantes-disponiveis/' + candidatoId)
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('Erro HTTP: ' + response.status);
+            }
+            return response.json();
+        })
+        .then(data => {
+            if (data.error) {
+                throw new Error(data.error);
+            }
+            
+            if (container) {
                 if (data.sindicantes && data.sindicantes.length > 0) {
-                    semSindicantesMsg.style.display = 'none';
+                    if (semSindicantesMsg) semSindicantesMsg.style.display = 'none';
                     
                     let html = '<div class="row">';
                     data.sindicantes.forEach(sindicante => {
-                        const isChecked = data.designados.includes(sindicante.id);
+                        const isChecked = data.designados && data.designados.includes(sindicante.id);
                         html += `
                             <div class="col-md-6 mb-2">
                                 <div class="form-check">
@@ -791,8 +814,8 @@
                                            ${isChecked ? 'checked' : ''}>
                                     <label class="form-check-label" for="sind_${sindicante.id}">
                                         <i class="bi bi-person-badge"></i>
-                                        ${sindicante.nome_completo || sindicante.usuario}
-                                        ${sindicante.cim_numero ? `<small class="text-muted">(CIM: ${sindicante.cim_numero})</small>` : ''}
+                                        ${escapeHtml(sindicante.nome_completo || sindicante.usuario)}
+                                        ${sindicante.cim_numero ? `<small class="text-muted"> (CIM: ${escapeHtml(sindicante.cim_numero)})</small>` : ''}
                                     </label>
                                 </div>
                             </div>
@@ -801,18 +824,39 @@
                     html += '</div>';
                     container.innerHTML = html;
                 } else {
-                    semSindicantesMsg.style.display = 'block';
+                    if (semSindicantesMsg) semSindicantesMsg.style.display = 'block';
                     container.innerHTML = '';
                 }
-            })
-            .catch(error => {
-                console.error('Erro:', error);
-                document.getElementById('sindicantesList').innerHTML = '<div class="alert alert-danger">Erro ao carregar sindicantes</div>';
-            });
-        
-        // Abrir o modal
-        new bootstrap.Modal(document.getElementById('modalDesignarSindicantes')).show();
+            }
+        })
+        .catch(error => {
+            console.error('Erro:', error);
+            if (container) {
+                container.innerHTML = '<div class="alert alert-danger">Erro ao carregar sindicantes: ' + escapeHtml(error.message) + '</div>';
+            }
+        });
+    
+    // Abrir o modal (garantindo que seja recriado)
+    const modalElement = document.getElementById('modalDesignarSindicantes');
+    if (modalElement) {
+        // Se o modal já existe, remove e recria
+        const modal = bootstrap.Modal.getInstance(modalElement);
+        if (modal) {
+            modal.dispose();
+        }
+        // Abrir novo modal
+        const newModal = new bootstrap.Modal(modalElement);
+        newModal.show();
     }
+}
+
+// Função auxiliar para escapar HTML
+function escapeHtml(text) {
+    if (!text) return '';
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+}
 
     // ============================================
     // ABRIR MODAL EMITIR PLACET
