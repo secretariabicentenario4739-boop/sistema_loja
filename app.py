@@ -7106,48 +7106,96 @@ def nova_reuniao():
 def editar_reuniao(id):
     cursor, conn = get_db()
     
-    # Buscar dados atuais da reunião
-    cursor.execute("SELECT * FROM reunioes WHERE id = %s", (id,))
-    reuniao_atual = cursor.fetchone()
-    
-    if not reuniao_atual:
-        flash("Reunião não encontrada", "danger")
-        return_connection(conn)
-        return redirect("/reunioes")
-    
-    # ... (resto do código)
-    
-    if request.method == "POST":
-        # ... (validações)
+    try:
+        # Buscar dados atuais da reunião
+        cursor.execute("SELECT * FROM reunioes WHERE id = %s", (id,))
+        reuniao_atual = cursor.fetchone()
         
-        try:
-            print("=== DEBUG ===")
-            print("Antes do UPDATE")
-            
-            cursor.execute("""
-                UPDATE reunioes 
-                SET titulo = %s, tipo = %s, grau = %s, data = %s, hora_inicio = %s, 
-                    hora_termino = %s, local = %s, pauta = %s, observacoes = %s, status = %s
-                WHERE id = %s
-            """, (titulo, tipo, grau, data_obj, hora_inicio_obj, hora_termino_obj, 
-                  local, pauta, observacoes, status, id))
-            
-            print("Depois do UPDATE - antes do commit")
-            conn.commit()
-            print("Depois do commit")
-            
-            flash("Reunião atualizada com sucesso!", "success")
+        if not reuniao_atual:
+            flash("Reunião não encontrada", "danger")
             return_connection(conn)
-            return redirect(f"/reunioes/{id}")
+            return redirect("/reunioes")
+        
+        # Verificar permissão para editar reunião
+        is_admin = session.get("tipo") == "admin"
+        
+        if request.method == "POST":
+            # Processar o POST
+            titulo = request.form.get("titulo")
+            tipo = request.form.get("tipo")
+            grau = request.form.get("grau")
+            data = request.form.get("data")
+            hora_inicio = request.form.get("hora_inicio")
+            hora_termino = request.form.get("hora_termino")
+            local = request.form.get("local")
+            pauta = request.form.get("pauta")
+            observacoes = request.form.get("observacoes")
+            status = request.form.get("status")
             
-        except Exception as e:
-            print(f"ERRO NA LINHA DO UPDATE: {e}")
-            import traceback
-            traceback.print_exc()
-            conn.rollback()
-            flash(f"Erro ao atualizar: {str(e)}", "danger")
+            # Validações
+            if not titulo or not tipo or not data or not hora_inicio:
+                flash("Preencha todos os campos obrigatórios", "danger")
+                return_connection(conn)
+                return redirect(f"/reunioes/{id}/editar")
+            
+            try:
+                data_obj = datetime.strptime(data, '%Y-%m-%d').date()
+                hora_inicio_obj = datetime.strptime(hora_inicio, '%H:%M').time()
+                hora_termino_obj = datetime.strptime(hora_termino, '%H:%M').time() if hora_termino else None
+            except ValueError as e:
+                flash(f"Erro no formato da data/hora: {str(e)}", "danger")
+                return_connection(conn)
+                return redirect(f"/reunioes/{id}/editar")
+            
+            try:
+                cursor.execute("""
+                    UPDATE reunioes 
+                    SET titulo = %s, tipo = %s, grau = %s, data = %s, hora_inicio = %s, 
+                        hora_termino = %s, local = %s, pauta = %s, observacoes = %s, status = %s
+                    WHERE id = %s
+                """, (titulo, tipo, grau, data_obj, hora_inicio_obj, hora_termino_obj, 
+                      local, pauta, observacoes, status, id))
+                conn.commit()
+                
+                registrar_log("editar", "reuniao", id, dados_anteriores=dict(reuniao_atual),
+                             dados_novos={"titulo": titulo, "data": data, "status": status})
+                flash("Reunião atualizada com sucesso!", "success")
+                return_connection(conn)
+                return redirect(f"/reunioes/{id}")
+                
+            except Exception as e:
+                print(f"ERRO: {e}")
+                conn.rollback()
+                flash(f"Erro ao atualizar: {str(e)}", "danger")
+                return_connection(conn)
+                return redirect(f"/reunioes/{id}/editar")
+        
+        # GET - Carregar dados para o formulário
+        cursor.execute("SELECT * FROM reunioes WHERE id = %s", (id,))
+        reuniao = cursor.fetchone()
+        
+        cursor.execute("SELECT * FROM tipos_reuniao ORDER BY nome")
+        tipos = cursor.fetchall()
+        
+        cursor.execute("SELECT id, nome FROM lojas WHERE ativo = 1 ORDER BY nome")
+        lojas = cursor.fetchall()
+        
+        return_connection(conn)
+        
+        return render_template("reunioes/editar.html", 
+                              reuniao=reuniao, 
+                              tipos=tipos,
+                              lojas=lojas,
+                              is_admin=is_admin)
+        
+    except Exception as e:
+        print(f"ERRO GERAL: {e}")
+        import traceback
+        traceback.print_exc()
+        if 'conn' in locals():
             return_connection(conn)
-            return redirect(f"/reunioes/{id}/editar")
+        flash(f"Erro: {str(e)}", "danger")
+        return redirect("/reunioes")
 @app.route("/reunioes/<int:id>/status", methods=["POST"])
 @admin_required
 def alterar_status_reuniao(id):
