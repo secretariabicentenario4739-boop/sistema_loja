@@ -4948,7 +4948,6 @@ def editar_obreiro(id):
         flash(f"Erro ao atualizar: {str(e)}", "danger")
         return_connection(conn)
         return redirect(f"/obreiros/{id}")
-
 @app.route("/obreiros/<int:id>")
 @login_required
 def visualizar_obreiro(id):
@@ -4972,17 +4971,36 @@ def visualizar_obreiro(id):
         # ============================================
         # BUSCAR HISTÓRICO DO CANDIDATO (ORIGEM)
         # ============================================
+        # Verificar quais colunas existem na tabela candidatos
         cursor.execute("""
+            SELECT column_name 
+            FROM information_schema.columns 
+            WHERE table_name = 'candidatos'
+        """)
+        colunas_candidatos = [row['column_name'] for row in cursor.fetchall()]
+        
+        # Montar query dinâmica baseada nas colunas existentes
+        select_fields = [
+            "c.id as candidato_id",
+            "c.nome as candidato_nome",
+            "c.cpf",
+            "c.data_criacao",
+            "c.status",
+            "c.data_fechamento as data_aprovacao",
+            "c.numero_placet",
+            "c.data_transformacao",
+            "c.obreiro_id"
+        ]
+        
+        # Adicionar data_iniciacao se existir
+        if 'data_iniciacao' in colunas_candidatos:
+            select_fields.append("c.data_iniciacao")
+        
+        select_clause = ",\n                ".join(select_fields)
+        
+        query = f"""
             SELECT 
-                c.id as candidato_id,
-                c.nome as candidato_nome,
-                c.cpf,
-                c.data_criacao,
-                c.status,
-                c.data_fechamento as data_aprovacao,
-                c.numero_placet,
-                c.data_transformacao,
-                c.data_iniciacao,
+                {select_clause},
                 COALESCE(pc.total_votos, 0) as total_votos,
                 COALESCE(pc.votos_positivos, 0) as votos_positivos,
                 COALESCE(pc.votos_negativos, 0) as votos_negativos,
@@ -4999,7 +5017,9 @@ def visualizar_obreiro(id):
                 GROUP BY candidato_id
             ) pc ON c.id = pc.candidato_id
             WHERE c.obreiro_id = %s
-        """, (id,))
+        """
+        
+        cursor.execute(query, (id,))
         historico_candidato = cursor.fetchone()
         
         # ============================================
@@ -5116,7 +5136,7 @@ def visualizar_obreiro(id):
                               condecoracoes_count=condecoracoes_count,
                               comunicados_count=comunicados_count,
                               pode_editar=pode_editar,
-                              historico_candidato=historico_candidato)  # ← NOVO
+                              historico_candidato=historico_candidato)
         
     except Exception as e:
         print(f"❌ Erro ao visualizar obreiro {id}: {e}")
