@@ -5,6 +5,7 @@
 {% block content %}
 <div class="container-fluid py-4">
     <div class="container">
+        <!-- Cabeçalho -->
         <div class="d-flex justify-content-between align-items-center mb-4">
             <h2>
                 <i class="bi bi-journal-bookmark-fill"></i> 
@@ -23,31 +24,135 @@
             </div>
         </div>
 
-        {% with messages = get_flashed_messages(with_categories=true) %}
-            {% if messages %}
-                {% for category, message in messages %}
-                    <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
-                        {{ message }}
-                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        <!-- Cards de Estatísticas -->
+        <div class="row mb-4">
+            <div class="col-md-3">
+                <div class="card bg-primary text-white shadow">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <h6 class="card-title mb-0">Total de Materiais</h6>
+                                <h2 class="mb-0">{{ materiais|length }}</h2>
+                            </div>
+                            <i class="bi bi-journal-bookmark-fill fs-1"></i>
+                        </div>
                     </div>
-                {% endfor %}
-            {% endif %}
-        {% endwith %}
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card bg-success text-white shadow">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <h6 class="card-title mb-0">Categorias</h6>
+                                <h2 class="mb-0">{{ materiais|map(attribute='categoria_id')|unique|list|length }}</h2>
+                            </div>
+                            <i class="bi bi-folder-fill fs-1"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card bg-info text-white shadow">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <h6 class="card-title mb-0">Autores</h6>
+                                <h2 class="mb-0">{{ materiais|selectattr('autor_nome')|map(attribute='autor_nome')|unique|list|length }}</h2>
+                            </div>
+                            <i class="bi bi-person-badge fs-1"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card bg-warning text-dark shadow">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <h6 class="card-title mb-0">Downloads</h6>
+                                <h2 class="mb-0">{{ materiais|sum(attribute='downloads_count')|default(0) }}</h2>
+                            </div>
+                            <i class="bi bi-download fs-1"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
 
+        <!-- Filtros (opcional) -->
+        <div class="card shadow mb-4">
+            <div class="card-header bg-light">
+                <h6 class="mb-0"><i class="bi bi-funnel"></i> Filtros</h6>
+            </div>
+            <div class="card-body">
+                <form method="GET" class="row g-3">
+                    <div class="col-md-4">
+                        <label class="form-label">Buscar</label>
+                        <input type="text" class="form-control" name="search" 
+                               value="{{ request.args.get('search', '') }}" 
+                               placeholder="Título, autor ou descrição...">
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">Categoria</label>
+                        <select class="form-select" name="categoria">
+                            <option value="">Todas</option>
+                            {% for cat in categorias %}
+                            <option value="{{ cat.id }}" {% if request.args.get('categoria') == cat.id|string %}selected{% endif %}>
+                                {{ cat.nome }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">Grau de Acesso</label>
+                        <select class="form-select" name="grau">
+                            <option value="">Todos</option>
+                            <option value="1" {% if request.args.get('grau') == '1' %}selected{% endif %}>Aprendiz</option>
+                            <option value="2" {% if request.args.get('grau') == '2' %}selected{% endif %}>Companheiro</option>
+                            <option value="3" {% if request.args.get('grau') == '3' %}selected{% endif %}>Mestre</option>
+                        </select>
+                    </div>
+                    <div class="col-md-2 d-flex align-items-end">
+                        <button type="submit" class="btn btn-primary w-100">
+                            <i class="bi bi-search"></i> Filtrar
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Lista de Materiais em Grid -->
         {% if materiais %}
         <div class="row">
             {% for material in materiais %}
             <div class="col-md-4 mb-4">
                 <div class="card shadow h-100">
+                    {% if material.capa_url %}
+                    <img src="{{ material.capa_url }}" class="card-img-top" alt="{{ material.titulo }}" 
+                         style="height: 180px; object-fit: cover;">
+                    {% else %}
+                    <div class="card-img-top bg-light d-flex align-items-center justify-content-center" style="height: 180px;">
+                        <i class="bi bi-journal-bookmark-fill fs-1 text-secondary"></i>
+                    </div>
+                    {% endif %}
                     <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-start mb-2">
+                            <span class="badge" style="background-color: {{ material.categoria_cor or '#6c757d' }}; color: white;">
+                                {{ material.categoria_nome or 'Geral' }}
+                            </span>
+                            <small class="text-muted">
+                                <i class="bi bi-eye"></i> {{ material.visualizacoes_count or 0 }}
+                            </small>
+                        </div>
                         <h5 class="card-title">{{ material.titulo }}</h5>
                         <p class="card-text text-muted small">
-                            <i class="bi bi-folder"></i> {{ material.categoria_nome or 'Sem categoria' }}
+                            <i class="bi bi-person"></i> {{ material.autor_nome or 'Anônimo' }}
                         </p>
                         <p class="card-text">{{ material.descricao[:100] }}{% if material.descricao and material.descricao|length > 100 %}...{% endif %}</p>
-                        <div class="d-flex justify-content-between align-items-center">
+                        <div class="d-flex justify-content-between align-items-center mt-3">
                             <small class="text-muted">
-                                <i class="bi bi-person"></i> {{ material.autor_nome or 'Anônimo' }}
+                                <i class="bi bi-file-text"></i> {{ material.formato or material.tipo|upper }}
                             </small>
                             <a href="/biblioteca/{{ material.id }}" class="btn btn-sm btn-primary">
                                 <i class="bi bi-eye"></i> Ver
@@ -58,7 +163,38 @@
             </div>
             {% endfor %}
         </div>
+
+        <!-- Paginação (se houver) -->
+        {% if total_pages and total_pages > 1 %}
+        <nav aria-label="Navegação de páginas" class="mt-4">
+            <ul class="pagination justify-content-center">
+                {% if page > 1 %}
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ page-1 }}{% if request.args.get('search') %}&search={{ request.args.get('search') }}{% endif %}{% if request.args.get('categoria') %}&categoria={{ request.args.get('categoria') }}{% endif %}">
+                        <i class="bi bi-chevron-left"></i> Anterior
+                    </a>
+                </li>
+                {% endif %}
+                
+                {% for p in range(1, total_pages + 1) %}
+                <li class="page-item {% if p == page %}active{% endif %}">
+                    <a class="page-link" href="?page={{ p }}{% if request.args.get('search') %}&search={{ request.args.get('search') }}{% endif %}{% if request.args.get('categoria') %}&categoria={{ request.args.get('categoria') }}{% endif %}">{{ p }}</a>
+                </li>
+                {% endfor %}
+                
+                {% if page < total_pages %}
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ page+1 }}{% if request.args.get('search') %}&search={{ request.args.get('search') }}{% endif %}{% if request.args.get('categoria') %}&categoria={{ request.args.get('categoria') }}{% endif %}">
+                        Próximo <i class="bi bi-chevron-right"></i>
+                    </a>
+                </li>
+                {% endif %}
+            </ul>
+        </nav>
+        {% endif %}
+        
         {% else %}
+        <!-- Nenhum material encontrado -->
         <div class="card shadow">
             <div class="card-body text-center py-5">
                 <i class="bi bi-inbox fs-1 text-muted"></i>
@@ -71,6 +207,39 @@
             </div>
         </div>
         {% endif %}
+
+        <!-- Legenda -->
+        <div class="card shadow mt-4">
+            <div class="card-header bg-light">
+                <h6 class="mb-0"><i class="bi bi-info-circle"></i> Informações</h6>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-4">
+                        <i class="bi bi-eye text-primary"></i> = Visualizações<br>
+                        <i class="bi bi-download text-success"></i> = Downloads
+                    </div>
+                    <div class="col-md-4">
+                        <span class="badge bg-secondary">Badge</span> = Categoria do material<br>
+                        <i class="bi bi-file-text"></i> = Formato do arquivo
+                    </div>
+                    <div class="col-md-4">
+                        <i class="bi bi-star-fill text-warning"></i> = Materiais favoritos<br>
+                        <i class="bi bi-cloud-check"></i> = Hospedado na nuvem
+                    </div>
+                </div>
+                <hr>
+                <div class="row">
+                    <div class="col-12">
+                        <small class="text-muted">
+                            <i class="bi bi-info-circle"></i> 
+                            <strong>Nota:</strong> Os materiais são organizados por categorias e têm níveis de acesso conforme o grau do usuário.
+                            Mestres têm acesso a todos os materiais, enquanto Aprendizes e Companheiros têm acesso restrito.
+                        </small>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
 </div>
 {% endblock %}
