@@ -2,628 +2,350 @@
 
 {% block title %}Gerenciar Candidatos{% endblock %}
 
-{% block styles %}
-{{ super() }}
-<style>
-    :root {
-        --primary: #4f46e5;
-        --primary-dark: #4338ca;
-        --success: #10b981;
-        --warning: #f59e0b;
-        --danger: #ef4444;
-        --info: #3b82f6;
-        --secondary: #64748b;
-    }
-
-    .card-modern {
-        border: none;
-        border-radius: 20px;
-        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
-        transition: transform 0.2s, box-shadow 0.2s;
-        overflow: hidden;
-        height: 100%;
-    }
-    
-    .card-modern:hover {
-        transform: translateY(-3px);
-        box-shadow: 0 12px 35px rgba(0, 0, 0, 0.12);
-    }
-
-    .card-header-gradient {
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        border: none;
-        padding: 1.25rem 1.5rem;
-    }
-
-    .card-header-secondary {
-        background: linear-gradient(135deg, #64748b 0%, #475569 100%);
-        border: none;
-        padding: 1.25rem 1.5rem;
-    }
-
-    .badge-status {
-        padding: 6px 12px;
-        border-radius: 20px;
-        font-size: 0.75rem;
-        font-weight: 600;
-        display: inline-flex;
-        align-items: center;
-        gap: 6px;
-    }
-    
-    .badge-aprovado {
-        background: #d1fae5;
-        color: #059669;
-    }
-    
-    .badge-reprovado {
-        background: #fee2e2;
-        color: #dc2626;
-    }
-    
-    .badge-analise {
-        background: #fed7aa;
-        color: #92400e;
-    }
-    
-    .badge-obreiro {
-        background: #dbeafe;
-        color: #1e40af;
-    }
-
-    .btn-icon {
-        width: 34px;
-        height: 34px;
-        padding: 0;
-        border-radius: 10px;
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        transition: all 0.2s;
-    }
-    
-    .btn-icon:hover {
-        transform: translateY(-2px);
-    }
-
-    .progress-custom {
-        height: 25px;
-        border-radius: 12px;
-        background: #e2e8f0;
-        overflow: hidden;
-        box-shadow: inset 0 1px 2px rgba(0,0,0,0.1);
-    }
-
-    .progress-custom .progress-bar {
-        border-radius: 12px;
-        background: linear-gradient(90deg, #10b981, #34d399);
-        transition: width 0.5s ease;
-        font-size: 0.8rem;
-        font-weight: 600;
-        line-height: 25px;
-        text-align: center;
-        color: white;
-        text-shadow: 0 1px 1px rgba(0,0,0,0.2);
-        display: flex;
-        align-items: center;
-        justify-content: center;
-    }
-
-    .table-candidatos {
-        margin-bottom: 0;
-    }
-    
-    .table-candidatos thead th {
-        background: #f8fafc;
-        border-bottom: 2px solid #e2e8f0;
-        color: #1e293b;
-        font-weight: 600;
-        padding: 1rem;
-        font-size: 0.85rem;
-        text-transform: uppercase;
-        letter-spacing: 0.5px;
-    }
-    
-    .table-candidatos tbody tr {
-        transition: background 0.2s;
-        border-bottom: 1px solid #f1f5f9;
-    }
-    
-    .table-candidatos tbody tr:hover {
-        background: #f8fafc;
-    }
-    
-    .table-candidatos td {
-        padding: 1rem;
-        vertical-align: middle;
-    }
-
-    .form-control-custom {
-        border-radius: 12px;
-        border: 1px solid #e2e8f0;
-        padding: 0.75rem 1rem;
-        transition: all 0.2s;
-    }
-    
-    .form-control-custom:focus {
-        border-color: var(--primary);
-        box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
-    }
-
-    .btn-add {
-        background: linear-gradient(135deg, var(--success) 0%, #059669 100%);
-        border: none;
-        padding: 0.75rem;
-        border-radius: 12px;
-        font-weight: 600;
-        transition: all 0.2s;
-    }
-    
-    .btn-add:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 4px 15px rgba(16, 185, 129, 0.3);
-    }
-
-    .stats-mini {
-        background: #f8fafc;
-        border-radius: 12px;
-        padding: 0.75rem;
-        text-align: center;
-    }
-    
-    .stats-mini .number {
-        font-size: 1.5rem;
-        font-weight: 700;
-        color: var(--primary);
-    }
-    
-    .stats-mini .label {
-        font-size: 0.7rem;
-        color: #64748b;
-    }
-
-    @media (max-width: 768px) {
-        .table-candidatos {
-            font-size: 0.85rem;
-        }
-        .table-candidatos td,
-        .table-candidatos th {
-            padding: 0.75rem;
-        }
-        .btn-icon {
-            width: 28px;
-            height: 28px;
-        }
-        .progress-custom {
-            height: 20px;
-        }
-        .progress-custom .progress-bar {
-            font-size: 0.7rem;
-            line-height: 20px;
-        }
-        .stats-mini .number {
-            font-size: 1.2rem;
-        }
-    }
-</style>
-{% endblock %}
-
 {% block content %}
 <div class="container-fluid py-4">
     <div class="container">
         <!-- Cabeçalho -->
-        <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-3">
-            <div>
-                <h2 class="fw-bold mb-1">
-                    <i class="bi bi-people-fill text-primary me-2"></i>
-                    Gerenciar Candidatos
-                </h2>
-                <p class="text-muted mb-0">Gerencie os candidatos em processo de sindicância</p>
-            </div>
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h2>
+                <i class="bi bi-people-fill"></i> 
+                Candidatos
+                <span class="badge bg-primary">{{ candidatos|length }}</span>
+                <small class="text-muted fs-6">({{ candidatos|selectattr('fechado', 'equalto', 0)|list|length }} em análise)</small>
+            </h2>
             <div>
                 <a href="/dashboard" class="btn btn-outline-secondary">
-                    <i class="bi bi-arrow-left me-1"></i> Voltar
+                    <i class="bi bi-arrow-left"></i> Voltar ao Dashboard
                 </a>
             </div>
         </div>
 
-        <!-- Cards de Estatísticas Rápidas -->
-        <div class="row g-3 mb-4">
-            <div class="col-md-3 col-6">
-                <div class="stats-mini">
-                    <div class="number">{{ candidatos|length }}</div>
-                    <div class="label">Total Candidatos</div>
+        <!-- Cards de Estatísticas -->
+        <div class="row mb-4">
+            <div class="col-md-3">
+                <div class="card bg-primary text-white shadow">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <h6 class="card-title mb-0">Total de Candidatos</h6>
+                                <h2 class="mb-0">{{ candidatos|length }}</h2>
+                            </div>
+                            <i class="bi bi-people-fill fs-1"></i>
+                        </div>
+                    </div>
                 </div>
             </div>
-            <div class="col-md-3 col-6">
-                <div class="stats-mini">
-                    <div class="number text-warning">{{ candidatos|selectattr('fechado', 'equalto', 0)|list|length }}</div>
-                    <div class="label">Em Análise</div>
+            <div class="col-md-3">
+                <div class="card bg-warning text-dark shadow">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <h6 class="card-title mb-0">Em Análise</h6>
+                                <h2 class="mb-0">{{ candidatos|selectattr('fechado', 'equalto', 0)|list|length }}</h2>
+                            </div>
+                            <i class="bi bi-clock-fill fs-1"></i>
+                        </div>
+                    </div>
                 </div>
             </div>
-            <div class="col-md-3 col-6">
-                <div class="stats-mini">
-                    <div class="number text-success">{{ candidatos|selectattr('status', 'equalto', 'Aprovado')|list|length }}</div>
-                    <div class="label">Aprovados</div>
+            <div class="col-md-3">
+                <div class="card bg-success text-white shadow">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <h6 class="card-title mb-0">Aprovados</h6>
+                                <h2 class="mb-0">{{ candidatos|selectattr('status', 'equalto', 'Aprovado')|list|length }}</h2>
+                            </div>
+                            <i class="bi bi-check-circle-fill fs-1"></i>
+                        </div>
+                    </div>
                 </div>
             </div>
-            <div class="col-md-3 col-6">
-                <div class="stats-mini">
-                    <div class="number text-danger">{{ candidatos|selectattr('status', 'equalto', 'Reprovado')|list|length }}</div>
-                    <div class="label">Reprovados</div>
+            <div class="col-md-3">
+                <div class="card bg-danger text-white shadow">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <h6 class="card-title mb-0">Reprovados</h6>
+                                <h2 class="mb-0">{{ candidatos|selectattr('status', 'equalto', 'Reprovado')|list|length }}</h2>
+                            </div>
+                            <i class="bi bi-x-circle-fill fs-1"></i>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
 
         <!-- Formulário para adicionar candidato -->
-        <div class="row">
-            <div class="col-md-12 mb-4">
-                <div class="card-modern">
-                    <div class="card-header-gradient text-white">
-                        <h5 class="mb-0 fw-bold">
-                            <i class="bi bi-person-plus me-2"></i> Novo Candidato
-                        </h5>
+        <div class="card shadow mb-4">
+            <div class="card-header bg-light">
+                <h6 class="mb-0"><i class="bi bi-person-plus"></i> Novo Candidato</h6>
+            </div>
+            <div class="card-body">
+                <form method="POST">
+                    <div class="row g-3">
+                        <div class="col-md-10">
+                            <input type="text" class="form-control" name="nome" required 
+                                   placeholder="Digite o nome completo do candidato">
+                        </div>
+                        <div class="col-md-2">
+                            <button type="submit" class="btn btn-success w-100">
+                                <i class="bi bi-save"></i> Adicionar
+                            </button>
+                        </div>
                     </div>
-                    <div class="card-body">
-                        <form method="POST">
-                            <div class="row align-items-end">
-                                <div class="col-md-10 mb-3 mb-md-0">
-                                    <label class="form-label fw-bold">Nome do Candidato</label>
-                                    <input type="text" class="form-control form-control-custom" name="nome" required 
-                                           placeholder="Digite o nome completo">
-                                    <div class="form-text text-muted mt-1">
-                                        <i class="bi bi-info-circle me-1"></i> Digite o nome completo do candidato
-                                    </div>
-                                </div>
-                                <div class="col-md-2">
-                                    <button type="submit" class="btn btn-add w-100 text-white">
-                                        <i class="bi bi-save me-2"></i> Adicionar
-                                    </button>
-                                </div>
-                            </div>
-                        </form>
+                    <div class="form-text text-muted mt-2">
+                        <i class="bi bi-info-circle"></i> Digite o nome completo do candidato para iniciar o processo.
                     </div>
-                </div>
+                </form>
             </div>
         </div>
 
         <!-- Lista de Candidatos -->
-        <div class="row">
-            <div class="col-md-12 mb-4">
-                <div class="card-modern">
-                    <div class="card-header-gradient text-white">
-                        <h5 class="mb-0 fw-bold">
-                            <i class="bi bi-list-ul me-2"></i>
-                            Candidatos em Sindicância
-                            <span class="ms-2 badge bg-white text-dark rounded-pill">{{ candidatos|length }}</span>
-                        </h5>
-                    </div>
-                    <div class="card-body p-0">
-                        {% if candidatos %}
-                        <div class="table-responsive">
-                            <table class="table table-candidatos">
-                                <thead>
-                                    <tr>
-                                        <th>Candidato</th>
-                                        <th>Cadastro</th>
-                                        <th>Status</th>
-                                        <th>Documentos</th>
-                                        <th>Formulário</th>
-                                        <th>Ações</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {% for c in candidatos %}
-                                    {% set doc_status = documentos_status.get(c.id) if documentos_status else None %}
-                                    <tr class="{% if c.fechado == 1 %}table-secondary{% endif %}">
-                                        <td>
-                                            <div class="d-flex flex-column">
-                                                <strong class="mb-1">{{ c.nome }}</strong>
-                                                {% if c.cpf %}
-                                                    <small class="text-muted"><i class="bi bi-credit-card me-1"></i> {{ c.cpf }}</small>
-                                                {% endif %}
-                                                {% if c.celular %}
-                                                    <small class="text-muted"><i class="bi bi-whatsapp text-success me-1"></i> {{ c.celular }}</small>
-                                                {% endif %}
-                                                {% if c.obreiro_id %}
-                                                    <small class="text-success mt-1">
-                                                        <i class="bi bi-person-badge"></i> Já é Obreiro
-                                                    </small>
-                                                {% endif %}
-                                                {% if c.fechado == 1 %}
-                                                    <small class="text-muted mt-1">
-                                                        <i class="bi bi-calendar-check me-1"></i> Encerrada: {{ c.data_fechamento.strftime('%d/%m/%Y') if c.data_fechamento else '-' }}
-                                                    </small>
-                                                {% endif %}
-                                            </div>
-                                        </td>
-                                        <td class="text-nowrap">
-                                            <i class="bi bi-calendar3 me-1 text-muted"></i>
-                                            {{ c.data_criacao.strftime('%d/%m/%Y') if c.data_criacao else '-' }}
-                                        </td>
-                                        <td>
-                                            {% if c.fechado == 1 %}
-                                                {% if c.status == 'Aprovado' %}
-                                                    <span class="badge-status badge-aprovado">
-                                                        <i class="bi bi-check-circle-fill"></i> Aprovado
-                                                    </span>
-                                                {% elif c.status == 'Reprovado' %}
-                                                    <span class="badge-status badge-reprovado">
-                                                        <i class="bi bi-x-circle-fill"></i> Reprovado
-                                                    </span>
+        <div class="card shadow">
+            <div class="card-header bg-light">
+                <h6 class="mb-0"><i class="bi bi-list-ul"></i> Candidatos em Processo</h6>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-hover" id="tabelaCandidatos">
+                        <thead class="table-light">
+                            <tr>
+                                <th style="width: 30%">Candidato</th>
+                                <th style="width: 15%">Cadastro</th>
+                                <th style="width: 15%">Status</th>
+                                <th style="width: 20%">Documentos</th>
+                                <th style="width: 20%">Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for c in candidatos %}
+                            {% set doc_status = documentos_status.get(c.id) if documentos_status else None %}
+                            <tr class="{% if c.obreiro_id %}table-success{% elif c.fechado == 1 %}table-secondary{% endif %}">
+                                <td>
+                                    <div class="d-flex flex-column">
+                                        <strong>{{ c.nome }}</strong>
+                                        {% if c.cpf %}
+                                            <small class="text-muted"><i class="bi bi-credit-card"></i> {{ c.cpf }}</small>
+                                        {% endif %}
+                                        {% if c.celular %}
+                                            <small class="text-muted"><i class="bi bi-whatsapp text-success"></i> {{ c.celular }}</small>
+                                        {% endif %}
+                                        {% if c.obreiro_id %}
+                                            <span class="badge bg-info mt-1">
+                                                <i class="bi bi-person-badge"></i> Já é Obreiro
+                                            </span>
+                                        {% endif %}
+                                        {% if c.fechado == 1 %}
+                                            <small class="text-muted mt-1">
+                                                <i class="bi bi-calendar-check"></i> Encerrada: {{ c.data_fechamento.strftime('%d/%m/%Y') if c.data_fechamento else '-' }}
+                                            </small>
+                                        {% endif %}
+                                    </div>
+                                </td>
+                                <td class="align-middle">
+                                    <i class="bi bi-calendar3"></i>
+                                    {{ c.data_criacao.strftime('%d/%m/%Y') if c.data_criacao else '-' }}
+                                </td>
+                                <td class="align-middle">
+                                    {% if c.obreiro_id %}
+                                        <span class="badge bg-info">
+                                            <i class="bi bi-person-badge"></i> Obreiro
+                                        </span>
+                                    {% elif c.fechado == 1 %}
+                                        {% if c.status == 'Aprovado' %}
+                                            <span class="badge bg-success">
+                                                <i class="bi bi-check-circle-fill"></i> Aprovado
+                                            </span>
+                                        {% else %}
+                                            <span class="badge bg-danger">
+                                                <i class="bi bi-x-circle-fill"></i> Reprovado
+                                            </span>
+                                        {% endif %}
+                                    {% else %}
+                                        {% if c.votos_positivos > c.votos_negativos and c.total_votos >= c.total_sindicantes %}
+                                            <span class="badge bg-success">
+                                                <i class="bi bi-check-circle-fill"></i> Aprovado
+                                            </span>
+                                        {% elif c.votos_negativos >= c.votos_positivos and c.total_votos >= c.total_sindicantes %}
+                                            <span class="badge bg-danger">
+                                                <i class="bi bi-x-circle-fill"></i> Reprovado
+                                            </span>
+                                        {% else %}
+                                            <span class="badge bg-warning text-dark">
+                                                <i class="bi bi-clock-fill"></i> Em análise ({{ c.total_votos }}/{{ c.total_sindicantes }})
+                                            </span>
+                                        {% endif %}
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if doc_status and doc_status.total and doc_status.total > 0 %}
+                                        {% set enviados = doc_status.enviados|default(0) %}
+                                        {% set total = doc_status.total|default(0) %}
+                                        {% set percentual = (enviados / total * 100) if total > 0 else 0 %}
+                                        
+                                        <div class="d-flex flex-column">
+                                            <div class="d-flex justify-content-between small mb-1">
+                                                <span class="text-muted">{{ enviados }}/{{ total }} enviados</span>
+                                                {% if total - enviados > 0 %}
+                                                    <span class="text-danger fw-bold">{{ total - enviados }} faltando</span>
                                                 {% else %}
-                                                    <span class="badge-status badge-analise">
-                                                        <i class="bi bi-clock-fill"></i> {{ c.status_calculado }}
-                                                    </span>
-                                                {% endif %}
-                                            {% else %}
-                                                {% if c.votos_positivos > c.votos_negativos and c.total_votos >= c.total_sindicantes %}
-                                                    <span class="badge-status badge-aprovado">
-                                                        <i class="bi bi-check-circle-fill"></i> Aprovado
-                                                    </span>
-                                                {% elif c.votos_negativos >= c.votos_positivos and c.total_votos >= c.total_sindicantes %}
-                                                    <span class="badge-status badge-reprovado">
-                                                        <i class="bi bi-x-circle-fill"></i> Reprovado
-                                                    </span>
-                                                {% else %}
-                                                    <span class="badge-status badge-analise">
-                                                        <i class="bi bi-clock-fill"></i> Em análise ({{ c.total_votos }}/{{ c.total_sindicantes }})
-                                                    </span>
-                                                {% endif %}
-                                            {% endif %}
-                                        </td>
-                                        <td style="min-width: 220px;">
-                                            {% if doc_status and doc_status.total and doc_status.total > 0 %}
-                                                {% set enviados = doc_status.enviados|default(0) %}
-                                                {% set total = doc_status.total|default(0) %}
-                                                {% set faltantes = total - enviados %}
-                                                {% set percentual = (enviados / total * 100) if total > 0 else 0 %}
-                                                
-                                                <div class="d-flex flex-column">
-                                                    <div class="d-flex justify-content-between small mb-1">
-                                                        <span class="text-muted">{{ enviados }}/{{ total }} enviados</span>
-                                                        {% if faltantes > 0 %}
-                                                            <span class="text-danger fw-bold">{{ faltantes }} faltando</span>
-                                                        {% else %}
-                                                            <span class="text-success fw-bold">✓ Completo</span>
-                                                        {% endif %}
-                                                    </div>
-                                                    <div class="progress-custom mb-2">
-                                                        <div class="progress-bar" role="progressbar" 
-                                                             style="width: {{ percentual }}%">
-                                                            {{ percentual|int }}%
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            {% else %}
-                                                <div class="d-flex flex-column">
-                                                    <div class="d-flex justify-content-between small mb-1">
-                                                        <span class="text-muted">Documentos</span>
-                                                        <span class="text-warning fw-bold">Pendente</span>
-                                                    </div>
-                                                    <div class="progress-custom mb-2">
-                                                        <div class="progress-bar" role="progressbar" style="width: 0%">0%</div>
-                                                    </div>
-                                                    <div class="small text-muted mt-1">
-                                                        <a href="/candidatos/{{ c.id }}/documentos" class="text-primary">
-                                                            <i class="bi bi-folder2-open me-1"></i> Enviar documentos
-                                                        </a>
-                                                    </div>
-                                                </div>
-                                            {% endif %}
-                                        </td>
-                                        <td class="text-center">
-                                            {% if c.cpf or c.rg or c.endereco_residencial %}
-                                                <span class="badge-status" style="background:#d1fae5; color:#059669;">
-                                                    <i class="bi bi-check-circle-fill"></i> Preenchido
-                                                </span>
-                                            {% else %}
-                                                <span class="badge-status" style="background:#fee2e2; color:#dc2626;">
-                                                    <i class="bi bi-exclamation-triangle-fill"></i> Pendente
-                                                </span>
-                                            {% endif %}
-                                            <div class="mt-2">
-                                                <a href="/candidato/formulario/{{ c.id }}" class="btn btn-outline-info btn-icon" title="Preencher Formulário">
-                                                    <i class="bi bi-file-text"></i>
-                                                </a>
-                                            </div>
-                                        </td>
-                                        <td class="text-center">
-                                            <div class="d-flex flex-wrap gap-1 justify-content-center">
-                                                <!-- Visualizar Sindicância -->
-                                                <a href="/sindicancia/{{ c.id }}" class="btn btn-info btn-icon" title="Visualizar Sindicância">
-                                                    <i class="bi bi-eye"></i>
-                                                </a>
-                                                
-                                                <!-- Checklist -->
-                                                <a href="/candidatos/{{ c.id }}/checklist" class="btn btn-success btn-icon" title="Checklist de Iniciação">
-                                                    <i class="bi bi-check2-square"></i>
-                                                </a>
-                                                
-                                                <!-- Documentos -->
-                                                <a href="/candidatos/{{ c.id }}/documentos" class="btn btn-outline-primary btn-icon" title="Gerenciar Documentos">
-                                                    <i class="bi bi-folder2-open"></i>
-                                                </a>
-                                                
-                                                <!-- Botão Designar Sindicantes -->
-                                                {% if session.tipo == 'admin' %}
-                                                <button type="button" class="btn btn-outline-secondary btn-icon" 
-                                                        onclick="abrirModalDesignarSindicantes({{ c.id }}, '{{ c.nome|replace("'", "\\'") }}')"
-                                                        title="Designar Sindicantes para este candidato">
-                                                    <i class="bi bi-person-plus"></i>
-                                                </button>
-                                                {% endif %}
-                                                
-                                                <!-- Botão Emitir Placet -->
-                                                {% if session.tipo == 'admin' and c.fechado == 1 and c.status == 'Aprovado' and not c.obreiro_id %}
-                                                <button type="button" class="btn btn-primary btn-icon" 
-                                                        onclick="abrirModalEmitirPlacet({{ c.id }}, '{{ c.nome|replace("'", "\\'") }}')"
-                                                        title="Emitir Placet de Iniciação">
-                                                    <i class="bi bi-file-text"></i>
-                                                </button>
-                                                {% endif %}
-                                                
-                                                <!-- Encerrar sindicância -->
-                                                {% if session.tipo == 'admin' and not c.fechado %}
-                                                <a href="/fechar_sindicancia/{{ c.id }}" class="btn btn-warning btn-icon" 
-                                                   onclick="return confirm('Encerrar sindicância deste candidato? Esta ação não pode ser desfeita!')" 
-                                                   title="Encerrar Sindicância">
-                                                    <i class="bi bi-check2-circle"></i>
-                                                </a>
-                                                {% endif %}
-                                                
-                                                <!-- Excluir candidato -->
-                                                {% if session.tipo == 'admin' %}
-                                                <form action="/candidatos/excluir/{{ c.id }}" method="POST" style="display:inline;">
-                                                    <button type="submit" class="btn btn-danger btn-icon" 
-                                                            onclick="return confirm('Excluir este candidato? Esta ação não pode ser desfeita!')" 
-                                                            title="Excluir Candidato">
-                                                        <i class="bi bi-trash"></i>
-                                                    </button>
-                                                </form>
+                                                    <span class="text-success fw-bold">✓ Completo</span>
                                                 {% endif %}
                                             </div>
-                                        </td>
-                                    </tr>
-                                    {% endfor %}
-                                </tbody>
-                            </table>
-                        </div>
-                        {% else %}
-                        <div class="text-center text-muted py-5">
-                            <i class="bi bi-inbox fs-1"></i>
-                            <p class="mt-2 mb-0">Nenhum candidato cadastrado</p>
-                            <small>Clique em "Adicionar Candidato" para começar</small>
-                        </div>
-                        {% endif %}
-                    </div>
+                                            <div class="progress" style="height: 20px;">
+                                                <div class="progress-bar bg-success" 
+                                                     role="progressbar" 
+                                                     style="width: {{ percentual }}%;">
+                                                    {{ percentual|int }}%
+                                                </div>
+                                            </div>
+                                        </div>
+                                    {% else %}
+                                        <div class="d-flex flex-column">
+                                            <div class="d-flex justify-content-between small mb-1">
+                                                <span class="text-muted">Documentos</span>
+                                                <span class="text-warning fw-bold">Pendente</span>
+                                            </div>
+                                            <div class="progress" style="height: 20px;">
+                                                <div class="progress-bar" role="progressbar" style="width: 0%">0%</div>
+                                            </div>
+                                            <div class="small text-muted mt-1">
+                                                <a href="/candidatos/{{ c.id }}/documentos" class="text-primary">
+                                                    <i class="bi bi-folder2-open"></i> Enviar documentos
+                                                </a>
+                                            </div>
+                                        </div>
+                                    {% endif %}
+                                </td>
+                                <td class="align-middle">
+                                    <div class="btn-group btn-group-sm" role="group">
+                                        <a href="/sindicancia/{{ c.id }}" class="btn btn-info" title="Visualizar Sindicância">
+                                            <i class="bi bi-eye"></i>
+                                        </a>
+                                        <a href="/candidatos/{{ c.id }}/checklist" class="btn btn-success" title="Checklist de Iniciação">
+                                            <i class="bi bi-check2-square"></i>
+                                        </a>
+                                        <a href="/candidatos/{{ c.id }}/documentos" class="btn btn-outline-primary" title="Gerenciar Documentos">
+                                            <i class="bi bi-folder2-open"></i>
+                                        </a>
+                                        
+                                        {% if session.tipo == 'admin' %}
+                                        <button type="button" class="btn btn-outline-secondary" 
+                                                onclick="abrirModalDesignarSindicantes({{ c.id }}, '{{ c.nome|replace("'", "\\'") }}')"
+                                                title="Designar Sindicantes">
+                                            <i class="bi bi-person-plus"></i>
+                                        </button>
+                                        {% endif %}
+                                        
+                                        {% if session.tipo == 'admin' and c.fechado == 1 and c.status == 'Aprovado' and not c.obreiro_id %}
+                                        <button type="button" class="btn btn-primary" 
+                                                onclick="abrirModalEmitirPlacet({{ c.id }}, '{{ c.nome|replace("'", "\\'") }}')"
+                                                title="Emitir Placet">
+                                            <i class="bi bi-file-text"></i>
+                                        </button>
+                                        {% endif %}
+                                        
+                                        {% if session.tipo == 'admin' and not c.fechado %}
+                                        <a href="/fechar_sindicancia/{{ c.id }}" class="btn btn-warning" 
+                                           onclick="return confirm('Encerrar sindicância deste candidato? Esta ação não pode ser desfeita!')" 
+                                           title="Encerrar Sindicância">
+                                            <i class="bi bi-check2-circle"></i>
+                                        </a>
+                                        {% endif %}
+                                        
+                                        {% if session.tipo == 'admin' %}
+                                        <form action="/candidatos/excluir/{{ c.id }}" method="POST" style="display:inline;">
+                                            <button type="submit" class="btn btn-danger" 
+                                                    onclick="return confirm('Excluir este candidato? Esta ação não pode ser desfeita!')" 
+                                                    title="Excluir Candidato">
+                                                <i class="bi bi-trash"></i>
+                                            </button>
+                                        </form>
+                                        {% endif %}
+                                    </div>
+                                </td>
+                            <tr>
+                            {% else %}
+                            <tr>
+                                <td colspan="5" class="text-center text-muted py-5">
+                                    <i class="bi bi-inbox fs-1"></i><br>
+                                    Nenhum candidato cadastrado
+                                    <br>
+                                    <small>Clique em "Adicionar Candidato" para começar</small>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
                 </div>
             </div>
         </div>
 
         <!-- Sindicantes Ativos - APENAS ADMIN -->
-        {% if session.tipo == 'admin' %}
-        <div class="row">
-            <div class="col-md-12 mb-4">
-                <div class="card-modern">
-                    <div class="card-header-secondary text-white">
-                        <h5 class="mb-0 fw-bold">
-                            <i class="bi bi-person-badge me-2"></i> Sindicantes Ativos
-                            <span class="ms-2 badge bg-white text-dark rounded-pill">{{ sindicantes|length }}</span>
-                        </h5>
-                    </div>
-                    <div class="card-body p-0">
-                        {% if sindicantes %}
-                        <div class="table-responsive">
-                            <table class="table table-candidatos">
-                                <thead>
-                                    <tr>
-                                        <th>Usuário</th>
-                                        <th>Nome</th>
-                                        <th>Loja</th>
-                                        <th>CIM</th>
-                                        <th>Telefone</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {% for s in sindicantes %}
-                                    <tr>
-                                        <td><strong><i class="bi bi-person-circle me-1"></i> {{ s.usuario }}</strong></td>
-                                        <td>{{ s.nome_completo or '-' }}</td>
-                                        <td>
-                                            {% if s.loja_nome %}
-                                                {{ s.loja_nome }} 
-                                                <small class="text-muted">(Nº {{ s.loja_numero or '-' }})</small>
-                                            {% else %}
-                                                -
-                                            {% endif %}
-                                        </td>
-                                        <td>{{ s.cim_numero or '-' }}</td>
-                                        <td>{{ s.telefone or '-' }}</td>
-                                    </tr>
-                                    {% endfor %}
-                                </tbody>
-                            </table>
-                        </div>
-                        {% else %}
-                        <div class="text-center py-4">
-                            <i class="bi bi-person-x fs-1 text-muted"></i>
-                            <p class="mt-2 mb-0">Nenhum sindicante ativo cadastrado.</p>
-                            <a href="/sindicantes" class="btn btn-sm btn-primary mt-2">Cadastrar Sindicante</a>
-                        </div>
-                        {% endif %}
-                    </div>
+        {% if session.tipo == 'admin' and sindicantes %}
+        <div class="card shadow mt-4">
+            <div class="card-header bg-light">
+                <h6 class="mb-0"><i class="bi bi-person-badge"></i> Sindicantes Ativos</h6>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-sm">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Usuário</th>
+                                <th>Nome</th>
+                                <th>Loja</th>
+                                <th>CIM</th>
+                                <th>Telefone</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for s in sindicantes %}
+                            <tr>
+                                <td><strong><i class="bi bi-person-circle"></i> {{ s.usuario }}</strong></td>
+                                <td>{{ s.nome_completo or '-' }}</td>
+                                <td>
+                                    {% if s.loja_nome %}
+                                        {{ s.loja_nome }} 
+                                        <small class="text-muted">(Nº {{ s.loja_numero or '-' }})</small>
+                                    {% else %}
+                                        -
+                                    {% endif %}
+                                </td>
+                                <td>{{ s.cim_numero or '-' }}</td>
+                                <td>{{ s.telefone or '-' }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
                 </div>
             </div>
         </div>
         {% endif %}
 
-        <!-- Guia de Processo -->
-        <div class="row">
-            <div class="col-md-12">
-                <div class="card-modern">
-                    <div class="card-header" style="background: #f8fafc; border-bottom: 1px solid #e2e8f0;">
-                        <h6 class="mb-0 fw-bold">
-                            <i class="bi bi-info-circle-fill text-info me-2"></i> Como funciona a Sindicância
-                        </h6>
+        <!-- Legenda -->
+        <div class="card shadow mt-4">
+            <div class="card-header bg-light">
+                <h6 class="mb-0"><i class="bi bi-info-circle"></i> Legenda</h6>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-3">
+                        <span class="badge bg-success">Verde</span> = Aprovado
+                        <span class="badge bg-danger">Vermelho</span> = Reprovado
                     </div>
-                    <div class="card-body">
-                        <div class="row text-center">
-                            <div class="col-md-2 col-6 mb-3">
-                                <div class="bg-primary bg-opacity-10 rounded-circle p-3 d-inline-block mb-2">
-                                    <i class="bi bi-person-plus fs-1 text-primary"></i>
-                                </div>
-                                <p class="mb-0"><strong>1. Cadastre</strong></p>
-                                <small class="text-muted">Adicione o candidato</small>
-                            </div>
-                            <div class="col-md-2 col-6 mb-3">
-                                <div class="bg-info bg-opacity-10 rounded-circle p-3 d-inline-block mb-2">
-                                    <i class="bi bi-file-text fs-1 text-info"></i>
-                                </div>
-                                <p class="mb-0"><strong>2. Formulário</strong></p>
-                                <small class="text-muted">Preencha os dados</small>
-                            </div>
-                            <div class="col-md-2 col-6 mb-3">
-                                <div class="bg-success bg-opacity-10 rounded-circle p-3 d-inline-block mb-2">
-                                    <i class="bi bi-file-earmark-text fs-1 text-success"></i>
-                                </div>
-                                <p class="mb-0"><strong>3. Documentos</strong></p>
-                                <small class="text-muted">Envie os documentos</small>
-                            </div>
-                            <div class="col-md-2 col-6 mb-3">
-                                <div class="bg-warning bg-opacity-10 rounded-circle p-3 d-inline-block mb-2">
-                                    <i class="bi bi-envelope-paper fs-1 text-warning"></i>
-                                </div>
-                                <p class="mb-0"><strong>4. Sindicantes</strong></p>
-                                <small class="text-muted">Avaliam o candidato</small>
-                            </div>
-                            <div class="col-md-2 col-6 mb-3">
-                                <div class="bg-danger bg-opacity-10 rounded-circle p-3 d-inline-block mb-2">
-                                    <i class="bi bi-bar-chart fs-1 text-danger"></i>
-                                </div>
-                                <p class="mb-0"><strong>5. Votação</strong></p>
-                                <small class="text-muted">Sindicantes votam</small>
-                            </div>
-                            <div class="col-md-2 col-6 mb-3">
-                                <div class="bg-success bg-opacity-10 rounded-circle p-3 d-inline-block mb-2">
-                                    <i class="bi bi-check2-circle fs-1 text-success"></i>
-                                </div>
-                                <p class="mb-0"><strong>6. Resultado</strong></p>
-                                <small class="text-muted">Resultado automático</small>
-                            </div>
-                        </div>
-                        <hr class="my-3">
-                        <div class="alert alert-info mb-0">
-                            <i class="bi bi-lightbulb-fill me-2"></i>
-                            <strong>Dicas importantes:</strong>
-                            <ul class="mb-0 mt-2">
-                                <li>Clique no ícone <i class="bi bi-eye"></i> para visualizar a sindicância</li>
-                                <li>Clique no ícone <i class="bi bi-folder2-open"></i> para gerenciar os documentos do candidato</li>
-                                <li>Quanto mais informações e documentos, melhor para a análise dos sindicantes</li>
-                                <li>A barra de progresso mostra quantos documentos já foram enviados</li>
-                                <li>Candidatos aprovados podem receber o <strong>Placet de Iniciação</strong> e se tornar Obreiros</li>
-                            </ul>
-                        </div>
+                    <div class="col-md-3">
+                        <span class="badge bg-warning text-dark">Amarelo</span> = Em análise
+                        <span class="badge bg-info">Azul</span> = Já é Obreiro
+                    </div>
+                    <div class="col-md-3">
+                        <i class="bi bi-eye text-info"></i> = Visualizar
+                        <i class="bi bi-check2-square text-success"></i> = Checklist
+                    </div>
+                    <div class="col-md-3">
+                        <i class="bi bi-folder2-open"></i> = Documentos
+                        <i class="bi bi-person-plus"></i> = Designar Sindicantes
                     </div>
                 </div>
             </div>
@@ -634,7 +356,6 @@
 <!-- ============================================ -->
 <!-- MODAL GENÉRICO PARA DESIGNAR SINDICANTES -->
 <!-- ============================================ -->
-{% if session.tipo == 'admin' %}
 <div class="modal fade" id="modalDesignarSindicantes" tabindex="-1">
     <div class="modal-dialog modal-dialog-centered modal-lg">
         <div class="modal-content">
@@ -653,7 +374,7 @@
                         Selecione os sindicantes que serão responsáveis por avaliar este candidato.
                     </div>
                     
-                    <div id="sindicantesList"></div>
+                    <div id="sindicantesList" class="row"></div>
                     
                     <div id="semSindicantesMsg" class="alert alert-warning" style="display: none;">
                         <i class="bi bi-exclamation-triangle me-2"></i>
@@ -662,7 +383,7 @@
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-                    <button type="submit" class="btn btn-primary" id="btnSalvarDesignacoes">
+                    <button type="submit" class="btn btn-primary">
                         <i class="bi bi-save"></i> Salvar Designações
                     </button>
                 </div>
@@ -746,10 +467,9 @@
         </div>
     </div>
 </div>
-{% endif %}
 
 <script>
-   // Variáveis globais
+// Variáveis globais
 let currentCandidatoId = null;
 let currentCandidatoNome = null;
 
@@ -760,47 +480,32 @@ function abrirModalDesignarSindicantes(candidatoId, candidatoNome) {
     currentCandidatoId = candidatoId;
     currentCandidatoNome = candidatoNome;
     
-    // Atualizar título do modal
     const modalTitle = document.querySelector('#modalDesignarSindicantes .modal-title');
     if (modalTitle) {
         modalTitle.innerHTML = '<i class="bi bi-person-plus me-2"></i> Designar Sindicantes - ' + candidatoNome;
     }
     
-    // Atualizar action do form
     const form = document.getElementById('formDesignarSindicantes');
     if (form) {
         form.action = '/designar-sindicantes/' + candidatoId;
     }
     
-    // Mostrar loading
     const container = document.getElementById('sindicantesList');
-    const semSindicantesMsg = document.getElementById('semSindicantesMsg');
+    const semMsg = document.getElementById('semSindicantesMsg');
     
     if (container) {
-        container.innerHTML = '<div class="text-center py-3"><div class="spinner-border spinner-border-sm text-primary" role="status"></div><p class="mt-2 small text-muted">Carregando sindicantes...</p></div>';
+        container.innerHTML = '<div class="col-12 text-center py-3"><div class="spinner-border spinner-border-sm text-primary" role="status"></div><p class="mt-2 small text-muted">Carregando sindicantes...</p></div>';
     }
-    if (semSindicantesMsg) {
-        semSindicantesMsg.style.display = 'none';
-    }
+    if (semMsg) semMsg.style.display = 'none';
     
-    // Buscar sindicantes disponíveis e designações via AJAX
     fetch('/api/sindicantes-disponiveis/' + candidatoId)
-        .then(response => {
-            if (!response.ok) {
-                throw new Error('Erro HTTP: ' + response.status);
-            }
-            return response.json();
-        })
+        .then(response => response.json())
         .then(data => {
-            if (data.error) {
-                throw new Error(data.error);
-            }
-            
             if (container) {
                 if (data.sindicantes && data.sindicantes.length > 0) {
-                    if (semSindicantesMsg) semSindicantesMsg.style.display = 'none';
+                    if (semMsg) semMsg.style.display = 'none';
                     
-                    let html = '<div class="row">';
+                    let html = '';
                     data.sindicantes.forEach(sindicante => {
                         const isChecked = data.designados && data.designados.includes(sindicante.id);
                         html += `
@@ -821,10 +526,9 @@ function abrirModalDesignarSindicantes(candidatoId, candidatoNome) {
                             </div>
                         `;
                     });
-                    html += '</div>';
                     container.innerHTML = html;
                 } else {
-                    if (semSindicantesMsg) semSindicantesMsg.style.display = 'block';
+                    if (semMsg) semMsg.style.display = 'block';
                     container.innerHTML = '';
                 }
             }
@@ -832,60 +536,85 @@ function abrirModalDesignarSindicantes(candidatoId, candidatoNome) {
         .catch(error => {
             console.error('Erro:', error);
             if (container) {
-                container.innerHTML = '<div class="alert alert-danger">Erro ao carregar sindicantes: ' + escapeHtml(error.message) + '</div>';
+                container.innerHTML = '<div class="col-12"><div class="alert alert-danger">Erro ao carregar sindicantes</div></div>';
             }
         });
     
-    // Abrir o modal (garantindo que seja recriado)
     const modalElement = document.getElementById('modalDesignarSindicantes');
     if (modalElement) {
-        // Se o modal já existe, remove e recria
         const modal = bootstrap.Modal.getInstance(modalElement);
-        if (modal) {
-            modal.dispose();
-        }
-        // Abrir novo modal
-        const newModal = new bootstrap.Modal(modalElement);
-        newModal.show();
+        if (modal) modal.dispose();
+        new bootstrap.Modal(modalElement).show();
     }
 }
 
-// Função auxiliar para escapar HTML
+// ============================================
+// ABRIR MODAL EMITIR PLACET
+// ============================================
+function abrirModalEmitirPlacet(candidatoId, candidatoNome) {
+    currentCandidatoId = candidatoId;
+    currentCandidatoNome = candidatoNome;
+    
+    document.querySelector('#modalEmitirPlacet .modal-title').innerHTML = 
+        '<i class="bi bi-file-text me-2"></i> Emitir Placet de Iniciação - ' + candidatoNome;
+    
+    document.getElementById('formEmitirPlacet').action = '/emitir-placet/' + candidatoId;
+    
+    new bootstrap.Modal(document.getElementById('modalEmitirPlacet')).show();
+}
+
 function escapeHtml(text) {
     if (!text) return '';
     const div = document.createElement('div');
     div.textContent = text;
     return div.innerHTML;
 }
-
-    // ============================================
-    // ABRIR MODAL EMITIR PLACET
-    // ============================================
-    function abrirModalEmitirPlacet(candidatoId, candidatoNome) {
-        currentCandidatoId = candidatoId;
-        currentCandidatoNome = candidatoNome;
-        
-        // Atualizar título do modal
-        document.querySelector('#modalEmitirPlacet .modal-title').innerHTML = 
-            '<i class="bi bi-file-text me-2"></i> Emitir Placet de Iniciação - ' + candidatoNome;
-        
-        // Atualizar action do form
-        document.getElementById('formEmitirPlacet').action = '/emitir-placet/' + candidatoId;
-        
-        // Abrir o modal
-        new bootstrap.Modal(document.getElementById('modalEmitirPlacet')).show();
-    }
-
-    // Auto-fechar alerts após 5 segundos
-    setTimeout(function() {
-        document.querySelectorAll('.alert').forEach(function(alert) {
-            setTimeout(function() {
-                alert.classList.remove('show');
-                setTimeout(function() {
-                    alert.remove();
-                }, 150);
-            }, 5000);
-        });
-    }, 1000);
 </script>
+
+<style>
+    .card {
+        border-radius: 10px;
+        overflow: hidden;
+        transition: transform 0.2s ease;
+    }
+    .card:hover {
+        transform: translateY(-4px);
+    }
+    .card-header {
+        font-weight: 600;
+    }
+    .progress {
+        border-radius: 10px;
+        overflow: hidden;
+        height: 20px;
+    }
+    .progress-bar {
+        transition: width 0.3s ease;
+        font-size: 10px;
+        line-height: 20px;
+    }
+    .table-hover tbody tr:hover {
+        cursor: pointer;
+        background-color: rgba(0, 123, 255, 0.05);
+    }
+    .badge {
+        font-size: 0.8rem;
+        padding: 0.4rem 0.6rem;
+    }
+    .btn-group-sm .btn {
+        padding: 0.25rem 0.5rem;
+        margin: 0 2px;
+    }
+    @media (max-width: 768px) {
+        .btn-group {
+            flex-direction: column;
+        }
+        .btn-group .btn {
+            margin-bottom: 5px;
+        }
+        .table-responsive {
+            font-size: 0.85rem;
+        }
+    }
+</style>
 {% endblock %}
