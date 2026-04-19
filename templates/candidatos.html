@@ -230,10 +230,12 @@
                                             <i class="bi bi-folder2-open"></i>
                                         </a>
                                         
-                                        <!-- Botão Formulário -->
+                                        <!-- Botão Formulário - APENAS ADMIN E SINDICANTES -->
+                                        {% if session.tipo == 'admin' or session.tipo == 'sindicante' %}
                                         <a href="/candidato/formulario/{{ c.id }}" class="btn btn-outline-info" title="Preencher Formulário">
                                             <i class="bi bi-file-text"></i>
                                         </a>
+                                        {% endif %}
                                         
                                         {% if session.tipo == 'admin' %}
                                         <button type="button" class="btn btn-outline-secondary" 
