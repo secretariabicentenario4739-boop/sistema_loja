@@ -230,6 +230,11 @@
                                             <i class="bi bi-folder2-open"></i>
                                         </a>
                                         
+                                        <!-- Botão Formulário -->
+                                        <a href="/candidato/formulario/{{ c.id }}" class="btn btn-outline-info" title="Preencher Formulário">
+                                            <i class="bi bi-file-text"></i>
+                                        </a>
+                                        
                                         {% if session.tipo == 'admin' %}
                                         <button type="button" class="btn btn-outline-secondary" 
                                                 onclick="abrirModalDesignarSindicantes({{ c.id }}, '{{ c.nome|replace("'", "\\'") }}')"
@@ -265,7 +270,7 @@
                                         {% endif %}
                                     </div>
                                 </td>
-                            <tr>
+                            </tr>
                             {% else %}
                             <tr>
                                 <td colspan="5" class="text-center text-muted py-5">
@@ -345,6 +350,7 @@
                     </div>
                     <div class="col-md-3">
                         <i class="bi bi-folder2-open"></i> = Documentos
+                        <i class="bi bi-file-text"></i> = Formulário
                         <i class="bi bi-person-plus"></i> = Designar Sindicantes
                     </div>
                 </div>
