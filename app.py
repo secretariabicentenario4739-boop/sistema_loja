@@ -9627,8 +9627,14 @@ def gerenciar_candidatos():
 def upload_foto_candidato(candidato_id):
     """Upload da foto do candidato"""
     try:
-        # Verificar se o candidato existe
+        # Verificar permissão
+        if session.get('tipo') not in ['admin', 'sindicante']:
+            flash("Acesso negado! Apenas administradores e sindicantes podem fazer upload de fotos.", "danger")
+            return redirect(f"/candidato/formulario/{candidato_id}")
+        
         cursor, conn = get_db()
+        
+        # Verificar se o candidato existe
         cursor.execute("SELECT * FROM candidatos WHERE id = %s", (candidato_id,))
         candidato = cursor.fetchone()
         
@@ -9636,59 +9642,58 @@ def upload_foto_candidato(candidato_id):
             flash("Candidato não encontrado", "danger")
             return redirect("/candidatos")
         
-        # Verificar permissão (apenas admin ou sindicante designado)
-        if session.get('tipo') not in ['admin', 'sindicante']:
-            flash("Sem permissão para esta ação", "danger")
-            return redirect(f"/sindicancia/{candidato_id}")
-        
-        # Processar o upload da foto
+        # Verificar se veio arquivo
         if 'foto' not in request.files:
             flash("Nenhum arquivo selecionado", "warning")
             return redirect(f"/candidato/formulario/{candidato_id}")
         
         file = request.files['foto']
+        
         if file.filename == '':
             flash("Nenhum arquivo selecionado", "warning")
             return redirect(f"/candidato/formulario/{candidato_id}")
         
-        if file and allowed_file(file.filename):
-            # Gerar nome único para o arquivo
-            ext = file.filename.rsplit('.', 1)[1].lower()
-            filename = f"candidato_{candidato_id}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.{ext}"
-            
-            # Criar diretório se não existir
-            upload_dir = os.path.join(app.config['UPLOAD_FOLDER'], 'candidatos')
-            os.makedirs(upload_dir, exist_ok=True)
-            
-            # Salvar arquivo
-            filepath = os.path.join(upload_dir, filename)
-            file.save(filepath)
-            
-            # URL pública
-            foto_url = f"/uploads/candidatos/{filename}"
-            
-            # Atualizar banco de dados
-            cursor.execute("UPDATE candidatos SET foto = %s WHERE id = %s", (foto_url, candidato_id))
-            conn.commit()
-            
-            flash("Foto enviada com sucesso!", "success")
-        else:
-            flash("Tipo de arquivo não permitido. Use JPG, PNG ou WEBP", "danger")
+        # Verificar extensão
+        if not allowed_file(file.filename):
+            flash("Tipo de arquivo não permitido. Use: PNG, JPG, JPEG, GIF ou WEBP", "danger")
+            return redirect(f"/candidato/formulario/{candidato_id}")
+        
+        # Criar diretório se não existir
+        upload_dir = os.path.join(app.config['UPLOAD_FOLDER'], 'candidatos')
+        os.makedirs(upload_dir, exist_ok=True)
+        
+        # Gerar nome seguro para o arquivo (igual ao padrão do obreiro)
+        from datetime import datetime
+        import secrets
+        
+        ext = file.filename.rsplit('.', 1)[1].lower()
+        nome_arquivo = f"candidato_{candidato_id}_{datetime.now().strftime('%Y%m%d_%H%M%S')}_{secrets.token_hex(4)}.{ext}"
+        nome_arquivo = secure_filename(nome_arquivo)
+        
+        # Salvar arquivo
+        filepath = os.path.join(upload_dir, nome_arquivo)
+        file.save(filepath)
+        
+        # URL pública (igual ao padrão do obreiro)
+        foto_url = f"/static/uploads/candidatos/{nome_arquivo}"
+        
+        # Atualizar banco de dados
+        cursor.execute("UPDATE candidatos SET foto = %s WHERE id = %s", (foto_url, candidato_id))
+        conn.commit()
+        
+        flash("Foto enviada com sucesso!", "success")
         
         return_connection(conn)
         return redirect(f"/candidato/formulario/{candidato_id}")
         
     except Exception as e:
-        print(f"Erro: {e}")
+        print(f"Erro ao fazer upload da foto: {e}")
+        import traceback
+        traceback.print_exc()
         if 'conn' in locals():
             return_connection(conn)
-        flash("Erro ao fazer upload da foto", "danger")
+        flash(f"Erro ao fazer upload da foto: {str(e)}", "danger")
         return redirect(f"/candidato/formulario/{candidato_id}")
-
-def allowed_file(filename):
-    """Verifica se o arquivo é permitido"""
-    ALLOWED_EXTENSIONS = {'jpg', 'jpeg', 'png', 'webp'}
-    return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
 @app.route("/emitir-placet/<int:candidato_id>", methods=["POST"])
 @login_required
