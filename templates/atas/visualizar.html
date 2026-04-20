@@ -19,7 +19,7 @@
             </div>
         </div>
 
-               <!-- Status das Assinaturas (apenas para atas aprovadas) -->
+        <!-- Status das Assinaturas (apenas para atas aprovadas) -->
         {% if ata_aprovada %}
         <div class="card shadow mb-4">
             <div class="card-header bg-primary text-white">
@@ -124,56 +124,70 @@
                 </div>
 
                 <!-- Lista de Presença -->
-                {% if presenca %}
-                <div class="card shadow">
-                    <div class="card-header bg-info text-white">
-                        <h5 class="mb-0"><i class="bi bi-people"></i> Lista de Presença</h5>
-                    </div>
-                    <div class="card-body">
-                        <div class="table-responsive">
-                            <table class="table table-sm table-hover">
-                                <thead>
-                                    <tr>
-                                        <th>Obreiro</th>
-                                        <th>Grau</th>
-                                        <th>Cargo</th>
-                                        <th>Status</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {% for p in presenca %}
-                                    <tr>
-                                        <td>{{ p.nome_completo }}</td>
-                                        <td>
-                                            {% if p.grau_atual >= 3 %}
-                                                <span class="badge bg-success">Mestre</span>
-                                            {% elif p.grau_atual == 2 %}
-                                                <span class="badge bg-primary">Companheiro</span>
-                                            {% else %}
-                                                <span class="badge bg-secondary">Aprendiz</span>
-                                            {% endif %}
-                                        </td>
-                                        <td>{{ p.cargo_nome or '-' }}</td>
-                                        <td>
-                                            {% if p.presente == 1 %}
-                                                <span class="badge bg-success">Presente</span>
-                                            {% else %}
-                                                <span class="badge bg-danger">
-                                                    Ausente
-                                                    {% if p.tipo_ausencia %}
-                                                        ({{ p.tipo_ausencia }})
-                                                    {% endif %}
-                                                </span>
-                                            {% endif %}
-                                        </td>
-                                    </tr>
-                                    {% endfor %}
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-                </div>
-                {% endif %}
+{% if presenca %}
+<div class="card shadow">
+    <div class="card-header bg-info text-white">
+        <h5 class="mb-0"><i class="bi bi-people"></i> Lista de Presença</h5>
+    </div>
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-sm table-hover">
+                <thead>
+                    <tr>
+                        <th>Obreiro</th>
+                        <th>Grau</th>
+                        <th>Status</th>
+                        <th>Justificativa</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for p in presenca %}
+                    <tr>
+                        <td>
+                            <span class="fw-semibold">{{ p.nome_completo }}</span>
+                            {% if p.cargo_nome in ['Venerável Mestre', 'Orador', 'Secretário'] %}
+                                <span class="badge bg-secondary ms-1">{{ p.cargo_nome }}</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% set grau = p.grau_atual|int %}
+                            {% if grau >= 3 %}
+                                <span class="badge bg-success">Mestre</span>
+                            {% elif grau == 2 %}
+                                <span class="badge bg-primary">Companheiro</span>
+                            {% elif grau == 1 %}
+                                <span class="badge bg-secondary">Aprendiz</span>
+                            {% else %}
+                                <span class="badge bg-info">Grau {{ grau }}</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if p.presente == 1 %}
+                                <span class="badge bg-success">Presente</span>
+                            {% else %}
+                                <span class="badge bg-danger">Ausente</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if p.presente != 1 %}
+                                {% if p.tipo_ausencia %}
+                                    <strong>{{ p.tipo_ausencia }}</strong>
+                                {% endif %}
+                                {% if p.justificativa %}
+                                    <br><small class="text-muted">{{ p.justificativa|truncate(50) }}</small>
+                                {% endif %}
+                            {% else %}
+                                <span class="text-muted">-</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endif %}
             </div>
 
             <div class="col-md-4">
@@ -255,7 +269,7 @@
                         
                         <hr>
                         
-                        <!-- Botões de Assinatura por Cargo (aparecem apenas para atas aprovadas e cargos corretos) -->
+                        <!-- Botões de Assinatura por Cargo -->
                         {% if ata_aprovada %}
                             {% if cargo_usuario == 'veneravel' and not assinatura_veneravel %}
                             <form method="POST" action="/atas/{{ ata.id }}/assinar/veneravel" class="mt-2">

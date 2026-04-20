@@ -7927,24 +7927,43 @@ def ver_ata_por_id(id):
                     return_connection(conn)
                     return redirect("/atas")
         
-        # Buscar lista de presença da reunião
+        # ============================================
+        # CORREÇÃO: Usar tabela presenca_reuniao (igual ao detalhe da reunião)
+        # ============================================
         presenca = []
         if verificar_permissao(session['user_id'], 'reuniao.view_one') or is_admin:
             cursor.execute("""
-                SELECT u.nome_completo, u.grau_atual,
-                       p.presente, p.tipo_ausencia,
-                       c.nome as cargo_nome
-                FROM presenca p
-                JOIN usuarios u ON p.obreiro_id = u.id
+                SELECT 
+                    u.id,
+                    u.nome_completo, 
+                    u.grau_atual,
+                    u.tipo,
+                    COALESCE(pr.presente, FALSE) as presente,
+                    pr.tipo_ausencia,
+                    pr.justificativa,
+                    c.nome as cargo_nome
+                FROM usuarios u
+                LEFT JOIN presenca_reuniao pr ON u.id = pr.obreiro_id AND pr.reuniao_id = %s
                 LEFT JOIN ocupacao_cargos oc ON u.id = oc.obreiro_id AND oc.ativo = 1
                 LEFT JOIN cargos c ON oc.cargo_id = c.id
-                WHERE p.reuniao_id = %s
+                WHERE u.ativo = 1 
+                  AND u.tipo IN ('admin', 'obreiro', 'sindicante')
                 ORDER BY 
-                    CASE WHEN c.ordem IS NOT NULL THEN c.ordem ELSE 999 END,
+                    CASE 
+                        WHEN c.nome = 'Venerável Mestre' THEN 1
+                        WHEN c.nome = 'Orador' THEN 2
+                        WHEN c.nome = 'Secretário' THEN 3
+                        ELSE 4
+                    END,
                     u.grau_atual DESC,
                     u.nome_completo
             """, (ata["reuniao_id"],))
             presenca = cursor.fetchall()
+            
+            # DEBUG (remova depois)
+            print(f"\n📊 PRESENÇA NA ATA (Reunião ID: {ata['reuniao_id']})")
+            for p in presenca:
+                print(f"  - {p['nome_completo']}: presente={p['presente']}")
         
         # ============================================
         # SISTEMA DE ASSINATURAS POR CARGO
@@ -7952,11 +7971,10 @@ def ver_ata_por_id(id):
         
         ata_aprovada = ata.get('aprovada', 0) == 1
         
-        # Buscar cargo atual do usuário (TAMBÉM PARA ADMIN)
+        # Buscar cargo atual do usuário
         usuario_id = session.get('user_id')
         cargo_usuario = None
         
-        # REMOVEMOS a condição "if not is_admin" para que admin também possa ter cargo
         cursor.execute("""
             SELECT c.nome as cargo_nome, c.id as cargo_id
             FROM ocupacao_cargos oc
@@ -7969,7 +7987,6 @@ def ver_ata_por_id(id):
         
         if cargo:
             cargo_nome_lower = cargo['cargo_nome'].lower()
-            print(f"🔍 Cargo do usuário {usuario_id}: '{cargo['cargo_nome']}' -> lower: '{cargo_nome_lower}'")
             
             if 'venerável' in cargo_nome_lower or 'veneravel' in cargo_nome_lower:
                 cargo_usuario = 'veneravel'
@@ -7977,10 +7994,6 @@ def ver_ata_por_id(id):
                 cargo_usuario = 'orador'
             elif 'secretário' in cargo_nome_lower or 'secretario' in cargo_nome_lower:
                 cargo_usuario = 'secretario'
-            
-            print(f"🔍 cargo_usuario definido como: '{cargo_usuario}'")
-        else:
-            print(f"⚠️ Nenhum cargo ativo encontrado para o usuário {usuario_id}")
         
         # Verificar status das assinaturas na ata
         assinatura_veneravel = ata.get('assinatura_veneravel', False)
@@ -8001,17 +8014,10 @@ def ver_ata_por_id(id):
         elif cargo_usuario == 'secretario' and assinatura_secretario:
             ja_assinou = True
         
-        # Verificar se pode assinar (ata aprovada, tem cargo correto, não assinou ainda)
-        # Admin também pode assinar se tiver o cargo correto
+        # Verificar se pode assinar
         pode_assinar = ata_aprovada and cargo_usuario is not None and not ja_assinou
         
-        print(f"🔍 DEBUG FINAL:")
-        print(f"   - ata_aprovada: {ata_aprovada}")
-        print(f"   - cargo_usuario: {cargo_usuario}")
-        print(f"   - ja_assinou: {ja_assinou}")
-        print(f"   - pode_assinar: {pode_assinar}")
-        
-        # Buscar assinaturas existentes (para admin visualizar)
+        # Buscar assinaturas existentes
         assinaturas_lista = []
         if assinatura_veneravel:
             assinaturas_lista.append({
@@ -8420,33 +8426,11 @@ def visualizar_ata_completa(id):
     try:
         cursor, conn = get_db()
         
+        # Buscar dados da ata
         cursor.execute("""
-            SELECT 
-                a.*,
-                a.numero_ata as numero,
-                a.data_criacao as data,
-                r.titulo as reuniao_titulo,
-                r.data as reuniao_data,
-                r.hora_inicio,
-                r.hora_termino,
-                r.local,
-                r.pauta,
-                r.grau as reuniao_grau,
-                u.nome_completo as redator_nome,
-                u2.nome_completo as aprovado_por_nome,
-                a.assinatura_veneravel,
-                a.assinatura_orador,
-                a.assinatura_secretario,
-                a.data_assinatura_veneravel,
-                a.data_assinatura_orador,
-                a.data_assinatura_secretario,
-                a.veneravel_mestre_nome,
-                a.orador_nome,
-                a.secretario_nome
+            SELECT a.*, r.id as reuniao_id, r.titulo as reuniao_titulo
             FROM atas a
             JOIN reunioes r ON a.reuniao_id = r.id
-            LEFT JOIN usuarios u ON a.redator_id = u.id
-            LEFT JOIN usuarios u2 ON a.aprovada_por = u2.id
             WHERE a.id = %s
         """, (id,))
         
@@ -8457,36 +8441,90 @@ def visualizar_ata_completa(id):
             return_connection(conn)
             return redirect("/atas")
         
-        # Buscar lista de presença da reunião
+        reuniao_id = ata['reuniao_id']
+        
+        # ============================================
+        # DEBUG: Verificar o que está na tabela presenca_reuniao
+        # ============================================
+        print(f"\n{'='*60}")
+        print(f"🔍 DEBUG - Ata ID: {id} | Reunião ID: {reuniao_id}")
+        print(f"{'='*60}")
+        
+        # Verificar registros de presença na tabela presenca_reuniao
         cursor.execute("""
-            SELECT u.nome_completo, u.grau_atual,
-                   p.presente, p.tipo_ausencia,
-                   c.nome as cargo_nome
-            FROM presenca p
-            JOIN usuarios u ON p.obreiro_id = u.id
-            LEFT JOIN ocupacao_cargos oc ON u.id = oc.obreiro_id AND oc.ativo = 1
-            LEFT JOIN cargos c ON oc.cargo_id = c.id
-            WHERE p.reuniao_id = %s
-            ORDER BY 
-                CASE WHEN c.ordem IS NOT NULL THEN c.ordem ELSE 999 END,
-                u.grau_atual DESC,
-                u.nome_completo
-        """, (ata["reuniao_id"],))
+            SELECT obreiro_id, presente, tipo_ausencia, justificativa
+            FROM presenca_reuniao
+            WHERE reuniao_id = %s
+        """, (reuniao_id,))
+        presenca_registros = cursor.fetchall()
+        
+        print(f"\n📌 Registros na tabela presenca_reuniao para reunião {reuniao_id}:")
+        for pr in presenca_registros:
+            print(f"  - obreiro_id: {pr['obreiro_id']}, presente: {pr['presente']}, tipo_ausencia: {pr['tipo_ausencia']}")
+        
+        # Verificar o usuário Renato Maximino especificamente
+        cursor.execute("""
+            SELECT id, nome_completo, tipo, ativo
+            FROM usuarios
+            WHERE nome_completo ILIKE '%Renato%' OR nome_completo ILIKE '%Maximino%'
+        """)
+        renato = cursor.fetchone()
+        
+        if renato:
+            print(f"\n👤 Usuário Renato Maximino: ID={renato['id']}, Nome={renato['nome_completo']}, Tipo={renato['tipo']}, Ativo={renato['ativo']}")
+            
+            # Verificar presença dele nesta reunião
+            cursor.execute("""
+                SELECT presente, tipo_ausencia, justificativa
+                FROM presenca_reuniao
+                WHERE reuniao_id = %s AND obreiro_id = %s
+            """, (reuniao_id, renato['id']))
+            presenca_renato = cursor.fetchone()
+            
+            if presenca_renato:
+                print(f"  - Presença na reunião: presente={presenca_renato['presente']}")
+            else:
+                print(f"  - NÃO há registro de presença para o Renato nesta reunião!")
+        else:
+            print("\n❌ Usuário Renato Maximino NÃO encontrado!")
+        
+        # ============================================
+        # BUSCAR PRESENÇA IGUAL AO DETALHE DA REUNIÃO
+        # ============================================
+        cursor.execute("""
+            SELECT 
+                u.id, 
+                u.nome_completo, 
+                u.grau_atual,
+                u.tipo,
+                COALESCE(pr.presente, FALSE) as presente,
+                pr.tipo_ausencia,
+                pr.justificativa
+            FROM usuarios u
+            LEFT JOIN presenca_reuniao pr ON u.id = pr.obreiro_id AND pr.reuniao_id = %s
+            WHERE u.ativo = 1 
+              AND u.tipo IN ('admin', 'obreiro', 'sindicante')
+            ORDER BY u.nome_completo
+        """, (reuniao_id,))
         
         presenca = cursor.fetchall()
         
+        print(f"\n📊 TOTAL de obreiros encontrados: {len(presenca)}")
+        print(f"{'='*60}\n")
+        
         return_connection(conn)
         
-        return render_template("atas/visualizar.html", ata=ata, presenca=presenca)
+        return render_template("atas/visualizar.html", 
+                              ata=ata, 
+                              presenca=presenca,
+                              ata_aprovada=ata.get('aprovada') == 1)
         
     except Exception as e:
-        print(f"❌ Erro ao visualizar ata completa {id}: {e}")
+        print(f"❌ Erro: {e}")
         import traceback
         traceback.print_exc()
-        
         if 'conn' in locals():
             return_connection(conn)
-        
         flash(f"Erro ao carregar ata: {str(e)}", "danger")
         return redirect("/atas")
 
