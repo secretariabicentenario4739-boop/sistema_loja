@@ -547,78 +547,102 @@
 </div>
 
 <script>
-    // Autopreenchimento dos dados da loja
-    const lojaSelect = document.getElementById('lojaSelect');
-    if (lojaSelect) {
-        lojaSelect.addEventListener('change', function() {
-            const selected = this.options[this.selectedIndex];
-            document.getElementById('lojaNumero').value = selected.dataset.numero || '';
-            document.getElementById('lojaOriente').value = selected.dataset.oriente || '';
+  // Tornar a linha da tabela clicável para abrir o sindicante
+document.addEventListener('DOMContentLoaded', function() {
+    const linhas = document.querySelectorAll('#tabelaSindicantes tbody tr');
+    linhas.forEach(linha => {
+        // Impedir que o clique em botões dentro da linha dispare o redirecionamento
+        const botoes = linha.querySelectorAll('.btn, button, a');
+        botoes.forEach(botao => {
+            botao.addEventListener('click', function(e) {
+                e.stopPropagation();
+            });
         });
-    }
-
-    // Mostrar informações do obreiro selecionado para promoção
-    const obreiroSelect = document.getElementById('obreiroSelect');
-    const infoDiv = document.getElementById('infoObreiroSelecionado');
-    const nomeSpan = document.getElementById('nomeSelecionado');
-    const grauSpan = document.getElementById('grauSelecionado');
-
-    if (obreiroSelect) {
-        obreiroSelect.addEventListener('change', function() {
-            const selected = this.options[this.selectedIndex];
-            if (selected.value) {
-                const nome = selected.dataset.nome || selected.text.split(' (')[0];
-                let grau = '';
-                if (selected.text.includes('Mestre (3°)')) grau = 'Mestre (3° Grau)';
-                else if (selected.text.includes('Mestre Instalado (4°)')) grau = 'Mestre Instalado (4° Grau)';
-                else if (selected.text.includes('Grau Superior')) {
-                    const match = selected.text.match(/Grau Superior \(\d+°\)/);
-                    grau = match ? match[0] : 'Grau Superior';
-                }
-                else grau = 'Mestre';
-                
-                nomeSpan.textContent = nome;
-                grauSpan.textContent = grau;
-                infoDiv.style.display = 'block';
-            } else {
-                infoDiv.style.display = 'none';
+        
+        // Adicionar cursor pointer e evento de clique
+        linha.style.cursor = 'pointer';
+        linha.addEventListener('click', function() {
+            // Buscar o link de visualização do obreiro dentro da linha
+            const linkVisualizar = this.querySelector('.btn-info[href*="/obreiros/"]');
+            if (linkVisualizar) {
+                window.location.href = linkVisualizar.getAttribute('href');
             }
         });
-    }
+    });
+});
 
-    // Validação de senha no formulário de novo sindicante
-    const formNovoSindicante = document.getElementById('formNovoSindicante');
-    if (formNovoSindicante) {
-        formNovoSindicante.addEventListener('submit', function(e) {
-            const senha = document.getElementById('senha');
-            if (senha && senha.value.length > 0 && senha.value.length < 6) {
-                e.preventDefault();
-                alert('A senha deve ter no mínimo 6 caracteres!');
-                senha.focus();
-                return false;
+// Autopreenchimento dos dados da loja
+const lojaSelect = document.getElementById('lojaSelect');
+if (lojaSelect) {
+    lojaSelect.addEventListener('change', function() {
+        const selected = this.options[this.selectedIndex];
+        document.getElementById('lojaNumero').value = selected.dataset.numero || '';
+        document.getElementById('lojaOriente').value = selected.dataset.oriente || '';
+    });
+}
+
+// Mostrar informações do obreiro selecionado para promoção
+const obreiroSelect = document.getElementById('obreiroSelect');
+const infoDiv = document.getElementById('infoObreiroSelecionado');
+const nomeSpan = document.getElementById('nomeSelecionado');
+const grauSpan = document.getElementById('grauSelecionado');
+
+if (obreiroSelect) {
+    obreiroSelect.addEventListener('change', function() {
+        const selected = this.options[this.selectedIndex];
+        if (selected.value) {
+            const nome = selected.dataset.nome || selected.text.split(' (')[0];
+            let grau = '';
+            if (selected.text.includes('Mestre (3°)')) grau = 'Mestre (3° Grau)';
+            else if (selected.text.includes('Mestre Instalado (4°)')) grau = 'Mestre Instalado (4° Grau)';
+            else if (selected.text.includes('Grau Superior')) {
+                const match = selected.text.match(/Grau Superior \(\d+°\)/);
+                grau = match ? match[0] : 'Grau Superior';
             }
-        });
-    }
+            else grau = 'Mestre';
+            
+            nomeSpan.textContent = nome;
+            grauSpan.textContent = grau;
+            infoDiv.style.display = 'block';
+        } else {
+            infoDiv.style.display = 'none';
+        }
+    });
+}
 
-    // Função para exportar lista de sindicantes
-    function exportarLista() {
-        const tabela = document.getElementById('tabelaSindicantes');
-        if (!tabela) return;
-        
-        let html = '<html><head><meta charset="UTF-8"><title>Sindicantes</title>';
-        html += '<style>table {border-collapse: collapse; width: 100%;} th, td {border: 1px solid #ddd; padding: 8px;} th {background-color: #f2f2f2;}</style>';
-        html += '</head><body>';
-        html += '<h2>Lista de Sindicantes</h2>';
-        html += '<p>Gerado em: ' + new Date().toLocaleString('pt-BR') + '</p>';
-        html += tabela.outerHTML;
-        html += '</body></html>';
-        
-        const blob = new Blob([html], {type: 'application/vnd.ms-excel'});
-        const link = document.createElement('a');
-        link.href = URL.createObjectURL(blob);
-        link.download = 'sindicantes.xls';
-        link.click();
-        URL.revokeObjectURL(link.href);
-    }
+// Validação de senha no formulário de novo sindicante
+const formNovoSindicante = document.getElementById('formNovoSindicante');
+if (formNovoSindicante) {
+    formNovoSindicante.addEventListener('submit', function(e) {
+        const senha = document.getElementById('senha');
+        if (senha && senha.value.length > 0 && senha.value.length < 6) {
+            e.preventDefault();
+            alert('A senha deve ter no mínimo 6 caracteres!');
+            senha.focus();
+            return false;
+        }
+    });
+}
+
+// Função para exportar lista de sindicantes
+function exportarLista() {
+    const tabela = document.getElementById('tabelaSindicantes');
+    if (!tabela) return;
+    
+    let html = '<html><head><meta charset="UTF-8"><title>Sindicantes</title>';
+    html += '<style>table {border-collapse: collapse; width: 100%;} th, td {border: 1px solid #ddd; padding: 8px;} th {background-color: #f2f2f2;}</style>';
+    html += '</head><body>';
+    html += '<h2>Lista de Sindicantes</h2>';
+    html += '<p>Gerado em: ' + new Date().toLocaleString('pt-BR') + '</p>';
+    html += tabela.outerHTML;
+    html += '</body></html>';
+    
+    const blob = new Blob([html], {type: 'application/vnd.ms-excel'});
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.download = 'sindicantes.xls';
+    link.click();
+    URL.revokeObjectURL(link.href);
+}
 </script>
 {% endblock %}

@@ -17,305 +17,357 @@
             </div>
         </div>
 
-         <div class="card shadow">
-            <div class="card-header bg-primary text-white">
-                <h5 class="mb-0"><i class="bi bi-person-badge"></i> Dados do Candidato: {{ candidato.nome }}</h5>
-            </div>
-            <div class="card-body">
-                <form method="POST" id="formCandidato">
-                    <!-- Informações da Loja (pré-preenchidas com dados do obreiro logado) -->
-                    <div class="card mb-4">
-                        <div class="card-header bg-info text-white">
-                            <h6 class="mb-0"><i class="bi bi-building"></i> Dados da Loja</h6>
-                        </div>
-                        <div class="card-body">
-                            <div class="alert alert-light border mb-3">
-                                <i class="bi bi-info-circle"></i>
-                                <strong>Loja do Obreiro Responsável:</strong> 
-                                {{ usuario.nome_completo }}
-                                <br>
-                                <small class="text-muted">Os campos abaixo foram preenchidos automaticamente com os dados da sua loja. Você pode alterá-los se necessário.</small>
+        <div class="row">
+            <div class="col-md-8">
+                <div class="card shadow">
+                    <div class="card-header bg-primary text-white">
+                        <h5 class="mb-0"><i class="bi bi-person-badge"></i> Dados do Candidato: {{ candidato.nome }}</h5>
+                    </div>
+                    <div class="card-body">
+                        <form method="POST" id="formCandidato">
+                            <!-- Informações da Loja (pré-preenchidas com dados do obreiro logado) -->
+                            <div class="card mb-4">
+                                <div class="card-header bg-info text-white">
+                                    <h6 class="mb-0"><i class="bi bi-building"></i> Dados da Loja</h6>
+                                </div>
+                                <div class="card-body">
+                                    <div class="alert alert-light border mb-3">
+                                        <i class="bi bi-info-circle"></i>
+                                        <strong>Loja do Obreiro Responsável:</strong> 
+                                        {{ usuario.nome_completo }}
+                                        <br>
+                                        <small class="text-muted">Os campos abaixo foram preenchidos automaticamente com os dados da sua loja. Você pode alterá-los se necessário.</small>
+                                    </div>
+                                    <div class="row">
+                                        <div class="col-md-8 mb-3">
+                                            <label class="form-label">Loja Maçônica</label>
+                                            <select class="form-select" name="loja_nome" id="lojaSelect">
+                                                <option value="{{ usuario.loja_nome }}" selected>{{ usuario.loja_nome }}</option>
+                                                {% for loja in lojas %}
+                                                    {% if loja.nome != usuario.loja_nome %}
+                                                    <option value="{{ loja.nome }}" 
+                                                            data-numero="{{ loja.numero }}"
+                                                            data-oriente="{{ loja.oriente }}">
+                                                        {{ loja.nome }}
+                                                    </option>
+                                                    {% endif %}
+                                                {% endfor %}
+                                            </select>
+                                            <small class="text-muted">Selecione a loja do candidato (pode ser diferente da sua)</small>
+                                        </div>
+                                        <div class="col-md-4 mb-3">
+                                            <label class="form-label">Nº da Loja</label>
+                                            <input type="text" class="form-control" name="loja_numero" id="lojaNumero" 
+                                                   value="{{ candidato.loja_numero or usuario.loja_numero or usuario.loja_numero_completo }}" readonly>
+                                        </div>
+                                    </div>
+                                    <div class="row">
+                                        <div class="col-md-12 mb-3">
+                                            <label class="form-label">Oriente</label>
+                                            <input type="text" class="form-control" name="loja_orient" id="lojaOriente" 
+                                                   value="{{ candidato.loja_orient or usuario.loja_orient or usuario.loja_oriente }}" readonly>
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
-                            <div class="row">
-                                <div class="col-md-8 mb-3">
-                                    <label class="form-label">Loja Maçônica</label>
-                                    <select class="form-select" name="loja_nome" id="lojaSelect">
-                                        <option value="{{ usuario.loja_nome }}" selected>{{ usuario.loja_nome }}</option>
-                                        {% for loja in lojas %}
-                                            {% if loja.nome != usuario.loja_nome %}
-                                            <option value="{{ loja.nome }}" 
-                                                    data-numero="{{ loja.numero }}"
-                                                    data-oriente="{{ loja.oriente }}">
-                                                {{ loja.nome }}
-                                            </option>
-                                            {% endif %}
+
+                            <!-- Dados Pessoais -->
+                            <div class="card mb-4">
+                                <div class="card-header bg-info text-white">
+                                    <h6 class="mb-0"><i class="bi bi-person-circle"></i> Dados Pessoais</h6>
+                                </div>
+                                <div class="card-body">
+                                    <div class="row">
+                                        <div class="col-md-6 mb-3">
+                                            <label class="form-label">Nome Completo *</label>
+                                            <input type="text" class="form-control" value="{{ candidato.nome }}" readonly>
+                                        </div>
+                                        <div class="col-md-6 mb-3">
+                                            <label class="form-label">Data de Nascimento</label>
+                                            <input type="date" class="form-control" name="data_nascimento" value="{{ candidato.data_nascimento.strftime('%Y-%m-%d') if candidato.data_nascimento else '' }}">
+                                        </div>
+                                    </div>
+                                    <div class="row">
+                                        <div class="col-md-4 mb-3">
+                                            <label class="form-label">Naturalidade</label>
+                                            <input type="text" class="form-control" name="naturalidade" value="{{ candidato.naturalidade or '' }}">
+                                        </div>
+                                        <div class="col-md-2 mb-3">
+                                            <label class="form-label">UF</label>
+                                            <input type="text" class="form-control" name="uf_naturalidade" value="{{ candidato.uf_naturalidade or '' }}">
+                                        </div>
+                                        <div class="col-md-6 mb-3">
+                                            <label class="form-label">Nacionalidade</label>
+                                            <input type="text" class="form-control" name="nacionalidade" value="{{ candidato.nacionalidade or 'Brasileiro' }}">
+                                        </div>
+                                    </div>
+                                    <div class="row">
+                                        <div class="col-md-6 mb-3">
+                                            <label class="form-label">CPF</label>
+                                            <input type="text" class="form-control" name="cpf" id="cpf" value="{{ candidato.cpf or '' }}" placeholder="000.000.000-00">
+                                        </div>
+                                        <div class="col-md-6 mb-3">
+                                            <label class="form-label">RG</label>
+                                            <input type="text" class="form-control" name="rg" value="{{ candidato.rg or '' }}">
+                                        </div>
+                                    </div>
+                                    <div class="row">
+                                        <div class="col-md-4 mb-3">
+                                            <label class="form-label">Órgão Expedidor</label>
+                                            <input type="text" class="form-control" name="orgao_expedidor" value="{{ candidato.orgao_expedidor or '' }}">
+                                        </div>
+                                        <div class="col-md-4 mb-3">
+                                            <label class="form-label">Telefone Fixo</label>
+                                            <input type="text" class="form-control" name="telefone_fixo" id="telefoneFixo" value="{{ candidato.telefone_fixo or '' }}">
+                                        </div>
+                                        <div class="col-md-4 mb-3">
+                                            <label class="form-label">Celular</label>
+                                            <input type="text" class="form-control" name="celular" id="celular" value="{{ candidato.celular or '' }}">
+                                        </div>
+                                    </div>
+                                    <div class="row">
+                                        <div class="col-md-6 mb-3">
+                                            <label class="form-label">E-mail</label>
+                                            <input type="email" class="form-control" name="email" value="{{ candidato.email or '' }}">
+                                        </div>
+                                        <div class="col-md-6 mb-3">
+                                            <label class="form-label">Grau de Instrução</label>
+                                            <select class="form-select" name="grau_instrucao">
+                                                <option value="">Selecione...</option>
+                                                <option value="Ensino Fundamental" {% if candidato.grau_instrucao == 'Ensino Fundamental' %}selected{% endif %}>Ensino Fundamental</option>
+                                                <option value="Ensino Médio" {% if candidato.grau_instrucao == 'Ensino Médio' %}selected{% endif %}>Ensino Médio</option>
+                                                <option value="Ensino Superior" {% if candidato.grau_instrucao == 'Ensino Superior' %}selected{% endif %}>Ensino Superior</option>
+                                                <option value="Pós-Graduação" {% if candidato.grau_instrucao == 'Pós-Graduação' %}selected{% endif %}>Pós-Graduação</option>
+                                                <option value="Mestrado" {% if candidato.grau_instrucao == 'Mestrado' %}selected{% endif %}>Mestrado</option>
+                                                <option value="Doutorado" {% if candidato.grau_instrucao == 'Doutorado' %}selected{% endif %}>Doutorado</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                    <div class="row">
+                                        <div class="col-md-2 mb-3">
+                                            <label class="form-label">Tipo Sanguíneo</label>
+                                            <input type="text" class="form-control" name="tipo_sanguineo" value="{{ candidato.tipo_sanguineo or '' }}">
+                                        </div>
+                                        <div class="col-md-5 mb-3">
+                                            <label class="form-label">Nome do Pai</label>
+                                            <input type="text" class="form-control" name="nome_pai" value="{{ candidato.nome_pai or '' }}">
+                                        </div>
+                                        <div class="col-md-5 mb-3">
+                                            <label class="form-label">Nome da Mãe</label>
+                                            <input type="text" class="form-control" name="nome_mae" value="{{ candidato.nome_mae or '' }}">
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Endereço Residencial -->
+                            <div class="card mb-4">
+                                <div class="card-header bg-info text-white">
+                                    <h6 class="mb-0"><i class="bi bi-house-door"></i> Endereço Residencial</h6>
+                                </div>
+                                <div class="card-body">
+                                    <div class="row">
+                                        <div class="col-md-8 mb-3">
+                                            <label class="form-label">Endereço</label>
+                                            <input type="text" class="form-control" name="endereco_residencial" value="{{ candidato.endereco_residencial or '' }}">
+                                        </div>
+                                        <div class="col-md-4 mb-3">
+                                            <label class="form-label">Número</label>
+                                            <input type="text" class="form-control" name="numero_residencial" value="{{ candidato.numero_residencial or '' }}">
+                                        </div>
+                                    </div>
+                                    <div class="row">
+                                        <div class="col-md-5 mb-3">
+                                            <label class="form-label">Bairro</label>
+                                            <input type="text" class="form-control" name="bairro" value="{{ candidato.bairro or '' }}">
+                                        </div>
+                                        <div class="col-md-5 mb-3">
+                                            <label class="form-label">Cidade</label>
+                                            <input type="text" class="form-control" name="cidade" value="{{ candidato.cidade or '' }}">
+                                        </div>
+                                        <div class="col-md-2 mb-3">
+                                            <label class="form-label">UF</label>
+                                            <input type="text" class="form-control" name="uf_residencial" value="{{ candidato.uf_residencial or '' }}">
+                                        </div>
+                                    </div>
+                                    <div class="row">
+                                        <div class="col-md-4 mb-3">
+                                            <label class="form-label">CEP</label>
+                                            <input type="text" class="form-control" name="cep" id="cep" value="{{ candidato.cep or '' }}" placeholder="00000-000">
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Estado Civil e Cônjuge -->
+                            <div class="card mb-4">
+                                <div class="card-header bg-info text-white">
+                                    <h6 class="mb-0"><i class="bi bi-heart"></i> Estado Civil</h6>
+                                </div>
+                                <div class="card-body">
+                                    <div class="row">
+                                        <div class="col-md-4 mb-3">
+                                            <label class="form-label">Estado Civil</label>
+                                            <select class="form-select" name="estado_civil" id="estadoCivil">
+                                                <option value="">Selecione...</option>
+                                                <option value="Solteiro" {% if candidato.estado_civil == 'Solteiro' %}selected{% endif %}>Solteiro</option>
+                                                <option value="Casado" {% if candidato.estado_civil == 'Casado' %}selected{% endif %}>Casado</option>
+                                                <option value="Divorciado" {% if candidato.estado_civil == 'Divorciado' %}selected{% endif %}>Divorciado</option>
+                                                <option value="Viúvo" {% if candidato.estado_civil == 'Viúvo' %}selected{% endif %}>Viúvo</option>
+                                                <option value="União Estável" {% if candidato.estado_civil == 'União Estável' %}selected{% endif %}>União Estável</option>
+                                            </select>
+                                        </div>
+                                        <div class="col-md-4 mb-3" id="dataCasamentoDiv" style="display: none;">
+                                            <label class="form-label">Data de Casamento</label>
+                                            <input type="date" class="form-control" name="data_casamento" value="{{ candidato.data_casamento.strftime('%Y-%m-%d') if candidato.data_casamento else '' }}">
+                                        </div>
+                                        <div class="col-md-4 mb-3" id="nomeConjugeDiv" style="display: none;">
+                                            <label class="form-label">Nome do Cônjuge</label>
+                                            <input type="text" class="form-control" name="nome_conjuge" value="{{ candidato.nome_conjuge or '' }}">
+                                        </div>
+                                        <div class="col-md-4 mb-3" id="dataConjugeDiv" style="display: none;">
+                                            <label class="form-label">Data de Nascimento do Cônjuge</label>
+                                            <input type="date" class="form-control" name="data_nascimento_conjuge" value="{{ candidato.data_nascimento_conjuge.strftime('%Y-%m-%d') if candidato.data_nascimento_conjuge else '' }}">
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Filhos -->
+                            <div class="card mb-4">
+                                <div class="card-header bg-info text-white">
+                                    <h6 class="mb-0"><i class="bi bi-baby"></i> Filhos</h6>
+                                </div>
+                                <div class="card-body">
+                                    <div id="filhos-container">
+                                        {% for filho in filhos %}
+                                        <div class="row mb-2 filho-row">
+                                            <div class="col-md-6">
+                                                <input type="text" class="form-control" name="filho_nome[]" value="{{ filho.nome }}" placeholder="Nome do filho(a)">
+                                            </div>
+                                            <div class="col-md-5">
+                                                <input type="date" class="form-control" name="filho_data[]" value="{{ filho.data_nascimento.strftime('%Y-%m-%d') if filho.data_nascimento else '' }}">
+                                            </div>
+                                            <div class="col-md-1">
+                                                <button type="button" class="btn btn-danger btn-sm remove-filho">
+                                                    <i class="bi bi-trash"></i>
+                                                </button>
+                                            </div>
+                                        </div>
                                         {% endfor %}
-                                    </select>
-                                    <small class="text-muted">Selecione a loja do candidato (pode ser diferente da sua)</small>
-                                </div>
-                                <div class="col-md-4 mb-3">
-                                    <label class="form-label">Nº da Loja</label>
-                                    <input type="text" class="form-control" name="loja_numero" id="lojaNumero" 
-                                           value="{{ candidato.loja_numero or usuario.loja_numero or usuario.loja_numero_completo }}" readonly>
-                                </div>
-                            </div>
-                            <div class="row">
-                                <div class="col-md-12 mb-3">
-                                    <label class="form-label">Oriente</label>
-                                    <input type="text" class="form-control" name="loja_orient" id="lojaOriente" 
-                                           value="{{ candidato.loja_orient or usuario.loja_orient or usuario.loja_oriente }}" readonly>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Dados Pessoais -->
-                    <div class="card mb-4">
-                        <div class="card-header bg-info text-white">
-                            <h6 class="mb-0"><i class="bi bi-person-circle"></i> Dados Pessoais</h6>
-                        </div>
-                        <div class="card-body">
-                            <div class="row">
-                                <div class="col-md-6 mb-3">
-                                    <label class="form-label">Nome Completo *</label>
-                                    <input type="text" class="form-control" value="{{ candidato.nome }}" readonly>
-                                </div>
-                                <div class="col-md-6 mb-3">
-                                    <label class="form-label">Data de Nascimento</label>
-                                    <input type="date" class="form-control" name="data_nascimento" value="{{ candidato.data_nascimento.strftime('%Y-%m-%d') if candidato.data_nascimento else '' }}">
-                                </div>
-                            </div>
-                            <div class="row">
-                                <div class="col-md-4 mb-3">
-                                    <label class="form-label">Naturalidade</label>
-                                    <input type="text" class="form-control" name="naturalidade" value="{{ candidato.naturalidade or '' }}">
-                                </div>
-                                <div class="col-md-2 mb-3">
-                                    <label class="form-label">UF</label>
-                                    <input type="text" class="form-control" name="uf_naturalidade" value="{{ candidato.uf_naturalidade or '' }}">
-                                </div>
-                                <div class="col-md-6 mb-3">
-                                    <label class="form-label">Nacionalidade</label>
-                                    <input type="text" class="form-control" name="nacionalidade" value="{{ candidato.nacionalidade or 'Brasileiro' }}">
-                                </div>
-                            </div>
-                            <div class="row">
-                                <div class="col-md-6 mb-3">
-                                    <label class="form-label">CPF</label>
-                                    <input type="text" class="form-control" name="cpf" id="cpf" value="{{ candidato.cpf or '' }}" placeholder="000.000.000-00">
-                                </div>
-                                <div class="col-md-6 mb-3">
-                                    <label class="form-label">RG</label>
-                                    <input type="text" class="form-control" name="rg" value="{{ candidato.rg or '' }}">
-                                </div>
-                            </div>
-                            <div class="row">
-                                <div class="col-md-4 mb-3">
-                                    <label class="form-label">Órgão Expedidor</label>
-                                    <input type="text" class="form-control" name="orgao_expedidor" value="{{ candidato.orgao_expedidor or '' }}">
-                                </div>
-                                <div class="col-md-4 mb-3">
-                                    <label class="form-label">Telefone Fixo</label>
-                                    <input type="text" class="form-control" name="telefone_fixo" id="telefoneFixo" value="{{ candidato.telefone_fixo or '' }}">
-                                </div>
-                                <div class="col-md-4 mb-3">
-                                    <label class="form-label">Celular</label>
-                                    <input type="text" class="form-control" name="celular" id="celular" value="{{ candidato.celular or '' }}">
-                                </div>
-                            </div>
-                            <div class="row">
-                                <div class="col-md-6 mb-3">
-                                    <label class="form-label">E-mail</label>
-                                    <input type="email" class="form-control" name="email" value="{{ candidato.email or '' }}">
-                                </div>
-                                <div class="col-md-6 mb-3">
-                                    <label class="form-label">Grau de Instrução</label>
-                                    <select class="form-select" name="grau_instrucao">
-                                        <option value="">Selecione...</option>
-                                        <option value="Ensino Fundamental" {% if candidato.grau_instrucao == 'Ensino Fundamental' %}selected{% endif %}>Ensino Fundamental</option>
-                                        <option value="Ensino Médio" {% if candidato.grau_instrucao == 'Ensino Médio' %}selected{% endif %}>Ensino Médio</option>
-                                        <option value="Ensino Superior" {% if candidato.grau_instrucao == 'Ensino Superior' %}selected{% endif %}>Ensino Superior</option>
-                                        <option value="Pós-Graduação" {% if candidato.grau_instrucao == 'Pós-Graduação' %}selected{% endif %}>Pós-Graduação</option>
-                                        <option value="Mestrado" {% if candidato.grau_instrucao == 'Mestrado' %}selected{% endif %}>Mestrado</option>
-                                        <option value="Doutorado" {% if candidato.grau_instrucao == 'Doutorado' %}selected{% endif %}>Doutorado</option>
-                                    </select>
-                                </div>
-                            </div>
-                            <div class="row">
-                                <div class="col-md-2 mb-3">
-                                    <label class="form-label">Tipo Sanguíneo</label>
-                                    <input type="text" class="form-control" name="tipo_sanguineo" value="{{ candidato.tipo_sanguineo or '' }}">
-                                </div>
-                                <div class="col-md-5 mb-3">
-                                    <label class="form-label">Nome do Pai</label>
-                                    <input type="text" class="form-control" name="nome_pai" value="{{ candidato.nome_pai or '' }}">
-                                </div>
-                                <div class="col-md-5 mb-3">
-                                    <label class="form-label">Nome da Mãe</label>
-                                    <input type="text" class="form-control" name="nome_mae" value="{{ candidato.nome_mae or '' }}">
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Endereço Residencial -->
-                    <div class="card mb-4">
-                        <div class="card-header bg-info text-white">
-                            <h6 class="mb-0"><i class="bi bi-house-door"></i> Endereço Residencial</h6>
-                        </div>
-                        <div class="card-body">
-                            <div class="row">
-                                <div class="col-md-8 mb-3">
-                                    <label class="form-label">Endereço</label>
-                                    <input type="text" class="form-control" name="endereco_residencial" value="{{ candidato.endereco_residencial or '' }}">
-                                </div>
-                                <div class="col-md-4 mb-3">
-                                    <label class="form-label">Número</label>
-                                    <input type="text" class="form-control" name="numero_residencial" value="{{ candidato.numero_residencial or '' }}">
-                                </div>
-                            </div>
-                            <div class="row">
-                                <div class="col-md-5 mb-3">
-                                    <label class="form-label">Bairro</label>
-                                    <input type="text" class="form-control" name="bairro" value="{{ candidato.bairro or '' }}">
-                                </div>
-                                <div class="col-md-5 mb-3">
-                                    <label class="form-label">Cidade</label>
-                                    <input type="text" class="form-control" name="cidade" value="{{ candidato.cidade or '' }}">
-                                </div>
-                                <div class="col-md-2 mb-3">
-                                    <label class="form-label">UF</label>
-                                    <input type="text" class="form-control" name="uf_residencial" value="{{ candidato.uf_residencial or '' }}">
-                                </div>
-                            </div>
-                            <div class="row">
-                                <div class="col-md-4 mb-3">
-                                    <label class="form-label">CEP</label>
-                                    <input type="text" class="form-control" name="cep" id="cep" value="{{ candidato.cep or '' }}" placeholder="00000-000">
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Estado Civil e Cônjuge -->
-                    <div class="card mb-4">
-                        <div class="card-header bg-info text-white">
-                            <h6 class="mb-0"><i class="bi bi-heart"></i> Estado Civil</h6>
-                        </div>
-                        <div class="card-body">
-                            <div class="row">
-                                <div class="col-md-4 mb-3">
-                                    <label class="form-label">Estado Civil</label>
-                                    <select class="form-select" name="estado_civil" id="estadoCivil">
-                                        <option value="">Selecione...</option>
-                                        <option value="Solteiro" {% if candidato.estado_civil == 'Solteiro' %}selected{% endif %}>Solteiro</option>
-                                        <option value="Casado" {% if candidato.estado_civil == 'Casado' %}selected{% endif %}>Casado</option>
-                                        <option value="Divorciado" {% if candidato.estado_civil == 'Divorciado' %}selected{% endif %}>Divorciado</option>
-                                        <option value="Viúvo" {% if candidato.estado_civil == 'Viúvo' %}selected{% endif %}>Viúvo</option>
-                                        <option value="União Estável" {% if candidato.estado_civil == 'União Estável' %}selected{% endif %}>União Estável</option>
-                                    </select>
-                                </div>
-                                <div class="col-md-4 mb-3" id="dataCasamentoDiv" style="display: none;">
-                                    <label class="form-label">Data de Casamento</label>
-                                    <input type="date" class="form-control" name="data_casamento" value="{{ candidato.data_casamento.strftime('%Y-%m-%d') if candidato.data_casamento else '' }}">
-                                </div>
-                                <div class="col-md-4 mb-3" id="nomeConjugeDiv" style="display: none;">
-                                    <label class="form-label">Nome do Cônjuge</label>
-                                    <input type="text" class="form-control" name="nome_conjuge" value="{{ candidato.nome_conjuge or '' }}">
-                                </div>
-                                <div class="col-md-4 mb-3" id="dataConjugeDiv" style="display: none;">
-                                    <label class="form-label">Data de Nascimento do Cônjuge</label>
-                                    <input type="date" class="form-control" name="data_nascimento_conjuge" value="{{ candidato.data_nascimento_conjuge.strftime('%Y-%m-%d') if candidato.data_nascimento_conjuge else '' }}">
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Filhos -->
-                    <div class="card mb-4">
-                        <div class="card-header bg-info text-white">
-                            <h6 class="mb-0"><i class="bi bi-baby"></i> Filhos</h6>
-                        </div>
-                        <div class="card-body">
-                            <div id="filhos-container">
-                                {% for filho in filhos %}
-                                <div class="row mb-2 filho-row">
-                                    <div class="col-md-6">
-                                        <input type="text" class="form-control" name="filho_nome[]" value="{{ filho.nome }}" placeholder="Nome do filho(a)">
                                     </div>
-                                    <div class="col-md-5">
-                                        <input type="date" class="form-control" name="filho_data[]" value="{{ filho.data_nascimento.strftime('%Y-%m-%d') if filho.data_nascimento else '' }}">
+                                    <button type="button" class="btn btn-sm btn-success mt-2" onclick="adicionarFilho()">
+                                        <i class="bi bi-plus-circle"></i> Adicionar Filho
+                                    </button>
+                                </div>
+                            </div>
+
+                            <!-- Atividade Profissional -->
+                            <div class="card mb-4">
+                                <div class="card-header bg-info text-white">
+                                    <h6 class="mb-0"><i class="bi bi-briefcase"></i> Atividade Profissional</h6>
+                                </div>
+                                <div class="card-body">
+                                    <div class="row">
+                                        <div class="col-md-6 mb-3">
+                                            <label class="form-label">Profissão</label>
+                                            <input type="text" class="form-control" name="profissao" value="{{ candidato.profissao or '' }}">
+                                        </div>
+                                        <div class="col-md-6 mb-3">
+                                            <label class="form-label">Empregador</label>
+                                            <input type="text" class="form-control" name="empregador" value="{{ candidato.empregador or '' }}">
+                                        </div>
                                     </div>
-                                    <div class="col-md-1">
-                                        <button type="button" class="btn btn-danger btn-sm remove-filho">
-                                            <i class="bi bi-trash"></i>
-                                        </button>
+                                    <div class="row">
+                                        <div class="col-md-8 mb-3">
+                                            <label class="form-label">Endereço Profissional</label>
+                                            <input type="text" class="form-control" name="endereco_profissional" value="{{ candidato.endereco_profissional or '' }}">
+                                        </div>
+                                        <div class="col-md-4 mb-3">
+                                            <label class="form-label">Bairro</label>
+                                            <input type="text" class="form-control" name="bairro_profissional" value="{{ candidato.bairro_profissional or '' }}">
+                                        </div>
+                                    </div>
+                                    <div class="row">
+                                        <div class="col-md-5 mb-3">
+                                            <label class="form-label">Cidade</label>
+                                            <input type="text" class="form-control" name="cidade_profissional" value="{{ candidato.cidade_profissional or '' }}">
+                                        </div>
+                                        <div class="col-md-2 mb-3">
+                                            <label class="form-label">UF</label>
+                                            <input type="text" class="form-control" name="uf_profissional" value="{{ candidato.uf_profissional or '' }}">
+                                        </div>
+                                        <div class="col-md-3 mb-3">
+                                            <label class="form-label">CEP</label>
+                                            <input type="text" class="form-control" name="cep_profissional" value="{{ candidato.cep_profissional or '' }}">
+                                        </div>
+                                        <div class="col-md-2 mb-3">
+                                            <label class="form-label">Telefone</label>
+                                            <input type="text" class="form-control" name="telefone_comercial" value="{{ candidato.telefone_comercial or '' }}">
+                                        </div>
                                     </div>
                                 </div>
-                                {% endfor %}
                             </div>
-                            <button type="button" class="btn btn-sm btn-success mt-2" onclick="adicionarFilho()">
-                                <i class="bi bi-plus-circle"></i> Adicionar Filho
+
+                            <div class="text-center mt-4">
+                                <a href="/sindicancia/{{ candidato.id }}" class="btn btn-secondary me-2">
+                                    <i class="bi bi-x-circle"></i> Cancelar
+                                </a>
+                                <button type="submit" class="btn btn-success btn-lg px-5">
+                                    <i class="bi bi-save"></i> Salvar Formulário
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-4">
+                <!-- Card da Foto do Candidato -->
+                <div class="card shadow mb-4">
+                    <div class="card-header bg-primary text-white">
+                        <i class="bi bi-camera"></i> Foto do Candidato
+                    </div>
+                    <div class="card-body text-center">
+                        {% if candidato.foto %}
+                        <img src="{{ candidato.foto }}" 
+                             class="rounded-circle mb-3 shadow-sm"
+                             style="width:150px; height:150px; object-fit:cover;">
+                        {% else %}
+                        <div class="bg-light rounded-circle d-flex align-items-center justify-content-center mx-auto mb-3 shadow-sm"
+                             style="width:150px; height:150px;">
+                            <i class="bi bi-person fs-1 text-secondary"></i>
+                        </div>
+                        {% endif %}
+
+                        <form method="POST" action="/candidatos/{{ candidato.id }}/foto" enctype="multipart/form-data" id="formFoto">
+                            <input type="file" name="foto" class="form-control mb-2" accept="image/*" required>
+                            <small class="text-muted d-block mb-2">
+                                JPG, PNG, WEBP • Máx: 5MB
+                            </small>
+                            <button type="submit" class="btn btn-primary w-100">
+                                <i class="bi bi-upload"></i> Upload Foto
                             </button>
-                        </div>
+                        </form>
                     </div>
+                </div>
 
-                    <!-- Atividade Profissional -->
-                    <div class="card mb-4">
-                        <div class="card-header bg-info text-white">
-                            <h6 class="mb-0"><i class="bi bi-briefcase"></i> Atividade Profissional</h6>
-                        </div>
-                        <div class="card-body">
-                            <div class="row">
-                                <div class="col-md-6 mb-3">
-                                    <label class="form-label">Profissão</label>
-                                    <input type="text" class="form-control" name="profissao" value="{{ candidato.profissao or '' }}">
-                                </div>
-                                <div class="col-md-6 mb-3">
-                                    <label class="form-label">Empregador</label>
-                                    <input type="text" class="form-control" name="empregador" value="{{ candidato.empregador or '' }}">
-                                </div>
-                            </div>
-                            <div class="row">
-                                <div class="col-md-8 mb-3">
-                                    <label class="form-label">Endereço Profissional</label>
-                                    <input type="text" class="form-control" name="endereco_profissional" value="{{ candidato.endereco_profissional or '' }}">
-                                </div>
-                                <div class="col-md-4 mb-3">
-                                    <label class="form-label">Bairro</label>
-                                    <input type="text" class="form-control" name="bairro_profissional" value="{{ candidato.bairro_profissional or '' }}">
-                                </div>
-                            </div>
-                            <div class="row">
-                                <div class="col-md-5 mb-3">
-                                    <label class="form-label">Cidade</label>
-                                    <input type="text" class="form-control" name="cidade_profissional" value="{{ candidato.cidade_profissional or '' }}">
-                                </div>
-                                <div class="col-md-2 mb-3">
-                                    <label class="form-label">UF</label>
-                                    <input type="text" class="form-control" name="uf_profissional" value="{{ candidato.uf_profissional or '' }}">
-                                </div>
-                                <div class="col-md-3 mb-3">
-                                    <label class="form-label">CEP</label>
-                                    <input type="text" class="form-control" name="cep_profissional" value="{{ candidato.cep_profissional or '' }}">
-                                </div>
-                                <div class="col-md-2 mb-3">
-                                    <label class="form-label">Telefone</label>
-                                    <input type="text" class="form-control" name="telefone_comercial" value="{{ candidato.telefone_comercial or '' }}">
-                                </div>
-                            </div>
+                <!-- Card de Informações -->
+                <div class="card shadow">
+                    <div class="card-header bg-info text-white">
+                        <i class="bi bi-info-circle"></i> Informações
+                    </div>
+                    <div class="card-body">
+                        <div class="alert alert-light mb-0">
+                            <i class="bi bi-camera-fill me-2"></i>
+                            <strong>Importante:</strong>
+                            <p class="mb-0 mt-2 small">
+                                A foto do candidato será utilizada na ficha de obreiro quando ele for 
+                                promovido e receber o Placet de Iniciação.
+                            </p>
                         </div>
                     </div>
-
-                    <div class="text-center mt-4">
-                        <a href="/sindicancia/{{ candidato.id }}" class="btn btn-secondary me-2">
-                            <i class="bi bi-x-circle"></i> Cancelar
-                        </a>
-                        <button type="submit" class="btn btn-success btn-lg px-5">
-                            <i class="bi bi-save"></i> Salvar Formulário
-                        </button>
-                    </div>
-                </form>
+                </div>
             </div>
         </div>
     </div>
@@ -336,21 +388,27 @@
     }
 
     // Máscaras
-    document.getElementById('cpf')?.addEventListener('input', function(e) {
-        let value = e.target.value.replace(/\D/g, '');
-        if (value.length <= 11) {
-            value = value.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, '$1.$2.$3-$4');
-        }
-        e.target.value = value;
-    });
+    const cpfInput = document.getElementById('cpf');
+    if (cpfInput) {
+        cpfInput.addEventListener('input', function(e) {
+            let value = e.target.value.replace(/\D/g, '');
+            if (value.length <= 11) {
+                value = value.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, '$1.$2.$3-$4');
+            }
+            e.target.value = value.substring(0, 14);
+        });
+    }
 
-    document.getElementById('cep')?.addEventListener('input', function(e) {
-        let value = e.target.value.replace(/\D/g, '');
-        if (value.length >= 5) {
-            value = value.replace(/^(\d{5})(\d{3})/, '$1-$2');
-        }
-        e.target.value = value;
-    });
+    const cepInput = document.getElementById('cep');
+    if (cepInput) {
+        cepInput.addEventListener('input', function(e) {
+            let value = e.target.value.replace(/\D/g, '');
+            if (value.length >= 5) {
+                value = value.replace(/^(\d{5})(\d{3})/, '$1-$2');
+            }
+            e.target.value = value.substring(0, 9);
+        });
+    }
 
     function mascaraTelefone(input) {
         let value = input.value.replace(/\D/g, '');
@@ -376,17 +434,21 @@
 
     function toggleConjuge() {
         const isCasado = estadoCivil.value === 'Casado' || estadoCivil.value === 'União Estável';
-        dataCasamentoDiv.style.display = isCasado ? 'block' : 'none';
-        nomeConjugeDiv.style.display = isCasado ? 'block' : 'none';
-        dataConjugeDiv.style.display = isCasado ? 'block' : 'none';
+        if (dataCasamentoDiv) dataCasamentoDiv.style.display = isCasado ? 'block' : 'none';
+        if (nomeConjugeDiv) nomeConjugeDiv.style.display = isCasado ? 'block' : 'none';
+        if (dataConjugeDiv) dataConjugeDiv.style.display = isCasado ? 'block' : 'none';
     }
 
-    estadoCivil?.addEventListener('change', toggleConjuge);
-    toggleConjuge();
+    if (estadoCivil) {
+        estadoCivil.addEventListener('change', toggleConjuge);
+        toggleConjuge();
+    }
 
     // Filhos
     function adicionarFilho() {
         const container = document.getElementById('filhos-container');
+        if (!container) return;
+        
         const row = document.createElement('div');
         row.className = 'row mb-2 filho-row';
         row.innerHTML = `
@@ -403,9 +465,14 @@
             </div>
         `;
         container.appendChild(row);
-        row.querySelector('.remove-filho').addEventListener('click', () => row.remove());
+        
+        const removeBtn = row.querySelector('.remove-filho');
+        if (removeBtn) {
+            removeBtn.addEventListener('click', () => row.remove());
+        }
     }
 
+    // Remover filhos existentes
     document.querySelectorAll('.remove-filho').forEach(btn => {
         btn.addEventListener('click', function() {
             this.closest('.filho-row').remove();
@@ -429,6 +496,9 @@
         background-color: #f8f9fa;
         border-left: 4px solid #0d6efd;
     }
+    .rounded-circle {
+        border: 3px solid #fff;
+        box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    }
 </style>
-
 {% endblock %}

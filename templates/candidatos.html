@@ -477,6 +477,30 @@
 </div>
 
 <script>
+// Tornar a linha da tabela clicável para abrir a sindicância
+document.addEventListener('DOMContentLoaded', function() {
+    const linhas = document.querySelectorAll('#tabelaCandidatos tbody tr');
+    linhas.forEach(linha => {
+        // Impedir que o clique em botões dentro da linha dispare o redirecionamento
+        const botoes = linha.querySelectorAll('.btn, button, a');
+        botoes.forEach(botao => {
+            botao.addEventListener('click', function(e) {
+                e.stopPropagation();
+            });
+        });
+        
+        // Adicionar cursor pointer e evento de clique
+        linha.style.cursor = 'pointer';
+        linha.addEventListener('click', function() {
+            // Buscar o link de visualização da sindicância dentro da linha
+            const linkSindicancia = this.querySelector('.btn-info[href*="/sindicancia/"]');
+            if (linkSindicancia) {
+                window.location.href = linkSindicancia.getAttribute('href');
+            }
+        });
+    });
+});
+
 // Variáveis globais
 let currentCandidatoId = null;
 let currentCandidatoNome = null;

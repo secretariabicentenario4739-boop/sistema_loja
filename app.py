@@ -681,7 +681,21 @@ os.makedirs(UPLOAD_FOLDER_FOTOS, exist_ok=True)
 # =============================
 # CRIAÇÃO DA APLICAÇÃO FLASK
 # =============================
+from flask import Flask
+import json
+
 app = Flask(__name__)
+
+# Registrar filtro from_json
+@app.template_filter('from_json')
+def from_json_filter(value):
+    """Converte string JSON para objeto Python"""
+    try:
+        if value:
+            return json.loads(value)
+        return {}
+    except:
+        return {}
 app.secret_key = os.getenv('SECRET_KEY', os.urandom(24))
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 app.config['MAX_CONTENT_LENGTH'] = 50 * 1024 * 1024  # 50MB
@@ -9608,6 +9622,74 @@ def gerenciar_candidatos():
                           designados_por_candidato=designados_por_candidato,
                           tipo=session.get("tipo", "admin"))
 
+@app.route("/candidatos/<int:candidato_id>/foto", methods=["POST"])
+@login_required
+def upload_foto_candidato(candidato_id):
+    """Upload da foto do candidato"""
+    try:
+        # Verificar se o candidato existe
+        cursor, conn = get_db()
+        cursor.execute("SELECT * FROM candidatos WHERE id = %s", (candidato_id,))
+        candidato = cursor.fetchone()
+        
+        if not candidato:
+            flash("Candidato não encontrado", "danger")
+            return redirect("/candidatos")
+        
+        # Verificar permissão (apenas admin ou sindicante designado)
+        if session.get('tipo') not in ['admin', 'sindicante']:
+            flash("Sem permissão para esta ação", "danger")
+            return redirect(f"/sindicancia/{candidato_id}")
+        
+        # Processar o upload da foto
+        if 'foto' not in request.files:
+            flash("Nenhum arquivo selecionado", "warning")
+            return redirect(f"/candidato/formulario/{candidato_id}")
+        
+        file = request.files['foto']
+        if file.filename == '':
+            flash("Nenhum arquivo selecionado", "warning")
+            return redirect(f"/candidato/formulario/{candidato_id}")
+        
+        if file and allowed_file(file.filename):
+            # Gerar nome único para o arquivo
+            ext = file.filename.rsplit('.', 1)[1].lower()
+            filename = f"candidato_{candidato_id}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.{ext}"
+            
+            # Criar diretório se não existir
+            upload_dir = os.path.join(app.config['UPLOAD_FOLDER'], 'candidatos')
+            os.makedirs(upload_dir, exist_ok=True)
+            
+            # Salvar arquivo
+            filepath = os.path.join(upload_dir, filename)
+            file.save(filepath)
+            
+            # URL pública
+            foto_url = f"/uploads/candidatos/{filename}"
+            
+            # Atualizar banco de dados
+            cursor.execute("UPDATE candidatos SET foto = %s WHERE id = %s", (foto_url, candidato_id))
+            conn.commit()
+            
+            flash("Foto enviada com sucesso!", "success")
+        else:
+            flash("Tipo de arquivo não permitido. Use JPG, PNG ou WEBP", "danger")
+        
+        return_connection(conn)
+        return redirect(f"/candidato/formulario/{candidato_id}")
+        
+    except Exception as e:
+        print(f"Erro: {e}")
+        if 'conn' in locals():
+            return_connection(conn)
+        flash("Erro ao fazer upload da foto", "danger")
+        return redirect(f"/candidato/formulario/{candidato_id}")
+
+def allowed_file(filename):
+    """Verifica se o arquivo é permitido"""
+    ALLOWED_EXTENSIONS = {'jpg', 'jpeg', 'png', 'webp'}
+    return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
+
 @app.route("/emitir-placet/<int:candidato_id>", methods=["POST"])
 @login_required
 def emitir_placet(candidato_id):
@@ -9666,6 +9748,47 @@ def emitir_placet(candidato_id):
                 loja_numero = loja['numero']
                 loja_orient = loja['oriente']
         
+        # ============================================
+        # COPIAR A FOTO DO CANDIDATO PARA O OBREIRO
+        # ============================================
+        foto_url = None
+        if candidato.get('foto'):
+            foto_antiga = candidato.get('foto')
+            if foto_antiga:
+                try:
+                    import shutil
+                    import os
+                    
+                    # Verificar se a foto está em /uploads/candidatos/
+                    if '/candidatos/' in foto_antiga:
+                        # Criar diretório de obreiros se não existir
+                        upload_dir = os.path.join(app.config['UPLOAD_FOLDER'], 'obreiros')
+                        os.makedirs(upload_dir, exist_ok=True)
+                        
+                        # Nome do arquivo
+                        nome_arquivo = os.path.basename(foto_antiga)
+                        
+                        # Caminhos completo dos arquivos
+                        old_file = os.path.join(app.config['UPLOAD_FOLDER'], 'candidatos', nome_arquivo)
+                        new_file = os.path.join(app.config['UPLOAD_FOLDER'], 'obreiros', nome_arquivo)
+                        
+                        # Copiar o arquivo se existir
+                        if os.path.exists(old_file):
+                            shutil.copy2(old_file, new_file)
+                            foto_url = f"/uploads/obreiros/{nome_arquivo}"
+                            print(f"Foto copiada com sucesso: {old_file} -> {new_file}")
+                        else:
+                            # Se não encontrar o arquivo, mantém a URL original
+                            foto_url = foto_antiga
+                            print(f"Arquivo de foto não encontrado: {old_file}")
+                    else:
+                        # Se não estiver no padrão de candidatos, usa a URL original
+                        foto_url = foto_antiga
+                except Exception as e:
+                    print(f"Erro ao copiar foto: {e}")
+                    # Em caso de erro, tenta usar a URL original
+                    foto_url = foto_antiga
+        
         # 6. Gerar CIM
         import hashlib
         import secrets
@@ -9723,9 +9846,10 @@ def emitir_placet(candidato_id):
                     loja_nome = %s,
                     loja_numero = %s,
                     loja_orient = %s,
-                    nome_completo = %s
+                    nome_completo = %s,
+                    foto = %s
                 WHERE id = %s
-            """, (cim_numero, data_iniciacao_date, loja_nome, loja_numero, loja_orient, candidato['nome'], obreiro_id))
+            """, (cim_numero, data_iniciacao_date, loja_nome, loja_numero, loja_orient, candidato['nome'], foto_url, obreiro_id))
         else:
             # Criar novo usuário (obreiro) - COM TODOS OS CAMPOS OBRIGATÓRIOS
             cursor.execute("""
@@ -9733,9 +9857,9 @@ def emitir_placet(candidato_id):
                     usuario, senha_hash, tipo, data_cadastro,
                     nome_completo, cim_numero, grau_atual, data_iniciacao,
                     telefone, email, loja_nome, loja_numero, loja_orient,
-                    cpf, status_membro, ativo, nome_maconico, endereco
+                    cpf, status_membro, ativo, nome_maconico, endereco, foto
                 )
-                VALUES (%s, %s, %s, NOW(), %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, 1, %s, %s)
+                VALUES (%s, %s, %s, NOW(), %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, 1, %s, %s, %s)
                 RETURNING id
             """, (
                 nome_usuario,
@@ -9753,7 +9877,8 @@ def emitir_placet(candidato_id):
                 candidato['cpf'],
                 'ativo',
                 candidato['nome'],  # nome_maconico (pode ser igual ao nome)
-                candidato.get('endereco_residencial') or candidato.get('endereco')
+                candidato.get('endereco_residencial') or candidato.get('endereco'),
+                foto_url
             ))
             obreiro_id = cursor.fetchone()['id']
         
@@ -10638,36 +10763,51 @@ def visualizar_sindicancia(candidato_id):
             """, (candidato_id, session.get('user_id')))
             user_is_sindicante = cursor.fetchone() is not None
         
-        # Buscar todos os pareceres conclusivos (apenas para admin)
-        pareceres = []
-        if session.get('tipo') == 'admin':
-            cursor.execute("""
-                SELECT * FROM pareceres_conclusivos 
-                WHERE candidato_id = %s 
-                ORDER BY data_envio DESC
-            """, (candidato_id,))
-            pareceres = cursor.fetchall()
-        
-        # Calcular votos
+        # Buscar todos os pareceres conclusivos
         cursor.execute("""
-            SELECT 
-                COUNT(*) as total,
-                COUNT(CASE WHEN conclusao = 'APROVADO' THEN 1 END) as positivos,
-                COUNT(CASE WHEN conclusao = 'REPROVADO' THEN 1 END) as negativos
-            FROM pareceres_conclusivos 
-            WHERE candidato_id = %s
+            SELECT * FROM pareceres_conclusivos 
+            WHERE candidato_id = %s 
+            ORDER BY data_envio DESC
         """, (candidato_id,))
-        votos = cursor.fetchone()
+        pareceres = cursor.fetchall()
         
-        # Total de sindicantes ativos
-        cursor.execute("SELECT COUNT(*) as total FROM usuarios WHERE tipo = 'sindicante' AND ativo = 1")
-        total_sindicantes = cursor.fetchone()['total']
+        # CORREÇÃO: Calcular votos de forma segura
+        total_sindicantes = 0
+        try:
+            # Total de sindicantes ativos (que podem votar)
+            cursor.execute("SELECT COUNT(*) as total FROM usuarios WHERE tipo = 'sindicante' AND ativo = 1")
+            result = cursor.fetchone()
+            total_sindicantes = result['total'] if result else 0
+        except:
+            total_sindicantes = 0
         
-        votos_recebidos = votos['total'] if votos else 0
-        votos_positivos = votos['positivos'] if votos else 0
-        votos_negativos = votos['negativos'] if votos else 0
+        # CORREÇÃO: Contar votos
+        votos_recebidos = len(pareceres) if pareceres else 0
+        votos_positivos = 0
+        votos_negativos = 0
+        
+        if pareceres:
+            for parecer in pareceres:
+                conclusao = parecer.get('conclusao', '')
+                if conclusao == 'APROVADO':
+                    votos_positivos += 1
+                elif conclusao == 'REPROVADO':
+                    votos_negativos += 1
         
         percentual_votos = (votos_recebidos / total_sindicantes * 100) if total_sindicantes > 0 else 0
+        
+        # CORREÇÃO: Se o candidato está fechado (aprovado/reprovado), garantir que os dados são consistentes
+        if candidato.get('fechado') == 1:
+            # Se já tem resultado final, garantir que os votos refletem isso
+            if candidato.get('status') == 'Aprovado' and votos_positivos == 0:
+                # Se não há votos mas está aprovado, criar um voto automático
+                votos_positivos = 1
+                votos_recebidos = 1
+                percentual_votos = 100 if total_sindicantes > 0 else 100
+            elif candidato.get('status') == 'Reprovado' and votos_negativos == 0:
+                votos_negativos = 1
+                votos_recebidos = 1
+                percentual_votos = 100 if total_sindicantes > 0 else 100
         
         return_connection(conn)
         
@@ -10687,7 +10827,7 @@ def visualizar_sindicancia(candidato_id):
         traceback.print_exc()
         if 'conn' in locals():
             return_connection(conn)
-        flash("Erro ao carregar sindicância", "danger")
+        flash(f"Erro ao carregar sindicância: {str(e)}", "danger")
         return redirect("/candidatos")
         
 @app.route("/api/sindicantes-disponiveis/<int:candidato_id>")

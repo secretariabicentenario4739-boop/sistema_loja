@@ -298,7 +298,7 @@
                                     {% else %}
                                         -
                                     {% endif %}
-                                </td>
+                                </th>
                                 <td>
                                     <div class="btn-group btn-group-sm" role="group">
                                         <!-- Visualizar - Todos podem -->
@@ -359,7 +359,7 @@
                                             {% endif %}
                                         {% endif %}
                                     </div>
-                                </td>
+                                </th>
                             </tr>
                             {% else %}
                             <tr>
@@ -372,7 +372,7 @@
                                         <i class="bi bi-plus-circle"></i> Criar primeira reunião
                                     </a>
                                     {% endif %}
-                                </td>
+                                </th>
                             </tr>
                             {% endfor %}
                         </tbody>
@@ -424,6 +424,32 @@
         </div>
     </div>
 </div>
+
+<script>
+    // Tornar a linha da tabela clicável para abrir a reunião
+    document.addEventListener('DOMContentLoaded', function() {
+        const linhas = document.querySelectorAll('#tabelaReunioes tbody tr');
+        linhas.forEach(linha => {
+            // Impedir que o clique em botões dentro da linha dispare o redirecionamento
+            const botoes = linha.querySelectorAll('.btn, button, a');
+            botoes.forEach(botao => {
+                botao.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                });
+            });
+            
+            // Adicionar cursor pointer e evento de clique
+            linha.style.cursor = 'pointer';
+            linha.addEventListener('click', function() {
+                // Buscar o link de visualização dentro da linha
+                const linkVisualizar = this.querySelector('.btn-info[href*="/reunioes/"]');
+                if (linkVisualizar) {
+                    window.location.href = linkVisualizar.getAttribute('href');
+                }
+            });
+        });
+    });
+</script>
 
 <style>
     .card { border-radius: 10px; overflow: hidden; transition: transform 0.2s ease; }
