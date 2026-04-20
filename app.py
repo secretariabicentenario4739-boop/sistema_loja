@@ -10767,7 +10767,7 @@ def formulario_candidato(candidato_id):
         return_connection(conn)
         return redirect("/candidatos")
     
-    # ✅ Buscar dados do usuário logado (loja do obreiro que está preenchendo)
+    # Buscar dados do usuário logado (loja do obreiro que está preenchendo)
     cursor.execute("""
         SELECT u.id, u.nome_completo, u.loja_nome, u.loja_numero, u.loja_orient,
                l.numero as loja_numero_completo, l.oriente as loja_oriente
@@ -10852,8 +10852,13 @@ def formulario_candidato(candidato_id):
                 """, (candidato_id, filhos_nomes[i], filhos_datas[i] or None))
         
         conn.commit()
-        registrar_log("preencher_formulario", "candidato", candidato_id, dados_novos={"nome": candidato["nome"]})
-        flash("Formulário do candidato salvo com sucesso!", "success")
+        
+        # ✅ REMOVIDO o registrar_log que pode estar causando duplicação
+        # Ou se precisar manter, certifique-se que ele não gera flash message
+        
+        # ✅ APENAS UMA mensagem flash
+        flash("✅ Formulário do candidato salvo com sucesso!", "success")
+        
         return_connection(conn)
         return redirect(f"/sindicancia/{candidato_id}")
     
@@ -10862,7 +10867,8 @@ def formulario_candidato(candidato_id):
                           candidato=candidato, 
                           filhos=filhos,
                           usuario=usuario)
-
+                          
+                          
 @app.route("/candidatos/enviar-link", methods=["POST"])
 @login_required
 def enviar_link_email():
