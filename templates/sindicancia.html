@@ -48,6 +48,18 @@
                                 <span class="badge bg-warning">Em análise</span>
                             {% endif %}
                         </p>
+                        <hr>
+                        <p><strong>Formulário:</strong><br>
+                            {% if candidato.formulario_preenchido %}
+                                <span class="badge bg-success">✓ Formulário preenchido</span>
+                            {% else %}
+                                <span class="badge bg-warning">⚠ Formulário pendente</span>
+                                <br>
+                                <a href="/candidato/formulario/{{ candidato.id }}" class="btn btn-sm btn-outline-primary mt-2">
+                                    <i class="bi bi-pencil"></i> Preencher Formulário
+                                </a>
+                            {% endif %}
+                        </p>
                     </div>
                 </div>
             </div>
@@ -85,8 +97,7 @@
                     </div>
                 </div>
 
-                <!-- Card de Pareceres dos Sindicantes - APENAS ADMIN VÊ -->
-                {% if session.tipo == 'admin' %}
+                <!-- Card de Pareceres dos Sindicantes -->
                 <div class="card shadow">
                     <div class="card-header bg-secondary text-white">
                         <h5 class="mb-0"><i class="bi bi-file-text"></i> Pareceres dos Sindicantes</h5>
@@ -100,14 +111,14 @@
                                         <th>Sindicante</th>
                                         <th>Data</th>
                                         <th>Conclusão</th>
-                                        <th>Ações</th>
+                                        <th style="width: 150px">Ações</th>
                                     </tr>
                                 </thead>
                                 <tbody>
                                     {% for p in pareceres %}
-                                    <tr>
+                                    <tr id="parecer-row-{{ p.id }}">
                                         <td>{{ p.sindicante }}</td>
-                                        <td>{{ p.data_envio.strftime('%d/%m/%Y') if p.data_envio else '-' }}</td>
+                                        <td>{{ p.data_envio.strftime('%d/%m/%Y %H:%M') if p.data_envio else '-' }}</td>
                                         <td>
                                             {% if p.conclusao == 'APROVADO' %}
                                                 <span class="badge bg-success">✅ Aprovado</span>
@@ -116,11 +127,34 @@
                                             {% endif %}
                                         </td>
                                         <td>
-                                            <button type="button" class="btn btn-sm btn-outline-info" 
-                                                    data-bs-toggle="modal" 
-                                                    data-bs-target="#modalParecer{{ p.id }}">
-                                                <i class="bi bi-eye"></i> Ver Detalhes
-                                            </button>
+                                            <div class="btn-group btn-group-sm" role="group">
+                                                <!-- 1. VISUALIZAR PARECER -->
+                                                <button type="button" class="btn btn-info" 
+                                                        data-bs-toggle="modal" 
+                                                        data-bs-target="#modalParecer{{ p.id }}"
+                                                        title="Visualizar Parecer">
+                                                    <i class="bi bi-eye"></i>
+                                                </button>
+                                                
+                                                <!-- 2. EDITAR PARECER (apenas sindicante dono do parecer e candidato não fechado) -->
+                                                {% if session.tipo == 'sindicante' and p.sindicante_id == session.user_id and not candidato.fechado %}
+                                                <a href="/parecer_conclusivo/{{ candidato.id }}/editar/{{ p.id }}" 
+                                                   class="btn btn-warning" 
+                                                   title="Editar Parecer">
+                                                    <i class="bi bi-pencil"></i>
+                                                </a>
+                                                {% endif %}
+                                                
+                                                <!-- 3. EXCLUIR PARECER (admin ou sindicante dono) -->
+                                                {% if session.tipo == 'admin' or (session.tipo == 'sindicante' and p.sindicante_id == session.user_id) %}
+                                                <button type="button" 
+                                                        class="btn btn-danger" 
+                                                        onclick="excluirParecer({{ p.id }}, '{{ p.sindicante }}', {{ candidato.id }})"
+                                                        title="Excluir Parecer">
+                                                    <i class="bi bi-trash"></i>
+                                                </button>
+                                                {% endif %}
+                                            </div>
                                         </td>
                                     </tr>
                                     {% endfor %}
@@ -135,19 +169,36 @@
                         {% endif %}
                     </div>
                 </div>
-                {% endif %}
 
                 <!-- Botão para Emitir Parecer - APENAS SINDICANTES DESIGNADOS -->
                 {% if session.tipo == 'sindicante' and user_is_sindicante %}
-                <div class="mt-4 text-center">
-                    <a href="/parecer_conclusivo/{{ candidato.id }}" class="btn btn-warning btn-lg">
-                        <i class="bi bi-pencil-square"></i> Emitir Parecer Conclusivo
-                    </a>
-                </div>
+                    {% set ja_votou = false %}
+                    {% for p in pareceres %}
+                        {% if p.sindicante_id == session.user_id %}
+                            {% set ja_votou = true %}
+                        {% endif %}
+                    {% endfor %}
+                    
+                    {% if ja_votou %}
+                        <div class="mt-4 text-center alert alert-info">
+                            <i class="bi bi-check-circle-fill"></i> 
+                            Você já emitiu seu parecer para este candidato.
+                            {% if not candidato.fechado %}
+                            <br>
+                            <small>Você pode editar ou excluir seu parecer usando os botões acima.</small>
+                            {% endif %}
+                        </div>
+                    {% else %}
+                        <div class="mt-4 text-center">
+                            <a href="/parecer_conclusivo/{{ candidato.id }}" class="btn btn-warning btn-lg">
+                                <i class="bi bi-pencil-square"></i> Emitir Parecer Conclusivo
+                            </a>
+                        </div>
+                    {% endif %}
                 {% elif session.tipo == 'admin' %}
                 <div class="mt-4 text-center alert alert-info">
                     <i class="bi bi-info-circle"></i> 
-                    Como administrador, você pode visualizar os pareceres, mas não pode emitir votos.
+                    Como administrador, você pode visualizar e excluir os pareceres, mas não pode emitir votos.
                 </div>
                 {% elif session.tipo == 'sindicante' and not user_is_sindicante %}
                 <div class="mt-4 text-center alert alert-warning">
@@ -160,7 +211,7 @@
     </div>
 </div>
 
-<!-- Modais para visualizar pareceres (apenas admin) -->
+<!-- Modais para visualizar pareceres -->
 {% for p in pareceres %}
 <div class="modal fade" id="modalParecer{{ p.id }}" tabindex="-1">
     <div class="modal-dialog modal-lg">
@@ -188,7 +239,7 @@
                 </div>
                 <div class="mb-3">
                     <label class="fw-bold">Parecer:</label>
-                    <div class="border rounded p-3 bg-light">
+                    <div class="border rounded p-3 bg-light" style="max-height: 300px; overflow-y: auto;">
                         {{ p.parecer_texto|replace('\n', '<br>')|safe }}
                     </div>
                 </div>
@@ -229,6 +280,69 @@
 {% endfor %}
 
 <script>
+// Função para excluir parecer
+function excluirParecer(parecerId, sindicanteNome, candidatoId) {
+    if (!confirm(`⚠️ ATENÇÃO!\n\nDeseja excluir o parecer do sindicante "${sindicanteNome}"?\n\nEsta ação não pode ser desfeita!\n\nDeseja continuar?`)) {
+        return;
+    }
+    
+    // Mostrar loading no botão
+    const btn = event.target;
+    const originalHtml = btn.innerHTML;
+    btn.innerHTML = '<i class="bi bi-hourglass-split"></i>';
+    btn.disabled = true;
+    
+    fetch(`/api/pareceres/${parecerId}/excluir`, {
+        method: 'DELETE',
+        headers: {
+            'Content-Type': 'application/json'
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Remover a linha da tabela
+            const row = document.getElementById(`parecer-row-${parecerId}`);
+            if (row) row.remove();
+            
+            // Mostrar notificação
+            mostrarNotificacao('✅ Parecer excluído com sucesso!', 'success');
+            
+            // Recarregar a página após 1 segundo
+            setTimeout(() => {
+                location.reload();
+            }, 1000);
+        } else {
+            mostrarNotificacao('❌ Erro ao excluir parecer: ' + (data.error || 'Erro desconhecido'), 'error');
+            btn.innerHTML = originalHtml;
+            btn.disabled = false;
+        }
+    })
+    .catch(error => {
+        console.error('Erro:', error);
+        mostrarNotificacao('❌ Erro ao excluir parecer', 'error');
+        btn.innerHTML = originalHtml;
+        btn.disabled = false;
+    });
+}
+
+// Função para mostrar notificação
+function mostrarNotificacao(mensagem, tipo) {
+    const alertDiv = document.createElement('div');
+    alertDiv.className = `alert alert-${tipo === 'success' ? 'success' : 'danger'} alert-dismissible fade show position-fixed top-0 end-0 m-3`;
+    alertDiv.style.zIndex = '9999';
+    alertDiv.style.minWidth = '300px';
+    alertDiv.innerHTML = `
+        ${mensagem}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    `;
+    document.body.appendChild(alertDiv);
+    
+    setTimeout(() => {
+        alertDiv.remove();
+    }, 3000);
+}
+
 // Função para converter JSON string para objeto
 function fromJson(jsonStr) {
     if (!jsonStr) return [];
@@ -238,6 +352,31 @@ function fromJson(jsonStr) {
         return [];
     }
 }
+
+// Função para tornar a linha da tabela clicável
+document.addEventListener('DOMContentLoaded', function() {
+    // Adicionar evento de clique nas linhas da tabela de pareceres para visualizar
+    const linhas = document.querySelectorAll('.table tbody tr');
+    linhas.forEach(linha => {
+        // Impedir que o clique em botões dentro da linha dispare o redirecionamento
+        const botoes = linha.querySelectorAll('.btn, button, a');
+        botoes.forEach(botao => {
+            botao.addEventListener('click', function(e) {
+                e.stopPropagation();
+            });
+        });
+        
+        // Adicionar cursor pointer
+        linha.style.cursor = 'pointer';
+        linha.addEventListener('click', function() {
+            // Buscar o botão de visualizar dentro da linha
+            const btnVisualizar = this.querySelector('.btn-info');
+            if (btnVisualizar) {
+                btnVisualizar.click();
+            }
+        });
+    });
+});
 </script>
 
 <style>
@@ -252,6 +391,15 @@ function fromJson(jsonStr) {
     font-size: 14px;
     font-weight: bold;
     line-height: 30px;
+}
+.btn-group-sm .btn {
+    margin: 0 2px;
+}
+.table tbody tr {
+    cursor: pointer;
+}
+.table tbody tr:hover {
+    background-color: rgba(0, 123, 255, 0.05);
 }
 </style>
 {% endblock %}

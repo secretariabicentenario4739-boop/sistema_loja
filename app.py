@@ -11320,60 +11320,197 @@ def minhas_sindicancias():
 @login_required
 def excluir_parecer_conclusivo(candidato_id):
     """Sindicante exclui seu parecer conclusivo"""
-    if session.get("tipo") != 'sindicante':
-        flash("❌ Apenas sindicantes podem excluir seus próprios pareceres!", "danger")
+    # Permitir admin e sindicante
+    if session.get("tipo") not in ['admin', 'sindicante']:
+        flash("❌ Apenas administradores e sindicantes podem excluir pareceres!", "danger")
         return redirect("/dashboard")
-    
-    # Limpar flashes anteriores
-    session.pop('_flashes', None)
     
     cursor, conn = get_db()
     
     try:
         conn.rollback()
         
+        usuario_id = session.get("user_id")
         usuario_nome = session.get("usuario")
+        is_admin = session.get("tipo") == 'admin'
         
-        # Verificar se o parecer existe
-        cursor.execute("""
-            SELECT id FROM pareceres_conclusivos 
-            WHERE candidato_id = %s AND sindicante = %s
-        """, (candidato_id, usuario_nome))
+        # Verificar se o parecer existe e pegar o sindicante
+        if is_admin:
+            # Admin pode excluir qualquer parecer (precisa receber o parecer_id)
+            # Para admin, vamos passar o parecer_id via form
+            parecer_id = request.form.get('parecer_id')
+            if not parecer_id:
+                flash("❌ ID do parecer não informado!", "danger")
+                return redirect(f"/sindicancia/{candidato_id}")
+            
+            cursor.execute("""
+                SELECT id, sindicante FROM pareceres_conclusivos 
+                WHERE id = %s AND candidato_id = %s
+            """, (parecer_id, candidato_id))
+        else:
+            # Sindicante só pode excluir seu próprio parecer
+            cursor.execute("""
+                SELECT id FROM pareceres_conclusivos 
+                WHERE candidato_id = %s AND sindicante_id = %s
+            """, (candidato_id, usuario_id))
         
         resultado = cursor.fetchone()
         
         if not resultado:
-            flash("❌ Você não tem um parecer conclusivo para este candidato!", "warning")
+            flash("❌ Parecer não encontrado ou você não tem permissão para excluí-lo!", "warning")
             return redirect(f"/sindicancia/{candidato_id}")
         
         # Excluir o parecer conclusivo
-        cursor.execute("""
-            DELETE FROM pareceres_conclusivos 
-            WHERE candidato_id = %s AND sindicante = %s
-        """, (candidato_id, usuario_nome))
+        if is_admin:
+            cursor.execute("DELETE FROM pareceres_conclusivos WHERE id = %s", (parecer_id,))
+        else:
+            cursor.execute("""
+                DELETE FROM pareceres_conclusivos 
+                WHERE candidato_id = %s AND sindicante_id = %s
+            """, (candidato_id, usuario_id))
         
         conn.commit()
         
-        # Reabrir a sindicância se estava fechada
+        # Verificar se ainda existem pareceres
         cursor.execute("""
-            UPDATE candidatos 
-            SET fechado = 0, data_fechamento = NULL
-            WHERE id = %s
+            SELECT COUNT(*) as total FROM pareceres_conclusivos 
+            WHERE candidato_id = %s
         """, (candidato_id,))
-        conn.commit()
+        total_pareceres = cursor.fetchone()['total']
         
-        flash("🗑️ Seu parecer conclusivo foi excluído com sucesso!", "success")
+        # Se não houver mais pareceres, reabrir a sindicância
+        if total_pareceres == 0:
+            cursor.execute("""
+                UPDATE candidatos 
+                SET fechado = 0, 
+                    data_fechamento = NULL,
+                    status = 'Em análise'
+                WHERE id = %s
+            """, (candidato_id,))
+            conn.commit()
+            flash("📂 Sindicância reaberta pois não há mais pareceres!", "info")
+        
+        flash("🗑️ Parecer excluído com sucesso!", "success")
         
     except Exception as e:
         conn.rollback()
-        print(f"Erro ao excluir parecer conclusivo: {str(e)}")
-        flash(f"❌ Erro ao excluir parecer conclusivo: {str(e)}", "danger")
+        print(f"Erro ao excluir parecer: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        flash(f"❌ Erro ao excluir parecer: {str(e)}", "danger")
     
     finally:
         return_connection(conn)
     
     return redirect(f"/sindicancia/{candidato_id}")
 
+@app.route("/api/pareceres/<int:parecer_id>/excluir", methods=["DELETE"])
+@login_required
+def excluir_parecer_api(parecer_id):
+    """API para excluir parecer (admin)"""
+    if session.get("tipo") != 'admin':
+        return jsonify({"success": False, "error": "Permissão negada"}), 403
+    
+    try:
+        cursor, conn = get_db()
+        
+        # Verificar se o parecer existe
+        cursor.execute("""
+            SELECT id, candidato_id FROM pareceres_conclusivos WHERE id = %s
+        """, (parecer_id,))
+        parecer = cursor.fetchone()
+        
+        if not parecer:
+            return jsonify({"success": False, "error": "Parecer não encontrado"}), 404
+        
+        candidato_id = parecer['candidato_id']
+        
+        # Excluir o parecer
+        cursor.execute("DELETE FROM pareceres_conclusivos WHERE id = %s", (parecer_id,))
+        conn.commit()
+        
+        # Verificar se ainda existem pareceres
+        cursor.execute("""
+            SELECT COUNT(*) as total FROM pareceres_conclusivos 
+            WHERE candidato_id = %s
+        """, (candidato_id,))
+        total_pareceres = cursor.fetchone()['total']
+        
+        # Se não houver mais pareceres, reabrir a sindicância
+        if total_pareceres == 0:
+            cursor.execute("""
+                UPDATE candidatos 
+                SET fechado = 0, 
+                    data_fechamento = NULL,
+                    status = 'Em análise'
+                WHERE id = %s
+            """, (candidato_id,))
+            conn.commit()
+        
+        return_connection(conn)
+        return jsonify({"success": True, "reaberto": total_pareceres == 0})
+        
+    except Exception as e:
+        print(f"Erro: {e}")
+        if 'conn' in locals():
+            return_connection(conn)
+        return jsonify({"success": False, "error": str(e)}), 500
+
+@app.route("/parecer_conclusivo/<int:candidato_id>/editar/<int:parecer_id>", methods=["GET", "POST"])
+@login_required
+def editar_parecer_conclusivo(candidato_id, parecer_id):
+    """Editar parecer conclusivo existente"""
+    if session.get("tipo") != 'sindicante':
+        flash("❌ Apenas sindicantes podem editar seus pareceres!", "danger")
+        return redirect("/dashboard")
+    
+    cursor, conn = get_db()
+    
+    try:
+        # Verificar se o parecer pertence ao sindicante logado
+        cursor.execute("""
+            SELECT * FROM pareceres_conclusivos 
+            WHERE id = %s AND candidato_id = %s AND sindicante_id = %s
+        """, (parecer_id, candidato_id, session['user_id']))
+        
+        parecer = cursor.fetchone()
+        
+        if not parecer:
+            flash("❌ Parecer não encontrado ou você não tem permissão para editá-lo!", "danger")
+            return redirect(f"/sindicancia/{candidato_id}")
+        
+        if request.method == "POST":
+            conclusao = request.form.get("conclusao")
+            parecer_texto = request.form.get("parecer_texto")
+            observacoes = request.form.get("observacoes")
+            fontes_json = request.form.get("fontes_json")
+            
+            cursor.execute("""
+                UPDATE pareceres_conclusivos 
+                SET conclusao = %s,
+                    parecer_texto = %s,
+                    observacoes = %s,
+                    fontes = %s,
+                    data_envio = NOW()
+                WHERE id = %s
+            """, (conclusao, parecer_texto, observacoes, fontes_json, parecer_id))
+            
+            conn.commit()
+            flash("✅ Parecer atualizado com sucesso!", "success")
+            return redirect(f"/sindicancia/{candidato_id}")
+        
+        return_connection(conn)
+        return render_template("sindicancia/editar_parecer.html", 
+                              candidato_id=candidato_id, 
+                              parecer=parecer)
+        
+    except Exception as e:
+        print(f"Erro: {e}")
+        if 'conn' in locals():
+            return_connection(conn)
+        flash(f"❌ Erro: {str(e)}", "danger")
+        return redirect(f"/sindicancia/{candidato_id}")
+        
 @app.route("/sindicancia/<int:candidato_id>/excluir_parecer", methods=["POST"])
 @login_required
 def excluir_parecer_simples(candidato_id):
