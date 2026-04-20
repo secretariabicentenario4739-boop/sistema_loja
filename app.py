@@ -9625,11 +9625,11 @@ def gerenciar_candidatos():
 @app.route("/candidatos/<int:candidato_id>/foto", methods=["POST"])
 @login_required
 def upload_foto_candidato(candidato_id):
-    """Upload da foto do candidato para o Cloudinary"""
+    """Upload da foto do candidato para o Cloudinary usando Upload Preset"""
     try:
         # Verificar permissão
         if session.get('tipo') not in ['admin', 'sindicante']:
-            flash("Acesso negado!", "danger")
+            flash("Acesso negado! Apenas administradores e sindicantes podem fazer upload de fotos.", "danger")
             return redirect(f"/candidato/formulario/{candidato_id}")
         
         cursor, conn = get_db()
@@ -9642,6 +9642,7 @@ def upload_foto_candidato(candidato_id):
             flash("Candidato não encontrado", "danger")
             return redirect("/candidatos")
         
+        # Verificar se veio arquivo
         if 'foto' not in request.files:
             flash("Nenhum arquivo selecionado", "warning")
             return redirect(f"/candidato/formulario/{candidato_id}")
@@ -9652,34 +9653,51 @@ def upload_foto_candidato(candidato_id):
             flash("Nenhum arquivo selecionado", "warning")
             return redirect(f"/candidato/formulario/{candidato_id}")
         
-        # Upload para o Cloudinary
+        # Verificar extensão
+        ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif', 'webp'}
+        ext = file.filename.rsplit('.', 1)[1].lower() if '.' in file.filename else ''
+        
+        if ext not in ALLOWED_EXTENSIONS:
+            flash("Tipo de arquivo não permitido. Use: PNG, JPG, JPEG, GIF ou WEBP", "danger")
+            return redirect(f"/candidato/formulario/{candidato_id}")
+        
+        # Upload para o Cloudinary usando Upload Preset
         try:
-            # Opção 1: Usando upload preset (recomendado)
+            import cloudinary.uploader
+            from datetime import datetime
+            
+            # Nome único para o arquivo
+            timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+            
+            # Upload com preset
             upload_result = cloudinary.uploader.upload(
                 file,
-                upload_preset="candidatos_preset",  # Nome do preset que você criou
-                public_id=f"candidato_{candidato_id}",  # ID único
+                upload_preset="candidatos_preset",  # Nome do preset que você criou no Cloudinary
                 folder="candidatos",
-                overwrite=True
+                public_id=f"candidato_{candidato_id}_{timestamp}",
+                overwrite=True,
+                transformation=[
+                    {'width': 500, 'height': 500, 'crop': 'limit', 'quality': 'auto'}
+                ]
             )
             
-            # Opção 2: Sem upload preset (alternativa)
-            # upload_result = cloudinary.uploader.upload(
-            #     file,
-            #     folder="candidatos",
-            #     public_id=f"candidato_{candidato_id}",
-            #     overwrite=True
-            # )
-            
-            # URL segura da imagem
+            # Obter URLs
             foto_url = upload_result['secure_url']
+            foto_public_id = upload_result['public_id']
             
-            # Também podemos guardar o public_id para manipulação futura
-            public_id = upload_result['public_id']
+            print(f"✅ Upload realizado com sucesso!")
+            print(f"URL: {foto_url}")
+            print(f"Public ID: {foto_public_id}")
             
-        except Exception as cloud_error:
+        except cloudinary.exceptions.Error as cloud_error:
             print(f"Erro no Cloudinary: {cloud_error}")
-            flash("Erro ao fazer upload para o Cloudinary", "danger")
+            flash(f"Erro no Cloudinary: {str(cloud_error)}", "danger")
+            return redirect(f"/candidato/formulario/{candidato_id}")
+        except Exception as upload_error:
+            print(f"Erro no upload: {upload_error}")
+            import traceback
+            traceback.print_exc()
+            flash(f"Erro ao fazer upload: {str(upload_error)}", "danger")
             return redirect(f"/candidato/formulario/{candidato_id}")
         
         # Atualizar banco de dados
@@ -9687,7 +9705,7 @@ def upload_foto_candidato(candidato_id):
             UPDATE candidatos 
             SET foto = %s, foto_public_id = %s 
             WHERE id = %s
-        """, (foto_url, public_id, candidato_id))
+        """, (foto_url, foto_public_id, candidato_id))
         conn.commit()
         
         flash("Foto enviada com sucesso para o Cloudinary!", "success")
