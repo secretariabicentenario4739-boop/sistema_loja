@@ -11146,27 +11146,16 @@ def visualizar_sindicancia(candidato_id):
             flash("Candidato não encontrado", "danger")
             return redirect("/candidatos")
         
-        # ============================================
-        # CORREÇÃO: Verificar se o formulário está preenchido
-        # ============================================
-        # Verificar se existe algum campo importante preenchido
+        # Verificar se formulário está preenchido
         formulario_preenchido = False
-        
-        # Verificar se há dados no formulário
         if (candidato.get('data_nascimento') or 
             candidato.get('cpf') or 
             candidato.get('rg') or 
-            candidato.get('endereco_residencial') or
-            candidato.get('cidade') or
-            candidato.get('profissao')):
+            candidato.get('endereco_residencial')):
             formulario_preenchido = True
-        
-        # Adicionar o campo ao dicionário do candidato
         candidato['formulario_preenchido'] = formulario_preenchido
         
-        # ============================================
         # Verificar se usuário é sindicante designado
-        # ============================================
         user_is_sindicante = False
         if session.get('tipo') == 'sindicante':
             cursor.execute("""
@@ -11183,15 +11172,12 @@ def visualizar_sindicancia(candidato_id):
         """, (candidato_id,))
         pareceres = cursor.fetchall()
         
-        # Calcular votos
-        total_sindicantes = 0
-        try:
-            cursor.execute("SELECT COUNT(*) as total FROM usuarios WHERE tipo = 'sindicante' AND ativo = 1")
-            result = cursor.fetchone()
-            total_sindicantes = result['total'] if result else 0
-        except:
-            total_sindicantes = 0
+        # Total de sindicantes
+        cursor.execute("SELECT COUNT(*) as total FROM usuarios WHERE tipo = 'sindicante' AND ativo = 1")
+        result = cursor.fetchone()
+        total_sindicantes = result['total'] if result else 0
         
+        # Contar votos
         votos_recebidos = len(pareceres) if pareceres else 0
         votos_positivos = 0
         votos_negativos = 0
@@ -11204,18 +11190,21 @@ def visualizar_sindicancia(candidato_id):
                 elif conclusao == 'REPROVADO':
                     votos_negativos += 1
         
-        percentual_votos = (votos_recebidos / total_sindicantes * 100) if total_sindicantes > 0 else 0
+        # ============================================
+        # CORREÇÃO: Arredondar percentual para inteiro
+        # ============================================
+        percentual_votos = int((votos_recebidos / total_sindicantes * 100)) if total_sindicantes > 0 else 0
         
         # Se o candidato está fechado, garantir consistência
         if candidato.get('fechado') == 1:
             if candidato.get('status') == 'Aprovado' and votos_positivos == 0:
                 votos_positivos = 1
                 votos_recebidos = 1
-                percentual_votos = 100 if total_sindicantes > 0 else 100
+                percentual_votos = 100
             elif candidato.get('status') == 'Reprovado' and votos_negativos == 0:
                 votos_negativos = 1
                 votos_recebidos = 1
-                percentual_votos = 100 if total_sindicantes > 0 else 100
+                percentual_votos = 100
         
         return_connection(conn)
         
