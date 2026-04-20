@@ -9672,7 +9672,7 @@ def upload_foto_candidato(candidato_id):
             # Upload com preset
             upload_result = cloudinary.uploader.upload(
                 file,
-                upload_preset="candidatos_preset",  # Nome do preset que você criou no Cloudinary
+                upload_preset="candidatos_unsigned", # Nome do preset criado no Cloudinary
                 folder="candidatos",
                 public_id=f"candidato_{candidato_id}_{timestamp}",
                 overwrite=True,
