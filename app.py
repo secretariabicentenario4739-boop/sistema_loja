@@ -9625,11 +9625,11 @@ def gerenciar_candidatos():
 @app.route("/candidatos/<int:candidato_id>/foto", methods=["POST"])
 @login_required
 def upload_foto_candidato(candidato_id):
-    """Upload da foto do candidato"""
+    """Upload da foto do candidato para o Cloudinary"""
     try:
         # Verificar permissão
         if session.get('tipo') not in ['admin', 'sindicante']:
-            flash("Acesso negado! Apenas administradores e sindicantes podem fazer upload de fotos.", "danger")
+            flash("Acesso negado!", "danger")
             return redirect(f"/candidato/formulario/{candidato_id}")
         
         cursor, conn = get_db()
@@ -9642,7 +9642,6 @@ def upload_foto_candidato(candidato_id):
             flash("Candidato não encontrado", "danger")
             return redirect("/candidatos")
         
-        # Verificar se veio arquivo
         if 'foto' not in request.files:
             flash("Nenhum arquivo selecionado", "warning")
             return redirect(f"/candidato/formulario/{candidato_id}")
@@ -9653,46 +9652,56 @@ def upload_foto_candidato(candidato_id):
             flash("Nenhum arquivo selecionado", "warning")
             return redirect(f"/candidato/formulario/{candidato_id}")
         
-        # Verificar extensão
-        if not allowed_file(file.filename):
-            flash("Tipo de arquivo não permitido. Use: PNG, JPG, JPEG, GIF ou WEBP", "danger")
+        # Upload para o Cloudinary
+        try:
+            # Opção 1: Usando upload preset (recomendado)
+            upload_result = cloudinary.uploader.upload(
+                file,
+                upload_preset="candidatos_preset",  # Nome do preset que você criou
+                public_id=f"candidato_{candidato_id}",  # ID único
+                folder="candidatos",
+                overwrite=True
+            )
+            
+            # Opção 2: Sem upload preset (alternativa)
+            # upload_result = cloudinary.uploader.upload(
+            #     file,
+            #     folder="candidatos",
+            #     public_id=f"candidato_{candidato_id}",
+            #     overwrite=True
+            # )
+            
+            # URL segura da imagem
+            foto_url = upload_result['secure_url']
+            
+            # Também podemos guardar o public_id para manipulação futura
+            public_id = upload_result['public_id']
+            
+        except Exception as cloud_error:
+            print(f"Erro no Cloudinary: {cloud_error}")
+            flash("Erro ao fazer upload para o Cloudinary", "danger")
             return redirect(f"/candidato/formulario/{candidato_id}")
         
-        # Criar diretório se não existir
-        upload_dir = os.path.join(app.config['UPLOAD_FOLDER'], 'candidatos')
-        os.makedirs(upload_dir, exist_ok=True)
-        
-        # Gerar nome seguro para o arquivo (igual ao padrão do obreiro)
-        from datetime import datetime
-        import secrets
-        
-        ext = file.filename.rsplit('.', 1)[1].lower()
-        nome_arquivo = f"candidato_{candidato_id}_{datetime.now().strftime('%Y%m%d_%H%M%S')}_{secrets.token_hex(4)}.{ext}"
-        nome_arquivo = secure_filename(nome_arquivo)
-        
-        # Salvar arquivo
-        filepath = os.path.join(upload_dir, nome_arquivo)
-        file.save(filepath)
-        
-        # URL pública (igual ao padrão do obreiro)
-        foto_url = f"/static/uploads/candidatos/{nome_arquivo}"
-        
         # Atualizar banco de dados
-        cursor.execute("UPDATE candidatos SET foto = %s WHERE id = %s", (foto_url, candidato_id))
+        cursor.execute("""
+            UPDATE candidatos 
+            SET foto = %s, foto_public_id = %s 
+            WHERE id = %s
+        """, (foto_url, public_id, candidato_id))
         conn.commit()
         
-        flash("Foto enviada com sucesso!", "success")
+        flash("Foto enviada com sucesso para o Cloudinary!", "success")
         
         return_connection(conn)
         return redirect(f"/candidato/formulario/{candidato_id}")
         
     except Exception as e:
-        print(f"Erro ao fazer upload da foto: {e}")
+        print(f"Erro geral: {e}")
         import traceback
         traceback.print_exc()
         if 'conn' in locals():
             return_connection(conn)
-        flash(f"Erro ao fazer upload da foto: {str(e)}", "danger")
+        flash(f"Erro ao fazer upload: {str(e)}", "danger")
         return redirect(f"/candidato/formulario/{candidato_id}")
 
 @app.route("/emitir-placet/<int:candidato_id>", methods=["POST"])
@@ -9754,45 +9763,60 @@ def emitir_placet(candidato_id):
                 loja_orient = loja['oriente']
         
         # ============================================
-        # COPIAR A FOTO DO CANDIDATO PARA O OBREIRO
+        # COPIAR A FOTO DO CANDIDATO PARA O OBREIRO VIA CLOUDINARY
         # ============================================
         foto_url = None
+        foto_public_id = None
+        
         if candidato.get('foto'):
-            foto_antiga = candidato.get('foto')
-            if foto_antiga:
-                try:
-                    import shutil
-                    import os
+            try:
+                import cloudinary.uploader
+                import requests
+                
+                foto_antiga = candidato.get('foto')
+                foto_public_id_antigo = candidato.get('foto_public_id')
+                
+                if foto_public_id_antigo:
+                    # Método 1: Usar o public_id para fazer upload
+                    # Cloudinary permite transformar imagens existentes
+                    # Criamos um novo public_id baseado no antigo
+                    novo_public_id = foto_public_id_antigo.replace('candidatos', 'obreiros')
                     
-                    # Verificar se a foto está em /uploads/candidatos/
-                    if '/candidatos/' in foto_antiga:
-                        # Criar diretório de obreiros se não existir
-                        upload_dir = os.path.join(app.config['UPLOAD_FOLDER'], 'obreiros')
-                        os.makedirs(upload_dir, exist_ok=True)
-                        
-                        # Nome do arquivo
-                        nome_arquivo = os.path.basename(foto_antiga)
-                        
-                        # Caminhos completo dos arquivos
-                        old_file = os.path.join(app.config['UPLOAD_FOLDER'], 'candidatos', nome_arquivo)
-                        new_file = os.path.join(app.config['UPLOAD_FOLDER'], 'obreiros', nome_arquivo)
-                        
-                        # Copiar o arquivo se existir
-                        if os.path.exists(old_file):
-                            shutil.copy2(old_file, new_file)
-                            foto_url = f"/uploads/obreiros/{nome_arquivo}"
-                            print(f"Foto copiada com sucesso: {old_file} -> {new_file}")
-                        else:
-                            # Se não encontrar o arquivo, mantém a URL original
-                            foto_url = foto_antiga
-                            print(f"Arquivo de foto não encontrado: {old_file}")
+                    # Fazer upload da imagem existente para a nova pasta
+                    upload_result = cloudinary.uploader.upload(
+                        foto_antiga,  # Pode usar a URL diretamente
+                        folder="obreiros",
+                        public_id=f"obreiro_{candidato_id}",
+                        overwrite=True
+                    )
+                    
+                    foto_url = upload_result['secure_url']
+                    foto_public_id = upload_result['public_id']
+                    
+                    print(f"Foto copiada com sucesso para: {foto_url}")
+                    
+                else:
+                    # Método 2: Se não tem public_id, baixar e re-upload
+                    response = requests.get(foto_antiga)
+                    if response.status_code == 200:
+                        upload_result = cloudinary.uploader.upload(
+                            response.content,
+                            folder="obreiros",
+                            public_id=f"obreiro_{candidato_id}",
+                            overwrite=True
+                        )
+                        foto_url = upload_result['secure_url']
+                        foto_public_id = upload_result['public_id']
+                        print(f"Foto copiada com sucesso (download/upload) para: {foto_url}")
                     else:
-                        # Se não estiver no padrão de candidatos, usa a URL original
+                        # Fallback: usar a URL original
                         foto_url = foto_antiga
-                except Exception as e:
-                    print(f"Erro ao copiar foto: {e}")
-                    # Em caso de erro, tenta usar a URL original
-                    foto_url = foto_antiga
+                        print(f"Usando URL original da foto: {foto_url}")
+                        
+            except Exception as e:
+                print(f"Erro ao copiar foto via Cloudinary: {e}")
+                # Em caso de erro, tenta usar a URL original
+                foto_url = candidato.get('foto')
         
         # 6. Gerar CIM
         import hashlib
@@ -9805,7 +9829,7 @@ def emitir_placet(candidato_id):
         cim_numero = hashlib.md5(cim_base.encode()).hexdigest()[:12].upper()
         cim_numero = f"GOB-{cim_numero[:4]}-{cim_numero[4:]}"
         
-        # 7. Gerar nome de usuário (login) - GARANTIR QUE NÃO SEJA NULL
+        # 7. Gerar nome de usuário (login)
         nome_original = candidato['nome']
         nome_usuario = nome_original.lower()
         nome_usuario = re.sub(r'[^a-z0-9]', '.', nome_usuario)
@@ -9813,11 +9837,10 @@ def emitir_placet(candidato_id):
         nome_usuario = nome_usuario.strip('.')
         nome_usuario = nome_usuario[:30]
         
-        # Se ficar vazio, usar um padrão
         if not nome_usuario or len(nome_usuario) < 3:
             nome_usuario = f"obreiro_{candidato['id']}"
         
-        # Verificar se o nome de usuário já existe e adicionar sufixo se necessário
+        # Verificar se o nome de usuário já existe
         cursor.execute("SELECT id FROM usuarios WHERE usuario = %s", (nome_usuario,))
         if cursor.fetchone():
             nome_usuario = f"{nome_usuario}_{secrets.token_hex(3)}"
@@ -9852,19 +9875,22 @@ def emitir_placet(candidato_id):
                     loja_numero = %s,
                     loja_orient = %s,
                     nome_completo = %s,
-                    foto = %s
+                    foto = %s,
+                    foto_public_id = %s
                 WHERE id = %s
-            """, (cim_numero, data_iniciacao_date, loja_nome, loja_numero, loja_orient, candidato['nome'], foto_url, obreiro_id))
+            """, (cim_numero, data_iniciacao_date, loja_nome, loja_numero, loja_orient, 
+                  candidato['nome'], foto_url, foto_public_id, obreiro_id))
         else:
-            # Criar novo usuário (obreiro) - COM TODOS OS CAMPOS OBRIGATÓRIOS
+            # Criar novo usuário (obreiro)
             cursor.execute("""
                 INSERT INTO usuarios (
                     usuario, senha_hash, tipo, data_cadastro,
                     nome_completo, cim_numero, grau_atual, data_iniciacao,
                     telefone, email, loja_nome, loja_numero, loja_orient,
-                    cpf, status_membro, ativo, nome_maconico, endereco, foto
+                    cpf, status_membro, ativo, nome_maconico, endereco, 
+                    foto, foto_public_id
                 )
-                VALUES (%s, %s, %s, NOW(), %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, 1, %s, %s, %s)
+                VALUES (%s, %s, %s, NOW(), %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, 1, %s, %s, %s, %s)
                 RETURNING id
             """, (
                 nome_usuario,
@@ -9881,9 +9907,10 @@ def emitir_placet(candidato_id):
                 loja_orient,
                 candidato['cpf'],
                 'ativo',
-                candidato['nome'],  # nome_maconico (pode ser igual ao nome)
+                candidato['nome'],  # nome_maconico
                 candidato.get('endereco_residencial') or candidato.get('endereco'),
-                foto_url
+                foto_url,
+                foto_public_id
             ))
             obreiro_id = cursor.fetchone()['id']
         
@@ -9910,7 +9937,7 @@ def emitir_placet(candidato_id):
             VALUES (%s, %s, %s, %s, %s)
         """, (candidato_id, 'iniciado', 'concluido', datetime.now(), session['user_id']))
         
-        # 13. Atualizar candidato (SEM data_iniciacao e status_processo - apenas colunas que existem)
+        # 13. Atualizar candidato
         cursor.execute("""
             UPDATE candidatos 
             SET obreiro_id = %s, 
@@ -9959,6 +9986,39 @@ def emitir_placet(candidato_id):
             return_connection(conn)
         flash(f"Erro ao emitir placet: {str(e)}", "danger")
         return redirect("/candidatos")
+        
+@app.route("/candidatos/<int:candidato_id>/foto/excluir", methods=["POST"])
+@login_required
+def excluir_foto_candidato(candidato_id):
+    """Excluir foto do candidato do Cloudinary"""
+    try:
+        if session.get('tipo') not in ['admin', 'sindicante']:
+            flash("Acesso negado!", "danger")
+            return redirect(f"/candidato/formulario/{candidato_id}")
+        
+        cursor, conn = get_db()
+        
+        cursor.execute("SELECT foto_public_id FROM candidatos WHERE id = %s", (candidato_id,))
+        candidato = cursor.fetchone()
+        
+        if candidato and candidato.get('foto_public_id'):
+            # Deletar do Cloudinary
+            cloudinary.uploader.destroy(candidato['foto_public_id'])
+            
+            # Limpar banco
+            cursor.execute("UPDATE candidatos SET foto = NULL, foto_public_id = NULL WHERE id = %s", (candidato_id,))
+            conn.commit()
+            flash("Foto excluída com sucesso!", "success")
+        
+        return_connection(conn)
+        return redirect(f"/candidato/formulario/{candidato_id}")
+        
+    except Exception as e:
+        print(f"Erro: {e}")
+        if 'conn' in locals():
+            return_connection(conn)
+        flash("Erro ao excluir foto", "danger")
+        return redirect(f"/candidato/formulario/{candidato_id}")        
 
 @app.route("/candidato/<int:candidato_id>/processo")
 @login_required
