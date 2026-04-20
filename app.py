@@ -7769,26 +7769,47 @@ def gerar_pdf_ata_oficial(id):
         return_connection(conn)
         return redirect("/atas")
     
-    # Buscar presentes na reunião
+    # ============================================
+    # CORREÇÃO: Buscar TODOS os obreiros com status de presença (igual ao template)
+    # Usando presenca_reuniao em vez de presenca
+    # ============================================
+    
+    # Buscar TODOS os obreiros com seus status de presença
     cursor.execute("""
-        SELECT u.id, u.nome_completo, u.grau_atual, c.nome as cargo
-        FROM presenca p
-        JOIN usuarios u ON p.obreiro_id = u.id
+        SELECT 
+            u.id, 
+            u.nome_completo, 
+            u.grau_atual,
+            u.tipo,
+            COALESCE(pr.presente, FALSE) as presente,
+            pr.tipo_ausencia,
+            pr.justificativa,
+            c.nome as cargo
+        FROM usuarios u
+        LEFT JOIN presenca_reuniao pr ON u.id = pr.obreiro_id AND pr.reuniao_id = %s
         LEFT JOIN ocupacao_cargos oc ON u.id = oc.obreiro_id AND oc.ativo = 1
         LEFT JOIN cargos c ON oc.cargo_id = c.id
-        WHERE p.reuniao_id = %s AND p.presente = 1
-        ORDER BY u.grau_atual DESC, u.nome_completo
+        WHERE u.ativo = 1 
+          AND u.tipo IN ('admin', 'obreiro', 'sindicante')
+        ORDER BY 
+            CASE 
+                WHEN c.nome = 'Venerável Mestre' THEN 1
+                WHEN c.nome = 'Orador' THEN 2
+                WHEN c.nome = 'Secretário' THEN 3
+                ELSE 4
+            END,
+            u.grau_atual DESC,
+            u.nome_completo
     """, (ata['reuniao_id'],))
-    presentes = cursor.fetchall()
     
-    # Buscar ausentes justificados
-    cursor.execute("""
-        SELECT u.id, u.nome_completo, u.grau_atual, p.justificativa
-        FROM presenca p
-        JOIN usuarios u ON p.obreiro_id = u.id
-        WHERE p.reuniao_id = %s AND p.presente = 0 AND p.justificativa IS NOT NULL
-    """, (ata['reuniao_id'],))
-    ausentes = cursor.fetchall()
+    todos_obreiros = cursor.fetchall()
+    
+    # Separar presentes e ausentes
+    presentes = [p for p in todos_obreiros if p['presente'] == True or p['presente'] == 1]
+    ausentes = [p for p in todos_obreiros if p['presente'] == False or p['presente'] == 0]
+    
+    # Filtrar ausentes com justificativa (opcional)
+    ausentes_justificados = [p for p in ausentes if p.get('justificativa')]
     
     return_connection(conn)
     
@@ -7827,6 +7848,7 @@ def gerar_pdf_ata_oficial(id):
                           reuniao=reuniao,
                           presentes=presentes,
                           ausentes=ausentes,
+                          ausentes_justificados=ausentes_justificados,
                           numero_ata=ata['numero_ata'],
                           ano_ata=ata['ano_ata'],
                           conteudo=ata['conteudo'],
