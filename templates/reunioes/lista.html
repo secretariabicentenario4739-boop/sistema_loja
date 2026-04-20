@@ -239,13 +239,13 @@
                                         {% endif %}
                                     </small>
                                     {% endif %}
-                                </td>
+                                </th>
                                 <td>
                                     <i class="bi bi-calendar"></i> 
                                     {{ reuniao.data.strftime('%d/%m/%Y') if reuniao.data else '-' }}
-                                    {% if reuniao.data and reuniao.data < now.date() %}
+                                    {% if reuniao.status != 'realizada' and reuniao.data and reuniao.data < now.date() %}
                                     <br><span class="badge bg-danger">Atrasada</span>
-                                    {% elif reuniao.data and reuniao.data == now.date() %}
+                                    {% elif reuniao.status != 'realizada' and reuniao.data and reuniao.data == now.date() %}
                                     <br><span class="badge bg-warning">Hoje</span>
                                     {% endif %}
                                 </td>
