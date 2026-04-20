@@ -7720,6 +7720,7 @@ def gerar_pdf_ata_oficial(id):
     import pdfkit
     import os
     import base64
+    import re
     
     cursor, conn = get_db()
     
@@ -7770,11 +7771,8 @@ def gerar_pdf_ata_oficial(id):
         return redirect("/atas")
     
     # ============================================
-    # CORREÇÃO: Buscar TODOS os obreiros com status de presença (igual ao template)
-    # Usando presenca_reuniao em vez de presenca
+    # BUSCAR TODOS OS OBREIROS COM STATUS DE PRESENÇA
     # ============================================
-    
-    # Buscar TODOS os obreiros com seus status de presença
     cursor.execute("""
         SELECT 
             u.id, 
@@ -7808,10 +7806,46 @@ def gerar_pdf_ata_oficial(id):
     presentes = [p for p in todos_obreiros if p['presente'] == True or p['presente'] == 1]
     ausentes = [p for p in todos_obreiros if p['presente'] == False or p['presente'] == 0]
     
-    # Filtrar ausentes com justificativa (opcional)
-    ausentes_justificados = [p for p in ausentes if p.get('justificativa')]
-    
     return_connection(conn)
+    
+    # ============================================
+    # GERAR NOME DO ARQUIVO PDF
+    # ============================================
+    
+    # Mapear grau da reunião
+    grau_reuniao = ata.get('reuniao_grau', 0)
+    if grau_reuniao >= 3:
+        grau_nome = "Mestre"
+    elif grau_reuniao == 2:
+        grau_nome = "Companheiro"
+    elif grau_reuniao == 1:
+        grau_nome = "Aprendiz"
+    else:
+        grau_nome = "Geral"
+    
+    # Mapear tipo da reunião
+    tipo_reuniao = ata.get('reuniao_tipo', 'ordinaria')
+    tipo_reuniao_lower = str(tipo_reuniao).lower()
+    
+    if 'magn' in tipo_reuniao_lower or 'magna' in tipo_reuniao_lower:
+        tipo_nome = "Magna"
+    elif 'extra' in tipo_reuniao_lower or 'extraordinaria' in tipo_reuniao_lower:
+        tipo_nome = "Extraordinaria"
+    elif 'admin' in tipo_reuniao_lower or 'administrativa' in tipo_reuniao_lower:
+        tipo_nome = "Administrativa"
+    else:
+        tipo_nome = "Ordinaria"
+    
+    # Gerar nome do arquivo: Ata-[numero]-[ano]-[grau]-[tipo].pdf
+    numero_ata = ata.get('numero_ata', '000')
+    ano_ata = ata.get('ano_ata', '2024')
+    
+    nome_arquivo = f"Ata-{numero_ata}-{ano_ata}-{grau_nome}-{tipo_nome}.pdf"
+    
+    # Remover caracteres especiais
+    nome_arquivo = re.sub(r'[^a-zA-Z0-9\-_.]', '', nome_arquivo)
+    
+    print(f"📄 Nome do arquivo PDF: {nome_arquivo}")
     
     # Preparar dados para o template
     reuniao = {
@@ -7825,9 +7859,7 @@ def gerar_pdf_ata_oficial(id):
         'local': ata['reuniao_local'] or 'Templo Maçônico'
     }
     
-    # ============================================
-    # CONVERTER LOGO PARA BASE64
-    # ============================================
+    # Converter logo para base64
     logo_base64 = None
     logo_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'static', 'images', 'Logo.png')
     
@@ -7836,11 +7868,8 @@ def gerar_pdf_ata_oficial(id):
             with open(logo_path, 'rb') as image_file:
                 image_data = image_file.read()
                 logo_base64 = base64.b64encode(image_data).decode('utf-8')
-                print(f"✅ Logo convertida para base64! Tamanho: {len(logo_base64)} caracteres")
         except Exception as e:
             print(f"❌ Erro ao converter logo: {e}")
-    else:
-        print(f"❌ Logo não encontrada em: {logo_path}")
     
     # Renderizar HTML para PDF
     html = render_template("atas/pdf_ata.html",
@@ -7848,9 +7877,8 @@ def gerar_pdf_ata_oficial(id):
                           reuniao=reuniao,
                           presentes=presentes,
                           ausentes=ausentes,
-                          ausentes_justificados=ausentes_justificados,
-                          numero_ata=ata['numero_ata'],
-                          ano_ata=ata['ano_ata'],
+                          numero_ata=numero_ata,
+                          ano_ata=ano_ata,
                           conteudo=ata['conteudo'],
                           assinatura_veneravel=ata['assinatura_veneravel'],
                           assinatura_orador=ata['assinatura_orador'],
@@ -7892,7 +7920,7 @@ def gerar_pdf_ata_oficial(id):
             pdf = pdfkit.from_string(html, False, options=options)
         
         response = Response(pdf, content_type='application/pdf')
-        response.headers['Content-Disposition'] = f'inline; filename=ata_{ata["numero_ata"]}_{ata["ano_ata"]}.pdf'
+        response.headers['Content-Disposition'] = f'attachment; filename={nome_arquivo}'
         return response
         
     except Exception as e:
