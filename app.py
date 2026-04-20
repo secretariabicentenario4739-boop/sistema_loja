@@ -11496,19 +11496,34 @@ def listar_documentos_candidato(candidato_id):
         ('Foto 3x4', 'Foto 3x4 recente e fundo branco', 1, 9)
     ]
     
-    # Verificar se os tipos obrigatórios existem, se não, criar
+    # Verificar se os tipos obrigatórios existem e ATUALIZAR os existentes
     for nome, descricao, obrigatorio, ordem in documentos_obrigatorios_padrao:
-        cursor.execute("SELECT id FROM tipos_documentos_candidato WHERE nome = %s", (nome,))
-        if not cursor.fetchone():
+        cursor.execute("SELECT id, obrigatorio FROM tipos_documentos_candidato WHERE nome = %s", (nome,))
+        resultado = cursor.fetchone()
+        
+        if not resultado:
+            # Criar se não existe
             cursor.execute("""
                 INSERT INTO tipos_documentos_candidato (nome, descricao, obrigatorio, ordem, ativo)
                 VALUES (%s, %s, %s, %s, 1)
             """, (nome, descricao, obrigatorio, ordem))
-            conn.commit()
+            print(f"✅ Criado: {nome}")
+        else:
+            # ATUALIZAR se existir mas não está marcado como obrigatório
+            if resultado['obrigatorio'] != obrigatorio:
+                cursor.execute("""
+                    UPDATE tipos_documentos_candidato 
+                    SET obrigatorio = %s, ordem = %s, descricao = %s, ativo = 1
+                    WHERE nome = %s
+                """, (obrigatorio, ordem, descricao, nome))
+                print(f"🔄 Atualizado: {nome} - obrigatorio={obrigatorio}")
+        
+        conn.commit()
     
     # Buscar TODOS os tipos de documentos ativos
     cursor.execute("""
-        SELECT * FROM tipos_documentos_candidato 
+        SELECT id, nome, descricao, obrigatorio, ordem
+        FROM tipos_documentos_candidato 
         WHERE ativo = 1 
         ORDER BY obrigatorio DESC, ordem, nome
     """)
@@ -11530,7 +11545,7 @@ def listar_documentos_candidato(candidato_id):
     # Mapear documentos enviados por tipo
     documentos_map = {d['tipo_documento_id']: d for d in documentos}
     
-    # Calcular progresso
+    # Calcular progresso (apenas documentos obrigatórios)
     total_obrigatorios = sum(1 for t in tipos_documentos if t['obrigatorio'] == 1)
     total_enviados = 0
     for t in tipos_documentos:
@@ -11539,7 +11554,7 @@ def listar_documentos_candidato(candidato_id):
     
     percentual = int((total_enviados / total_obrigatorios * 100)) if total_obrigatorios > 0 else 0
     
-    # Documentos pendentes de aprovação
+    # Documentos pendentes de aprovação (apenas obrigatórios)
     documentos_pendentes = 0
     for t in tipos_documentos:
         if t['obrigatorio'] == 1 and t['id'] in documentos_map:
@@ -11550,9 +11565,19 @@ def listar_documentos_candidato(candidato_id):
     # Documentos opcionais
     documentos_opcionais_count = sum(1 for t in tipos_documentos if t['obrigatorio'] == 0)
     
-    print(f"📊 Tipos encontrados: {len(tipos_documentos)}")
-    print(f"📊 Obrigatórios: {total_obrigatorios}")
-    print(f"📊 Opcionais: {documentos_opcionais_count}")
+    # DEBUG: Imprimir no console para verificar
+    print(f"\n{'='*50}")
+    print(f"📊 CANDIDATO: {candidato['nome']}")
+    print(f"{'='*50}")
+    for t in tipos_documentos:
+        status = "OBRIGATÓRIO" if t['obrigatorio'] == 1 else "opcional"
+        enviado = "✅" if t['id'] in documentos_map else "❌"
+        print(f"  {enviado} {t['nome']} - {status}")
+    print(f"{'='*50}")
+    print(f"Total obrigatórios: {total_obrigatorios}")
+    print(f"Total enviados: {total_enviados}")
+    print(f"Percentual: {percentual}%")
+    print(f"{'='*50}\n")
     
     return_connection(conn)
     
@@ -11565,7 +11590,6 @@ def listar_documentos_candidato(candidato_id):
                           percentual=percentual,
                           documentos_pendentes=documentos_pendentes,
                           documentos_opcionais_count=documentos_opcionais_count)
-                          
 @app.route("/candidatos/<int:candidato_id>/documentos/upload/<int:tipo_id>", methods=["POST"])
 @login_required
 def upload_documento_candidato(candidato_id, tipo_id):
