@@ -5,10 +5,12 @@
 {% block content %}
 <div class="container-fluid py-4">
     <div class="container">
+        <!-- Cabeçalho -->
         <div class="d-flex justify-content-between align-items-center mb-4">
             <h2>
                 <i class="bi bi-clipboard-data"></i> 
                 Sindicância: {{ candidato.nome }}
+                <span class="badge bg-primary">{{ candidato.status or 'Em análise' }}</span>
             </h2>
             <div>
                 <a href="/candidatos" class="btn btn-outline-secondary">
@@ -21,12 +23,103 @@
             {% if messages %}
                 {% for category, message in messages %}
                     <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+                        <i class="bi bi-{% if category == 'success' %}check-circle{% elif category == 'danger' %}exclamation-triangle{% else %}info-circle{% endif %} me-2"></i>
                         {{ message }}
                         <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
                     </div>
                 {% endfor %}
             {% endif %}
         {% endwith %}
+
+        <!-- Cards de Estatísticas -->
+        <div class="row mb-4">
+            <div class="col-md-3">
+                <div class="card bg-primary text-white shadow">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <h6 class="card-title mb-0">Total Sindicantes</h6>
+                                <h2 class="mb-0">{{ total_sindicantes }}</h2>
+                            </div>
+                            <i class="bi bi-people-fill fs-1"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card bg-success text-white shadow">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <h6 class="card-title mb-0">Pareceres Recebidos</h6>
+                                <h2 class="mb-0">{{ votos_recebidos }}</h2>
+                            </div>
+                            <i class="bi bi-envelope-check-fill fs-1"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card bg-warning text-dark shadow">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <h6 class="card-title mb-0">Aguardando</h6>
+                                <h2 class="mb-0">{{ total_sindicantes - votos_recebidos }}</h2>
+                            </div>
+                            <i class="bi bi-clock-fill fs-1"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card shadow" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white;">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <h6 class="card-title mb-0">Progresso</h6>
+                                <h2 class="mb-0">{{ percentual_votos }}%</h2>
+                            </div>
+                            <i class="bi bi-graph-up fs-1"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Barra de Progresso -->
+        <div class="card shadow mb-4">
+            <div class="card-header bg-light">
+                <h6 class="mb-0"><i class="bi bi-bar-chart"></i> Progresso da Sindicância</h6>
+            </div>
+            <div class="card-body">
+                <div class="progress mb-2" style="height: 25px;">
+                    <div class="progress-bar bg-success" role="progressbar" 
+                         style="width: {{ percentual_votos }}%" 
+                         aria-valuenow="{{ votos_recebidos }}" 
+                         aria-valuemin="0" 
+                         aria-valuemax="{{ total_sindicantes }}">
+                        {{ percentual_votos }}% ({{ votos_recebidos }}/{{ total_sindicantes }})
+                    </div>
+                </div>
+                <div class="row text-center mt-3">
+                    <div class="col-6">
+                        <div class="alert alert-success mb-0">
+                            <i class="bi bi-check-circle-fill"></i>
+                            <strong>Aprovados</strong>
+                            <span class="badge bg-success ms-2">{{ votos_positivos }}</span>
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <div class="alert alert-danger mb-0">
+                            <i class="bi bi-x-circle-fill"></i>
+                            <strong>Reprovados</strong>
+                            <span class="badge bg-danger ms-2">{{ votos_negativos }}</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
 
         <div class="row">
             <div class="col-md-4">
@@ -36,82 +129,148 @@
                         <h5 class="mb-0"><i class="bi bi-person"></i> Dados do Candidato</h5>
                     </div>
                     <div class="card-body">
-                        <p><strong>Nome:</strong> {{ candidato.nome }}</p>
-                        <p><strong>CPF:</strong> {{ candidato.cpf or '-' }}</p>
-                        <p><strong>Email:</strong> {{ candidato.email or '-' }}</p>
-                        <p><strong>Celular:</strong> {{ candidato.celular or '-' }}</p>
-                        <p><strong>Data Cadastro:</strong> {{ candidato.data_criacao.strftime('%d/%m/%Y') if candidato.data_criacao else '-' }}</p>
-                        <p><strong>Status:</strong> 
-                            {% if candidato.fechado == 1 %}
-                                <span class="badge bg-success">{{ candidato.status }}</span>
-                            {% else %}
-                                <span class="badge bg-warning">Em análise</span>
-                            {% endif %}
-                        </p>
+                        <div class="mb-3">
+                            <label class="fw-bold text-muted small">NOME COMPLETO</label>
+                            <p class="mb-0">{{ candidato.nome }}</p>
+                        </div>
+                        <div class="mb-3">
+                            <label class="fw-bold text-muted small">CPF</label>
+                            <p class="mb-0">{{ candidato.cpf or '-' }}</p>
+                        </div>
+                        <div class="mb-3">
+                            <label class="fw-bold text-muted small">E-MAIL</label>
+                            <p class="mb-0">{{ candidato.email or '-' }}</p>
+                        </div>
+                        <div class="mb-3">
+                            <label class="fw-bold text-muted small">CELULAR</label>
+                            <p class="mb-0">{{ candidato.celular or '-' }}</p>
+                        </div>
+                        <div class="mb-3">
+                            <label class="fw-bold text-muted small">DATA CADASTRO</label>
+                            <p class="mb-0">{{ candidato.data_criacao.strftime('%d/%m/%Y') if candidato.data_criacao else '-' }}</p>
+                        </div>
                         <hr>
-                        <p><strong>Formulário:</strong><br>
-                            {% if candidato.formulario_preenchido %}
-                                <span class="badge bg-success">✓ Formulário preenchido</span>
-                            {% else %}
-                                <span class="badge bg-warning">⚠ Formulário pendente</span>
-                                <br>
-                                <a href="/candidato/formulario/{{ candidato.id }}" class="btn btn-sm btn-outline-primary mt-2">
-                                    <i class="bi bi-pencil"></i> Preencher Formulário
-                                </a>
-                            {% endif %}
-                        </p>
+                        <div class="mb-3">
+                            <label class="fw-bold text-muted small">FORMULÁRIO</label>
+                            <div>
+                                {% if candidato.formulario_preenchido %}
+                                    <span class="badge bg-success">
+                                        <i class="bi bi-check-circle"></i> Preenchido
+                                    </span>
+                                {% else %}
+                                    <span class="badge bg-warning text-dark">
+                                        <i class="bi bi-exclamation-triangle"></i> Pendente
+                                    </span>
+                                    <br>
+                                    <a href="/candidato/formulario/{{ candidato.id }}" class="btn btn-sm btn-outline-primary mt-2">
+                                        <i class="bi bi-pencil"></i> Preencher Formulário
+                                    </a>
+                                {% endif %}
+                            </div>
+                        </div>
+                        <div>
+                            <label class="fw-bold text-muted small">STATUS</label>
+                            <div>
+                                {% if candidato.fechado == 1 %}
+                                    <span class="badge bg-success">{{ candidato.status }}</span>
+                                {% else %}
+                                    <span class="badge bg-warning text-dark">Em análise</span>
+                                {% endif %}
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
 
             <div class="col-md-8">
-                <!-- Card de Progresso dos Pareceres -->
+                <!-- MEU PARECER (apenas para sindicantes designados) -->
+                {% if session.tipo == 'sindicante' and user_is_sindicante %}
                 <div class="card shadow mb-4">
-                    <div class="card-header bg-info text-white">
-                        <h5 class="mb-0"><i class="bi bi-bar-chart"></i> Progresso dos Pareceres</h5>
+                    <div class="card-header bg-secondary text-white">
+                        <h5 class="mb-0"><i class="bi bi-file-text"></i> Meu Parecer</h5>
                     </div>
                     <div class="card-body">
-                        <div class="progress mb-3" style="height: 30px;">
-                            <div class="progress-bar bg-success" role="progressbar" 
-                                 style="width: {{ percentual_votos }}%" 
-                                 aria-valuenow="{{ votos_recebidos }}" 
-                                 aria-valuemin="0" 
-                                 aria-valuemax="{{ total_sindicantes }}">
-                                {{ votos_recebidos }}/{{ total_sindicantes }} votos
-                            </div>
-                        </div>
-                        <div class="row text-center">
-                            <div class="col-6">
-                                <div class="alert alert-success">
-                                    <strong>✅ Aprovados</strong><br>
-                                    <span class="fs-2">{{ votos_positivos }}</span>
+                        {% set meu_parecer = None %}
+                        {% for p in pareceres %}
+                            {% if p.sindicante_id == session.user_id %}
+                                {% set meu_parecer = p %}
+                            {% endif %}
+                        {% endfor %}
+                        
+                        {% if meu_parecer %}
+                            <!-- Parecer já emitido -->
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label class="fw-bold text-muted small">CONCLUSÃO</label>
+                                    <div>
+                                        {% if meu_parecer.conclusao == 'APROVADO' %}
+                                            <span class="badge bg-success fs-6">✅ APROVADO</span>
+                                        {% else %}
+                                            <span class="badge bg-danger fs-6">❌ REPROVADO</span>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label class="fw-bold text-muted small">DATA DO PARECER</label>
+                                    <p class="mb-0">{{ meu_parecer.data_envio.strftime('%d/%m/%Y %H:%M') if meu_parecer.data_envio else '-' }}</p>
                                 </div>
                             </div>
-                            <div class="col-6">
-                                <div class="alert alert-danger">
-                                    <strong>❌ Reprovados</strong><br>
-                                    <span class="fs-2">{{ votos_negativos }}</span>
+                            <div class="mb-3">
+                                <label class="fw-bold text-muted small">PARECER</label>
+                                <div class="border rounded p-3 bg-light" style="max-height: 150px; overflow-y: auto;">
+                                    {{ meu_parecer.parecer_texto|replace('\n', '<br>')|safe }}
                                 </div>
                             </div>
-                        </div>
+                            <div class="d-flex gap-2">
+                                <button type="button" class="btn btn-info" 
+                                        data-bs-toggle="modal" 
+                                        data-bs-target="#modalVisualizarParecer"
+                                        title="Visualizar Parecer">
+                                    <i class="bi bi-eye"></i> Visualizar
+                                </button>
+                                {% if not candidato.fechado %}
+                                <a href="/parecer_conclusivo/{{ candidato.id }}/editar/{{ meu_parecer.id }}" 
+                                   class="btn btn-warning" 
+                                   title="Editar Parecer">
+                                    <i class="bi bi-pencil"></i> Editar
+                                </a>
+                                <button type="button" 
+                                        class="btn btn-danger" 
+                                        onclick="excluirMeuParecer({{ meu_parecer.id }}, {{ candidato.id }})"
+                                        title="Excluir Parecer">
+                                    <i class="bi bi-trash"></i> Excluir
+                                </button>
+                                {% endif %}
+                            </div>
+                        {% else %}
+                            <!-- Ainda não emitiu parecer -->
+                            <div class="text-center py-4">
+                                <i class="bi bi-inbox fs-1 text-muted"></i>
+                                <p class="mt-2">Você ainda não emitiu seu parecer para este candidato.</p>
+                                <a href="/parecer_conclusivo/{{ candidato.id }}" class="btn btn-warning btn-lg">
+                                    <i class="bi bi-pencil-square"></i> Emitir Parecer Conclusivo
+                                </a>
+                            </div>
+                        {% endif %}
                     </div>
                 </div>
+                {% endif %}
 
-                <!-- Card de Pareceres dos Sindicantes -->
+                <!-- ADMIN: Visualização de todos os pareceres -->
+                {% if session.tipo == 'admin' and pareceres %}
                 <div class="card shadow">
-                    <div class="card-header bg-secondary text-white">
-                        <h5 class="mb-0"><i class="bi bi-file-text"></i> Pareceres dos Sindicantes</h5>
+                    <div class="card-header bg-info text-white">
+                        <h5 class="mb-0"><i class="bi bi-list-check"></i> Pareceres dos Sindicantes</h5>
                     </div>
                     <div class="card-body p-0">
-                        {% if pareceres %}
                         <div class="table-responsive">
-                            <table class="table table-bordered mb-0">
+                            <table class="table table-hover mb-0">
                                 <thead class="table-light">
                                     <tr>
                                         <th>Sindicante</th>
                                         <th>Data</th>
                                         <th>Conclusão</th>
-                                        <th style="width: 150px">Ações</th>
+                                        <th style="width: 100px">Ações</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -127,33 +286,18 @@
                                             {% endif %}
                                         </td>
                                         <td>
-                                            <div class="btn-group btn-group-sm" role="group">
-                                                <!-- 1. VISUALIZAR PARECER -->
+                                            <div class="btn-group btn-group-sm">
                                                 <button type="button" class="btn btn-info" 
                                                         data-bs-toggle="modal" 
-                                                        data-bs-target="#modalParecer{{ p.id }}"
+                                                        data-bs-target="#modalParecerAdmin{{ p.id }}"
                                                         title="Visualizar Parecer">
                                                     <i class="bi bi-eye"></i>
                                                 </button>
-                                                
-                                                <!-- 2. EDITAR PARECER (apenas sindicante dono do parecer e candidato não fechado) -->
-                                                {% if session.tipo == 'sindicante' and p.sindicante_id == session.user_id and not candidato.fechado %}
-                                                <a href="/parecer_conclusivo/{{ candidato.id }}/editar/{{ p.id }}" 
-                                                   class="btn btn-warning" 
-                                                   title="Editar Parecer">
-                                                    <i class="bi bi-pencil"></i>
-                                                </a>
-                                                {% endif %}
-                                                
-                                                <!-- 3. EXCLUIR PARECER (admin ou sindicante dono) -->
-                                                {% if session.tipo == 'admin' or (session.tipo == 'sindicante' and p.sindicante_id == session.user_id) %}
-                                                <button type="button" 
-                                                        class="btn btn-danger" 
-                                                        onclick="excluirParecer({{ p.id }}, '{{ p.sindicante }}', {{ candidato.id }})"
+                                                <button type="button" class="btn btn-danger" 
+                                                        onclick="excluirParecerAdmin({{ p.id }}, '{{ p.sindicante }}', {{ candidato.id }})"
                                                         title="Excluir Parecer">
                                                     <i class="bi bi-trash"></i>
                                                 </button>
-                                                {% endif %}
                                             </div>
                                         </td>
                                     </tr>
@@ -161,49 +305,33 @@
                                 </tbody>
                             </table>
                         </div>
-                        {% else %}
-                        <div class="text-center py-4">
-                            <i class="bi bi-inbox fs-1 text-muted"></i>
-                            <p class="mt-2">Nenhum parecer emitido ainda</p>
-                        </div>
-                        {% endif %}
                     </div>
                 </div>
-
-                <!-- Botão para Emitir Parecer - APENAS SINDICANTES DESIGNADOS -->
-                {% if session.tipo == 'sindicante' and user_is_sindicante %}
-                    {% set ja_votou = false %}
-                    {% for p in pareceres %}
-                        {% if p.sindicante_id == session.user_id %}
-                            {% set ja_votou = true %}
-                        {% endif %}
-                    {% endfor %}
-                    
-                    {% if ja_votou %}
-                        <div class="mt-4 text-center alert alert-info">
-                            <i class="bi bi-check-circle-fill"></i> 
-                            Você já emitiu seu parecer para este candidato.
-                            {% if not candidato.fechado %}
-                            <br>
-                            <small>Você pode editar ou excluir seu parecer usando os botões acima.</small>
-                            {% endif %}
-                        </div>
-                    {% else %}
-                        <div class="mt-4 text-center">
-                            <a href="/parecer_conclusivo/{{ candidato.id }}" class="btn btn-warning btn-lg">
-                                <i class="bi bi-pencil-square"></i> Emitir Parecer Conclusivo
-                            </a>
-                        </div>
-                    {% endif %}
-                {% elif session.tipo == 'admin' %}
-                <div class="mt-4 text-center alert alert-info">
-                    <i class="bi bi-info-circle"></i> 
-                    Como administrador, você pode visualizar e excluir os pareceres, mas não pode emitir votos.
+                {% elif session.tipo == 'admin' and not pareceres %}
+                <div class="card shadow">
+                    <div class="card-body text-center py-5">
+                        <i class="bi bi-inbox fs-1 text-muted"></i>
+                        <p class="mt-2">Nenhum parecer emitido ainda</p>
+                    </div>
                 </div>
-                {% elif session.tipo == 'sindicante' and not user_is_sindicante %}
-                <div class="mt-4 text-center alert alert-warning">
-                    <i class="bi bi-exclamation-triangle"></i> 
-                    Você não está designado como sindicante para este candidato.
+                {% endif %}
+
+                <!-- Ações para ADMIN (encerrar sindicância) -->
+                {% if session.tipo == 'admin' and not candidato.fechado %}
+                <div class="mt-4">
+                    <a href="/fechar_sindicancia/{{ candidato.id }}" 
+                       class="btn btn-warning w-100"
+                       onclick="return confirm('Encerrar sindicância deste candidato? Esta ação não pode ser desfeita!')">
+                        <i class="bi bi-check2-circle"></i> Encerrar Sindicância
+                    </a>
+                </div>
+                {% endif %}
+
+                <!-- Mensagem para sindicante não designado -->
+                {% if session.tipo == 'sindicante' and not user_is_sindicante %}
+                <div class="alert alert-warning text-center">
+                    <i class="bi bi-exclamation-triangle fs-4"></i>
+                    <p class="mb-0 mt-2">Você não está designado como sindicante para este candidato.</p>
                 </div>
                 {% endif %}
             </div>
@@ -211,9 +339,65 @@
     </div>
 </div>
 
-<!-- Modais para visualizar pareceres -->
+<!-- Modal para visualizar MEU PARECER (sindicante) -->
+{% if session.tipo == 'sindicante' and user_is_sindicante %}
+    {% set meu_parecer = None %}
+    {% for p in pareceres %}
+        {% if p.sindicante_id == session.user_id %}
+            {% set meu_parecer = p %}
+        {% endif %}
+    {% endfor %}
+    
+    {% if meu_parecer %}
+    <div class="modal fade" id="modalVisualizarParecer" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header bg-info text-white">
+                    <h5 class="modal-title">
+                        <i class="bi bi-file-text"></i> Meu Parecer - {{ candidato.nome }}
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="fw-bold">Conclusão:</label>
+                        <div>
+                            {% if meu_parecer.conclusao == 'APROVADO' %}
+                                <span class="badge bg-success fs-6">✅ APROVADO</span>
+                            {% else %}
+                                <span class="badge bg-danger fs-6">❌ REPROVADO</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="fw-bold">Data do Parecer:</label>
+                        <p>{{ meu_parecer.data_envio.strftime('%d/%m/%Y %H:%M') if meu_parecer.data_envio else '-' }}</p>
+                    </div>
+                    <div class="mb-3">
+                        <label class="fw-bold">Parecer:</label>
+                        <div class="border rounded p-3 bg-light" style="max-height: 300px; overflow-y: auto;">
+                            {{ meu_parecer.parecer_texto|replace('\n', '<br>')|safe }}
+                        </div>
+                    </div>
+                    {% if meu_parecer.observacoes %}
+                    <div class="mb-3">
+                        <label class="fw-bold">Observações:</label>
+                        <p>{{ meu_parecer.observacoes }}</p>
+                    </div>
+                    {% endif %}
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fechar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+{% endif %}
+
+<!-- Modais para admin visualizar pareceres -->
 {% for p in pareceres %}
-<div class="modal fade" id="modalParecer{{ p.id }}" tabindex="-1">
+<div class="modal fade" id="modalParecerAdmin{{ p.id }}" tabindex="-1">
     <div class="modal-dialog modal-lg">
         <div class="modal-content">
             <div class="modal-header bg-info text-white">
@@ -235,7 +419,7 @@
                 </div>
                 <div class="mb-3">
                     <label class="fw-bold">Data do Parecer:</label>
-                    <p>{{ p.data_parecer.strftime('%d/%m/%Y') if p.data_parecer else '-' }}</p>
+                    <p>{{ p.data_envio.strftime('%d/%m/%Y %H:%M') if p.data_envio else '-' }}</p>
                 </div>
                 <div class="mb-3">
                     <label class="fw-bold">Parecer:</label>
@@ -243,27 +427,6 @@
                         {{ p.parecer_texto|replace('\n', '<br>')|safe }}
                     </div>
                 </div>
-                {% if p.fontes %}
-                <div class="mb-3">
-                    <label class="fw-bold">Fontes de Referência:</label>
-                    <div class="table-responsive">
-                        <table class="table table-sm">
-                            <thead>
-                                <tr><th>Fonte</th><th>Informação</th></tr>
-                            </thead>
-                            <tbody>
-                                {% set fontes = p.fontes|from_json %}
-                                {% for fonte in fontes %}
-                                <tr>
-                                    <td>{{ fonte.nome }}</td>
-                                    <td>{{ fonte.informacao }}</td>
-                                </tr>
-                                {% endfor %}
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-                {% endif %}
                 {% if p.observacoes %}
                 <div class="mb-3">
                     <label class="fw-bold">Observações:</label>
@@ -280,13 +443,12 @@
 {% endfor %}
 
 <script>
-// Função para excluir parecer
-function excluirParecer(parecerId, sindicanteNome, candidatoId) {
-    if (!confirm(`⚠️ ATENÇÃO!\n\nDeseja excluir o parecer do sindicante "${sindicanteNome}"?\n\nEsta ação não pode ser desfeita!\n\nDeseja continuar?`)) {
+// Função para sindicante excluir seu próprio parecer
+function excluirMeuParecer(parecerId, candidatoId) {
+    if (!confirm('⚠️ ATENÇÃO!\n\nDeseja excluir SEU parecer?\n\nEsta ação não pode ser desfeita!\n\nDeseja continuar?')) {
         return;
     }
     
-    // Mostrar loading no botão
     const btn = event.target;
     const originalHtml = btn.innerHTML;
     btn.innerHTML = '<i class="bi bi-hourglass-split"></i>';
@@ -294,112 +456,133 @@ function excluirParecer(parecerId, sindicanteNome, candidatoId) {
     
     fetch(`/api/pareceres/${parecerId}/excluir`, {
         method: 'DELETE',
-        headers: {
-            'Content-Type': 'application/json'
-        }
+        headers: { 'Content-Type': 'application/json' }
     })
     .then(response => response.json())
     .then(data => {
         if (data.success) {
-            // Remover a linha da tabela
-            const row = document.getElementById(`parecer-row-${parecerId}`);
-            if (row) row.remove();
-            
-            // Mostrar notificação
-            mostrarNotificacao('✅ Parecer excluído com sucesso!', 'success');
-            
-            // Recarregar a página após 1 segundo
-            setTimeout(() => {
-                location.reload();
-            }, 1000);
+            mostrarAlerta('success', '✅ Seu parecer foi excluído com sucesso!', 2000);
+            setTimeout(() => location.reload(), 1000);
         } else {
-            mostrarNotificacao('❌ Erro ao excluir parecer: ' + (data.error || 'Erro desconhecido'), 'error');
+            mostrarAlerta('danger', '❌ Erro ao excluir parecer: ' + (data.error || 'Erro desconhecido'), 3000);
             btn.innerHTML = originalHtml;
             btn.disabled = false;
         }
     })
     .catch(error => {
-        console.error('Erro:', error);
-        mostrarNotificacao('❌ Erro ao excluir parecer', 'error');
+        mostrarAlerta('danger', '❌ Erro ao excluir parecer', 3000);
         btn.innerHTML = originalHtml;
         btn.disabled = false;
     });
 }
 
-// Função para mostrar notificação
-function mostrarNotificacao(mensagem, tipo) {
-    const alertDiv = document.createElement('div');
-    alertDiv.className = `alert alert-${tipo === 'success' ? 'success' : 'danger'} alert-dismissible fade show position-fixed top-0 end-0 m-3`;
-    alertDiv.style.zIndex = '9999';
-    alertDiv.style.minWidth = '300px';
-    alertDiv.innerHTML = `
-        ${mensagem}
-        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-    `;
-    document.body.appendChild(alertDiv);
-    
-    setTimeout(() => {
-        alertDiv.remove();
-    }, 3000);
-}
-
-// Função para converter JSON string para objeto
-function fromJson(jsonStr) {
-    if (!jsonStr) return [];
-    try {
-        return JSON.parse(jsonStr);
-    } catch(e) {
-        return [];
+// Função para admin excluir parecer
+function excluirParecerAdmin(parecerId, sindicanteNome, candidatoId) {
+    if (!confirm(`⚠️ ATENÇÃO!\n\nDeseja excluir o parecer do sindicante "${sindicanteNome}"?\n\nEsta ação não pode ser desfeita!\n\nDeseja continuar?`)) {
+        return;
     }
+    
+    const btn = event.target;
+    const originalHtml = btn.innerHTML;
+    btn.innerHTML = '<i class="bi bi-hourglass-split"></i>';
+    btn.disabled = true;
+    
+    fetch(`/api/pareceres/${parecerId}/excluir`, {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            const row = document.getElementById(`parecer-row-${parecerId}`);
+            if (row) row.remove();
+            mostrarAlerta('success', '✅ Parecer excluído com sucesso!', 2000);
+            setTimeout(() => location.reload(), 1000);
+        } else {
+            mostrarAlerta('danger', '❌ Erro ao excluir parecer: ' + (data.error || 'Erro desconhecido'), 3000);
+            btn.innerHTML = originalHtml;
+            btn.disabled = false;
+        }
+    })
+    .catch(error => {
+        mostrarAlerta('danger', '❌ Erro ao excluir parecer', 3000);
+        btn.innerHTML = originalHtml;
+        btn.disabled = false;
+    });
 }
 
-// Função para tornar a linha da tabela clicável
-document.addEventListener('DOMContentLoaded', function() {
-    // Adicionar evento de clique nas linhas da tabela de pareceres para visualizar
-    const linhas = document.querySelectorAll('.table tbody tr');
-    linhas.forEach(linha => {
-        // Impedir que o clique em botões dentro da linha dispare o redirecionamento
-        const botoes = linha.querySelectorAll('.btn, button, a');
-        botoes.forEach(botao => {
-            botao.addEventListener('click', function(e) {
-                e.stopPropagation();
-            });
-        });
-        
-        // Adicionar cursor pointer
-        linha.style.cursor = 'pointer';
-        linha.addEventListener('click', function() {
-            // Buscar o botão de visualizar dentro da linha
-            const btnVisualizar = this.querySelector('.btn-info');
-            if (btnVisualizar) {
-                btnVisualizar.click();
-            }
-        });
-    });
-});
+function mostrarAlerta(tipo, mensagem, timeout = 5000) {
+    const alertContainer = document.getElementById('alert-container') || criarContainerAlerta();
+    const alertId = 'alert-' + Date.now();
+    const alertHtml = `
+        <div id="${alertId}" class="alert alert-${tipo} alert-dismissible fade show" role="alert">
+            ${mensagem}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    `;
+    alertContainer.insertAdjacentHTML('beforeend', alertHtml);
+    setTimeout(() => {
+        const el = document.getElementById(alertId);
+        if (el) el.remove();
+    }, timeout);
+}
+
+function criarContainerAlerta() {
+    const container = document.createElement('div');
+    container.id = 'alert-container';
+    container.style.position = 'fixed';
+    container.style.top = '20px';
+    container.style.right = '20px';
+    container.style.zIndex = '9999';
+    container.style.maxWidth = '500px';
+    document.body.appendChild(container);
+    return container;
+}
 </script>
 
 <style>
-.card {
-    border-radius: 10px;
-    overflow: hidden;
-}
-.progress {
-    border-radius: 30px;
-}
-.progress-bar {
-    font-size: 14px;
-    font-weight: bold;
-    line-height: 30px;
-}
-.btn-group-sm .btn {
-    margin: 0 2px;
-}
-.table tbody tr {
-    cursor: pointer;
-}
-.table tbody tr:hover {
-    background-color: rgba(0, 123, 255, 0.05);
-}
+    .card {
+        border-radius: 10px;
+        overflow: hidden;
+        transition: transform 0.2s ease;
+    }
+    .card:hover {
+        transform: translateY(-4px);
+    }
+    .card-header {
+        font-weight: 600;
+    }
+    .progress {
+        border-radius: 30px;
+        height: 25px;
+    }
+    .progress-bar {
+        font-size: 14px;
+        font-weight: bold;
+        line-height: 25px;
+    }
+    .table-hover tbody tr:hover {
+        cursor: pointer;
+        background-color: rgba(0, 123, 255, 0.05);
+    }
+    .badge {
+        font-size: 0.8rem;
+        padding: 0.4rem 0.6rem;
+    }
+    .btn-group-sm .btn {
+        padding: 0.25rem 0.5rem;
+        margin: 0 2px;
+    }
+    @media (max-width: 768px) {
+        .btn-group {
+            flex-direction: column;
+        }
+        .btn-group .btn {
+            margin-bottom: 5px;
+        }
+        .table-responsive {
+            font-size: 0.85rem;
+        }
+    }
 </style>
 {% endblock %}
