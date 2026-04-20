@@ -2386,42 +2386,83 @@ def gerar_link_candidato(candidato_id):
         'token': candidato['token_acesso'],
         'candidato': candidato['nome']
     })
-
 @app.route("/candidato/acesso/<token>")
 def candidato_acesso(token):
-    """Página de acesso do candidato via token"""
-    print(f"🔍 ROTA ACIONADA - Token: {token}")
-    
-    cursor, conn = get_db()
-    
+    """Página de acesso do candidato para envio de documentos"""
     try:
+        cursor, conn = get_db()
+        
         # Buscar candidato pelo token
         cursor.execute("""
-            SELECT id, nome, status, token_acesso, email
+            SELECT id, nome, status, token_acesso, email 
             FROM candidatos 
             WHERE token_acesso = %s
         """, (token,))
         candidato = cursor.fetchone()
         
-        print(f"🔍 Candidato encontrado: {candidato is not None}")
-        
         if not candidato:
-            flash("Link inválido ou candidato não encontrado!", "danger")
+            flash("Token inválido ou candidato não encontrado!", "danger")
             return redirect("/")
         
-        print(f"✅ Candidato: {candidato['nome']} - ID: {candidato['id']}")
+        # Buscar tipos de documentos
+        cursor.execute("""
+            SELECT id, nome, descricao, obrigatorio, ordem
+            FROM tipos_documentos_candidato 
+            WHERE ativo = 1 
+            ORDER BY obrigatorio DESC, ordem, nome
+        """)
+        tipos_documentos = cursor.fetchall()
+        
+        # Buscar documentos já enviados pelo candidato
+        cursor.execute("""
+            SELECT d.*, t.nome as tipo_nome, t.obrigatorio
+            FROM documentos_candidato d
+            JOIN tipos_documentos_candidato t ON d.tipo_documento_id = t.id
+            WHERE d.candidato_id = %s
+        """, (candidato['id'],))
+        documentos = cursor.fetchall()
+        
+        # Mapear documentos por tipo
+        documentos_map = {doc['tipo_documento_id']: doc for doc in documentos}
+        
+        # Calcular progresso
+        total_obrigatorios = sum(1 for t in tipos_documentos if t['obrigatorio'] == 1)
+        total_enviados = 0
+        for t in tipos_documentos:
+            if t['obrigatorio'] == 1 and t['id'] in documentos_map:
+                total_enviados += 1
+        
+        percentual = int((total_enviados / total_obrigatorios * 100)) if total_obrigatorios > 0 else 0
+        
+        # Documentos pendentes de aprovação
+        documentos_pendentes = 0
+        for t in tipos_documentos:
+            if t['obrigatorio'] == 1 and t['id'] in documentos_map:
+                doc = documentos_map[t['id']]
+                if doc['status'] == 'pendente':
+                    documentos_pendentes += 1
+        
+        # Documentos opcionais
+        documentos_opcionais_count = sum(1 for t in tipos_documentos if t['obrigatorio'] == 0)
         
         return_connection(conn)
         
-        return render_template("candidatos/acesso.html", candidato=candidato)
+        # Renderizar DIRETAMENTE o template de documentos do candidato
+        return render_template("candidatos/documentos_externo.html",
+                              candidato=candidato,
+                              tipos_documentos=tipos_documentos,
+                              documentos_map=documentos_map,
+                              total_obrigatorios=total_obrigatorios,
+                              total_enviados=total_enviados,
+                              percentual=percentual,
+                              documentos_pendentes=documentos_pendentes,
+                              documentos_opcionais_count=documentos_opcionais_count)
         
     except Exception as e:
-        print(f"❌ Erro: {e}")
-        import traceback
-        traceback.print_exc()
-        if conn:
+        print(f"Erro: {e}")
+        if 'conn' in locals():
             return_connection(conn)
-        flash("Erro ao acessar o link. Tente novamente.", "danger")
+        flash("Erro ao acessar página do candidato", "danger")
         return redirect("/")
 
 @app.route("/candidato/<int:candidato_id>/documentos")
@@ -10821,6 +10862,180 @@ def formulario_candidato(candidato_id):
                           candidato=candidato, 
                           filhos=filhos,
                           usuario=usuario)
+
+@app.route("/candidatos/enviar-link", methods=["POST"])
+@login_required
+def enviar_link_email():
+    """Envia o link de acesso para o candidato por e-mail"""
+    try:
+        data = request.get_json()
+        email = data.get('email')
+        link = data.get('link')
+        candidato_id = data.get('candidato_id')
+        candidato_nome = data.get('candidato_nome')
+        
+        if not email or not link:
+            return jsonify({"success": False, "error": "E-mail e link são obrigatórios"}), 400
+        
+        # Assunto do e-mail
+        assunto = f"📄 Link para envio de documentos - {candidato_nome}"
+        
+        # Corpo do e-mail em HTML
+        corpo_html = f"""
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <meta charset="UTF-8">
+            <style>
+                body {{
+                    font-family: Arial, sans-serif;
+                    line-height: 1.6;
+                    color: #333;
+                }}
+                .container {{
+                    max-width: 600px;
+                    margin: 0 auto;
+                    padding: 20px;
+                    border: 1px solid #ddd;
+                    border-radius: 10px;
+                }}
+                .header {{
+                    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                    color: white;
+                    padding: 20px;
+                    text-align: center;
+                    border-radius: 10px 10px 0 0;
+                }}
+                .content {{
+                    padding: 20px;
+                }}
+                .button {{
+                    display: inline-block;
+                    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                    color: white;
+                    padding: 12px 30px;
+                    text-decoration: none;
+                    border-radius: 25px;
+                    margin: 20px 0;
+                }}
+                .footer {{
+                    font-size: 12px;
+                    color: #666;
+                    text-align: center;
+                    padding: 20px;
+                    border-top: 1px solid #ddd;
+                }}
+            </style>
+        </head>
+        <body>
+            <div class="container">
+                <div class="header">
+                    <h2>📄 Documentos do Candidato</h2>
+                </div>
+                <div class="content">
+                    <p>Olá <strong>{candidato_nome}</strong>,</p>
+                    <p>Seu processo de candidatura está em andamento. Para dar continuidade, você precisa enviar os documentos solicitados.</p>
+                    
+                    <p><strong>📋 Documentos necessários:</strong></p>
+                    <ul>
+                        <li>RG e CPF</li>
+                        <li>Foto 3x4</li>
+                        <li>Certidão Negativa Eleitoral</li>
+                        <li>Certidão Negativa Militar</li>
+                        <li>Certidão Negativa TRF1</li>
+                        <li>Certidão Negativa TJDFT</li>
+                        <li>Certidão de Antecedentes Criminais PF</li>
+                        <li>Certidão Negativa de Débitos - GDF</li>
+                    </ul>
+                    
+                    <p style="text-align: center;">
+                        <a href="{link}" class="button" target="_blank">
+                            🔗 ACESSAR MEUS DOCUMENTOS
+                        </a>
+                    </p>
+                    
+                    <p><strong>⚠️ Importante:</strong></p>
+                    <ul>
+                        <li>O link é pessoal e intransferível</li>
+                        <li>Você pode enviar os documentos de forma segura</li>
+                        <li>Acompanhe o status de aprovação dos documentos</li>
+                        <li>Todos os documentos obrigatórios devem ser enviados</li>
+                    </ul>
+                    
+                    <p>Em caso de dúvidas, entre em contato com a secretaria.</p>
+                    
+                    <p>Atenciosamente,<br>
+                    <strong>Secretaria da Loja</strong></p>
+                </div>
+                <div class="footer">
+                    <p>Este é um e-mail automático. Por favor, não responda.</p>
+                    <p>© 2024 - Sistema de Gerenciamento de Candidatos</p>
+                </div>
+            </div>
+        </body>
+        </html>
+        """
+        
+        # Corpo do e-mail em texto puro (fallback)
+        corpo_texto = f"""
+        Olá {candidato_nome},
+        
+        Seu processo de candidatura está em andamento.
+        
+        Acesse o link abaixo para enviar seus documentos:
+        
+        {link}
+        
+        Documentos necessários:
+        - RG e CPF
+        - Foto 3x4
+        - Certidão Negativa Eleitoral
+        - Certidão Negativa Militar
+        - Certidão Negativa TRF1
+        - Certidão Negativa TJDFT
+        - Certidão de Antecedentes Criminais PF
+        - Certidão Negativa de Débitos - GDF
+        
+        Atenciosamente,
+        Secretaria da Loja
+        """
+        
+        # Enviar e-mail
+        import smtplib
+        from email.mime.text import MIMEText
+        from email.mime.multipart import MIMEMultipart
+        
+        # Configurações de e-mail (ajuste conforme seu servidor)
+        smtp_server = "smtp.gmail.com"  # ou seu servidor SMTP
+        smtp_port = 587
+        smtp_user = "seu_email@gmail.com"
+        smtp_password = "sua_senha"
+        
+        msg = MIMEMultipart("alternative")
+        msg["Subject"] = assunto
+        msg["From"] = smtp_user
+        msg["To"] = email
+        
+        # Anexar versões HTML e texto
+        part_text = MIMEText(corpo_texto, "plain")
+        part_html = MIMEText(corpo_html, "html")
+        
+        msg.attach(part_text)
+        msg.attach(part_html)
+        
+        # Enviar
+        with smtplib.SMTP(smtp_server, smtp_port) as server:
+            server.starttls()
+            server.login(smtp_user, smtp_password)
+            server.sendmail(smtp_user, email, msg.as_string())
+        
+        return jsonify({"success": True, "message": "E-mail enviado com sucesso!"})
+        
+    except Exception as e:
+        print(f"Erro ao enviar e-mail: {e}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({"success": False, "error": str(e)}), 500                          
                           
 @app.route("/sindicancia/<int:candidato_id>")
 @login_required
