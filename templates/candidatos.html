@@ -219,59 +219,72 @@
                                     {% endif %}
                                 </td>
                                 <td class="align-middle">
-                                    <div class="btn-group btn-group-sm" role="group">
-                                        <a href="/sindicancia/{{ c.id }}" class="btn btn-info" title="Visualizar Sindicância">
-                                            <i class="bi bi-eye"></i>
-                                        </a>
-                                        <a href="/candidatos/{{ c.id }}/checklist" class="btn btn-success" title="Checklist de Iniciação">
-                                            <i class="bi bi-check2-square"></i>
-                                        </a>
-                                        <a href="/candidatos/{{ c.id }}/documentos" class="btn btn-outline-primary" title="Gerenciar Documentos">
-                                            <i class="bi bi-folder2-open"></i>
-                                        </a>
-                                        
-                                        <!-- Botão Formulário - APENAS ADMIN E SINDICANTES -->
-                                        {% if session.tipo == 'admin' or session.tipo == 'sindicante' %}
-                                        <a href="/candidato/formulario/{{ c.id }}" class="btn btn-outline-info" title="Preencher Formulário">
-                                            <i class="bi bi-file-text"></i>
-                                        </a>
-                                        {% endif %}
-                                        
-                                        {% if session.tipo == 'admin' %}
-                                        <button type="button" class="btn btn-outline-secondary" 
-                                                onclick="abrirModalDesignarSindicantes({{ c.id }}, '{{ c.nome|replace("'", "\\'") }}')"
-                                                title="Designar Sindicantes">
-                                            <i class="bi bi-person-plus"></i>
-                                        </button>
-                                        {% endif %}
-                                        
-                                        {% if session.tipo == 'admin' and c.fechado == 1 and c.status == 'Aprovado' and not c.obreiro_id %}
-                                        <button type="button" class="btn btn-primary" 
-                                                onclick="abrirModalEmitirPlacet({{ c.id }}, '{{ c.nome|replace("'", "\\'") }}')"
-                                                title="Emitir Placet">
-                                            <i class="bi bi-file-text"></i>
-                                        </button>
-                                        {% endif %}
-                                        
-                                        {% if session.tipo == 'admin' and not c.fechado %}
-                                        <a href="/fechar_sindicancia/{{ c.id }}" class="btn btn-warning" 
-                                           onclick="return confirm('Encerrar sindicância deste candidato? Esta ação não pode ser desfeita!')" 
-                                           title="Encerrar Sindicância">
-                                            <i class="bi bi-check2-circle"></i>
-                                        </a>
-                                        {% endif %}
-                                        
-                                        {% if session.tipo == 'admin' %}
-                                        <form action="/candidatos/excluir/{{ c.id }}" method="POST" style="display:inline;">
-                                            <button type="submit" class="btn btn-danger" 
-                                                    onclick="return confirm('Excluir este candidato? Esta ação não pode ser desfeita!')" 
-                                                    title="Excluir Candidato">
-                                                <i class="bi bi-trash"></i>
-                                            </button>
-                                        </form>
-                                        {% endif %}
-                                    </div>
-                                </td>
+    <div class="btn-group btn-group-sm" role="group">
+        <!-- 1. VISUALIZAR - Todos podem ver -->
+        <a href="/sindicancia/{{ c.id }}" class="btn btn-info" title="Visualizar Sindicância">
+            <i class="bi bi-eye"></i>
+        </a>
+        
+        <!-- 2. ESCOLHER SINDICANTE / DESIGNAR - APENAS ADMIN -->
+        {% if session.tipo == 'admin' %}
+        <button type="button" class="btn btn-outline-secondary" 
+                onclick="abrirModalDesignarSindicantes({{ c.id }}, '{{ c.nome|replace("'", "\\'") }}')"
+                title="Designar Sindicantes">
+            <i class="bi bi-person-plus"></i>
+        </button>
+        {% endif %}
+        
+        <!-- 3. FORMULÁRIO - ADMIN E SINDICANTES -->
+        {% if session.tipo == 'admin' or session.tipo == 'sindicante' %}
+        <a href="/candidato/formulario/{{ c.id }}" class="btn btn-outline-info" title="Preencher Formulário">
+            <i class="bi bi-file-text"></i>
+        </a>
+        {% endif %}
+        
+        <!-- 4. ENVIAR DOCUMENTOS - ADMIN E SINDICANTES -->
+        {% if session.tipo == 'admin' or session.tipo == 'sindicante' %}
+        <a href="/candidatos/{{ c.id }}/documentos" class="btn btn-outline-primary" title="Gerenciar Documentos">
+            <i class="bi bi-folder2-open"></i>
+        </a>
+        {% endif %}
+        
+        <!-- 5. CHECKLIST - ADMIN E SINDICANTES -->
+        {% if session.tipo == 'admin' or session.tipo == 'sindicante' %}
+        <a href="/candidatos/{{ c.id }}/checklist" class="btn btn-success" title="Checklist de Iniciação">
+            <i class="bi bi-check2-square"></i>
+        </a>
+        {% endif %}
+        
+        <!-- 6. ENCERRAR SINDICÂNCIA - APENAS ADMIN (apenas se não estiver fechado) -->
+        {% if session.tipo == 'admin' and not c.fechado %}
+        <a href="/fechar_sindicancia/{{ c.id }}" class="btn btn-warning" 
+           onclick="return confirm('Encerrar sindicância deste candidato? Esta ação não pode ser desfeita!')" 
+           title="Encerrar Sindicância">
+            <i class="bi bi-check2-circle"></i>
+        </a>
+        {% endif %}
+        
+        <!-- 7. EXCLUIR - APENAS ADMIN -->
+        {% if session.tipo == 'admin' %}
+        <form action="/candidatos/excluir/{{ c.id }}" method="POST" style="display:inline;">
+            <button type="submit" class="btn btn-danger" 
+                    onclick="return confirm('Excluir este candidato? Esta ação não pode ser desfeita!')" 
+                    title="Excluir Candidato">
+                <i class="bi bi-trash"></i>
+            </button>
+        </form>
+        {% endif %}
+        
+        <!-- BOTÃO EMITIR PLACET - APENAS ADMIN (quando aprovado e ainda não é obreiro) -->
+        {% if session.tipo == 'admin' and c.fechado == 1 and c.status == 'Aprovado' and not c.obreiro_id %}
+        <button type="button" class="btn btn-primary" 
+                onclick="abrirModalEmitirPlacet({{ c.id }}, '{{ c.nome|replace("'", "\\'") }}')"
+                title="Emitir Placet">
+            <i class="bi bi-file-text"></i>
+        </button>
+        {% endif %}
+    </div>
+</td>
                             </tr>
                             {% else %}
                             <tr>
