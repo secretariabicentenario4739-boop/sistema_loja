@@ -3085,31 +3085,65 @@ def excluir_material(material_id):
     
     try:
         # Buscar material para log
-        cursor.execute("SELECT titulo FROM materiais WHERE id = %s", (material_id,))
+        cursor.execute("SELECT titulo, arquivo_url FROM materiais WHERE id = %s", (material_id,))
         material = cursor.fetchone()
         
         if not material:
             flash('Material não encontrado', 'danger')
+            return_connection(conn)
             return redirect(url_for('listar_materiais'))
+        
+        # Salvar dados para o log ANTES de excluir
+        dados_anteriores = {
+            'titulo': material['titulo'],
+            'arquivo_url': material['arquivo_url']
+        }
         
         # Excluir registros relacionados
         cursor.execute("DELETE FROM downloads_material WHERE material_id = %s", (material_id,))
         cursor.execute("DELETE FROM favoritos_material WHERE material_id = %s", (material_id,))
         cursor.execute("DELETE FROM avaliacoes_material WHERE material_id = %s", (material_id,))
         
-        # Excluir material
+        # 🔧 Tentar excluir arquivo do Cloudinary (opcional)
+        try:
+            arquivo_url = material.get('arquivo_url', '')
+            if 'cloudinary' in arquivo_url and '/upload/' in arquivo_url:
+                parts = arquivo_url.split('/upload/')
+                if len(parts) > 1:
+                    public_id = parts[1].split('.')[0]
+                    try:
+                        cloudinary.uploader.destroy(public_id, resource_type="raw")
+                        print(f"Arquivo removido do Cloudinary: {public_id}")
+                    except:
+                        pass
+        except Exception as e:
+            print(f"Erro ao excluir do Cloudinary (ignorado): {e}")
+        
+        # Excluir material do banco
         cursor.execute("DELETE FROM materiais WHERE id = %s", (material_id,))
         conn.commit()
         
-        registrar_log("excluir", "material", material_id, dados_antigos={"titulo": material['titulo']})
-        flash(f'Material "{material["titulo"]}" excluído com sucesso!', 'success')
+        # 🔧 CORREÇÃO: Usar dados_anteriores em vez de dados_antigos
+        registrar_log(
+            acao="excluir",
+            entidade="material",
+            entidade_id=material_id,
+            dados_anteriores=dados_anteriores,
+            dados_novos=None
+        )
+        
+        flash(f'✅ Material "{material["titulo"]}" excluído com sucesso!', 'success')
         
     except Exception as e:
         print(f"Erro ao excluir: {e}")
+        import traceback
+        traceback.print_exc()
         conn.rollback()
         flash(f'Erro ao excluir: {str(e)}', 'danger')
     
-    return_connection(conn)
+    finally:
+        return_connection(conn)
+    
     return redirect(url_for('listar_materiais'))
     
 @app.route("/biblioteca/categoria/<int:categoria_id>")
