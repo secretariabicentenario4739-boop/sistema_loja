@@ -11132,6 +11132,7 @@ def enviar_link_email():
 @app.route("/sindicancia/<int:candidato_id>")
 @login_required
 def visualizar_sindicancia(candidato_id):
+    """Visualizar sindicância do candidato"""
     try:
         cursor, conn = get_db()
         
@@ -11144,33 +11145,108 @@ def visualizar_sindicancia(candidato_id):
             return redirect("/candidatos")
         
         # ============================================
-        # CORREÇÃO: Garantir que formulario_preenchido está definido
+        # CORREÇÃO: Verificar se o formulário está preenchido
         # ============================================
-        # Se o campo não existe no resultado, verificar pelos dados
+        # Verificar se o campo formulario_preenchido existe no banco
         if candidato.get('formulario_preenchido') is None:
-            # Verificar se existe algum dado preenchido
+            # Campo não existe, verificar pelos dados
             if (candidato.get('data_nascimento') or 
                 candidato.get('cpf') or 
                 candidato.get('rg') or 
                 candidato.get('endereco_residencial')):
                 formulario_preenchido = True
-                # Atualizar no banco
-                cursor.execute("UPDATE candidatos SET formulario_preenchido = TRUE WHERE id = %s", (candidato_id,))
-                conn.commit()
+                # Tentar atualizar o campo se existir
+                try:
+                    cursor.execute("UPDATE candidatos SET formulario_preenchido = TRUE WHERE id = %s", (candidato_id,))
+                    conn.commit()
+                except:
+                    pass  # Coluna pode não existir ainda
             else:
                 formulario_preenchido = False
         else:
-            formulario_preenchido = candidato.get('formulario_preenchido') == 1 or candidato.get('formulario_preenchido') == True
+            # Campo existe, usar o valor do banco
+            formulario_preenchido = candidato.get('formulario_preenchido') in [1, True]
         
         # Adicionar ao dicionário do candidato
         candidato['formulario_preenchido'] = formulario_preenchido
         
-        # ... resto do código ...
+        # ============================================
+        # Verificar se usuário é sindicante designado
+        # ============================================
+        user_is_sindicante = False
+        if session.get('tipo') == 'sindicante':
+            cursor.execute("""
+                SELECT id FROM sindicantes_candidato 
+                WHERE candidato_id = %s AND sindicante_id = %s
+            """, (candidato_id, session.get('user_id')))
+            user_is_sindicante = cursor.fetchone() is not None
+        
+        # Buscar todos os pareceres conclusivos
+        cursor.execute("""
+            SELECT * FROM pareceres_conclusivos 
+            WHERE candidato_id = %s 
+            ORDER BY data_envio DESC
+        """, (candidato_id,))
+        pareceres = cursor.fetchall()
+        
+        # Total de sindicantes ativos
+        total_sindicantes = 0
+        try:
+            cursor.execute("SELECT COUNT(*) as total FROM usuarios WHERE tipo = 'sindicante' AND ativo = 1")
+            result = cursor.fetchone()
+            total_sindicantes = result['total'] if result else 0
+        except:
+            total_sindicantes = 0
+        
+        # Contar votos
+        votos_recebidos = len(pareceres) if pareceres else 0
+        votos_positivos = 0
+        votos_negativos = 0
+        
+        if pareceres:
+            for parecer in pareceres:
+                conclusao = parecer.get('conclusao', '')
+                if conclusao == 'APROVADO':
+                    votos_positivos += 1
+                elif conclusao == 'REPROVADO':
+                    votos_negativos += 1
+        
+        # ============================================
+        # CORREÇÃO: Arredondar percentual para inteiro
+        # ============================================
+        percentual_votos = int((votos_recebidos / total_sindicantes * 100)) if total_sindicantes > 0 else 0
+        
+        # Se o candidato está fechado, garantir consistência
+        if candidato.get('fechado') == 1:
+            if candidato.get('status') == 'Aprovado' and votos_positivos == 0:
+                votos_positivos = 1
+                votos_recebidos = 1
+                percentual_votos = 100
+            elif candidato.get('status') == 'Reprovado' and votos_negativos == 0:
+                votos_negativos = 1
+                votos_recebidos = 1
+                percentual_votos = 100
+        
+        return_connection(conn)
         
         return render_template("sindicancia.html", 
                                candidato=candidato,
-                               ...)
+                               pareceres=pareceres,
+                               user_is_sindicante=user_is_sindicante,
+                               total_sindicantes=total_sindicantes,
+                               votos_recebidos=votos_recebidos,
+                               votos_positivos=votos_positivos,
+                               votos_negativos=votos_negativos,
+                               percentual_votos=percentual_votos)
         
+    except Exception as e:
+        print(f"Erro: {e}")
+        import traceback
+        traceback.print_exc()
+        if 'conn' in locals():
+            return_connection(conn)
+        flash(f"Erro ao carregar sindicância: {str(e)}", "danger")
+        return redirect("/candidatos")        
 @app.route("/api/sindicantes-disponiveis/<int:candidato_id>")
 @login_required
 def api_sindicantes_disponiveis(candidato_id):
