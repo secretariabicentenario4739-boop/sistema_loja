@@ -2,15 +2,250 @@
 
 {% block title %}Editar Material - Biblioteca{% endblock %}
 
+{% block styles %}
+{{ super() }}
+<style>
+    :root {
+        --bordo: #4A0E2E;
+        --bordo-escuro: #3A0A24;
+        --bordo-claro: #6B1342;
+        --bordo-suave: #8B4A6B;
+        --bordo-transparente: rgba(74, 14, 46, 0.08);
+        --bordo-transparente-hover: rgba(74, 14, 46, 0.12);
+        --ouro: #D4AF37;
+        --ouro-escuro: #996515;
+        --ouro-claro: #F0D68A;
+    }
+
+    /* BOTÕES DO RITO - VERSÃO MOBILE FRIENDLY */
+    .btn-bordo {
+        background: linear-gradient(135deg, var(--bordo), var(--bordo-escuro));
+        border: none;
+        color: white;
+        border-radius: 30px;
+        padding: 8px 20px;
+        transition: all 0.3s;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        text-decoration: none;
+    }
+    
+    .btn-bordo:hover {
+        background: linear-gradient(135deg, var(--bordo-claro), var(--bordo));
+        transform: translateY(-2px);
+        color: white;
+        box-shadow: 0 5px 15px rgba(74, 14, 46, 0.3);
+    }
+    
+    .btn-bordo-outline {
+        background: transparent;
+        border: 1px solid var(--bordo);
+        color: var(--bordo);
+        border-radius: 30px;
+        padding: 8px 20px;
+        transition: all 0.3s;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        text-decoration: none;
+    }
+    
+    .btn-bordo-outline:hover {
+        background: var(--bordo);
+        color: white;
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(74, 14, 46, 0.2);
+    }
+
+    .btn-bordo-warning {
+        background: linear-gradient(135deg, #f59e0b, #d97706);
+        border: none;
+        color: white;
+        border-radius: 30px;
+        padding: 12px 28px;
+        transition: all 0.3s;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        text-decoration: none;
+        font-weight: 500;
+    }
+    
+    .btn-bordo-warning:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(245, 158, 11, 0.3);
+        color: white;
+    }
+
+    /* CARDS */
+    .card {
+        border-radius: 16px;
+        overflow: hidden;
+        border: 1px solid rgba(74, 14, 46, 0.15);
+        transition: transform 0.2s, box-shadow 0.2s;
+    }
+    
+    .card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
+    }
+    
+    .card-header {
+        background: linear-gradient(135deg, #f59e0b, #d97706);
+        border-bottom: none;
+        color: white;
+        padding: 1rem 1.5rem;
+    }
+    
+    .card-header h5 {
+        margin: 0;
+        font-weight: 600;
+    }
+
+    /* FORMULÁRIO */
+    .form-label {
+        color: var(--bordo);
+        font-weight: 600;
+        margin-bottom: 0.5rem;
+    }
+    
+    .form-control, .form-select {
+        border-radius: 12px;
+        border: 1px solid rgba(74, 14, 46, 0.2);
+        padding: 0.6rem 1rem;
+        transition: all 0.2s;
+    }
+    
+    .form-control:focus, .form-select:focus {
+        border-color: var(--bordo);
+        box-shadow: 0 0 0 3px rgba(74, 14, 46, 0.1);
+        outline: none;
+    }
+    
+    .form-check-input:checked {
+        background-color: var(--bordo);
+        border-color: var(--bordo);
+    }
+    
+    .form-check-label {
+        color: var(--bordo);
+        font-weight: 500;
+    }
+
+    /* ALERTAS */
+    .alert-bordo-info {
+        background: var(--bordo-transparente);
+        border: 1px solid rgba(74, 14, 46, 0.15);
+        color: var(--bordo);
+        border-radius: 12px;
+    }
+    
+    .text-success {
+        color: #059669 !important;
+    }
+
+    /* GRUPO DE AÇÕES DO CABEÇALHO */
+    .header-actions {
+        display: flex;
+        gap: 12px;
+        align-items: center;
+        flex-wrap: wrap;
+    }
+
+    /* GRUPO DE BOTÕES */
+    .btn-group-mobile {
+        display: flex;
+        gap: 12px;
+        justify-content: center;
+        flex-wrap: wrap;
+    }
+
+    /* RESPONSIVIDADE */
+    @media (max-width: 768px) {
+        .btn-bordo, .btn-bordo-outline, .btn-bordo-warning {
+            padding: 6px 16px;
+            font-size: 0.85rem;
+        }
+        
+        .btn-bordo-warning {
+            padding: 10px 20px;
+        }
+        
+        /* Cabeçalho responsivo */
+        .d-flex.justify-content-between {
+            flex-direction: column;
+            align-items: flex-start !important;
+            gap: 15px;
+        }
+        
+        .header-actions {
+            width: 100%;
+        }
+        
+        .header-actions .btn-bordo-outline {
+            width: 100%;
+            justify-content: center;
+        }
+        
+        h2 {
+            font-size: 1.5rem;
+        }
+        
+        /* Formulário responsivo */
+        .row .col-md-6 {
+            margin-bottom: 0.5rem;
+        }
+        
+        .form-control, .form-select {
+            font-size: 0.875rem;
+        }
+        
+        /* Botões do formulário */
+        .btn-group-mobile {
+            flex-direction: column;
+            width: 100%;
+        }
+        
+        .btn-group-mobile .btn-bordo-warning,
+        .btn-group-mobile .btn-bordo-outline {
+            width: 100%;
+            justify-content: center;
+        }
+        
+        .card-body {
+            padding: 1rem !important;
+        }
+        
+        .card-header {
+            padding: 0.75rem 1rem;
+        }
+    }
+
+    @media (max-width: 480px) {
+        .btn-bordo, .btn-bordo-outline, .btn-bordo-warning {
+            padding: 5px 12px;
+            font-size: 0.8rem;
+        }
+        
+        .btn-bordo-warning {
+            padding: 8px 16px;
+        }
+    }
+</style>
+{% endblock %}
+
 {% block content %}
 <div class="container py-4">
+    <!-- Cabeçalho responsivo -->
     <div class="d-flex justify-content-between align-items-center mb-4">
         <h2>
-            <i class="bi bi-pencil-square"></i> 
-            Editar Material: {{ material.titulo }}
+            <i class="bi bi-pencil-square" style="color: var(--bordo);"></i> 
+            <span style="color: var(--bordo);">Editar Material:</span>
+            <span style="color: var(--bordo-claro);">{{ material.titulo }}</span>
         </h2>
-        <div>
-            <a href="/biblioteca/material/{{ material.id }}" class="btn btn-outline-secondary">
+        <div class="header-actions">
+            <a href="/biblioteca/material/{{ material.id }}" class="btn-bordo-outline">
                 <i class="bi bi-arrow-left"></i> Voltar
             </a>
         </div>
@@ -18,30 +253,30 @@
 
     <div class="row">
         <div class="col-md-8 mx-auto">
-            <div class="card shadow">
-                <div class="card-header bg-warning text-dark">
-                    <h5 class="mb-0"><i class="bi bi-info-circle"></i> Editar informações do material</h5>
+            <div class="card shadow-sm">
+                <div class="card-header">
+                    <h5><i class="bi bi-info-circle me-2"></i> Editar informações do material</h5>
                 </div>
-                <div class="card-body">
+                <div class="card-body p-4">
                     <form method="POST" enctype="multipart/form-data" id="formEditar">
                         <div class="mb-3">
-                            <label class="form-label fw-bold">Título *</label>
+                            <label class="form-label">Título <span class="text-danger">*</span></label>
                             <input type="text" class="form-control" name="titulo" value="{{ material.titulo }}" required>
                         </div>
 
                         <div class="mb-3">
-                            <label class="form-label fw-bold">Subtítulo</label>
+                            <label class="form-label">Subtítulo</label>
                             <input type="text" class="form-control" name="subtitulo" value="{{ material.subtitulo or '' }}">
                         </div>
 
                         <div class="mb-3">
-                            <label class="form-label fw-bold">Descrição</label>
+                            <label class="form-label">Descrição</label>
                             <textarea class="form-control" name="descricao" rows="4">{{ material.descricao or '' }}</textarea>
                         </div>
 
                         <div class="row">
                             <div class="col-md-6 mb-3">
-                                <label class="form-label fw-bold">Tipo *</label>
+                                <label class="form-label">Tipo <span class="text-danger">*</span></label>
                                 <select class="form-select" name="tipo" required>
                                     <option value="livro" {% if material.tipo == 'livro' %}selected{% endif %}>📚 Livro</option>
                                     <option value="apostila" {% if material.tipo == 'apostila' %}selected{% endif %}>📖 Apostila</option>
@@ -53,7 +288,7 @@
                             </div>
 
                             <div class="col-md-6 mb-3">
-                                <label class="form-label fw-bold">Categoria *</label>
+                                <label class="form-label">Categoria <span class="text-danger">*</span></label>
                                 <select class="form-select" name="categoria_id" required>
                                     <option value="">Selecione...</option>
                                     {% for cat in categorias %}
@@ -67,7 +302,7 @@
 
                         <div class="row">
                             <div class="col-md-6 mb-3">
-                                <label class="form-label fw-bold">Grau de Acesso *</label>
+                                <label class="form-label">Grau de Acesso <span class="text-danger">*</span></label>
                                 <select class="form-select" name="grau_acesso" required>
                                     <option value="1" {% if material.grau_acesso == 1 %}selected{% endif %}>📘 Aprendiz (Grau 1)</option>
                                     <option value="2" {% if material.grau_acesso == 2 %}selected{% endif %}>📙 Companheiro (Grau 2)</option>
@@ -76,42 +311,42 @@
                             </div>
 
                             <div class="col-md-6 mb-3">
-                                <label class="form-label fw-bold">Autor</label>
+                                <label class="form-label">Autor</label>
                                 <input type="text" class="form-control" name="autor" value="{{ material.autor or '' }}">
                             </div>
                         </div>
 
                         <div class="row">
                             <div class="col-md-6 mb-3">
-                                <label class="form-label fw-bold">Editora</label>
+                                <label class="form-label">Editora</label>
                                 <input type="text" class="form-control" name="editora" value="{{ material.editora or '' }}">
                             </div>
 
                             <div class="col-md-6 mb-3">
-                                <label class="form-label fw-bold">Ano de Publicação</label>
+                                <label class="form-label">Ano de Publicação</label>
                                 <input type="number" class="form-control" name="ano_publicacao" value="{{ material.ano_publicacao or '' }}" min="1800" max="2026">
                             </div>
                         </div>
 
                         <div class="row">
                             <div class="col-md-6 mb-3">
-                                <label class="form-label fw-bold">Número de Páginas</label>
+                                <label class="form-label">Número de Páginas</label>
                                 <input type="number" class="form-control" name="num_paginas" value="{{ material.num_paginas or '' }}">
                             </div>
 
                             <div class="col-md-6 mb-3">
-                                <label class="form-label fw-bold">ISBN</label>
+                                <label class="form-label">ISBN</label>
                                 <input type="text" class="form-control" name="isbn" value="{{ material.isbn or '' }}">
                             </div>
                         </div>
 
                         <div class="mb-3">
-                            <label class="form-label fw-bold">Tags (separadas por vírgula)</label>
+                            <label class="form-label">Tags (separadas por vírgula)</label>
                             <input type="text" class="form-control" name="tags" value="{{ material.tags or '' }}" placeholder="Ex: maçonaria, aprendizado, ritual">
                         </div>
 
                         <div class="mb-3">
-                            <label class="form-label fw-bold">Arquivo (deixe em branco para manter o atual)</label>
+                            <label class="form-label">Arquivo (deixe em branco para manter o atual)</label>
                             <input type="file" class="form-control" name="arquivo" accept=".pdf,.doc,.docx,.jpg,.jpeg,.png,.mp4,.mp3">
                             {% if material.arquivo_url %}
                             <small class="text-success mt-1 d-block">
@@ -121,7 +356,7 @@
                         </div>
 
                         <div class="mb-3">
-                            <label class="form-label fw-bold">Capa (deixe em branco para manter a atual)</label>
+                            <label class="form-label">Capa (deixe em branco para manter a atual)</label>
                             <input type="file" class="form-control" name="capa" accept="image/*">
                             {% if material.capa_url %}
                             <small class="text-success mt-1 d-block">
@@ -133,29 +368,30 @@
                         <div class="row">
                             <div class="col-md-6 mb-3 form-check">
                                 <input type="checkbox" class="form-check-input" name="destaque" id="destaque" {% if material.destaque %}checked{% endif %}>
-                                <label class="form-check-label fw-bold" for="destaque">
-                                    <i class="bi bi-star-fill text-warning"></i> Destacar este material
+                                <label class="form-check-label" for="destaque">
+                                    <i class="bi bi-star-fill" style="color: var(--ouro);"></i> Destacar este material
                                 </label>
                             </div>
 
                             <div class="col-md-6 mb-3 form-check">
                                 <input type="checkbox" class="form-check-input" name="publicado" id="publicado" {% if material.publicado %}checked{% endif %}>
-                                <label class="form-check-label fw-bold" for="publicado">
+                                <label class="form-check-label" for="publicado">
                                     <i class="bi bi-eye"></i> Publicado (visível para usuários)
                                 </label>
                             </div>
                         </div>
 
-                        <div class="alert alert-info">
+                        <div class="alert alert-bordo-info mb-4">
                             <i class="bi bi-cloud-upload"></i>
                             <strong>Armazenamento em Nuvem:</strong> Os arquivos são hospedados no Cloudinary.
                         </div>
 
-                        <div class="d-grid gap-2">
-                            <button type="submit" class="btn btn-warning btn-lg">
+                        <!-- Botões com layout responsivo -->
+                        <div class="btn-group-mobile">
+                            <button type="submit" class="btn-bordo-warning">
                                 <i class="bi bi-save"></i> Salvar Alterações
                             </button>
-                            <a href="/biblioteca/material/{{ material.id }}" class="btn btn-outline-secondary">
+                            <a href="/biblioteca/material/{{ material.id }}" class="btn-bordo-outline">
                                 <i class="bi bi-x-circle"></i> Cancelar
                             </a>
                         </div>
@@ -170,12 +406,49 @@
 document.getElementById('formEditar').addEventListener('submit', function(e) {
     const arquivo = document.querySelector('input[name="arquivo"]').files[0];
     if (arquivo) {
-        const maxSize = 50 * 1024 * 1024;
+        const maxSize = 50 * 1024 * 1024; // 50MB
         if (arquivo.size > maxSize) {
             e.preventDefault();
-            alert('Arquivo muito grande! O tamanho máximo é 50MB.');
+            alert('❌ Arquivo muito grande! O tamanho máximo é 50MB.');
             return false;
         }
+    }
+    
+    // Mostrar loading no botão
+    const btnSubmit = this.querySelector('button[type="submit"]');
+    const originalText = btnSubmit.innerHTML;
+    btnSubmit.innerHTML = '<i class="bi bi-hourglass-split"></i> Salvando...';
+    btnSubmit.disabled = true;
+    
+    setTimeout(() => {
+        btnSubmit.innerHTML = originalText;
+        btnSubmit.disabled = false;
+    }, 3000);
+});
+
+// Validação do formulário
+document.querySelector('form').addEventListener('submit', function(e) {
+    const titulo = document.querySelector('input[name="titulo"]').value.trim();
+    const tipo = document.querySelector('select[name="tipo"]').value;
+    const categoria = document.querySelector('select[name="categoria_id"]').value;
+    
+    if (!titulo) {
+        e.preventDefault();
+        alert('❌ Por favor, informe o título do material!');
+        document.querySelector('input[name="titulo"]').focus();
+        return false;
+    }
+    
+    if (!tipo) {
+        e.preventDefault();
+        alert('❌ Por favor, selecione o tipo do material!');
+        return false;
+    }
+    
+    if (!categoria) {
+        e.preventDefault();
+        alert('❌ Por favor, selecione a categoria do material!');
+        return false;
     }
 });
 </script>

@@ -6,44 +6,213 @@
 {{ super() }}
 <style>
     :root {
-        --primary: #4A0E2E;
-        --primary-dark: #3A0A24;
-        --success: #10b981;
-        --warning: #f59e0b;
-        --danger: #ef4444;
-        --info: #3b82f6;
-        --secondary: #64748b;
+        --bordo: #4A0E2E;
+        --bordo-escuro: #3A0A24;
+        --bordo-claro: #6B1342;
+        --bordo-suave: #8B4A6B;
+        --bordo-transparente: rgba(74, 14, 46, 0.08);
+        --bordo-transparente-hover: rgba(74, 14, 46, 0.12);
+        --ouro: #D4AF37;
+        --ouro-escuro: #996515;
+        --ouro-claro: #F0D68A;
     }
 
-    .card-elegant {
+    /* BOTÕES DO RITO - VERSÃO MOBILE FRIENDLY */
+    .btn-bordo {
+        background: linear-gradient(135deg, var(--bordo), var(--bordo-escuro));
         border: none;
-        border-radius: 20px;
-        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
-        transition: transform 0.2s, box-shadow 0.2s;
-        overflow: hidden;
+        color: white;
+        border-radius: 30px;
+        padding: 8px 20px;
+        transition: all 0.3s;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        text-decoration: none;
     }
     
-    .card-elegant:hover {
-        box-shadow: 0 8px 30px rgba(0, 0, 0, 0.12);
+    .btn-bordo:hover {
+        background: linear-gradient(135deg, var(--bordo-claro), var(--bordo));
+        transform: translateY(-2px);
+        color: white;
+        box-shadow: 0 5px 15px rgba(74, 14, 46, 0.3);
     }
     
+    .btn-bordo-outline {
+        background: transparent;
+        border: 1px solid var(--bordo);
+        color: var(--bordo);
+        border-radius: 30px;
+        padding: 8px 20px;
+        transition: all 0.3s;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        text-decoration: none;
+    }
+    
+    .btn-bordo-outline:hover {
+        background: var(--bordo);
+        color: white;
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(74, 14, 46, 0.2);
+    }
+
+    /* BOTÕES ÍCONE APENAS */
+    .btn-icon-info {
+        background: linear-gradient(135deg, #0ea5e9, #0284c7);
+        border: none;
+        color: white;
+        width: 32px;
+        height: 32px;
+        padding: 0;
+        border-radius: 50%;
+        transition: all 0.3s;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+    }
+    
+    .btn-icon-info:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(14, 165, 233, 0.3);
+        color: white;
+    }
+
+    .btn-icon-success {
+        background: linear-gradient(135deg, #10b981, #059669);
+        border: none;
+        color: white;
+        width: 32px;
+        height: 32px;
+        padding: 0;
+        border-radius: 50%;
+        transition: all 0.3s;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+    }
+    
+    .btn-icon-success:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(16, 185, 129, 0.3);
+        color: white;
+    }
+
+    .btn-icon-danger {
+        background: linear-gradient(135deg, #ef4444, #dc2626);
+        border: none;
+        color: white;
+        width: 32px;
+        height: 32px;
+        padding: 0;
+        border-radius: 50%;
+        transition: all 0.3s;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+    }
+    
+    .btn-icon-danger:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(239, 68, 68, 0.3);
+        color: white;
+    }
+
+    .btn-icon-secondary {
+        background: linear-gradient(135deg, #6c757d, #495057);
+        border: none;
+        color: white;
+        width: 32px;
+        height: 32px;
+        padding: 0;
+        border-radius: 50%;
+        transition: all 0.3s;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+    }
+    
+    .btn-icon-secondary:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(108, 117, 125, 0.3);
+        color: white;
+    }
+
+    /* BOTÕES DE APROVAR/REJEITAR */
+    .btn-aprovar {
+        background: linear-gradient(135deg, #10b981, #059669);
+        border: none;
+        color: white;
+        border-radius: 30px;
+        padding: 6px 16px;
+        font-size: 0.75rem;
+        font-weight: 600;
+        transition: all 0.3s;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+    }
+    
+    .btn-aprovar:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(16, 185, 129, 0.3);
+        color: white;
+    }
+
+    .btn-rejeitar {
+        background: linear-gradient(135deg, #ef4444, #dc2626);
+        border: none;
+        color: white;
+        border-radius: 30px;
+        padding: 6px 16px;
+        font-size: 0.75rem;
+        font-weight: 600;
+        transition: all 0.3s;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+    }
+    
+    .btn-rejeitar:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(239, 68, 68, 0.3);
+        color: white;
+    }
+
+    /* CABEÇALHO */
     .header-gradient {
-        background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+        background: linear-gradient(135deg, var(--bordo) 0%, var(--bordo-escuro) 100%);
         padding: 2rem;
         border-radius: 20px;
         margin-bottom: 1.5rem;
     }
+
+    /* CARDS */
+    .card-elegant {
+        background: white;
+        border: 1px solid rgba(74, 14, 46, 0.15);
+        border-radius: 16px;
+        transition: all 0.3s ease;
+        overflow: hidden;
+    }
     
+    .card-elegant:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 8px 25px rgba(74, 14, 46, 0.12);
+        border-color: var(--bordo);
+    }
+
+    /* PROGRESS BAR */
     .progress-custom {
         height: 25px;
-        border-radius: 12px;
-        background: #e2e8f0;
+        border-radius: 30px;
+        background: rgba(74, 14, 46, 0.1);
         overflow: hidden;
-        box-shadow: inset 0 1px 2px rgba(0,0,0,0.1);
     }
     
     .progress-custom .progress-bar {
-        border-radius: 12px;
+        border-radius: 30px;
         background: linear-gradient(90deg, #10b981, #34d399);
         transition: width 0.5s ease;
         font-size: 0.8rem;
@@ -51,41 +220,36 @@
         line-height: 25px;
         text-align: center;
         color: white;
-        text-shadow: 0 1px 1px rgba(0,0,0,0.2);
-        display: flex;
-        align-items: center;
-        justify-content: center;
     }
-    
+
+    /* TABELA */
     .table-documentos {
         margin-bottom: 0;
     }
     
     .table-documentos thead th {
-        background: #f8fafc;
-        border-bottom: 2px solid #e2e8f0;
-        color: #1e293b;
+        background: var(--bordo-transparente);
+        color: var(--bordo);
         font-weight: 600;
+        border-bottom: 2px solid rgba(74, 14, 46, 0.15);
         padding: 1rem;
-        font-size: 0.85rem;
-        text-transform: uppercase;
-        letter-spacing: 0.5px;
     }
     
     .table-documentos tbody tr {
-        transition: background 0.2s;
-        border-bottom: 1px solid #f1f5f9;
+        border-bottom: 1px solid rgba(74, 14, 46, 0.08);
+        transition: all 0.2s;
     }
     
     .table-documentos tbody tr:hover {
-        background: #f8fafc;
+        background: var(--bordo-transparente);
     }
     
     .table-documentos td {
         padding: 1rem;
         vertical-align: middle;
     }
-    
+
+    /* BADGES */
     .badge-custom {
         padding: 6px 12px;
         border-radius: 20px;
@@ -120,77 +284,26 @@
         background: #fee2e2;
         color: #dc2626;
     }
-    
-    .badge-nao-enviado {
-        background: #f1f5f9;
-        color: #475569;
-    }
-    
-    .btn-action {
-        width: 32px;
-        height: 32px;
-        padding: 0;
-        border-radius: 8px;
-        display: inline-flex;
+
+    /* GRUPO DE AÇÕES DO CABEÇALHO */
+    .header-actions {
+        display: flex;
+        gap: 12px;
         align-items: center;
-        justify-content: center;
-        transition: all 0.2s;
-        margin: 0 2px;
+        flex-wrap: wrap;
     }
-    
-    .btn-action:hover {
-        transform: translateY(-2px);
+
+    /* GRUPO DE AÇÕES DA TABELA */
+    .table-actions {
+        display: inline-flex;
+        gap: 6px;
+        align-items: center;
+        flex-wrap: wrap;
     }
-    
-    .btn-aprovar {
-        background: #10b981;
-        color: white;
-        border: none;
-        padding: 4px 12px;
-        border-radius: 8px;
-        font-size: 0.75rem;
-        font-weight: 600;
-        transition: all 0.2s;
-    }
-    
-    .btn-aprovar:hover {
-        background: #059669;
-        transform: translateY(-1px);
-    }
-    
-    .btn-rejeitar {
-        background: #ef4444;
-        color: white;
-        border: none;
-        padding: 4px 12px;
-        border-radius: 8px;
-        font-size: 0.75rem;
-        font-weight: 600;
-        transition: all 0.2s;
-    }
-    
-    .btn-rejeitar:hover {
-        background: #dc2626;
-        transform: translateY(-1px);
-    }
-    
-    .photo-preview {
-        width: 50px;
-        height: 50px;
-        object-fit: cover;
-        border-radius: 50%;
-        border: 2px solid #e2e8f0;
-        transition: transform 0.2s;
-        cursor: pointer;
-    }
-    
-    .photo-preview:hover {
-        transform: scale(1.1);
-        border-color: var(--primary);
-    }
-    
+
+    /* STAT CARD */
     .stat-card {
-        background: #f8fafc;
+        background: var(--bordo-transparente);
         border-radius: 16px;
         padding: 1rem;
         text-align: center;
@@ -198,7 +311,7 @@
     }
     
     .stat-card:hover {
-        background: #f1f5f9;
+        background: rgba(74, 14, 46, 0.12);
         transform: translateY(-2px);
     }
     
@@ -206,77 +319,46 @@
         font-size: 2rem;
         font-weight: 700;
         line-height: 1;
+        color: var(--bordo);
+    }
+
+    .photo-preview {
+        width: 50px;
+        height: 50px;
+        object-fit: cover;
+        border-radius: 50%;
+        border: 2px solid var(--bordo);
+        transition: transform 0.2s;
+        cursor: pointer;
     }
     
-    .separator {
-        display: flex;
-        align-items: center;
-        text-align: center;
-        margin: 1.5rem 0;
+    .photo-preview:hover {
+        transform: scale(1.1);
     }
-    
-    .separator::before,
-    .separator::after {
-        content: '';
-        flex: 1;
-        border-bottom: 1px solid #e2e8f0;
-    }
-    
-    .separator span {
-        padding: 0 1rem;
-        color: #64748b;
-        font-size: 0.85rem;
-        font-weight: 500;
-    }
-    
-    .document-viewer {
-        max-height: 80vh;
-        overflow: auto;
-        background: #f8fafc;
-        border-radius: 12px;
-        padding: 1rem;
-    }
-    
-    .document-viewer iframe,
-    .document-viewer img {
-        width: 100%;
-        border-radius: 8px;
-    }
-    
-    @keyframes fadeInUp {
-        from {
-            opacity: 0;
-            transform: translateY(20px);
-        }
-        to {
-            opacity: 1;
-            transform: translateY(0);
-        }
-    }
-    
-    .animate-in {
-        animation: fadeInUp 0.5s ease-out;
-    }
-    
-    @keyframes fadeIn {
-        from { opacity: 0; transform: translateY(-10px); }
-        to { opacity: 1; transform: translateY(0); }
-    }
-    
-    .toast-notification {
-        position: fixed;
-        top: 20px;
-        right: 20px;
-        z-index: 9999;
-        animation: fadeIn 0.3s ease;
-    }
-    
+
     .documento-obrigatorio-destaque {
         background-color: #fff8f0;
         border-left: 3px solid #dc2626;
     }
-    
+
+    /* RESPONSIVIDADE */
     @media (max-width: 768px) {
+        .btn-bordo, .btn-bordo-outline {
+            padding: 6px 16px;
+            font-size: 0.85rem;
+        }
+        
+        .btn-icon-info, .btn-icon-success, .btn-icon-danger, .btn-icon-secondary {
+            width: 28px;
+            height: 28px;
+            font-size: 0.75rem;
+        }
+        
+        .btn-aprovar, .btn-rejeitar {
+            padding: 4px 12px;
+            font-size: 0.7rem;
+        }
+        
         .table-documentos {
             font-size: 0.85rem;
         }
@@ -286,18 +368,75 @@
             padding: 0.75rem;
         }
         
-        .btn-action {
-            width: 28px;
-            height: 28px;
-        }
-        
         .stat-number {
             font-size: 1.5rem;
         }
         
-        .btn-aprovar, .btn-rejeitar {
-            padding: 4px 8px;
+        /* Cabeçalho responsivo */
+        .header-gradient .d-flex {
+            flex-direction: column;
+            align-items: flex-start !important;
+            gap: 15px;
+        }
+        
+        .header-actions {
+            width: 100%;
+        }
+        
+        .header-actions .btn-bordo-outline,
+        .header-actions .btn-light {
+            width: 100%;
+            justify-content: center;
+        }
+        
+        /* Tabela de ações */
+        .table-actions {
+            flex-direction: column;
+        }
+        
+        /* Cards de estatísticas */
+        .row.g-3 .col-md-3 {
+            margin-bottom: 0.75rem;
+        }
+        
+        /* Modal responsivo */
+        .modal-dialog {
+            margin: 1rem;
+        }
+        
+        .modal-footer {
+            flex-direction: column;
+            gap: 8px;
+        }
+        
+        .modal-footer .btn-secondary,
+        .modal-footer .btn-primary {
+            width: 100%;
+        }
+        
+        /* Progress bar */
+        .progress-custom {
+            height: 20px;
+        }
+        
+        .progress-custom .progress-bar {
             font-size: 0.7rem;
+            line-height: 20px;
+        }
+    }
+
+    @media (max-width: 480px) {
+        .btn-bordo, .btn-bordo-outline {
+            padding: 5px 12px;
+            font-size: 0.8rem;
+        }
+        
+        .header-gradient {
+            padding: 1.5rem;
+        }
+        
+        .stat-number {
+            font-size: 1.3rem;
         }
     }
 </style>
@@ -310,7 +449,7 @@
         <input type="hidden" id="tokenAcesso" value="{{ candidato.token_acesso }}">
         <input type="hidden" id="candidatoId" value="{{ candidato.id }}">
 
-        <!-- Cabeçalho -->
+        <!-- Cabeçalho responsivo -->
         <div class="header-gradient text-white animate-in">
             <div class="d-flex justify-content-between align-items-center flex-wrap gap-3">
                 <div>
@@ -332,11 +471,11 @@
                         </span>
                     </div>
                 </div>
-                <div>
-                    <a href="/candidato/acesso/{{ candidato.token_acesso }}" class="btn btn-light me-2" target="_blank">
+                <div class="header-actions">
+                    <a href="/candidato/acesso/{{ candidato.token_acesso }}" class="btn btn-light" target="_blank">
                         <i class="bi bi-link-45deg"></i> Link de Acesso
                     </a>
-                    <a href="/candidatos" class="btn btn-outline-light">
+                    <a href="/candidatos" class="btn-bordo-outline" style="background: rgba(255,255,255,0.2); color: white; border-color: rgba(255,255,255,0.3);">
                         <i class="bi bi-arrow-left"></i> Voltar
                     </a>
                 </div>
@@ -346,8 +485,8 @@
         <!-- BARRA DE PROGRESSO -->
         <div class="card-elegant mb-4 animate-in">
             <div class="card-body p-4">
-                <div class="d-flex justify-content-between align-items-center mb-3">
-                    <h5 class="mb-0 fw-bold">
+                <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap">
+                    <h5 class="mb-0 fw-bold" style="color: var(--bordo);">
                         <i class="bi bi-check-circle-fill text-success me-2"></i>
                         Progresso da Documentação
                     </h5>
@@ -360,10 +499,10 @@
                 <div class="mb-2">
                     <div class="d-flex justify-content-between mb-1">
                         <small class="text-muted">Documentos obrigatórios enviados</small>
-                        <small class="fw-bold">{{ total_enviados }}/{{ total_obrigatorios }} ({{ percentual }}%)</small>
+                        <small class="fw-bold" style="color: var(--bordo);">{{ total_enviados }}/{{ total_obrigatorios }} ({{ percentual }}%)</small>
                     </div>
                     <div class="progress-custom">
-                        <div class="progress-bar bg-success" role="progressbar" 
+                        <div class="progress-bar" role="progressbar" 
                              style="width: {{ percentual }}%" 
                              aria-valuenow="{{ percentual }}" 
                              aria-valuemin="0" 
@@ -425,8 +564,8 @@
         <!-- Lista de Documentos -->
         <div class="card-elegant animate-in">
             <div class="card-header bg-white border-bottom-0 pt-4 px-4">
-                <h5 class="mb-0 fw-bold">
-                    <i class="bi bi-list-check me-2 text-primary"></i>
+                <h5 class="mb-0 fw-bold" style="color: var(--bordo);">
+                    <i class="bi bi-list-check me-2" style="color: var(--bordo);"></i>
                     Documentos para Envio
                 </h5>
                 <p class="text-muted small mt-1 mb-0">Gerencie os documentos do candidato</p>
@@ -451,14 +590,14 @@
         <td style="width: 30%">
             <div class="d-flex align-items-center gap-2">
                 {% if tipo.nome == 'Foto 3x4' %}
-                    <i class="bi bi-camera-fill fs-5 text-danger"></i>
+                    <i class="bi bi-camera-fill fs-5" style="color: #dc2626;"></i>
                 {% elif tipo.nome == 'RG' or tipo.nome == 'CPF' %}
-                    <i class="bi bi-credit-card-fill fs-5 text-primary"></i>
+                    <i class="bi bi-credit-card-fill fs-5" style="color: #3b82f6;"></i>
                 {% else %}
-                    <i class="bi bi-file-text-fill fs-5 text-info"></i>
+                    <i class="bi bi-file-text-fill fs-5" style="color: #0ea5e9;"></i>
                 {% endif %}
                 <div>
-                    <strong>{{ tipo.nome }}</strong>
+                    <strong style="color: var(--bordo);">{{ tipo.nome }}</strong>
                     {% if tipo.descricao %}
                         <br><small class="text-muted">{{ tipo.descricao[:80] }}</small>
                     {% endif %}
@@ -477,16 +616,16 @@
                         <span class="badge-custom 
                             {% if doc.status == 'aprovado' %}badge-aprovado
                             {% elif doc.status == 'rejeitado' %}badge-rejeitado
-                            {% else %}badge-pendente{% endif %}">
+                            else %}badge-pendente{% endif %}">
                             <i class="bi 
                                 {% if doc.status == 'aprovado' %}bi-check-circle-fill
                                 {% elif doc.status == 'rejeitado' %}bi-x-circle-fill
-                                {% else %}bi-clock-fill{% endif %}"></i>
+                                else %}bi-clock-fill{% endif %}"></i>
                             {% if doc.status == 'aprovado' %}
                                 Aprovado
                             {% elif doc.status == 'rejeitado' %}
                                 Rejeitado
-                            {% else %}
+                            else %}
                                 Pendente
                             {% endif %}
                         </span>
@@ -514,15 +653,15 @@
             {% endif %}
         </td>
         <td style="width: 20%">
-            <div class="d-flex flex-wrap gap-1">
+            <div class="table-actions">
                 {% if doc %}
-                    <button type="button" class="btn btn-outline-info btn-action" 
+                    <button type="button" class="btn-icon-info" 
                             onclick="visualizarDocumento('{{ doc.caminho_arquivo }}', '{{ tipo.nome }}')" 
                             title="Visualizar">
-                        <i class="bi bi-eye"></i>
+                        <i class="bi bi-eye-fill"></i>
                     </button>
                     <a href="{{ doc.caminho_arquivo }}" download 
-                       class="btn btn-outline-success btn-action" title="Baixar">
+                       class="btn-icon-success" title="Baixar">
                         <i class="bi bi-download"></i>
                     </a>
                     
@@ -537,14 +676,14 @@
                         </button>
                     {% endif %}
                     
-                    <button type="button" class="btn btn-outline-danger btn-action" 
+                    <button type="button" class="btn-icon-danger" 
                             onclick="excluirDocumento({{ doc.id }}, '{{ tipo.nome }}', {{ tipo.id }})" 
                             title="Excluir">
-                        <i class="bi bi-trash"></i>
+                        <i class="bi bi-trash-fill"></i>
                     </button>
                 {% endif %}
                 
-                <button type="button" class="btn btn-outline-primary btn-action" 
+                <button type="button" class="btn-icon-secondary" 
                         data-bs-toggle="modal" 
                         data-bs-target="#modalUpload{{ tipo.id }}" title="Enviar">
                     <i class="bi bi-cloud-upload"></i>
@@ -554,13 +693,17 @@
     </tr>
 {% endfor %}
                             
-                            <!-- Separador para Documentos Opcionais (só mostrar se houver opcionais) -->
+                            <!-- Separador para Documentos Opcionais -->
                             {% set tem_opcionais = tipos_documentos|selectattr('obrigatorio', 'equalto', 0)|list|length > 0 %}
                             {% if tem_opcionais %}
                                 <tr class="separator-row">
                                     <td colspan="5">
-                                        <div class="separator">
-                                            <span><i class="bi bi-bookmark-fill me-1"></i> Documentos Opcionais</span>
+                                        <div class="separator" style="display: flex; align-items: center; text-align: center; margin: 1rem 0;">
+                                            <hr style="flex: 1; border-color: rgba(74, 14, 46, 0.15);">
+                                            <span style="padding: 0 1rem; color: var(--bordo-suave); font-size: 0.85rem;">
+                                                <i class="bi bi-bookmark-fill me-1"></i> Documentos Opcionais
+                                            </span>
+                                            <hr style="flex: 1; border-color: rgba(74, 14, 46, 0.15);">
                                         </div>
                                     </td>
                                 </tr>
@@ -572,9 +715,9 @@
                                 <tr>
                                     <td style="width: 30%">
                                         <div class="d-flex align-items-center gap-2">
-                                            <i class="bi bi-file-earmark-text fs-5 text-secondary"></i>
+                                            <i class="bi bi-file-earmark-text fs-5" style="color: var(--bordo-suave);"></i>
                                             <div>
-                                                <strong>{{ tipo.nome }}</strong>
+                                                <strong style="color: var(--bordo);">{{ tipo.nome }}</strong>
                                                 {% if tipo.descricao %}
                                                     <br><small class="text-muted">{{ tipo.descricao[:80] }}</small>
                                                 {% endif %}
@@ -625,15 +768,15 @@
                                         {% endif %}
                                     </td>
                                     <td style="width: 20%">
-                                        <div class="d-flex flex-wrap gap-1">
+                                        <div class="table-actions">
                                             {% if doc %}
-                                                <button type="button" class="btn btn-outline-info btn-action" 
+                                                <button type="button" class="btn-icon-info" 
                                                         onclick="visualizarDocumento('{{ doc.caminho_arquivo }}', '{{ tipo.nome }}')" 
                                                         title="Visualizar">
-                                                    <i class="bi bi-eye"></i>
+                                                    <i class="bi bi-eye-fill"></i>
                                                 </button>
                                                 <a href="{{ doc.caminho_arquivo }}" download 
-                                                   class="btn btn-outline-success btn-action" title="Baixar">
+                                                   class="btn-icon-success" title="Baixar">
                                                     <i class="bi bi-download"></i>
                                                 </a>
                                                 
@@ -648,14 +791,14 @@
                                                     </button>
                                                 {% endif %}
                                                 
-                                                <button type="button" class="btn btn-outline-danger btn-action" 
+                                                <button type="button" class="btn-icon-danger" 
                                                         onclick="excluirDocumento({{ doc.id }}, '{{ tipo.nome }}', {{ tipo.id }})" 
                                                         title="Excluir">
-                                                    <i class="bi bi-trash"></i>
+                                                    <i class="bi bi-trash-fill"></i>
                                                 </button>
                                             {% endif %}
                                             
-                                            <button type="button" class="btn btn-outline-secondary btn-action" 
+                                            <button type="button" class="btn-icon-secondary" 
                                                     data-bs-toggle="modal" 
                                                     data-bs-target="#modalUpload{{ tipo.id }}" title="Enviar">
                                                 <i class="bi bi-cloud-upload"></i>
@@ -675,12 +818,12 @@
             <div class="col-md-6">
                 <div class="card-elegant h-100">
                     <div class="card-header bg-white border-bottom-0 pt-4 px-4">
-                        <h5 class="mb-0 fw-bold">
-                            <i class="bi bi-info-circle-fill text-info me-2"></i>
+                        <h5 class="mb-0 fw-bold" style="color: var(--bordo);">
+                            <i class="bi bi-info-circle-fill me-2" style="color: #0ea5e9;"></i>
                             Informações Importantes
                         </h5>
                     </div>
-                    <div class="card-body">
+                    <div class="card-body p-4">
                         <ul class="list-unstyled mb-0">
                             <li class="mb-2"><i class="bi bi-star-fill text-danger me-2"></i> <strong class="text-danger">Documentos obrigatórios</strong> são necessários para completar a candidatura</li>
                             <li class="mb-2"><i class="bi bi-camera-fill text-danger me-2"></i> <strong>Foto 3x4</strong> é obrigatória e será usada no cadastro</li>
@@ -698,20 +841,20 @@
             <div class="col-md-6">
                 <div class="card-elegant h-100">
                     <div class="card-header bg-white border-bottom-0 pt-4 px-4">
-                        <h5 class="mb-0 fw-bold">
-                            <i class="bi bi-share-fill text-success me-2"></i>
+                        <h5 class="mb-0 fw-bold" style="color: var(--bordo);">
+                            <i class="bi bi-share-fill me-2" style="color: #10b981;"></i>
                             Links de Acesso
                         </h5>
                     </div>
-                    <div class="card-body">
-                        <div class="alert alert-info mb-3">
+                    <div class="card-body p-4">
+                        <div class="alert alert-info mb-3" style="background: var(--bordo-transparente); border-color: var(--bordo); color: var(--bordo); border-radius: 12px;">
                             <i class="bi bi-link-45deg me-2"></i>
                             <strong>Link de Acesso do Candidato:</strong>
                             <div class="input-group mt-2">
                                 <input type="text" class="form-control form-control-sm" id="linkAcesso" 
                                        value="{{ url_for('candidato_acesso', token=candidato.token_acesso, _external=True) }}" 
-                                       readonly>
-                                <button class="btn btn-outline-primary btn-sm" onclick="copiarLink()">
+                                       readonly style="border-radius: 30px 0 0 30px;">
+                                <button class="btn-icon-success" onclick="copiarLink()" style="border-radius: 0 30px 30px 0; width: auto; padding: 0 16px;">
                                     <i class="bi bi-copy"></i> Copiar
                                 </button>
                             </div>
@@ -720,13 +863,14 @@
                             </small>
                         </div>
                         
-                        <div class="alert alert-success mb-0">
+                        <div class="alert alert-success mb-0" style="background: var(--bordo-transparente); border-color: #10b981; color: #059669; border-radius: 12px;">
                             <i class="bi bi-envelope-fill me-2"></i>
                             <strong>Enviar Link por E-mail:</strong>
                             <div class="input-group mt-2">
                                 <input type="email" class="form-control form-control-sm" id="emailCandidato" 
-                                       placeholder="E-mail do candidato" value="{{ candidato.email or '' }}">
-                                <button class="btn btn-success btn-sm" onclick="enviarLinkEmail()">
+                                       placeholder="E-mail do candidato" value="{{ candidato.email or '' }}"
+                                       style="border-radius: 30px 0 0 30px;">
+                                <button class="btn-icon-info" onclick="enviarLinkEmail()" style="border-radius: 0 30px 30px 0; width: auto; padding: 0 16px;">
                                     <i class="bi bi-send"></i> Enviar
                                 </button>
                             </div>
@@ -745,9 +889,9 @@
 {% for tipo in tipos_documentos %}
 <div class="modal fade" id="modalUpload{{ tipo.id }}" tabindex="-1">
     <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content border-0 rounded-4">
+        <div class="modal-content" style="border-radius: 16px; overflow: hidden;">
             <form id="formUpload{{ tipo.id }}" enctype="multipart/form-data">
-                <div class="modal-header bg-primary text-white border-0">
+                <div class="modal-header" style="background: linear-gradient(135deg, var(--bordo), var(--bordo-escuro)); color: white; border: none;">
                     <h5 class="modal-title">
                         <i class="bi bi-cloud-upload-fill me-2"></i> 
                         Enviar {{ tipo.nome }}
@@ -756,35 +900,35 @@
                 </div>
                 <div class="modal-body p-4">
                     <div class="mb-3">
-                        <label class="fw-bold mb-2">{{ tipo.nome }}</label>
+                        <label class="fw-bold mb-2" style="color: var(--bordo);">{{ tipo.nome }}</label>
                         {% if tipo.descricao %}
                             <p class="small text-muted">{{ tipo.descricao }}</p>
                         {% endif %}
                     </div>
                     
                     {% if tipo.obrigatorio == 1 %}
-                        <div class="alert alert-danger py-2 small">
+                        <div class="alert alert-danger py-2 small" style="background: #fee2e2; border: 1px solid #fecaca; color: #dc2626; border-radius: 12px;">
                             <i class="bi bi-exclamation-triangle-fill me-1"></i>
                             <strong>Documento obrigatório</strong> - O envio é necessário para completar a candidatura.
                         </div>
                     {% endif %}
                     
                     <div class="mb-3">
-                        <label class="form-label fw-bold">
+                        <label class="form-label fw-bold" style="color: var(--bordo);">
                             <i class="bi bi-file-earmark-arrow-up me-1"></i> Arquivo
                         </label>
                         <input type="file" class="form-control" name="arquivo" required 
-                               accept=".pdf,.jpg,.jpeg,.png">
+                               accept=".pdf,.jpg,.jpeg,.png" style="border-radius: 12px;">
                         <div class="form-text">
                             <i class="bi bi-info-circle"></i> Formatos permitidos: PDF, JPG, PNG. Tamanho máximo: 10MB
                         </div>
                     </div>
                 </div>
-                <div class="modal-footer bg-light border-0">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                <div class="modal-footer" style="border-top-color: rgba(74, 14, 46, 0.1);">
+                    <button type="button" class="btn-bordo-secondary" data-bs-dismiss="modal">
                         <i class="bi bi-x-circle"></i> Cancelar
                     </button>
-                    <button type="submit" class="btn btn-primary" onclick="uploadDocumento({{ tipo.id }}, '{{ tipo.nome }}'); return false;">
+                    <button type="submit" class="btn-bordo" onclick="uploadDocumento({{ tipo.id }}, '{{ tipo.nome }}'); return false;">
                         <i class="bi bi-cloud-upload-fill"></i> Enviar Documento
                     </button>
                 </div>
@@ -795,6 +939,30 @@
 {% endfor %}
 
 <script>
+// Adicionar estilos para btn-bordo-secondary
+const btnStyle = document.createElement('style');
+btnStyle.textContent = `
+    .btn-bordo-secondary {
+        background: linear-gradient(135deg, #6c757d, #495057);
+        border: none;
+        color: white;
+        border-radius: 30px;
+        padding: 8px 20px;
+        transition: all 0.3s;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        text-decoration: none;
+    }
+    .btn-bordo-secondary:hover {
+        background: linear-gradient(135deg, #5a6268, #3d4246);
+        transform: translateY(-2px);
+        color: white;
+        box-shadow: 0 5px 15px rgba(108, 117, 125, 0.3);
+    }
+`;
+document.head.appendChild(btnStyle);
+
 const token = document.getElementById('tokenAcesso')?.value;
 const candidatoId = document.getElementById('candidatoId')?.value;
 
@@ -806,7 +974,7 @@ if (!token || !candidatoId) {
 function mostrarNotificacao(mensagem, tipo = 'success') {
     const toastDiv = document.createElement('div');
     toastDiv.className = `toast-notification alert alert-${tipo === 'success' ? 'success' : 'danger'} shadow-lg`;
-    toastDiv.style.cssText = 'position: fixed; top: 20px; right: 20px; z-index: 9999; min-width: 300px;';
+    toastDiv.style.cssText = 'position: fixed; top: 20px; right: 20px; z-index: 9999; min-width: 300px; border-radius: 12px;';
     toastDiv.innerHTML = `
         <div class="d-flex align-items-center">
             <i class="bi ${tipo === 'success' ? 'bi-check-circle-fill' : 'bi-exclamation-triangle-fill'} fs-4 me-2"></i>

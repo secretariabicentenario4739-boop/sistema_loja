@@ -2,40 +2,311 @@
 
 {% block title %}Novo Cargo{% endblock %}
 
+{% block styles %}
+{{ super() }}
+<style>
+    :root {
+        --bordo: #4A0E2E;
+        --bordo-escuro: #3A0A24;
+        --bordo-claro: #6B1342;
+        --bordo-suave: #8B4A6B;
+        --bordo-transparente: rgba(74, 14, 46, 0.08);
+        --bordo-transparente-hover: rgba(74, 14, 46, 0.12);
+        --ouro: #D4AF37;
+        --ouro-escuro: #996515;
+        --ouro-claro: #F0D68A;
+    }
+
+    /* CARDS BRANCOS COM BORDÔ */
+    .card-bordo-branco {
+        background: white;
+        border: 1px solid rgba(74, 14, 46, 0.15);
+        border-radius: 16px;
+        transition: all 0.3s ease;
+        color: var(--bordo);
+    }
+    
+    .card-bordo-branco:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 8px 25px rgba(74, 14, 46, 0.12);
+        border-color: var(--bordo);
+    }
+
+    /* BOTÕES DO RITO - VERSÃO MOBILE FRIENDLY */
+    .btn-bordo {
+        background: linear-gradient(135deg, var(--bordo), var(--bordo-escuro));
+        border: none;
+        color: white;
+        border-radius: 30px;
+        padding: 8px 20px;
+        transition: all 0.3s;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        text-decoration: none;
+    }
+    
+    .btn-bordo:hover {
+        background: linear-gradient(135deg, var(--bordo-claro), var(--bordo));
+        transform: translateY(-2px);
+        color: white;
+        box-shadow: 0 5px 15px rgba(74, 14, 46, 0.3);
+    }
+    
+    .btn-bordo-outline {
+        background: transparent;
+        border: 1px solid var(--bordo);
+        color: var(--bordo);
+        border-radius: 30px;
+        padding: 8px 20px;
+        transition: all 0.3s;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        text-decoration: none;
+    }
+    
+    .btn-bordo-outline:hover {
+        background: var(--bordo);
+        color: white;
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(74, 14, 46, 0.2);
+    }
+
+    .btn-bordo-success {
+        background: linear-gradient(135deg, #10b981, #059669);
+        border: none;
+        color: white;
+        border-radius: 30px;
+        padding: 10px 28px;
+        transition: all 0.3s;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        text-decoration: none;
+        font-weight: 500;
+    }
+    
+    .btn-bordo-success:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(16, 185, 129, 0.3);
+        color: white;
+    }
+
+    .btn-bordo-secondary {
+        background: linear-gradient(135deg, #6c757d, #495057);
+        border: none;
+        color: white;
+        border-radius: 30px;
+        padding: 10px 24px;
+        transition: all 0.3s;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        text-decoration: none;
+    }
+    
+    .btn-bordo-secondary:hover {
+        background: linear-gradient(135deg, #5a6268, #3d4246);
+        transform: translateY(-2px);
+        color: white;
+        box-shadow: 0 5px 15px rgba(108, 117, 125, 0.3);
+    }
+
+    /* Cabeçalho dos Cards */
+    .card-header-bordo {
+        background: var(--bordo-transparente);
+        border-bottom: 1px solid rgba(74, 14, 46, 0.1);
+        padding: 15px 20px;
+        border-radius: 16px 16px 0 0 !important;
+    }
+    
+    .card-header-bordo h5, 
+    .card-header-bordo h6 {
+        color: var(--bordo);
+        margin: 0;
+        font-weight: 600;
+    }
+
+    /* FORMULÁRIOS */
+    .form-label {
+        color: var(--bordo);
+        font-weight: 500;
+        margin-bottom: 0.5rem;
+    }
+    
+    .form-control, .form-select {
+        border-radius: 12px;
+        border: 1px solid rgba(74, 14, 46, 0.2);
+        transition: all 0.3s;
+        padding: 0.5rem 1rem;
+    }
+    
+    .form-control:focus, .form-select:focus {
+        border-color: var(--bordo);
+        box-shadow: 0 0 0 0.2rem rgba(74, 14, 46, 0.25);
+        outline: none;
+    }
+    
+    textarea.form-control {
+        resize: vertical;
+    }
+    
+    .text-muted {
+        color: var(--bordo-suave) !important;
+        font-size: 0.75rem;
+        margin-top: 0.25rem;
+    }
+
+    /* BADGES */
+    .badge-mestre {
+        background: linear-gradient(135deg, #10b981, #059669);
+        padding: 5px 12px;
+        border-radius: 20px;
+        font-size: 0.7rem;
+        font-weight: 600;
+        color: white;
+        display: inline-block;
+    }
+    
+    .badge-ativo {
+        background: linear-gradient(135deg, #10b981, #059669);
+        padding: 5px 12px;
+        border-radius: 20px;
+        font-size: 0.7rem;
+        font-weight: 600;
+        color: white;
+        display: inline-block;
+    }
+
+    hr {
+        border-color: rgba(74, 14, 46, 0.15);
+        margin: 1.5rem 0;
+    }
+    
+    .text-danger {
+        color: #dc2626 !important;
+    }
+
+    /* GRUPO DE BOTÕES MOBILE */
+    .btn-group-mobile {
+        display: flex;
+        gap: 12px;
+        justify-content: center;
+        flex-wrap: wrap;
+    }
+    
+    /* CONTAINER DE AÇÕES DO CABEÇALHO */
+    .header-actions {
+        display: flex;
+        gap: 12px;
+        align-items: center;
+        flex-wrap: wrap;
+    }
+
+    /* RESPONSIVIDADE */
+    @media (max-width: 768px) {
+        .btn-bordo, .btn-bordo-outline {
+            padding: 6px 16px;
+            font-size: 0.85rem;
+        }
+        
+        .btn-bordo-success, .btn-bordo-secondary {
+            padding: 8px 20px;
+            font-size: 0.9rem;
+        }
+        
+        .form-control, .form-select {
+            font-size: 0.875rem;
+        }
+        
+        .btn-group-mobile {
+            flex-direction: column;
+            width: 100%;
+        }
+        
+        .btn-group-mobile .btn-bordo-secondary,
+        .btn-group-mobile .btn-bordo-success {
+            width: 100%;
+            justify-content: center;
+        }
+        
+        .header-actions {
+            flex-direction: column;
+            width: 100%;
+        }
+        
+        .header-actions .btn-bordo-outline {
+            width: 100%;
+            justify-content: center;
+        }
+        
+        h2 {
+            font-size: 1.5rem;
+            margin-bottom: 1rem;
+        }
+        
+        .d-flex.justify-content-between {
+            flex-direction: column;
+            align-items: flex-start !important;
+            gap: 15px;
+        }
+    }
+
+    @media (max-width: 480px) {
+        .btn-bordo, .btn-bordo-outline {
+            padding: 5px 12px;
+            font-size: 0.8rem;
+        }
+        
+        .btn-bordo-success, .btn-bordo-secondary {
+            padding: 7px 16px;
+            font-size: 0.85rem;
+        }
+        
+        .card-body {
+            padding: 1rem !important;
+        }
+    }
+</style>
+{% endblock %}
+
 {% block content %}
 <div class="container-fluid py-4">
     <div class="container">
-        <div class="d-flex justify-content-between align-items-center mb-4">
-            <h2>
-                <i class="bi bi-plus-circle"></i> 
-                Novo Cargo
+        <!-- Cabeçalho com flexbox responsivo -->
+        <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap">
+            <h2 class="mb-2 mb-md-0">
+                <i class="bi bi-plus-circle" style="color: var(--bordo);"></i> 
+                <span style="color: var(--bordo);">Novo Cargo</span>
             </h2>
-            <div>
-                <a href="/cargos" class="btn btn-outline-secondary">
+            <div class="header-actions">
+                <a href="/cargos" class="btn-bordo-outline">
                     <i class="bi bi-arrow-left"></i> Voltar
                 </a>
             </div>
         </div>
 
-     <div class="card shadow">
-            <div class="card-header bg-primary text-white">
-                <h5 class="mb-0"><i class="bi bi-briefcase"></i> Dados do Cargo</h5>
+        <!-- Formulário de Novo Cargo -->
+        <div class="card-bordo-branco shadow-sm">
+            <div class="card-header-bordo">
+                <h5><i class="bi bi-briefcase"></i> Dados do Cargo</h5>
             </div>
-            <div class="card-body">
+            <div class="card-body p-4">
                 <form method="POST">
                     <div class="row">
                         <div class="col-md-6 mb-3">
-                            <label class="form-label">Nome do Cargo *</label>
+                            <label class="form-label">Nome do Cargo <span class="text-danger">*</span></label>
                             <input type="text" class="form-control" name="nome" required>
-                            <small class="text-muted">Ex: Venerável Mestre, Secretário, etc.</small>
+                            <small class="text-muted">Ex: Venerável Mestre, Secretário, Tesoureiro, etc.</small>
                         </div>
                         <div class="col-md-3 mb-3">
-                            <label class="form-label">Sigla *</label>
+                            <label class="form-label">Sigla <span class="text-danger">*</span></label>
                             <input type="text" class="form-control" name="sigla" maxlength="10" required>
-                            <small class="text-muted">Ex: VM, SEC, TES</small>
+                            <small class="text-muted">Ex: VM, SEC, TES, ORA</small>
                         </div>
                         <div class="col-md-3 mb-3">
-                            <label class="form-label">Ordem *</label>
+                            <label class="form-label">Ordem <span class="text-danger">*</span></label>
                             <input type="number" class="form-control" name="ordem" required>
                             <small class="text-muted">Ordem de precedência (1, 2, 3...)</small>
                         </div>
@@ -55,38 +326,109 @@
 
                     <div class="mb-3">
                         <label class="form-label">Descrição</label>
-                        <textarea class="form-control" name="descricao" rows="3" 
+                        <textarea class="form-control" name="descricao" rows="4" 
                                   placeholder="Descreva as responsabilidades e funções deste cargo..."></textarea>
+                        <small class="text-muted">Descrição detalhada das atribuições do cargo</small>
                     </div>
 
                     <hr>
 
-                    <div class="text-center mt-4">
-                        <a href="/cargos" class="btn btn-secondary me-2">
+                    <!-- Informações importantes -->
+                    <div class="alert" style="background: var(--bordo-transparente); border: 1px solid rgba(74, 14, 46, 0.15); color: var(--bordo); border-radius: 12px;">
+                        <i class="bi bi-info-circle-fill"></i>
+                        <strong>Informações importantes:</strong>
+                        <ul class="mb-0 mt-2">
+                            <li>A <strong>ordem</strong> define a hierarquia entre os cargos (menor número = maior precedência)</li>
+                            <li>O <strong>grau mínimo</strong> define qual o grau mínimo que um obreiro precisa ter para ocupar este cargo</li>
+                            <li>Cargos podem ser <strong>ativados/desativados</strong> posteriormente na edição</li>
+                            <li>A <strong>sigla</strong> será usada em relatórios e listagens</li>
+                        </ul>
+                    </div>
+
+                    <!-- Exemplo de como ficará -->
+                    <div class="alert" style="background: #f8f9fa; border: 1px solid rgba(74, 14, 46, 0.15); border-radius: 12px;">
+                        <i class="bi bi-eye"></i>
+                        <strong>Prévia do cargo:</strong>
+                        <div class="mt-2">
+                            <span class="badge" style="background: var(--bordo);">Ordem: 1</span>
+                            <span class="badge" style="background: var(--bordo-claro);">Sigla: VM</span>
+                            <span class="badge-mestre">Mestre</span>
+                            <span class="badge-ativo">Ativo</span>
+                        </div>
+                        <small class="text-muted mt-2 d-block">* Esta é apenas uma prévia visual</small>
+                    </div>
+
+                    <!-- Botões com layout responsivo -->
+                    <div class="btn-group-mobile mt-4">
+                        <a href="/cargos" class="btn-bordo-secondary">
                             <i class="bi bi-x-circle"></i> Cancelar
                         </a>
-                        <button type="submit" class="btn btn-success btn-lg px-5">
+                        <button type="submit" class="btn-bordo-success">
                             <i class="bi bi-save"></i> Salvar Cargo
                         </button>
                     </div>
                 </form>
             </div>
         </div>
+
+        <!-- Dicas Rápidas -->
+        <div class="card-bordo-branco shadow-sm mt-4">
+            <div class="card-header-bordo">
+                <h6 class="mb-0"><i class="bi bi-lightbulb"></i> Dicas Rápidas</h6>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-4 mb-3 mb-md-0">
+                        <i class="bi bi-star-fill" style="color: var(--ouro);"></i>
+                        <strong class="d-block">Ordem de Precedência</strong>
+                        <small class="text-muted">Cargos com ordem 1 têm maior precedência que ordem 2</small>
+                    </div>
+                    <div class="col-md-4 mb-3 mb-md-0">
+                        <i class="bi bi-shield-check" style="color: var(--bordo);"></i>
+                        <strong class="d-block">Grau Mínimo</strong>
+                        <small class="text-muted">Apenas obreiros com grau suficiente podem ocupar o cargo</small>
+                    </div>
+                    <div class="col-md-4">
+                        <i class="bi bi-card-list" style="color: var(--bordo-claro);"></i>
+                        <strong class="d-block">Sigla Padrão</strong>
+                        <small class="text-muted">Use siglas curtas e padronizadas (2-4 caracteres)</small>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
 </div>
 
-<style>
-    .card {
-        border-radius: 10px;
-        overflow: hidden;
-    }
-    .card-header {
-        font-weight: 600;
-    }
-    .form-control:focus, .form-select:focus {
-        border-color: #0d6efd;
-        box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.25);
-    }
-</style>
-
+<script>
+    // Adicionar máscara e validações
+    document.addEventListener('DOMContentLoaded', function() {
+        // Campo ordem: apenas números positivos
+        const ordemInput = document.querySelector('input[name="ordem"]');
+        if (ordemInput) {
+            ordemInput.addEventListener('input', function() {
+                if (this.value < 1) this.value = 1;
+            });
+        }
+        
+        // Campo sigla: converter para maiúsculas automaticamente
+        const siglaInput = document.querySelector('input[name="sigla"]');
+        if (siglaInput) {
+            siglaInput.addEventListener('input', function() {
+                this.value = this.value.toUpperCase();
+            });
+        }
+        
+        // Campo nome: capitalizar primeira letra de cada palavra
+        const nomeInput = document.querySelector('input[name="nome"]');
+        if (nomeInput) {
+            nomeInput.addEventListener('blur', function() {
+                let value = this.value.toLowerCase();
+                value = value.split(' ').map(word => 
+                    word.charAt(0).toUpperCase() + word.slice(1)
+                ).join(' ');
+                this.value = value;
+            });
+        }
+    });
+</script>
 {% endblock %}

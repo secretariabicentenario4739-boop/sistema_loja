@@ -32,14 +32,18 @@
         border-color: var(--bordo);
     }
 
-    /* BOTÕES DO RITO */
+    /* BOTÕES DO RITO - VERSÃO MOBILE FRIENDLY */
     .btn-bordo {
         background: linear-gradient(135deg, var(--bordo), var(--bordo-escuro));
         border: none;
         color: white;
         border-radius: 30px;
-        padding: 8px 24px;
+        padding: 8px 20px;
         transition: all 0.3s;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        text-decoration: none;
     }
     
     .btn-bordo:hover {
@@ -54,8 +58,12 @@
         border: 1px solid var(--bordo);
         color: var(--bordo);
         border-radius: 30px;
-        padding: 8px 24px;
+        padding: 8px 20px;
         transition: all 0.3s;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        text-decoration: none;
     }
     
     .btn-bordo-outline:hover {
@@ -63,6 +71,25 @@
         color: white;
         transform: translateY(-2px);
         box-shadow: 0 5px 15px rgba(74, 14, 46, 0.2);
+    }
+
+    .btn-bordo-success {
+        background: linear-gradient(135deg, #10b981, #059669);
+        border: none;
+        color: white;
+        border-radius: 30px;
+        padding: 8px 20px;
+        transition: all 0.3s;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        text-decoration: none;
+    }
+    
+    .btn-bordo-success:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(16, 185, 129, 0.3);
+        color: white;
     }
 
     /* FORMULÁRIO */
@@ -77,18 +104,104 @@
         border-color: var(--bordo);
         box-shadow: 0 0 0 3px rgba(74, 14, 46, 0.1);
     }
+    
+    .form-label {
+        color: var(--bordo);
+        font-weight: 500;
+        margin-bottom: 0.5rem;
+    }
+    
+    .card-header-custom {
+        background: linear-gradient(135deg, var(--bordo), var(--bordo-escuro));
+        border-bottom: none;
+        color: white;
+        border-radius: 16px 16px 0 0;
+        padding: 15px 20px;
+    }
+    
+    .card-header-custom h5 {
+        margin: 0;
+    }
 
+    /* CONTAINER DE AÇÕES DO CABEÇALHO */
+    .header-actions {
+        display: flex;
+        gap: 12px;
+        align-items: center;
+        flex-wrap: wrap;
+    }
+
+    /* GRUPO DE BOTÕES */
+    .btn-group-mobile {
+        display: flex;
+        gap: 12px;
+        justify-content: center;
+        flex-wrap: wrap;
+    }
+
+    /* BADGES */
+    .badge-sindicante {
+        background: linear-gradient(135deg, var(--ouro-escuro), #7c5510);
+        padding: 5px 12px;
+        border-radius: 20px;
+        font-size: 0.7rem;
+        font-weight: 600;
+        color: white;
+        display: inline-block;
+    }
+
+    /* RESPONSIVIDADE */
     @media (max-width: 768px) {
-        .d-flex.align-items-center {
-            flex-direction: column;
-            text-align: center;
+        .btn-bordo, .btn-bordo-outline, .btn-bordo-success {
+            padding: 6px 16px;
+            font-size: 0.85rem;
         }
-        .btn-group {
-            margin-top: 1rem;
+        
+        /* Cabeçalho responsivo */
+        .d-flex.justify-content-between {
+            flex-direction: column;
+            align-items: flex-start !important;
+            gap: 15px;
+        }
+        
+        .header-actions {
+            width: 100%;
             flex-direction: column;
         }
-        .btn-group .btn {
-            margin: 5px 0;
+        
+        .header-actions .btn-bordo-outline {
+            width: 100%;
+            justify-content: center;
+        }
+        
+        /* Botão salvar */
+        .btn-group-mobile {
+            flex-direction: column;
+            width: 100%;
+        }
+        
+        .btn-group-mobile .btn-bordo {
+            width: 100%;
+            justify-content: center;
+        }
+        
+        h2 {
+            font-size: 1.5rem;
+        }
+        
+        .form-control-custom, .form-select-custom {
+            font-size: 0.875rem;
+        }
+    }
+
+    @media (max-width: 480px) {
+        .btn-bordo, .btn-bordo-outline, .btn-bordo-success {
+            padding: 5px 12px;
+            font-size: 0.8rem;
+        }
+        
+        .card-body {
+            padding: 1rem !important;
         }
     }
 </style>
@@ -98,8 +211,9 @@
 <div class="container-fluid py-4">
     <div class="container">
 
+        <!-- Cabeçalho responsivo -->
         <div class="d-flex justify-content-between align-items-center mb-4">
-            <h2>
+            <h2 class="mb-2 mb-md-0">
                 <i class="bi bi-pencil-square" style="color: var(--bordo);"></i> 
                 <span style="color: var(--bordo);">
                     {% if is_own_profile %}
@@ -109,9 +223,8 @@
                     {% endif %}
                 </span>
             </h2>
-
-            <div>
-                <a href="/obreiros/{{ obreiro.id }}" class="btn-bordo-outline me-2">
+            <div class="header-actions">
+                <a href="/obreiros/{{ obreiro.id }}" class="btn-bordo-outline">
                     <i class="bi bi-eye"></i> Visualizar
                 </a>
                 <a href="/obreiros" class="btn-bordo-outline">
@@ -123,8 +236,8 @@
         <div class="row">
             <div class="col-md-8">
                 <div class="card-bordo-branco shadow-sm">
-                    <div class="card-header" style="background: var(--bordo); border-bottom: none; color: white;">
-                        <h5 class="mb-0">
+                    <div class="card-header-custom">
+                        <h5>
                             <i class="bi bi-person-badge"></i> 
                             {% if is_own_profile %}
                                 Editar Meu Perfil
@@ -134,7 +247,7 @@
                         </h5>
                     </div>
 
-                    <div class="card-body">
+                    <div class="card-body p-4">
 
                         <form method="POST" id="formEditarObreiro">
 
@@ -143,7 +256,7 @@
                             <!-- ===================== -->
                             <div class="row">
                                 <div class="col-md-6 mb-3">
-                                    <label class="form-label" style="color: var(--bordo);">Usuário</label>
+                                    <label class="form-label">Usuário</label>
                                     {% if is_admin %}
                                         <input type="text" class="form-control form-control-custom" name="usuario" value="{{ obreiro.usuario }}" required>
                                         <small class="text-warning">
@@ -158,7 +271,7 @@
 
                                 {% if is_admin %}
                                 <div class="col-md-6 mb-3">
-                                    <label class="form-label" style="color: var(--bordo);">Tipo</label>
+                                    <label class="form-label">Tipo</label>
                                     <select class="form-select form-select-custom" name="tipo" id="tipoSelect">
                                         <option value="obreiro" {% if obreiro.tipo == 'obreiro' %}selected{% endif %}>Obreiro</option>
                                         
@@ -193,27 +306,27 @@
 
                             <div class="row">
                                 <div class="col-md-6 mb-3">
-                                    <label class="form-label" style="color: var(--bordo);">Nome Completo</label>
+                                    <label class="form-label">Nome Completo</label>
                                     <input type="text" class="form-control form-control-custom" name="nome_completo" value="{{ obreiro.nome_completo or obreiro.usuario }}" required>
                                 </div>
 
                                 <div class="col-md-6 mb-3">
-                                    <label class="form-label" style="color: var(--bordo);">Nome Maçônico</label>
+                                    <label class="form-label">Nome Maçônico</label>
                                     <input type="text" class="form-control form-control-custom" name="nome_maconico" value="{{ obreiro.nome_maconico or '' }}">
                                 </div>
                             </div>
 
                             <div class="row">
                                 <div class="col-md-4 mb-3">
-                                    <label class="form-label" style="color: var(--bordo);">Data Nascimento</label>
+                                    <label class="form-label">Data Nascimento</label>
                                     <input type="date" class="form-control form-control-custom" name="data_nascimento" value="{{ obreiro.data_nascimento or '' }}">
                                 </div>
                                 <div class="col-md-4 mb-3">
-                                    <label class="form-label" style="color: var(--bordo);">CPF</label>
+                                    <label class="form-label">CPF</label>
                                     <input type="text" class="form-control form-control-custom" name="cpf" id="cpf" value="{{ obreiro.cpf or '' }}" placeholder="000.000.000-00">
                                 </div>
                                 <div class="col-md-4 mb-3">
-                                    <label class="form-label" style="color: var(--bordo);">Tipo Sanguíneo</label>
+                                    <label class="form-label">Tipo Sanguíneo</label>
                                     <select class="form-select form-select-custom" name="tipo_sanguineo">
                                         <option value="">Selecione</option>
                                         <option value="A+" {% if obreiro.tipo_sanguineo == 'A+' %}selected{% endif %}>A+</option>
@@ -230,22 +343,22 @@
 
                             <div class="row">
                                 <div class="col-md-4 mb-3">
-                                    <label class="form-label" style="color: var(--bordo);">RG</label>
+                                    <label class="form-label">RG</label>
                                     <input type="text" class="form-control form-control-custom" name="rg" value="{{ obreiro.rg or '' }}">
                                 </div>
                                 <div class="col-md-4 mb-3">
-                                    <label class="form-label" style="color: var(--bordo);">Órgão Emissor</label>
+                                    <label class="form-label">Órgão Emissor</label>
                                     <input type="text" class="form-control form-control-custom" name="orgao_emissor" value="{{ obreiro.orgao_emissor or '' }}" placeholder="SSP-DF">
                                 </div>
                                 <div class="col-md-4 mb-3">
-                                    <label class="form-label" style="color: var(--bordo);">Naturalidade</label>
+                                    <label class="form-label">Naturalidade</label>
                                     <input type="text" class="form-control form-control-custom" name="naturalidade" value="{{ obreiro.naturalidade or '' }}" placeholder="BRASÍLIA-DF">
                                 </div>
                             </div>
 
                             <div class="row">
                                 <div class="col-md-4 mb-3">
-                                    <label class="form-label" style="color: var(--bordo);">Grau de Instrução</label>
+                                    <label class="form-label">Grau de Instrução</label>
                                     <select class="form-select form-select-custom" name="grau_instrucao">
                                         <option value="">Selecione</option>
                                         <option value="1º GRAU" {% if obreiro.grau_instrucao == '1º GRAU' %}selected{% endif %}>1º Grau (Fundamental)</option>
@@ -258,11 +371,11 @@
                                     </select>
                                 </div>
                                 <div class="col-md-4 mb-3">
-                                    <label class="form-label" style="color: var(--bordo);">Título de Eleitor</label>
+                                    <label class="form-label">Título de Eleitor</label>
                                     <input type="text" class="form-control form-control-custom" name="titulo_eleitor" value="{{ obreiro.titulo_eleitor or '' }}">
                                 </div>
                                 <div class="col-md-4 mb-3">
-                                    <label class="form-label" style="color: var(--bordo);">Estado Civil</label>
+                                    <label class="form-label">Estado Civil</label>
                                     <select class="form-select form-select-custom" name="estado_civil">
                                         <option value="Solteiro" {% if obreiro.estado_civil == 'Solteiro' %}selected{% endif %}>Solteiro</option>
                                         <option value="Casado" {% if obreiro.estado_civil == 'Casado' %}selected{% endif %}>Casado</option>
@@ -280,11 +393,11 @@
                             <div class="row">
                                 {% if is_admin %}
                                 <div class="col-md-4 mb-3">
-                                    <label class="form-label" style="color: var(--bordo);">CIM</label>
+                                    <label class="form-label">CIM</label>
                                     <input type="text" class="form-control form-control-custom" name="cim_numero" value="{{ obreiro.cim_numero or '' }}">
                                 </div>
                                 <div class="col-md-4 mb-3">
-                                    <label class="form-label" style="color: var(--bordo);">Status Maçônico</label>
+                                    <label class="form-label">Status Maçônico</label>
                                     <select class="form-select form-select-custom" name="status_maconico">
                                         <option value="Regular" {% if obreiro.status_maconico == 'Regular' %}selected{% endif %}>Regular</option>
                                         <option value="Irregular" {% if obreiro.status_maconico == 'Irregular' %}selected{% endif %}>Irregular</option>
@@ -294,11 +407,11 @@
                                 </div>
                                 {% else %}
                                 <div class="col-md-4 mb-3">
-                                    <label class="form-label" style="color: var(--bordo);">CIM</label>
+                                    <label class="form-label">CIM</label>
                                     <input type="text" class="form-control form-control-custom" value="{{ obreiro.cim_numero or '-' }}" readonly disabled>
                                 </div>
                                 <div class="col-md-4 mb-3">
-                                    <label class="form-label" style="color: var(--bordo);">Status Maçônico</label>
+                                    <label class="form-label">Status Maçônico</label>
                                     <input type="text" class="form-control form-control-custom" value="{{ obreiro.status_maconico or 'Regular' }}" readonly disabled>
                                 </div>
                                 {% endif %}
@@ -308,28 +421,28 @@
                             <div class="row">
                                 {% if is_admin %}
                                 <div class="col-md-4 mb-3">
-                                    <label class="form-label" style="color: var(--bordo);">Data de Iniciação</label>
+                                    <label class="form-label">Data de Iniciação</label>
                                     <input type="date" class="form-control form-control-custom" name="data_iniciacao" value="{{ obreiro.data_iniciacao or '' }}">
                                 </div>
                                 <div class="col-md-4 mb-3">
-                                    <label class="form-label" style="color: var(--bordo);">Data de Elevação</label>
+                                    <label class="form-label">Data de Elevação</label>
                                     <input type="date" class="form-control form-control-custom" name="data_elevacao" value="{{ obreiro.data_elevacao or '' }}">
                                 </div>
                                 <div class="col-md-4 mb-3">
-                                    <label class="form-label" style="color: var(--bordo);">Data de Exaltação</label>
+                                    <label class="form-label">Data de Exaltação</label>
                                     <input type="date" class="form-control form-control-custom" name="data_exaltacao" value="{{ obreiro.data_exaltacao or '' }}">
                                 </div>
                                 {% else %}
                                 <div class="col-md-4 mb-3">
-                                    <label class="form-label" style="color: var(--bordo);">Data de Iniciação</label>
+                                    <label class="form-label">Data de Iniciação</label>
                                     <input type="text" class="form-control form-control-custom" value="{{ obreiro.data_iniciacao.strftime('%d/%m/%Y') if obreiro.data_iniciacao else '-' }}" readonly disabled>
                                 </div>
                                 <div class="col-md-4 mb-3">
-                                    <label class="form-label" style="color: var(--bordo);">Data de Elevação</label>
+                                    <label class="form-label">Data de Elevação</label>
                                     <input type="text" class="form-control form-control-custom" value="{{ obreiro.data_elevacao.strftime('%d/%m/%Y') if obreiro.data_elevacao else '-' }}" readonly disabled>
                                 </div>
                                 <div class="col-md-4 mb-3">
-                                    <label class="form-label" style="color: var(--bordo);">Data de Exaltação</label>
+                                    <label class="form-label">Data de Exaltação</label>
                                     <input type="text" class="form-control form-control-custom" value="{{ obreiro.data_exaltacao.strftime('%d/%m/%Y') if obreiro.data_exaltacao else '-' }}" readonly disabled>
                                 </div>
                                 {% endif %}
@@ -339,22 +452,22 @@
                             <div class="row">
                                 {% if is_admin %}
                                 <div class="col-md-4 mb-3">
-                                    <label class="form-label" style="color: var(--bordo);">Data de Instalação</label>
+                                    <label class="form-label">Data de Instalação</label>
                                     <input type="date" class="form-control form-control-custom" name="data_instalacao" value="{{ obreiro.data_instalacao or '' }}">
                                 </div>
                                 <div class="col-md-4 mb-3">
-                                    <label class="form-label" style="color: var(--bordo);">Distinção Maçônica</label>
+                                    <label class="form-label">Distinção Maçônica</label>
                                     <input type="text" class="form-control form-control-custom" name="distincao_maconica" value="{{ obreiro.distincao_maconica or '' }}" placeholder="Ex: Benemérito">
                                 </div>
                                 <div class="col-md-2 mb-3">
-                                    <label class="form-label" style="color: var(--bordo);">Isento</label>
+                                    <label class="form-label">Isento</label>
                                     <select class="form-select form-select-custom" name="isento">
                                         <option value="NÃO" {% if obreiro.isento == 'NÃO' %}selected{% endif %}>Não</option>
                                         <option value="SIM" {% if obreiro.isento == 'SIM' %}selected{% endif %}>Sim</option>
                                     </select>
                                 </div>
                                 <div class="col-md-2 mb-3">
-                                    <label class="form-label" style="color: var(--bordo);">Artigo 27</label>
+                                    <label class="form-label">Artigo 27</label>
                                     <select class="form-select form-select-custom" name="artigo_27">
                                         <option value="NÃO" {% if obreiro.artigo_27 == 'NÃO' %}selected{% endif %}>Não</option>
                                         <option value="SIM" {% if obreiro.artigo_27 == 'SIM' %}selected{% endif %}>Sim</option>
@@ -362,19 +475,19 @@
                                 </div>
                                 {% else %}
                                 <div class="col-md-4 mb-3">
-                                    <label class="form-label" style="color: var(--bordo);">Data de Instalação</label>
+                                    <label class="form-label">Data de Instalação</label>
                                     <input type="text" class="form-control form-control-custom" value="{{ obreiro.data_instalacao.strftime('%d/%m/%Y') if obreiro.data_instalacao else '-' }}" readonly disabled>
                                 </div>
                                 <div class="col-md-4 mb-3">
-                                    <label class="form-label" style="color: var(--bordo);">Distinção Maçônica</label>
+                                    <label class="form-label">Distinção Maçônica</label>
                                     <input type="text" class="form-control form-control-custom" value="{{ obreiro.distincao_maconica or '-' }}" readonly disabled>
                                 </div>
                                 <div class="col-md-2 mb-3">
-                                    <label class="form-label" style="color: var(--bordo);">Isento</label>
+                                    <label class="form-label">Isento</label>
                                     <input type="text" class="form-control form-control-custom" value="{{ obreiro.isento or 'NÃO' }}" readonly disabled>
                                 </div>
                                 <div class="col-md-2 mb-3">
-                                    <label class="form-label" style="color: var(--bordo);">Artigo 27</label>
+                                    <label class="form-label">Artigo 27</label>
                                     <input type="text" class="form-control form-control-custom" value="{{ obreiro.artigo_27 or 'NÃO' }}" readonly disabled>
                                 </div>
                                 {% endif %}
@@ -384,12 +497,12 @@
                             <div class="row">
                                 {% if is_admin %}
                                 <div class="col-md-6 mb-3">
-                                    <label class="form-label" style="color: var(--bordo);">Loja de Iniciação</label>
+                                    <label class="form-label">Loja de Iniciação</label>
                                     <input type="text" class="form-control form-control-custom" name="loja_iniciacao" value="{{ obreiro.loja_iniciacao or '' }}" placeholder="Ex: Loja Maçônica XYZ - Nº 123">
                                     <small class="text-muted">Loja onde foi iniciado (digite livremente)</small>
                                 </div>
                                 <div class="col-md-6 mb-3">
-                                    <label class="form-label" style="color: var(--bordo);">Loja Atual</label>
+                                    <label class="form-label">Loja Atual</label>
                                     <select class="form-select form-select-custom" name="loja_nome" id="lojaSelect">
                                         <option value="">Selecione a Loja</option>
                                         {% for l in lojas %}
@@ -406,11 +519,11 @@
                                 </div>
                                 {% else %}
                                 <div class="col-md-6 mb-3">
-                                    <label class="form-label" style="color: var(--bordo);">Loja de Iniciação</label>
+                                    <label class="form-label">Loja de Iniciação</label>
                                     <input type="text" class="form-control form-control-custom" value="{{ obreiro.loja_iniciacao or '-' }}" readonly disabled>
                                 </div>
                                 <div class="col-md-6 mb-3">
-                                    <label class="form-label" style="color: var(--bordo);">Loja Atual</label>
+                                    <label class="form-label">Loja Atual</label>
                                     <input type="text" class="form-control form-control-custom" value="{{ obreiro.loja_nome or '-' }}" readonly disabled>
                                 </div>
                                 {% endif %}
@@ -420,36 +533,36 @@
                             <div class="row">
                                 {% if is_admin %}
                                 <div class="col-md-4 mb-3">
-                                    <label class="form-label" style="color: var(--bordo);">Número da Loja</label>
+                                    <label class="form-label">Número da Loja</label>
                                     <input type="text" class="form-control form-control-custom" name="loja_numero" id="lojaNumero" value="{{ obreiro.loja_numero or '' }}">
                                 </div>
                                 <div class="col-md-4 mb-3">
-                                    <label class="form-label" style="color: var(--bordo);">Oriente</label>
+                                    <label class="form-label">Oriente</label>
                                     <input type="text" class="form-control form-control-custom" name="loja_orient" id="lojaOriente" value="{{ obreiro.loja_orient or '' }}">
                                 </div>
                                 <div class="col-md-2 mb-3">
-                                    <label class="form-label" style="color: var(--bordo);">Cidade da Loja</label>
+                                    <label class="form-label">Cidade da Loja</label>
                                     <input type="text" class="form-control form-control-custom" name="loja_cidade" id="lojaCidade" value="{{ obreiro.loja_cidade or '' }}">
                                 </div>
                                 <div class="col-md-2 mb-3">
-                                    <label class="form-label" style="color: var(--bordo);">UF</label>
+                                    <label class="form-label">UF</label>
                                     <input type="text" class="form-control form-control-custom" name="loja_uf" id="lojaUf" value="{{ obreiro.loja_uf or '' }}" maxlength="2">
                                 </div>
                                 {% else %}
                                 <div class="col-md-4 mb-3">
-                                    <label class="form-label" style="color: var(--bordo);">Número da Loja</label>
+                                    <label class="form-label">Número da Loja</label>
                                     <input type="text" class="form-control form-control-custom" value="{{ obreiro.loja_numero or '-' }}" readonly disabled>
                                 </div>
                                 <div class="col-md-4 mb-3">
-                                    <label class="form-label" style="color: var(--bordo);">Oriente</label>
+                                    <label class="form-label">Oriente</label>
                                     <input type="text" class="form-control form-control-custom" value="{{ obreiro.loja_orient or '-' }}" readonly disabled>
                                 </div>
                                 <div class="col-md-2 mb-3">
-                                    <label class="form-label" style="color: var(--bordo);">Cidade</label>
+                                    <label class="form-label">Cidade</label>
                                     <input type="text" class="form-control form-control-custom" value="{{ obreiro.loja_cidade or '-' }}" readonly disabled>
                                 </div>
                                 <div class="col-md-2 mb-3">
-                                    <label class="form-label" style="color: var(--bordo);">UF</label>
+                                    <label class="form-label">UF</label>
                                     <input type="text" class="form-control form-control-custom" value="{{ obreiro.loja_uf or '-' }}" readonly disabled>
                                 </div>
                                 {% endif %}
@@ -459,7 +572,7 @@
                             <div class="row">
                                 {% if is_admin %}
                                 <div class="col-md-3 mb-3">
-                                    <label class="form-label" style="color: var(--bordo);">Recolhe</label>
+                                    <label class="form-label">Recolhe</label>
                                     <select class="form-select form-select-custom" name="recolhe">
                                         <option value="Sim" {% if obreiro.recolhe == 'Sim' %}selected{% endif %}>Sim</option>
                                         <option value="Não" {% if obreiro.recolhe == 'Não' %}selected{% endif %}>Não</option>
@@ -467,7 +580,7 @@
                                 </div>
                                 {% else %}
                                 <div class="col-md-3 mb-3">
-                                    <label class="form-label" style="color: var(--bordo);">Recolhe</label>
+                                    <label class="form-label">Recolhe</label>
                                     <input type="text" class="form-control form-control-custom" value="{{ obreiro.recolhe or 'Não' }}" readonly disabled>
                                 </div>
                                 {% endif %}
@@ -478,34 +591,34 @@
 
                             <div class="row">
                                 <div class="col-md-3 mb-3">
-                                    <label class="form-label" style="color: var(--bordo);">CEP</label>
+                                    <label class="form-label">CEP</label>
                                     <input type="text" class="form-control form-control-custom" name="cep" id="cep" value="{{ obreiro.cep or '' }}" placeholder="00000-000">
                                 </div>
                                 <div class="col-md-3 mb-3">
-                                    <label class="form-label" style="color: var(--bordo);">Cidade</label>
+                                    <label class="form-label">Cidade</label>
                                     <input type="text" class="form-control form-control-custom" name="cidade" value="{{ obreiro.cidade or '' }}">
                                 </div>
                                 <div class="col-md-2 mb-3">
-                                    <label class="form-label" style="color: var(--bordo);">UF</label>
+                                    <label class="form-label">UF</label>
                                     <input type="text" class="form-control form-control-custom" name="uf" value="{{ obreiro.uf or '' }}" maxlength="2">
                                 </div>
                                 <div class="col-md-4 mb-3">
-                                    <label class="form-label" style="color: var(--bordo);">Bairro</label>
+                                    <label class="form-label">Bairro</label>
                                     <input type="text" class="form-control form-control-custom" name="bairro" value="{{ obreiro.bairro or '' }}">
                                 </div>
                             </div>
 
                             <div class="row">
                                 <div class="col-md-8 mb-3">
-                                    <label class="form-label" style="color: var(--bordo);">Endereço</label>
+                                    <label class="form-label">Endereço</label>
                                     <input type="text" class="form-control form-control-custom" name="endereco" value="{{ obreiro.endereco or '' }}" placeholder="Rua, Av., etc.">
                                 </div>
                                 <div class="col-md-2 mb-3">
-                                    <label class="form-label" style="color: var(--bordo);">Número</label>
+                                    <label class="form-label">Número</label>
                                     <input type="text" class="form-control form-control-custom" name="numero" value="{{ obreiro.numero or '' }}">
                                 </div>
                                 <div class="col-md-2 mb-3">
-                                    <label class="form-label" style="color: var(--bordo);">Complemento</label>
+                                    <label class="form-label">Complemento</label>
                                     <input type="text" class="form-control form-control-custom" name="complemento" value="{{ obreiro.complemento or '' }}">
                                 </div>
                             </div>
@@ -515,11 +628,11 @@
 
                             <div class="row">
                                 <div class="col-md-6 mb-3">
-                                    <label class="form-label" style="color: var(--bordo);">Nome do Pai</label>
+                                    <label class="form-label">Nome do Pai</label>
                                     <input type="text" class="form-control form-control-custom" name="nome_pai" value="{{ obreiro.nome_pai or '' }}">
                                 </div>
                                 <div class="col-md-6 mb-3">
-                                    <label class="form-label" style="color: var(--bordo);">Nome da Mãe</label>
+                                    <label class="form-label">Nome da Mãe</label>
                                     <input type="text" class="form-control form-control-custom" name="nome_mae" value="{{ obreiro.nome_mae or '' }}">
                                 </div>
                             </div>
@@ -529,28 +642,28 @@
 
                             <div class="row">
                                 <div class="col-md-6 mb-3">
-                                    <label class="form-label" style="color: var(--bordo);">Profissão</label>
+                                    <label class="form-label">Profissão</label>
                                     <input type="text" class="form-control form-control-custom" name="profissao" value="{{ obreiro.profissao or '' }}">
                                 </div>
                                 <div class="col-md-6 mb-3">
-                                    <label class="form-label" style="color: var(--bordo);">Empresa</label>
+                                    <label class="form-label">Empresa</label>
                                     <input type="text" class="form-control form-control-custom" name="empresa" value="{{ obreiro.empresa or '' }}">
                                 </div>
                             </div>
 
                             <div class="row">
                                 <div class="col-md-6 mb-3">
-                                    <label class="form-label" style="color: var(--bordo);">E-mail Profissional</label>
+                                    <label class="form-label">E-mail Profissional</label>
                                     <input type="email" class="form-control form-control-custom" name="email_profissional" value="{{ obreiro.email_profissional or '' }}">
                                 </div>
                                 <div class="col-md-6 mb-3">
-                                    <label class="form-label" style="color: var(--bordo);">Telefone Profissional</label>
+                                    <label class="form-label">Telefone Profissional</label>
                                     <input type="text" class="form-control form-control-custom" name="telefone_profissional" id="telefoneProfissional" value="{{ obreiro.telefone_profissional or '' }}">
                                 </div>
                             </div>
 
                             <div class="mb-3">
-                                <label class="form-label" style="color: var(--bordo);">Endereço Profissional</label>
+                                <label class="form-label">Endereço Profissional</label>
                                 <input type="text" class="form-control form-control-custom" name="endereco_profissional" value="{{ obreiro.endereco_profissional or '' }}">
                             </div>
 
@@ -559,11 +672,11 @@
 
                             <div class="row">
                                 <div class="col-md-6 mb-3">
-                                    <label class="form-label" style="color: var(--bordo);">Telefone</label>
+                                    <label class="form-label">Telefone</label>
                                     <input type="text" class="form-control form-control-custom" name="telefone" id="telefone" value="{{ obreiro.telefone or '' }}">
                                 </div>
                                 <div class="col-md-6 mb-3">
-                                    <label class="form-label" style="color: var(--bordo);">E-mail</label>
+                                    <label class="form-label">E-mail</label>
                                     <input type="email" class="form-control form-control-custom" name="email" value="{{ obreiro.email or '' }}">
                                 </div>
                             </div>
@@ -574,7 +687,7 @@
 
                             <div class="row">
                                 <div class="col-md-6 mb-3">
-                                    <label class="form-label" style="color: var(--bordo);">Grau Principal</label>
+                                    <label class="form-label">Grau Principal</label>
                                     <select class="form-select form-select-custom" name="grau_principal" id="grauPrincipalSelect">
                                         <option value="1" {% if obreiro.grau_atual == 1 %}selected{% endif %}>1 - Aprendiz</option>
                                         <option value="2" {% if obreiro.grau_atual == 2 %}selected{% endif %}>2 - Companheiro</option>
@@ -584,7 +697,7 @@
                                 </div>
 
                                 <div class="col-md-6 mb-3" id="divGrauSuperior">
-                                    <label class="form-label" style="color: var(--bordo);">Grau Superior (Opcional)</label>
+                                    <label class="form-label">Grau Superior (Opcional)</label>
                                     <select class="form-select form-select-custom" name="grau_superior" id="grauSuperiorSelect">
                                         <option value="">Nenhum (Mestre)</option>
                                         {% for g in graus_superiores %}
@@ -604,7 +717,7 @@
 
                             <div class="row">
                                 <div class="col-md-6 mb-3">
-                                    <label class="form-label" style="color: var(--bordo);">Status</label>
+                                    <label class="form-label">Status</label>
                                     <select class="form-select form-select-custom" name="ativo">
                                         <option value="1" {% if obreiro.ativo == 1 %}selected{% endif %}>Ativo</option>
                                         <option value="0" {% if obreiro.ativo == 0 %}selected{% endif %}>Inativo</option>
@@ -620,32 +733,33 @@
                             <!-- Campos de senha -->
                             <hr style="border-color: var(--bordo-transparente);">
                             <h6 style="color: var(--bordo);">🔐 Alterar Senha</h6>
-                            <div class="alert alert-info small mb-3" style="background: var(--bordo-transparente); border-color: var(--bordo); color: var(--bordo);">
+                            <div class="alert small mb-3" style="background: var(--bordo-transparente); border-color: var(--bordo); color: var(--bordo); border-radius: 12px;">
                                 <i class="bi bi-info-circle"></i> 
                                 Preencha apenas se deseja modificar a senha atual.
                             </div>
 
                             <div class="row">
                                 <div class="col-md-12 mb-3">
-                                    <label class="form-label" style="color: var(--bordo);">Senha Atual</label>
+                                    <label class="form-label">Senha Atual</label>
                                     <input type="password" class="form-control form-control-custom" name="senha_atual" id="senha_atual" placeholder="Digite sua senha atual">
                                     <small class="text-muted">Obrigatório para alterar a senha</small>
                                 </div>
 
                                 <div class="col-md-6 mb-3">
-                                    <label class="form-label" style="color: var(--bordo);">Nova Senha</label>
+                                    <label class="form-label">Nova Senha</label>
                                     <input type="password" class="form-control form-control-custom" name="senha" id="senha" placeholder="Deixe em branco para manter a atual">
                                     <small class="text-muted">Mínimo de 6 caracteres</small>
                                 </div>
 
                                 <div class="col-md-6 mb-3">
-                                    <label class="form-label" style="color: var(--bordo);">Confirmar Nova Senha</label>
+                                    <label class="form-label">Confirmar Nova Senha</label>
                                     <input type="password" class="form-control form-control-custom" id="confirmar_senha" placeholder="Digite a senha novamente">
-                                    <small class="text-muted" id="senha_erro" style="color: red; display: none;">As senhas não coincidem</small>
+                                    <small class="text-muted" id="senha_erro" style="color: #dc2626; display: none;">As senhas não coincidem</small>
                                 </div>
                             </div>
 
-                            <div class="text-center mt-3">
+                            <!-- Botão Salvar com layout responsivo -->
+                            <div class="btn-group-mobile mt-3">
                                 <button type="submit" class="btn-bordo" id="btnSalvar">
                                     <i class="bi bi-save"></i> Salvar Alterações
                                 </button>
@@ -660,11 +774,11 @@
             <div class="col-md-4">
                 <!-- Card da Foto -->
                 <div class="card-bordo-branco shadow-sm mb-4">
-                    <div class="card-header" style="background: var(--bordo); border-bottom: none; color: white;">
+                    <div class="card-header-custom">
                         <i class="bi bi-camera"></i> Foto do Obreiro
                     </div>
 
-                    <div class="card-body text-center">
+                    <div class="card-body text-center p-4">
 
                         {% if obreiro.foto %}
                         <img src="{{ obreiro.foto }}" 
@@ -692,22 +806,22 @@
 
                 <!-- Card de Documentos -->
                 <div class="card-bordo-branco shadow-sm mb-4" id="documentos">
-                    <div class="card-header" style="background: #3b82f6; border-bottom: none; color: white;">
+                    <div class="card-header" style="background: linear-gradient(135deg, #3b82f6, #2563eb); border-bottom: none; color: white; border-radius: 16px 16px 0 0;">
                         <i class="bi bi-cloud-upload"></i> Documentos do Obreiro
                     </div>
-                    <div class="card-body">
-                        <div class="alert alert-info small mb-3" style="background: var(--bordo-transparente); border-color: var(--bordo); color: var(--bordo);">
+                    <div class="card-body p-4">
+                        <div class="alert small mb-3" style="background: var(--bordo-transparente); border-color: var(--bordo); color: var(--bordo); border-radius: 12px;">
                             <i class="bi bi-info-circle"></i> 
                             Envie documentos importantes como: CIM, Certificados, Diplomas, etc.
                         </div>
                         
                         <form method="POST" action="/obreiros/{{ obreiro.id }}/documentos/upload" enctype="multipart/form-data" class="mb-3">
                             <div class="mb-2">
-                                <label class="form-label fw-bold" style="color: var(--bordo);">Título do Documento</label>
+                                <label class="form-label fw-bold">Título do Documento</label>
                                 <input type="text" class="form-control form-control-custom" name="titulo" placeholder="Ex: CIM, Certificado de Mestre, etc." required>
                             </div>
                             <div class="mb-2">
-                                <label class="form-label fw-bold" style="color: var(--bordo);">Categoria</label>
+                                <label class="form-label fw-bold">Categoria</label>
                                 <select class="form-select form-select-custom" name="categoria" required>
                                     <option value="identificacao">Identificação (CIM, RG, CPF)</option>
                                     <option value="certificado">Certificados</option>
@@ -717,12 +831,12 @@
                                 </select>
                             </div>
                             <div class="mb-2">
-                                <label class="form-label fw-bold" style="color: var(--bordo);">Arquivo</label>
+                                <label class="form-label fw-bold">Arquivo</label>
                                 <input type="file" class="form-control form-control-custom" name="arquivo" accept=".pdf,.jpg,.jpeg,.png,.doc,.docx" required>
                                 <small class="text-muted">PDF, imagens, Word (max 10MB)</small>
                             </div>
                             <div class="mb-2">
-                                <label class="form-label" style="color: var(--bordo);">Descrição (opcional)</label>
+                                <label class="form-label">Descrição (opcional)</label>
                                 <textarea class="form-control form-control-custom" name="descricao" rows="2" placeholder="Informações adicionais sobre o documento"></textarea>
                             </div>
                             <button type="submit" class="btn-bordo w-100">
@@ -749,10 +863,10 @@
                 <!-- Card de Informação sobre Sindicante -->
                 {% if obreiro.tipo == 'sindicante' and obreiro.grau_atual < 3 %}
                 <div class="card-bordo-branco shadow-sm border-warning">
-                    <div class="card-header" style="background: #f59e0b; border-bottom: none; color: white;">
+                    <div class="card-header" style="background: linear-gradient(135deg, #f59e0b, #d97706); border-bottom: none; color: white; border-radius: 16px 16px 0 0;">
                         <i class="bi bi-exclamation-triangle"></i> Atenção
                     </div>
-                    <div class="card-body">
+                    <div class="card-body p-4">
                         <p class="mb-0">
                             <i class="bi bi-info-circle"></i>
                             Este obreiro está como <strong>Sindicante</strong> mas possui grau 
@@ -923,13 +1037,13 @@ function carregarDocumentos() {
                     const icone = getIconePorTipo(doc.tipo_arquivo);
                     
                     html += `
-                        <div class="list-group-item" id="doc-${doc.id}">
+                        <div class="list-group-item" id="doc-${doc.id}" style="background: transparent; border-color: rgba(74, 14, 46, 0.08);">
                             <div class="d-flex justify-content-between align-items-start">
                                 <div class="flex-grow-1">
                                     <div class="d-flex align-items-center mb-1">
-                                        <i class="bi ${icone} fs-4 me-2 text-info"></i>
+                                        <i class="bi ${icone} fs-4 me-2" style="color: var(--bordo);"></i>
                                         <div>
-                                            <strong class="d-block">${escapeHtml(doc.titulo)}</strong>
+                                            <strong class="d-block" style="color: var(--bordo);">${escapeHtml(doc.titulo)}</strong>
                                             <small class="text-muted">
                                                 <i class="bi bi-folder"></i> ${doc.categoria}
                                                 <i class="bi bi-calendar ms-2"></i> ${dataUpload}
@@ -938,14 +1052,14 @@ function carregarDocumentos() {
                                     </div>
                                     ${doc.descricao ? `<p class="small text-muted mb-1">${escapeHtml(doc.descricao)}</p>` : ''}
                                 </div>
-                                <div class="btn-group btn-group-sm">
-                                    <a href="${doc.url}" target="_blank" class="btn btn-outline-primary" title="Visualizar">
+                                <div class="btn-group btn-group-sm" style="gap: 5px;">
+                                    <a href="${doc.url}" target="_blank" class="btn-icon-info" style="width: 32px; height: 32px;">
                                         <i class="bi bi-eye"></i>
                                     </a>
-                                    <a href="${doc.url}" download class="btn btn-outline-success" title="Baixar">
+                                    <a href="${doc.url}" download class="btn-icon-warning" style="width: 32px; height: 32px;">
                                         <i class="bi bi-download"></i>
                                     </a>
-                                    <button type="button" class="btn btn-outline-danger" onclick="excluirDocumento(${doc.id})" title="Excluir">
+                                    <button type="button" class="btn-icon-danger" onclick="excluirDocumento(${doc.id})" style="width: 32px; height: 32px;">
                                         <i class="bi bi-trash"></i>
                                     </button>
                                 </div>
@@ -1080,5 +1194,67 @@ document.addEventListener('DOMContentLoaded', function() {
     
     atualizarVisibilidade();
 });
+
+// Adicionar estilos para botões ícone que podem estar faltando
+const btnIconStyle = document.createElement('style');
+btnIconStyle.textContent = `
+    .btn-icon-info {
+        background: linear-gradient(135deg, #0ea5e9, #0284c7);
+        border: none;
+        color: white;
+        width: 32px;
+        height: 32px;
+        padding: 0;
+        border-radius: 50%;
+        transition: all 0.3s;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        text-decoration: none;
+    }
+    .btn-icon-info:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(14, 165, 233, 0.3);
+        color: white;
+    }
+    .btn-icon-warning {
+        background: linear-gradient(135deg, #f59e0b, #d97706);
+        border: none;
+        color: white;
+        width: 32px;
+        height: 32px;
+        padding: 0;
+        border-radius: 50%;
+        transition: all 0.3s;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        text-decoration: none;
+    }
+    .btn-icon-warning:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(245, 158, 11, 0.3);
+        color: white;
+    }
+    .btn-icon-danger {
+        background: linear-gradient(135deg, #ef4444, #dc2626);
+        border: none;
+        color: white;
+        width: 32px;
+        height: 32px;
+        padding: 0;
+        border-radius: 50%;
+        transition: all 0.3s;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+    }
+    .btn-icon-danger:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(239, 68, 68, 0.3);
+        color: white;
+    }
+`;
+document.head.appendChild(btnIconStyle);
 </script>
 {% endblock %}

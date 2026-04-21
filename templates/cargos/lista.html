@@ -2,90 +2,405 @@
 
 {% block title %}Gerenciar Cargos{% endblock %}
 
+{% block styles %}
+{{ super() }}
+<style>
+    :root {
+        --bordo: #4A0E2E;
+        --bordo-escuro: #3A0A24;
+        --bordo-claro: #6B1342;
+        --bordo-suave: #8B4A6B;
+        --bordo-transparente: rgba(74, 14, 46, 0.08);
+        --bordo-transparente-hover: rgba(74, 14, 46, 0.12);
+        --ouro: #D4AF37;
+        --ouro-escuro: #996515;
+        --ouro-claro: #F0D68A;
+    }
+
+    /* CARDS BRANCOS COM BORDÔ */
+    .card-bordo-branco {
+        background: white;
+        border: 1px solid rgba(74, 14, 46, 0.15);
+        border-radius: 16px;
+        transition: all 0.3s ease;
+        color: var(--bordo);
+    }
+    
+    .card-bordo-branco:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 8px 25px rgba(74, 14, 46, 0.12);
+        border-color: var(--bordo);
+    }
+
+    /* BOTÕES DO RITO - VERSÃO MOBILE FRIENDLY */
+    .btn-bordo {
+        background: linear-gradient(135deg, var(--bordo), var(--bordo-escuro));
+        border: none;
+        color: white;
+        border-radius: 30px;
+        padding: 8px 20px;
+        transition: all 0.3s;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        text-decoration: none;
+    }
+    
+    .btn-bordo:hover {
+        background: linear-gradient(135deg, var(--bordo-claro), var(--bordo));
+        transform: translateY(-2px);
+        color: white;
+        box-shadow: 0 5px 15px rgba(74, 14, 46, 0.3);
+    }
+    
+    .btn-bordo-outline {
+        background: transparent;
+        border: 1px solid var(--bordo);
+        color: var(--bordo);
+        border-radius: 30px;
+        padding: 8px 20px;
+        transition: all 0.3s;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        text-decoration: none;
+    }
+    
+    .btn-bordo-outline:hover {
+        background: var(--bordo);
+        color: white;
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(74, 14, 46, 0.2);
+    }
+
+    .btn-bordo-success {
+        background: linear-gradient(135deg, #10b981, #059669);
+        border: none;
+        color: white;
+        border-radius: 30px;
+        padding: 8px 20px;
+        transition: all 0.3s;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        text-decoration: none;
+    }
+    
+    .btn-bordo-success:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(16, 185, 129, 0.3);
+        color: white;
+    }
+
+    /* BOTÕES ÍCONE APENAS */
+    .btn-icon-warning {
+        background: linear-gradient(135deg, #f59e0b, #d97706);
+        border: none;
+        color: white;
+        width: 32px;
+        height: 32px;
+        padding: 0;
+        border-radius: 50%;
+        transition: all 0.3s;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+    }
+    
+    .btn-icon-warning:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(245, 158, 11, 0.3);
+        color: white;
+    }
+
+    .btn-icon-danger {
+        background: linear-gradient(135deg, #ef4444, #dc2626);
+        border: none;
+        color: white;
+        width: 32px;
+        height: 32px;
+        padding: 0;
+        border-radius: 50%;
+        transition: all 0.3s;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+    }
+    
+    .btn-icon-danger:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(239, 68, 68, 0.3);
+        color: white;
+    }
+
+    /* Cabeçalho dos Cards */
+    .card-header-bordo {
+        background: var(--bordo-transparente);
+        border-bottom: 1px solid rgba(74, 14, 46, 0.1);
+        padding: 15px 20px;
+        border-radius: 16px 16px 0 0 !important;
+    }
+    
+    .card-header-bordo h5, 
+    .card-header-bordo h6 {
+        color: var(--bordo);
+        margin: 0;
+        font-weight: 600;
+    }
+
+    /* TABELA */
+    .table-bordo {
+        margin-bottom: 0;
+    }
+    
+    .table-bordo thead th {
+        background: var(--bordo-transparente);
+        color: var(--bordo);
+        font-weight: 600;
+        border-bottom: 2px solid rgba(74, 14, 46, 0.15);
+        padding: 12px 16px;
+    }
+    
+    .table-bordo tbody tr {
+        border-bottom: 1px solid rgba(74, 14, 46, 0.08);
+        transition: all 0.2s;
+    }
+    
+    .table-bordo tbody tr:hover {
+        background: var(--bordo-transparente);
+    }
+    
+    .table-bordo tbody td {
+        padding: 12px 16px;
+        vertical-align: middle;
+    }
+
+    /* BADGES DE GRAU */
+    .badge-mestre {
+        background: linear-gradient(135deg, #10b981, #059669);
+        padding: 5px 12px;
+        border-radius: 20px;
+        font-size: 0.7rem;
+        font-weight: 600;
+        color: white;
+    }
+    
+    .badge-companheiro {
+        background: linear-gradient(135deg, #3b82f6, #2563eb);
+        padding: 5px 12px;
+        border-radius: 20px;
+        font-size: 0.7rem;
+        font-weight: 600;
+        color: white;
+    }
+    
+    .badge-aprendiz {
+        background: linear-gradient(135deg, #6c757d, #495057);
+        padding: 5px 12px;
+        border-radius: 20px;
+        font-size: 0.7rem;
+        font-weight: 600;
+        color: white;
+    }
+
+    .badge-ativo {
+        background: linear-gradient(135deg, #10b981, #059669);
+        padding: 5px 12px;
+        border-radius: 20px;
+        font-size: 0.7rem;
+        font-weight: 600;
+        color: white;
+    }
+    
+    .badge-inativo {
+        background: linear-gradient(135deg, #ef4444, #dc2626);
+        padding: 5px 12px;
+        border-radius: 20px;
+        font-size: 0.7rem;
+        font-weight: 600;
+        color: white;
+    }
+
+    .badge-sigla {
+        background: var(--bordo);
+        padding: 5px 12px;
+        border-radius: 20px;
+        font-size: 0.7rem;
+        font-weight: 600;
+        color: white;
+    }
+
+    /* GRUPO DE BOTÕES */
+    .btn-group-bordo {
+        display: inline-flex;
+        gap: 8px;
+        align-items: center;
+    }
+
+    /* CONTAINER DE AÇÕES DO CABEÇALHO */
+    .header-actions {
+        display: flex;
+        gap: 12px;
+        align-items: center;
+        flex-wrap: wrap;
+    }
+
+    /* RESPONSIVIDADE */
+    @media (max-width: 768px) {
+        .btn-bordo, .btn-bordo-outline, .btn-bordo-success {
+            padding: 6px 16px;
+            font-size: 0.85rem;
+        }
+        
+        .table-bordo {
+            font-size: 0.85rem;
+        }
+        .table-bordo thead th,
+        .table-bordo tbody td {
+            padding: 8px 12px;
+        }
+        .badge-mestre, .badge-companheiro, .badge-aprendiz,
+        .badge-ativo, .badge-inativo, .badge-sigla {
+            font-size: 0.65rem;
+            padding: 3px 8px;
+        }
+        .btn-icon-warning, .btn-icon-danger {
+            width: 28px;
+            height: 28px;
+            font-size: 0.75rem;
+        }
+        
+        /* Cabeçalho responsivo */
+        .d-flex.justify-content-between {
+            flex-direction: column;
+            align-items: flex-start !important;
+            gap: 15px;
+        }
+        
+        .header-actions {
+            width: 100%;
+            flex-direction: column;
+        }
+        
+        .header-actions .btn-bordo-success,
+        .header-actions .btn-bordo-outline {
+            width: 100%;
+            justify-content: center;
+        }
+        
+        .me-2 {
+            margin-right: 0 !important;
+        }
+    }
+
+    @media (max-width: 480px) {
+        .btn-bordo, .btn-bordo-outline, .btn-bordo-success {
+            padding: 5px 12px;
+            font-size: 0.8rem;
+        }
+        
+        .card-body {
+            padding: 1rem !important;
+        }
+    }
+</style>
+{% endblock %}
+
 {% block content %}
 <div class="container-fluid py-4">
     <div class="container">
+        <!-- Cabeçalho responsivo -->
         <div class="d-flex justify-content-between align-items-center mb-4">
-            <h2>
-                <i class="bi bi-briefcase"></i> 
-                Gerenciar Cargos
-                <span class="badge bg-primary">{{ cargos|length }}</span>
+            <h2 class="mb-2 mb-md-0">
+                <i class="bi bi-briefcase-fill" style="color: var(--bordo);"></i> 
+                <span style="color: var(--bordo);">Gerenciar Cargos</span>
+                <span class="badge" style="background: var(--bordo);">{{ cargos|length }}</span>
             </h2>
-            <div>
-                <a href="/cargos/novo" class="btn btn-success me-2">
+            <div class="header-actions">
+                <a href="/cargos/novo" class="btn-bordo-success">
                     <i class="bi bi-plus-circle"></i> Novo Cargo
                 </a>
-                <a href="/dashboard" class="btn btn-outline-secondary">
+                <a href="/dashboard" class="btn-bordo-outline">
                     <i class="bi bi-arrow-left"></i> Voltar
                 </a>
             </div>
         </div>
 
-        
-        <div class="card shadow">
-            <div class="card-header bg-primary text-white">
-                <h5 class="mb-0"><i class="bi bi-list-ul"></i> Lista de Cargos</h5>
+        <!-- Lista de Cargos -->
+        <div class="card-bordo-branco shadow-sm">
+            <div class="card-header-bordo">
+                <h5><i class="bi bi-list-ul"></i> Lista de Cargos</h5>
             </div>
-            <div class="card-body">
+            <div class="card-body p-0">
                 <div class="table-responsive">
-                    <table class="table table-hover">
-                        <thead class="table-light">
+                    <table class="table table-bordo">
+                        <thead>
                             <tr>
-                                <th>Ordem</th>
-                                <th>Cargo</th>
-                                <th>Sigla</th>
-                                <th>Grau Mínimo</th>
-                                <th>Descrição</th>
-                                <th>Status</th>
-                                <th>Ações</th>
+                                <th style="width: 8%">Ordem</th>
+                                <th style="width: 20%">Cargo</th>
+                                <th style="width: 10%">Sigla</th>
+                                <th style="width: 12%">Grau Mínimo</th>
+                                <th style="width: 25%">Descrição</th>
+                                <th style="width: 10%">Status</th>
+                                <th style="width: 15%">Ações</th>
                             </tr>
                         </thead>
                         <tbody>
                             {% for cargo in cargos %}
                             <tr>
-                                <td>{{ cargo.ordem or '-' }}</td>
-                                <td>
-                                    <strong>{{ cargo.nome }}</strong>
+                                <td class="align-middle">
+                                    {% if cargo.ordem %}
+                                        <span class="badge" style="background: var(--bordo-suave);">{{ cargo.ordem }}</span>
+                                    {% else %}
+                                        <span class="text-muted">-</span>
+                                    {% endif %}
                                 </td>
-                                <td>
-                                    <span class="badge bg-secondary">{{ cargo.sigla }}</span>
+                                <td class="align-middle">
+                                    <strong style="color: var(--bordo);">{{ cargo.nome }}</strong>
                                 </td>
-                                <td>
+                                <td class="align-middle">
+                                    <span class="badge-sigla">{{ cargo.sigla }}</span>
+                                </td>
+                                <td class="align-middle">
                                     {% if cargo.grau_minimo == 3 %}
-                                        <span class="badge bg-success">Mestre</span>
+                                        <span class="badge-mestre">Mestre</span>
                                     {% elif cargo.grau_minimo == 2 %}
-                                        <span class="badge bg-primary">Companheiro</span>
+                                        <span class="badge-companheiro">Companheiro</span>
+                                    {% elif cargo.grau_minimo == 1 %}
+                                        <span class="badge-aprendiz">Aprendiz</span>
                                     {% else %}
-                                        <span class="badge bg-secondary">Aprendiz</span>
+                                        <span class="badge" style="background: var(--bordo-suave);">Grau {{ cargo.grau_minimo }}</span>
                                     {% endif %}
                                 </td>
-                                <td>{{ cargo.descricao or '-' }}</td>
-                                <td>
+                                <td class="align-middle">
+                                    {{ cargo.descricao or '<span class="text-muted">-</span>'|safe }}
+                                </td>
+                                <td class="align-middle">
                                     {% if cargo.ativo == 1 %}
-                                        <span class="badge bg-success">Ativo</span>
+                                        <span class="badge-ativo">Ativo</span>
                                     {% else %}
-                                        <span class="badge bg-danger">Inativo</span>
+                                        <span class="badge-inativo">Inativo</span>
                                     {% endif %}
                                 </td>
-                                <td>
-                                    <div class="btn-group btn-group-sm">
-                                        <a href="/cargos/editar/{{ cargo.id }}" class="btn btn-warning" title="Editar">
-                                            <i class="bi bi-pencil"></i>
+                                <td class="align-middle">
+                                    <div class="btn-group-bordo">
+                                        <a href="/cargos/editar/{{ cargo.id }}" class="btn-icon-warning" title="Editar cargo">
+                                            <i class="bi bi-pencil-fill"></i>
                                         </a>
-                                        <a href="/cargos/excluir/{{ cargo.id }}" class="btn btn-danger" 
-                                           onclick="return confirm('Excluir este cargo?')" title="Excluir">
-                                            <i class="bi bi-trash"></i>
+                                        <a href="/cargos/excluir/{{ cargo.id }}" class="btn-icon-danger" 
+                                           onclick="return confirmarExclusao('{{ cargo.nome }}')" title="Excluir cargo">
+                                            <i class="bi bi-trash-fill"></i>
                                         </a>
                                     </div>
                                 </td>
                             </tr>
                             {% else %}
                             <tr>
-                                <td colspan="7" class="text-center text-muted py-4">
-                                    <i class="bi bi-briefcase-x fs-1"></i><br>
+                                <td colspan="7" class="text-center text-muted py-5">
+                                    <i class="bi bi-briefcase-x fs-1" style="color: var(--bordo-suave);"></i><br>
                                     Nenhum cargo cadastrado
                                     <br>
-                                    <a href="/cargos/novo" class="btn btn-sm btn-primary mt-3">
+                                    <a href="/cargos/novo" class="btn-bordo mt-3">
                                         <i class="bi bi-plus-circle"></i> Cadastrar Primeiro Cargo
                                     </a>
                                 </td>
@@ -96,35 +411,46 @@
                 </div>
             </div>
         </div>
+
+        <!-- Legenda -->
+        <div class="card-bordo-branco shadow-sm mt-4">
+            <div class="card-header-bordo">
+                <h6 class="mb-0"><i class="bi bi-info-circle"></i> Legenda</h6>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-4 mb-2 mb-md-0">
+                        <span class="badge-mestre me-1">Verde</span> = Mestre (Grau ≥ 3)<br>
+                        <span class="badge-companheiro me-1">Azul</span> = Companheiro (Grau = 2)<br>
+                        <span class="badge-aprendiz me-1">Cinza</span> = Aprendiz (Grau = 1)
+                    </div>
+                    <div class="col-md-4 mb-2 mb-md-0">
+                        <span class="badge-ativo me-1">Verde</span> = Cargo Ativo<br>
+                        <span class="badge-inativo me-1">Vermelho</span> = Cargo Inativo
+                    </div>
+                    <div class="col-md-4">
+                        <span class="badge-sigla me-1">Bordô</span> = Sigla do Cargo<br>
+                        <span class="btn-icon-warning d-inline-flex me-1" style="width: 24px; height: 24px;">✏️</span> = Editar &nbsp;
+                        <span class="btn-icon-danger d-inline-flex" style="width: 24px; height: 24px;">🗑️</span> = Excluir
+                    </div>
+                </div>
+                <hr class="my-2" style="border-color: rgba(74, 14, 46, 0.15);">
+                <div class="row">
+                    <div class="col-12">
+                        <small class="text-muted">
+                            <i class="bi bi-info-circle"></i> 
+                            <strong>Nota:</strong> Cargos com grau mínimo maior que o grau do obreiro não poderão ser atribuídos.
+                        </small>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
 </div>
 
-<style>
-    .card {
-        border-radius: 10px;
-        overflow: hidden;
+<script>
+    function confirmarExclusao(nomeCargo) {
+        return confirm(`⚠️ ATENÇÃO!\n\nDeseja excluir o cargo "${nomeCargo}"?\n\nEsta ação removerá o cargo de todos os obreiros que o possuem.\n\nEsta operação não pode ser desfeita!`);
     }
-    .card-header {
-        font-weight: 600;
-    }
-    .table-responsive {
-        overflow-x: auto;
-    }
-    .badge {
-        font-size: 0.85rem;
-        padding: 0.4rem 0.7rem;
-    }
-    @media (max-width: 768px) {
-        .table {
-            font-size: 0.85rem;
-        }
-        .btn-group {
-            flex-direction: column;
-        }
-        .btn-group .btn {
-            margin-bottom: 5px;
-        }
-    }
-</style>
-
+</script>
 {% endblock %}

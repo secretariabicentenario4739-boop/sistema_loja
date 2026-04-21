@@ -2,34 +2,444 @@
 
 {% block title %}Gerenciamento de Backups - Sistema Maçônico{% endblock %}
 
+{% block styles %}
+{{ super() }}
+<style>
+    :root {
+        --bordo: #4A0E2E;
+        --bordo-escuro: #3A0A24;
+        --bordo-claro: #6B1342;
+        --bordo-suave: #8B4A6B;
+        --bordo-transparente: rgba(74, 14, 46, 0.08);
+        --bordo-transparente-hover: rgba(74, 14, 46, 0.12);
+        --ouro: #D4AF37;
+        --ouro-escuro: #996515;
+        --ouro-claro: #F0D68A;
+    }
+
+    /* BOTÕES DO RITO - VERSÃO MOBILE FRIENDLY */
+    .btn-bordo {
+        background: linear-gradient(135deg, var(--bordo), var(--bordo-escuro));
+        border: none;
+        color: white;
+        border-radius: 30px;
+        padding: 8px 20px;
+        transition: all 0.3s;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        text-decoration: none;
+    }
+    
+    .btn-bordo:hover {
+        background: linear-gradient(135deg, var(--bordo-claro), var(--bordo));
+        transform: translateY(-2px);
+        color: white;
+        box-shadow: 0 5px 15px rgba(74, 14, 46, 0.3);
+    }
+    
+    .btn-bordo-outline {
+        background: transparent;
+        border: 1px solid var(--bordo);
+        color: var(--bordo);
+        border-radius: 30px;
+        padding: 8px 20px;
+        transition: all 0.3s;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        text-decoration: none;
+    }
+    
+    .btn-bordo-outline:hover {
+        background: var(--bordo);
+        color: white;
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(74, 14, 46, 0.2);
+    }
+
+    .btn-bordo-success {
+        background: linear-gradient(135deg, #10b981, #059669);
+        border: none;
+        color: white;
+        border-radius: 30px;
+        padding: 8px 20px;
+        transition: all 0.3s;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        text-decoration: none;
+    }
+    
+    .btn-bordo-success:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(16, 185, 129, 0.3);
+        color: white;
+    }
+
+    .btn-bordo-warning {
+        background: linear-gradient(135deg, #f59e0b, #d97706);
+        border: none;
+        color: white;
+        border-radius: 30px;
+        padding: 8px 20px;
+        transition: all 0.3s;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        text-decoration: none;
+    }
+    
+    .btn-bordo-warning:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(245, 158, 11, 0.3);
+        color: white;
+    }
+
+    .btn-bordo-secondary {
+        background: linear-gradient(135deg, #6c757d, #495057);
+        border: none;
+        color: white;
+        border-radius: 30px;
+        padding: 8px 20px;
+        transition: all 0.3s;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        text-decoration: none;
+    }
+    
+    .btn-bordo-secondary:hover {
+        background: linear-gradient(135deg, #5a6268, #3d4246);
+        transform: translateY(-2px);
+        color: white;
+        box-shadow: 0 5px 15px rgba(108, 117, 125, 0.3);
+    }
+
+    .btn-bordo-danger {
+        background: linear-gradient(135deg, #ef4444, #dc2626);
+        border: none;
+        color: white;
+        border-radius: 30px;
+        padding: 8px 20px;
+        transition: all 0.3s;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        text-decoration: none;
+    }
+    
+    .btn-bordo-danger:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(239, 68, 68, 0.3);
+        color: white;
+    }
+
+    /* BOTÕES ÍCONE APENAS */
+    .btn-icon-info {
+        background: linear-gradient(135deg, #0ea5e9, #0284c7);
+        border: none;
+        color: white;
+        width: 32px;
+        height: 32px;
+        padding: 0;
+        border-radius: 50%;
+        transition: all 0.3s;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+    }
+    
+    .btn-icon-info:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(14, 165, 233, 0.3);
+        color: white;
+    }
+
+    .btn-icon-success {
+        background: linear-gradient(135deg, #10b981, #059669);
+        border: none;
+        color: white;
+        width: 32px;
+        height: 32px;
+        padding: 0;
+        border-radius: 50%;
+        transition: all 0.3s;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+    }
+    
+    .btn-icon-success:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(16, 185, 129, 0.3);
+        color: white;
+    }
+
+    .btn-icon-warning {
+        background: linear-gradient(135deg, #f59e0b, #d97706);
+        border: none;
+        color: white;
+        width: 32px;
+        height: 32px;
+        padding: 0;
+        border-radius: 50%;
+        transition: all 0.3s;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+    }
+    
+    .btn-icon-warning:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(245, 158, 11, 0.3);
+        color: white;
+    }
+
+    .btn-icon-danger {
+        background: linear-gradient(135deg, #ef4444, #dc2626);
+        border: none;
+        color: white;
+        width: 32px;
+        height: 32px;
+        padding: 0;
+        border-radius: 50%;
+        transition: all 0.3s;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+    }
+    
+    .btn-icon-danger:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(239, 68, 68, 0.3);
+        color: white;
+    }
+
+    /* CARDS */
+    .card {
+        border-radius: 16px;
+        overflow: hidden;
+        border: 1px solid rgba(74, 14, 46, 0.15);
+        transition: transform 0.2s, box-shadow 0.2s;
+    }
+    
+    .card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 16px rgba(0,0,0,0.1);
+    }
+    
+    .card-header {
+        font-weight: 600;
+        border-bottom: none;
+    }
+    
+    .card.bg-primary {
+        background: linear-gradient(135deg, var(--bordo), var(--bordo-escuro)) !important;
+    }
+    
+    .card.bg-success {
+        background: linear-gradient(135deg, #10b981, #059669) !important;
+    }
+    
+    .card.bg-secondary {
+        background: linear-gradient(135deg, #6c757d, #495057) !important;
+    }
+
+    /* TABELA */
+    .table-hover tbody tr:hover {
+        cursor: pointer;
+        background: var(--bordo-transparente);
+    }
+    
+    .table-hover tbody tr {
+        transition: background 0.2s;
+    }
+
+    /* GRUPO DE AÇÕES DO CABEÇALHO */
+    .header-actions {
+        display: flex;
+        gap: 12px;
+        align-items: center;
+        flex-wrap: wrap;
+    }
+
+    /* GRUPO DE AÇÕES DA TABELA */
+    .table-actions {
+        display: inline-flex;
+        gap: 6px;
+        align-items: center;
+        flex-wrap: wrap;
+    }
+
+    /* RESPONSIVIDADE */
+    @media (max-width: 768px) {
+        .btn-bordo, .btn-bordo-outline, .btn-bordo-success, 
+        .btn-bordo-warning, .btn-bordo-secondary, .btn-bordo-danger {
+            padding: 6px 16px;
+            font-size: 0.85rem;
+        }
+        
+        .btn-icon-info, .btn-icon-success, .btn-icon-warning, .btn-icon-danger {
+            width: 28px;
+            height: 28px;
+            font-size: 0.75rem;
+        }
+        
+        /* Cabeçalho responsivo */
+        .d-flex.justify-content-between {
+            flex-direction: column;
+            align-items: flex-start !important;
+            gap: 15px;
+        }
+        
+        .header-actions {
+            width: 100%;
+            flex-direction: column;
+        }
+        
+        .header-actions .btn-bordo-success,
+        .header-actions .btn-bordo-warning,
+        .header-actions .btn-bordo-outline {
+            width: 100%;
+            justify-content: center;
+        }
+        
+        h2 {
+            font-size: 1.5rem;
+        }
+        
+        /* Botões da tabela */
+        .table-actions {
+            flex-direction: column;
+        }
+        
+        /* Cards de estatísticas */
+        .row.mb-4 .col-md-4 {
+            margin-bottom: 0.75rem;
+        }
+        
+        /* Tabela responsiva */
+        .table-responsive {
+            font-size: 0.85rem;
+        }
+        
+        /* Modal responsivo */
+        .modal-dialog {
+            margin: 1rem;
+        }
+        
+        .modal-footer {
+            flex-direction: column;
+            gap: 8px;
+        }
+        
+        .modal-footer .btn-bordo-secondary,
+        .modal-footer .btn-bordo-danger {
+            width: 100%;
+            justify-content: center;
+        }
+        
+        /* Legenda responsiva */
+        .card.mt-4 .row .col-md-3 {
+            margin-bottom: 0.5rem;
+        }
+    }
+
+    @media (max-width: 480px) {
+        .btn-bordo, .btn-bordo-outline, .btn-bordo-success, 
+        .btn-bordo-warning, .btn-bordo-secondary, .btn-bordo-danger {
+            padding: 5px 12px;
+            font-size: 0.8rem;
+        }
+        
+        .card-body {
+            padding: 1rem !important;
+        }
+        
+        .badge {
+            font-size: 0.7rem;
+            padding: 0.3rem 0.5rem;
+        }
+    }
+
+    /* ANIMAÇÕES */
+    @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(-20px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+    
+    .alert {
+        animation: fadeIn 0.3s ease-out;
+        border-radius: 12px;
+    }
+    
+    .modal-content {
+        border-radius: 16px;
+        overflow: hidden;
+    }
+    
+    .modal-header {
+        border-bottom: 2px solid rgba(0,0,0,0.1);
+    }
+    
+    .modal-footer {
+        border-top: 1px solid rgba(0,0,0,0.1);
+    }
+    
+    .progress-bar {
+        background-image: linear-gradient(45deg, 
+            rgba(255,255,255,0.15) 25%, 
+            transparent 25%, 
+            transparent 50%, 
+            rgba(255,255,255,0.15) 50%, 
+            rgba(255,255,255,0.15) 75%, 
+            transparent 75%, 
+            transparent);
+        background-size: 1rem 1rem;
+        animation: progress-bar-stripes 1s linear infinite;
+    }
+    
+    @keyframes progress-bar-stripes {
+        0% { background-position: 1rem 0; }
+        100% { background-position: 0 0; }
+    }
+    
+    [title] {
+        position: relative;
+        cursor: help;
+    }
+</style>
+{% endblock %}
+
 {% block content %}
 <div class="container-fluid py-4">
     <div class="container">
-        <!-- Cabeçalho com botões -->
+        <!-- Cabeçalho responsivo -->
         <div class="d-flex justify-content-between align-items-center mb-4">
-            <h2>
-                <i class="bi bi-database-fill"></i> 
-                Gerenciamento de Backups
-                <span class="badge bg-primary">{{ stats.total }}</span>
+            <h2 class="mb-2 mb-md-0">
+                <i class="bi bi-database-fill" style="color: var(--bordo);"></i> 
+                <span style="color: var(--bordo);">Gerenciamento de Backups</span>
+                <span class="badge bg-primary" style="background: var(--bordo) !important;">{{ stats.total }}</span>
             </h2>
-            <div>
-                <button type="button" class="btn btn-success me-2" onclick="criarBackup()" id="btnCriarBackup">
+            <div class="header-actions">
+                <button type="button" class="btn-bordo-success" onclick="criarBackup()" id="btnCriarBackup">
                     <i class="bi bi-plus-circle"></i> Criar Backup
                 </button>
-                <button type="button" class="btn btn-warning me-2" onclick="limparBackupsAntigos()">
+                <button type="button" class="btn-bordo-warning" onclick="limparBackupsAntigos()">
                     <i class="bi bi-trash"></i> Limpar Antigos
                 </button>
-                <a href="/dashboard" class="btn btn-outline-secondary">
-                    <i class="bi bi-arrow-left"></i> Voltar ao Dashboard
+                <a href="/dashboard" class="btn-bordo-outline">
+                    <i class="bi bi-arrow-left"></i> Voltar
                 </a>
             </div>
         </div>
 
-        <!-- Cards de Estatísticas (ajustados para Cloudinary) -->
+        <!-- Cards de Estatísticas -->
         <div class="row mb-4">
-            <div class="col-md-4">
-                <div class="card bg-primary text-white shadow">
-                    <div class="card-body">
+            <div class="col-md-4 col-sm-12 mb-3 mb-md-0">
+                <div class="card bg-primary text-white shadow-sm">
+                    <div class="card-body p-4">
                         <div class="d-flex justify-content-between align-items-center">
                             <div>
                                 <h6 class="card-title mb-0">Total de Backups</h6>
@@ -40,9 +450,9 @@
                     </div>
                 </div>
             </div>
-            <div class="col-md-4">
-                <div class="card bg-success text-white shadow">
-                    <div class="card-body">
+            <div class="col-md-4 col-sm-12 mb-3 mb-md-0">
+                <div class="card bg-success text-white shadow-sm">
+                    <div class="card-body p-4">
                         <div class="d-flex justify-content-between align-items-center">
                             <div>
                                 <h6 class="card-title mb-0">Espaço Total</h6>
@@ -54,9 +464,9 @@
                     </div>
                 </div>
             </div>
-            <div class="col-md-4">
-                <div class="card bg-secondary text-white shadow">
-                    <div class="card-body">
+            <div class="col-md-4 col-sm-12">
+                <div class="card bg-secondary text-white shadow-sm">
+                    <div class="card-body p-4">
                         <div class="d-flex justify-content-between align-items-center">
                             <div>
                                 <h6 class="card-title mb-0">Último Backup</h6>
@@ -70,10 +480,10 @@
         </div>
 
         <!-- Lista de Backups -->
-        <div class="card shadow">
-            <div class="card-body">
+        <div class="card shadow-sm">
+            <div class="card-body p-0">
                 <div class="table-responsive">
-                    <table class="table table-hover" id="tabelaBackups">
+                    <table class="table table-hover mb-0" id="tabelaBackups">
                         <thead class="table-light">
                             <tr>
                                 <th style="width: 45%">Arquivo</th>
@@ -106,24 +516,24 @@
                                     <small class="text-muted">{{ (backup.size_bytes / 1024)|int }} KB</small>
                                 </td>
                                 <td>
-                                    <div class="btn-group btn-group-sm" role="group">
-                                        <button class="btn btn-info" onclick="infoBackup('{{ backup.public_id }}')" title="Informações">
-                                            <i class="bi bi-info-circle"></i>
+                                    <div class="table-actions">
+                                        <button class="btn-icon-info" onclick="infoBackup('{{ backup.public_id }}')" title="Informações">
+                                            <i class="bi bi-info-circle-fill"></i>
                                         </button>
                                         <a href="/api/backup/baixar/{{ backup.public_id }}" 
-                                           class="btn btn-success" 
+                                           class="btn-icon-success" 
                                            title="Download">
                                             <i class="bi bi-download"></i>
                                         </a>
-                                        <button class="btn btn-warning" 
+                                        <button class="btn-icon-warning" 
                                                 onclick="restaurarBackup('{{ backup.public_id }}')" 
                                                 title="Restaurar">
                                             <i class="bi bi-arrow-repeat"></i>
                                         </button>
-                                        <button class="btn btn-danger" 
+                                        <button class="btn-icon-danger" 
                                                 onclick="excluirBackup('{{ backup.public_id }}')" 
                                                 title="Excluir">
-                                            <i class="bi bi-trash"></i>
+                                            <i class="bi bi-trash-fill"></i>
                                         </button>
                                     </div>
                                 </td>
@@ -134,7 +544,7 @@
                                     <i class="bi bi-inbox fs-1"></i><br>
                                     Nenhum backup encontrado
                                     <br>
-                                    <button class="btn btn-primary mt-3" onclick="criarBackup()">
+                                    <button class="btn-bordo mt-3" onclick="criarBackup()">
                                         <i class="bi bi-plus-circle"></i> Criar primeiro backup
                                     </button>
                                 </td>
@@ -147,28 +557,28 @@
         </div>
 
         <!-- Legenda -->
-        <div class="card shadow mt-4">
-            <div class="card-header bg-light">
-                <h6 class="mb-0"><i class="bi bi-info-circle"></i> Legenda</h6>
+        <div class="card shadow-sm mt-4">
+            <div class="card-header" style="background: var(--bordo-transparente); border-bottom: 1px solid rgba(74, 14, 46, 0.1);">
+                <h6 class="mb-0" style="color: var(--bordo);"><i class="bi bi-info-circle"></i> Legenda</h6>
             </div>
-            <div class="card-body">
+            <div class="card-body p-4">
                 <div class="row">
-                    <div class="col-md-3">
-                        <i class="bi bi-eye text-info"></i> = Informações
+                    <div class="col-md-3 mb-2 mb-md-0">
+                        <span class="btn-icon-info d-inline-flex me-1" style="width: 24px; height: 24px;">ℹ️</span> = Informações
+                    </div>
+                    <div class="col-md-3 mb-2 mb-md-0">
+                        <span class="btn-icon-success d-inline-flex me-1" style="width: 24px; height: 24px;">⬇️</span> = Download
+                    </div>
+                    <div class="col-md-3 mb-2 mb-md-0">
+                        <span class="btn-icon-warning d-inline-flex me-1" style="width: 24px; height: 24px;">🔄</span> = Restaurar
                     </div>
                     <div class="col-md-3">
-                        <i class="bi bi-download text-success"></i> = Download
-                    </div>
-                    <div class="col-md-3">
-                        <i class="bi bi-arrow-repeat text-warning"></i> = Restaurar
-                    </div>
-                    <div class="col-md-3">
-                        <i class="bi bi-trash text-danger"></i> = Excluir
+                        <span class="btn-icon-danger d-inline-flex me-1" style="width: 24px; height: 24px;">🗑️</span> = Excluir
                     </div>
                 </div>
-                <hr class="my-2">
+                <hr class="my-3" style="border-color: rgba(74, 14, 46, 0.15);">
                 <div class="row">
-                    <div class="col-md-6">
+                    <div class="col-md-6 mb-2 mb-md-0">
                         <i class="bi bi-cloud text-info"></i> = Armazenado na nuvem (Cloudinary)
                     </div>
                     <div class="col-md-6">
@@ -184,13 +594,13 @@
 <div class="modal fade" id="modalInfoBackup" tabindex="-1">
     <div class="modal-dialog">
         <div class="modal-content">
-            <div class="modal-header bg-info text-white">
+            <div class="modal-header" style="background: linear-gradient(135deg, #0ea5e9, #0284c7); color: white; border: none;">
                 <h5 class="modal-title">
                     <i class="bi bi-info-circle"></i> Informações do Backup
                 </h5>
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
             </div>
-            <div class="modal-body" id="infoBackupContent">
+            <div class="modal-body p-4" id="infoBackupContent">
                 <div class="text-center py-4">
                     <div class="spinner-border text-primary" role="status">
                         <span class="visually-hidden">Carregando...</span>
@@ -198,8 +608,8 @@
                     <p class="mt-2">Carregando informações...</p>
                 </div>
             </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+            <div class="modal-footer" style="border-top-color: rgba(74, 14, 46, 0.1);">
+                <button type="button" class="btn-bordo-secondary" data-bs-dismiss="modal">
                     <i class="bi bi-x-circle"></i> Fechar
                 </button>
             </div>
@@ -211,19 +621,19 @@
 <div class="modal fade" id="modalConfirmRestore" tabindex="-1">
     <div class="modal-dialog modal-lg">
         <div class="modal-content">
-            <div class="modal-header bg-warning">
+            <div class="modal-header" style="background: linear-gradient(135deg, #f59e0b, #d97706); color: white; border: none;">
                 <h5 class="modal-title">
                     <i class="bi bi-exclamation-triangle-fill"></i> ATENÇÃO - Restauração de Backup
                 </h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
             </div>
-            <div class="modal-body">
-                <div class="alert alert-danger">
+            <div class="modal-body p-4">
+                <div class="alert alert-danger" style="border-radius: 12px;">
                     <i class="bi bi-skull"></i>
                     <strong>Esta operação é irreversível!</strong>
                 </div>
                 <p>Você está prestes a restaurar o backup:</p>
-                <p class="alert alert-info">
+                <p class="alert alert-info" style="background: var(--bordo-transparente); border-color: var(--bordo); color: var(--bordo); border-radius: 12px;">
                     <i class="bi bi-file-zip-fill"></i>
                     <strong id="restoreFileName"></strong>
                 </p>
@@ -233,18 +643,18 @@
                     <li><i class="bi bi-arrow-repeat"></i> Não poderá ser desfeita facilmente</li>
                     <li><i class="bi bi-shield-check"></i> Um backup de emergência será criado automaticamente</li>
                 </ul>
-                <div class="alert alert-info">
+                <div class="alert alert-info" style="background: var(--bordo-transparente); border-color: var(--bordo); color: var(--bordo); border-radius: 12px;">
                     <i class="bi bi-info-circle"></i>
                     Para confirmar, digite <strong class="text-danger">RESTAURAR</strong> no campo abaixo:
                 </div>
                 <input type="text" id="confirmRestoreText" class="form-control" 
-                       placeholder="Digite RESTAURAR para confirmar" autocomplete="off">
+                       placeholder="Digite RESTAURAR para confirmar" autocomplete="off" style="border-radius: 12px;">
             </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+            <div class="modal-footer" style="border-top-color: rgba(74, 14, 46, 0.1);">
+                <button type="button" class="btn-bordo-secondary" data-bs-dismiss="modal">
                     <i class="bi bi-x-circle"></i> Cancelar
                 </button>
-                <button type="button" class="btn btn-danger" id="btnConfirmRestore" onclick="confirmarRestauracao()" disabled>
+                <button type="button" class="btn-bordo-danger" id="btnConfirmRestore" onclick="confirmarRestauracao()" disabled>
                     <i class="bi bi-arrow-repeat"></i> Confirmar Restauração
                 </button>
             </div>
@@ -453,7 +863,7 @@ function infoBackup(publicId) {
                 `;
             } else {
                 contentDiv.innerHTML = `
-                    <div class="alert alert-danger">
+                    <div class="alert alert-danger" style="border-radius: 12px;">
                         <i class="bi bi-exclamation-triangle-fill"></i>
                         Erro ao carregar informações: ${escapeHtml(data.error || 'Desconhecido')}
                     </div>
@@ -462,7 +872,7 @@ function infoBackup(publicId) {
         })
         .catch(error => {
             contentDiv.innerHTML = `
-                <div class="alert alert-danger">
+                <div class="alert alert-danger" style="border-radius: 12px;">
                     <i class="bi bi-bug"></i>
                     Erro na requisição: ${escapeHtml(error.message)}
                 </div>
@@ -474,7 +884,7 @@ function mostrarAlerta(tipo, mensagem, timeout = 5000) {
     const alertContainer = document.getElementById('alert-container') || criarContainerAlerta();
     const alertId = 'alert-' + Date.now();
     const alertHtml = `
-        <div id="${alertId}" class="alert alert-${tipo} alert-dismissible fade show" role="alert">
+        <div id="${alertId}" class="alert alert-${tipo} alert-dismissible fade show" role="alert" style="border-radius: 12px;">
             ${mensagem}
             <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
         </div>
@@ -509,105 +919,4 @@ function escapeHtml(text) {
     return div.innerHTML;
 }
 </script>
-
-<style>
-    .card {
-        border-radius: 10px;
-        overflow: hidden;
-        transition: transform 0.2s, box-shadow 0.2s;
-    }
-    .card:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 8px 16px rgba(0,0,0,0.1);
-    }
-    .card-header {
-        font-weight: 600;
-    }
-    .progress {
-        border-radius: 10px;
-        overflow: hidden;
-    }
-    .progress-bar {
-        transition: width 0.3s ease;
-        font-size: 12px;
-        line-height: 30px;
-    }
-    .table-hover tbody tr:hover {
-        cursor: pointer;
-        background-color: rgba(0, 123, 255, 0.05);
-    }
-    .badge {
-        font-size: 0.8rem;
-        padding: 0.4rem 0.6rem;
-    }
-    .btn-group-sm .btn {
-        padding: 0.25rem 0.5rem;
-        margin: 0 2px;
-    }
-    .btn-group-sm .btn i {
-        font-size: 1rem;
-    }
-    @media (max-width: 768px) {
-        .btn-group {
-            flex-direction: row;
-            flex-wrap: wrap;
-        }
-        .btn-group .btn {
-            margin-bottom: 5px;
-        }
-        .table-responsive {
-            font-size: 0.85rem;
-        }
-    }
-    
-    @keyframes fadeIn {
-        from { opacity: 0; transform: translateY(-20px); }
-        to { opacity: 1; transform: translateY(0); }
-    }
-    
-    .alert {
-        animation: fadeIn 0.3s ease-out;
-        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-    }
-    
-    .modal-content {
-        border-radius: 12px;
-        overflow: hidden;
-    }
-    
-    .modal-header {
-        border-bottom: 2px solid rgba(0,0,0,0.1);
-    }
-    
-    .modal-footer {
-        border-top: 1px solid rgba(0,0,0,0.1);
-    }
-    
-    .btn i {
-        margin-right: 5px;
-    }
-    
-    .progress-bar {
-        background-image: linear-gradient(45deg, 
-            rgba(255,255,255,0.15) 25%, 
-            transparent 25%, 
-            transparent 50%, 
-            rgba(255,255,255,0.15) 50%, 
-            rgba(255,255,255,0.15) 75%, 
-            transparent 75%, 
-            transparent);
-        background-size: 1rem 1rem;
-        animation: progress-bar-stripes 1s linear infinite;
-    }
-    
-    @keyframes progress-bar-stripes {
-        0% { background-position: 1rem 0; }
-        100% { background-position: 0 0; }
-    }
-    
-    [title] {
-        position: relative;
-        cursor: help;
-    }
-</style>
 {% endblock %}

@@ -3,7 +3,198 @@
 {% block title %}Gerenciar Permissões{% endblock %}
 
 {% block styles %}
+{{ super() }}
 <style>
+    :root {
+        --bordo: #4A0E2E;
+        --bordo-escuro: #3A0A24;
+        --bordo-claro: #6B1342;
+        --bordo-suave: #8B4A6B;
+        --bordo-transparente: rgba(74, 14, 46, 0.08);
+        --bordo-transparente-hover: rgba(74, 14, 46, 0.12);
+        --ouro: #D4AF37;
+        --ouro-escuro: #996515;
+        --ouro-claro: #F0D68A;
+    }
+
+    /* BOTÕES DO RITO - VERSÃO MOBILE FRIENDLY */
+    .btn-bordo {
+        background: linear-gradient(135deg, var(--bordo), var(--bordo-escuro));
+        border: none;
+        color: white;
+        border-radius: 30px;
+        padding: 8px 20px;
+        transition: all 0.3s;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        text-decoration: none;
+    }
+    
+    .btn-bordo:hover {
+        background: linear-gradient(135deg, var(--bordo-claro), var(--bordo));
+        transform: translateY(-2px);
+        color: white;
+        box-shadow: 0 5px 15px rgba(74, 14, 46, 0.3);
+    }
+    
+    .btn-bordo-outline {
+        background: transparent;
+        border: 1px solid var(--bordo);
+        color: var(--bordo);
+        border-radius: 30px;
+        padding: 8px 20px;
+        transition: all 0.3s;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        text-decoration: none;
+    }
+    
+    .btn-bordo-outline:hover {
+        background: var(--bordo);
+        color: white;
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(74, 14, 46, 0.2);
+    }
+
+    .btn-bordo-success {
+        background: linear-gradient(135deg, #10b981, #059669);
+        border: none;
+        color: white;
+        border-radius: 30px;
+        padding: 8px 20px;
+        transition: all 0.3s;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        text-decoration: none;
+    }
+    
+    .btn-bordo-success:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(16, 185, 129, 0.3);
+        color: white;
+    }
+
+    /* CARDS */
+    .card {
+        border-radius: 16px;
+        overflow: hidden;
+        border: 1px solid rgba(74, 14, 46, 0.15);
+    }
+    
+    .card-header {
+        font-weight: 600;
+        border-bottom: none;
+    }
+    
+    .card-header.bg-success {
+        background: linear-gradient(135deg, #10b981, #059669) !important;
+    }
+    
+    .card-header.bg-primary {
+        background: linear-gradient(135deg, #3b82f6, #2563eb) !important;
+    }
+    
+    .card-header.bg-secondary {
+        background: linear-gradient(135deg, #6c757d, #495057) !important;
+    }
+    
+    .card-header.bg-info {
+        background: linear-gradient(135deg, #0ea5e9, #0284c7) !important;
+    }
+    
+    .card-header.bg-danger {
+        background: linear-gradient(135deg, #ef4444, #dc2626) !important;
+    }
+
+    /* TABS */
+    .nav-tabs {
+        border-bottom: 2px solid rgba(74, 14, 46, 0.15);
+    }
+    
+    .nav-tabs .nav-link {
+        color: var(--bordo-suave);
+        border: none;
+        padding: 0.75rem 1.5rem;
+        font-weight: 500;
+        transition: all 0.3s;
+    }
+    
+    .nav-tabs .nav-link:hover {
+        color: var(--bordo);
+        border: none;
+    }
+    
+    .nav-tabs .nav-link.active {
+        color: var(--bordo);
+        background: transparent;
+        border-bottom: 2px solid var(--bordo);
+        font-weight: 600;
+    }
+
+    /* ACCORDION */
+    .accordion-item {
+        border: none;
+        border-bottom: 1px solid rgba(74, 14, 46, 0.1);
+    }
+    
+    .accordion-button {
+        background: var(--bordo-transparente);
+        color: var(--bordo);
+        font-weight: 500;
+        padding: 0.75rem 1rem;
+    }
+    
+    .accordion-button:not(.collapsed) {
+        background: var(--bordo-transparente-hover);
+        color: var(--bordo);
+    }
+    
+    .accordion-button:focus {
+        box-shadow: none;
+        border-color: var(--bordo);
+    }
+    
+    .accordion-body {
+        padding: 1rem;
+        background: white;
+    }
+
+    /* FORM CHECK */
+    .form-check {
+        margin-bottom: 0.5rem;
+    }
+    
+    .form-check-input:checked {
+        background-color: var(--bordo);
+        border-color: var(--bordo);
+    }
+    
+    .permission-group {
+        border-left: 3px solid var(--bordo);
+        padding-left: 12px;
+        margin-bottom: 12px;
+    }
+    
+    .permission-special {
+        background: #fff3cd;
+        border-left: 3px solid #ffc107;
+        padding: 8px 12px;
+        margin: 8px 0;
+        border-radius: 12px;
+    }
+
+    /* BADGES */
+    .badge-module {
+        font-size: 0.7rem;
+        padding: 3px 6px;
+        margin-left: 5px;
+        border-radius: 20px;
+    }
+
+    /* TREE */
     .tree {
         margin-left: 0;
         padding-left: 0;
@@ -19,7 +210,7 @@
         position: absolute;
         top: 0;
         left: 0;
-        border-left: 1px solid #dee2e6;
+        border-left: 1px solid rgba(74, 14, 46, 0.2);
         height: 100%;
     }
     .tree li:last-child::before {
@@ -31,89 +222,144 @@
         top: 15px;
         left: 0;
         width: 15px;
-        border-top: 1px solid #dee2e6;
+        border-top: 1px solid rgba(74, 14, 46, 0.2);
     }
     .tree li .tree-item {
         position: relative;
         padding: 5px 10px;
-        background: #f8f9fa;
-        border-radius: 5px;
+        background: var(--bordo-transparente);
+        border-radius: 8px;
         margin-bottom: 5px;
         cursor: pointer;
         transition: all 0.2s;
     }
     .tree li .tree-item:hover {
-        background: #e9ecef;
+        background: rgba(74, 14, 46, 0.12);
     }
     .tree li .tree-item.active {
-        background: #0d6efd;
+        background: linear-gradient(135deg, var(--bordo), var(--bordo-escuro));
         color: white;
-    }
-    .tree li .tree-item .badge {
-        font-size: 0.7rem;
     }
     .tree li ul {
         padding-left: 20px;
     }
-    .tree-toggle {
-        cursor: pointer;
-        margin-right: 5px;
-        color: #6c757d;
+
+    /* CONTAINER DE AÇÕES DO CABEÇALHO */
+    .header-actions {
+        display: flex;
+        gap: 12px;
+        align-items: center;
+        flex-wrap: wrap;
     }
-    .tree-toggle:hover {
-        color: #0d6efd;
+
+    /* BOTÕES DE SALVAR */
+    .btn-save {
+        background: linear-gradient(135deg, #10b981, #059669);
+        border: none;
+        color: white;
+        border-radius: 30px;
+        padding: 8px 20px;
+        transition: all 0.3s;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        text-decoration: none;
+        width: 100%;
+        justify-content: center;
     }
-    .module-header {
-        font-weight: bold;
-        background: #e9ecef;
-        padding: 8px 12px;
-        border-radius: 5px;
-        margin-bottom: 10px;
+    
+    .btn-save:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(16, 185, 129, 0.3);
+        color: white;
     }
-    .permission-item {
-        padding-left: 30px;
-        margin: 3px 0;
+
+    /* RESPONSIVIDADE */
+    @media (max-width: 768px) {
+        .btn-bordo, .btn-bordo-outline, .btn-bordo-success {
+            padding: 6px 16px;
+            font-size: 0.85rem;
+        }
+        
+        /* Cabeçalho responsivo */
+        .d-flex.justify-content-between {
+            flex-direction: column;
+            align-items: flex-start !important;
+            gap: 15px;
+        }
+        
+        .header-actions {
+            width: 100%;
+        }
+        
+        .header-actions .btn-bordo-outline {
+            width: 100%;
+            justify-content: center;
+        }
+        
+        h2 {
+            font-size: 1.5rem;
+        }
+        
+        /* Tabs responsivas */
+        .nav-tabs {
+            flex-direction: column;
+        }
+        
+        .nav-tabs .nav-link {
+            text-align: center;
+        }
+        
+        /* Cards de graus responsivos */
+        .row .col-md-4 {
+            margin-bottom: 1rem;
+        }
+        
+        /* Accordion responsivo */
+        .accordion-button {
+            padding: 0.5rem 0.75rem;
+            font-size: 0.85rem;
+        }
+        
+        .form-check-label {
+            font-size: 0.8rem;
+        }
+        
+        /* Área de permissões por usuário */
+        .row .col-md-6 {
+            margin-bottom: 1rem;
+        }
+        
+        /* Botões expandir/recolher */
+        .card-header .btn-group {
+            margin-top: 8px;
+            display: flex;
+            justify-content: center;
+        }
+        
+        /* Tree responsiva */
+        .tree li {
+            padding: 5px 0 0 15px;
+        }
     }
-    .form-check {
-        margin-bottom: 0.25rem;
-    }
-    .card {
-        border-radius: 10px;
-        overflow: hidden;
-    }
-    .card-header {
-        font-weight: 600;
-    }
-    .nav-tabs .nav-link {
-        color: #495057;
-    }
-    .nav-tabs .nav-link.active {
-        font-weight: bold;
-        color: #0d6efd;
-    }
-    .accordion-button:not(.collapsed) {
-        background-color: #e7f1ff;
-        color: #0d6efd;
-    }
-    .accordion-button:focus {
-        box-shadow: none;
-    }
-    .badge-module {
-        font-size: 0.7rem;
-        padding: 3px 6px;
-        margin-left: 5px;
-    }
-    .permission-group {
-        border-left: 3px solid #0d6efd;
-        padding-left: 10px;
-        margin-bottom: 10px;
-    }
-    .permission-special {
-        background-color: #fff3cd;
-        border-left: 3px solid #ffc107;
-        padding: 5px 10px;
-        margin: 5px 0;
-        border-radius: 5px;
+
+    @media (max-width: 480px) {
+        .btn-bordo, .btn-bordo-outline, .btn-bordo-success {
+            padding: 5px 12px;
+            font-size: 0.8rem;
+        }
+        
+        .card-body {
+            padding: 1rem !important;
+        }
+        
+        .accordion-body {
+            padding: 0.75rem;
+        }
+        
+        .permission-group {
+            padding-left: 8px;
+        }
     }
 </style>
 {% endblock %}
@@ -121,26 +367,29 @@
 {% block content %}
 <div class="container-fluid py-4">
     <div class="container">
+        <!-- Cabeçalho responsivo -->
         <div class="d-flex justify-content-between align-items-center mb-4">
-            <h2>
-                <i class="bi bi-shield-lock"></i> 
-                Gerenciar Permissões
+            <h2 class="mb-2 mb-md-0">
+                <i class="bi bi-shield-lock" style="color: var(--bordo);"></i> 
+                <span style="color: var(--bordo);">Gerenciar Permissões</span>
             </h2>
-            <a href="/dashboard" class="btn btn-outline-secondary">
-                <i class="bi bi-arrow-left"></i> Voltar
-            </a>
+            <div class="header-actions">
+                <a href="/dashboard" class="btn-bordo-outline">
+                    <i class="bi bi-arrow-left"></i> Voltar
+                </a>
+            </div>
         </div>
 
-        
+        <!-- Tabs responsivas -->
         <ul class="nav nav-tabs mb-4" id="permissoesTab" role="tablist">
             <li class="nav-item" role="presentation">
                 <button class="nav-link active" id="graus-tab" data-bs-toggle="tab" data-bs-target="#graus" type="button" role="tab">
-                    <i class="bi bi-star-fill"></i> Por Grau
+                    <i class="bi bi-star-fill me-1"></i> Por Grau
                 </button>
             </li>
             <li class="nav-item" role="presentation">
                 <button class="nav-link" id="usuarios-tab" data-bs-toggle="tab" data-bs-target="#usuarios" type="button" role="tab">
-                    <i class="bi bi-person"></i> Por Usuário (Árvore)
+                    <i class="bi bi-person me-1"></i> Por Usuário
                 </button>
             </li>
         </ul>
@@ -151,16 +400,26 @@
                 <div class="row">
                     {% for grau in graus %}
                     <div class="col-md-4 mb-4">
-                        <div class="card shadow h-100">
+                        <div class="card shadow-sm h-100">
                             <div class="card-header {% if grau.nivel == 3 %}bg-success{% elif grau.nivel == 2 %}bg-primary{% else %}bg-secondary{% endif %} text-white">
-                                <h5 class="mb-0">
-                                    <i class="bi bi-star-fill"></i> 
-                                    {{ grau.nome }}
-                                </h5>
+                                <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+                                    <h5 class="mb-0">
+                                        <i class="bi bi-star-fill me-1"></i> 
+                                        {{ grau.nome }}
+                                    </h5>
+                                    <div class="btn-group btn-group-sm">
+                                        <button type="button" class="btn btn-light btn-sm" onclick="expandirTodos('accordionGrau{{ loop.index }}')" title="Expandir todos">
+                                            <i class="bi bi-arrows-expand"></i>
+                                        </button>
+                                        <button type="button" class="btn btn-light btn-sm" onclick="recolherTodos('accordionGrau{{ loop.index }}')" title="Recolher todos">
+                                            <i class="bi bi-arrows-collapse"></i>
+                                        </button>
+                                    </div>
+                                </div>
                             </div>
                             <div class="card-body" style="max-height: 600px; overflow-y: auto;">
                                 <form method="POST" action="/admin/permissoes/grau/{{ grau.id }}">
-                                    <div class="accordion" id="accordionGrau{{ grau.id }}">
+                                    <div class="accordion" id="accordionGrau{{ loop.index }}">
                                         {% for modulo_nome, modulo_data in permissoes_por_modulo.items() %}
                                         <div class="accordion-item">
                                             <h2 class="accordion-header">
@@ -171,7 +430,6 @@
                                                     {{ modulo_nome|capitalize }}
                                                     <span class="badge bg-secondary ms-2">{{ modulo_data.permissoes|length }}</span>
                                                     
-                                                    <!-- Badge indicando módulo Biblioteca -->
                                                     {% if modulo_nome == 'biblioteca' %}
                                                     <span class="badge bg-info ms-2">
                                                         <i class="bi bi-book"></i> Biblioteca
@@ -181,7 +439,7 @@
                                             </h2>
                                             <div id="collapse{{ grau.id }}{{ loop.index }}" 
                                                  class="accordion-collapse collapse" 
-                                                 data-bs-parent="#accordionGrau{{ grau.id }}">
+                                                 data-bs-parent="#accordionGrau{{ loop.index }}">
                                                 <div class="accordion-body">
                                                     {% for permissao in modulo_data.permissoes %}
                                                     <div class="form-check {% if 'superior' in permissao.nome %}permission-special{% endif %}">
@@ -200,14 +458,12 @@
                                                             <br>
                                                             <small class="text-muted">{{ permissao.descricao }}</small>
                                                             
-                                                            <!-- Indicador de permissão especial -->
                                                             {% if 'superior' in permissao.nome %}
                                                             <span class="badge bg-warning text-dark ms-2">
                                                                 <i class="bi bi-star"></i> Especial
                                                             </span>
                                                             {% endif %}
                                                             
-                                                            <!-- Indicador de permissão de categoria -->
                                                             {% if 'categoria' in permissao.nome %}
                                                             <span class="badge bg-secondary ms-2">
                                                                 <i class="bi bi-folder"></i> Categoria
@@ -222,7 +478,7 @@
                                         {% endfor %}
                                     </div>
                                     <div class="text-center mt-3">
-                                        <button type="submit" class="btn btn-success btn-sm w-100">
+                                        <button type="submit" class="btn-save">
                                             <i class="bi bi-save"></i> Salvar Permissões
                                         </button>
                                     </div>
@@ -234,24 +490,24 @@
                 </div>
             </div>
 
-            <!-- Aba: Permissões por Usuário (Visualização em Árvore) -->
+            <!-- Aba: Permissões por Usuário -->
             <div class="tab-pane fade" id="usuarios" role="tabpanel">
                 <div class="row">
                     {% for usuario in usuarios %}
                     <div class="col-md-6 mb-4">
-                        <div class="card shadow">
+                        <div class="card shadow-sm">
                             <div class="card-header bg-info text-white">
                                 <h5 class="mb-0">
-                                    <i class="bi bi-person-circle"></i> 
+                                    <i class="bi bi-person-circle me-1"></i> 
                                     {{ usuario.nome_completo or usuario.usuario }}
                                     <span class="badge bg-light text-dark ms-2">
                                         {% if usuario.tipo == 'admin' %}Admin{% else %}Grau {{ usuario.grau_atual }}{% endif %}
                                     </span>
                                 </h5>
                             </div>
-                            <div class="card-body">
+                            <div class="card-body p-4">
                                 <form method="POST" action="/admin/permissoes/usuario/{{ usuario.id }}">
-                                    <div class="alert alert-info small">
+                                    <div class="alert alert-bordo-info mb-3" style="background: var(--bordo-transparente); border-color: var(--bordo); color: var(--bordo); border-radius: 12px;">
                                         <i class="bi bi-info-circle"></i>
                                         As permissões do grau se aplicam automaticamente. Use esta seção para 
                                         <strong>adicionar permissões extras</strong> ou 
@@ -259,12 +515,12 @@
                                     </div>
                                     
                                     <div class="row">
-                                        <div class="col-md-6">
+                                        <div class="col-md-6 mb-3 mb-md-0">
                                             <div class="card h-100">
-                                                <div class="card-header bg-success text-white py-1">
+                                                <div class="card-header bg-success text-white py-2">
                                                     <small><i class="bi bi-plus-circle"></i> Permissões Extras</small>
                                                 </div>
-                                                <div class="card-body" style="max-height: 450px; overflow-y: auto;">
+                                                <div class="card-body p-3" style="max-height: 450px; overflow-y: auto;">
                                                     <div class="accordion" id="accordionExtra{{ usuario.id }}">
                                                         {% for modulo_nome, modulo_data in permissoes_por_modulo.items() %}
                                                         <div class="accordion-item">
@@ -282,7 +538,7 @@
                                                             </h2>
                                                             <div id="collapseExtra{{ usuario.id }}{{ loop.index }}" 
                                                                  class="accordion-collapse collapse">
-                                                                <div class="accordion-body">
+                                                                <div class="accordion-body p-3">
                                                                     <!-- Permissões básicas -->
                                                                     <div class="permission-group">
                                                                         <small class="text-muted">Básicas</small>
@@ -385,10 +641,10 @@
                                         </div>
                                         <div class="col-md-6">
                                             <div class="card h-100">
-                                                <div class="card-header bg-danger text-white py-1">
+                                                <div class="card-header bg-danger text-white py-2">
                                                     <small><i class="bi bi-ban"></i> Permissões Bloqueadas</small>
                                                 </div>
-                                                <div class="card-body" style="max-height: 450px; overflow-y: auto;">
+                                                <div class="card-body p-3" style="max-height: 450px; overflow-y: auto;">
                                                     <div class="accordion" id="accordionBloqueio{{ usuario.id }}">
                                                         {% for modulo_nome, modulo_data in permissoes_por_modulo.items() %}
                                                         <div class="accordion-item">
@@ -406,7 +662,7 @@
                                                             </h2>
                                                             <div id="collapseBloqueio{{ usuario.id }}{{ loop.index }}" 
                                                                  class="accordion-collapse collapse">
-                                                                <div class="accordion-body">
+                                                                <div class="accordion-body p-3">
                                                                     {% for permissao in modulo_data.permissoes %}
                                                                     <div class="form-check">
                                                                         <input class="form-check-input" type="checkbox" 
@@ -437,7 +693,7 @@
                                         </div>
                                     </div>
                                     <div class="text-center mt-3">
-                                        <button type="submit" class="btn btn-success w-100">
+                                        <button type="submit" class="btn-save">
                                             <i class="bi bi-save"></i> Salvar Permissões do Usuário
                                         </button>
                                     </div>
@@ -455,13 +711,15 @@
 <script>
     // Função para expandir/colapsar todos os accordions
     function expandirTodos(containerId) {
-        document.querySelectorAll(`#${containerId} .accordion-collapse`).forEach(el => {
+        const accordions = document.querySelectorAll(`#${containerId} .accordion-collapse`);
+        accordions.forEach(el => {
             el.classList.add('show');
         });
     }
     
     function recolherTodos(containerId) {
-        document.querySelectorAll(`#${containerId} .accordion-collapse`).forEach(el => {
+        const accordions = document.querySelectorAll(`#${containerId} .accordion-collapse`);
+        accordions.forEach(el => {
             el.classList.remove('show');
         });
     }
@@ -478,25 +736,6 @@
         // Inicializar tooltips
         var tooltipList = tooltipTriggerList.map(function(tooltipTriggerEl) {
             return new bootstrap.Tooltip(tooltipTriggerEl);
-        });
-        
-        // Botões de expandir/recolher para a aba de graus
-        const grausCards = document.querySelectorAll('#graus .card');
-        grausCards.forEach((card, index) => {
-            const header = card.querySelector('.card-header');
-            if (header) {
-                const btnGroup = document.createElement('div');
-                btnGroup.className = 'btn-group btn-group-sm float-end';
-                btnGroup.innerHTML = `
-                    <button type="button" class="btn btn-light btn-sm" onclick="expandirTodos('accordionGrau${index + 1}')" title="Expandir todos">
-                        <i class="bi bi-arrows-expand"></i>
-                    </button>
-                    <button type="button" class="btn btn-light btn-sm" onclick="recolherTodos('accordionGrau${index + 1}')" title="Recolher todos">
-                        <i class="bi bi-arrows-collapse"></i>
-                    </button>
-                `;
-                header.appendChild(btnGroup);
-            }
         });
         
         // Adicionar contador de permissões para o módulo Biblioteca
@@ -524,5 +763,4 @@
         });
     });
 </script>
-
 {% endblock %}

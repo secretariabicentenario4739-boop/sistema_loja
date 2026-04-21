@@ -32,14 +32,18 @@
         border-color: var(--bordo);
     }
 
-    /* BOTÕES DO RITO */
+    /* BOTÕES DO RITO - VERSÃO MOBILE FRIENDLY */
     .btn-bordo {
         background: linear-gradient(135deg, var(--bordo), var(--bordo-escuro));
         border: none;
         color: white;
         border-radius: 30px;
-        padding: 8px 24px;
+        padding: 8px 20px;
         transition: all 0.3s;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        text-decoration: none;
     }
     
     .btn-bordo:hover {
@@ -54,8 +58,12 @@
         border: 1px solid var(--bordo);
         color: var(--bordo);
         border-radius: 30px;
-        padding: 8px 24px;
+        padding: 8px 20px;
         transition: all 0.3s;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        text-decoration: none;
     }
     
     .btn-bordo-outline:hover {
@@ -65,7 +73,101 @@
         box-shadow: 0 5px 15px rgba(74, 14, 46, 0.2);
     }
 
+    .btn-bordo-secondary {
+        background: linear-gradient(135deg, #6c757d, #495057);
+        border: none;
+        color: white;
+        border-radius: 30px;
+        padding: 8px 20px;
+        transition: all 0.3s;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        text-decoration: none;
+    }
+    
+    .btn-bordo-secondary:hover {
+        background: linear-gradient(135deg, #5a6268, #3d4246);
+        transform: translateY(-2px);
+        color: white;
+        box-shadow: 0 5px 15px rgba(108, 117, 125, 0.3);
+    }
+
+    .btn-icon-success-sm {
+        background: linear-gradient(135deg, #10b981, #059669);
+        border: none;
+        color: white;
+        padding: 6px 12px;
+        border-radius: 30px;
+        transition: all 0.3s;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        text-decoration: none;
+        font-size: 0.8rem;
+    }
+    
+    .btn-icon-success-sm:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(16, 185, 129, 0.3);
+        color: white;
+    }
+
+    .btn-icon-danger-sm {
+        background: linear-gradient(135deg, #ef4444, #dc2626);
+        border: none;
+        color: white;
+        width: 32px;
+        height: 32px;
+        padding: 0;
+        border-radius: 50%;
+        transition: all 0.3s;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+    }
+    
+    .btn-icon-danger-sm:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(239, 68, 68, 0.3);
+        color: white;
+    }
+
+    /* CABEÇALHO DOS CARDS */
+    .card-header-bordo {
+        background: linear-gradient(135deg, var(--bordo), var(--bordo-escuro));
+        border-bottom: none;
+        color: white;
+        border-radius: 16px 16px 0 0;
+        padding: 15px 20px;
+    }
+    
+    .card-header-bordo h5, 
+    .card-header-bordo h6 {
+        margin: 0;
+        font-weight: 600;
+    }
+
+    .card-header-blue {
+        background: linear-gradient(135deg, #3b82f6, #2563eb);
+        border-bottom: none;
+        color: white;
+        border-radius: 16px 16px 0 0;
+        padding: 12px 16px;
+    }
+    
+    .card-header-blue h6 {
+        margin: 0;
+        font-weight: 600;
+    }
+
     /* FORMULÁRIO */
+    .form-label {
+        color: var(--bordo);
+        font-weight: 500;
+        margin-bottom: 0.5rem;
+    }
+    
     .form-control-custom, .form-select-custom {
         border-radius: 12px;
         border: 1px solid rgba(74, 14, 46, 0.2);
@@ -77,16 +179,116 @@
         border-color: var(--bordo);
         box-shadow: 0 0 0 3px rgba(74, 14, 46, 0.1);
     }
+    
+    input[readonly] {
+        background-color: var(--bordo-transparente);
+        border-color: rgba(74, 14, 46, 0.15);
+        color: var(--bordo-suave);
+        cursor: not-allowed;
+    }
 
+    /* ALERTAS */
+    .alert-bordo-light {
+        background: var(--bordo-transparente);
+        border-left: 4px solid var(--bordo);
+        border-radius: 12px;
+        color: var(--bordo);
+    }
+
+    /* GRUPO DE AÇÕES DO CABEÇALHO */
+    .header-actions {
+        display: flex;
+        gap: 12px;
+        align-items: center;
+        flex-wrap: wrap;
+    }
+
+    /* GRUPO DE BOTÕES */
+    .btn-group-mobile {
+        display: flex;
+        gap: 12px;
+        justify-content: center;
+        flex-wrap: wrap;
+    }
+
+    /* RESPONSIVIDADE */
     @media (max-width: 768px) {
-        .btn-group {
+        .btn-bordo, .btn-bordo-outline, .btn-bordo-secondary {
+            padding: 6px 16px;
+            font-size: 0.85rem;
+        }
+        
+        /* Cabeçalho responsivo */
+        .d-flex.justify-content-between {
+            flex-direction: column;
+            align-items: flex-start !important;
+            gap: 15px;
+        }
+        
+        .header-actions {
+            width: 100%;
+        }
+        
+        .header-actions .btn-bordo-outline {
+            width: 100%;
+            justify-content: center;
+        }
+        
+        h2 {
+            font-size: 1.5rem;
+        }
+        
+        /* Botões do formulário */
+        .btn-group-mobile {
+            flex-direction: column;
+            width: 100%;
+        }
+        
+        .btn-group-mobile .btn-bordo-secondary,
+        .btn-group-mobile .btn-bordo {
+            width: 100%;
+            justify-content: center;
+        }
+        
+        /* Formulário responsivo */
+        .form-control-custom, .form-select-custom {
+            font-size: 0.875rem;
+        }
+        
+        /* Botão de adicionar filho */
+        .btn-icon-success-sm {
+            width: 100%;
+            justify-content: center;
+        }
+        
+        /* Linhas de filhos responsivas */
+        .filho-row {
             flex-direction: column;
         }
-        .btn-group .btn {
-            margin-bottom: 5px;
+        
+        .filho-row .col-md-6,
+        .filho-row .col-md-5,
+        .filho-row .col-md-1 {
+            width: 100%;
+            margin-bottom: 8px;
         }
-        .table-responsive {
-            font-size: 0.85rem;
+        
+        .filho-row .btn-icon-danger-sm {
+            width: 100%;
+            border-radius: 30px;
+            padding: 6px;
+        }
+        
+        /* Cards de informações */
+        .card-body {
+            padding: 1rem !important;
+        }
+    }
+
+    @media (max-width: 480px) {
+        .btn-bordo, .btn-bordo-outline, .btn-bordo-secondary {
+            padding: 5px 12px;
+            font-size: 0.8rem;
         }
     }
 </style>
@@ -95,12 +297,13 @@
 {% block content %}
 <div class="container-fluid py-4">
     <div class="container">
+        <!-- Cabeçalho responsivo -->
         <div class="d-flex justify-content-between align-items-center mb-4">
-            <h2>
+            <h2 class="mb-2 mb-md-0">
                 <i class="bi bi-file-text" style="color: var(--bordo);"></i> 
                 <span style="color: var(--bordo);">Formulário de Indicação de Candidato</span>
             </h2>
-            <div>
+            <div class="header-actions">
                 <a href="/sindicancia/{{ candidato.id }}" class="btn-bordo-outline">
                     <i class="bi bi-arrow-left"></i> Voltar
                 </a>
@@ -110,18 +313,18 @@
         <div class="row">
             <div class="col-md-8">
                 <div class="card-bordo-branco shadow-sm">
-                    <div class="card-header" style="background: var(--bordo); border-bottom: none; color: white; border-radius: 16px 16px 0 0;">
-                        <h5 class="mb-0"><i class="bi bi-person-badge"></i> Dados do Candidato: {{ candidato.nome }}</h5>
+                    <div class="card-header-bordo">
+                        <h5><i class="bi bi-person-badge"></i> Dados do Candidato: {{ candidato.nome }}</h5>
                     </div>
-                    <div class="card-body">
+                    <div class="card-body p-4">
                         <form method="POST" id="formCandidato">
                             <!-- Informações da Loja -->
                             <div class="card-bordo-branco shadow-sm mb-4">
-                                <div class="card-header" style="background: #3b82f6; border-bottom: none; color: white; border-radius: 16px 16px 0 0;">
-                                    <h6 class="mb-0"><i class="bi bi-building"></i> Dados da Loja</h6>
+                                <div class="card-header-blue">
+                                    <h6><i class="bi bi-building"></i> Dados da Loja</h6>
                                 </div>
-                                <div class="card-body">
-                                    <div class="alert alert-light border mb-3" style="border-left: 4px solid var(--bordo) !important;">
+                                <div class="card-body p-4">
+                                    <div class="alert alert-bordo-light mb-3">
                                         <i class="bi bi-info-circle"></i>
                                         <strong>Loja do Obreiro Responsável:</strong> 
                                         {{ usuario.nome_completo }}
@@ -130,7 +333,7 @@
                                     </div>
                                     <div class="row">
                                         <div class="col-md-8 mb-3">
-                                            <label class="form-label" style="color: var(--bordo);">Loja Maçônica</label>
+                                            <label class="form-label">Loja Maçônica</label>
                                             <select class="form-select form-select-custom" name="loja_nome" id="lojaSelect">
                                                 <option value="{{ usuario.loja_nome }}" selected>{{ usuario.loja_nome }}</option>
                                                 {% for loja in lojas %}
@@ -146,14 +349,14 @@
                                             <small class="text-muted">Selecione a loja do candidato (pode ser diferente da sua)</small>
                                         </div>
                                         <div class="col-md-4 mb-3">
-                                            <label class="form-label" style="color: var(--bordo);">Nº da Loja</label>
+                                            <label class="form-label">Nº da Loja</label>
                                             <input type="text" class="form-control form-control-custom" name="loja_numero" id="lojaNumero" 
                                                    value="{{ candidato.loja_numero or usuario.loja_numero or usuario.loja_numero_completo }}" readonly>
                                         </div>
                                     </div>
                                     <div class="row">
                                         <div class="col-md-12 mb-3">
-                                            <label class="form-label" style="color: var(--bordo);">Oriente</label>
+                                            <label class="form-label">Oriente</label>
                                             <input type="text" class="form-control form-control-custom" name="loja_orient" id="lojaOriente" 
                                                    value="{{ candidato.loja_orient or usuario.loja_orient or usuario.loja_oriente }}" readonly>
                                         </div>
@@ -163,65 +366,65 @@
 
                             <!-- Dados Pessoais -->
                             <div class="card-bordo-branco shadow-sm mb-4">
-                                <div class="card-header" style="background: #3b82f6; border-bottom: none; color: white; border-radius: 16px 16px 0 0;">
-                                    <h6 class="mb-0"><i class="bi bi-person-circle"></i> Dados Pessoais</h6>
+                                <div class="card-header-blue">
+                                    <h6><i class="bi bi-person-circle"></i> Dados Pessoais</h6>
                                 </div>
-                                <div class="card-body">
+                                <div class="card-body p-4">
                                     <div class="row">
                                         <div class="col-md-6 mb-3">
-                                            <label class="form-label" style="color: var(--bordo);">Nome Completo *</label>
+                                            <label class="form-label">Nome Completo <span class="text-danger">*</span></label>
                                             <input type="text" class="form-control form-control-custom" value="{{ candidato.nome }}" readonly>
                                         </div>
                                         <div class="col-md-6 mb-3">
-                                            <label class="form-label" style="color: var(--bordo);">Data de Nascimento</label>
+                                            <label class="form-label">Data de Nascimento</label>
                                             <input type="date" class="form-control form-control-custom" name="data_nascimento" value="{{ candidato.data_nascimento.strftime('%Y-%m-%d') if candidato.data_nascimento else '' }}">
                                         </div>
                                     </div>
                                     <div class="row">
                                         <div class="col-md-4 mb-3">
-                                            <label class="form-label" style="color: var(--bordo);">Naturalidade</label>
+                                            <label class="form-label">Naturalidade</label>
                                             <input type="text" class="form-control form-control-custom" name="naturalidade" value="{{ candidato.naturalidade or '' }}">
                                         </div>
                                         <div class="col-md-2 mb-3">
-                                            <label class="form-label" style="color: var(--bordo);">UF</label>
+                                            <label class="form-label">UF</label>
                                             <input type="text" class="form-control form-control-custom" name="uf_naturalidade" value="{{ candidato.uf_naturalidade or '' }}">
                                         </div>
                                         <div class="col-md-6 mb-3">
-                                            <label class="form-label" style="color: var(--bordo);">Nacionalidade</label>
+                                            <label class="form-label">Nacionalidade</label>
                                             <input type="text" class="form-control form-control-custom" name="nacionalidade" value="{{ candidato.nacionalidade or 'Brasileiro' }}">
                                         </div>
                                     </div>
                                     <div class="row">
                                         <div class="col-md-6 mb-3">
-                                            <label class="form-label" style="color: var(--bordo);">CPF</label>
+                                            <label class="form-label">CPF</label>
                                             <input type="text" class="form-control form-control-custom" name="cpf" id="cpf" value="{{ candidato.cpf or '' }}" placeholder="000.000.000-00">
                                         </div>
                                         <div class="col-md-6 mb-3">
-                                            <label class="form-label" style="color: var(--bordo);">RG</label>
+                                            <label class="form-label">RG</label>
                                             <input type="text" class="form-control form-control-custom" name="rg" value="{{ candidato.rg or '' }}">
                                         </div>
                                     </div>
                                     <div class="row">
                                         <div class="col-md-4 mb-3">
-                                            <label class="form-label" style="color: var(--bordo);">Órgão Expedidor</label>
+                                            <label class="form-label">Órgão Expedidor</label>
                                             <input type="text" class="form-control form-control-custom" name="orgao_expedidor" value="{{ candidato.orgao_expedidor or '' }}">
                                         </div>
                                         <div class="col-md-4 mb-3">
-                                            <label class="form-label" style="color: var(--bordo);">Telefone Fixo</label>
+                                            <label class="form-label">Telefone Fixo</label>
                                             <input type="text" class="form-control form-control-custom" name="telefone_fixo" id="telefoneFixo" value="{{ candidato.telefone_fixo or '' }}">
                                         </div>
                                         <div class="col-md-4 mb-3">
-                                            <label class="form-label" style="color: var(--bordo);">Celular</label>
+                                            <label class="form-label">Celular</label>
                                             <input type="text" class="form-control form-control-custom" name="celular" id="celular" value="{{ candidato.celular or '' }}">
                                         </div>
                                     </div>
                                     <div class="row">
                                         <div class="col-md-6 mb-3">
-                                            <label class="form-label" style="color: var(--bordo);">E-mail</label>
+                                            <label class="form-label">E-mail</label>
                                             <input type="email" class="form-control form-control-custom" name="email" value="{{ candidato.email or '' }}">
                                         </div>
                                         <div class="col-md-6 mb-3">
-                                            <label class="form-label" style="color: var(--bordo);">Grau de Instrução</label>
+                                            <label class="form-label">Grau de Instrução</label>
                                             <select class="form-select form-select-custom" name="grau_instrucao">
                                                 <option value="">Selecione...</option>
                                                 <option value="Ensino Fundamental" {% if candidato.grau_instrucao == 'Ensino Fundamental' %}selected{% endif %}>Ensino Fundamental</option>
@@ -235,15 +438,15 @@
                                     </div>
                                     <div class="row">
                                         <div class="col-md-2 mb-3">
-                                            <label class="form-label" style="color: var(--bordo);">Tipo Sanguíneo</label>
+                                            <label class="form-label">Tipo Sanguíneo</label>
                                             <input type="text" class="form-control form-control-custom" name="tipo_sanguineo" value="{{ candidato.tipo_sanguineo or '' }}">
                                         </div>
                                         <div class="col-md-5 mb-3">
-                                            <label class="form-label" style="color: var(--bordo);">Nome do Pai</label>
+                                            <label class="form-label">Nome do Pai</label>
                                             <input type="text" class="form-control form-control-custom" name="nome_pai" value="{{ candidato.nome_pai or '' }}">
                                         </div>
                                         <div class="col-md-5 mb-3">
-                                            <label class="form-label" style="color: var(--bordo);">Nome da Mãe</label>
+                                            <label class="form-label">Nome da Mãe</label>
                                             <input type="text" class="form-control form-control-custom" name="nome_mae" value="{{ candidato.nome_mae or '' }}">
                                         </div>
                                     </div>
@@ -252,37 +455,37 @@
 
                             <!-- Endereço Residencial -->
                             <div class="card-bordo-branco shadow-sm mb-4">
-                                <div class="card-header" style="background: #3b82f6; border-bottom: none; color: white; border-radius: 16px 16px 0 0;">
-                                    <h6 class="mb-0"><i class="bi bi-house-door"></i> Endereço Residencial</h6>
+                                <div class="card-header-blue">
+                                    <h6><i class="bi bi-house-door"></i> Endereço Residencial</h6>
                                 </div>
-                                <div class="card-body">
+                                <div class="card-body p-4">
                                     <div class="row">
                                         <div class="col-md-8 mb-3">
-                                            <label class="form-label" style="color: var(--bordo);">Endereço</label>
+                                            <label class="form-label">Endereço</label>
                                             <input type="text" class="form-control form-control-custom" name="endereco_residencial" value="{{ candidato.endereco_residencial or '' }}">
                                         </div>
                                         <div class="col-md-4 mb-3">
-                                            <label class="form-label" style="color: var(--bordo);">Número</label>
+                                            <label class="form-label">Número</label>
                                             <input type="text" class="form-control form-control-custom" name="numero_residencial" value="{{ candidato.numero_residencial or '' }}">
                                         </div>
                                     </div>
                                     <div class="row">
                                         <div class="col-md-5 mb-3">
-                                            <label class="form-label" style="color: var(--bordo);">Bairro</label>
+                                            <label class="form-label">Bairro</label>
                                             <input type="text" class="form-control form-control-custom" name="bairro" value="{{ candidato.bairro or '' }}">
                                         </div>
                                         <div class="col-md-5 mb-3">
-                                            <label class="form-label" style="color: var(--bordo);">Cidade</label>
+                                            <label class="form-label">Cidade</label>
                                             <input type="text" class="form-control form-control-custom" name="cidade" value="{{ candidato.cidade or '' }}">
                                         </div>
                                         <div class="col-md-2 mb-3">
-                                            <label class="form-label" style="color: var(--bordo);">UF</label>
+                                            <label class="form-label">UF</label>
                                             <input type="text" class="form-control form-control-custom" name="uf_residencial" value="{{ candidato.uf_residencial or '' }}">
                                         </div>
                                     </div>
                                     <div class="row">
                                         <div class="col-md-4 mb-3">
-                                            <label class="form-label" style="color: var(--bordo);">CEP</label>
+                                            <label class="form-label">CEP</label>
                                             <input type="text" class="form-control form-control-custom" name="cep" id="cep" value="{{ candidato.cep or '' }}" placeholder="00000-000">
                                         </div>
                                     </div>
@@ -291,13 +494,13 @@
 
                             <!-- Estado Civil e Cônjuge -->
                             <div class="card-bordo-branco shadow-sm mb-4">
-                                <div class="card-header" style="background: #3b82f6; border-bottom: none; color: white; border-radius: 16px 16px 0 0;">
-                                    <h6 class="mb-0"><i class="bi bi-heart"></i> Estado Civil</h6>
+                                <div class="card-header-blue">
+                                    <h6><i class="bi bi-heart"></i> Estado Civil</h6>
                                 </div>
-                                <div class="card-body">
+                                <div class="card-body p-4">
                                     <div class="row">
                                         <div class="col-md-4 mb-3">
-                                            <label class="form-label" style="color: var(--bordo);">Estado Civil</label>
+                                            <label class="form-label">Estado Civil</label>
                                             <select class="form-select form-select-custom" name="estado_civil" id="estadoCivil">
                                                 <option value="">Selecione...</option>
                                                 <option value="Solteiro" {% if candidato.estado_civil == 'Solteiro' %}selected{% endif %}>Solteiro</option>
@@ -308,15 +511,15 @@
                                             </select>
                                         </div>
                                         <div class="col-md-4 mb-3" id="dataCasamentoDiv" style="display: none;">
-                                            <label class="form-label" style="color: var(--bordo);">Data de Casamento</label>
+                                            <label class="form-label">Data de Casamento</label>
                                             <input type="date" class="form-control form-control-custom" name="data_casamento" value="{{ candidato.data_casamento.strftime('%Y-%m-%d') if candidato.data_casamento else '' }}">
                                         </div>
                                         <div class="col-md-4 mb-3" id="nomeConjugeDiv" style="display: none;">
-                                            <label class="form-label" style="color: var(--bordo);">Nome do Cônjuge</label>
+                                            <label class="form-label">Nome do Cônjuge</label>
                                             <input type="text" class="form-control form-control-custom" name="nome_conjuge" value="{{ candidato.nome_conjuge or '' }}">
                                         </div>
                                         <div class="col-md-4 mb-3" id="dataConjugeDiv" style="display: none;">
-                                            <label class="form-label" style="color: var(--bordo);">Data de Nascimento do Cônjuge</label>
+                                            <label class="form-label">Data de Nascimento do Cônjuge</label>
                                             <input type="date" class="form-control form-control-custom" name="data_nascimento_conjuge" value="{{ candidato.data_nascimento_conjuge.strftime('%Y-%m-%d') if candidato.data_nascimento_conjuge else '' }}">
                                         </div>
                                     </div>
@@ -325,10 +528,10 @@
 
                             <!-- Filhos -->
                             <div class="card-bordo-branco shadow-sm mb-4">
-                                <div class="card-header" style="background: #3b82f6; border-bottom: none; color: white; border-radius: 16px 16px 0 0;">
-                                    <h6 class="mb-0"><i class="bi bi-baby"></i> Filhos</h6>
+                                <div class="card-header-blue">
+                                    <h6><i class="bi bi-baby"></i> Filhos</h6>
                                 </div>
-                                <div class="card-body">
+                                <div class="card-body p-4">
                                     <div id="filhos-container">
                                         {% for filho in filhos %}
                                         <div class="row mb-2 filho-row">
@@ -339,14 +542,14 @@
                                                 <input type="date" class="form-control form-control-custom" name="filho_data[]" value="{{ filho.data_nascimento.strftime('%Y-%m-%d') if filho.data_nascimento else '' }}">
                                             </div>
                                             <div class="col-md-1">
-                                                <button type="button" class="btn btn-danger btn-sm remove-filho">
-                                                    <i class="bi bi-trash"></i>
+                                                <button type="button" class="btn-icon-danger-sm remove-filho">
+                                                    <i class="bi bi-trash-fill"></i>
                                                 </button>
                                             </div>
                                         </div>
                                         {% endfor %}
                                     </div>
-                                    <button type="button" class="btn btn-sm btn-success mt-2" onclick="adicionarFilho()">
+                                    <button type="button" class="btn-icon-success-sm mt-2" onclick="adicionarFilho()">
                                         <i class="bi bi-plus-circle"></i> Adicionar Filho
                                     </button>
                                 </div>
@@ -354,56 +557,57 @@
 
                             <!-- Atividade Profissional -->
                             <div class="card-bordo-branco shadow-sm mb-4">
-                                <div class="card-header" style="background: #3b82f6; border-bottom: none; color: white; border-radius: 16px 16px 0 0;">
-                                    <h6 class="mb-0"><i class="bi bi-briefcase"></i> Atividade Profissional</h6>
+                                <div class="card-header-blue">
+                                    <h6><i class="bi bi-briefcase"></i> Atividade Profissional</h6>
                                 </div>
-                                <div class="card-body">
+                                <div class="card-body p-4">
                                     <div class="row">
                                         <div class="col-md-6 mb-3">
-                                            <label class="form-label" style="color: var(--bordo);">Profissão</label>
+                                            <label class="form-label">Profissão</label>
                                             <input type="text" class="form-control form-control-custom" name="profissao" value="{{ candidato.profissao or '' }}">
                                         </div>
                                         <div class="col-md-6 mb-3">
-                                            <label class="form-label" style="color: var(--bordo);">Empregador</label>
+                                            <label class="form-label">Empregador</label>
                                             <input type="text" class="form-control form-control-custom" name="empregador" value="{{ candidato.empregador or '' }}">
                                         </div>
                                     </div>
                                     <div class="row">
                                         <div class="col-md-8 mb-3">
-                                            <label class="form-label" style="color: var(--bordo);">Endereço Profissional</label>
+                                            <label class="form-label">Endereço Profissional</label>
                                             <input type="text" class="form-control form-control-custom" name="endereco_profissional" value="{{ candidato.endereco_profissional or '' }}">
                                         </div>
                                         <div class="col-md-4 mb-3">
-                                            <label class="form-label" style="color: var(--bordo);">Bairro</label>
+                                            <label class="form-label">Bairro</label>
                                             <input type="text" class="form-control form-control-custom" name="bairro_profissional" value="{{ candidato.bairro_profissional or '' }}">
                                         </div>
                                     </div>
                                     <div class="row">
                                         <div class="col-md-5 mb-3">
-                                            <label class="form-label" style="color: var(--bordo);">Cidade</label>
+                                            <label class="form-label">Cidade</label>
                                             <input type="text" class="form-control form-control-custom" name="cidade_profissional" value="{{ candidato.cidade_profissional or '' }}">
                                         </div>
                                         <div class="col-md-2 mb-3">
-                                            <label class="form-label" style="color: var(--bordo);">UF</label>
+                                            <label class="form-label">UF</label>
                                             <input type="text" class="form-control form-control-custom" name="uf_profissional" value="{{ candidato.uf_profissional or '' }}">
                                         </div>
                                         <div class="col-md-3 mb-3">
-                                            <label class="form-label" style="color: var(--bordo);">CEP</label>
+                                            <label class="form-label">CEP</label>
                                             <input type="text" class="form-control form-control-custom" name="cep_profissional" value="{{ candidato.cep_profissional or '' }}">
                                         </div>
                                         <div class="col-md-2 mb-3">
-                                            <label class="form-label" style="color: var(--bordo);">Telefone</label>
+                                            <label class="form-label">Telefone</label>
                                             <input type="text" class="form-control form-control-custom" name="telefone_comercial" value="{{ candidato.telefone_comercial or '' }}">
                                         </div>
                                     </div>
                                 </div>
                             </div>
 
-                            <div class="text-center mt-4">
-                                <a href="/sindicancia/{{ candidato.id }}" class="btn btn-secondary me-2">
+                            <!-- Botões de ação com layout responsivo -->
+                            <div class="btn-group-mobile mt-4">
+                                <a href="/sindicancia/{{ candidato.id }}" class="btn-bordo-secondary">
                                     <i class="bi bi-x-circle"></i> Cancelar
                                 </a>
-                                <button type="submit" class="btn-bordo btn-lg px-5">
+                                <button type="submit" class="btn-bordo">
                                     <i class="bi bi-save"></i> Salvar Formulário
                                 </button>
                             </div>
@@ -415,10 +619,10 @@
             <div class="col-md-4">
                 <!-- Card da Foto do Candidato -->
                 <div class="card-bordo-branco shadow-sm mb-4">
-                    <div class="card-header" style="background: var(--bordo); border-bottom: none; color: white; border-radius: 16px 16px 0 0;">
+                    <div class="card-header-bordo">
                         <i class="bi bi-camera"></i> Foto do Candidato
                     </div>
-                    <div class="card-body text-center">
+                    <div class="card-body text-center p-4">
                         {% if candidato.foto %}
                         <img src="{{ candidato.foto }}" 
                              class="rounded-circle mb-3 shadow-sm"
@@ -444,11 +648,11 @@
 
                 <!-- Card de Informações -->
                 <div class="card-bordo-branco shadow-sm">
-                    <div class="card-header" style="background: #3b82f6; border-bottom: none; color: white; border-radius: 16px 16px 0 0;">
+                    <div class="card-header-blue">
                         <i class="bi bi-info-circle"></i> Informações
                     </div>
-                    <div class="card-body">
-                        <div class="alert alert-light mb-0" style="border-left: 4px solid var(--bordo) !important;">
+                    <div class="card-body p-4">
+                        <div class="alert alert-bordo-light mb-0">
                             <i class="bi bi-camera-fill me-2" style="color: var(--bordo);"></i>
                             <strong style="color: var(--bordo);">Importante:</strong>
                             <p class="mb-0 mt-2 small text-muted">
@@ -549,8 +753,8 @@
                 <input type="date" class="form-control form-control-custom" name="filho_data[]">
             </div>
             <div class="col-md-1">
-                <button type="button" class="btn btn-danger btn-sm remove-filho">
-                    <i class="bi bi-trash"></i>
+                <button type="button" class="btn-icon-danger-sm remove-filho">
+                    <i class="bi bi-trash-fill"></i>
                 </button>
             </div>
         `;

@@ -6,47 +6,112 @@
 {{ super() }}
 <style>
     :root {
-        --primary-gradient-start: #667eea;
-        --primary-gradient-end: #764ba2;
-        --success: #10b981;
-        --warning: #f59e0b;
-        --danger: #ef4444;
-        --info: #3b82f6;
+        --bordo: #4A0E2E;
+        --bordo-escuro: #3A0A24;
+        --bordo-claro: #6B1342;
+        --bordo-suave: #8B4A6B;
+        --bordo-transparente: rgba(74, 14, 46, 0.08);
+        --bordo-transparente-hover: rgba(74, 14, 46, 0.12);
+        --ouro: #D4AF37;
+        --ouro-escuro: #996515;
+        --ouro-claro: #F0D68A;
     }
 
+    /* BOTÕES DO RITO - VERSÃO MOBILE FRIENDLY */
+    .btn-upload {
+        background: linear-gradient(135deg, var(--bordo), var(--bordo-escuro));
+        color: white;
+        border: none;
+        padding: 6px 16px;
+        border-radius: 30px;
+        font-weight: 500;
+        font-size: 0.85rem;
+        transition: all 0.3s;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+    }
+    
+    .btn-upload:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(74, 14, 46, 0.3);
+        color: white;
+    }
+    
+    .btn-upload-sm {
+        padding: 5px 12px;
+        font-size: 0.75rem;
+    }
+
+    .btn-icon {
+        width: 32px;
+        height: 32px;
+        padding: 0;
+        border-radius: 50%;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        transition: all 0.3s;
+        border: none;
+    }
+    
+    .btn-icon-info {
+        background: linear-gradient(135deg, #0ea5e9, #0284c7);
+        color: white;
+    }
+    
+    .btn-icon-info:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(14, 165, 233, 0.3);
+        color: white;
+    }
+    
+    .btn-icon-success {
+        background: linear-gradient(135deg, #10b981, #059669);
+        color: white;
+    }
+    
+    .btn-icon-success:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(16, 185, 129, 0.3);
+        color: white;
+    }
+    
+    .btn-icon-danger {
+        background: linear-gradient(135deg, #ef4444, #dc2626);
+        color: white;
+    }
+    
+    .btn-icon-danger:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(239, 68, 68, 0.3);
+        color: white;
+    }
+
+    /* CARDS */
     .document-card {
         transition: transform 0.2s, box-shadow 0.2s;
         border-radius: 16px;
         overflow: hidden;
-        border: none;
-        box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        border: 1px solid rgba(74, 14, 46, 0.15);
+        background: white;
     }
+    
     .document-card:hover {
         transform: translateY(-3px);
         box-shadow: 0 20px 30px -12px rgba(0,0,0,0.15);
     }
+    
     .document-header {
         padding: 16px 20px;
-        background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
-        border-bottom: 2px solid #e2e8f0;
+        background: var(--bordo-transparente);
+        border-bottom: 1px solid rgba(74, 14, 46, 0.1);
     }
+    
     .document-body {
         padding: 20px;
     }
-    .btn-upload {
-        background: linear-gradient(135deg, var(--primary-gradient-start) 0%, var(--primary-gradient-end) 100%);
-        color: white;
-        border: none;
-        padding: 8px 20px;
-        border-radius: 10px;
-        font-weight: 500;
-        transition: all 0.3s;
-    }
-    .btn-upload:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
-        color: white;
-    }
+
     .status-badge {
         padding: 6px 14px;
         border-radius: 24px;
@@ -56,18 +121,22 @@
         align-items: center;
         gap: 6px;
     }
+    
     .status-aprovado {
         background: #d1fae5;
         color: #065f46;
     }
+    
     .status-pendente {
         background: #fed7aa;
         color: #92400e;
     }
+    
     .status-rejeitado {
         background: #fee2e2;
         color: #991b1b;
     }
+    
     .status-nao-enviado {
         background: #f1f5f9;
         color: #475569;
@@ -75,14 +144,13 @@
 
     .progress-custom {
         height: 25px;
-        border-radius: 12px;
-        background: #e2e8f0;
+        border-radius: 30px;
+        background: rgba(74, 14, 46, 0.1);
         overflow: hidden;
-        box-shadow: inset 0 1px 2px rgba(0,0,0,0.1);
     }
 
     .progress-custom .progress-bar {
-        border-radius: 12px;
+        border-radius: 30px;
         background: linear-gradient(90deg, #10b981, #34d399);
         transition: width 0.5s ease;
         font-size: 0.8rem;
@@ -90,123 +158,252 @@
         line-height: 25px;
         text-align: center;
         color: white;
-        text-shadow: 0 1px 1px rgba(0,0,0,0.2);
         display: flex;
         align-items: center;
         justify-content: center;
     }
 
     .certidao-link {
-        background: #f8fafc;
+        background: var(--bordo-transparente);
         border-radius: 12px;
         padding: 12px 16px;
         margin-bottom: 12px;
         transition: all 0.2s;
-        border-left: 3px solid var(--success);
+        border-left: 3px solid #10b981;
     }
+    
     .certidao-link:hover {
-        background: #f1f5f9;
+        background: rgba(74, 14, 46, 0.12);
         transform: translateX(5px);
-        border-left-color: var(--primary-gradient-start);
+        border-left-color: var(--bordo);
     }
+    
     .certidao-link a {
         text-decoration: none;
-        color: #1e293b;
+        color: var(--bordo);
         font-weight: 600;
         display: flex;
         align-items: center;
         gap: 10px;
     }
+    
     .certidao-link a:hover {
-        color: var(--primary-gradient-start);
+        color: var(--bordo-claro);
     }
+    
     .certidao-link small {
         margin-left: 28px;
         display: block;
-        color: #64748b;
+        color: var(--bordo-suave);
     }
+
     .info-card {
-        border: none;
+        border: 1px solid rgba(74, 14, 46, 0.15);
         border-radius: 16px;
         overflow: hidden;
+        background: white;
     }
+    
     .info-card .card-header {
         border: none;
         padding: 16px 20px;
         font-weight: 600;
     }
+    
+    .card-header-primary {
+        background: linear-gradient(135deg, var(--bordo), var(--bordo-escuro));
+        color: white;
+    }
+    
+    .card-header-info {
+        background: linear-gradient(135deg, #0ea5e9, #0284c7);
+        color: white;
+    }
+    
+    .card-header-warning {
+        background: linear-gradient(135deg, #f59e0b, #d97706);
+        color: white;
+    }
+
     .photo-preview {
         width: 80px;
         height: 80px;
         object-fit: cover;
         border-radius: 50%;
-        border: 3px solid white;
+        border: 3px solid var(--bordo);
         box-shadow: 0 4px 12px rgba(0,0,0,0.15);
         cursor: pointer;
+        transition: transform 0.2s;
     }
+    
+    .photo-preview:hover {
+        transform: scale(1.05);
+    }
+
     .badge-required {
-        background: linear-gradient(135deg, var(--danger), #dc2626);
+        background: linear-gradient(135deg, #ef4444, #dc2626);
         color: white;
         padding: 4px 12px;
         border-radius: 20px;
         font-size: 0.7rem;
         font-weight: 600;
     }
+    
     .badge-optional {
-        background: #64748b;
+        background: var(--bordo-suave);
         color: white;
         padding: 4px 12px;
         border-radius: 20px;
         font-size: 0.7rem;
         font-weight: 600;
     }
-    .btn-icon {
-        width: 34px;
-        height: 34px;
-        padding: 0;
-        border-radius: 10px;
-        display: inline-flex;
+
+    .separator {
+        display: flex;
         align-items: center;
-        justify-content: center;
+        text-align: center;
+        margin: 1.5rem 0;
     }
-    .modal-content-custom {
-        border: none;
-        border-radius: 20px;
-        overflow: hidden;
+    
+    .separator::before,
+    .separator::after {
+        content: '';
+        flex: 1;
+        border-bottom: 1px solid rgba(74, 14, 46, 0.15);
     }
+    
+    .separator span {
+        padding: 0 1rem;
+        color: var(--bordo-suave);
+        font-size: 0.85rem;
+        font-weight: 500;
+    }
+
     .document-viewer {
         max-height: 80vh;
         overflow: auto;
-        background: #f8fafc;
+        background: var(--bordo-transparente);
         border-radius: 12px;
         padding: 1rem;
         min-height: 400px;
     }
+    
     .document-viewer iframe,
     .document-viewer img {
         width: 100%;
         border-radius: 8px;
     }
-    @keyframes fadeIn {
-        from { opacity: 0; transform: translateY(-10px); }
-        to { opacity: 1; transform: translateY(0); }
+
+    .modal-content-custom {
+        border: none;
+        border-radius: 16px;
+        overflow: hidden;
     }
+
     .toast-notification {
         position: fixed;
         top: 20px;
         right: 20px;
         z-index: 9999;
         animation: fadeIn 0.3s ease;
+        border-radius: 12px;
     }
+
+    @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(-10px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* RESPONSIVIDADE */
     @media (max-width: 768px) {
-        .document-header h5 { font-size: 1rem; }
-        .status-badge { font-size: 0.7rem; }
+        .btn-upload {
+            padding: 5px 12px;
+            font-size: 0.75rem;
+        }
+        
+        .btn-icon {
+            width: 28px;
+            height: 28px;
+            font-size: 0.75rem;
+        }
+        
+        .document-header h5 {
+            font-size: 1rem;
+        }
+        
+        .status-badge {
+            font-size: 0.7rem;
+            padding: 4px 10px;
+        }
+        
         .progress-custom {
             height: 20px;
         }
+        
         .progress-custom .progress-bar {
             font-size: 0.7rem;
             line-height: 20px;
+        }
+        
+        /* Coluna de documentos */
+        .document-body .row {
+            flex-direction: column;
+        }
+        
+        .document-body .col-md-8,
+        .document-body .col-md-4 {
+            width: 100%;
+        }
+        
+        .document-body .col-md-4.text-md-end {
+            text-align: left !important;
+            margin-top: 12px;
+        }
+        
+        /* Botões de ação */
+        .document-body .col-md-4.text-md-end {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+        
+        /* Modal responsivo */
+        .modal-dialog {
+            margin: 1rem;
+        }
+        
+        .modal-footer {
+            flex-direction: column;
+            gap: 8px;
+        }
+        
+        .modal-footer .btn-secondary,
+        .modal-footer .btn-primary {
+            width: 100%;
+        }
+        
+        /* Cabeçalho */
+        .card-body.text-center.py-5 {
+            padding: 2rem 1rem !important;
+        }
+        
+        h2 {
+            font-size: 1.5rem;
+        }
+    }
+
+    @media (max-width: 480px) {
+        .document-header {
+            padding: 12px 16px;
+        }
+        
+        .document-body {
+            padding: 16px;
+        }
+        
+        .photo-preview {
+            width: 60px;
+            height: 60px;
         }
     }
 </style>
@@ -222,7 +419,7 @@
 
             <!-- Cabeçalho -->
             <div class="card shadow-lg mb-4 border-0 rounded-4 overflow-hidden">
-                <div class="card-body text-center py-5" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+                <div class="card-body text-center py-5" style="background: linear-gradient(135deg, var(--bordo) 0%, var(--bordo-escuro) 100%);">
                     <div class="mb-3">
                         <div class="bg-white bg-opacity-25 rounded-circle d-inline-flex p-3">
                             <i class="bi bi-file-earmark-text fs-1 text-white"></i>
@@ -236,12 +433,12 @@
             <!-- Barra de Progresso -->
             <div class="card shadow-sm mb-4 border-0 rounded-4" id="progressCard">
                 <div class="card-body p-4">
-                    <div class="d-flex justify-content-between align-items-center mb-3">
-                        <h6 class="mb-0 fw-bold">
+                    <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap">
+                        <h6 class="mb-0 fw-bold" style="color: var(--bordo);">
                             <i class="bi bi-check-circle-fill text-success me-2"></i>
                             Progresso da Documentação
                         </h6>
-                        <span class="badge bg-primary rounded-pill px-3 py-2" id="contadorDocumentos">
+                        <span class="badge bg-primary rounded-pill px-3 py-2" id="contadorDocumentos" style="background: var(--bordo) !important;">
                             {{ total_enviados }}/{{ total_obrigatorios }} Obrigatórios
                         </span>
                     </div>
@@ -249,7 +446,7 @@
                     <div class="mb-2">
                         <div class="d-flex justify-content-between mb-1">
                             <small class="text-muted">Documentos enviados</small>
-                            <small class="fw-bold">{{ total_enviados }}/{{ total_obrigatorios }} ({{ percentual }}%)</small>
+                            <small class="fw-bold" style="color: var(--bordo);">{{ total_enviados }}/{{ total_obrigatorios }} ({{ percentual }}%)</small>
                         </div>
                         <div class="progress-custom">
                             <div class="progress-bar" id="barraProgresso" role="progressbar" 
@@ -287,7 +484,7 @@
                         <div class="document-header">
                             <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
                                 <div>
-                                    <h5 class="mb-1 fw-bold">
+                                    <h5 class="mb-1 fw-bold" style="color: var(--bordo);">
                                         {% if tipo.nome == 'Foto 3x4' %}
                                             <i class="bi bi-camera-fill text-danger me-2"></i>
                                         {% elif tipo.nome == 'RG' or tipo.nome == 'CPF' %}
@@ -295,7 +492,7 @@
                                         {% elif tipo.nome == 'Comprovante de Residência' %}
                                             <i class="bi bi-house-fill text-success me-2"></i>
                                         {% else %}
-                                            <i class="bi bi-file-earmark-text me-2 text-primary"></i>
+                                            <i class="bi bi-file-earmark-text me-2" style="color: var(--bordo);"></i>
                                         {% endif %}
                                         {{ tipo.nome }}
                                     </h5>
@@ -343,25 +540,25 @@
                                     </div>
                                 </div>
                                 <div class="col-md-4 text-md-end">
-                                    <button type="button" class="btn btn-upload btn-sm" 
+                                    <button type="button" class="btn-upload btn-upload-sm" 
                                             data-bs-toggle="modal" 
                                             data-bs-target="#modalUpload{{ tipo.id }}">
                                         <i class="bi bi-cloud-upload"></i> 
                                         {% if doc %}Reenviar{% else %}Enviar{% endif %}
                                     </button>
                                     {% if doc %}
-                                        <button type="button" class="btn btn-outline-info btn-sm btn-icon ms-1" 
+                                        <button type="button" class="btn-icon btn-icon-info ms-1" 
                                                 onclick="visualizarDocumento('{{ doc.caminho_arquivo }}', '{{ tipo.nome }}')" 
                                                 title="Visualizar">
-                                            <i class="bi bi-eye"></i>
+                                            <i class="bi bi-eye-fill"></i>
                                         </button>
                                         <a href="{{ doc.caminho_arquivo }}" download 
-                                           class="btn btn-outline-success btn-sm btn-icon ms-1" title="Baixar">
+                                           class="btn-icon btn-icon-success ms-1" title="Baixar">
                                             <i class="bi bi-download"></i>
                                         </a>
-                                        <button type="button" class="btn btn-outline-danger btn-sm btn-icon ms-1" 
+                                        <button type="button" class="btn-icon btn-icon-danger ms-1" 
                                                 onclick="excluirDocumento({{ doc.id }}, '{{ tipo.nome }}', {{ tipo.id }})" title="Excluir">
-                                            <i class="bi bi-trash"></i>
+                                            <i class="bi bi-trash-fill"></i>
                                         </button>
                                     {% endif %}
                                 </div>
@@ -370,7 +567,7 @@
                     </div>
                     {% endfor %}
 
-                    <!-- Separador para Documentos Opcionais (só mostrar se houver opcionais) -->
+                    <!-- Separador para Documentos Opcionais -->
                     {% set tem_opcionais = tipos_documentos|selectattr('obrigatorio', 'equalto', 0)|list|length > 0 %}
                     {% if tem_opcionais %}
                         <div class="text-center my-4">
@@ -387,8 +584,8 @@
                         <div class="document-header">
                             <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
                                 <div>
-                                    <h5 class="mb-1 fw-bold">
-                                        <i class="bi bi-file-earmark-text me-2 text-secondary"></i>
+                                    <h5 class="mb-1 fw-bold" style="color: var(--bordo);">
+                                        <i class="bi bi-file-earmark-text me-2" style="color: var(--bordo-suave);"></i>
                                         {{ tipo.nome }}
                                     </h5>
                                     {% if tipo.descricao %}
@@ -430,25 +627,25 @@
                                     </div>
                                 </div>
                                 <div class="col-md-4 text-md-end">
-                                    <button type="button" class="btn btn-upload btn-sm" 
+                                    <button type="button" class="btn-upload btn-upload-sm" 
                                             data-bs-toggle="modal" 
                                             data-bs-target="#modalUpload{{ tipo.id }}">
                                         <i class="bi bi-cloud-upload"></i> 
                                         {% if doc %}Reenviar{% else %}Enviar{% endif %}
                                     </button>
                                     {% if doc %}
-                                        <button type="button" class="btn btn-outline-info btn-sm btn-icon ms-1" 
+                                        <button type="button" class="btn-icon btn-icon-info ms-1" 
                                                 onclick="visualizarDocumento('{{ doc.caminho_arquivo }}', '{{ tipo.nome }}')" 
                                                 title="Visualizar">
-                                            <i class="bi bi-eye"></i>
+                                            <i class="bi bi-eye-fill"></i>
                                         </button>
                                         <a href="{{ doc.caminho_arquivo }}" download 
-                                           class="btn btn-outline-success btn-sm btn-icon ms-1" title="Baixar">
+                                           class="btn-icon btn-icon-success ms-1" title="Baixar">
                                             <i class="bi bi-download"></i>
                                         </a>
-                                        <button type="button" class="btn btn-outline-danger btn-sm btn-icon ms-1" 
+                                        <button type="button" class="btn-icon btn-icon-danger ms-1" 
                                                 onclick="excluirDocumento({{ doc.id }}, '{{ tipo.nome }}', {{ tipo.id }})" title="Excluir">
-                                            <i class="bi bi-trash"></i>
+                                            <i class="bi bi-trash-fill"></i>
                                         </button>
                                     {% endif %}
                                 </div>
@@ -458,18 +655,18 @@
                     {% endfor %}
                 </div>
 
-                <!-- Coluna das Certidões e Links Úteis (mantida igual) -->
+                <!-- Coluna das Certidões e Links Úteis -->
                 <div class="col-lg-4">
                     <!-- Certidões Necessárias -->
-                    <div class="card info-card shadow-sm mb-4">
-                        <div class="card-header bg-primary text-white">
+                    <div class="info-card shadow-sm mb-4">
+                        <div class="card-header card-header-primary">
                             <h5 class="mb-0 fw-bold">
                                 <i class="bi bi-file-check-fill me-2"></i> Certidões Necessárias
                             </h5>
                         </div>
                         <div class="card-body p-3">
                             <div class="certidao-link">
-                                <a href="https://www.tse.jus.br/eleitor/certidoes/certidao-de-crimes-eleitorais" target="_blank">
+                                <a href="https://www.tse.jus.br/servicos-eleitorais/autoatendimento-eleitoral#/" target="_blank">
                                     <i class="bi bi-check-circle-fill text-success fs-5"></i>
                                     Certidão Negativa Eleitoral
                                 </a>
@@ -501,7 +698,7 @@
                             </div>
                             
                             <div class="certidao-link">
-                                <a href="https://antecedentes.dpf.gov.br/" target="_blank">
+                                <a href="https://www.gov.br/pf/pt-br/assuntos/antecedentes-criminais/" target="_blank">
                                     <i class="bi bi-fingerprint text-success fs-5"></i>
                                     Certidão de Antecedentes Criminais
                                 </a>
@@ -509,7 +706,7 @@
                             </div>
                             
                             <div class="certidao-link">
-                                <a href="https://www.gov.br/pf/pt-br/assuntos/antecedentes-criminais" target="_blank">
+                                <a href="https://www.dflegal.df.gov.br/certidao-de-debitos-2" target="_blank">
                                     <i class="bi bi-receipt text-success fs-5"></i>
                                     Certidão Negativa de Débitos - GDF
                                 </a>
@@ -519,8 +716,8 @@
                     </div>
 
                     <!-- Informações sobre Documentos -->
-                    <div class="card info-card shadow-sm mb-4">
-                        <div class="card-header bg-info text-white">
+                    <div class="info-card shadow-sm mb-4">
+                        <div class="card-header card-header-info">
                             <h5 class="mb-0 fw-bold">
                                 <i class="bi bi-info-circle-fill me-2"></i> Documentos Obrigatórios
                             </h5>
@@ -533,9 +730,9 @@
                                     <div class="small text-muted">Obrigatória - Formato JPG/PNG</div>
                                 </div>
                             </div>
-                            <hr class="my-2">
+                            <hr class="my-2" style="border-color: rgba(74, 14, 46, 0.1);">
                             <div class="d-flex align-items-start mb-2">
-                                <i class="bi bi-file-earmark-text text-primary fs-5 me-3 mt-1"></i>
+                                <i class="bi bi-file-earmark-text" style="color: var(--bordo); font-size: 1.25rem; margin-right: 12px;"></i>
                                 <div>
                                     <strong>Demais documentos</strong>
                                     <div class="small text-muted">Envie em PDF, JPG ou PNG (máx. 10MB)</div>
@@ -545,8 +742,8 @@
                     </div>
 
                     <!-- Contato -->
-                    <div class="card info-card shadow-sm">
-                        <div class="card-header bg-warning text-dark">
+                    <div class="info-card shadow-sm">
+                        <div class="card-header card-header-warning">
                             <h5 class="mb-0 fw-bold">
                                 <i class="bi bi-headset me-2"></i> Precisa de ajuda?
                             </h5>
@@ -555,11 +752,11 @@
                             <p class="small mb-2">Em caso de dúvidas, entre em contato com a secretaria:</p>
                             <div class="d-flex flex-column gap-2">
                                 <div>
-                                    <i class="bi bi-envelope-fill me-2 text-secondary"></i>
+                                    <i class="bi bi-envelope-fill me-2" style="color: var(--bordo);"></i>
                                     <span class="small">secretaria.bicentenario4739@gmail.com</span>
                                 </div>
                                 <div>
-                                    <i class="bi bi-telephone-fill me-2 text-secondary"></i>
+                                    <i class="bi bi-telephone-fill me-2" style="color: var(--bordo);"></i>
                                     <span class="small">(61) 99368-1248</span>
                                 </div>
                             </div>
@@ -571,32 +768,11 @@
     </div>
 </div>
 
-<style>
-.separator {
-    display: flex;
-    align-items: center;
-    text-align: center;
-    margin: 1.5rem 0;
-}
-.separator::before,
-.separator::after {
-    content: '';
-    flex: 1;
-    border-bottom: 1px solid #e2e8f0;
-}
-.separator span {
-    padding: 0 1rem;
-    color: #64748b;
-    font-size: 0.85rem;
-    font-weight: 500;
-}
-</style>
-
 <!-- Modal de Visualização de Documento -->
 <div class="modal fade" id="modalVisualizacao" tabindex="-1">
     <div class="modal-dialog modal-xl modal-dialog-centered">
         <div class="modal-content border-0 rounded-4">
-            <div class="modal-header bg-primary text-white border-0">
+            <div class="modal-header" style="background: linear-gradient(135deg, var(--bordo), var(--bordo-escuro)); color: white; border: none;">
                 <h5 class="modal-title" id="modalVisualizacaoTitulo">
                     <i class="bi bi-file-earmark-text me-2"></i>
                     Visualizar Documento
@@ -613,11 +789,11 @@
                     </div>
                 </div>
             </div>
-            <div class="modal-footer bg-light border-0">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+            <div class="modal-footer" style="border-top-color: rgba(74, 14, 46, 0.1);">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" style="border-radius: 30px; padding: 6px 20px;">
                     <i class="bi bi-x-circle"></i> Fechar
                 </button>
-                <a href="#" id="btnDownloadVisualizacao" class="btn btn-success" download>
+                <a href="#" id="btnDownloadVisualizacao" class="btn-upload" download>
                     <i class="bi bi-download"></i> Baixar
                 </a>
             </div>
@@ -631,7 +807,7 @@
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content modal-content-custom">
             <form id="formUpload{{ tipo.id }}" enctype="multipart/form-data">
-                <div class="modal-header bg-primary text-white border-0">
+                <div class="modal-header" style="background: linear-gradient(135deg, var(--bordo), var(--bordo-escuro)); color: white; border: none;">
                     <h5 class="modal-title">
                         <i class="bi bi-cloud-upload-fill me-2"></i> 
                         Enviar {{ tipo.nome }}
@@ -640,35 +816,35 @@
                 </div>
                 <div class="modal-body p-4">
                     <div class="mb-3">
-                        <label class="fw-bold mb-2">{{ tipo.nome }}</label>
+                        <label class="fw-bold mb-2" style="color: var(--bordo);">{{ tipo.nome }}</label>
                         {% if tipo.descricao %}
                             <p class="small text-muted">{{ tipo.descricao }}</p>
                         {% endif %}
                     </div>
                     
                     {% if tipo.obrigatorio == 1 %}
-                        <div class="alert alert-danger py-2 small">
+                        <div class="alert alert-danger py-2 small" style="background: #fee2e2; border: 1px solid #fecaca; color: #dc2626; border-radius: 12px;">
                             <i class="bi bi-exclamation-triangle-fill me-1"></i>
                             <strong>Documento obrigatório</strong> - O envio é necessário para completar sua candidatura.
                         </div>
                     {% endif %}
                     
                     <div class="mb-3">
-                        <label class="form-label fw-bold">
+                        <label class="form-label fw-bold" style="color: var(--bordo);">
                             <i class="bi bi-file-earmark-arrow-up me-1"></i> Arquivo
                         </label>
                         <input type="file" class="form-control" name="arquivo" required 
-                               accept=".pdf,.jpg,.jpeg,.png">
+                               accept=".pdf,.jpg,.jpeg,.png" style="border-radius: 12px;">
                         <div class="form-text">
                             <i class="bi bi-info-circle"></i> Formatos permitidos: PDF, JPG, PNG. Tamanho máximo: 10MB
                         </div>
                     </div>
                 </div>
-                <div class="modal-footer bg-light border-0">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                <div class="modal-footer" style="border-top-color: rgba(74, 14, 46, 0.1);">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" style="border-radius: 30px; padding: 6px 20px;">
                         <i class="bi bi-x-circle"></i> Cancelar
                     </button>
-                    <button type="submit" class="btn btn-primary" onclick="uploadDocumento({{ tipo.id }}, '{{ tipo.nome }}'); return false;">
+                    <button type="submit" class="btn-upload" onclick="uploadDocumento({{ tipo.id }}, '{{ tipo.nome }}'); return false;">
                         <i class="bi bi-cloud-upload-fill"></i> Enviar Documento
                     </button>
                 </div>
@@ -691,7 +867,7 @@ if (!token || !candidatoId) {
 function mostrarNotificacao(mensagem, tipo = 'success') {
     const toastDiv = document.createElement('div');
     toastDiv.className = `toast-notification alert alert-${tipo === 'success' ? 'success' : 'danger'} shadow-lg`;
-    toastDiv.style.cssText = 'position: fixed; top: 20px; right: 20px; z-index: 9999; min-width: 300px;';
+    toastDiv.style.cssText = 'position: fixed; top: 20px; right: 20px; z-index: 9999; min-width: 300px; border-radius: 12px;';
     toastDiv.innerHTML = `
         <div class="d-flex align-items-center">
             <i class="bi ${tipo === 'success' ? 'bi-check-circle-fill' : 'bi-exclamation-triangle-fill'} fs-4 me-2"></i>

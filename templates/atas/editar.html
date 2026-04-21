@@ -5,26 +5,302 @@
 {% block styles %}
 {{ super() }}
 <style>
+    :root {
+        --bordo: #4A0E2E;
+        --bordo-escuro: #3A0A24;
+        --bordo-claro: #6B1342;
+        --bordo-suave: #8B4A6B;
+        --bordo-transparente: rgba(74, 14, 46, 0.08);
+        --bordo-transparente-hover: rgba(74, 14, 46, 0.12);
+        --ouro: #D4AF37;
+        --ouro-escuro: #996515;
+        --ouro-claro: #F0D68A;
+    }
+
+    /* CARDS BRANCOS COM BORDÔ */
+    .card-bordo-branco {
+        background: white;
+        border: 1px solid rgba(74, 14, 46, 0.15);
+        border-radius: 16px;
+        transition: all 0.3s ease;
+    }
+    
+    .card-bordo-branco:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 8px 25px rgba(74, 14, 46, 0.12);
+        border-color: var(--bordo);
+    }
+
+    /* BOTÕES DO RITO - VERSÃO MOBILE FRIENDLY */
+    .btn-bordo {
+        background: linear-gradient(135deg, var(--bordo), var(--bordo-escuro));
+        border: none;
+        color: white;
+        border-radius: 30px;
+        padding: 8px 20px;
+        transition: all 0.3s;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        text-decoration: none;
+    }
+    
+    .btn-bordo:hover {
+        background: linear-gradient(135deg, var(--bordo-claro), var(--bordo));
+        transform: translateY(-2px);
+        color: white;
+        box-shadow: 0 5px 15px rgba(74, 14, 46, 0.3);
+    }
+    
+    .btn-bordo-outline {
+        background: transparent;
+        border: 1px solid var(--bordo);
+        color: var(--bordo);
+        border-radius: 30px;
+        padding: 8px 20px;
+        transition: all 0.3s;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        text-decoration: none;
+    }
+    
+    .btn-bordo-outline:hover {
+        background: var(--bordo);
+        color: white;
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(74, 14, 46, 0.2);
+    }
+
+    .btn-bordo-info {
+        background: linear-gradient(135deg, #0ea5e9, #0284c7);
+        border: none;
+        color: white;
+        border-radius: 30px;
+        padding: 8px 20px;
+        transition: all 0.3s;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        text-decoration: none;
+    }
+    
+    .btn-bordo-info:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(14, 165, 233, 0.3);
+        color: white;
+    }
+
+    .btn-bordo-warning {
+        background: linear-gradient(135deg, #f59e0b, #d97706);
+        border: none;
+        color: white;
+        border-radius: 30px;
+        padding: 8px 20px;
+        transition: all 0.3s;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        text-decoration: none;
+    }
+    
+    .btn-bordo-warning:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(245, 158, 11, 0.3);
+        color: white;
+    }
+
+    .btn-bordo-secondary {
+        background: linear-gradient(135deg, #6c757d, #495057);
+        border: none;
+        color: white;
+        border-radius: 30px;
+        padding: 8px 20px;
+        transition: all 0.3s;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        text-decoration: none;
+    }
+    
+    .btn-bordo-secondary:hover {
+        background: linear-gradient(135deg, #5a6268, #3d4246);
+        transform: translateY(-2px);
+        color: white;
+        box-shadow: 0 5px 15px rgba(108, 117, 125, 0.3);
+    }
+
+    /* CABEÇALHO DOS CARDS */
+    .card-header-bordo {
+        background: var(--bordo-transparente);
+        border-bottom: 1px solid rgba(74, 14, 46, 0.1);
+        padding: 15px 20px;
+        border-radius: 16px 16px 0 0 !important;
+    }
+    
+    .card-header-bordo h5, 
+    .card-header-bordo h6 {
+        color: var(--bordo);
+        margin: 0;
+        font-weight: 600;
+    }
+
+    .card-header-bordo-warning {
+        background: linear-gradient(135deg, #f59e0b, #d97706);
+        padding: 15px 20px;
+        border-radius: 16px 16px 0 0 !important;
+    }
+    
+    .card-header-bordo-warning h5 {
+        color: white;
+        margin: 0;
+        font-weight: 600;
+    }
+
+    .card-header-bordo-info {
+        background: linear-gradient(135deg, #0ea5e9, #0284c7);
+        padding: 15px 20px;
+        border-radius: 16px 16px 0 0 !important;
+    }
+    
+    .card-header-bordo-info h5 {
+        color: white;
+        margin: 0;
+        font-weight: 600;
+    }
+
+    /* FORMULÁRIO */
+    .form-label {
+        color: var(--bordo);
+        font-weight: 500;
+        margin-bottom: 0.5rem;
+    }
+    
+    .form-control, .form-select {
+        border-radius: 12px;
+        border: 1px solid rgba(74, 14, 46, 0.2);
+        transition: all 0.3s;
+        padding: 0.5rem 1rem;
+    }
+    
+    .form-control:focus, .form-select:focus {
+        border-color: var(--bordo);
+        box-shadow: 0 0 0 0.2rem rgba(74, 14, 46, 0.25);
+        outline: none;
+    }
+
+    /* TINYMCE */
     .tox-tinymce {
-        border-radius: 10px !important;
+        border-radius: 12px !important;
         min-height: 500px;
     }
+    
     .toolbar-preview {
-        background: #f8f9fa;
-        border: 1px solid #dee2e6;
-        border-radius: 5px;
+        background: var(--bordo-transparente);
+        border: 1px solid rgba(74, 14, 46, 0.15);
+        border-radius: 12px;
         padding: 20px;
         min-height: 200px;
         max-height: 500px;
         overflow-y: auto;
     }
+    
     kbd {
-        background-color: #f8f9fa;
-        border: 1px solid #ccc;
+        background-color: var(--bordo-transparente);
+        border: 1px solid rgba(74, 14, 46, 0.2);
         border-radius: 3px;
         padding: 2px 6px;
         font-size: 0.8rem;
         font-family: monospace;
+        color: var(--bordo);
+    }
+
+    /* GRUPO DE AÇÕES DO CABEÇALHO */
+    .header-actions {
+        display: flex;
+        gap: 12px;
+        align-items: center;
+        flex-wrap: wrap;
+    }
+
+    /* GRUPO DE BOTÕES */
+    .btn-group-mobile {
+        display: flex;
+        gap: 12px;
+        justify-content: center;
+        flex-wrap: wrap;
+    }
+
+    /* RESPONSIVIDADE */
+    @media (max-width: 768px) {
+        .btn-bordo, .btn-bordo-outline, .btn-bordo-info, 
+        .btn-bordo-warning, .btn-bordo-secondary {
+            padding: 6px 16px;
+            font-size: 0.85rem;
+        }
+        
+        /* Cabeçalho responsivo */
+        .d-flex.justify-content-between {
+            flex-direction: column;
+            align-items: flex-start !important;
+            gap: 15px;
+        }
+        
+        .header-actions {
+            width: 100%;
+            flex-direction: column;
+        }
+        
+        .header-actions .btn-bordo-outline,
+        .header-actions .btn-bordo-info {
+            width: 100%;
+            justify-content: center;
+        }
+        
+        h2 {
+            font-size: 1.5rem;
+        }
+        
+        /* Botões do formulário */
+        .btn-group-mobile {
+            flex-direction: column;
+            width: 100%;
+        }
+        
+        .btn-group-mobile .btn-bordo-secondary,
+        .btn-group-mobile .btn-bordo-warning {
+            width: 100%;
+            justify-content: center;
+        }
+        
+        .form-control, .form-select {
+            font-size: 0.875rem;
+        }
+        
+        /* TinyMCE toolbar responsiva */
+        .tox-toolbar__group {
+            flex-wrap: wrap;
+        }
+        
+        .toolbar-preview {
+            font-size: 0.875rem;
+        }
+    }
+
+    @media (max-width: 480px) {
+        .btn-bordo, .btn-bordo-outline, .btn-bordo-info, 
+        .btn-bordo-warning, .btn-bordo-secondary {
+            padding: 5px 12px;
+            font-size: 0.8rem;
+        }
+        
+        .card-body {
+            padding: 1rem !important;
+        }
+        
+        .toolbar-preview {
+            padding: 15px;
+        }
     }
 </style>
 {% endblock %}
@@ -32,29 +308,30 @@
 {% block content %}
 <div class="container-fluid py-4">
     <div class="container">
+        <!-- Cabeçalho responsivo -->
         <div class="d-flex justify-content-between align-items-center mb-4">
-            <h2>
-                <i class="bi bi-file-text"></i> 
-                Editar Ata - {{ ata.titulo or ata.reuniao_titulo }}
+            <h2 class="mb-2 mb-md-0">
+                <i class="bi bi-file-text" style="color: var(--bordo);"></i> 
+                <span style="color: var(--bordo);">Editar Ata - {{ ata.titulo or ata.reuniao_titulo }}</span>
             </h2>
-            <div>
-                <a href="/atas/{{ ata.id }}" class="btn btn-outline-info me-2">
+            <div class="header-actions">
+                <a href="/atas/{{ ata.id }}" class="btn-bordo-info">
                     <i class="bi bi-eye"></i> Visualizar
                 </a>
-                <a href="/atas" class="btn btn-outline-secondary">
+                <a href="/atas" class="btn-bordo-outline">
                     <i class="bi bi-arrow-left"></i> Voltar
                 </a>
             </div>
         </div>
 
-        <div class="card shadow">
-            <div class="card-header bg-warning text-dark">
-                <h5 class="mb-0">
+        <div class="card-bordo-branco shadow-sm">
+            <div class="card-header-bordo-warning">
+                <h5>
                     <i class="bi bi-pencil-square"></i> 
                     Editando Ata da Reunião: {{ ata.reuniao_titulo }}
                 </h5>
             </div>
-            <div class="card-body">
+            <div class="card-body p-4">
                 <form method="POST" id="formEditarAta">
                     <div class="row">
                         <div class="col-md-6 mb-3">
@@ -104,11 +381,12 @@
                         </small>
                     </div>
 
-                    <div class="text-center mt-4">
-                        <a href="/atas" class="btn btn-secondary me-2">
+                    <!-- Botões de ação com layout responsivo -->
+                    <div class="btn-group-mobile mt-4">
+                        <a href="/atas" class="btn-bordo-secondary">
                             <i class="bi bi-x-circle"></i> Cancelar
                         </a>
-                        <button type="submit" class="btn btn-warning">
+                        <button type="submit" class="btn-bordo-warning">
                             <i class="bi bi-save"></i> Salvar Alterações
                         </button>
                     </div>
@@ -117,11 +395,11 @@
         </div>
 
         <!-- Pré-visualização -->
-        <div class="card shadow mt-4">
-            <div class="card-header bg-info text-white">
-                <h5 class="mb-0"><i class="bi bi-eye"></i> Pré-visualização</h5>
+        <div class="card-bordo-branco shadow-sm mt-4">
+            <div class="card-header-bordo-info">
+                <h5><i class="bi bi-eye"></i> Pré-visualização</h5>
             </div>
-            <div class="card-body">
+            <div class="card-body p-4">
                 <div id="preview" class="toolbar-preview">
                     <em>Digite ou cole o conteúdo acima para ver a pré-visualização...</em>
                 </div>

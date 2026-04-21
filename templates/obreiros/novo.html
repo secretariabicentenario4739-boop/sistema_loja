@@ -2,49 +2,378 @@
 
 {% block title %}Novo Obreiro{% endblock %}
 
+{% block styles %}
+{{ super() }}
+<style>
+    :root {
+        --bordo: #4A0E2E;
+        --bordo-escuro: #3A0A24;
+        --bordo-claro: #6B1342;
+        --bordo-suave: #8B4A6B;
+        --bordo-transparente: rgba(74, 14, 46, 0.08);
+        --bordo-transparente-hover: rgba(74, 14, 46, 0.12);
+        --ouro: #D4AF37;
+        --ouro-escuro: #996515;
+        --ouro-claro: #F0D68A;
+    }
+
+    /* CARDS BRANCOS COM BORDÔ */
+    .card-bordo-branco {
+        background: white;
+        border: 1px solid rgba(74, 14, 46, 0.15);
+        border-radius: 16px;
+        transition: all 0.3s ease;
+        color: var(--bordo);
+    }
+    
+    .card-bordo-branco:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 8px 25px rgba(74, 14, 46, 0.12);
+        border-color: var(--bordo);
+    }
+
+    /* BOTÕES DO RITO - VERSÃO MOBILE FRIENDLY */
+    .btn-bordo {
+        background: linear-gradient(135deg, var(--bordo), var(--bordo-escuro));
+        border: none;
+        color: white;
+        border-radius: 30px;
+        padding: 8px 20px;
+        transition: all 0.3s;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        text-decoration: none;
+    }
+    
+    .btn-bordo:hover {
+        background: linear-gradient(135deg, var(--bordo-claro), var(--bordo));
+        transform: translateY(-2px);
+        color: white;
+        box-shadow: 0 5px 15px rgba(74, 14, 46, 0.3);
+    }
+    
+    .btn-bordo-outline {
+        background: transparent;
+        border: 1px solid var(--bordo);
+        color: var(--bordo);
+        border-radius: 30px;
+        padding: 8px 20px;
+        transition: all 0.3s;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        text-decoration: none;
+    }
+    
+    .btn-bordo-outline:hover {
+        background: var(--bordo);
+        color: white;
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(74, 14, 46, 0.2);
+    }
+
+    .btn-bordo-success {
+        background: linear-gradient(135deg, #10b981, #059669);
+        border: none;
+        color: white;
+        border-radius: 30px;
+        padding: 10px 28px;
+        transition: all 0.3s;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        text-decoration: none;
+        font-weight: 500;
+    }
+    
+    .btn-bordo-success:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(16, 185, 129, 0.3);
+        color: white;
+    }
+
+    .btn-bordo-secondary {
+        background: linear-gradient(135deg, #6c757d, #495057);
+        border: none;
+        color: white;
+        border-radius: 30px;
+        padding: 10px 24px;
+        transition: all 0.3s;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        text-decoration: none;
+    }
+    
+    .btn-bordo-secondary:hover {
+        background: linear-gradient(135deg, #5a6268, #3d4246);
+        transform: translateY(-2px);
+        color: white;
+        box-shadow: 0 5px 15px rgba(108, 117, 125, 0.3);
+    }
+
+    .btn-bordo-outline-primary {
+        background: transparent;
+        border: 1px solid var(--bordo);
+        color: var(--bordo);
+        border-radius: 30px;
+        padding: 6px 16px;
+        transition: all 0.3s;
+        font-size: 0.875rem;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        text-decoration: none;
+    }
+    
+    .btn-bordo-outline-primary:hover {
+        background: var(--bordo);
+        color: white;
+        transform: translateY(-2px);
+    }
+
+    .btn-icon-danger-sm {
+        background: linear-gradient(135deg, #ef4444, #dc2626);
+        border: none;
+        color: white;
+        width: 32px;
+        height: 32px;
+        padding: 0;
+        border-radius: 50%;
+        transition: all 0.3s;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+    }
+    
+    .btn-icon-danger-sm:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(239, 68, 68, 0.3);
+        color: white;
+    }
+
+    /* Cabeçalho dos Cards */
+    .card-header-bordo {
+        background: var(--bordo-transparente);
+        border-bottom: 1px solid rgba(74, 14, 46, 0.1);
+        padding: 15px 20px;
+        border-radius: 16px 16px 0 0 !important;
+    }
+    
+    .card-header-bordo h5, 
+    .card-header-bordo h6 {
+        color: var(--bordo);
+        margin: 0;
+        font-weight: 600;
+    }
+
+    /* SEÇÕES DE FORMULÁRIO */
+    .section-bordo {
+        background: var(--bordo-transparente);
+        border: 1px solid rgba(74, 14, 46, 0.1);
+        border-radius: 12px;
+        padding: 1.25rem;
+        margin-bottom: 1.5rem;
+    }
+    
+    .section-title {
+        color: var(--bordo);
+        font-weight: 600;
+        margin-bottom: 1rem;
+        padding-bottom: 0.5rem;
+        border-bottom: 2px solid rgba(74, 14, 46, 0.15);
+    }
+    
+    .section-title i {
+        margin-right: 0.5rem;
+        color: var(--bordo-claro);
+    }
+
+    /* FORMULÁRIOS */
+    .form-label {
+        color: var(--bordo);
+        font-weight: 500;
+        margin-bottom: 0.5rem;
+    }
+    
+    .form-control, .form-select {
+        border-radius: 12px;
+        border: 1px solid rgba(74, 14, 46, 0.2);
+        transition: all 0.3s;
+        padding: 0.5rem 1rem;
+    }
+    
+    .form-control:focus, .form-select:focus {
+        border-color: var(--bordo);
+        box-shadow: 0 0 0 0.2rem rgba(74, 14, 46, 0.25);
+        outline: none;
+    }
+    
+    textarea.form-control {
+        resize: vertical;
+    }
+    
+    .text-muted {
+        color: var(--bordo-suave) !important;
+        font-size: 0.75rem;
+        margin-top: 0.25rem;
+    }
+    
+    input[readonly] {
+        background-color: var(--bordo-transparente);
+        border-color: rgba(74, 14, 46, 0.15);
+        color: var(--bordo-suave);
+        cursor: not-allowed;
+    }
+
+    hr {
+        border-color: rgba(74, 14, 46, 0.15);
+        margin: 1rem 0;
+    }
+
+    /* ALERTAS */
+    .alert-bordo-info {
+        background: var(--bordo-transparente);
+        border: 1px solid rgba(74, 14, 46, 0.15);
+        color: var(--bordo);
+        border-radius: 12px;
+    }
+
+    /* CONTAINER DE AÇÕES DO CABEÇALHO */
+    .header-actions {
+        display: flex;
+        gap: 12px;
+        align-items: center;
+        flex-wrap: wrap;
+    }
+
+    /* GRUPO DE BOTÕES MOBILE */
+    .btn-group-mobile {
+        display: flex;
+        gap: 12px;
+        justify-content: center;
+        flex-wrap: wrap;
+    }
+
+    /* RESPONSIVIDADE */
+    @media (max-width: 768px) {
+        .btn-bordo, .btn-bordo-outline {
+            padding: 6px 16px;
+            font-size: 0.85rem;
+        }
+        
+        .btn-bordo-success, .btn-bordo-secondary {
+            padding: 8px 20px;
+            font-size: 0.9rem;
+        }
+        
+        .form-control, .form-select {
+            font-size: 0.875rem;
+        }
+        
+        .section-bordo {
+            padding: 1rem;
+        }
+        
+        /* Cabeçalho responsivo */
+        .d-flex.justify-content-between {
+            flex-direction: column;
+            align-items: flex-start !important;
+            gap: 15px;
+        }
+        
+        .header-actions {
+            width: 100%;
+        }
+        
+        .header-actions .btn-bordo-outline {
+            width: 100%;
+            justify-content: center;
+        }
+        
+        /* Grupo de botões do formulário */
+        .btn-group-mobile {
+            flex-direction: column;
+            width: 100%;
+        }
+        
+        .btn-group-mobile .btn-bordo-secondary,
+        .btn-group-mobile .btn-bordo-success {
+            width: 100%;
+            justify-content: center;
+        }
+        
+        h2 {
+            font-size: 1.5rem;
+        }
+    }
+
+    @media (max-width: 480px) {
+        .btn-bordo, .btn-bordo-outline {
+            padding: 5px 12px;
+            font-size: 0.8rem;
+        }
+        
+        .btn-bordo-success, .btn-bordo-secondary {
+            padding: 7px 16px;
+            font-size: 0.85rem;
+        }
+        
+        .card-body {
+            padding: 1rem !important;
+        }
+        
+        .section-bordo {
+            padding: 0.875rem;
+        }
+    }
+</style>
+{% endblock %}
+
 {% block content %}
 <div class="container-fluid py-4">
     <div class="container">
+        <!-- Cabeçalho responsivo -->
         <div class="d-flex justify-content-between align-items-center mb-4">
-            <h2>
-                <i class="bi bi-person-plus"></i> 
-                Novo Obreiro
+            <h2 class="mb-2 mb-md-0">
+                <i class="bi bi-person-plus" style="color: var(--bordo);"></i> 
+                <span style="color: var(--bordo);">Novo Obreiro</span>
             </h2>
-            <div>
-                <a href="/obreiros" class="btn btn-outline-secondary">
+            <div class="header-actions">
+                <a href="/obreiros" class="btn-bordo-outline">
                     <i class="bi bi-arrow-left"></i> Voltar
                 </a>
             </div>
         </div>
 
-        <div class="card shadow">
-            <div class="card-header bg-primary text-white">
-                <h5 class="mb-0"><i class="bi bi-person-badge"></i> Dados do Obreiro</h5>
+        <!-- Formulário Principal -->
+        <div class="card-bordo-branco shadow-sm">
+            <div class="card-header-bordo">
+                <h5><i class="bi bi-person-badge"></i> Dados do Obreiro</h5>
             </div>
-            <div class="card-body">
+            <div class="card-body p-4">
                 <form method="POST" id="formObreiro">
 
-                    <!-- ===================== -->
                     <!-- DADOS PESSOAIS -->
-                    <!-- ===================== -->
-                    <div class="bg-light p-3 rounded mb-4">
-                        <h6 class="mb-3 text-primary">
+                    <div class="section-bordo">
+                        <h6 class="section-title">
                             <i class="bi bi-person-circle"></i> Dados Pessoais
                         </h6>
                         <div class="row">
                             <div class="col-md-6 mb-3">
-                                <label class="form-label">Nome Completo *</label>
+                                <label class="form-label">Nome Completo <span class="text-danger">*</span></label>
                                 <input type="text" class="form-control" name="nome_completo" required>
                             </div>
                             <div class="col-md-6 mb-3">
                                 <label class="form-label">Nome Maçônico</label>
-                                <input type="text" class="form-control" name="nome_maconico">
+                                <input type="text" class="form-control" name="nome_maconico" placeholder="Ex: Túlio Hostílio">
                             </div>
                         </div>
 
                         <div class="row">
                             <div class="col-md-3 mb-3">
-                                <label class="form-label">Data Nascimento *</label>
+                                <label class="form-label">Data Nascimento <span class="text-danger">*</span></label>
                                 <input type="date" class="form-control" name="data_nascimento" required>
                             </div>
                             <div class="col-md-3 mb-3">
@@ -113,27 +442,25 @@
                         </div>
                     </div>
 
-                    <!-- ===================== -->
                     <!-- DADOS MACÔNICOS -->
-                    <!-- ===================== -->
-                    <div class="bg-light p-3 rounded mb-4">
-                        <h6 class="mb-3 text-primary">
+                    <div class="section-bordo">
+                        <h6 class="section-title">
                             <i class="bi bi-compass"></i> Dados Maçônicos
                         </h6>
                         <div class="row">
                             <div class="col-md-4 mb-3">
-                                <label class="form-label">CIM *</label>
+                                <label class="form-label">CIM <span class="text-danger">*</span></label>
                                 <input type="text" class="form-control" name="cim_numero" id="cimNumero" required placeholder="Ex: 339652 ou 339.652">
-                                <small class="text-muted">Número de identificação do obreiro (pode conter pontos)</small>
+                                <small class="text-muted">Número de identificação do obreiro</small>
                             </div>
                             <div class="col-md-4 mb-3">
-                                <label class="form-label">Data de Iniciação *</label>
+                                <label class="form-label">Data de Iniciação <span class="text-danger">*</span></label>
                                 <input type="date" class="form-control" name="data_iniciacao" id="dataIniciacao" required>
                             </div>
                             <div class="col-md-4 mb-3">
-                                <label class="form-label">Loja de Iniciação *</label>
+                                <label class="form-label">Loja de Iniciação <span class="text-danger">*</span></label>
                                 <input type="text" class="form-control" name="loja_iniciacao" id="lojaIniciacao" required placeholder="Ex: Loja Maçônica XYZ - Nº 123">
-                                <small class="text-muted">Digite o nome e número da loja onde foi iniciado</small>
+                                <small class="text-muted">Nome e número da loja onde foi iniciado</small>
                             </div>
                         </div>
 
@@ -183,11 +510,9 @@
                         </div>
                     </div>
 
-                    <!-- ===================== -->
-                    <!-- LOJA ATUAL (Pertence) -->
-                    <!-- ===================== -->
-                    <div class="bg-light p-3 rounded mb-4">
-                        <h6 class="mb-3 text-primary">
+                    <!-- LOJA ATUAL -->
+                    <div class="section-bordo">
+                        <h6 class="section-title">
                             <i class="bi bi-building"></i> Loja Atual
                         </h6>
                         <div class="row">
@@ -235,16 +560,14 @@
                         </div>
                     </div>
 
-                    <!-- ===================== -->
                     <!-- GRAUS -->
-                    <!-- ===================== -->
-                    <div class="bg-light p-3 rounded mb-4">
-                        <h6 class="mb-3 text-primary">
+                    <div class="section-bordo">
+                        <h6 class="section-title">
                             <i class="bi bi-star"></i> Graus
                         </h6>
                         <div class="row">
                             <div class="col-md-6 mb-3">
-                                <label class="form-label">Grau Principal *</label>
+                                <label class="form-label">Grau Principal <span class="text-danger">*</span></label>
                                 <select class="form-select" name="grau_principal" id="grauPrincipalSelect" required>
                                     <option value="1">1 - Aprendiz</option>
                                     <option value="2">2 - Companheiro</option>
@@ -264,11 +587,9 @@
                         <input type="hidden" name="grau_atual" id="grauAtualHidden" value="1">
                     </div>
 
-                    <!-- ===================== -->
                     <!-- ENDEREÇO -->
-                    <!-- ===================== -->
-                    <div class="bg-light p-3 rounded mb-4">
-                        <h6 class="mb-3 text-primary">
+                    <div class="section-bordo">
+                        <h6 class="section-title">
                             <i class="bi bi-geo-alt"></i> Endereço
                         </h6>
                         <div class="row">
@@ -305,11 +626,9 @@
                         </div>
                     </div>
 
-                    <!-- ===================== -->
                     <!-- FILIAÇÃO -->
-                    <!-- ===================== -->
-                    <div class="bg-light p-3 rounded mb-4">
-                        <h6 class="mb-3 text-primary">
+                    <div class="section-bordo">
+                        <h6 class="section-title">
                             <i class="bi bi-people"></i> Filiação
                         </h6>
                         <div class="row">
@@ -324,11 +643,9 @@
                         </div>
                     </div>
 
-                    <!-- ===================== -->
                     <!-- DADOS PROFISSIONAIS -->
-                    <!-- ===================== -->
-                    <div class="bg-light p-3 rounded mb-4">
-                        <h6 class="mb-3 text-primary">
+                    <div class="section-bordo">
+                        <h6 class="section-title">
                             <i class="bi bi-briefcase"></i> Dados Profissionais
                         </h6>
                         <div class="row">
@@ -359,11 +676,9 @@
                         </div>
                     </div>
 
-                    <!-- ===================== -->
                     <!-- CONTATO -->
-                    <!-- ===================== -->
-                    <div class="bg-light p-3 rounded mb-4">
-                        <h6 class="mb-3 text-primary">
+                    <div class="section-bordo">
+                        <h6 class="section-title">
                             <i class="bi bi-envelope"></i> Contato
                         </h6>
                         <div class="row">
@@ -378,45 +693,18 @@
                         </div>
                     </div>
 
-                    <!-- ===================== -->
-                    <!-- DEPENDENTES -->
-                    <!-- ===================== -->
-<!--                    <div class="bg-light p-3 rounded mb-4">
-                        <h6 class="mb-3 text-primary">
-                            <i class="bi bi-people-fill"></i> Dependentes
-                        </h6>
-                        <div id="dependentes-container">
-                            <div class="row dependente-item mb-2">
-                                <div class="col-md-5">
-                                    <input type="text" class="form-control" name="dependente_nome[]" placeholder="Nome do dependente">
-                                </div>
-                                <div class="col-md-4">
-                                    <input type="text" class="form-control" name="dependente_parentesco[]" placeholder="Parentesco">
-                                </div>
-                                <div class="col-md-3">
-                                    <input type="date" class="form-control" name="dependente_nascimento[]" placeholder="Data Nascimento">
-                                </div>
-                            </div>
-                        </div>
-                        <button type="button" class="btn btn-sm btn-outline-primary mt-2" onclick="adicionarDependente()">
-                            <i class="bi bi-plus-circle"></i> Adicionar Dependente
-                        </button>
-                    </div>
-
-                    <!-- ===================== -->
-                    <!-- DADOS DE LOGIN -->
-                    <!-- ===================== -->
-                    <div class="bg-light p-3 rounded mb-4">
-                        <h6 class="mb-3 text-primary">
+                    <!-- DADOS DE ACESSO -->
+                    <div class="section-bordo">
+                        <h6 class="section-title">
                             <i class="bi bi-key"></i> Dados de Acesso
                         </h6>
                         <div class="row">
                             <div class="col-md-6 mb-3">
-                                <label class="form-label">Usuário *</label>
+                                <label class="form-label">Usuário <span class="text-danger">*</span></label>
                                 <input type="text" class="form-control" name="usuario" required>
                             </div>
                             <div class="col-md-6 mb-3">
-                                <label class="form-label">Senha *</label>
+                                <label class="form-label">Senha <span class="text-danger">*</span></label>
                                 <input type="password" class="form-control" name="senha" id="senha" required>
                                 <small class="text-muted">Mínimo 6 caracteres</small>
                             </div>
@@ -440,21 +728,23 @@
                         </div>
                     </div>
 
-                    <div class="alert alert-info mt-3">
-                        <i class="bi bi-info-circle"></i>
-                        <strong>Informações:</strong>
+                    <!-- INFORMAÇÕES IMPORTANTES -->
+                    <div class="alert-bordo-info p-3 rounded mb-4">
+                        <i class="bi bi-info-circle-fill"></i>
+                        <strong>Informações importantes:</strong>
                         <ul class="mb-0 mt-2">
-                            <li>Os campos marcados com * são obrigatórios</li>
+                            <li>Os campos marcados com <span class="text-danger">*</span> são obrigatórios</li>
                             <li>O CIM é único e identifica o obreiro no sistema</li>
-                            <li>Dependentes podem ser adicionados após o cadastro também</li>
+                            <li>Dependentes podem ser adicionados após o cadastro</li>
                         </ul>
                     </div>
 
-                    <div class="text-center mt-4">
-                        <a href="/obreiros" class="btn btn-secondary me-2">
+                    <!-- BOTÕES com layout responsivo -->
+                    <div class="btn-group-mobile mt-4">
+                        <a href="/obreiros" class="btn-bordo-secondary">
                             <i class="bi bi-x-circle"></i> Cancelar
                         </a>
-                        <button type="submit" class="btn btn-success btn-lg px-5" id="btnSalvar">
+                        <button type="submit" class="btn-bordo-success" id="btnSalvar">
                             <i class="bi bi-save"></i> Salvar Obreiro
                         </button>
                     </div>
@@ -496,30 +786,6 @@
                 e.target.value = value.substring(0, 9);
             }
         });
-    }
-
-    // Dependentes
-    function adicionarDependente() {
-        const container = document.getElementById('dependentes-container');
-        const div = document.createElement('div');
-        div.className = 'row dependente-item mb-2';
-        div.innerHTML = `
-            <div class="col-md-5">
-                <input type="text" class="form-control" name="dependente_nome[]" placeholder="Nome do dependente">
-            </div>
-            <div class="col-md-4">
-                <input type="text" class="form-control" name="dependente_parentesco[]" placeholder="Parentesco">
-            </div>
-            <div class="col-md-2">
-                <input type="date" class="form-control" name="dependente_nascimento[]" placeholder="Data Nascimento">
-            </div>
-            <div class="col-md-1">
-                <button type="button" class="btn btn-danger btn-sm" onclick="this.parentElement.parentElement.remove()">
-                    <i class="bi bi-trash"></i>
-                </button>
-            </div>
-        `;
-        container.appendChild(div);
     }
 
     // Controle de graus e auto-preenchimento da loja
@@ -571,9 +837,7 @@
         
         atualizarVisibilidade();
         
-        // ============================================
-        // AUTO-PREENCHIMENTO DA LOJA ATUAL
-        // ============================================
+        // Auto-preenchimento da loja
         const lojaSelect = document.getElementById('lojaSelect');
         const lojaNumero = document.getElementById('lojaNumero');
         const lojaOriente = document.getElementById('lojaOriente');
@@ -584,28 +848,24 @@
             lojaSelect.addEventListener('change', function() {
                 const selectedOption = this.options[this.selectedIndex];
                 
-                // Preencher número da loja
                 if (lojaNumero && selectedOption.dataset.numero) {
                     lojaNumero.value = selectedOption.dataset.numero;
                 } else if (lojaNumero) {
                     lojaNumero.value = '';
                 }
                 
-                // Preencher oriente
                 if (lojaOriente && selectedOption.dataset.oriente) {
                     lojaOriente.value = selectedOption.dataset.oriente;
                 } else if (lojaOriente) {
                     lojaOriente.value = '';
                 }
                 
-                // Preencher cidade da loja
                 if (lojaCidade && selectedOption.dataset.cidade) {
                     lojaCidade.value = selectedOption.dataset.cidade;
                 } else if (lojaCidade) {
                     lojaCidade.value = '';
                 }
                 
-                // Preencher UF da loja
                 if (lojaUf && selectedOption.dataset.uf) {
                     lojaUf.value = selectedOption.dataset.uf;
                 } else if (lojaUf) {
@@ -615,28 +875,4 @@
         }
     });
 </script>
-
-<style>
-    .card {
-        border-radius: 10px;
-        overflow: hidden;
-    }
-    .card-header {
-        font-weight: 600;
-    }
-    .form-control:focus, .form-select:focus {
-        border-color: #0d6efd;
-        box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.25);
-    }
-    .bg-light {
-        background-color: #f8f9fa !important;
-    }
-    .rounded {
-        border-radius: 10px !important;
-    }
-    input[readonly] {
-        background-color: #e9ecef;
-        cursor: not-allowed;
-    }
-</style>
 {% endblock %}

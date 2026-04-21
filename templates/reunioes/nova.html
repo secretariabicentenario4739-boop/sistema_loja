@@ -31,14 +31,18 @@
         border-color: var(--bordo);
     }
 
-    /* BOTÕES */
+    /* BOTÕES DO RITO - VERSÃO MOBILE FRIENDLY */
     .btn-bordo {
         background: linear-gradient(135deg, var(--bordo), var(--bordo-escuro));
         border: none;
         color: white;
         border-radius: 30px;
-        padding: 8px 24px;
+        padding: 8px 20px;
         transition: all 0.3s;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        text-decoration: none;
     }
     
     .btn-bordo:hover {
@@ -53,8 +57,12 @@
         border: 1px solid var(--bordo);
         color: var(--bordo);
         border-radius: 30px;
-        padding: 8px 24px;
+        padding: 8px 20px;
         transition: all 0.3s;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        text-decoration: none;
     }
     
     .btn-bordo-outline:hover {
@@ -62,6 +70,45 @@
         color: white;
         transform: translateY(-2px);
         box-shadow: 0 5px 15px rgba(74, 14, 46, 0.2);
+    }
+
+    .btn-bordo-info {
+        background: linear-gradient(135deg, #0ea5e9, #0284c7);
+        border: none;
+        color: white;
+        border-radius: 30px;
+        padding: 8px 20px;
+        transition: all 0.3s;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        text-decoration: none;
+    }
+    
+    .btn-bordo-info:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(14, 165, 233, 0.3);
+        color: white;
+    }
+
+    .btn-bordo-secondary {
+        background: linear-gradient(135deg, #6c757d, #495057);
+        border: none;
+        color: white;
+        border-radius: 30px;
+        padding: 8px 20px;
+        transition: all 0.3s;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        text-decoration: none;
+    }
+    
+    .btn-bordo-secondary:hover {
+        background: linear-gradient(135deg, #5a6268, #3d4246);
+        transform: translateY(-2px);
+        color: white;
+        box-shadow: 0 5px 15px rgba(108, 117, 125, 0.3);
     }
 
     /* FORMULÁRIO */
@@ -76,6 +123,12 @@
         border-color: var(--bordo);
         box-shadow: 0 0 0 3px rgba(74, 14, 46, 0.1);
     }
+    
+    .form-label {
+        color: var(--bordo);
+        font-weight: 500;
+        margin-bottom: 0.5rem;
+    }
 
     /* CARDS DE DICAS */
     .card-dica {
@@ -83,6 +136,7 @@
         border: 1px solid rgba(74, 14, 46, 0.1);
         border-radius: 16px;
         transition: all 0.3s ease;
+        height: 100%;
     }
     
     .card-dica:hover {
@@ -91,17 +145,104 @@
         box-shadow: 0 8px 25px rgba(74, 14, 46, 0.1);
     }
 
+    /* CABEÇALHO DOS CARDS */
+    .card-header-custom {
+        background: linear-gradient(135deg, var(--bordo), var(--bordo-escuro));
+        border-bottom: none;
+        color: white;
+        border-radius: 16px 16px 0 0;
+        padding: 15px 20px;
+    }
+    
+    .card-header-custom h5 {
+        margin: 0;
+    }
+
+    /* CONTAINER DE AÇÕES DO CABEÇALHO */
+    .header-actions {
+        display: flex;
+        gap: 12px;
+        align-items: center;
+        flex-wrap: wrap;
+    }
+
+    /* GRUPO DE BOTÕES */
+    .btn-group-mobile {
+        display: flex;
+        gap: 12px;
+        justify-content: center;
+        flex-wrap: wrap;
+    }
+
     textarea {
         font-family: monospace;
         font-size: 14px;
     }
 
+    /* FORM CHECK SWITCH */
+    .form-check-input:checked {
+        background-color: var(--bordo);
+        border-color: var(--bordo);
+    }
+
+    /* RESPONSIVIDADE */
     @media (max-width: 768px) {
-        .btn-group {
-            flex-direction: column;
+        .btn-bordo, .btn-bordo-outline, .btn-bordo-info, .btn-bordo-secondary {
+            padding: 6px 16px;
+            font-size: 0.85rem;
         }
-        .btn-group .btn {
-            margin-bottom: 5px;
+        
+        /* Cabeçalho responsivo */
+        .d-flex.justify-content-between {
+            flex-direction: column;
+            align-items: flex-start !important;
+            gap: 15px;
+        }
+        
+        .header-actions {
+            width: 100%;
+        }
+        
+        .header-actions .btn-bordo-outline {
+            width: 100%;
+            justify-content: center;
+        }
+        
+        /* Grupo de botões do formulário */
+        .btn-group-mobile {
+            flex-direction: column;
+            width: 100%;
+        }
+        
+        .btn-group-mobile .btn-bordo-secondary,
+        .btn-group-mobile .btn-bordo-info,
+        .btn-group-mobile .btn-bordo {
+            width: 100%;
+            justify-content: center;
+        }
+        
+        h2 {
+            font-size: 1.5rem;
+        }
+        
+        .form-control-custom, .form-select-custom {
+            font-size: 0.875rem;
+        }
+        
+        /* Cards de dicas responsivos */
+        .row.mt-4 .col-md-4 {
+            margin-bottom: 1rem;
+        }
+    }
+
+    @media (max-width: 480px) {
+        .btn-bordo, .btn-bordo-outline, .btn-bordo-info, .btn-bordo-secondary {
+            padding: 5px 12px;
+            font-size: 0.8rem;
+        }
+        
+        .card-body {
+            padding: 1rem !important;
         }
     }
 </style>
@@ -110,12 +251,13 @@
 {% block content %}
 <div class="container-fluid py-4">
     <div class="container">
+        <!-- Cabeçalho responsivo -->
         <div class="d-flex justify-content-between align-items-center mb-4">
-            <h2>
+            <h2 class="mb-2 mb-md-0">
                 <i class="bi bi-calendar-plus" style="color: var(--bordo);"></i> 
                 <span style="color: var(--bordo);">Nova Reunião</span>
             </h2>
-            <div>
+            <div class="header-actions">
                 <a href="/reunioes" class="btn-bordo-outline">
                     <i class="bi bi-arrow-left"></i> Voltar
                 </a>
@@ -123,20 +265,20 @@
         </div>
 
         <div class="card-bordo-branco shadow-sm">
-            <div class="card-header" style="background: var(--bordo); border-bottom: none; color: white;">
-                <h5 class="mb-0"><i class="bi bi-calendar-event"></i> Dados da Reunião</h5>
+            <div class="card-header-custom">
+                <h5><i class="bi bi-calendar-event"></i> Dados da Reunião</h5>
             </div>
-            <div class="card-body">
+            <div class="card-body p-4">
                 <form method="POST" id="formReuniao">
                     <!-- Informações Básicas -->
                     <div class="row">
                         <div class="col-md-8 mb-3">
-                            <label class="form-label" style="color: var(--bordo);">Título da Reunião *</label>
+                            <label class="form-label">Título da Reunião <span class="text-danger">*</span></label>
                             <input type="text" class="form-control form-control-custom" name="titulo" 
                                    placeholder="Ex: Reunião Ordinária de Março" required>
                         </div>
                         <div class="col-md-4 mb-3">
-                            <label class="form-label" style="color: var(--bordo);">Tipo de Reunião *</label>
+                            <label class="form-label">Tipo de Reunião <span class="text-danger">*</span></label>
                             <select class="form-select form-select-custom" name="tipo" id="tipoReuniao" required>
                                 <option value="">Selecione...</option>
                                 {% for tipo in tipos %}
@@ -152,12 +294,12 @@
                     <!-- LOCAL e LOJA -->
                     <div class="row">
                         <div class="col-md-6 mb-3">
-                            <label class="form-label" style="color: var(--bordo);">Local</label>
+                            <label class="form-label">Local</label>
                             <input type="text" class="form-control form-control-custom" name="local" 
                                    placeholder="Ex: Templo Maçônico, Rua das Acácias, 123">
                         </div>
                         <div class="col-md-6 mb-3">
-                            <label class="form-label" style="color: var(--bordo);">Loja</label>
+                            <label class="form-label">Loja</label>
                             <select class="form-select form-select-custom" name="loja_id" id="lojaSelect">
                                 <option value="">Selecione uma loja...</option>
                                 {% for loja in lojas %}
@@ -177,22 +319,22 @@
                     <!-- DATA, HORA INÍCIO e HORA TÉRMINO -->
                     <div class="row">
                         <div class="col-md-4 mb-3">
-                            <label class="form-label" style="color: var(--bordo);">Data *</label>
+                            <label class="form-label">Data <span class="text-danger">*</span></label>
                             <input type="date" class="form-control form-control-custom" name="data" id="dataReuniao" 
                                    value="{{ hoje }}" required>
                         </div>
                         <div class="col-md-4 mb-3">
-                            <label class="form-label" style="color: var(--bordo);">Hora Início *</label>
+                            <label class="form-label">Hora Início <span class="text-danger">*</span></label>
                             <input type="time" class="form-control form-control-custom" name="hora_inicio" id="horaInicio" required>
                         </div>
                         <div class="col-md-4 mb-3">
-                            <label class="form-label" style="color: var(--bordo);">Hora Término</label>
+                            <label class="form-label">Hora Término</label>
                             <input type="time" class="form-control form-control-custom" name="hora_termino" id="horaTermino">
                         </div>
                     </div>
 
                     <!-- Informações de Horário da Loja -->
-                    <div class="alert" id="infoHorarios" style="display: none; background: var(--bordo-transparente); border-color: var(--bordo); color: var(--bordo);">
+                    <div class="alert" id="infoHorarios" style="display: none; background: var(--bordo-transparente); border-color: var(--bordo); color: var(--bordo); border-radius: 12px;">
                         <i class="bi bi-info-circle"></i>
                         <span id="infoHorariosTexto"></span>
                     </div>
@@ -200,7 +342,7 @@
                     <!-- Grau e Status -->
                     <div class="row">
                         <div class="col-md-6 mb-3">
-                            <label class="form-label" style="color: var(--bordo);">Grau</label>
+                            <label class="form-label">Grau</label>
                             <select class="form-select form-select-custom" name="grau">
                                 <option value="">Todos os graus</option>
                                 <option value="1">Aprendiz (1º Grau)</option>
@@ -210,7 +352,7 @@
                             <small class="text-muted">Restringir participação a um grau específico</small>
                         </div>
                         <div class="col-md-6 mb-3">
-                            <label class="form-label" style="color: var(--bordo);">Status</label>
+                            <label class="form-label">Status</label>
                             <select class="form-select form-select-custom" name="status">
                                 <option value="agendada">Agendada</option>
                                 <option value="realizada">Realizada</option>
@@ -262,15 +404,15 @@
 
                     <hr style="border-color: var(--bordo-transparente);">
 
-                    <!-- Botões de Ação -->
-                    <div class="text-center mt-4">
-                        <button type="button" class="btn btn-secondary me-2" onclick="window.location.href='/reunioes'">
+                    <!-- Botões de Ação com layout responsivo -->
+                    <div class="btn-group-mobile mt-4">
+                        <button type="button" class="btn-bordo-secondary" onclick="window.location.href='/reunioes'">
                             <i class="bi bi-x-circle"></i> Cancelar
                         </button>
-                        <button type="button" class="btn btn-info me-2" onclick="visualizarPauta()">
+                        <button type="button" class="btn-bordo-info" onclick="visualizarPauta()">
                             <i class="bi bi-eye"></i> Visualizar Pauta
                         </button>
-                        <button type="submit" class="btn-bordo btn-lg px-5">
+                        <button type="submit" class="btn-bordo">
                             <i class="bi bi-save"></i> Agendar Reunião
                         </button>
                     </div>
@@ -280,18 +422,18 @@
 
         <!-- Cards de Sugestões -->
         <div class="row mt-4">
-            <div class="col-md-4">
+            <div class="col-md-4 mb-3 mb-md-0">
                 <div class="card-dica shadow-sm">
-                    <div class="card-body text-center">
+                    <div class="card-body text-center p-4">
                         <i class="bi bi-info-circle fs-1" style="color: var(--bordo);"></i>
                         <h6 class="mt-2" style="color: var(--bordo);">Dica</h6>
                         <p class="small text-muted">Preencha todos os campos obrigatórios marcados com * para agendar a reunião.</p>
                     </div>
                 </div>
             </div>
-            <div class="col-md-4">
+            <div class="col-md-4 mb-3 mb-md-0">
                 <div class="card-dica shadow-sm">
-                    <div class="card-body text-center">
+                    <div class="card-body text-center p-4">
                         <i class="bi bi-whatsapp fs-1 text-success"></i>
                         <h6 class="mt-2" style="color: var(--bordo);">Notificações</h6>
                         <p class="small text-muted">Ative as notificações para avisar os obreiros sobre a nova reunião.</p>
@@ -300,7 +442,7 @@
             </div>
             <div class="col-md-4">
                 <div class="card-dica shadow-sm">
-                    <div class="card-body text-center">
+                    <div class="card-body text-center p-4">
                         <i class="bi bi-calendar-check fs-1" style="color: var(--ouro);"></i>
                         <h6 class="mt-2" style="color: var(--bordo);">Lembretes</h6>
                         <p class="small text-muted">Os obreiros receberão lembretes automáticos 24h antes da reunião.</p>
@@ -314,17 +456,19 @@
 <!-- Modal de Visualização da Pauta -->
 <div class="modal fade" id="modalPauta" tabindex="-1">
     <div class="modal-dialog modal-lg">
-        <div class="modal-content">
-            <div class="modal-header" style="background: var(--bordo); color: white;">
+        <div class="modal-content" style="border-radius: 16px; overflow: hidden;">
+            <div class="modal-header" style="background: linear-gradient(135deg, var(--bordo), var(--bordo-escuro)); color: white; border: none;">
                 <h5 class="modal-title"><i class="bi bi-eye"></i> Visualização da Pauta</h5>
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
             </div>
-            <div class="modal-body" id="pautaPreview">
+            <div class="modal-body p-4" id="pautaPreview">
                 <p class="text-muted">Clique em "Visualizar Pauta" para ver o conteúdo formatado.</p>
             </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fechar</button>
-                <button type="button" class="btn btn-primary" onclick="copiarPauta()">
+            <div class="modal-footer" style="border-top-color: rgba(74, 14, 46, 0.1);">
+                <button type="button" class="btn-bordo-secondary" data-bs-dismiss="modal">
+                    <i class="bi bi-x-circle"></i> Fechar
+                </button>
+                <button type="button" class="btn-bordo-info" onclick="copiarPauta()">
                     <i class="bi bi-clipboard"></i> Copiar
                 </button>
             </div>
@@ -456,7 +600,7 @@ function visualizarPauta() {
             .replace(/<li>(.*?)<\/li>/g, '<ul><li>$1</li></ul>')
             .replace(/<\/ul><ul>/g, '');
         
-        modalBody.innerHTML = `<div class="p-3 bg-light rounded" style="background: var(--bordo-transparente) !important;">${html}</div>`;
+        modalBody.innerHTML = `<div class="p-3 bg-light rounded" style="background: var(--bordo-transparente) !important; border-radius: 12px;">${html}</div>`;
     } else {
         modalBody.innerHTML = '<p class="text-muted">Nenhuma pauta definida.</p>';
     }

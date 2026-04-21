@@ -75,14 +75,18 @@
         font-weight: 700;
     }
 
-    /* BOTÕES DO RITO */
+    /* BOTÕES DO RITO - VERSÃO MOBILE FRIENDLY */
     .btn-bordo {
         background: linear-gradient(135deg, var(--bordo), var(--bordo-escuro));
         border: none;
         color: white;
         border-radius: 30px;
-        padding: 8px 24px;
+        padding: 8px 20px;
         transition: all 0.3s;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        text-decoration: none;
     }
     
     .btn-bordo:hover {
@@ -97,8 +101,12 @@
         border: 1px solid var(--bordo);
         color: var(--bordo);
         border-radius: 30px;
-        padding: 8px 24px;
+        padding: 8px 20px;
         transition: all 0.3s;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        text-decoration: none;
     }
     
     .btn-bordo-outline:hover {
@@ -106,6 +114,107 @@
         color: white;
         transform: translateY(-2px);
         box-shadow: 0 5px 15px rgba(74, 14, 46, 0.2);
+    }
+
+    /* BOTÕES ÍCONE APENAS */
+    .btn-icon-info {
+        background: linear-gradient(135deg, #0ea5e9, #0284c7);
+        border: none;
+        color: white;
+        width: 32px;
+        height: 32px;
+        padding: 0;
+        border-radius: 50%;
+        transition: all 0.3s;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+    }
+    
+    .btn-icon-info:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(14, 165, 233, 0.3);
+        color: white;
+    }
+
+    .btn-icon-warning {
+        background: linear-gradient(135deg, #f59e0b, #d97706);
+        border: none;
+        color: white;
+        width: 32px;
+        height: 32px;
+        padding: 0;
+        border-radius: 50%;
+        transition: all 0.3s;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+    }
+    
+    .btn-icon-warning:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(245, 158, 11, 0.3);
+        color: white;
+    }
+
+    .btn-icon-danger {
+        background: linear-gradient(135deg, #ef4444, #dc2626);
+        border: none;
+        color: white;
+        width: 32px;
+        height: 32px;
+        padding: 0;
+        border-radius: 50%;
+        transition: all 0.3s;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+    }
+    
+    .btn-icon-danger:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(239, 68, 68, 0.3);
+        color: white;
+    }
+
+    .btn-icon-success {
+        background: linear-gradient(135deg, #10b981, #059669);
+        border: none;
+        color: white;
+        width: 32px;
+        height: 32px;
+        padding: 0;
+        border-radius: 50%;
+        transition: all 0.3s;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+    }
+    
+    .btn-icon-success:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(16, 185, 129, 0.3);
+        color: white;
+    }
+
+    .btn-icon-primary {
+        background: linear-gradient(135deg, #3b82f6, #2563eb);
+        border: none;
+        color: white;
+        width: 32px;
+        height: 32px;
+        padding: 0;
+        border-radius: 50%;
+        transition: all 0.3s;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+    }
+    
+    .btn-icon-primary:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(59, 130, 246, 0.3);
+        color: white;
     }
 
     /* FILTROS */
@@ -151,21 +260,116 @@
         border-radius: 16px;
     }
 
+    /* GRUPO DE AÇÕES DO CABEÇALHO */
+    .header-actions {
+        display: flex;
+        gap: 12px;
+        align-items: center;
+        flex-wrap: wrap;
+    }
+
+    /* GRUPO DE AÇÕES DA TABELA */
+    .table-actions {
+        display: inline-flex;
+        gap: 6px;
+        align-items: center;
+        flex-wrap: wrap;
+    }
+
+    /* RESPONSIVIDADE */
     @media (max-width: 768px) {
-        .btn-group {
-            flex-direction: column;
+        .btn-bordo, .btn-bordo-outline {
+            padding: 6px 16px;
+            font-size: 0.85rem;
         }
-        .btn-group .btn {
-            margin-bottom: 5px;
+        
+        .btn-icon-info, .btn-icon-warning, .btn-icon-danger, 
+        .btn-icon-success, .btn-icon-primary {
+            width: 28px;
+            height: 28px;
+            font-size: 0.75rem;
         }
+        
         .table-responsive {
             font-size: 0.85rem;
         }
+        
+        .table-bordo thead th,
+        .table-bordo tbody td {
+            padding: 8px 12px;
+        }
+        
         .table td {
             min-width: 100px;
         }
+        
         td:first-child {
             min-width: 120px;
+        }
+        
+        /* Cabeçalho responsivo */
+        .d-flex.justify-content-between {
+            flex-direction: column;
+            align-items: flex-start !important;
+            gap: 15px;
+        }
+        
+        .header-actions {
+            width: 100%;
+        }
+        
+        .header-actions .btn-bordo-outline {
+            width: 100%;
+            justify-content: center;
+        }
+        
+        h2 {
+            font-size: 1.5rem;
+        }
+        
+        /* Botões da tabela */
+        .table-actions {
+            flex-direction: column;
+        }
+        
+        /* Cards de estatísticas responsivos */
+        .row.mb-4 .col-md-3 {
+            margin-bottom: 0.75rem;
+        }
+        
+        /* Filtros responsivos */
+        .filtros-card .row.g-3 {
+            flex-direction: column;
+        }
+        
+        .filtros-card .col-md-3,
+        .filtros-card .col-md-2,
+        .filtros-card .col-md-1 {
+            width: 100%;
+        }
+        
+        .filtros-card .d-flex.align-items-end {
+            margin-top: 8px;
+        }
+        
+        .filtros-card .btn-bordo {
+            width: 100%;
+            justify-content: center;
+        }
+    }
+
+    @media (max-width: 480px) {
+        .btn-bordo, .btn-bordo-outline {
+            padding: 5px 12px;
+            font-size: 0.8rem;
+        }
+        
+        .card-body {
+            padding: 1rem !important;
+        }
+        
+        .filtros-header {
+            padding: 10px 15px;
         }
     }
 </style>
@@ -174,9 +378,9 @@
 {% block content %}
 <div class="container-fluid py-4">
     <div class="container">
-        <!-- Cabeçalho -->
+        <!-- Cabeçalho responsivo -->
         <div class="d-flex justify-content-between align-items-center mb-4">
-            <h2>
+            <h2 class="mb-2 mb-md-0">
                 <i class="bi bi-files" style="color: var(--bordo);"></i> 
                 <span style="color: var(--bordo);">Atas de Reuniões</span>
                 <span class="badge" style="background: var(--bordo);">{{ estatisticas.total_atas }}</span>
@@ -184,16 +388,16 @@
                 <small class="text-muted fs-6">({{ estatisticas.pendentes }} pendentes)</small>
                 {% endif %}
             </h2>
-            <div>
+            <div class="header-actions">
                 <a href="/dashboard" class="btn-bordo-outline">
-                    <i class="bi bi-arrow-left"></i> Voltar ao Dashboard
+                    <i class="bi bi-arrow-left"></i> Voltar
                 </a>
             </div>
         </div>
 
         <!-- Cards de Estatísticas -->
         <div class="row mb-4">
-            <div class="col-md-3">
+            <div class="col-md-3 col-sm-6 mb-3 mb-md-0">
                 <div class="card-bordo-branco shadow-sm">
                     <div class="card-body">
                         <div class="d-flex justify-content-between align-items-center">
@@ -206,7 +410,7 @@
                     </div>
                 </div>
             </div>
-            <div class="col-md-3">
+            <div class="col-md-3 col-sm-6 mb-3 mb-md-0">
                 <div class="card-bordo-branco-destaque shadow-sm">
                     <div class="card-body">
                         <div class="d-flex justify-content-between align-items-center">
@@ -219,7 +423,7 @@
                     </div>
                 </div>
             </div>
-            <div class="col-md-3">
+            <div class="col-md-3 col-sm-6 mb-3 mb-md-0">
                 <div class="card-bordo-branco shadow-sm">
                     <div class="card-body">
                         <div class="d-flex justify-content-between align-items-center">
@@ -232,7 +436,7 @@
                     </div>
                 </div>
             </div>
-            <div class="col-md-3">
+            <div class="col-md-3 col-sm-6">
                 <div class="card-bordo-branco-suave shadow-sm">
                     <div class="card-body">
                         <div class="d-flex justify-content-between align-items-center">
@@ -249,7 +453,7 @@
 
         <!-- Segunda linha de cards -->
         <div class="row mb-4">
-            <div class="col-md-3">
+            <div class="col-md-3 col-sm-6 mb-3 mb-md-0">
                 <div class="card-bordo-branco-suave shadow-sm">
                     <div class="card-body">
                         <div class="d-flex justify-content-between align-items-center">
@@ -262,7 +466,7 @@
                     </div>
                 </div>
             </div>
-            <div class="col-md-3">
+            <div class="col-md-3 col-sm-6 mb-3 mb-md-0">
                 <div class="card-bordo-branco shadow-sm">
                     <div class="card-body">
                         <div class="d-flex justify-content-between align-items-center">
@@ -275,7 +479,7 @@
                     </div>
                 </div>
             </div>
-            <div class="col-md-3">
+            <div class="col-md-3 col-sm-6 mb-3 mb-md-0">
                 <div class="card-bordo-branco-destaque shadow-sm">
                     <div class="card-body">
                         <div class="d-flex justify-content-between align-items-center">
@@ -288,7 +492,7 @@
                     </div>
                 </div>
             </div>
-            <div class="col-md-3">
+            <div class="col-md-3 col-sm-6">
                 <div class="card-bordo-branco shadow-sm">
                     <div class="card-body">
                         <div class="d-flex justify-content-between align-items-center">
@@ -303,22 +507,22 @@
             </div>
         </div>
 
-        <!-- Filtros -->
+        <!-- Filtros responsivos -->
         <div class="filtros-card shadow-sm mb-4">
             <div class="filtros-header">
                 <h6 class="mb-0" style="color: var(--bordo);"><i class="bi bi-funnel"></i> Filtros</h6>
             </div>
-            <div class="card-body">
+            <div class="card-body p-4">
                 <form method="GET" class="row g-3">
-                    <div class="col-md-3">
+                    <div class="col-md-3 col-sm-12">
                         <label class="form-label">Data Início</label>
                         <input type="date" class="form-control" name="data_ini" value="{{ filtros.data_ini }}">
                     </div>
-                    <div class="col-md-3">
+                    <div class="col-md-3 col-sm-12">
                         <label class="form-label">Data Fim</label>
                         <input type="date" class="form-control" name="data_fim" value="{{ filtros.data_fim }}">
                     </div>
-                    <div class="col-md-2">
+                    <div class="col-md-2 col-sm-12">
                         <label class="form-label">Status</label>
                         <select class="form-select" name="aprovada">
                             <option value="">Todos</option>
@@ -326,12 +530,12 @@
                             <option value="0" {% if filtros.aprovada == '0' %}selected{% endif %}>Pendentes</option>
                         </select>
                     </div>
-                    <div class="col-md-3">
+                    <div class="col-md-3 col-sm-12">
                         <label class="form-label">Título da Reunião</label>
                         <input type="text" class="form-control" name="reuniao_titulo" 
                                value="{{ filtros.reuniao_titulo }}" placeholder="Buscar...">
                     </div>
-                    <div class="col-md-1 d-flex align-items-end">
+                    <div class="col-md-1 col-sm-12 d-flex align-items-end">
                         <button type="submit" class="btn-bordo w-100">
                             <i class="bi bi-search"></i>
                         </button>
@@ -380,7 +584,7 @@
                                             </small>
                                         {% endif %}
                                     </div>
-                                </td>
+                                 </td>
                                 <td class="align-middle">
                                     <strong>{{ ata.reuniao_titulo_original or ata.reuniao_titulo or 'Sem título' }}</strong>
                                     <br>
@@ -400,7 +604,7 @@
                                         <i class="bi bi-tag"></i> {{ ata.reuniao_tipo }}
                                     </small>
                                     {% endif %}
-                                </td>
+                                 </td>
                                 <td class="align-middle">
                                     <div>
                                         <i class="bi bi-calendar-check"></i>
@@ -415,7 +619,7 @@
                                         <i class="bi bi-clock-history"></i> Criado em: {{ ata.data_criacao.strftime('%d/%m/%Y') if ata.data_criacao else '-' }}
                                     </small>
                                     {% endif %}
-                                </td>
+                                 </td>
                                 <td class="align-middle">
                                     <span class="badge bg-info">
                                         <i class="bi bi-tag"></i> {{ ata.tipo_ata or 'Ata' }}
@@ -426,7 +630,7 @@
                                         <i class="bi bi-layout-text-window"></i> {{ ata.modelo_ata }}
                                     </small>
                                     {% endif %}
-                                </td>
+                                 </td>
                                <td class="align-middle">
                                     <div>
                                         <i class="bi bi-person"></i> 
@@ -438,7 +642,7 @@
                                         <i class="bi bi-journal"></i> Secretário: {{ ata.secretario_nome }}
                                     </small>
                                     {% endif %}
-                                </td>
+                                 </td>
                                 <td class="align-middle">
                                     {% if ata.aprovada == 1 %}
                                         <span class="badge bg-success">
@@ -466,7 +670,7 @@
                                             <i class="bi bi-hourglass"></i> Aguardando aprovação
                                         </small>
                                     {% endif %}
-                                </td>
+                                 </td>
                                 <td class="text-center align-middle">
                                     <div>
                                         <span class="badge bg-secondary" style="font-size: 0.9rem;">
@@ -489,23 +693,23 @@
                                         {{ ata.hash_documento[:8] }}...
                                     </small>
                                     {% endif %}
-                                </td>
+                                 </td>
                                 <td class="align-middle">
-                                    <div class="btn-group btn-group-sm" role="group">
-                                        <a href="/atas/{{ ata.id }}" class="btn btn-info" title="Visualizar Ata">
-                                            <i class="bi bi-eye"></i>
+                                    <div class="table-actions">
+                                        <a href="/atas/{{ ata.id }}" class="btn-icon-info" title="Visualizar Ata">
+                                            <i class="bi bi-eye-fill"></i>
                                         </a>
                                         {% if session.tipo == 'admin' and not ata.aprovada %}
-                                        <a href="/atas/{{ ata.id }}/editar" class="btn btn-warning" title="Editar Ata">
-                                            <i class="bi bi-pencil"></i>
+                                        <a href="/atas/{{ ata.id }}/editar" class="btn-icon-warning" title="Editar Ata">
+                                            <i class="bi bi-pencil-fill"></i>
                                         </a>
                                         {% endif %}
-                                        <a href="/atas/{{ ata.id }}/pdf-oficial" class="btn btn-primary" title="Baixar PDF Oficial">
+                                        <a href="/atas/{{ ata.id }}/pdf-oficial" class="btn-icon-primary" title="Baixar PDF Oficial">
                                             <i class="bi bi-file-pdf-fill"></i>
                                         </a>
                                         {% if session.tipo == 'admin' and not ata.aprovada %}
                                         <form method="POST" action="/atas/{{ ata.id }}/aprovar" style="display: inline;">
-                                            <button type="submit" class="btn btn-success" 
+                                            <button type="submit" class="btn-icon-success" 
                                                     title="Aprovar Ata"
                                                     onclick="return confirm('Aprovar esta ata?')">
                                                 <i class="bi bi-check-lg"></i>
@@ -513,10 +717,10 @@
                                         </form>
                                         {% endif %}
                                         {% if session.tipo == 'admin' %}
-                                        <button class="btn btn-danger" 
+                                        <button class="btn-icon-danger" 
                                                 onclick="excluirAta('{{ ata.id }}', '{{ "%03d"|format(ata.numero_ata or loop.index|int) }}/{{ ata.ano_ata or (ata.reuniao_data.strftime('%Y') if ata.reuniao_data else (ata.data.strftime('%Y') if ata.data else '2026')) }}')" 
                                                 title="Excluir Ata">
-                                            <i class="bi bi-trash"></i>
+                                            <i class="bi bi-trash-fill"></i>
                                         </button>
                                         {% endif %}
                                     </div>
@@ -531,8 +735,8 @@
                                         <i class="bi bi-printer"></i> Impresso em: {{ ata.data_impressao.strftime('%d/%m/%Y') if ata.data_impressao else '-' }}
                                     </small>
                                     {% endif %}
-                                </td>
-                            </tr>
+                                 </td>
+                             </tr>
                             {% else %}
                             <tr>
                                 <td colspan="8" class="text-center text-muted py-5">
@@ -542,11 +746,11 @@
                                     <a href="/reunioes" class="btn-bordo mt-3">
                                         <i class="bi bi-calendar"></i> Ir para Reuniões
                                     </a>
-                                </td>
-                            </tr>
+                                 </td>
+                             </tr>
                             {% endfor %}
                         </tbody>
-                    </table>
+                     </table>
                 </div>
             </div>
         </div>
@@ -554,16 +758,16 @@
         <!-- Resumo por Período -->
         {% if atas %}
         <div class="legenda-card shadow-sm mt-4">
-            <div class="card-header" style="background: var(--bordo-transparente); border-bottom: 1px solid rgba(74, 14, 46, 0.1);">
+            <div class="card-header" style="background: var(--bordo-transparente); border-bottom: 1px solid rgba(74, 14, 46, 0.1); border-radius: 16px 16px 0 0;">
                 <h6 class="mb-0" style="color: var(--bordo);"><i class="bi bi-calendar-range"></i> Resumo por Período</h6>
             </div>
-            <div class="card-body">
+            <div class="card-body p-4">
                 <div class="row">
-                    <div class="col-md-6">
+                    <div class="col-md-6 mb-3 mb-md-0">
                         <h6><i class="bi bi-file-text"></i> Últimas 5 Atas</h6>
                         <ul class="list-group">
                             {% for ata in atas[:5] %}
-                            <li class="list-group-item d-flex justify-content-between align-items-center">
+                            <li class="list-group-item d-flex justify-content-between align-items-center flex-wrap">
                                 <div>
                                     <strong>{{ "%03d"|format(ata.numero_ata or loop.index|int) }}/{{ ata.ano_ata or (ata.reuniao_data.strftime('%Y') if ata.reuniao_data else (ata.data.strftime('%Y') if ata.data else '2026')) }}</strong> - 
                                     {{ ata.reuniao_titulo_original or ata.reuniao_titulo or 'Sem título' }}
@@ -636,20 +840,20 @@
 <!-- Modal de Confirmação de Exclusão -->
 <div class="modal fade" id="modalConfirmExcluir" tabindex="-1">
     <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header bg-danger text-white">
+        <div class="modal-content" style="border-radius: 16px; overflow: hidden;">
+            <div class="modal-header" style="background: linear-gradient(135deg, #ef4444, #dc2626); color: white; border: none;">
                 <h5 class="modal-title">
                     <i class="bi bi-exclamation-triangle-fill"></i> Confirmar Exclusão
                 </h5>
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
             </div>
-            <div class="modal-body">
-                <div class="alert alert-danger">
+            <div class="modal-body p-4">
+                <div class="alert" style="background: #fef2f2; border: 1px solid #fecaca; color: #dc2626; border-radius: 12px;">
                     <i class="bi bi-skull"></i>
                     <strong>Esta operação é irreversível!</strong>
                 </div>
                 <p>Você está prestes a excluir a ata:</p>
-                <p class="alert alert-info">
+                <p class="alert" style="background: var(--bordo-transparente); border: 1px solid rgba(74, 14, 46, 0.15); border-radius: 12px;">
                     <i class="bi bi-files"></i>
                     <strong id="ataNomeExcluir"></strong>
                 </p>
@@ -660,19 +864,19 @@
                     <li><i class="bi bi-file-pdf"></i> O arquivo PDF associado será removido</li>
                     <li><i class="bi bi-arrow-repeat"></i> Esta ação não pode ser desfeita</li>
                 </ul>
-                <div class="alert alert-info">
+                <div class="alert" style="background: var(--bordo-transparente); border: 1px solid rgba(74, 14, 46, 0.15); border-radius: 12px;">
                     <i class="bi bi-info-circle"></i>
                     Para confirmar, digite <strong class="text-danger">EXCLUIR</strong> no campo abaixo:
                 </div>
                 <input type="text" id="confirmExcluirText" class="form-control" 
-                       placeholder="Digite EXCLUIR para confirmar" autocomplete="off">
+                       placeholder="Digite EXCLUIR para confirmar" autocomplete="off" style="border-radius: 12px;">
             </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+            <div class="modal-footer" style="border-top-color: rgba(74, 14, 46, 0.1);">
+                <button type="button" class="btn-bordo-secondary" data-bs-dismiss="modal">
                     <i class="bi bi-x-circle"></i> Cancelar
                 </button>
-                <button type="button" class="btn btn-danger" id="btnConfirmExcluir" onclick="confirmarExclusao()" disabled>
-                    <i class="bi bi-trash"></i> Confirmar Exclusão
+                <button type="button" class="btn-bordo-danger" id="btnConfirmExcluir" onclick="confirmarExclusao()" disabled>
+                    <i class="bi bi-trash-fill"></i> Confirmar Exclusão
                 </button>
             </div>
         </div>
@@ -680,6 +884,47 @@
 </div>
 
 <script>
+// Adicionar estilos para btn-bordo-secondary e btn-bordo-danger se não existirem
+const missingStyles = document.createElement('style');
+missingStyles.textContent = `
+    .btn-bordo-secondary {
+        background: linear-gradient(135deg, #6c757d, #495057);
+        border: none;
+        color: white;
+        border-radius: 30px;
+        padding: 8px 20px;
+        transition: all 0.3s;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        text-decoration: none;
+    }
+    .btn-bordo-secondary:hover {
+        background: linear-gradient(135deg, #5a6268, #3d4246);
+        transform: translateY(-2px);
+        color: white;
+        box-shadow: 0 5px 15px rgba(108, 117, 125, 0.3);
+    }
+    .btn-bordo-danger {
+        background: linear-gradient(135deg, #ef4444, #dc2626);
+        border: none;
+        color: white;
+        border-radius: 30px;
+        padding: 8px 20px;
+        transition: all 0.3s;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        text-decoration: none;
+    }
+    .btn-bordo-danger:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(239, 68, 68, 0.3);
+        color: white;
+    }
+`;
+document.head.appendChild(missingStyles);
+
 let ataParaExcluir = null;
 let modalConfirmExcluir;
 
@@ -750,7 +995,7 @@ function mostrarAlerta(tipo, mensagem, timeout = 5000) {
     const alertId = 'alert-' + Date.now();
 
     const alertHtml = `
-        <div id="${alertId}" class="alert alert-${tipo} alert-dismissible fade show" role="alert">
+        <div id="${alertId}" class="alert alert-${tipo} alert-dismissible fade show" role="alert" style="border-radius: 12px;">
             ${mensagem}
             <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
         </div>

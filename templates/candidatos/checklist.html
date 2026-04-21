@@ -2,15 +2,300 @@
 
 {% block title %}Checklist de Iniciação - {{ candidato.nome }}{% endblock %}
 
+{% block styles %}
+{{ super() }}
+<style>
+    :root {
+        --bordo: #4A0E2E;
+        --bordo-escuro: #3A0A24;
+        --bordo-claro: #6B1342;
+        --bordo-suave: #8B4A6B;
+        --bordo-transparente: rgba(74, 14, 46, 0.08);
+        --bordo-transparente-hover: rgba(74, 14, 46, 0.12);
+        --ouro: #D4AF37;
+        --ouro-escuro: #996515;
+        --ouro-claro: #F0D68A;
+    }
+
+    /* CARDS BRANCOS COM BORDÔ */
+    .card-bordo-branco {
+        background: white;
+        border: 1px solid rgba(74, 14, 46, 0.15);
+        border-radius: 16px;
+        transition: all 0.3s ease;
+        color: var(--bordo);
+    }
+    
+    .card-bordo-branco:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 8px 25px rgba(74, 14, 46, 0.12);
+        border-color: var(--bordo);
+    }
+
+    /* BOTÕES DO RITO - VERSÃO MOBILE FRIENDLY */
+    .btn-bordo {
+        background: linear-gradient(135deg, var(--bordo), var(--bordo-escuro));
+        border: none;
+        color: white;
+        border-radius: 30px;
+        padding: 8px 20px;
+        transition: all 0.3s;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        text-decoration: none;
+    }
+    
+    .btn-bordo:hover {
+        background: linear-gradient(135deg, var(--bordo-claro), var(--bordo));
+        transform: translateY(-2px);
+        color: white;
+        box-shadow: 0 5px 15px rgba(74, 14, 46, 0.3);
+    }
+    
+    .btn-bordo-outline {
+        background: transparent;
+        border: 1px solid var(--bordo);
+        color: var(--bordo);
+        border-radius: 30px;
+        padding: 8px 20px;
+        transition: all 0.3s;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        text-decoration: none;
+    }
+    
+    .btn-bordo-outline:hover {
+        background: var(--bordo);
+        color: white;
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(74, 14, 46, 0.2);
+    }
+
+    .btn-bordo-danger {
+        background: linear-gradient(135deg, #ef4444, #dc2626);
+        border: none;
+        color: white;
+        border-radius: 30px;
+        padding: 8px 20px;
+        transition: all 0.3s;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        text-decoration: none;
+    }
+    
+    .btn-bordo-danger:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(239, 68, 68, 0.3);
+        color: white;
+    }
+
+    /* CABEÇALHO DOS CARDS */
+    .card-header-bordo {
+        background: linear-gradient(135deg, var(--bordo), var(--bordo-escuro));
+        border-bottom: none;
+        color: white;
+        border-radius: 16px 16px 0 0;
+        padding: 15px 20px;
+    }
+    
+    .card-header-bordo h5 {
+        margin: 0;
+        font-weight: 600;
+    }
+    
+    .card-header-bordo small {
+        color: rgba(255, 255, 255, 0.7);
+    }
+
+    /* PROGRESS BAR */
+    .progress-bordo {
+        background: rgba(74, 14, 46, 0.1);
+        border-radius: 30px;
+        height: 25px;
+        overflow: hidden;
+    }
+    
+    .progress-bordo .progress-bar {
+        background: linear-gradient(90deg, var(--bordo), var(--bordo-claro));
+        border-radius: 30px;
+        font-size: 14px;
+        font-weight: bold;
+        line-height: 25px;
+    }
+
+    /* LIST GROUP */
+    .list-group-item-custom {
+        background: white;
+        border-bottom: 1px solid rgba(74, 14, 46, 0.08);
+        padding: 1rem;
+        transition: background 0.2s;
+    }
+    
+    .list-group-item-custom:hover {
+        background: var(--bordo-transparente);
+    }
+    
+    .list-group-item-custom:last-child {
+        border-bottom: none;
+    }
+
+    /* BOTÃO DROPDOWN */
+    .btn-dropdown-custom {
+        background: transparent;
+        border: 1px solid rgba(74, 14, 46, 0.2);
+        color: var(--bordo);
+        border-radius: 30px;
+        padding: 6px 12px;
+        transition: all 0.3s;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+    }
+    
+    .btn-dropdown-custom:hover {
+        background: var(--bordo-transparente);
+        border-color: var(--bordo);
+    }
+    
+    .dropdown-menu-custom {
+        border-radius: 12px;
+        border: 1px solid rgba(74, 14, 46, 0.1);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    }
+    
+    .dropdown-item-custom {
+        padding: 8px 16px;
+        transition: background 0.2s;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+    
+    .dropdown-item-custom:hover {
+        background: var(--bordo-transparente);
+    }
+
+    /* STATUS ICON */
+    .status-icon {
+        width: 28px;
+        text-align: center;
+    }
+
+    /* CONTAINER DE AÇÕES DO CABEÇALHO */
+    .header-actions {
+        display: flex;
+        gap: 12px;
+        align-items: center;
+        flex-wrap: wrap;
+    }
+
+    /* RESPONSIVIDADE */
+    @media (max-width: 768px) {
+        .btn-bordo, .btn-bordo-outline, .btn-bordo-danger {
+            padding: 6px 16px;
+            font-size: 0.85rem;
+        }
+        
+        .progress-bordo {
+            height: 20px;
+        }
+        
+        .progress-bordo .progress-bar {
+            font-size: 12px;
+            line-height: 20px;
+        }
+        
+        /* Cabeçalho responsivo */
+        .d-flex.justify-content-between {
+            flex-direction: column;
+            align-items: flex-start !important;
+            gap: 15px;
+        }
+        
+        .header-actions {
+            width: 100%;
+            flex-direction: column;
+        }
+        
+        .header-actions .btn-bordo-outline,
+        .header-actions .btn-bordo-danger {
+            width: 100%;
+            justify-content: center;
+        }
+        
+        h2 {
+            font-size: 1.5rem;
+        }
+        
+        /* Cards responsivos */
+        .col-md-6 {
+            margin-bottom: 1rem;
+        }
+        
+        /* List group responsivo */
+        .list-group-item-custom .d-flex {
+            flex-direction: column;
+            gap: 10px;
+        }
+        
+        .list-group-item-custom .dropdown {
+            align-self: flex-start;
+        }
+        
+        .btn-dropdown-custom {
+            width: 100%;
+            justify-content: center;
+        }
+        
+        /* Modal responsivo */
+        .modal-dialog {
+            margin: 1rem;
+        }
+        
+        .modal-footer {
+            flex-direction: column;
+            gap: 8px;
+        }
+        
+        .modal-footer .btn-secondary,
+        .modal-footer .btn-primary {
+            width: 100%;
+        }
+    }
+
+    @media (max-width: 480px) {
+        .btn-bordo, .btn-bordo-outline, .btn-bordo-danger {
+            padding: 5px 12px;
+            font-size: 0.8rem;
+        }
+        
+        .card-body {
+            padding: 1rem !important;
+        }
+        
+        .list-group-item-custom {
+            padding: 0.75rem;
+        }
+        
+        .status-icon {
+            width: 24px;
+        }
+    }
+</style>
+{% endblock %}
+
 {% block content %}
 <div class="container-fluid py-4">
     <div class="container">
-        <!-- Cabeçalho -->
+        <!-- Cabeçalho responsivo -->
         <div class="d-flex justify-content-between align-items-center mb-4">
             <div>
                 <h2>
-                    <i class="bi bi-check2-square"></i> 
-                    Checklist de Iniciação
+                    <i class="bi bi-check2-square" style="color: var(--bordo);"></i> 
+                    <span style="color: var(--bordo);">Checklist de Iniciação</span>
                 </h2>
                 <p class="text-muted mb-0">{{ candidato.nome }}</p>
                 <p class="text-muted small">
@@ -24,12 +309,12 @@
                     {% endif %}
                 </p>
             </div>
-            <div>
-                <a href="/candidatos" class="btn btn-outline-secondary">
+            <div class="header-actions">
+                <a href="/candidatos" class="btn-bordo-outline">
                     <i class="bi bi-arrow-left"></i> Voltar
                 </a>
                 {% if session.tipo == 'admin' %}
-                <button type="button" class="btn btn-danger ms-2" onclick="resetarChecklist()">
+                <button type="button" class="btn-bordo-danger" onclick="resetarChecklist()">
                     <i class="bi bi-arrow-repeat"></i> Resetar Checklist
                 </button>
                 {% endif %}
@@ -37,20 +322,20 @@
         </div>
 
         <!-- Barra de Progresso -->
-        <div class="card shadow mb-4">
-            <div class="card-body">
-                <h6 class="mb-2">
+        <div class="card-bordo-branco shadow-sm mb-4">
+            <div class="card-body p-4">
+                <h6 class="mb-2" style="color: var(--bordo);">
                     <i class="bi bi-graph-up"></i> 
                     Progresso da Iniciação
-                    <span class="badge bg-primary ms-2" id="progressoBadge">{{ concluidos }}/{{ total_obrigatorios }}</span>
+                    <span class="badge" style="background: var(--bordo); color: white;" id="progressoBadge">{{ concluidos }}/{{ total_obrigatorios }}</span>
                 </h6>
-                <div class="progress" style="height: 25px;">
-                    <div class="progress-bar bg-success" role="progressbar" 
+                <div class="progress-bordo mb-2">
+                    <div class="progress-bar" role="progressbar" 
                          id="progressoBarra" style="width: {{ percentual }}%">
                         {{ percentual }}%
                     </div>
                 </div>
-                <small class="text-muted mt-2 d-block" id="progressoMensagem">
+                <small class="text-muted d-block" id="progressoMensagem">
                     {% if percentual == 100 %}
                         <i class="bi bi-check-circle-fill text-success"></i> 
                         Todos os itens obrigatórios foram concluídos! O candidato está pronto para a iniciação.
@@ -69,19 +354,19 @@
         <div class="row">
             {% for cat_id, cat_data in checklist.items() %}
             <div class="col-md-6 mb-4">
-                <div class="card shadow h-100">
-                    <div class="card-header bg-primary text-white">
-                        <h5 class="mb-0">
+                <div class="card-bordo-branco shadow-sm h-100">
+                    <div class="card-header-bordo">
+                        <h5>
                             <i class="bi bi-folder"></i> 
                             {{ cat_data.categoria.nome }}
                         </h5>
-                        <small class="text-white-50">{{ cat_data.categoria.descricao or '' }}</small>
+                        <small>{{ cat_data.categoria.descricao or '' }}</small>
                     </div>
-                    <div class="card-body">
-                        <div class="list-group list-group-flush">
+                    <div class="card-body p-0">
+                        <div class="list-group">
                             {% for item in cat_data.itens %}
-                            <div class="list-group-item" id="item-{{ item.id }}">
-                                <div class="d-flex justify-content-between align-items-start">
+                            <div class="list-group-item-custom" id="item-{{ item.id }}">
+                                <div class="d-flex justify-content-between align-items-start flex-wrap">
                                     <div class="flex-grow-1">
                                         <div class="d-flex align-items-center mb-1">
                                             <span class="status-icon me-2" id="status-icon-{{ item.id }}">
@@ -90,16 +375,16 @@
                                                 {% elif item.status == 'em_andamento' %}
                                                     <i class="bi bi-play-circle-fill text-warning fs-5"></i>
                                                 {% else %}
-                                                    <i class="bi bi-circle text-secondary fs-5"></i>
+                                                    <i class="bi bi-circle" style="color: var(--bordo-suave); font-size: 1.25rem;"></i>
                                                 {% endif %}
                                             </span>
                                             <div>
-                                                <strong class="{% if item.obrigatorio == 1 %}text-dark{% else %}text-muted{% endif %}">
+                                                <strong class="{% if item.obrigatorio == 1 %}text-dark{% else %}text-muted{% endif %}" style="color: var(--bordo);">
                                                     {{ item.nome }}
                                                     {% if item.obrigatorio == 1 %}
                                                         <span class="badge bg-danger ms-1">Obrigatório</span>
                                                     {% else %}
-                                                        <span class="badge bg-secondary ms-1">Opcional</span>
+                                                        <span class="badge" style="background: var(--bordo-suave);">Opcional</span>
                                                     {% endif %}
                                                 </strong>
                                                 {% if item.descricao %}
@@ -137,29 +422,29 @@
                                         </div>
                                     </div>
                                     <div class="dropdown">
-                                        <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" 
+                                        <button class="btn-dropdown-custom dropdown-toggle" type="button" 
                                                 data-bs-toggle="dropdown" aria-expanded="false">
-                                            <i class="bi bi-gear"></i>
+                                            <i class="bi bi-gear"></i> Ações
                                         </button>
-                                        <ul class="dropdown-menu dropdown-menu-end">
+                                        <ul class="dropdown-menu dropdown-menu-custom">
                                             <li>
-                                                <button class="dropdown-item" onclick="atualizarStatus({{ item.id }}, 'pendente')">
-                                                    <i class="bi bi-circle text-secondary"></i> Pendente
+                                                <button class="dropdown-item-custom" onclick="atualizarStatus({{ item.id }}, 'pendente')">
+                                                    <i class="bi bi-circle" style="color: var(--bordo-suave);"></i> Pendente
                                                 </button>
                                             </li>
                                             <li>
-                                                <button class="dropdown-item" onclick="atualizarStatus({{ item.id }}, 'em_andamento')">
+                                                <button class="dropdown-item-custom" onclick="atualizarStatus({{ item.id }}, 'em_andamento')">
                                                     <i class="bi bi-play-circle-fill text-warning"></i> Em Andamento
                                                 </button>
                                             </li>
                                             <li>
-                                                <button class="dropdown-item" onclick="atualizarStatus({{ item.id }}, 'concluido')">
+                                                <button class="dropdown-item-custom" onclick="atualizarStatus({{ item.id }}, 'concluido')">
                                                     <i class="bi bi-check-circle-fill text-success"></i> Concluído
                                                 </button>
                                             </li>
                                             <li><hr class="dropdown-divider"></li>
                                             <li>
-                                                <button class="dropdown-item" onclick="abrirModalObservacao({{ item.id }}, '{{ item.nome }}', '{{ item.progresso_obs or '' }}')">
+                                                <button class="dropdown-item-custom" onclick="abrirModalObservacao({{ item.id }}, '{{ item.nome }}', '{{ item.progresso_obs or '' }}')">
                                                     <i class="bi bi-chat-text"></i> Adicionar Observação
                                                 </button>
                                             </li>
@@ -180,20 +465,22 @@
 <!-- Modal de Observação (ÚNICO MODAL REUTILIZÁVEL) -->
 <div class="modal fade" id="modalObservacao" tabindex="-1" data-bs-backdrop="static">
     <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header">
+        <div class="modal-content" style="border-radius: 16px; overflow: hidden;">
+            <div class="modal-header" style="background: linear-gradient(135deg, var(--bordo), var(--bordo-escuro)); color: white; border: none;">
                 <h5 class="modal-title" id="modalObservacaoTitulo">Adicionar Observação</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
             </div>
-            <div class="modal-body">
+            <div class="modal-body p-4">
                 <input type="hidden" id="observacaoItemId">
                 <textarea id="observacaoTexto" class="form-control" rows="4" 
-                          placeholder="Digite uma observação sobre este item..."></textarea>
+                          placeholder="Digite uma observação sobre este item..." style="border-radius: 12px;"></textarea>
             </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-                <button type="button" class="btn btn-primary" onclick="salvarObservacao()">
-                    Salvar Observação
+            <div class="modal-footer" style="border-top-color: rgba(74, 14, 46, 0.1);">
+                <button type="button" class="btn-bordo-outline" data-bs-dismiss="modal">
+                    <i class="bi bi-x-circle"></i> Cancelar
+                </button>
+                <button type="button" class="btn-bordo" onclick="salvarObservacao()">
+                    <i class="bi bi-save"></i> Salvar Observação
                 </button>
             </div>
         </div>
@@ -304,7 +591,7 @@ function atualizarStatus(itemId, status) {
                 } else if (status === 'em_andamento') {
                     statusIcon.innerHTML = '<i class="bi bi-play-circle-fill text-warning fs-5"></i>';
                 } else {
-                    statusIcon.innerHTML = '<i class="bi bi-circle text-secondary fs-5"></i>';
+                    statusIcon.innerHTML = '<i class="bi bi-circle" style="color: var(--bordo-suave); font-size: 1.25rem;"></i>';
                 }
             }
             
@@ -347,29 +634,4 @@ function resetarChecklist() {
     });
 }
 </script>
-
-<style>
-    .list-group-item {
-        transition: background-color 0.2s;
-    }
-    .list-group-item:hover {
-        background-color: #f8f9fa;
-    }
-    .progress {
-        border-radius: 10px;
-        overflow: hidden;
-    }
-    .progress-bar {
-        transition: width 0.3s ease;
-    }
-    .status-icon {
-        width: 24px;
-        text-align: center;
-    }
-    .dropdown-item i {
-        width: 20px;
-        margin-right: 8px;
-    }
-</style>
-
 {% endblock %}

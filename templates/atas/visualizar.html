@@ -2,325 +2,366 @@
 
 {% block title %}Visualizar Ata - {{ ata.reuniao_titulo }}{% endblock %}
 
-{% block content %}
-<div class="container-fluid py-4">
-    <div class="container">
-        <!-- Cabeçalho -->
-        <div class="d-flex justify-content-between align-items-center mb-4">
-            <h2>
-                <i class="bi bi-file-text"></i> 
-                Visualizar Ata
-                <small class="text-muted">Nº {{ "%03d"|format(ata.numero_ata|int) }}/{{ ata.ano_ata }}</small>
-            </h2>
-            <div>
-                <a href="/atas" class="btn btn-outline-secondary">
-                    <i class="bi bi-arrow-left"></i> Voltar para Lista
-                </a>
-            </div>
-        </div>
-
-        <!-- Status das Assinaturas (apenas para atas aprovadas) -->
-        {% if ata_aprovada %}
-        <div class="card shadow mb-4">
-            <div class="card-header bg-primary text-white">
-                <h5 class="mb-0"><i class="bi bi-pen"></i> Status das Assinaturas</h5>
-            </div>
-            <div class="card-body">
-                <div class="row text-center">
-                    <div class="col-md-4">
-                        <div class="border rounded p-3 {% if assinatura_veneravel %}bg-success text-white{% else %}bg-light{% endif %}">
-                            <i class="bi bi-crown fs-1"></i>
-                            <h6 class="mt-2">Venerável Mestre</h6>
-                            {% if assinatura_veneravel %}
-                                <span class="badge bg-white text-success">✓ Assinado</span>
-                                <br>
-                                <small>{{ ata.data_assinatura_veneravel.strftime('%d/%m/%Y %H:%M') if ata.data_assinatura_veneravel else '' }}</small>
-                                {% if ata.veneravel_mestre_nome %}
-                                <br>
-                                <small class="text-white-50">{{ ata.veneravel_mestre_nome }}</small>
-                                {% endif %}
-                            {% else %}
-                                <span class="badge bg-secondary">Aguardando</span>
-                            {% endif %}
-                        </div>
-                    </div>
-                    <div class="col-md-4">
-                        <div class="border rounded p-3 {% if assinatura_orador %}bg-success text-white{% else %}bg-light{% endif %}">
-                            <i class="bi bi-mic fs-1"></i>
-                            <h6 class="mt-2">Orador</h6>
-                            {% if assinatura_orador %}
-                                <span class="badge bg-white text-success">✓ Assinado</span>
-                                <br>
-                                <small>{{ ata.data_assinatura_orador.strftime('%d/%m/%Y %H:%M') if ata.data_assinatura_orador else '' }}</small>
-                                {% if ata.orador_nome %}
-                                <br>
-                                <small class="text-white-50">{{ ata.orador_nome }}</small>
-                                {% endif %}
-                            {% else %}
-                                <span class="badge bg-secondary">Aguardando</span>
-                            {% endif %}
-                        </div>
-                    </div>
-                    <div class="col-md-4">
-                        <div class="border rounded p-3 {% if assinatura_secretario %}bg-success text-white{% else %}bg-light{% endif %}">
-                            <i class="bi bi-journal fs-1"></i>
-                            <h6 class="mt-2">Secretário</h6>
-                            {% if assinatura_secretario %}
-                                <span class="badge bg-white text-success">✓ Assinado</span>
-                                <br>
-                                <small>{{ ata.data_assinatura_secretario.strftime('%d/%m/%Y %H:%M') if ata.data_assinatura_secretario else '' }}</small>
-                                {% if ata.secretario_nome %}
-                                <br>
-                                <small class="text-white-50">{{ ata.secretario_nome }}</small>
-                                {% endif %}
-                            {% else %}
-                                <span class="badge bg-secondary">Aguardando</span>
-                            {% endif %}
-                        </div>
-                    </div>
-                </div>
-                
-                <!-- Barra de progresso das assinaturas -->
-                {% set assinadas = [assinatura_veneravel, assinatura_orador, assinatura_secretario]|select('eq', true)|list|length %}
-                {% set percentual = (assinadas / 3 * 100)|int %}
-                <div class="mt-4">
-                    <div class="d-flex justify-content-between mb-1">
-                        <small>Progresso das Assinaturas</small>
-                        <small>{{ assinadas }}/3 ({{ percentual }}%)</small>
-                    </div>
-                    <div class="progress">
-                        <div class="progress-bar bg-success" role="progressbar" 
-                             style="width: {{ percentual }}%" 
-                             aria-valuenow="{{ percentual }}" aria-valuemin="0" aria-valuemax="100">
-                            {{ percentual }}%
-                        </div>
-                    </div>
-                </div>
-                
-                <!-- Mensagem quando todas as assinaturas forem concluídas -->
-                {% if assinatura_veneravel and assinatura_orador and assinatura_secretario %}
-                <div class="alert alert-success text-center mt-4">
-                    <i class="bi bi-trophy fs-3"></i>
-                    <h5 class="mt-2">Ata totalmente assinada!</h5>
-                    <p class="mb-0">Todos os responsáveis já assinaram esta ata.</p>
-                </div>
-                {% endif %}
-            </div>
-        </div>
-        {% endif %}
-
-        <div class="row">
-            <div class="col-md-8">
-                <!-- Conteúdo da Ata -->
-                <div class="card shadow mb-4">
-                    <div class="card-header bg-primary text-white">
-                        <h5 class="mb-0"><i class="bi bi-file-text"></i> Conteúdo da Ata</h5>
-                    </div>
-                    <div class="card-body">
-                        <div class="ata-conteudo">
-                            {{ ata.conteudo|markdown|safe }}
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Lista de Presença -->
-{% if presenca %}
-<div class="card shadow">
-    <div class="card-header bg-info text-white">
-        <h5 class="mb-0"><i class="bi bi-people"></i> Lista de Presença</h5>
-    </div>
-    <div class="card-body">
-        <div class="table-responsive">
-            <table class="table table-sm table-hover">
-                <thead>
-                    <tr>
-                        <th>Obreiro</th>
-                        <th>Grau</th>
-                        <th>Status</th>
-                        <th>Justificativa</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for p in presenca %}
-                    <tr>
-                        <td>
-                            <span class="fw-semibold">{{ p.nome_completo }}</span>
-                            {% if p.cargo_nome in ['Venerável Mestre', 'Orador', 'Secretário'] %}
-                                <span class="badge bg-secondary ms-1">{{ p.cargo_nome }}</span>
-                            {% endif %}
-                        </td>
-                        <td>
-                            {% set grau = p.grau_atual|int %}
-                            {% if grau >= 3 %}
-                                <span class="badge bg-success">Mestre</span>
-                            {% elif grau == 2 %}
-                                <span class="badge bg-primary">Companheiro</span>
-                            {% elif grau == 1 %}
-                                <span class="badge bg-secondary">Aprendiz</span>
-                            {% else %}
-                                <span class="badge bg-info">Grau {{ grau }}</span>
-                            {% endif %}
-                        </td>
-                        <td>
-                            {% if p.presente == 1 %}
-                                <span class="badge bg-success">Presente</span>
-                            {% else %}
-                                <span class="badge bg-danger">Ausente</span>
-                            {% endif %}
-                        </td>
-                        <td>
-                            {% if p.presente != 1 %}
-                                {% if p.tipo_ausencia %}
-                                    <strong>{{ p.tipo_ausencia }}</strong>
-                                {% endif %}
-                                {% if p.justificativa %}
-                                    <br><small class="text-muted">{{ p.justificativa|truncate(50) }}</small>
-                                {% endif %}
-                            {% else %}
-                                <span class="text-muted">-</span>
-                            {% endif %}
-                        </td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-        </div>
-    </div>
-</div>
-{% endif %}
-            </div>
-
-            <div class="col-md-4">
-                <!-- Informações da Ata -->
-                <div class="card shadow mb-4">
-                    <div class="card-header bg-info text-white">
-                        <h5 class="mb-0"><i class="bi bi-info-circle"></i> Informações</h5>
-                    </div>
-                    <div class="card-body">
-                        <p><strong>Número da Ata:</strong><br>
-                        {{ "%03d"|format(ata.numero_ata|int) }}/{{ ata.ano_ata }}</p>
-                        
-                        <p><strong>Reunião:</strong><br>
-                        {{ ata.reuniao_titulo }}</p>
-                        
-                        <p><strong>Data da Reunião:</strong><br>
-                        {{ ata.reuniao_data.strftime('%d/%m/%Y') if ata.reuniao_data else '-' }}</p>
-                        
-                        <p><strong>Horário:</strong><br>
-                        {{ ata.hora_inicio.strftime('%H:%M') if ata.hora_inicio else '-' }}h</p>
-                        
-                        <p><strong>Local:</strong><br>
-                        {{ ata.local or 'Não informado' }}</p>
-                        
-                        <p><strong>Redator:</strong><br>
-                        {{ ata.redator_nome or 'Sistema' }}</p>
-                        
-                        <p><strong>Data de Criação:</strong><br>
-                        {{ ata.data.strftime('%d/%m/%Y %H:%M') if ata.data else '-' }}</p>
-                        
-                        <p><strong>Status:</strong><br>
-                        {% if ata.aprovada == 1 %}
-                            <span class="badge bg-success">Aprovada</span>
-                            {% if ata.aprovada_em %}
-                            <br><small>Aprovada em: {{ ata.aprovada_em.strftime('%d/%m/%Y') }}</small>
-                            {% endif %}
-                        {% else %}
-                            <span class="badge bg-warning">Pendente</span>
-                        {% endif %}</p>
-                        
-                        {% if ata.aprovada_por_nome %}
-                        <p><strong>Aprovada por:</strong><br>
-                        {{ ata.aprovada_por_nome }}</p>
-                        {% endif %}
-                    </div>
-                </div>
-
-                <!-- Ações -->
-                <div class="card shadow">
-                    <div class="card-header bg-dark text-white">
-                        <h5 class="mb-0"><i class="bi bi-gear"></i> Ações</h5>
-                    </div>
-                    <div class="card-body">
-                        <div class="d-grid gap-2">
-                            <a href="/atas/{{ ata.id }}/pdf-oficial" class="btn btn-primary">
-                                <i class="bi bi-file-pdf"></i> Baixar PDF Oficial
-                            </a>
-                            
-                            {% if session.tipo == 'admin' and not ata.aprovada %}
-                            <a href="/atas/{{ ata.id }}/editar" class="btn btn-warning">
-                                <i class="bi bi-pencil"></i> Editar Ata
-                            </a>
-                            
-                            <form method="POST" action="/atas/{{ ata.id }}/aprovar" style="display: inline;">
-                                <button type="submit" class="btn btn-success w-100" 
-                                        onclick="return confirm('Aprovar esta ata?')">
-                                    <i class="bi bi-check-lg"></i> Aprovar Ata
-                                </button>
-                            </form>
-                            {% endif %}
-                            
-                            {% if session.tipo == 'admin' %}
-                            <button class="btn btn-danger" 
-                                    onclick="if(confirm('⚠️ ATENÇÃO!\n\nDeseja EXCLUIR esta ata?\n\nEsta ação não pode ser desfeita!\n\nDeseja continuar?')) { window.location.href='/atas/{{ ata.id }}/excluir' }">
-                                <i class="bi bi-trash"></i> Excluir Ata
-                            </button>
-                            {% endif %}
-                        </div>
-                        
-                        <hr>
-                        
-                        <!-- Botões de Assinatura por Cargo -->
-                        {% if ata_aprovada %}
-                            {% if cargo_usuario == 'veneravel' and not assinatura_veneravel %}
-                            <form method="POST" action="/atas/{{ ata.id }}/assinar/veneravel" class="mt-2">
-                                <button type="submit" class="btn btn-outline-success w-100" 
-                                        onclick="return confirm('Assinar esta ata como Venerável Mestre?')">
-                                    <i class="bi bi-crown"></i> Assinar como Venerável Mestre
-                                </button>
-                            </form>
-                            {% endif %}
-                            
-                            {% if cargo_usuario == 'orador' and not assinatura_orador %}
-                            <form method="POST" action="/atas/{{ ata.id }}/assinar/orador" class="mt-2">
-                                <button type="submit" class="btn btn-outline-success w-100" 
-                                        onclick="return confirm('Assinar esta ata como Orador?')">
-                                    <i class="bi bi-mic"></i> Assinar como Orador
-                                </button>
-                            </form>
-                            {% endif %}
-                            
-                            {% if cargo_usuario == 'secretario' and not assinatura_secretario %}
-                            <form method="POST" action="/atas/{{ ata.id }}/assinar/secretario" class="mt-2">
-                                <button type="submit" class="btn btn-outline-success w-100" 
-                                        onclick="return confirm('Assinar esta ata como Secretário?')">
-                                    <i class="bi bi-journal"></i> Assinar como Secretário
-                                </button>
-                            </form>
-                            {% endif %}
-                            
-                            {% if ja_assinou %}
-                            <div class="alert alert-success mt-2 text-center mb-0">
-                                <i class="bi bi-check-circle"></i> Você já assinou esta ata.
-                            </div>
-                            {% endif %}
-                        {% endif %}
-                        
-                        <!-- Botão de assinatura genérico (fallback) -->
-                        {% if not ata_aprovada and session.tipo != 'admin' and not cargo_usuario %}
-                        <form method="POST" action="/atas/{{ ata.id }}/assinar" class="mt-2">
-                            <button type="submit" class="btn btn-outline-secondary w-100">
-                                <i class="bi bi-pen"></i> Assinar Ata
-                            </button>
-                        </form>
-                        {% endif %}
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
-
+{% block styles %}
+{{ super() }}
 <style>
+    :root {
+        --bordo: #4A0E2E;
+        --bordo-escuro: #3A0A24;
+        --bordo-claro: #6B1342;
+        --bordo-suave: #8B4A6B;
+        --bordo-transparente: rgba(74, 14, 46, 0.08);
+        --bordo-transparente-hover: rgba(74, 14, 46, 0.12);
+        --ouro: #D4AF37;
+        --ouro-escuro: #996515;
+        --ouro-claro: #F0D68A;
+    }
+
+    /* CARDS BRANCOS COM BORDÔ */
+    .card-bordo-branco {
+        background: white;
+        border: 1px solid rgba(74, 14, 46, 0.15);
+        border-radius: 16px;
+        transition: all 0.3s ease;
+        color: var(--bordo);
+    }
+    
+    .card-bordo-branco:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 8px 25px rgba(74, 14, 46, 0.12);
+        border-color: var(--bordo);
+    }
+
+    /* BOTÕES DO RITO - VERSÃO MOBILE FRIENDLY */
+    .btn-bordo {
+        background: linear-gradient(135deg, var(--bordo), var(--bordo-escuro));
+        border: none;
+        color: white;
+        border-radius: 30px;
+        padding: 8px 20px;
+        transition: all 0.3s;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        text-decoration: none;
+    }
+    
+    .btn-bordo:hover {
+        background: linear-gradient(135deg, var(--bordo-claro), var(--bordo));
+        transform: translateY(-2px);
+        color: white;
+        box-shadow: 0 5px 15px rgba(74, 14, 46, 0.3);
+    }
+    
+    .btn-bordo-outline {
+        background: transparent;
+        border: 1px solid var(--bordo);
+        color: var(--bordo);
+        border-radius: 30px;
+        padding: 8px 20px;
+        transition: all 0.3s;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        text-decoration: none;
+    }
+    
+    .btn-bordo-outline:hover {
+        background: var(--bordo);
+        color: white;
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(74, 14, 46, 0.2);
+    }
+
+    .btn-bordo-primary {
+        background: linear-gradient(135deg, var(--bordo), var(--bordo-escuro));
+        border: none;
+        color: white;
+        border-radius: 30px;
+        padding: 8px 20px;
+        transition: all 0.3s;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        text-decoration: none;
+    }
+    
+    .btn-bordo-primary:hover {
+        background: linear-gradient(135deg, var(--bordo-claro), var(--bordo));
+        transform: translateY(-2px);
+        color: white;
+        box-shadow: 0 5px 15px rgba(74, 14, 46, 0.3);
+    }
+
+    .btn-bordo-success {
+        background: linear-gradient(135deg, #10b981, #059669);
+        border: none;
+        color: white;
+        border-radius: 30px;
+        padding: 8px 20px;
+        transition: all 0.3s;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        text-decoration: none;
+    }
+    
+    .btn-bordo-success:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(16, 185, 129, 0.3);
+        color: white;
+    }
+
+    .btn-bordo-warning {
+        background: linear-gradient(135deg, #f59e0b, #d97706);
+        border: none;
+        color: white;
+        border-radius: 30px;
+        padding: 8px 20px;
+        transition: all 0.3s;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        text-decoration: none;
+    }
+    
+    .btn-bordo-warning:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(245, 158, 11, 0.3);
+        color: white;
+    }
+
+    .btn-bordo-danger {
+        background: linear-gradient(135deg, #ef4444, #dc2626);
+        border: none;
+        color: white;
+        border-radius: 30px;
+        padding: 8px 20px;
+        transition: all 0.3s;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        text-decoration: none;
+    }
+    
+    .btn-bordo-danger:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(239, 68, 68, 0.3);
+        color: white;
+    }
+
+    .btn-bordo-outline-success {
+        background: transparent;
+        border: 1px solid #10b981;
+        color: #10b981;
+        border-radius: 30px;
+        padding: 8px 20px;
+        transition: all 0.3s;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        text-decoration: none;
+    }
+    
+    .btn-bordo-outline-success:hover {
+        background: #10b981;
+        color: white;
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(16, 185, 129, 0.3);
+    }
+
+    /* CABEÇALHO DOS CARDS */
+    .card-header-bordo {
+        background: var(--bordo-transparente);
+        border-bottom: 1px solid rgba(74, 14, 46, 0.1);
+        padding: 15px 20px;
+        border-radius: 16px 16px 0 0 !important;
+    }
+    
+    .card-header-bordo h5, 
+    .card-header-bordo h6 {
+        color: var(--bordo);
+        margin: 0;
+        font-weight: 600;
+    }
+
+    .card-header-bordo-primary {
+        background: linear-gradient(135deg, var(--bordo), var(--bordo-escuro));
+        padding: 15px 20px;
+        border-radius: 16px 16px 0 0 !important;
+    }
+    
+    .card-header-bordo-primary h5 {
+        color: white;
+        margin: 0;
+        font-weight: 600;
+    }
+
+    .card-header-bordo-info {
+        background: linear-gradient(135deg, var(--bordo), var(--bordo-escuro));
+        padding: 15px 20px;
+        border-radius: 16px 16px 0 0 !important;
+    }
+    
+    .card-header-bordo-info h5 {
+        color: white;
+        margin: 0;
+        font-weight: 600;
+    }
+
+    .card-header-bordo-dark {
+        background: linear-gradient(135deg, #1e293b, #0f172a);
+        padding: 15px 20px;
+        border-radius: 16px 16px 0 0 !important;
+    }
+    
+    .card-header-bordo-dark h5 {
+        color: white;
+        margin: 0;
+        font-weight: 600;
+    }
+
+    /* STATUS DE ASSINATURA */
+    .assinatura-card {
+        border: 1px solid rgba(74, 14, 46, 0.1);
+        border-radius: 12px;
+        padding: 1rem;
+        transition: all 0.3s;
+        text-align: center;
+    }
+    
+    .assinatura-card-assinado {
+        background: linear-gradient(135deg, #10b981, #059669);
+        border: none;
+        color: white;
+    }
+    
+    .assinatura-card-pendente {
+        background: var(--bordo-transparente);
+        border: 1px solid rgba(74, 14, 46, 0.15);
+    }
+
+    /* PROGRESS BAR */
+    .progress-bordo {
+        background: rgba(74, 14, 46, 0.1);
+        border-radius: 30px;
+        height: 10px;
+        overflow: hidden;
+    }
+    
+    .progress-bordo .progress-bar {
+        background: linear-gradient(90deg, var(--bordo), var(--bordo-claro));
+        border-radius: 30px;
+    }
+
+    /* TABELA */
+    .table-bordo {
+        margin-bottom: 0;
+    }
+    
+    .table-bordo thead th {
+        background: var(--bordo-transparente);
+        color: var(--bordo);
+        font-weight: 600;
+        border-bottom: 2px solid rgba(74, 14, 46, 0.15);
+    }
+    
+    .table-bordo tbody tr {
+        border-bottom: 1px solid rgba(74, 14, 46, 0.08);
+        transition: all 0.2s;
+    }
+    
+    .table-bordo tbody tr:hover {
+        background: var(--bordo-transparente);
+    }
+
+    /* BADGES */
+    .badge-mestre {
+        background: linear-gradient(135deg, #10b981, #059669);
+        padding: 5px 12px;
+        border-radius: 20px;
+        font-size: 0.7rem;
+        font-weight: 600;
+        color: white;
+        display: inline-block;
+    }
+    
+    .badge-companheiro {
+        background: linear-gradient(135deg, #3b82f6, #2563eb);
+        padding: 5px 12px;
+        border-radius: 20px;
+        font-size: 0.7rem;
+        font-weight: 600;
+        color: white;
+        display: inline-block;
+    }
+    
+    .badge-aprendiz {
+        background: linear-gradient(135deg, #6c757d, #495057);
+        padding: 5px 12px;
+        border-radius: 20px;
+        font-size: 0.7rem;
+        font-weight: 600;
+        color: white;
+        display: inline-block;
+    }
+
+    .badge-presente {
+        background: linear-gradient(135deg, #10b981, #059669);
+        padding: 5px 12px;
+        border-radius: 20px;
+        font-size: 0.7rem;
+        font-weight: 600;
+        color: white;
+        display: inline-block;
+    }
+    
+    .badge-ausente {
+        background: linear-gradient(135deg, #ef4444, #dc2626);
+        padding: 5px 12px;
+        border-radius: 20px;
+        font-size: 0.7rem;
+        font-weight: 600;
+        color: white;
+        display: inline-block;
+    }
+
+    .badge-aprovada {
+        background: linear-gradient(135deg, #10b981, #059669);
+        padding: 5px 12px;
+        border-radius: 20px;
+        font-size: 0.7rem;
+        font-weight: 600;
+        color: white;
+        display: inline-block;
+    }
+    
+    .badge-pendente {
+        background: linear-gradient(135deg, #f59e0b, #d97706);
+        padding: 5px 12px;
+        border-radius: 20px;
+        font-size: 0.7rem;
+        font-weight: 600;
+        color: white;
+        display: inline-block;
+    }
+
+    /* ALERTAS */
+    .alert-bordo-success {
+        background: linear-gradient(135deg, #d1fae5, #a7f3d0);
+        border: 1px solid #10b981;
+        color: #065f46;
+        border-radius: 12px;
+    }
+
+    .alert-bordo-info {
+        background: var(--bordo-transparente);
+        border: 1px solid rgba(74, 14, 46, 0.15);
+        color: var(--bordo);
+        border-radius: 12px;
+    }
+
+    /* CONTEÚDO DA ATA */
     .ata-conteudo {
         line-height: 1.6;
         font-size: 14px;
@@ -341,33 +382,106 @@
     }
     
     .ata-conteudo::-webkit-scrollbar-thumb {
-        background: #c9a03d;
+        background: var(--bordo-suave);
         border-radius: 10px;
     }
     
     .ata-conteudo::-webkit-scrollbar-thumb:hover {
-        background: #b58c2a;
+        background: var(--bordo);
     }
-    
-    .card {
-        border-radius: 10px;
-        overflow: hidden;
+
+    /* GRUPO DE AÇÕES DO CABEÇALHO */
+    .header-actions {
+        display: flex;
+        gap: 12px;
+        align-items: center;
+        flex-wrap: wrap;
     }
-    .card-header {
-        font-weight: 600;
+
+    /* GRUPO DE BOTÕES */
+    .btn-group-mobile {
+        display: flex;
+        gap: 12px;
+        justify-content: center;
+        flex-wrap: wrap;
     }
-    .progress {
-        border-radius: 10px;
-        height: 10px;
+
+    /* RESPONSIVIDADE */
+    @media (max-width: 768px) {
+        .btn-bordo, .btn-bordo-outline, .btn-bordo-primary, 
+        .btn-bordo-success, .btn-bordo-warning, .btn-bordo-danger,
+        .btn-bordo-outline-success {
+            padding: 6px 16px;
+            font-size: 0.85rem;
+        }
+        
+        /* Cabeçalho responsivo */
+        .d-flex.justify-content-between {
+            flex-direction: column;
+            align-items: flex-start !important;
+            gap: 15px;
+        }
+        
+        .header-actions {
+            width: 100%;
+        }
+        
+        .header-actions .btn-bordo-outline {
+            width: 100%;
+            justify-content: center;
+        }
+        
+        h2 {
+            font-size: 1.5rem;
+        }
+        
+        /* Cards de assinatura responsivos */
+        .assinatura-card {
+            margin-bottom: 1rem;
+        }
+        
+        /* Botões de ação responsivos */
+        .btn-group-mobile {
+            flex-direction: column;
+            width: 100%;
+        }
+        
+        .btn-group-mobile .btn-bordo-primary,
+        .btn-group-mobile .btn-bordo-warning,
+        .btn-group-mobile .btn-bordo-success,
+        .btn-group-mobile .btn-bordo-danger,
+        .btn-group-mobile .btn-bordo-outline-success {
+            width: 100%;
+            justify-content: center;
+        }
+        
+        .ata-conteudo {
+            font-size: 13px;
+        }
     }
-    .progress-bar {
-        transition: width 0.3s ease;
+
+    @media (max-width: 480px) {
+        .btn-bordo, .btn-bordo-outline, .btn-bordo-primary, 
+        .btn-bordo-success, .btn-bordo-warning, .btn-bordo-danger,
+        .btn-bordo-outline-success {
+            padding: 5px 12px;
+            font-size: 0.8rem;
+        }
+        
+        .card-body {
+            padding: 1rem !important;
+        }
+        
+        .ata-conteudo {
+            font-size: 12px;
+        }
     }
+
     @media print {
         .btn, .btn-group, .no-print {
             display: none !important;
         }
-        .card {
+        .card-bordo-branco {
             box-shadow: none !important;
             border: 1px solid #ddd !important;
         }
@@ -377,4 +491,334 @@
         }
     }
 </style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="container">
+        <!-- Cabeçalho responsivo -->
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h2 class="mb-2 mb-md-0">
+                <i class="bi bi-file-text" style="color: var(--bordo);"></i> 
+                <span style="color: var(--bordo);">Visualizar Ata</span>
+                <small class="text-muted" style="color: var(--bordo-suave);">Nº {{ "%03d"|format(ata.numero_ata|int) }}/{{ ata.ano_ata }}</small>
+            </h2>
+            <div class="header-actions">
+                <a href="/atas" class="btn-bordo-outline">
+                    <i class="bi bi-arrow-left"></i> Voltar
+                </a>
+            </div>
+        </div>
+
+        <!-- Status das Assinaturas (apenas para atas aprovadas) -->
+        {% if ata_aprovada %}
+        <div class="card-bordo-branco shadow-sm mb-4">
+            <div class="card-header-bordo-info">
+                <h5><i class="bi bi-pen"></i> Status das Assinaturas</h5>
+            </div>
+            <div class="card-body p-4">
+                <div class="row">
+                    <div class="col-md-4 mb-3 mb-md-0">
+                        <div class="assinatura-card {% if assinatura_veneravel %}assinatura-card-assinado{% else %}assinatura-card-pendente{% endif %}">
+                            <i class="bi bi-crown fs-1"></i>
+                            <h6 class="mt-2">Venerável Mestre</h6>
+                            {% if assinatura_veneravel %}
+                                <span class="badge bg-white text-success mt-2">✓ Assinado</span>
+                                <br>
+                                <small class="{% if assinatura_veneravel %}text-white-50{% else %}text-muted{% endif %}">
+                                    {{ ata.data_assinatura_veneravel.strftime('%d/%m/%Y %H:%M') if ata.data_assinatura_veneravel else '' }}
+                                </small>
+                                {% if ata.veneravel_mestre_nome %}
+                                <br>
+                                <small class="{% if assinatura_veneravel %}text-white-50{% else %}text-muted{% endif %}">
+                                    {{ ata.veneravel_mestre_nome }}
+                                </small>
+                                {% endif %}
+                            {% else %}
+                                <span class="badge bg-secondary mt-2">Aguardando</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                    <div class="col-md-4 mb-3 mb-md-0">
+                        <div class="assinatura-card {% if assinatura_orador %}assinatura-card-assinado{% else %}assinatura-card-pendente{% endif %}">
+                            <i class="bi bi-mic fs-1"></i>
+                            <h6 class="mt-2">Orador</h6>
+                            {% if assinatura_orador %}
+                                <span class="badge bg-white text-success mt-2">✓ Assinado</span>
+                                <br>
+                                <small class="{% if assinatura_orador %}text-white-50{% else %}text-muted{% endif %}">
+                                    {{ ata.data_assinatura_orador.strftime('%d/%m/%Y %H:%M') if ata.data_assinatura_orador else '' }}
+                                </small>
+                                {% if ata.orador_nome %}
+                                <br>
+                                <small class="{% if assinatura_orador %}text-white-50{% else %}text-muted{% endif %}">
+                                    {{ ata.orador_nome }}
+                                </small>
+                                {% endif %}
+                            {% else %}
+                                <span class="badge bg-secondary mt-2">Aguardando</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="assinatura-card {% if assinatura_secretario %}assinatura-card-assinado{% else %}assinatura-card-pendente{% endif %}">
+                            <i class="bi bi-journal fs-1"></i>
+                            <h6 class="mt-2">Secretário</h6>
+                            {% if assinatura_secretario %}
+                                <span class="badge bg-white text-success mt-2">✓ Assinado</span>
+                                <br>
+                                <small class="{% if assinatura_secretario %}text-white-50{% else %}text-muted{% endif %}">
+                                    {{ ata.data_assinatura_secretario.strftime('%d/%m/%Y %H:%M') if ata.data_assinatura_secretario else '' }}
+                                </small>
+                                {% if ata.secretario_nome %}
+                                <br>
+                                <small class="{% if assinatura_secretario %}text-white-50{% else %}text-muted{% endif %}">
+                                    {{ ata.secretario_nome }}
+                                </small>
+                                {% endif %}
+                            {% else %}
+                                <span class="badge bg-secondary mt-2">Aguardando</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Barra de progresso das assinaturas -->
+                {% set assinadas = [assinatura_veneravel, assinatura_orador, assinatura_secretario]|select('eq', true)|list|length %}
+                {% set percentual = (assinadas / 3 * 100)|int %}
+                <div class="mt-4">
+                    <div class="d-flex justify-content-between mb-1">
+                        <small class="text-muted">Progresso das Assinaturas</small>
+                        <small class="text-muted">{{ assinadas }}/3 ({{ percentual }}%)</small>
+                    </div>
+                    <div class="progress-bordo">
+                        <div class="progress-bar" role="progressbar" 
+                             style="width: {{ percentual }}%" 
+                             aria-valuenow="{{ percentual }}" aria-valuemin="0" aria-valuemax="100">
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Mensagem quando todas as assinaturas forem concluídas -->
+                {% if assinatura_veneravel and assinatura_orador and assinatura_secretario %}
+                <div class="alert-bordo-success text-center mt-4 p-3 rounded">
+                    <i class="bi bi-trophy fs-3"></i>
+                    <h5 class="mt-2">Ata totalmente assinada!</h5>
+                    <p class="mb-0">Todos os responsáveis já assinaram esta ata.</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+        {% endif %}
+
+        <div class="row">
+            <div class="col-md-8">
+                <!-- Conteúdo da Ata -->
+                <div class="card-bordo-branco shadow-sm mb-4">
+                    <div class="card-header-bordo-primary">
+                        <h5><i class="bi bi-file-text"></i> Conteúdo da Ata</h5>
+                    </div>
+                    <div class="card-body p-4">
+                        <div class="ata-conteudo">
+                            {{ ata.conteudo|markdown|safe }}
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Lista de Presença -->
+                {% if presenca %}
+                <div class="card-bordo-branco shadow-sm">
+                    <div class="card-header-bordo">
+                        <h5><i class="bi bi-people"></i> Lista de Presença</h5>
+                    </div>
+                    <div class="card-body p-0">
+                        <div class="table-responsive">
+                            <table class="table table-bordo">
+                                <thead>
+                                    <tr>
+                                        <th>Obreiro</th>
+                                        <th>Grau</th>
+                                        <th>Status</th>
+                                        <th>Justificativa</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for p in presenca %}
+                                    <tr>
+                                        <td>
+                                            <span class="fw-semibold" style="color: var(--bordo);">{{ p.nome_completo }}</span>
+                                            {% if p.cargo_nome in ['Venerável Mestre', 'Orador', 'Secretário'] %}
+                                                <span class="badge" style="background: var(--bordo);">{{ p.cargo_nome }}</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            {% set grau = p.grau_atual|int %}
+                                            {% if grau >= 3 %}
+                                                <span class="badge-mestre">Mestre</span>
+                                            {% elif grau == 2 %}
+                                                <span class="badge-companheiro">Companheiro</span>
+                                            {% elif grau == 1 %}
+                                                <span class="badge-aprendiz">Aprendiz</span>
+                                            {% else %}
+                                                <span class="badge" style="background: var(--bordo-suave);">Grau {{ grau }}</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            {% if p.presente == 1 %}
+                                                <span class="badge-presente">Presente</span>
+                                            {% else %}
+                                                <span class="badge-ausente">Ausente</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            {% if p.presente != 1 %}
+                                                {% if p.tipo_ausencia %}
+                                                    <strong>{{ p.tipo_ausencia }}</strong>
+                                                {% endif %}
+                                                {% if p.justificativa %}
+                                                    <br><small class="text-muted">{{ p.justificativa|truncate(50) }}</small>
+                                                {% endif %}
+                                            {% else %}
+                                                <span class="text-muted">-</span>
+                                            {% endif %}
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+
+            <div class="col-md-4">
+                <!-- Informações da Ata -->
+                <div class="card-bordo-branco shadow-sm mb-4">
+                    <div class="card-header-bordo">
+                        <h5><i class="bi bi-info-circle"></i> Informações</h5>
+                    </div>
+                    <div class="card-body p-4">
+                        <p><strong style="color: var(--bordo);">Número da Ata:</strong><br>
+                        {{ "%03d"|format(ata.numero_ata|int) }}/{{ ata.ano_ata }}</p>
+                        
+                        <p><strong style="color: var(--bordo);">Reunião:</strong><br>
+                        {{ ata.reuniao_titulo }}</p>
+                        
+                        <p><strong style="color: var(--bordo);">Data da Reunião:</strong><br>
+                        {{ ata.reuniao_data.strftime('%d/%m/%Y') if ata.reuniao_data else '-' }}</p>
+                        
+                        <p><strong style="color: var(--bordo);">Horário:</strong><br>
+                        {{ ata.hora_inicio.strftime('%H:%M') if ata.hora_inicio else '-' }}h</p>
+                        
+                        <p><strong style="color: var(--bordo);">Local:</strong><br>
+                        {{ ata.local or 'Não informado' }}</p>
+                        
+                        <p><strong style="color: var(--bordo);">Redator:</strong><br>
+                        {{ ata.redator_nome or 'Sistema' }}</p>
+                        
+                        <p><strong style="color: var(--bordo);">Data de Criação:</strong><br>
+                        {{ ata.data.strftime('%d/%m/%Y %H:%M') if ata.data else '-' }}</p>
+                        
+                        <p><strong style="color: var(--bordo);">Status:</strong><br>
+                        {% if ata.aprovada == 1 %}
+                            <span class="badge-aprovada">Aprovada</span>
+                            {% if ata.aprovada_em %}
+                            <br><small class="text-muted">Aprovada em: {{ ata.aprovada_em.strftime('%d/%m/%Y') }}</small>
+                            {% endif %}
+                        {% else %}
+                            <span class="badge-pendente">Pendente</span>
+                        {% endif %}</p>
+                        
+                        {% if ata.aprovada_por_nome %}
+                        <p><strong style="color: var(--bordo);">Aprovada por:</strong><br>
+                        {{ ata.aprovada_por_nome }}</p>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <!-- Ações -->
+                <div class="card-bordo-branco shadow-sm">
+                    <div class="card-header-bordo-dark">
+                        <h5><i class="bi bi-gear"></i> Ações</h5>
+                    </div>
+                    <div class="card-body p-4">
+                        <div class="btn-group-mobile">
+                            <a href="/atas/{{ ata.id }}/pdf-oficial" class="btn-bordo-primary">
+                                <i class="bi bi-file-pdf"></i> Baixar PDF
+                            </a>
+                            
+                            {% if session.tipo == 'admin' and not ata.aprovada %}
+                            <a href="/atas/{{ ata.id }}/editar" class="btn-bordo-warning">
+                                <i class="bi bi-pencil"></i> Editar Ata
+                            </a>
+                            
+                            <form method="POST" action="/atas/{{ ata.id }}/aprovar" style="display: inline;">
+                                <button type="submit" class="btn-bordo-success w-100" 
+                                        onclick="return confirm('Aprovar esta ata?')">
+                                    <i class="bi bi-check-lg"></i> Aprovar Ata
+                                </button>
+                            </form>
+                            {% endif %}
+                            
+                            {% if session.tipo == 'admin' %}
+                            <button class="btn-bordo-danger" 
+                                    onclick="if(confirm('⚠️ ATENÇÃO!\n\nDeseja EXCLUIR esta ata?\n\nEsta ação não pode ser desfeita!\n\nDeseja continuar?')) { window.location.href='/atas/{{ ata.id }}/excluir' }">
+                                <i class="bi bi-trash"></i> Excluir Ata
+                            </button>
+                            {% endif %}
+                        </div>
+                        
+                        <hr style="border-color: rgba(74, 14, 46, 0.15);">
+                        
+                        <!-- Botões de Assinatura por Cargo -->
+                        {% if ata_aprovada %}
+                            {% if cargo_usuario == 'veneravel' and not assinatura_veneravel %}
+                            <form method="POST" action="/atas/{{ ata.id }}/assinar/veneravel" class="mt-2">
+                                <button type="submit" class="btn-bordo-outline-success w-100" 
+                                        onclick="return confirm('Assinar esta ata como Venerável Mestre?')">
+                                    <i class="bi bi-crown"></i> Assinar como Venerável Mestre
+                                </button>
+                            </form>
+                            {% endif %}
+                            
+                            {% if cargo_usuario == 'orador' and not assinatura_orador %}
+                            <form method="POST" action="/atas/{{ ata.id }}/assinar/orador" class="mt-2">
+                                <button type="submit" class="btn-bordo-outline-success w-100" 
+                                        onclick="return confirm('Assinar esta ata como Orador?')">
+                                    <i class="bi bi-mic"></i> Assinar como Orador
+                                </button>
+                            </form>
+                            {% endif %}
+                            
+                            {% if cargo_usuario == 'secretario' and not assinatura_secretario %}
+                            <form method="POST" action="/atas/{{ ata.id }}/assinar/secretario" class="mt-2">
+                                <button type="submit" class="btn-bordo-outline-success w-100" 
+                                        onclick="return confirm('Assinar esta ata como Secretário?')">
+                                    <i class="bi bi-journal"></i> Assinar como Secretário
+                                </button>
+                            </form>
+                            {% endif %}
+                            
+                            {% if ja_assinou %}
+                            <div class="alert-bordo-success text-center mt-3 mb-0 p-3 rounded">
+                                <i class="bi bi-check-circle"></i> Você já assinou esta ata.
+                            </div>
+                            {% endif %}
+                        {% endif %}
+                        
+                        <!-- Botão de assinatura genérico (fallback) -->
+                        {% if not ata_aprovada and session.tipo != 'admin' and not cargo_usuario %}
+                        <form method="POST" action="/atas/{{ ata.id }}/assinar" class="mt-2">
+                            <button type="submit" class="btn-bordo-outline w-100">
+                                <i class="bi bi-pen"></i> Assinar Ata
+                            </button>
+                        </form>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
 {% endblock %}

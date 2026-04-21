@@ -75,14 +75,18 @@
         font-weight: 700;
     }
 
-    /* BOTÕES DO RITO */
+    /* BOTÕES DO RITO - VERSÃO MOBILE FRIENDLY */
     .btn-bordo {
         background: linear-gradient(135deg, var(--bordo), var(--bordo-escuro));
         border: none;
         color: white;
         border-radius: 30px;
-        padding: 8px 24px;
+        padding: 8px 20px;
         transition: all 0.3s;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        text-decoration: none;
     }
     
     .btn-bordo:hover {
@@ -97,8 +101,12 @@
         border: 1px solid var(--bordo);
         color: var(--bordo);
         border-radius: 30px;
-        padding: 8px 24px;
+        padding: 8px 20px;
         transition: all 0.3s;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        text-decoration: none;
     }
     
     .btn-bordo-outline:hover {
@@ -106,6 +114,107 @@
         color: white;
         transform: translateY(-2px);
         box-shadow: 0 5px 15px rgba(74, 14, 46, 0.2);
+    }
+
+    /* BOTÕES ÍCONE APENAS */
+    .btn-icon-info {
+        background: linear-gradient(135deg, #0ea5e9, #0284c7);
+        border: none;
+        color: white;
+        width: 32px;
+        height: 32px;
+        padding: 0;
+        border-radius: 50%;
+        transition: all 0.3s;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+    }
+    
+    .btn-icon-info:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(14, 165, 233, 0.3);
+        color: white;
+    }
+
+    .btn-icon-warning {
+        background: linear-gradient(135deg, #f59e0b, #d97706);
+        border: none;
+        color: white;
+        width: 32px;
+        height: 32px;
+        padding: 0;
+        border-radius: 50%;
+        transition: all 0.3s;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+    }
+    
+    .btn-icon-warning:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(245, 158, 11, 0.3);
+        color: white;
+    }
+
+    .btn-icon-danger {
+        background: linear-gradient(135deg, #ef4444, #dc2626);
+        border: none;
+        color: white;
+        width: 32px;
+        height: 32px;
+        padding: 0;
+        border-radius: 50%;
+        transition: all 0.3s;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+    }
+    
+    .btn-icon-danger:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(239, 68, 68, 0.3);
+        color: white;
+    }
+
+    .btn-icon-success {
+        background: linear-gradient(135deg, #10b981, #059669);
+        border: none;
+        color: white;
+        width: 32px;
+        height: 32px;
+        padding: 0;
+        border-radius: 50%;
+        transition: all 0.3s;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+    }
+    
+    .btn-icon-success:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(16, 185, 129, 0.3);
+        color: white;
+    }
+
+    .btn-icon-secondary {
+        background: linear-gradient(135deg, #6c757d, #495057);
+        border: none;
+        color: white;
+        width: 32px;
+        height: 32px;
+        padding: 0;
+        border-radius: 50%;
+        transition: all 0.3s;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+    }
+    
+    .btn-icon-secondary:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(108, 117, 125, 0.3);
+        color: white;
     }
 
     /* FILTROS */
@@ -166,12 +275,120 @@
         border-radius: 16px;
     }
 
+    /* GRUPO DE AÇÕES DO CABEÇALHO */
+    .header-actions {
+        display: flex;
+        gap: 12px;
+        align-items: center;
+        flex-wrap: wrap;
+    }
+
+    /* GRUPO DE AÇÕES DA TABELA */
+    .table-actions {
+        display: inline-flex;
+        gap: 6px;
+        align-items: center;
+        flex-wrap: wrap;
+    }
+
+    /* RESPONSIVIDADE */
     @media (max-width: 768px) {
-        .btn-group { flex-direction: column; }
-        .btn-group .btn { margin-bottom: 5px; }
-        .table-responsive { font-size: 0.8rem; }
-        .progress-bordo { height: 15px; }
-        .progress-bordo .progress-bar { font-size: 8px; line-height: 15px; }
+        .btn-bordo, .btn-bordo-outline {
+            padding: 6px 16px;
+            font-size: 0.85rem;
+        }
+        
+        .table-responsive {
+            font-size: 0.85rem;
+        }
+        
+        .table-bordo thead th,
+        .table-bordo tbody td {
+            padding: 8px 12px;
+        }
+        
+        .btn-icon-info, .btn-icon-warning, .btn-icon-danger, 
+        .btn-icon-success, .btn-icon-secondary {
+            width: 28px;
+            height: 28px;
+            font-size: 0.75rem;
+        }
+        
+        .progress-bordo {
+            height: 15px;
+        }
+        
+        .progress-bordo .progress-bar {
+            font-size: 8px;
+            line-height: 15px;
+        }
+        
+        /* Cabeçalho responsivo */
+        .d-flex.justify-content-between {
+            flex-direction: column;
+            align-items: flex-start !important;
+            gap: 15px;
+        }
+        
+        .header-actions {
+            width: 100%;
+            flex-direction: column;
+        }
+        
+        .header-actions .btn-bordo,
+        .header-actions .btn-bordo-outline {
+            width: 100%;
+            justify-content: center;
+        }
+        
+        /* Filtros responsivos */
+        .filtros-card .row.g-3 {
+            flex-direction: column;
+        }
+        
+        .filtros-card .col-md-2,
+        .filtros-card .col-md-12 {
+            width: 100%;
+        }
+        
+        .filtros-card .d-flex.justify-content-end {
+            flex-direction: column;
+            gap: 8px;
+        }
+        
+        .filtros-card .btn-bordo,
+        .filtros-card .btn-bordo-outline {
+            width: 100%;
+            justify-content: center;
+        }
+        
+        .filtros-card .me-2 {
+            margin-right: 0 !important;
+        }
+        
+        h2 {
+            font-size: 1.5rem;
+        }
+        
+        .table-actions {
+            flex-direction: column;
+        }
+        
+        /* Cards de estatísticas responsivos */
+        .row.mb-4 .col-md-3 {
+            margin-bottom: 0.75rem;
+        }
+    }
+
+    @media (max-width: 480px) {
+        .btn-bordo, .btn-bordo-outline {
+            padding: 5px 12px;
+            font-size: 0.8rem;
+        }
+        
+        .card-body {
+            padding: 1rem !important;
+        }
     }
 </style>
 {% endblock %}
@@ -179,9 +396,9 @@
 {% block content %}
 <div class="container-fluid py-4">
     <div class="container">
-        <!-- Cabeçalho -->
+        <!-- Cabeçalho responsivo -->
         <div class="d-flex justify-content-between align-items-center mb-4">
-            <h2>
+            <h2 class="mb-2 mb-md-0">
                 <i class="bi bi-calendar-week" style="color: var(--bordo);"></i> 
                 <span style="color: var(--bordo);">Reuniões</span>
                 <span class="badge" style="background: var(--bordo);">{{ estatisticas.total_reunioes }}</span>
@@ -189,21 +406,21 @@
                 <small class="text-muted fs-6">({{ estatisticas.reunioes_atrasadas }} atrasadas)</small>
                 {% endif %}
             </h2>
-            <div>
+            <div class="header-actions">
                 {% if session.tipo == 'admin' %}
-                <a href="/reunioes/nova" class="btn-bordo me-2">
+                <a href="/reunioes/nova" class="btn-bordo">
                     <i class="bi bi-plus-circle"></i> Nova Reunião
                 </a>
                 {% endif %}
                 <a href="/dashboard" class="btn-bordo-outline">
-                    <i class="bi bi-arrow-left"></i> Voltar ao Dashboard
+                    <i class="bi bi-arrow-left"></i> Voltar
                 </a>
             </div>
         </div>
 
         <!-- Cards de Estatísticas - Brancos com letras bordô -->
         <div class="row mb-4">
-            <div class="col-md-3">
+            <div class="col-md-3 col-sm-6 mb-3 mb-md-0">
                 <div class="card-bordo-branco shadow-sm">
                     <div class="card-body">
                         <div class="d-flex justify-content-between align-items-center">
@@ -216,7 +433,7 @@
                     </div>
                 </div>
             </div>
-            <div class="col-md-3">
+            <div class="col-md-3 col-sm-6 mb-3 mb-md-0">
                 <div class="card-bordo-branco-destaque shadow-sm">
                     <div class="card-body">
                         <div class="d-flex justify-content-between align-items-center">
@@ -229,7 +446,7 @@
                     </div>
                 </div>
             </div>
-            <div class="col-md-3">
+            <div class="col-md-3 col-sm-6 mb-3 mb-md-0">
                 <div class="card-bordo-branco shadow-sm">
                     <div class="card-body">
                         <div class="d-flex justify-content-between align-items-center">
@@ -242,7 +459,7 @@
                     </div>
                 </div>
             </div>
-            <div class="col-md-3">
+            <div class="col-md-3 col-sm-6">
                 <div class="card-bordo-branco-suave shadow-sm">
                     <div class="card-body">
                         <div class="d-flex justify-content-between align-items-center">
@@ -259,7 +476,7 @@
 
         <!-- Segunda linha de cards -->
         <div class="row mb-4">
-            <div class="col-md-3">
+            <div class="col-md-3 col-sm-6 mb-3 mb-md-0">
                 <div class="card-bordo-branco-suave shadow-sm">
                     <div class="card-body">
                         <div class="d-flex justify-content-between align-items-center">
@@ -272,7 +489,7 @@
                     </div>
                 </div>
             </div>
-            <div class="col-md-3">
+            <div class="col-md-3 col-sm-6 mb-3 mb-md-0">
                 <div class="card-bordo-branco-destaque shadow-sm">
                     <div class="card-body">
                         <div class="d-flex justify-content-between align-items-center">
@@ -285,7 +502,7 @@
                     </div>
                 </div>
             </div>
-            <div class="col-md-3">
+            <div class="col-md-3 col-sm-6 mb-3 mb-md-0">
                 <div class="card-bordo-branco shadow-sm">
                     <div class="card-body">
                         <div class="d-flex justify-content-between align-items-center">
@@ -298,7 +515,7 @@
                     </div>
                 </div>
             </div>
-            <div class="col-md-3">
+            <div class="col-md-3 col-sm-6">
                 <div class="card-bordo-branco shadow-sm">
                     <div class="card-body">
                         <div class="d-flex justify-content-between align-items-center">
@@ -313,22 +530,22 @@
             </div>
         </div>
 
-        <!-- Filtros -->
+        <!-- Filtros responsivos -->
         <div class="filtros-card shadow-sm mb-4">
             <div class="filtros-header">
                 <h6 class="mb-0" style="color: var(--bordo);"><i class="bi bi-funnel"></i> Filtros</h6>
             </div>
-            <div class="card-body">
+            <div class="card-body p-4">
                 <form method="GET" class="row g-3">
-                    <div class="col-md-2">
+                    <div class="col-md-2 col-sm-12">
                         <label class="form-label">Data Início</label>
                         <input type="date" class="form-control" name="data_ini" value="{{ filtros.data_ini }}">
                     </div>
-                    <div class="col-md-2">
+                    <div class="col-md-2 col-sm-12">
                         <label class="form-label">Data Fim</label>
                         <input type="date" class="form-control" name="data_fim" value="{{ filtros.data_fim }}">
                     </div>
-                    <div class="col-md-2">
+                    <div class="col-md-2 col-sm-12">
                         <label class="form-label">Tipo</label>
                         <select class="form-select" name="tipo">
                             <option value="">Todos</option>
@@ -339,7 +556,7 @@
                             {% endfor %}
                         </select>
                     </div>
-                    <div class="col-md-2">
+                    <div class="col-md-2 col-sm-12">
                         <label class="form-label">Status</label>
                         <select class="form-select" name="status">
                             <option value="">Todos</option>
@@ -348,7 +565,7 @@
                             <option value="cancelada" {% if filtros.status == 'cancelada' %}selected{% endif %}>Cancelada</option>
                         </select>
                     </div>
-                    <div class="col-md-2">
+                    <div class="col-md-2 col-sm-12">
                         <label class="form-label">Grau</label>
                         <select class="form-select" name="grau">
                             <option value="">Todos</option>
@@ -362,13 +579,13 @@
                             {% endfor %}
                         </select>
                     </div>
-                    <div class="col-md-2">
+                    <div class="col-md-2 col-sm-12">
                         <label class="form-label">Local</label>
                         <input type="text" class="form-control" name="local" value="{{ filtros.local }}" 
                                placeholder="Buscar local...">
                     </div>
-                    <div class="col-md-12 d-flex justify-content-end">
-                        <button type="submit" class="btn-bordo me-2">
+                    <div class="col-md-12 d-flex justify-content-end gap-2 mt-3">
+                        <button type="submit" class="btn-bordo">
                             <i class="bi bi-search"></i> Filtrar
                         </button>
                         <a href="/reunioes" class="btn-bordo-outline">
@@ -438,14 +655,14 @@
                                     <span class="badge" style="background-color: {{ reuniao.cor or '#6c757d' }}; color: white;">
                                         {{ reuniao.tipo }}
                                     </span>
-                                </td>
+                                </th>
                                 <td>
                                     <i class="bi bi-geo-alt"></i> 
                                     {{ reuniao.local or '-' }}
                                     {% if reuniao.loja_nome %}
                                     <br><small class="text-muted">{{ reuniao.loja_nome }}</small>
                                     {% endif %}
-                                </td>
+                                </th>
                                 <td>
                                     {% if reuniao.status == 'realizada' %}
                                         <span class="badge bg-success">Realizada</span>
@@ -456,11 +673,11 @@
                                     {% else %}
                                         <span class="badge bg-secondary">{{ reuniao.status }}</span>
                                     {% endif %}
-                                </td>
+                                </th>
                                 <td class="text-center" style="min-width: 100px;">
                                     {% if reuniao.total_obreiros and reuniao.total_obreiros > 0 %}
                                         <div class="progress-bordo" style="height: 20px;">
-                                            <div class="progress-bar bg-success" role="progressbar" 
+                                            <div class="progress-bar" role="progressbar" 
                                                  style="width: {{ reuniao.percentual_presenca }}%"
                                                  title="{{ reuniao.presentes_confirmados or 0 }} presentes">
                                                 {{ "%.0f"|format(reuniao.percentual_presenca) }}%
@@ -472,52 +689,52 @@
                                     {% else %}
                                         -
                                     {% endif %}
-                                </th>
+                                </td>
                                 <td>
-                                    <div class="btn-group btn-group-sm" role="group">
-                                        <a href="/reunioes/{{ reuniao.id }}" class="btn btn-info" title="Visualizar">
-                                            <i class="bi bi-eye"></i>
+                                    <div class="table-actions">
+                                        <a href="/reunioes/{{ reuniao.id }}" class="btn-icon-info" title="Visualizar">
+                                            <i class="bi bi-eye-fill"></i>
                                         </a>
                                         
                                         {% if session.tipo == 'admin' %}
                                             {% if reuniao.status != 'realizada' and reuniao.status != 'cancelada' %}
-                                            <a href="/reunioes/{{ reuniao.id }}/editar" class="btn btn-warning" title="Editar">
-                                                <i class="bi bi-pencil"></i>
+                                            <a href="/reunioes/{{ reuniao.id }}/editar" class="btn-icon-warning" title="Editar">
+                                                <i class="bi bi-pencil-fill"></i>
                                             </a>
                                             {% endif %}
                                             
                                             {% if reuniao.status != 'realizada' and reuniao.status != 'cancelada' %}
-                                            <a href="/reunioes/{{ reuniao.id }}/excluir" class="btn btn-danger" 
+                                            <a href="/reunioes/{{ reuniao.id }}/excluir" class="btn-icon-danger" 
                                                title="Excluir" onclick="return confirm('Tem certeza que deseja excluir esta reunião?')">
-                                                <i class="bi bi-trash"></i>
+                                                <i class="bi bi-trash-fill"></i>
                                             </a>
                                             {% endif %}
                                             
                                             {% if reuniao.status == 'realizada' %}
                                             <form method="POST" action="/reunioes/{{ reuniao.id }}/cancelar" style="display: inline;">
-                                                <button type="submit" class="btn btn-secondary" 
+                                                <button type="submit" class="btn-icon-secondary" 
                                                         onclick="return confirm('Cancelar esta reunião?')" 
                                                         title="Cancelar">
-                                                    <i class="bi bi-x-circle"></i>
+                                                    <i class="bi bi-x-circle-fill"></i>
                                                 </button>
                                             </form>
                                             {% endif %}
                                             
                                             {% if reuniao.status == 'realizada' and not reuniao.tem_ata %}
-                                            <a href="/atas/nova/{{ reuniao.id }}" class="btn btn-success" title="Criar Ata">
-                                                <i class="bi bi-file-text"></i>
+                                            <a href="/atas/nova/{{ reuniao.id }}" class="btn-icon-success" title="Criar Ata">
+                                                <i class="bi bi-file-text-fill"></i>
                                             </a>
                                             {% endif %}
                                             
                                             {% if reuniao.status == 'realizada' and reuniao.tem_ata and reuniao.ata_id %}
-                                            <a href="/atas/{{ reuniao.ata_id }}" class="btn btn-info" title="Visualizar Ata">
+                                            <a href="/atas/{{ reuniao.ata_id }}" class="btn-icon-info" title="Visualizar Ata">
                                                 <i class="bi bi-file-text-fill"></i>
                                             </a>
                                             {% endif %}
                                             
                                             {% if reuniao.status == 'cancelada' %}
                                             <form method="POST" action="/reunioes/{{ reuniao.id }}/reativar" style="display: inline;">
-                                                <button type="submit" class="btn btn-warning" 
+                                                <button type="submit" class="btn-icon-warning" 
                                                         onclick="return confirm('Reativar esta reunião?')" 
                                                         title="Reativar">
                                                     <i class="bi bi-arrow-repeat"></i>
@@ -539,7 +756,7 @@
                                         <i class="bi bi-plus-circle"></i> Criar primeira reunião
                                     </a>
                                     {% endif %}
-                                </th>
+                                </td>
                             </tr>
                             {% endfor %}
                         </tbody>
@@ -550,26 +767,26 @@
 
         <!-- Legenda -->
         <div class="legenda-card shadow-sm mt-4">
-            <div class="card-header" style="background: var(--bordo-transparente); border-bottom: 1px solid rgba(74, 14, 46, 0.1);">
+            <div class="card-header" style="background: var(--bordo-transparente); border-bottom: 1px solid rgba(74, 14, 46, 0.1); border-radius: 16px 16px 0 0;">
                 <h6 class="mb-0" style="color: var(--bordo);"><i class="bi bi-info-circle"></i> Legenda</h6>
             </div>
-            <div class="card-body">
+            <div class="card-body p-4">
                 <div class="row">
-                    <div class="col-md-3">
+                    <div class="col-md-3 mb-2 mb-md-0">
                         <span class="badge bg-success">Verde</span> = Realizada<br>
                         <span class="badge bg-warning">Amarelo</span> = Agendada<br>
                         <span class="badge bg-danger">Vermelho</span> = Cancelada
                     </div>
-                    <div class="col-md-3">
+                    <div class="col-md-3 mb-2 mb-md-0">
                         <i class="bi bi-star-fill text-warning"></i> = Mestre<br>
                         <i class="bi bi-star text-primary"></i> = Companheiro<br>
                         <i class="bi bi-star text-secondary"></i> = Aprendiz
                     </div>
-                    <div class="col-md-3">
-                        <i class="bi bi-eye"></i> = Visualizar<br>
+                    <div class="col-md-3 mb-2 mb-md-0">
+                        <span class="btn-icon-info d-inline-flex me-1" style="width: 24px; height: 24px;">👁️</span> = Visualizar<br>
                         {% if session.tipo == 'admin' %}
-                        <i class="bi bi-pencil"></i> = Editar<br>
-                        <i class="bi bi-file-text"></i> = Criar Ata
+                        <span class="btn-icon-warning d-inline-flex me-1" style="width: 24px; height: 24px;">✏️</span> = Editar<br>
+                        <span class="btn-icon-success d-inline-flex me-1" style="width: 24px; height: 24px;">📄</span> = Criar Ata
                         {% endif %}
                     </div>
                     <div class="col-md-3">
@@ -578,7 +795,7 @@
                         <i class="bi bi-x-circle text-danger"></i> = Cancelada
                     </div>
                 </div>
-                <hr>
+                <hr class="my-3" style="border-color: rgba(74, 14, 46, 0.15);">
                 <small class="text-muted">
                     <i class="bi bi-info-circle"></i> 
                     {% if session.tipo == 'admin' %}
@@ -596,7 +813,7 @@
     document.addEventListener('DOMContentLoaded', function() {
         const linhas = document.querySelectorAll('#tabelaReunioes tbody tr');
         linhas.forEach(linha => {
-            const botoes = linha.querySelectorAll('.btn, button, a');
+            const botoes = linha.querySelectorAll('.btn-icon-info, .btn-icon-warning, .btn-icon-danger, .btn-icon-success, .btn-icon-secondary, button, a');
             botoes.forEach(botao => {
                 botao.addEventListener('click', function(e) {
                     e.stopPropagation();
@@ -605,7 +822,7 @@
             
             linha.style.cursor = 'pointer';
             linha.addEventListener('click', function() {
-                const linkVisualizar = this.querySelector('.btn-info[href*="/reunioes/"]');
+                const linkVisualizar = this.querySelector('.btn-icon-info[href*="/reunioes/"]');
                 if (linkVisualizar) {
                     window.location.href = linkVisualizar.getAttribute('href');
                 }

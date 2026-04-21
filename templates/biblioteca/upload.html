@@ -2,15 +2,286 @@
 
 {% block title %}Upload de Material - Biblioteca{% endblock %}
 
+{% block styles %}
+{{ super() }}
+<style>
+    :root {
+        --bordo: #4A0E2E;
+        --bordo-escuro: #3A0A24;
+        --bordo-claro: #6B1342;
+        --bordo-suave: #8B4A6B;
+        --bordo-transparente: rgba(74, 14, 46, 0.08);
+        --bordo-transparente-hover: rgba(74, 14, 46, 0.12);
+        --ouro: #D4AF37;
+        --ouro-escuro: #996515;
+        --ouro-claro: #F0D68A;
+    }
+
+    /* BOTÕES DO RITO - VERSÃO MOBILE FRIENDLY */
+    .btn-bordo {
+        background: linear-gradient(135deg, var(--bordo), var(--bordo-escuro));
+        border: none;
+        color: white;
+        border-radius: 30px;
+        padding: 8px 20px;
+        transition: all 0.3s;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        text-decoration: none;
+    }
+    
+    .btn-bordo:hover {
+        background: linear-gradient(135deg, var(--bordo-claro), var(--bordo));
+        transform: translateY(-2px);
+        color: white;
+        box-shadow: 0 5px 15px rgba(74, 14, 46, 0.3);
+    }
+    
+    .btn-bordo-outline {
+        background: transparent;
+        border: 1px solid var(--bordo);
+        color: var(--bordo);
+        border-radius: 30px;
+        padding: 8px 20px;
+        transition: all 0.3s;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        text-decoration: none;
+    }
+    
+    .btn-bordo-outline:hover {
+        background: var(--bordo);
+        color: white;
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(74, 14, 46, 0.2);
+    }
+
+    .btn-bordo-primary {
+        background: linear-gradient(135deg, var(--bordo), var(--bordo-escuro));
+        border: none;
+        color: white;
+        border-radius: 30px;
+        padding: 12px 28px;
+        transition: all 0.3s;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        text-decoration: none;
+        font-weight: 500;
+    }
+    
+    .btn-bordo-primary:hover {
+        background: linear-gradient(135deg, var(--bordo-claro), var(--bordo));
+        transform: translateY(-2px);
+        color: white;
+        box-shadow: 0 5px 15px rgba(74, 14, 46, 0.3);
+    }
+
+    /* CARDS */
+    .card {
+        border-radius: 16px;
+        overflow: hidden;
+        border: 1px solid rgba(74, 14, 46, 0.15);
+        transition: transform 0.2s, box-shadow 0.2s;
+    }
+    
+    .card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
+    }
+    
+    .card-header {
+        background: linear-gradient(135deg, var(--bordo), var(--bordo-escuro));
+        border-bottom: none;
+        color: white;
+        padding: 1rem 1.5rem;
+    }
+    
+    .card-header h5 {
+        margin: 0;
+        font-weight: 600;
+    }
+
+    /* FORMULÁRIO */
+    .form-label {
+        color: var(--bordo);
+        font-weight: 600;
+        margin-bottom: 0.5rem;
+    }
+    
+    .form-control, .form-select {
+        border-radius: 12px;
+        border: 1px solid rgba(74, 14, 46, 0.2);
+        padding: 0.6rem 1rem;
+        transition: all 0.2s;
+    }
+    
+    .form-control:focus, .form-select:focus {
+        border-color: var(--bordo);
+        box-shadow: 0 0 0 3px rgba(74, 14, 46, 0.1);
+        outline: none;
+    }
+    
+    .form-check-input:checked {
+        background-color: var(--bordo);
+        border-color: var(--bordo);
+    }
+    
+    .form-check-label {
+        color: var(--bordo);
+        font-weight: 500;
+    }
+
+    /* ALERTAS */
+    .alert-bordo-info {
+        background: var(--bordo-transparente);
+        border: 1px solid rgba(74, 14, 46, 0.15);
+        color: var(--bordo);
+        border-radius: 12px;
+    }
+
+    /* GRUPO DE AÇÕES DO CABEÇALHO */
+    .header-actions {
+        display: flex;
+        gap: 12px;
+        align-items: center;
+        flex-wrap: wrap;
+    }
+
+    /* GRUPO DE BOTÕES */
+    .btn-group-mobile {
+        display: flex;
+        gap: 12px;
+        justify-content: center;
+        flex-wrap: wrap;
+    }
+
+    /* LOADING OVERLAY */
+    #loadingOverlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(74, 14, 46, 0.9);
+        z-index: 9999;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+    }
+    
+    .spinner-border-lg {
+        width: 3rem;
+        height: 3rem;
+    }
+    
+    .progress-custom {
+        background: rgba(255, 255, 255, 0.2);
+        border-radius: 30px;
+        overflow: hidden;
+    }
+    
+    .progress-custom .progress-bar {
+        background: linear-gradient(90deg, var(--ouro), var(--ouro-claro));
+        border-radius: 30px;
+    }
+
+    /* RESPONSIVIDADE */
+    @media (max-width: 768px) {
+        .btn-bordo, .btn-bordo-outline, .btn-bordo-primary {
+            padding: 6px 16px;
+            font-size: 0.85rem;
+        }
+        
+        .btn-bordo-primary {
+            padding: 10px 20px;
+        }
+        
+        /* Cabeçalho responsivo */
+        .d-flex.justify-content-between {
+            flex-direction: column;
+            align-items: flex-start !important;
+            gap: 15px;
+        }
+        
+        .header-actions {
+            width: 100%;
+        }
+        
+        .header-actions .btn-bordo-outline {
+            width: 100%;
+            justify-content: center;
+        }
+        
+        h2 {
+            font-size: 1.5rem;
+        }
+        
+        /* Formulário responsivo */
+        .row .col-md-6 {
+            margin-bottom: 0.5rem;
+        }
+        
+        .form-control, .form-select {
+            font-size: 0.875rem;
+        }
+        
+        /* Botões do formulário */
+        .btn-group-mobile {
+            flex-direction: column;
+            width: 100%;
+        }
+        
+        .btn-group-mobile .btn-bordo-primary,
+        .btn-group-mobile .btn-bordo-outline {
+            width: 100%;
+            justify-content: center;
+        }
+        
+        /* Loading overlay responsivo */
+        .progress-custom {
+            width: 80%;
+            max-width: 300px;
+        }
+        
+        .modal-body {
+            padding: 1rem;
+        }
+    }
+
+    @media (max-width: 480px) {
+        .btn-bordo, .btn-bordo-outline, .btn-bordo-primary {
+            padding: 5px 12px;
+            font-size: 0.8rem;
+        }
+        
+        .btn-bordo-primary {
+            padding: 8px 16px;
+        }
+        
+        .card-body {
+            padding: 1rem !important;
+        }
+        
+        .card-header {
+            padding: 0.75rem 1rem;
+        }
+    }
+</style>
+{% endblock %}
+
 {% block content %}
 <div class="container py-4">
+    <!-- Cabeçalho responsivo -->
     <div class="d-flex justify-content-between align-items-center mb-4">
         <h2>
-            <i class="bi bi-cloud-upload"></i> 
-            Upload de Material
+            <i class="bi bi-cloud-upload" style="color: var(--bordo);"></i> 
+            <span style="color: var(--bordo);">Upload de Material</span>
         </h2>
-        <div>
-            <a href="/biblioteca" class="btn btn-outline-secondary">
+        <div class="header-actions">
+            <a href="/biblioteca" class="btn-bordo-outline">
                 <i class="bi bi-arrow-left"></i> Voltar
             </a>
         </div>
@@ -18,30 +289,30 @@
 
     <div class="row">
         <div class="col-md-8 mx-auto">
-            <div class="card shadow">
-                <div class="card-header bg-primary text-white">
-                    <h5 class="mb-0"><i class="bi bi-info-circle"></i> Enviar novo material para a biblioteca</h5>
+            <div class="card shadow-sm">
+                <div class="card-header">
+                    <h5><i class="bi bi-info-circle me-2"></i> Enviar novo material para a biblioteca</h5>
                 </div>
-                <div class="card-body">
+                <div class="card-body p-4">
                     <form method="POST" enctype="multipart/form-data" id="formUpload">
                         <div class="mb-3">
-                            <label class="form-label fw-bold">Título *</label>
+                            <label class="form-label">Título <span class="text-danger">*</span></label>
                             <input type="text" class="form-control" name="titulo" required>
                         </div>
 
                         <div class="mb-3">
-                            <label class="form-label fw-bold">Subtítulo</label>
+                            <label class="form-label">Subtítulo</label>
                             <input type="text" class="form-control" name="subtitulo">
                         </div>
 
                         <div class="mb-3">
-                            <label class="form-label fw-bold">Descrição</label>
+                            <label class="form-label">Descrição</label>
                             <textarea class="form-control" name="descricao" rows="4"></textarea>
                         </div>
 
                         <div class="row">
                             <div class="col-md-6 mb-3">
-                                <label class="form-label fw-bold">Tipo *</label>
+                                <label class="form-label">Tipo <span class="text-danger">*</span></label>
                                 <select class="form-select" name="tipo" required>
                                     <option value="livro">📚 Livro</option>
                                     <option value="apostila">📖 Apostila</option>
@@ -53,7 +324,7 @@
                             </div>
 
                             <div class="col-md-6 mb-3">
-                                <label class="form-label fw-bold">Categoria *</label>
+                                <label class="form-label">Categoria <span class="text-danger">*</span></label>
                                 <select class="form-select" name="categoria_id" required>
                                     <option value="">Selecione...</option>
                                     {% for cat in categorias %}
@@ -65,7 +336,7 @@
 
                         <div class="row">
                             <div class="col-md-6 mb-3">
-                                <label class="form-label fw-bold">Grau de Acesso *</label>
+                                <label class="form-label">Grau de Acesso <span class="text-danger">*</span></label>
                                 <select class="form-select" name="grau_acesso" required>
                                     <option value="1">📘 Aprendiz (Grau 1)</option>
                                     <option value="2">📙 Companheiro (Grau 2)</option>
@@ -74,57 +345,58 @@
                             </div>
 
                             <div class="col-md-6 mb-3">
-                                <label class="form-label fw-bold">Autor</label>
+                                <label class="form-label">Autor</label>
                                 <input type="text" class="form-control" name="autor">
                             </div>
                         </div>
 
                         <div class="row">
                             <div class="col-md-6 mb-3">
-                                <label class="form-label fw-bold">Editora</label>
+                                <label class="form-label">Editora</label>
                                 <input type="text" class="form-control" name="editora">
                             </div>
 
                             <div class="col-md-6 mb-3">
-                                <label class="form-label fw-bold">Ano de Publicação</label>
+                                <label class="form-label">Ano de Publicação</label>
                                 <input type="number" class="form-control" name="ano_publicacao" min="1800" max="2026">
                             </div>
                         </div>
 
                         <div class="mb-3">
-                            <label class="form-label fw-bold">Tags (separadas por vírgula)</label>
+                            <label class="form-label">Tags (separadas por vírgula)</label>
                             <input type="text" class="form-control" name="tags" placeholder="Ex: maçonaria, aprendizado, ritual">
                         </div>
 
                         <div class="mb-3">
-                            <label class="form-label fw-bold">Arquivo *</label>
+                            <label class="form-label">Arquivo <span class="text-danger">*</span></label>
                             <input type="file" class="form-control" name="arquivo" accept=".pdf,.doc,.docx,.jpg,.jpeg,.png,.mp4,.mp3" required>
                             <small class="text-muted">Formatos aceitos: PDF, DOC, DOCX, JPG, PNG, MP4, MP3 (máx 50MB)</small>
                         </div>
 
                         <div class="mb-3">
-                            <label class="form-label fw-bold">Capa (imagem)</label>
+                            <label class="form-label">Capa (imagem)</label>
                             <input type="file" class="form-control" name="capa" accept="image/*">
                             <small class="text-muted">Imagem para capa do material (JPG, PNG - recomendado 300x400px)</small>
                         </div>
 
                         <div class="mb-3 form-check">
                             <input type="checkbox" class="form-check-input" name="destaque" id="destaque">
-                            <label class="form-check-label fw-bold" for="destaque">
-                                <i class="bi bi-star-fill text-warning"></i> Destacar este material
+                            <label class="form-check-label" for="destaque">
+                                <i class="bi bi-star-fill" style="color: var(--ouro);"></i> Destacar este material
                             </label>
                         </div>
 
-                        <div class="alert alert-info">
+                        <div class="alert alert-bordo-info mb-4">
                             <i class="bi bi-cloud-upload"></i>
                             <strong>Armazenamento em Nuvem:</strong> O arquivo será enviado para o Cloudinary e estará disponível globalmente.
                         </div>
 
-                        <div class="d-grid gap-2">
-                            <button type="submit" class="btn btn-primary btn-lg" id="btnSubmit">
+                        <!-- Botões com layout responsivo -->
+                        <div class="btn-group-mobile">
+                            <button type="submit" class="btn-bordo-primary" id="btnSubmit">
                                 <i class="bi bi-cloud-upload"></i> Enviar para a Nuvem
                             </button>
-                            <a href="/biblioteca" class="btn btn-outline-secondary">
+                            <a href="/biblioteca" class="btn-bordo-outline">
                                 <i class="bi bi-x-circle"></i> Cancelar
                             </a>
                         </div>
@@ -136,15 +408,15 @@
 </div>
 
 <!-- Loading Overlay -->
-<div id="loadingOverlay" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.7); z-index: 9999; justify-content: center; align-items: center;">
+<div id="loadingOverlay" style="display: none;">
     <div class="text-center text-white">
-        <div class="spinner-border spinner-border-lg" style="width: 3rem; height: 3rem;" role="status">
+        <div class="spinner-border spinner-border-lg" role="status">
             <span class="visually-hidden">Carregando...</span>
         </div>
         <h4 class="mt-3">Enviando para a nuvem...</h4>
         <p>Aguarde, o arquivo está sendo processado</p>
-        <div class="progress mt-3" style="width: 300px;">
-            <div class="progress-bar progress-bar-striped progress-bar-animated" style="width: 100%"></div>
+        <div class="progress-custom mt-3" style="width: 300px; max-width: 80%; margin: 0 auto;">
+            <div class="progress-bar progress-bar-striped progress-bar-animated" style="width: 100%; height: 8px;"></div>
         </div>
     </div>
 </div>
@@ -156,7 +428,7 @@ document.getElementById('formUpload').addEventListener('submit', function(e) {
         const maxSize = 50 * 1024 * 1024; // 50MB
         if (arquivo.size > maxSize) {
             e.preventDefault();
-            alert('Arquivo muito grande! O tamanho máximo é 50MB.');
+            alert('❌ Arquivo muito grande! O tamanho máximo é 50MB.');
             return false;
         }
     }
@@ -166,12 +438,38 @@ document.getElementById('formUpload').addEventListener('submit', function(e) {
     document.getElementById('btnSubmit').disabled = true;
     document.getElementById('btnSubmit').innerHTML = '<i class="bi bi-hourglass-split"></i> Enviando...';
 });
-</script>
 
-<style>
-.spinner-border-lg {
-    width: 3rem;
-    height: 3rem;
-}
-</style>
+// Validação do formulário
+document.querySelector('form').addEventListener('submit', function(e) {
+    const titulo = document.querySelector('input[name="titulo"]').value.trim();
+    const tipo = document.querySelector('select[name="tipo"]').value;
+    const categoria = document.querySelector('select[name="categoria_id"]').value;
+    const arquivo = document.querySelector('input[name="arquivo"]').files[0];
+    
+    if (!titulo) {
+        e.preventDefault();
+        alert('❌ Por favor, informe o título do material!');
+        document.querySelector('input[name="titulo"]').focus();
+        return false;
+    }
+    
+    if (!tipo) {
+        e.preventDefault();
+        alert('❌ Por favor, selecione o tipo do material!');
+        return false;
+    }
+    
+    if (!categoria) {
+        e.preventDefault();
+        alert('❌ Por favor, selecione a categoria do material!');
+        return false;
+    }
+    
+    if (!arquivo) {
+        e.preventDefault();
+        alert('❌ Por favor, selecione o arquivo para upload!');
+        return false;
+    }
+});
+</script>
 {% endblock %}

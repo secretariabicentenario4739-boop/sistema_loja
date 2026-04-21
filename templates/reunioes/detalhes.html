@@ -75,14 +75,18 @@
         font-weight: 700;
     }
 
-    /* BOTÕES DO RITO */
+    /* BOTÕES DO RITO - VERSÃO MOBILE FRIENDLY */
     .btn-bordo {
         background: linear-gradient(135deg, var(--bordo), var(--bordo-escuro));
         border: none;
         color: white;
         border-radius: 30px;
-        padding: 8px 24px;
+        padding: 8px 20px;
         transition: all 0.3s;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        text-decoration: none;
     }
     
     .btn-bordo:hover {
@@ -97,8 +101,12 @@
         border: 1px solid var(--bordo);
         color: var(--bordo);
         border-radius: 30px;
-        padding: 8px 24px;
+        padding: 8px 20px;
         transition: all 0.3s;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        text-decoration: none;
     }
     
     .btn-bordo-outline:hover {
@@ -106,6 +114,107 @@
         color: white;
         transform: translateY(-2px);
         box-shadow: 0 5px 15px rgba(74, 14, 46, 0.2);
+    }
+
+    /* BOTÕES ÍCONE APENAS */
+    .btn-icon-info {
+        background: linear-gradient(135deg, #0ea5e9, #0284c7);
+        border: none;
+        color: white;
+        width: 32px;
+        height: 32px;
+        padding: 0;
+        border-radius: 50%;
+        transition: all 0.3s;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+    }
+    
+    .btn-icon-info:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(14, 165, 233, 0.3);
+        color: white;
+    }
+
+    .btn-icon-warning {
+        background: linear-gradient(135deg, #f59e0b, #d97706);
+        border: none;
+        color: white;
+        width: 32px;
+        height: 32px;
+        padding: 0;
+        border-radius: 50%;
+        transition: all 0.3s;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+    }
+    
+    .btn-icon-warning:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(245, 158, 11, 0.3);
+        color: white;
+    }
+
+    .btn-icon-danger {
+        background: linear-gradient(135deg, #ef4444, #dc2626);
+        border: none;
+        color: white;
+        width: 32px;
+        height: 32px;
+        padding: 0;
+        border-radius: 50%;
+        transition: all 0.3s;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+    }
+    
+    .btn-icon-danger:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(239, 68, 68, 0.3);
+        color: white;
+    }
+
+    .btn-icon-success {
+        background: linear-gradient(135deg, #10b981, #059669);
+        border: none;
+        color: white;
+        width: 32px;
+        height: 32px;
+        padding: 0;
+        border-radius: 50%;
+        transition: all 0.3s;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+    }
+    
+    .btn-icon-success:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(16, 185, 129, 0.3);
+        color: white;
+    }
+
+    .btn-icon-secondary {
+        background: linear-gradient(135deg, #6c757d, #495057);
+        border: none;
+        color: white;
+        width: 32px;
+        height: 32px;
+        padding: 0;
+        border-radius: 50%;
+        transition: all 0.3s;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+    }
+    
+    .btn-icon-secondary:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(108, 117, 125, 0.3);
+        color: white;
     }
 
     /* FILTROS */
@@ -166,12 +275,136 @@
         border-radius: 16px;
     }
 
+    /* CONTAINER DE AÇÕES DO CABEÇALHO */
+    .header-actions {
+        display: flex;
+        gap: 12px;
+        align-items: center;
+        flex-wrap: wrap;
+    }
+
+    /* GRUPO DE BOTÕES DA ATA */
+    .ata-actions {
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+        justify-content: center;
+    }
+
+    /* GRUPO DE BOTÕES DE PRESENÇA */
+    .presenca-actions {
+        display: flex;
+        gap: 8px;
+        align-items: center;
+        flex-wrap: wrap;
+    }
+
+    /* RESPONSIVIDADE */
     @media (max-width: 768px) {
-        .btn-group { flex-direction: column; }
-        .btn-group .btn { margin-bottom: 5px; }
-        .table-responsive { font-size: 0.8rem; }
-        .progress-bordo { height: 15px; }
-        .progress-bordo .progress-bar { font-size: 8px; line-height: 15px; }
+        .btn-bordo, .btn-bordo-outline {
+            padding: 6px 16px;
+            font-size: 0.85rem;
+        }
+        
+        .btn-icon-info, .btn-icon-warning, .btn-icon-danger, 
+        .btn-icon-success, .btn-icon-secondary {
+            width: 28px;
+            height: 28px;
+            font-size: 0.75rem;
+        }
+        
+        .table-responsive {
+            font-size: 0.85rem;
+        }
+        
+        .table-bordo thead th,
+        .table-bordo tbody td {
+            padding: 8px 12px;
+        }
+        
+        .progress-bordo {
+            height: 15px;
+        }
+        
+        .progress-bordo .progress-bar {
+            font-size: 8px;
+            line-height: 15px;
+        }
+        
+        /* Cabeçalho responsivo */
+        .d-flex.justify-content-between {
+            flex-direction: column;
+            align-items: flex-start !important;
+            gap: 15px;
+        }
+        
+        .header-actions {
+            width: 100%;
+        }
+        
+        .header-actions .btn-bordo-outline {
+            width: 100%;
+            justify-content: center;
+        }
+        
+        h2 {
+            font-size: 1.5rem;
+        }
+        
+        /* Botões da ata */
+        .ata-actions {
+            flex-direction: column;
+        }
+        
+        .ata-actions .btn-icon-info,
+        .ata-actions .btn-icon-warning,
+        .ata-actions .btn-icon-danger,
+        .ata-actions .btn-icon-success,
+        .ata-actions .btn-bordo-outline {
+            width: 100%;
+            justify-content: center;
+        }
+        
+        /* Botões de presença */
+        .presenca-actions {
+            flex-direction: column;
+            width: 100%;
+            margin-top: 10px;
+        }
+        
+        .presenca-actions button {
+            width: 100%;
+        }
+        
+        /* Footer de presença */
+        .card-footer .d-flex {
+            flex-direction: column;
+            gap: 8px;
+        }
+        
+        .card-footer button {
+            width: 100%;
+        }
+        
+        /* Cards de estatísticas responsivos */
+        .row.mb-4 .col-md-4 {
+            margin-bottom: 0.75rem;
+        }
+    }
+
+    @media (max-width: 480px) {
+        .btn-bordo, .btn-bordo-outline {
+            padding: 5px 12px;
+            font-size: 0.8rem;
+        }
+        
+        .card-body {
+            padding: 1rem !important;
+        }
+        
+        .filtros-header {
+            padding: 10px 15px;
+        }
     }
 </style>
 {% endblock %}
@@ -179,13 +412,13 @@
 {% block content %}
 <div class="container-fluid py-4">
     <div class="container">
-        <!-- Cabeçalho -->
+        <!-- Cabeçalho responsivo -->
         <div class="d-flex justify-content-between align-items-center mb-4">
-            <h2>
+            <h2 class="mb-2 mb-md-0">
                 <i class="bi bi-calendar-week" style="color: var(--bordo);"></i> 
                 <span style="color: var(--bordo);">{{ reuniao.titulo or 'Reunião' }}</span>
             </h2>
-            <div>
+            <div class="header-actions">
                 <a href="/reunioes" class="btn-bordo-outline">
                     <i class="bi bi-arrow-left"></i> Voltar
                 </a>
@@ -194,7 +427,7 @@
 
         <!-- Cards de Estatísticas - Brancos com letras bordô (igual à lista) -->
         <div class="row mb-4">
-            <div class="col-md-4">
+            <div class="col-md-4 mb-3 mb-md-0">
                 <div class="card-bordo-branco shadow-sm">
                     <div class="card-body">
                         <div class="d-flex justify-content-between align-items-center">
@@ -208,7 +441,7 @@
                     </div>
                 </div>
             </div>
-            <div class="col-md-4">
+            <div class="col-md-4 mb-3 mb-md-0">
                 <div class="card-bordo-branco-destaque shadow-sm">
                     <div class="card-body">
                         <div class="d-flex justify-content-between align-items-center">
@@ -246,7 +479,7 @@
                     <div class="filtros-header">
                         <h6 class="mb-0" style="color: var(--bordo);"><i class="bi bi-info-circle"></i> Informações da Reunião</h6>
                     </div>
-                    <div class="card-body">
+                    <div class="card-body p-4">
                         <div class="row">
                             <div class="col-sm-6">
                                 <table class="table table-sm table-borderless">
@@ -278,7 +511,7 @@
                                             {% else %}
                                                 <span class="badge bg-secondary">Todos os Graus</span>
                                             {% endif %}
-                                        </td>
+                                         </td>
                                     </tr>
                                     <tr>
                                         <td class="text-muted">Local</td>
@@ -307,7 +540,7 @@
                                             {% else %}
                                                 -
                                             {% endif %}
-                                        </td>
+                                         </td>
                                     </tr>
                                 </table>
                             </div>
@@ -336,7 +569,7 @@
                     <div class="filtros-header">
                         <h6 class="mb-0" style="color: var(--bordo);"><i class="bi bi-file-text"></i> Ata da Reunião</h6>
                     </div>
-                    <div class="card-body text-center">
+                    <div class="card-body text-center p-4">
                         {% if ata_id %}
                             <i class="bi bi-file-text-fill fs-1" style="color: #10b981;"></i>
                             <h5 class="mt-2 mb-1" style="color: var(--bordo);">Ata nº {{ ata_numero or '?' }}/{{ ata_ano or '?' }}</h5>
@@ -345,28 +578,30 @@
                             {% else %}
                                 <span class="badge bg-warning mb-3">Pendente</span>
                             {% endif %}
-                            <div class="d-grid gap-2">
-                                <a href="/atas/{{ ata_id }}" class="btn btn-sm btn-outline-info">
-                                    <i class="bi bi-eye"></i> Visualizar
+                            <div class="ata-actions">
+                                <a href="/atas/{{ ata_id }}" class="btn-icon-info" title="Visualizar">
+                                    <i class="bi bi-eye-fill"></i>
                                 </a>
-                                <a href="/atas/{{ ata_id }}/pdf-oficial" class="btn btn-sm btn-outline-primary" target="_blank">
-                                    <i class="bi bi-file-pdf"></i> Baixar PDF
+                                <a href="/atas/{{ ata_id }}/pdf-oficial" class="btn-icon-secondary" title="Baixar PDF" target="_blank">
+                                    <i class="bi bi-file-pdf-fill"></i>
                                 </a>
                                 {% if session.tipo == 'admin' %}
                                     {% if not ata_aprovada %}
-                                    <a href="/atas/{{ ata_id }}/editar" class="btn btn-sm btn-outline-warning">
-                                        <i class="bi bi-pencil"></i> Editar
+                                    <a href="/atas/{{ ata_id }}/editar" class="btn-icon-warning" title="Editar">
+                                        <i class="bi bi-pencil-fill"></i>
                                     </a>
                                     {% endif %}
-                                    <button class="btn btn-sm btn-outline-danger" 
-                                            onclick="if(confirm('Excluir esta ata?')) location.href='/atas/{{ ata_id }}/excluir'">
-                                        <i class="bi bi-trash"></i> Excluir
+                                    <button class="btn-icon-danger" 
+                                            onclick="if(confirm('Excluir esta ata?')) location.href='/atas/{{ ata_id }}/excluir'" 
+                                            title="Excluir">
+                                        <i class="bi bi-trash-fill"></i>
                                     </button>
                                     {% if not ata_aprovada %}
-                                    <form method="POST" action="/atas/{{ ata_id }}/aprovar">
-                                        <button type="submit" class="btn btn-sm btn-outline-success w-100" 
-                                                onclick="return confirm('Aprovar esta ata?')">
-                                            <i class="bi bi-check-lg"></i> Aprovar
+                                    <form method="POST" action="/atas/{{ ata_id }}/aprovar" style="display: inline;">
+                                        <button type="submit" class="btn-icon-success" 
+                                                onclick="return confirm('Aprovar esta ata?')" 
+                                                title="Aprovar">
+                                            <i class="bi bi-check-lg"></i>
                                         </button>
                                     </form>
                                     {% endif %}
@@ -376,7 +611,7 @@
                             <i class="bi bi-file-earmark-text fs-1 text-muted"></i>
                             <p class="text-muted mt-2 mb-3">Nenhuma ata registrada</p>
                             {% if session.tipo == 'admin' %}
-                                <a href="/atas/nova/{{ reuniao.id }}" class="btn btn-sm btn-success">
+                                <a href="/atas/nova/{{ reuniao.id }}" class="btn-bordo">
                                     <i class="bi bi-plus-circle"></i> Criar Ata
                                 </a>
                             {% else %}
@@ -391,15 +626,15 @@
         <!-- LISTA DE PRESENÇA -->
         <div class="filtros-card shadow-sm">
             <div class="filtros-header">
-                <div class="d-flex justify-content-between align-items-center">
+                <div class="d-flex justify-content-between align-items-center flex-wrap">
                     <h6 class="mb-0" style="color: var(--bordo);"><i class="bi bi-people"></i> Lista de Presença</h6>
                     {% if session.tipo == 'admin' and reuniao.status in ['agendada', 'realizada'] %}
-                    <div>
-                        <button type="button" class="btn btn-sm btn-success me-1" id="btnTodosPresentes">
-                            <i class="bi bi-check-all"></i> Todos
+                    <div class="presenca-actions">
+                        <button type="button" class="btn-icon-success" id="btnTodosPresentes" title="Marcar Todos Presentes">
+                            <i class="bi bi-check-all"></i>
                         </button>
-                        <button type="button" class="btn btn-sm btn-danger" id="btnTodosAusentes">
-                            <i class="bi bi-x-lg"></i> Nenhum
+                        <button type="button" class="btn-icon-danger" id="btnTodosAusentes" title="Marcar Todos Ausentes">
+                            <i class="bi bi-x-lg"></i>
                         </button>
                     </div>
                     {% endif %}
@@ -479,10 +714,10 @@
                     </div>
                     <div class="card-footer" style="background: white; border-top: 1px solid rgba(74, 14, 46, 0.1);">
                         <div class="d-flex justify-content-end gap-2">
-                            <button type="button" class="btn btn-sm btn-secondary" onclick="location.reload()">
+                            <button type="button" class="btn-bordo-secondary" onclick="location.reload()">
                                 <i class="bi bi-arrow-repeat"></i> Resetar
                             </button>
-                            <button type="submit" class="btn btn-sm btn-primary">
+                            <button type="submit" class="btn-bordo">
                                 <i class="bi bi-save"></i> Salvar Presenças
                             </button>
                         </div>
@@ -542,26 +777,26 @@
 
         <!-- Legenda -->
         <div class="legenda-card shadow-sm mt-4">
-            <div class="card-header" style="background: var(--bordo-transparente); border-bottom: 1px solid rgba(74, 14, 46, 0.1);">
+            <div class="card-header" style="background: var(--bordo-transparente); border-bottom: 1px solid rgba(74, 14, 46, 0.1); border-radius: 16px 16px 0 0;">
                 <h6 class="mb-0" style="color: var(--bordo);"><i class="bi bi-info-circle"></i> Legenda</h6>
             </div>
-            <div class="card-body">
+            <div class="card-body p-4">
                 <div class="row">
-                    <div class="col-md-3">
+                    <div class="col-md-3 mb-2 mb-md-0">
                         <span class="badge bg-success">Verde</span> = Realizada / Presente<br>
                         <span class="badge bg-warning">Amarelo</span> = Agendada<br>
                         <span class="badge bg-danger">Vermelho</span> = Cancelada / Ausente
                     </div>
-                    <div class="col-md-3">
+                    <div class="col-md-3 mb-2 mb-md-0">
                         <i class="bi bi-star-fill text-warning"></i> = Mestre<br>
                         <i class="bi bi-star text-primary"></i> = Companheiro<br>
                         <i class="bi bi-star text-secondary"></i> = Aprendiz
                     </div>
-                    <div class="col-md-3">
-                        <i class="bi bi-eye"></i> = Visualizar<br>
+                    <div class="col-md-3 mb-2 mb-md-0">
+                        <span class="btn-icon-info d-inline-flex me-1" style="width: 24px; height: 24px;">👁️</span> = Visualizar<br>
                         {% if session.tipo == 'admin' %}
-                        <i class="bi bi-pencil"></i> = Editar<br>
-                        <i class="bi bi-file-text"></i> = Criar Ata
+                        <span class="btn-icon-warning d-inline-flex me-1" style="width: 24px; height: 24px;">✏️</span> = Editar<br>
+                        <span class="btn-icon-success d-inline-flex me-1" style="width: 24px; height: 24px;">📄</span> = Criar Ata
                         {% endif %}
                     </div>
                     <div class="col-md-3">
@@ -570,7 +805,7 @@
                         <i class="bi bi-x-circle text-danger"></i> = Cancelada
                     </div>
                 </div>
-                <hr>
+                <hr class="my-3" style="border-color: rgba(74, 14, 46, 0.15);">
                 <small class="text-muted">
                     <i class="bi bi-info-circle"></i> 
                     {% if session.tipo == 'admin' %}

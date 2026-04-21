@@ -2,17 +2,194 @@
 
 {% block title %}Meu Perfil{% endblock %}
 
+{% block styles %}
+{{ super() }}
+<style>
+    :root {
+        --bordo: #4A0E2E;
+        --bordo-escuro: #3A0A24;
+        --bordo-claro: #6B1342;
+        --bordo-suave: #8B4A6B;
+        --bordo-transparente: rgba(74, 14, 46, 0.08);
+        --bordo-transparente-hover: rgba(74, 14, 46, 0.12);
+        --ouro: #D4AF37;
+        --ouro-escuro: #996515;
+        --ouro-claro: #F0D68A;
+    }
+
+    /* CARDS BRANCOS COM BORDÔ */
+    .card-bordo-branco {
+        background: white;
+        border: 1px solid rgba(74, 14, 46, 0.15);
+        border-radius: 16px;
+        transition: all 0.3s ease;
+        color: var(--bordo);
+    }
+    
+    .card-bordo-branco:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 8px 25px rgba(74, 14, 46, 0.12);
+        border-color: var(--bordo);
+    }
+    
+    .card-bordo-branco-destaque {
+        background: white;
+        border: 2px solid var(--bordo);
+        border-radius: 16px;
+        transition: all 0.3s ease;
+        color: var(--bordo);
+    }
+
+    /* BOTÕES DO RITO */
+    .btn-bordo {
+        background: linear-gradient(135deg, var(--bordo), var(--bordo-escuro));
+        border: none;
+        color: white;
+        border-radius: 30px;
+        padding: 8px 24px;
+        transition: all 0.3s;
+    }
+    
+    .btn-bordo:hover {
+        background: linear-gradient(135deg, var(--bordo-claro), var(--bordo));
+        transform: translateY(-2px);
+        color: white;
+        box-shadow: 0 5px 15px rgba(74, 14, 46, 0.3);
+    }
+    
+    .btn-bordo-outline {
+        background: transparent;
+        border: 1px solid var(--bordo);
+        color: var(--bordo);
+        border-radius: 30px;
+        padding: 8px 24px;
+        transition: all 0.3s;
+    }
+    
+    .btn-bordo-outline:hover {
+        background: var(--bordo);
+        color: white;
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(74, 14, 46, 0.2);
+    }
+
+    .btn-bordo-success {
+        background: linear-gradient(135deg, #10b981, #059669);
+        border: none;
+        color: white;
+        border-radius: 30px;
+        padding: 8px 24px;
+        transition: all 0.3s;
+    }
+    
+    .btn-bordo-success:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(16, 185, 129, 0.3);
+        color: white;
+    }
+
+    .btn-bordo-warning {
+        background: linear-gradient(135deg, #f59e0b, #d97706);
+        border: none;
+        color: white;
+        border-radius: 30px;
+        transition: all 0.3s;
+    }
+    
+    .btn-bordo-warning:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(245, 158, 11, 0.3);
+        color: white;
+    }
+
+    /* FORMULÁRIOS */
+    .form-bordo {
+        border: 1px solid rgba(74, 14, 46, 0.15);
+        border-radius: 12px;
+        transition: all 0.3s;
+    }
+    
+    .form-bordo:focus {
+        border-color: var(--bordo);
+        box-shadow: 0 0 0 0.2rem rgba(74, 14, 46, 0.25);
+        outline: none;
+    }
+    
+    .form-label {
+        color: var(--bordo);
+        font-weight: 500;
+        margin-bottom: 0.5rem;
+    }
+
+    /* Cabeçalho dos Cards */
+    .card-header-bordo {
+        background: var(--bordo-transparente);
+        border-bottom: 1px solid rgba(74, 14, 46, 0.1);
+        padding: 15px 20px;
+        border-radius: 16px 16px 0 0 !important;
+    }
+    
+    .card-header-bordo h5, 
+    .card-header-bordo h6 {
+        color: var(--bordo);
+        margin: 0;
+        font-weight: 600;
+    }
+
+    /* ALERTAS */
+    .alert-bordo-info {
+        background: var(--bordo-transparente);
+        border: 1px solid rgba(74, 14, 46, 0.15);
+        color: var(--bordo);
+        border-radius: 12px;
+    }
+    
+    .alert-bordo-danger {
+        background: rgba(239, 68, 68, 0.1);
+        border: 1px solid rgba(239, 68, 68, 0.2);
+        color: #dc2626;
+        border-radius: 12px;
+    }
+
+    /* CAMPOS READONLY */
+    input[readonly], select[readonly] {
+        background-color: var(--bordo-transparente);
+        border-color: rgba(74, 14, 46, 0.15);
+        color: var(--bordo-suave);
+    }
+    
+    .form-control, .form-select {
+        border-radius: 12px;
+        border: 1px solid rgba(74, 14, 46, 0.2);
+        transition: all 0.3s;
+    }
+    
+    .form-control:focus, .form-select:focus {
+        border-color: var(--bordo);
+        box-shadow: 0 0 0 0.2rem rgba(74, 14, 46, 0.25);
+    }
+
+    @media (max-width: 768px) {
+        .btn-bordo, .btn-bordo-outline, .btn-bordo-success, .btn-bordo-warning {
+            padding: 6px 16px;
+            font-size: 0.875rem;
+        }
+    }
+</style>
+{% endblock %}
+
 {% block content %}
 <div class="container-fluid py-4">
     <div class="container">
+        <!-- Cabeçalho -->
         <div class="d-flex justify-content-between align-items-center mb-4">
             <h2>
-                <i class="bi bi-person-circle"></i> 
-                Meu Perfil
+                <i class="bi bi-person-circle" style="color: var(--bordo);"></i> 
+                <span style="color: var(--bordo);">Meu Perfil</span>
             </h2>
             <div>
-                <a href="/dashboard" class="btn btn-outline-secondary">
-                    <i class="bi bi-arrow-left"></i> Voltar
+                <a href="/dashboard" class="btn-bordo-outline">
+                    <i class="bi bi-arrow-left"></i> Voltar ao Dashboard
                 </a>
             </div>
         </div>
@@ -31,11 +208,11 @@
         <div class="row">
             <div class="col-md-8">
                 <!-- Dados do Perfil -->
-                <div class="card shadow mb-4">
-                    <div class="card-header bg-primary text-white">
-                        <h5 class="mb-0"><i class="bi bi-pencil-square"></i> Editar Perfil</h5>
+                <div class="card-bordo-branco shadow-sm mb-4">
+                    <div class="card-header-bordo">
+                        <h5><i class="bi bi-pencil-square"></i> Editar Perfil</h5>
                     </div>
-                    <div class="card-body">
+                    <div class="card-body p-4">
                         <form method="POST">
                             <div class="row">
                                 <div class="col-md-6 mb-3">
@@ -82,8 +259,11 @@
                                 <textarea class="form-control" name="endereco" rows="2">{{ usuario.endereco or '' }}</textarea>
                             </div>
 
-                            <hr>
-                            <h6 class="mb-3"><i class="bi bi-building"></i> Loja</h6>
+                            <hr class="my-4" style="border-color: rgba(74, 14, 46, 0.15);">
+
+                            <h6 class="mb-3" style="color: var(--bordo);">
+                                <i class="bi bi-building"></i> Loja
+                            </h6>
 
                             <div class="row">
                                 <div class="col-md-5 mb-3">
@@ -113,7 +293,7 @@
                             </div>
 
                             <div class="text-center mt-4">
-                                <button type="submit" class="btn btn-success btn-lg px-5">
+                                <button type="submit" class="btn-bordo-success btn-lg px-5">
                                     <i class="bi bi-save"></i> Salvar Alterações
                                 </button>
                             </div>
@@ -124,18 +304,18 @@
 
             <div class="col-md-4">
                 <!-- Card de Informações -->
-                <div class="card shadow mb-4">
-                    <div class="card-header bg-info text-white">
-                        <h5 class="mb-0"><i class="bi bi-info-circle"></i> Informações</h5>
+                <div class="card-bordo-branco-destaque shadow-sm mb-4">
+                    <div class="card-header-bordo">
+                        <h5><i class="bi bi-info-circle"></i> Informações</h5>
                     </div>
-                    <div class="card-body">
-                        <p><strong>Usuário:</strong> {{ usuario.usuario }}</p>
-                        <p><strong>Data de Cadastro:</strong> 
+                    <div class="card-body p-4">
+                        <p><strong style="color: var(--bordo);">Usuário:</strong> {{ usuario.usuario }}</p>
+                        <p><strong style="color: var(--bordo);">Data de Cadastro:</strong> 
                             {{ usuario.data_cadastro.strftime('%d/%m/%Y') if usuario.data_cadastro else '-' }}
                         </p>
-                        <p><strong>Último Login:</strong> {{ session.get('ultimo_login', '-') }}</p>
-                        <hr>
-                        <div class="alert alert-info small">
+                        <p><strong style="color: var(--bordo);">Último Login:</strong> {{ session.get('ultimo_login', '-') }}</p>
+                        <hr style="border-color: rgba(74, 14, 46, 0.15);">
+                        <div class="alert-bordo-info p-3 rounded">
                             <i class="bi bi-shield-lock"></i>
                             Para alterar sua senha, utilize o formulário ao lado.
                         </div>
@@ -143,11 +323,11 @@
                 </div>
 
                 <!-- Card de Alteração de Senha -->
-                <div class="card shadow">
-                    <div class="card-header bg-warning text-dark">
-                        <h5 class="mb-0"><i class="bi bi-key"></i> Alterar Senha</h5>
+                <div class="card-bordo-branco shadow-sm">
+                    <div class="card-header-bordo">
+                        <h5><i class="bi bi-key"></i> Alterar Senha</h5>
                     </div>
-                    <div class="card-body">
+                    <div class="card-body p-4">
                         <form method="POST">
                             <input type="hidden" name="acao" value="alterar_senha">
                             
@@ -167,13 +347,14 @@
                                 <input type="password" class="form-control" name="confirmar_senha" required>
                             </div>
                             
-                            <button type="submit" class="btn btn-warning w-100">
+                            <button type="submit" class="btn-bordo-warning w-100">
                                 <i class="bi bi-key"></i> Alterar Senha
                             </button>
                         </form>
                         
-                        <hr>
-                        <div class="alert alert-danger small mb-0">
+                        <hr class="my-3" style="border-color: rgba(74, 14, 46, 0.15);">
+                        
+                        <div class="alert-bordo-danger p-3 rounded small mb-0">
                             <i class="bi bi-exclamation-triangle"></i>
                             <strong>Atenção:</strong> Após alterar a senha, você precisará fazer login novamente.
                         </div>
@@ -233,22 +414,4 @@
         });
     }
 </script>
-
-<style>
-    .card {
-        border-radius: 10px;
-        overflow: hidden;
-    }
-    .card-header {
-        font-weight: 600;
-    }
-    .form-control:focus, .form-select:focus {
-        border-color: #0d6efd;
-        box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.25);
-    }
-    input[readonly] {
-        background-color: #e9ecef;
-    }
-</style>
-
 {% endblock %}
