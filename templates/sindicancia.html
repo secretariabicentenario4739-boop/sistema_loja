@@ -2,168 +2,18 @@
 
 {% block title %}Sindicância - {{ candidato.nome }}{% endblock %}
 
-{% block styles %}
-{{ super() }}
-<style>
-    :root {
-        --bordo: #4A0E2E;
-        --bordo-escuro: #3A0A24;
-        --bordo-claro: #6B1342;
-        --bordo-suave: #8B4A6B;
-        --bordo-transparente: rgba(74, 14, 46, 0.08);
-        --bordo-transparente-hover: rgba(74, 14, 46, 0.12);
-        --ouro: #D4AF37;
-        --ouro-escuro: #996515;
-        --ouro-claro: #F0D68A;
-    }
-
-    /* CARDS BRANCOS COM BORDÔ */
-    .card-bordo-branco {
-        background: white;
-        border: 1px solid rgba(74, 14, 46, 0.15);
-        border-radius: 16px;
-        transition: all 0.3s ease;
-    }
-    
-    .card-bordo-branco:hover {
-        transform: translateY(-4px);
-        box-shadow: 0 8px 25px rgba(74, 14, 46, 0.12);
-        border-color: var(--bordo);
-    }
-
-    /* CARDS DE ESTATÍSTICAS */
-    .stat-card-total {
-        background: linear-gradient(135deg, #3b82f6, #2563eb);
-        border: none;
-        border-radius: 16px;
-        color: white;
-    }
-    
-    .stat-card-recebidos {
-        background: linear-gradient(135deg, #10b981, #059669);
-        border: none;
-        border-radius: 16px;
-        color: white;
-    }
-    
-    .stat-card-aguardando {
-        background: linear-gradient(135deg, #f59e0b, #d97706);
-        border: none;
-        border-radius: 16px;
-        color: white;
-    }
-    
-    .stat-card-progresso {
-        background: linear-gradient(135deg, #667eea, #764ba2);
-        border: none;
-        border-radius: 16px;
-        color: white;
-    }
-
-    /* BOTÕES DO RITO */
-    .btn-bordo {
-        background: linear-gradient(135deg, var(--bordo), var(--bordo-escuro));
-        border: none;
-        color: white;
-        border-radius: 30px;
-        padding: 8px 24px;
-        transition: all 0.3s;
-    }
-    
-    .btn-bordo:hover {
-        background: linear-gradient(135deg, var(--bordo-claro), var(--bordo));
-        transform: translateY(-2px);
-        color: white;
-        box-shadow: 0 5px 15px rgba(74, 14, 46, 0.3);
-    }
-    
-    .btn-bordo-outline {
-        background: transparent;
-        border: 1px solid var(--bordo);
-        color: var(--bordo);
-        border-radius: 30px;
-        padding: 8px 24px;
-        transition: all 0.3s;
-    }
-    
-    .btn-bordo-outline:hover {
-        background: var(--bordo);
-        color: white;
-        transform: translateY(-2px);
-        box-shadow: 0 5px 15px rgba(74, 14, 46, 0.2);
-    }
-
-    /* PROGRESS BAR */
-    .progress-bordo {
-        background: rgba(74, 14, 46, 0.1);
-        border-radius: 30px;
-        height: 25px;
-        overflow: hidden;
-    }
-    
-    .progress-bordo .progress-bar {
-        background: linear-gradient(90deg, var(--bordo), var(--bordo-claro));
-        border-radius: 30px;
-        font-size: 14px;
-        font-weight: bold;
-        line-height: 25px;
-    }
-
-    /* TABELA */
-    .table-bordo {
-        margin-bottom: 0;
-    }
-    
-    .table-bordo thead th {
-        background: var(--bordo-transparente);
-        color: var(--bordo);
-        font-weight: 600;
-        border-bottom: 2px solid rgba(74, 14, 46, 0.15);
-    }
-    
-    .table-bordo tbody tr {
-        border-bottom: 1px solid rgba(74, 14, 46, 0.08);
-        transition: all 0.2s;
-    }
-    
-    .table-bordo tbody tr:hover {
-        background: var(--bordo-transparente);
-        cursor: pointer;
-    }
-
-    @media (max-width: 768px) {
-        .btn-group {
-            flex-direction: column;
-        }
-        .btn-group .btn {
-            margin-bottom: 5px;
-        }
-        .table-responsive {
-            font-size: 0.85rem;
-        }
-        .progress-bordo {
-            height: 20px;
-        }
-        .progress-bordo .progress-bar {
-            font-size: 12px;
-            line-height: 20px;
-        }
-    }
-</style>
-{% endblock %}
-
 {% block content %}
 <div class="container-fluid py-4">
     <div class="container">
         <!-- Cabeçalho -->
         <div class="d-flex justify-content-between align-items-center mb-4">
             <h2>
-                <i class="bi bi-clipboard-data" style="color: var(--bordo);"></i> 
-                <span style="color: var(--bordo);">Sindicância: {{ candidato.nome }}</span>
-                <span class="badge" style="background: var(--bordo);">{{ candidato.status or 'Em análise' }}</span>
+                <i class="bi bi-clipboard-data"></i> 
+                Sindicância: {{ candidato.nome }}
+                <span class="badge bg-primary">{{ candidato.status or 'Em análise' }}</span>
             </h2>
             <div>
-                <a href="/candidatos" class="btn-bordo-outline">
+                <a href="/candidatos" class="btn btn-outline-secondary">
                     <i class="bi bi-arrow-left"></i> Voltar
                 </a>
             </div>
@@ -172,7 +22,7 @@
         {% with messages = get_flashed_messages(with_categories=true) %}
             {% if messages %}
                 {% for category, message in messages %}
-                    <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert" style="background: var(--bordo-transparente); border-color: var(--bordo); color: var(--bordo);">
+                    <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
                         <i class="bi bi-{% if category == 'success' %}check-circle{% elif category == 'danger' %}exclamation-triangle{% else %}info-circle{% endif %} me-2"></i>
                         {{ message }}
                         <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
@@ -184,53 +34,53 @@
         <!-- Cards de Estatísticas -->
         <div class="row mb-4">
             <div class="col-md-3">
-                <div class="stat-card-total shadow-sm">
+                <div class="card bg-primary text-white shadow">
                     <div class="card-body">
                         <div class="d-flex justify-content-between align-items-center">
                             <div>
-                                <h6 class="card-title mb-0 opacity-75">Total Sindicantes</h6>
-                                <h2 class="mb-0 fw-bold">{{ total_sindicantes }}</h2>
+                                <h6 class="card-title mb-0">Total Sindicantes</h6>
+                                <h2 class="mb-0">{{ total_sindicantes }}</h2>
                             </div>
-                            <i class="bi bi-people-fill fs-1 opacity-50"></i>
+                            <i class="bi bi-people-fill fs-1"></i>
                         </div>
                     </div>
                 </div>
             </div>
             <div class="col-md-3">
-                <div class="stat-card-recebidos shadow-sm">
+                <div class="card bg-success text-white shadow">
                     <div class="card-body">
                         <div class="d-flex justify-content-between align-items-center">
                             <div>
-                                <h6 class="card-title mb-0 opacity-75">Pareceres Recebidos</h6>
-                                <h2 class="mb-0 fw-bold">{{ votos_recebidos }}</h2>
+                                <h6 class="card-title mb-0">Pareceres Recebidos</h6>
+                                <h2 class="mb-0">{{ votos_recebidos }}</h2>
                             </div>
-                            <i class="bi bi-envelope-check-fill fs-1 opacity-50"></i>
+                            <i class="bi bi-envelope-check-fill fs-1"></i>
                         </div>
                     </div>
                 </div>
             </div>
             <div class="col-md-3">
-                <div class="stat-card-aguardando shadow-sm">
+                <div class="card bg-warning text-dark shadow">
                     <div class="card-body">
                         <div class="d-flex justify-content-between align-items-center">
                             <div>
-                                <h6 class="card-title mb-0 opacity-75">Aguardando</h6>
-                                <h2 class="mb-0 fw-bold">{{ total_sindicantes - votos_recebidos }}</h2>
+                                <h6 class="card-title mb-0">Aguardando</h6>
+                                <h2 class="mb-0">{{ total_sindicantes - votos_recebidos }}</h2>
                             </div>
-                            <i class="bi bi-clock-fill fs-1 opacity-50"></i>
+                            <i class="bi bi-clock-fill fs-1"></i>
                         </div>
                     </div>
                 </div>
             </div>
             <div class="col-md-3">
-                <div class="stat-card-progresso shadow-sm">
+                <div class="card shadow" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white;">
                     <div class="card-body">
                         <div class="d-flex justify-content-between align-items-center">
                             <div>
-                                <h6 class="card-title mb-0 opacity-75">Progresso</h6>
-                                <h2 class="mb-0 fw-bold">{{ percentual_votos }}%</h2>
+                                <h6 class="card-title mb-0">Progresso</h6>
+                                <h2 class="mb-0">{{ percentual_votos }}%</h2>
                             </div>
-                            <i class="bi bi-graph-up fs-1 opacity-50"></i>
+                            <i class="bi bi-graph-up fs-1"></i>
                         </div>
                     </div>
                 </div>
@@ -238,13 +88,13 @@
         </div>
 
         <!-- Barra de Progresso -->
-        <div class="card-bordo-branco shadow-sm mb-4">
-            <div class="card-header" style="background: var(--bordo-transparente); border-bottom: 1px solid rgba(74, 14, 46, 0.1);">
-                <h6 class="mb-0" style="color: var(--bordo);"><i class="bi bi-bar-chart"></i> Progresso da Sindicância</h6>
+        <div class="card shadow mb-4">
+            <div class="card-header bg-light">
+                <h6 class="mb-0"><i class="bi bi-bar-chart"></i> Progresso da Sindicância</h6>
             </div>
             <div class="card-body">
-                <div class="progress-bordo mb-2">
-                    <div class="progress-bar" role="progressbar" 
+                <div class="progress mb-2" style="height: 25px;">
+                    <div class="progress-bar bg-success" role="progressbar" 
                          style="width: {{ percentual_votos }}%" 
                          aria-valuenow="{{ votos_recebidos }}" 
                          aria-valuemin="0" 
@@ -254,14 +104,14 @@
                 </div>
                 <div class="row text-center mt-3">
                     <div class="col-6">
-                        <div class="alert alert-success mb-0" style="background: var(--bordo-transparente); border-color: #10b981; color: #059669;">
+                        <div class="alert alert-success mb-0">
                             <i class="bi bi-check-circle-fill"></i>
                             <strong>Aprovados</strong>
                             <span class="badge bg-success ms-2">{{ votos_positivos }}</span>
                         </div>
                     </div>
                     <div class="col-6">
-                        <div class="alert alert-danger mb-0" style="background: var(--bordo-transparente); border-color: #ef4444; color: #dc2626;">
+                        <div class="alert alert-danger mb-0">
                             <i class="bi bi-x-circle-fill"></i>
                             <strong>Reprovados</strong>
                             <span class="badge bg-danger ms-2">{{ votos_negativos }}</span>
@@ -274,14 +124,14 @@
         <div class="row">
             <div class="col-md-4">
                 <!-- Card do Candidato -->
-                <div class="card-bordo-branco shadow-sm mb-4">
-                    <div class="card-header" style="background: var(--bordo); border-bottom: none; color: white; border-radius: 16px 16px 0 0;">
+                <div class="card shadow mb-4">
+                    <div class="card-header bg-primary text-white">
                         <h5 class="mb-0"><i class="bi bi-person"></i> Dados do Candidato</h5>
                     </div>
                     <div class="card-body">
                         <div class="mb-3">
                             <label class="fw-bold text-muted small">NOME COMPLETO</label>
-                            <p class="mb-0" style="color: var(--bordo);">{{ candidato.nome }}</p>
+                            <p class="mb-0">{{ candidato.nome }}</p>
                         </div>
                         <div class="mb-3">
                             <label class="fw-bold text-muted small">CPF</label>
@@ -299,7 +149,7 @@
                             <label class="fw-bold text-muted small">DATA CADASTRO</label>
                             <p class="mb-0">{{ candidato.data_criacao.strftime('%d/%m/%Y') if candidato.data_criacao else '-' }}</p>
                         </div>
-                        <hr style="border-color: var(--bordo-transparente);">
+                        <hr>
                         <div class="mb-3">
                             <label class="fw-bold text-muted small">FORMULÁRIO</label>
                             <div>
@@ -312,7 +162,7 @@
                                         <i class="bi bi-exclamation-triangle"></i> Pendente
                                     </span>
                                     <br>
-                                    <a href="/candidato/formulario/{{ candidato.id }}" class="btn-bordo-outline btn-sm mt-2">
+                                    <a href="/candidato/formulario/{{ candidato.id }}" class="btn btn-sm btn-outline-primary mt-2">
                                         <i class="bi bi-pencil"></i> Preencher Formulário
                                     </a>
                                 {% endif %}
@@ -335,8 +185,8 @@
             <div class="col-md-8">
                 <!-- MEU PARECER (apenas para sindicantes designados) -->
                 {% if session.tipo == 'sindicante' and user_is_sindicante %}
-                <div class="card-bordo-branco shadow-sm mb-4">
-                    <div class="card-header" style="background: #64748b; border-bottom: none; color: white; border-radius: 16px 16px 0 0;">
+                <div class="card shadow mb-4">
+                    <div class="card-header bg-secondary text-white">
                         <h5 class="mb-0"><i class="bi bi-file-text"></i> Meu Parecer</h5>
                     </div>
                     <div class="card-body">
@@ -367,12 +217,12 @@
                             </div>
                             <div class="mb-3">
                                 <label class="fw-bold text-muted small">PARECER</label>
-                                <div class="border rounded p-3" style="max-height: 150px; overflow-y: auto; border-color: var(--bordo) !important; background: var(--bordo-transparente);">
+                                <div class="border rounded p-3 bg-light" style="max-height: 150px; overflow-y: auto;">
                                     {{ meu_parecer.parecer_texto|replace('\n', '<br>')|safe }}
                                 </div>
                             </div>
                             <div class="d-flex gap-2">
-                                <button type="button" class="btn-bordo-outline" 
+                                <button type="button" class="btn btn-info" 
                                         data-bs-toggle="modal" 
                                         data-bs-target="#modalVisualizarParecer"
                                         title="Visualizar Parecer">
@@ -397,7 +247,7 @@
                             <div class="text-center py-4">
                                 <i class="bi bi-inbox fs-1 text-muted"></i>
                                 <p class="mt-2">Você ainda não emitiu seu parecer para este candidato.</p>
-                                <a href="/parecer_conclusivo/{{ candidato.id }}" class="btn-bordo btn-lg">
+                                <a href="/parecer_conclusivo/{{ candidato.id }}" class="btn btn-warning btn-lg">
                                     <i class="bi bi-pencil-square"></i> Emitir Parecer Conclusivo
                                 </a>
                             </div>
@@ -408,14 +258,14 @@
 
                 <!-- ADMIN: Visualização de todos os pareceres -->
                 {% if session.tipo == 'admin' and pareceres %}
-                <div class="card-bordo-branco shadow-sm">
-                    <div class="card-header" style="background: #3b82f6; border-bottom: none; color: white; border-radius: 16px 16px 0 0;">
+                <div class="card shadow">
+                    <div class="card-header bg-info text-white">
                         <h5 class="mb-0"><i class="bi bi-list-check"></i> Pareceres dos Sindicantes</h5>
                     </div>
                     <div class="card-body p-0">
                         <div class="table-responsive">
-                            <table class="table table-bordo">
-                                <thead>
+                            <table class="table table-hover mb-0">
+                                <thead class="table-light">
                                     <tr>
                                         <th>Sindicante</th>
                                         <th>Data</th>
@@ -458,7 +308,7 @@
                     </div>
                 </div>
                 {% elif session.tipo == 'admin' and not pareceres %}
-                <div class="card-bordo-branco shadow-sm">
+                <div class="card shadow">
                     <div class="card-body text-center py-5">
                         <i class="bi bi-inbox fs-1 text-muted"></i>
                         <p class="mt-2">Nenhum parecer emitido ainda</p>
@@ -470,7 +320,7 @@
                 {% if session.tipo == 'admin' and not candidato.fechado %}
                 <div class="mt-4">
                     <a href="/fechar_sindicancia/{{ candidato.id }}" 
-                       class="btn-bordo w-100"
+                       class="btn btn-warning w-100"
                        onclick="return confirm('Encerrar sindicância deste candidato? Esta ação não pode ser desfeita!')">
                         <i class="bi bi-check2-circle"></i> Encerrar Sindicância
                     </a>
@@ -479,7 +329,7 @@
 
                 <!-- Mensagem para sindicante não designado -->
                 {% if session.tipo == 'sindicante' and not user_is_sindicante %}
-                <div class="alert alert-warning text-center" style="background: var(--bordo-transparente); border-color: #f59e0b; color: #d97706;">
+                <div class="alert alert-warning text-center">
                     <i class="bi bi-exclamation-triangle fs-4"></i>
                     <p class="mb-0 mt-2">Você não está designado como sindicante para este candidato.</p>
                 </div>
@@ -502,7 +352,7 @@
     <div class="modal fade" id="modalVisualizarParecer" tabindex="-1">
         <div class="modal-dialog modal-lg">
             <div class="modal-content">
-                <div class="modal-header" style="background: var(--bordo); color: white;">
+                <div class="modal-header bg-info text-white">
                     <h5 class="modal-title">
                         <i class="bi bi-file-text"></i> Meu Parecer - {{ candidato.nome }}
                     </h5>
@@ -525,7 +375,7 @@
                     </div>
                     <div class="mb-3">
                         <label class="fw-bold">Parecer:</label>
-                        <div class="border rounded p-3 bg-light" style="max-height: 300px; overflow-y: auto; border-color: var(--bordo) !important;">
+                        <div class="border rounded p-3 bg-light" style="max-height: 300px; overflow-y: auto;">
                             {{ meu_parecer.parecer_texto|replace('\n', '<br>')|safe }}
                         </div>
                     </div>
@@ -550,7 +400,7 @@
 <div class="modal fade" id="modalParecerAdmin{{ p.id }}" tabindex="-1">
     <div class="modal-dialog modal-lg">
         <div class="modal-content">
-            <div class="modal-header" style="background: var(--bordo); color: white;">
+            <div class="modal-header bg-info text-white">
                 <h5 class="modal-title">
                     <i class="bi bi-file-text"></i> Parecer de {{ p.sindicante }}
                 </h5>
@@ -573,7 +423,7 @@
                 </div>
                 <div class="mb-3">
                     <label class="fw-bold">Parecer:</label>
-                    <div class="border rounded p-3 bg-light" style="max-height: 300px; overflow-y: auto; border-color: var(--bordo) !important;">
+                    <div class="border rounded p-3 bg-light" style="max-height: 300px; overflow-y: auto;">
                         {{ p.parecer_texto|replace('\n', '<br>')|safe }}
                     </div>
                 </div>
@@ -665,7 +515,7 @@ function mostrarAlerta(tipo, mensagem, timeout = 5000) {
     const alertContainer = document.getElementById('alert-container') || criarContainerAlerta();
     const alertId = 'alert-' + Date.now();
     const alertHtml = `
-        <div id="${alertId}" class="alert alert-${tipo} alert-dismissible fade show" role="alert" style="background: var(--bordo-transparente); border-color: var(--bordo); color: var(--bordo);">
+        <div id="${alertId}" class="alert alert-${tipo} alert-dismissible fade show" role="alert">
             ${mensagem}
             <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
         </div>
@@ -689,4 +539,50 @@ function criarContainerAlerta() {
     return container;
 }
 </script>
+
+<style>
+    .card {
+        border-radius: 10px;
+        overflow: hidden;
+        transition: transform 0.2s ease;
+    }
+    .card:hover {
+        transform: translateY(-4px);
+    }
+    .card-header {
+        font-weight: 600;
+    }
+    .progress {
+        border-radius: 30px;
+        height: 25px;
+    }
+    .progress-bar {
+        font-size: 14px;
+        font-weight: bold;
+        line-height: 25px;
+    }
+    .table-hover tbody tr:hover {
+        cursor: pointer;
+        background-color: rgba(0, 123, 255, 0.05);
+    }
+    .badge {
+        font-size: 0.8rem;
+        padding: 0.4rem 0.6rem;
+    }
+    .btn-group-sm .btn {
+        padding: 0.25rem 0.5rem;
+        margin: 0 2px;
+    }
+    @media (max-width: 768px) {
+        .btn-group {
+            flex-direction: column;
+        }
+        .btn-group .btn {
+            margin-bottom: 5px;
+        }
+        .table-responsive {
+            font-size: 0.85rem;
+        }
+    }
+</style>
 {% endblock %}
