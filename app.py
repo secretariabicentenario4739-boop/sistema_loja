@@ -11133,8 +11133,19 @@ def enviar_link_email():
 @login_required
 def visualizar_sindicancia(candidato_id):
     """Visualizar sindicância do candidato"""
+    cursor = None
+    conn = None
+    
     try:
         cursor, conn = get_db()
+        
+        # ============================================
+        # CORREÇÃO: Fazer rollback de qualquer transação pendente
+        # ============================================
+        try:
+            conn.rollback()
+        except:
+            pass
         
         # Buscar candidato
         cursor.execute("SELECT * FROM candidatos WHERE id = %s", (candidato_id,))
@@ -11142,32 +11153,33 @@ def visualizar_sindicancia(candidato_id):
         
         if not candidato:
             flash("Candidato não encontrado", "danger")
+            return_connection(conn)
             return redirect("/candidatos")
         
         # ============================================
-        # CORREÇÃO: Verificar se o formulário está preenchido
+        # Verificar se o formulário está preenchido
         # ============================================
-        # Verificar se o campo formulario_preenchido existe no banco
-        if candidato.get('formulario_preenchido') is None:
-            # Campo não existe, verificar pelos dados
+        formulario_preenchido = False
+        
+        # Tentar usar o campo do banco primeiro
+        try:
+            if 'formulario_preenchido' in candidato.keys():
+                formulario_preenchido = candidato.get('formulario_preenchido') in [1, True]
+            else:
+                # Verificar pelos dados
+                if (candidato.get('data_nascimento') or 
+                    candidato.get('cpf') or 
+                    candidato.get('rg') or 
+                    candidato.get('endereco_residencial')):
+                    formulario_preenchido = True
+        except:
+            # Se houver erro, verificar pelos dados
             if (candidato.get('data_nascimento') or 
                 candidato.get('cpf') or 
                 candidato.get('rg') or 
                 candidato.get('endereco_residencial')):
                 formulario_preenchido = True
-                # Tentar atualizar o campo se existir
-                try:
-                    cursor.execute("UPDATE candidatos SET formulario_preenchido = TRUE WHERE id = %s", (candidato_id,))
-                    conn.commit()
-                except:
-                    pass  # Coluna pode não existir ainda
-            else:
-                formulario_preenchido = False
-        else:
-            # Campo existe, usar o valor do banco
-            formulario_preenchido = candidato.get('formulario_preenchido') in [1, True]
         
-        # Adicionar ao dicionário do candidato
         candidato['formulario_preenchido'] = formulario_preenchido
         
         # ============================================
@@ -11175,19 +11187,26 @@ def visualizar_sindicancia(candidato_id):
         # ============================================
         user_is_sindicante = False
         if session.get('tipo') == 'sindicante':
-            cursor.execute("""
-                SELECT id FROM sindicantes_candidato 
-                WHERE candidato_id = %s AND sindicante_id = %s
-            """, (candidato_id, session.get('user_id')))
-            user_is_sindicante = cursor.fetchone() is not None
+            try:
+                cursor.execute("""
+                    SELECT id FROM sindicantes_candidato 
+                    WHERE candidato_id = %s AND sindicante_id = %s
+                """, (candidato_id, session.get('user_id')))
+                user_is_sindicante = cursor.fetchone() is not None
+            except Exception as e:
+                print(f"Erro ao verificar sindicante: {e}")
+                user_is_sindicante = False
         
         # Buscar todos os pareceres conclusivos
-        cursor.execute("""
-            SELECT * FROM pareceres_conclusivos 
-            WHERE candidato_id = %s 
-            ORDER BY data_envio DESC
-        """, (candidato_id,))
-        pareceres = cursor.fetchall()
+        try:
+            cursor.execute("""
+                SELECT * FROM pareceres_conclusivos 
+                WHERE candidato_id = %s 
+                ORDER BY data_envio DESC
+            """, (candidato_id,))
+            pareceres = cursor.fetchall()
+        except:
+            pareceres = []
         
         # Total de sindicantes ativos
         total_sindicantes = 0
@@ -11205,15 +11224,16 @@ def visualizar_sindicancia(candidato_id):
         
         if pareceres:
             for parecer in pareceres:
-                conclusao = parecer.get('conclusao', '')
-                if conclusao == 'APROVADO':
-                    votos_positivos += 1
-                elif conclusao == 'REPROVADO':
-                    votos_negativos += 1
+                try:
+                    conclusao = parecer.get('conclusao', '')
+                    if conclusao == 'APROVADO':
+                        votos_positivos += 1
+                    elif conclusao == 'REPROVADO':
+                        votos_negativos += 1
+                except:
+                    pass
         
-        # ============================================
-        # CORREÇÃO: Arredondar percentual para inteiro
-        # ============================================
+        # Arredondar percentual para inteiro
         percentual_votos = int((votos_recebidos / total_sindicantes * 100)) if total_sindicantes > 0 else 0
         
         # Se o candidato está fechado, garantir consistência
@@ -11240,11 +11260,17 @@ def visualizar_sindicancia(candidato_id):
                                percentual_votos=percentual_votos)
         
     except Exception as e:
-        print(f"Erro: {e}")
+        print(f"Erro ao visualizar sindicância: {e}")
         import traceback
         traceback.print_exc()
-        if 'conn' in locals():
+        
+        if conn:
+            try:
+                conn.rollback()
+            except:
+                pass
             return_connection(conn)
+        
         flash(f"Erro ao carregar sindicância: {str(e)}", "danger")
         return redirect("/candidatos")        
 @app.route("/api/sindicantes-disponiveis/<int:candidato_id>")
