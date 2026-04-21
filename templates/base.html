@@ -657,45 +657,49 @@
             
             <hr>
             
-            <!-- MENU ADMINISTRATIVO -->
-            {% if session.tipo == 'admin' %}
-            <div class="menu-dropdown" id="adminMenu">
-                <div class="dropdown-header" onclick="toggleDropdown('adminMenu')">
-                    <div class="dropdown-title">
-                        <i class="bi bi-shield-lock"></i>
-                        <span>Administrativo</span>
-                    </div>
-                    <i class="bi bi-chevron-down dropdown-icon"></i>
-                </div>
-                <div class="dropdown-content">
-                    <a class="nav-link" href="/cargos">
-                        <i class="bi bi-briefcase-fill"></i> <span>Gerenciar Cargos</span>
-                    </a>
-                    <a class="nav-link" href="/admin/permissoes">
-                        <i class="bi bi-shield-lock"></i> <span>Permissões</span>
-                    </a>
-                    <a class="nav-link" href="/backups">
-                        <i class="bi bi-database"></i> <span>Backup</span>
-                    </a>
-                    <a class="nav-link" href="/auditoria">
-                        <i class="bi bi-journal"></i> <span>Auditoria</span>
-                    </a>
-                    <a class="nav-link" href="/config/email">
-                        <i class="bi bi-envelope"></i> <span>Config. E-mail</span>
-                    </a>
-                    <a class="nav-link" href="/config/whatsapp">
-                        <i class="bi bi-whatsapp"></i> <span>WhatsApp</span>
-                    </a>
-                    <a class="nav-link" href="/configuracoes/notificacoes">
-                        <i class="bi bi-bell"></i> <span>Notificações</span>
-                    </a>
-                    <a class="nav-link" href="/sugestoes">
-                        <i class="bi bi-lightbulb"></i> <span>Sugestões</span>
-                    </a>
-                </div>
-            </div>
-            <hr>
-            {% endif %}
+           <!-- MENU ADMINISTRATIVO -->
+{% if session.tipo == 'admin' %}
+<div class="menu-dropdown" id="adminMenu">
+    <div class="dropdown-header" onclick="toggleDropdown('adminMenu')">
+        <div class="dropdown-title">
+            <i class="bi bi-shield-lock"></i>
+            <span>Administrativo</span>
+        </div>
+        <i class="bi bi-chevron-down dropdown-icon"></i>
+    </div>
+    <div class="dropdown-content">
+        <a class="nav-link" href="/relatorios">
+            <i class="bi bi-graph-up"></i> <span>Relatórios</span>
+            </a>
+        
+        <a class="nav-link" href="/cargos">
+            <i class="bi bi-briefcase-fill"></i> <span>Gerenciar Cargos</span>
+        </a>
+        <a class="nav-link" href="/admin/permissoes">
+            <i class="bi bi-shield-lock"></i> <span>Permissões</span>
+        </a>
+        <a class="nav-link" href="/backups">
+            <i class="bi bi-database"></i> <span>Backup</span>
+        </a>
+        <a class="nav-link" href="/auditoria">
+            <i class="bi bi-journal"></i> <span>Auditoria</span>
+        </a>
+        <a class="nav-link" href="/config/email">
+            <i class="bi bi-envelope"></i> <span>Config. E-mail</span>
+        </a>
+        <a class="nav-link" href="/config/whatsapp">
+            <i class="bi bi-whatsapp"></i> <span>WhatsApp</span>
+        </a>
+        <a class="nav-link" href="/configuracoes/notificacoes">
+            <i class="bi bi-bell"></i> <span>Notificações</span>
+        </a>
+        <a class="nav-link" href="/sugestoes">
+            <i class="bi bi-lightbulb"></i> <span>Sugestões</span>
+        </a>
+    </div>
+</div>
+<hr>
+{% endif %}
             
             <!-- Menu do Usuário -->
             <a class="nav-link" href="/perfil">

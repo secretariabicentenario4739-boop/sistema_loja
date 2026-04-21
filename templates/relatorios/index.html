@@ -1,0 +1,498 @@
+{% extends "base.html" %}
+
+{% block title %}Relatórios - Sistema Maçônico{% endblock %}
+
+{% block styles %}
+{{ super() }}
+<style>
+    :root {
+        --bordo: #4A0E2E;
+        --bordo-escuro: #3A0A24;
+        --bordo-claro: #6B1342;
+        --bordo-suave: #8B4A6B;
+        --bordo-transparente: rgba(74, 14, 46, 0.08);
+        --ouro: #D4AF37;
+        --ouro-escuro: #996515;
+        --ouro-claro: #F0D68A;
+    }
+
+    /* BOTÕES DO RITO - PADRÃO */
+    .btn-bordo-outline {
+        background: transparent;
+        border: 1px solid var(--bordo);
+        color: var(--bordo);
+        border-radius: 30px;
+        padding: 8px 20px;
+        transition: all 0.3s;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        text-decoration: none;
+    }
+    
+    .btn-bordo-outline:hover {
+        background: var(--bordo);
+        color: white;
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(74, 14, 46, 0.2);
+    }
+
+    .btn-bordo {
+        background: linear-gradient(135deg, var(--bordo), var(--bordo-escuro));
+        border: none;
+        color: white;
+        border-radius: 30px;
+        padding: 8px 20px;
+        transition: all 0.3s;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        text-decoration: none;
+    }
+    
+    .btn-bordo:hover {
+        background: linear-gradient(135deg, var(--bordo-claro), var(--bordo));
+        transform: translateY(-2px);
+        color: white;
+        box-shadow: 0 5px 15px rgba(74, 14, 46, 0.3);
+    }
+
+    /* REPORT CARD */
+    .report-card {
+        background: white;
+        border: 1px solid rgba(74, 14, 46, 0.15);
+        border-radius: 16px;
+        transition: all 0.3s ease;
+        height: 100%;
+    }
+    
+    .report-card:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 8px 25px rgba(74, 14, 46, 0.12);
+        border-color: var(--bordo);
+    }
+    
+    .report-header {
+        background: linear-gradient(135deg, var(--bordo), var(--bordo-escuro));
+        padding: 15px 20px;
+        border-radius: 16px 16px 0 0;
+        color: white;
+    }
+    
+    .filter-group {
+        background: var(--bordo-transparente);
+        border-radius: 12px;
+        padding: 15px;
+        margin-bottom: 20px;
+    }
+    
+    .result-table {
+        max-height: 500px;
+        overflow-y: auto;
+    }
+    
+    .result-table table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+    
+    .result-table th {
+        background: var(--bordo);
+        color: white;
+        padding: 10px;
+        position: sticky;
+        top: 0;
+    }
+    
+    .result-table td {
+        padding: 8px 10px;
+        border-bottom: 1px solid rgba(74, 14, 46, 0.1);
+    }
+    
+    .result-table tr:hover {
+        background: var(--bordo-transparente);
+    }
+    
+    .badge-presenca {
+        background: linear-gradient(135deg, #10b981, #059669);
+        padding: 4px 12px;
+        border-radius: 20px;
+        font-size: 0.75rem;
+        color: white;
+        display: inline-block;
+    }
+    
+    .badge-ausente {
+        background: linear-gradient(135deg, #ef4444, #dc2626);
+        padding: 4px 12px;
+        border-radius: 20px;
+        font-size: 0.75rem;
+        color: white;
+        display: inline-block;
+    }
+    
+    .btn-report {
+        background: linear-gradient(135deg, var(--bordo), var(--bordo-escuro));
+        border: none;
+        color: white;
+        border-radius: 30px;
+        padding: 10px 24px;
+        transition: all 0.3s;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        width: 100%;
+        justify-content: center;
+    }
+    
+    .btn-report:hover {
+        background: linear-gradient(135deg, var(--bordo-claro), var(--bordo));
+        transform: translateY(-2px);
+        color: white;
+    }
+    
+    .btn-export {
+        background: linear-gradient(135deg, #10b981, #059669);
+        border: none;
+        color: white;
+        border-radius: 30px;
+        padding: 8px 20px;
+        transition: all 0.3s;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+    }
+    
+    .btn-export:hover {
+        transform: translateY(-2px);
+        color: white;
+    }
+
+    /* FORMULÁRIO */
+    .form-label {
+        color: var(--bordo);
+        font-weight: 500;
+        margin-bottom: 0.5rem;
+    }
+    
+    .form-control, .form-select {
+        border-radius: 12px;
+        border: 1px solid rgba(74, 14, 46, 0.2);
+        padding: 0.5rem 1rem;
+        transition: all 0.2s;
+    }
+    
+    .form-control:focus, .form-select:focus {
+        border-color: var(--bordo);
+        box-shadow: 0 0 0 3px rgba(74, 14, 46, 0.1);
+        outline: none;
+    }
+    
+    .form-check-input:checked {
+        background-color: var(--bordo);
+        border-color: var(--bordo);
+    }
+    
+    .form-check-label {
+        color: var(--bordo);
+        font-weight: 500;
+    }
+
+    /* HEADER ACTIONS */
+    .header-actions {
+        display: flex;
+        gap: 12px;
+        align-items: center;
+        flex-wrap: wrap;
+    }
+
+    /* RESPONSIVIDADE */
+    @media (max-width: 768px) {
+        .btn-bordo-outline, .btn-bordo, .btn-report, .btn-export {
+            padding: 6px 16px;
+            font-size: 0.85rem;
+        }
+        
+        .d-flex.justify-content-between {
+            flex-direction: column;
+            align-items: flex-start !important;
+            gap: 15px;
+        }
+        
+        .header-actions {
+            width: 100%;
+        }
+        
+        .header-actions .btn-bordo-outline {
+            width: 100%;
+            justify-content: center;
+        }
+        
+        h2 {
+            font-size: 1.5rem;
+        }
+        
+        .filters-row {
+            flex-direction: column;
+        }
+        
+        .btn-report, .btn-export {
+            width: 100%;
+            justify-content: center;
+        }
+        
+        .filter-group {
+            padding: 12px;
+        }
+        
+        .result-table {
+            font-size: 0.85rem;
+        }
+        
+        .result-table th,
+        .result-table td {
+            padding: 6px 8px;
+        }
+    }
+
+    @media (max-width: 480px) {
+        .btn-bordo-outline, .btn-bordo, .btn-report, .btn-export {
+            padding: 5px 12px;
+            font-size: 0.8rem;
+        }
+        
+        .card-body {
+            padding: 1rem !important;
+        }
+        
+        .report-header {
+            padding: 12px 15px;
+        }
+        
+        .report-header h5 {
+            font-size: 1rem;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="container">
+        <!-- Cabeçalho com botão padronizado -->
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h2>
+                <i class="bi bi-graph-up" style="color: var(--bordo);"></i> 
+                <span style="color: var(--bordo);">Relatórios</span>
+            </h2>
+            <div class="header-actions">
+                <a href="/dashboard" class="btn-bordo-outline">
+                    <i class="bi bi-arrow-left"></i> Voltar
+                </a>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col-md-4 mb-4">
+                <!-- Cards de Seleção de Relatório -->
+                <div class="report-card">
+                    <div class="report-header">
+                        <h5 class="mb-0"><i class="bi bi-sliders2"></i> Opções do Relatório</h5>
+                    </div>
+                    <div class="card-body p-4">
+                        <form id="formRelatorio" method="GET" action="/relatorios/gerar">
+                            <!-- Tipo de Relatório -->
+                            <div class="mb-4">
+                                <label class="form-label fw-bold">
+                                    <i class="bi bi-file-text"></i> Tipo de Relatório
+                                </label>
+                                <select class="form-select" name="tipo" id="tipoRelatorio" required>
+                                    <option value="">Selecione...</option>
+                                    <option value="presenca">📋 Presença dos Obreiros</option>
+                                    <option value="aniversarios">🎂 Aniversários</option>
+                                    <option value="aniversarios_familiares">👨‍👩‍👧‍👦 Aniversários de Familiares</option>
+                                    <option value="estatisticas">📊 Estatísticas Gerais</option>
+                                    <option value="combinado">🔄 Relatório Combinado</option>
+                                </select>
+                            </div>
+
+                            <!-- Filtros Comuns -->
+                            <div id="filtrosComuns" class="filter-group" style="display: none;">
+                                <h6 class="mb-3" style="color: var(--bordo);"><i class="bi bi-funnel"></i> Filtros</h6>
+                                
+                                <div class="mb-3">
+                                    <label class="form-label">Período de Início</label>
+                                    <input type="date" class="form-control" name="data_inicio" id="dataInicio">
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label class="form-label">Período de Fim</label>
+                                    <input type="date" class="form-control" name="data_fim" id="dataFim">
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label class="form-label">Reunião</label>
+                                    <select class="form-select" name="reuniao_id" id="reuniaoId">
+                                        <option value="">Todas</option>
+                                        {% for reuniao in reunioes %}
+                                        <option value="{{ reuniao.id }}">{{ reuniao.titulo }} - {{ reuniao.data.strftime('%d/%m/%Y') if reuniao.data else '' }}</option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label class="form-label">Grau</label>
+                                    <select class="form-select" name="grau" id="grau">
+                                        <option value="">Todos</option>
+                                        <option value="1">Aprendiz (1º)</option>
+                                        <option value="2">Companheiro (2º)</option>
+                                        <option value="3">Mestre (3º)</option>
+                                    </select>
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label class="form-label">Loja</label>
+                                    <select class="form-select" name="loja" id="loja">
+                                        <option value="">Todas</option>
+                                        {% for loja in lojas %}
+                                        <option value="{{ loja.nome }}">{{ loja.nome }}</option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                            </div>
+
+                            <!-- Opções Adicionais -->
+                            <div id="opcoesAdicionais" style="display: none;">
+                                <div class="filter-group">
+                                    <h6 class="mb-3" style="color: var(--bordo);"><i class="bi bi-plus-circle"></i> Opções Adicionais</h6>
+                                    
+                                    <div class="form-check mb-2">
+                                        <input class="form-check-input" type="checkbox" name="incluir_detalhes" id="incluirDetalhes">
+                                        <label class="form-check-label" for="incluirDetalhes">
+                                            Incluir detalhes completos
+                                        </label>
+                                    </div>
+                                    
+                                    <div class="form-check mb-2">
+                                        <input class="form-check-input" type="checkbox" name="agrupar_por_loja" id="agruparPorLoja">
+                                        <label class="form-check-label" for="agruparPorLoja">
+                                            Agrupar por Loja
+                                        </label>
+                                    </div>
+                                    
+                                    <div class="form-check mb-2">
+                                        <input class="form-check-input" type="checkbox" name="apenas_ativos" id="apenasAtivos" checked>
+                                        <label class="form-check-label" for="apenasAtivos">
+                                            Apenas obreiros ativos
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <button type="submit" class="btn-report mt-3">
+                                <i class="bi bi-search"></i> Gerar Relatório
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-8 mb-4">
+                <!-- Resultados -->
+                <div class="report-card" id="resultadosContainer">
+                    <div class="report-header">
+                        <div class="d-flex justify-content-between align-items-center flex-wrap">
+                            <h5 class="mb-0"><i class="bi bi-table"></i> Resultados</h5>
+                            <div id="exportButtons" style="display: none;">
+                                <button class="btn-export me-2" onclick="exportarExcel()">
+                                    <i class="bi bi-file-excel"></i> Excel
+                                </button>
+                                <button class="btn-export" onclick="exportarPDF()">
+                                    <i class="bi bi-file-pdf"></i> PDF
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card-body p-4" id="resultadosContent">
+                        <div class="text-center text-muted py-5">
+                            <i class="bi bi-graph-up fs-1"></i>
+                            <p class="mt-3">Selecione um tipo de relatório e os filtros desejados</p>
+                            <p class="small">Os resultados aparecerão aqui</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Mostrar/esconder filtros baseado no tipo de relatório
+document.getElementById('tipoRelatorio').addEventListener('change', function() {
+    const tipo = this.value;
+    const filtrosComuns = document.getElementById('filtrosComuns');
+    const opcoesAdicionais = document.getElementById('opcoesAdicionais');
+    
+    if (tipo) {
+        filtrosComuns.style.display = 'block';
+        opcoesAdicionais.style.display = 'block';
+        
+        // Ajustar filtros específicos por tipo
+        if (tipo === 'aniversarios' || tipo === 'aniversarios_familiares') {
+            document.getElementById('reuniaoId').disabled = true;
+            document.getElementById('reuniaoId').value = '';
+        } else {
+            document.getElementById('reuniaoId').disabled = false;
+        }
+    } else {
+        filtrosComuns.style.display = 'none';
+        opcoesAdicionais.style.display = 'none';
+    }
+});
+
+// Submissão do formulário via AJAX
+document.getElementById('formRelatorio').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    
+    const formData = new FormData(this);
+    const params = new URLSearchParams(formData);
+    
+    const resultadosDiv = document.getElementById('resultadosContent');
+    const exportDiv = document.getElementById('exportButtons');
+    
+    resultadosDiv.innerHTML = `
+        <div class="text-center py-5">
+            <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">Carregando...</span>
+            </div>
+            <p class="mt-3">Gerando relatório...</p>
+        </div>
+    `;
+    exportDiv.style.display = 'none';
+    
+    try {
+        const response = await fetch(`/relatorios/gerar?${params.toString()}`);
+        const html = await response.text();
+        resultadosDiv.innerHTML = html;
+        exportDiv.style.display = 'block';
+    } catch (error) {
+        resultadosDiv.innerHTML = `
+            <div class="alert alert-danger">
+                <i class="bi bi-exclamation-triangle-fill"></i>
+                Erro ao gerar relatório: ${error.message}
+            </div>
+        `;
+    }
+});
+
+function exportarExcel() {
+    const params = new URLSearchParams(new FormData(document.getElementById('formRelatorio')));
+    window.location.href = `/relatorios/exportar/excel?${params.toString()}`;
+}
+
+function exportarPDF() {
+    const params = new URLSearchParams(new FormData(document.getElementById('formRelatorio')));
+    window.location.href = `/relatorios/exportar/pdf?${params.toString()}`;
+}
+</script>
+{% endblock %}
