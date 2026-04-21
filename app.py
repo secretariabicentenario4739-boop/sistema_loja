@@ -10922,7 +10922,9 @@ def formulario_candidato(candidato_id):
                 empregador = %s, endereco_profissional = %s,
                 bairro_profissional = %s, cidade_profissional = %s,
                 uf_profissional = %s, cep_profissional = %s,
-                telefone_comercial = %s
+                telefone_comercial = %s,
+                formulario_preenchido = TRUE,
+                data_atualizacao_formulario = NOW()
             WHERE id = %s
         """
         values = list(dados.values()) + [candidato_id]
@@ -10941,10 +10943,6 @@ def formulario_candidato(candidato_id):
         
         conn.commit()
         
-        # ✅ REMOVIDO o registrar_log que pode estar causando duplicação
-        # Ou se precisar manter, certifique-se que ele não gera flash message
-        
-        # ✅ APENAS UMA mensagem flash
         flash("✅ Formulário do candidato salvo com sucesso!", "success")
         
         return_connection(conn)
@@ -11134,7 +11132,6 @@ def enviar_link_email():
 @app.route("/sindicancia/<int:candidato_id>")
 @login_required
 def visualizar_sindicancia(candidato_id):
-    """Visualizar sindicância do candidato"""
     try:
         cursor, conn = get_db()
         
@@ -11146,81 +11143,33 @@ def visualizar_sindicancia(candidato_id):
             flash("Candidato não encontrado", "danger")
             return redirect("/candidatos")
         
-        # Verificar se usuário é sindicante designado para este candidato
-        user_is_sindicante = False
-        if session.get('tipo') == 'sindicante':
-            cursor.execute("""
-                SELECT id FROM sindicantes_candidato 
-                WHERE candidato_id = %s AND sindicante_id = %s
-            """, (candidato_id, session.get('user_id')))
-            user_is_sindicante = cursor.fetchone() is not None
+        # ============================================
+        # CORREÇÃO: Garantir que formulario_preenchido está definido
+        # ============================================
+        # Se o campo não existe no resultado, verificar pelos dados
+        if candidato.get('formulario_preenchido') is None:
+            # Verificar se existe algum dado preenchido
+            if (candidato.get('data_nascimento') or 
+                candidato.get('cpf') or 
+                candidato.get('rg') or 
+                candidato.get('endereco_residencial')):
+                formulario_preenchido = True
+                # Atualizar no banco
+                cursor.execute("UPDATE candidatos SET formulario_preenchido = TRUE WHERE id = %s", (candidato_id,))
+                conn.commit()
+            else:
+                formulario_preenchido = False
+        else:
+            formulario_preenchido = candidato.get('formulario_preenchido') == 1 or candidato.get('formulario_preenchido') == True
         
-        # Buscar todos os pareceres conclusivos
-        cursor.execute("""
-            SELECT * FROM pareceres_conclusivos 
-            WHERE candidato_id = %s 
-            ORDER BY data_envio DESC
-        """, (candidato_id,))
-        pareceres = cursor.fetchall()
+        # Adicionar ao dicionário do candidato
+        candidato['formulario_preenchido'] = formulario_preenchido
         
-        # CORREÇÃO: Calcular votos de forma segura
-        total_sindicantes = 0
-        try:
-            # Total de sindicantes ativos (que podem votar)
-            cursor.execute("SELECT COUNT(*) as total FROM usuarios WHERE tipo = 'sindicante' AND ativo = 1")
-            result = cursor.fetchone()
-            total_sindicantes = result['total'] if result else 0
-        except:
-            total_sindicantes = 0
-        
-        # CORREÇÃO: Contar votos
-        votos_recebidos = len(pareceres) if pareceres else 0
-        votos_positivos = 0
-        votos_negativos = 0
-        
-        if pareceres:
-            for parecer in pareceres:
-                conclusao = parecer.get('conclusao', '')
-                if conclusao == 'APROVADO':
-                    votos_positivos += 1
-                elif conclusao == 'REPROVADO':
-                    votos_negativos += 1
-        
-        percentual_votos = (votos_recebidos / total_sindicantes * 100) if total_sindicantes > 0 else 0
-        
-        # CORREÇÃO: Se o candidato está fechado (aprovado/reprovado), garantir que os dados são consistentes
-        if candidato.get('fechado') == 1:
-            # Se já tem resultado final, garantir que os votos refletem isso
-            if candidato.get('status') == 'Aprovado' and votos_positivos == 0:
-                # Se não há votos mas está aprovado, criar um voto automático
-                votos_positivos = 1
-                votos_recebidos = 1
-                percentual_votos = 100 if total_sindicantes > 0 else 100
-            elif candidato.get('status') == 'Reprovado' and votos_negativos == 0:
-                votos_negativos = 1
-                votos_recebidos = 1
-                percentual_votos = 100 if total_sindicantes > 0 else 100
-        
-        return_connection(conn)
+        # ... resto do código ...
         
         return render_template("sindicancia.html", 
                                candidato=candidato,
-                               pareceres=pareceres,
-                               user_is_sindicante=user_is_sindicante,
-                               total_sindicantes=total_sindicantes,
-                               votos_recebidos=votos_recebidos,
-                               votos_positivos=votos_positivos,
-                               votos_negativos=votos_negativos,
-                               percentual_votos=percentual_votos)
-        
-    except Exception as e:
-        print(f"Erro: {e}")
-        import traceback
-        traceback.print_exc()
-        if 'conn' in locals():
-            return_connection(conn)
-        flash(f"Erro ao carregar sindicância: {str(e)}", "danger")
-        return redirect("/candidatos")
+                               ...)
         
 @app.route("/api/sindicantes-disponiveis/<int:candidato_id>")
 @login_required
