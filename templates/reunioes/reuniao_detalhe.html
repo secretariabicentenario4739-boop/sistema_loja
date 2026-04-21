@@ -2,161 +2,271 @@
 
 {% block title %}Detalhes da Reunião - {{ reuniao.titulo }}{% endblock %}
 
+{% block styles %}
+{{ super() }}
+<style>
+    :root {
+        --bordo: #4A0E2E;
+        --bordo-escuro: #3A0A24;
+        --bordo-claro: #6B1342;
+        --bordo-suave: #8B4A6B;
+        --bordo-transparente: rgba(74, 14, 46, 0.08);
+        --bordo-transparente-hover: rgba(74, 14, 46, 0.12);
+        --ouro: #D4AF37;
+        --ouro-escuro: #996515;
+        --ouro-claro: #F0D68A;
+    }
+
+    /* CARDS BRANCOS COM BORDÔ */
+    .card-bordo-branco {
+        background: white;
+        border: 1px solid rgba(74, 14, 46, 0.15);
+        border-radius: 16px;
+        transition: all 0.3s ease;
+    }
+    
+    .card-bordo-branco:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 8px 25px rgba(74, 14, 46, 0.12);
+        border-color: var(--bordo);
+    }
+
+    /* CARDS DE ESTATÍSTICAS */
+    .stat-card-total {
+        background: linear-gradient(135deg, #3b82f6, #2563eb);
+        border: none;
+        border-radius: 16px;
+        color: white;
+    }
+    
+    .stat-card-presente {
+        background: linear-gradient(135deg, #10b981, #059669);
+        border: none;
+        border-radius: 16px;
+        color: white;
+    }
+    
+    .stat-card-ausente {
+        background: linear-gradient(135deg, #ef4444, #dc2626);
+        border: none;
+        border-radius: 16px;
+        color: white;
+    }
+
+    /* TABELA */
+    .table-bordo {
+        margin-bottom: 0;
+    }
+    
+    .table-bordo thead th {
+        background: var(--bordo-transparente);
+        color: var(--bordo);
+        font-weight: 600;
+        border-bottom: 2px solid rgba(74, 14, 46, 0.15);
+    }
+    
+    .table-bordo tbody tr {
+        border-bottom: 1px solid rgba(74, 14, 46, 0.08);
+        transition: all 0.2s;
+    }
+    
+    .table-bordo tbody tr:hover {
+        background: var(--bordo-transparente);
+    }
+
+    /* BOTÕES */
+    .btn-bordo-outline {
+        background: transparent;
+        border: 1px solid var(--bordo);
+        color: var(--bordo);
+        border-radius: 30px;
+        padding: 8px 24px;
+        transition: all 0.3s;
+    }
+    
+    .btn-bordo-outline:hover {
+        background: var(--bordo);
+        color: white;
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(74, 14, 46, 0.2);
+    }
+    
+    .btn-bordo {
+        background: linear-gradient(135deg, var(--bordo), var(--bordo-escuro));
+        border: none;
+        color: white;
+        border-radius: 30px;
+        padding: 8px 24px;
+        transition: all 0.3s;
+    }
+    
+    .btn-bordo:hover {
+        background: linear-gradient(135deg, var(--bordo-claro), var(--bordo));
+        transform: translateY(-2px);
+        color: white;
+        box-shadow: 0 5px 15px rgba(74, 14, 46, 0.3);
+    }
+
+    @media (max-width: 768px) {
+        .table-sm td, .table-sm th { padding: 0.4rem 0.5rem; font-size: 0.75rem; }
+        .badge { font-size: 0.6rem; }
+        .btn-sm { padding: 0.2rem 0.5rem; }
+    }
+</style>
+{% endblock %}
+
 {% block content %}
 <div class="container-fluid py-4">
-<div class="container">
+    <div class="container">
 
-<!-- HEADER -->
-<div class="d-flex justify-content-between align-items-center mb-4">
-    <h2>
-        <i class="bi bi-calendar-event"></i> 
-        {{ reuniao.titulo }}
-    </h2>
-    <a href="/reunioes" class="btn btn-outline-secondary">
-        <i class="bi bi-arrow-left"></i> Voltar
-    </a>
-</div>
-
-<!-- ===================== -->
-<!-- INFORMAÇÕES -->
-<!-- ===================== -->
-<div class="card mb-4">
-<div class="card-body">
-
-<p><strong>Tipo:</strong> {{ reuniao.tipo }}</p>
-<p><strong>Data:</strong> {{ reuniao.data }}</p>
-<p><strong>Local:</strong> {{ reuniao.local }}</p>
-
-</div>
-</div>
-
-<!-- ===================== -->
-<!-- ESTATÍSTICAS -->
-<!-- ===================== -->
-<div class="row mb-4 text-center">
-
-<div class="col">
-    <div class="card">
-        <div class="card-body">
-            <h3>{{ total_obreiros }}</h3>
-            <small>Total</small>
+        <!-- HEADER -->
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h2>
+                <i class="bi bi-calendar-event" style="color: var(--bordo);"></i> 
+                <span style="color: var(--bordo);">{{ reuniao.titulo }}</span>
+            </h2>
+            <a href="/reunioes" class="btn-bordo-outline">
+                <i class="bi bi-arrow-left"></i> Voltar
+            </a>
         </div>
+
+        <!-- ===================== -->
+        <!-- INFORMAÇÕES -->
+        <!-- ===================== -->
+        <div class="card-bordo-branco shadow-sm mb-4">
+            <div class="card-header" style="background: var(--bordo-transparente); border-bottom: 1px solid rgba(74, 14, 46, 0.1);">
+                <i class="bi bi-info-circle" style="color: var(--bordo);"></i> 
+                <span style="color: var(--bordo); font-weight: 600;">Informações da Reunião</span>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <p><strong style="color: var(--bordo);">Tipo:</strong> {{ reuniao.tipo }}</p>
+                        <p><strong style="color: var(--bordo);">Data:</strong> {{ reuniao.data }}</p>
+                    </div>
+                    <div class="col-md-6">
+                        <p><strong style="color: var(--bordo);">Local:</strong> {{ reuniao.local }}</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ===================== -->
+        <!-- ESTATÍSTICAS -->
+        <!-- ===================== -->
+        <div class="row g-3 mb-4 text-center">
+            <div class="col-md-4">
+                <div class="stat-card-total shadow-sm">
+                    <div class="card-body py-3">
+                        <h3 class="mb-0">{{ total_obreiros }}</h3>
+                        <small class="opacity-75">Total de Obreiros</small>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="stat-card-presente shadow-sm">
+                    <div class="card-body py-3">
+                        <h3 class="mb-0">{{ presentes }}</h3>
+                        <small class="opacity-75">Presentes</small>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="stat-card-ausente shadow-sm">
+                    <div class="card-body py-3">
+                        <h3 class="mb-0">{{ ausentes }}</h3>
+                        <small class="opacity-75">Ausentes</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ===================== -->
+        <!-- PRESENÇA (CORE DO SISTEMA) -->
+        <!-- ===================== -->
+        <div class="card-bordo-branco shadow-sm">
+            <div class="card-header" style="background: var(--bordo); border-bottom: none; color: white;">
+                <h5 class="mb-0"><i class="bi bi-people"></i> Lista de Presença</h5>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-bordo">
+                        <thead>
+                            <tr>
+                                <th>Obreiro</th>
+                                <th>Grau</th>
+                                <th>Status</th>
+                                <th style="width: 280px">Ação</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for p in presenca %}
+                            <tr>
+                                <td>
+                                    <strong>{{ p.nome_completo }}</strong>
+                                </td>
+                                <td>
+                                    {% set grau = p.grau_atual|int %}
+                                    {% if grau == 3 %}
+                                        <span class="badge bg-success">Mestre</span>
+                                    {% elif grau == 2 %}
+                                        <span class="badge bg-primary">Companheiro</span>
+                                    {% elif grau == 1 %}
+                                        <span class="badge bg-secondary">Aprendiz</span>
+                                    {% else %}
+                                        <span class="badge bg-info">Grau {{ grau }}</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if p.presente == 1 %}
+                                        <span class="badge bg-success">Presente</span>
+                                    {% elif p.presente == 0 %}
+                                        <span class="badge bg-danger">Ausente</span>
+                                    {% else %}
+                                        <span class="badge bg-warning">Pendente</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <form method="POST" action="/presenca/update/{{ p.presenca_id }}" class="row g-1">
+                                        <div class="col-md-4">
+                                            <select name="presente" class="form-select form-select-sm">
+                                                <option value="1" {% if p.presente == 1 %}selected{% endif %}>Presente</option>
+                                                <option value="0" {% if p.presente == 0 %}selected{% endif %}>Ausente</option>
+                                            </select>
+                                        </div>
+                                        <div class="col-md-3">
+                                            <select name="tipo_ausencia" class="form-select form-select-sm">
+                                                <option value="">Motivo</option>
+                                                {% for tipo in tipos_ausencia %}
+                                                    <option value="{{ tipo.nome }}"
+                                                        {% if p.tipo_ausencia == tipo.nome %}selected{% endif %}>
+                                                        {{ tipo.nome }}
+                                                    </option>
+                                                {% endfor %}
+                                            </select>
+                                        </div>
+                                        <div class="col-md-3">
+                                            <input type="text"
+                                                   name="justificativa"
+                                                   value="{{ p.justificativa or '' }}"
+                                                   class="form-control form-control-sm"
+                                                   placeholder="Justificativa">
+                                        </div>
+                                        <div class="col-md-2">
+                                            <button class="btn-bordo btn-sm w-100">
+                                                <i class="bi bi-save"></i> Salvar
+                                            </button>
+                                        </div>
+                                    </form>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
     </div>
 </div>
-
-<div class="col">
-    <div class="card">
-        <div class="card-body text-success">
-            <h3>{{ presentes }}</h3>
-            <small>Presentes</small>
-        </div>
-    </div>
-</div>
-
-<div class="col">
-    <div class="card">
-        <div class="card-body text-danger">
-            <h3>{{ ausentes }}</h3>
-            <small>Ausentes</small>
-        </div>
-    </div>
-</div>
-
-</div>
-
-<!-- ===================== -->
-<!-- PRESENÇA (CORE DO SISTEMA) -->
-<!-- ===================== -->
-<div class="card">
-<div class="card-header bg-dark text-white">
-    <h5>Lista de Presença</h5>
-</div>
-
-<div class="card-body table-responsive">
-
-<table class="table table-hover">
-
-<thead>
-<tr>
-    <th>Obreiro</th>
-    <th>Grau</th>
-    <th>Status</th>
-    <th>Ação</th>
-</tr>
-</thead>
-
-<tbody>
-
-{% for p in presenca %}
-
-<tr>
-
-<td><strong>{{ p.nome_completo }}</strong></td>
-
-<td>
-    {% if p.grau_atual == 3 %}
-        Mestre
-    {% elif p.grau_atual == 2 %}
-        Companheiro
-    {% else %}
-        Aprendiz
-    {% endif %}
-</td>
-
-<td>
-    {% if p.presente == 1 %}
-        <span class="badge bg-success">Presente</span>
-    {% elif p.presente == 0 %}
-        <span class="badge bg-danger">Ausente</span>
-    {% else %}
-        <span class="badge bg-warning">Pendente</span>
-    {% endif %}
-</td>
-
-<td>
-
-<form method="POST" action="/presenca/update/{{ p.presenca_id }}">
-
-    <select name="presente" class="form-select form-select-sm mb-1">
-        <option value="1" {% if p.presente == 1 %}selected{% endif %}>Presente</option>
-        <option value="0" {% if p.presente == 0 %}selected{% endif %}>Ausente</option>
-    </select>
-
-    <select name="tipo_ausencia" class="form-select form-select-sm mb-1">
-        <option value="">Tipo ausência</option>
-        {% for tipo in tipos_ausencia %}
-            <option value="{{ tipo.nome }}"
-                {% if p.tipo_ausencia == tipo.nome %}selected{% endif %}>
-                {{ tipo.nome }}
-            </option>
-        {% endfor %}
-    </select>
-
-    <input type="text"
-           name="justificativa"
-           value="{{ p.justificativa or '' }}"
-           class="form-control form-control-sm mb-1"
-           placeholder="Justificativa">
-
-    <button class="btn btn-sm btn-primary w-100">
-        Salvar
-    </button>
-
-</form>
-
-</td>
-
-</tr>
-
-{% endfor %}
-
-</tbody>
-</table>
-
-</div>
-</div>
-
-</div>
-</div>
-
 {% endblock %}

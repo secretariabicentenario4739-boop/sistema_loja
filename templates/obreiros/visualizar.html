@@ -2,21 +2,187 @@
 
 {% block title %}Visualizar Obreiro - {{ obreiro.nome_completo or obreiro.usuario }}{% endblock %}
 
+{% block styles %}
+{{ super() }}
+<style>
+    :root {
+        --bordo: #4A0E2E;
+        --bordo-escuro: #3A0A24;
+        --bordo-claro: #6B1342;
+        --bordo-suave: #8B4A6B;
+        --bordo-transparente: rgba(74, 14, 46, 0.08);
+        --bordo-transparente-hover: rgba(74, 14, 46, 0.12);
+        --ouro: #D4AF37;
+        --ouro-escuro: #996515;
+        --ouro-claro: #F0D68A;
+    }
+
+    /* CARDS BRANCOS COM BORDÔ */
+    .card-bordo-branco {
+        background: white;
+        border: 1px solid rgba(74, 14, 46, 0.15);
+        border-radius: 16px;
+        transition: all 0.3s ease;
+        color: var(--bordo);
+    }
+    
+    .card-bordo-branco:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 8px 25px rgba(74, 14, 46, 0.12);
+        border-color: var(--bordo);
+    }
+    
+    .card-bordo-branco-destaque {
+        background: white;
+        border: 2px solid var(--bordo);
+        border-radius: 16px;
+        transition: all 0.3s ease;
+        color: var(--bordo);
+    }
+    
+    .card-bordo-branco-destaque:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 8px 25px rgba(74, 14, 46, 0.15);
+    }
+    
+    .card-bordo-branco-suave {
+        background: white;
+        border: 1px solid rgba(74, 14, 46, 0.1);
+        border-radius: 16px;
+        transition: all 0.3s ease;
+        color: var(--bordo-suave);
+    }
+    
+    .card-bordo-branco-suave:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 8px 25px rgba(74, 14, 46, 0.1);
+        border-color: var(--bordo-suave);
+    }
+
+    /* NÚMEROS EM DESTAQUE BORDÔ */
+    .numero-bordo {
+        color: var(--bordo);
+        font-weight: 700;
+    }
+    
+    .numero-bordo-claro {
+        color: var(--bordo-claro);
+        font-weight: 700;
+    }
+    
+    .numero-bordo-suave {
+        color: var(--bordo-suave);
+        font-weight: 700;
+    }
+
+    /* BOTÕES DO RITO */
+    .btn-bordo {
+        background: linear-gradient(135deg, var(--bordo), var(--bordo-escuro));
+        border: none;
+        color: white;
+        border-radius: 30px;
+        padding: 8px 24px;
+        transition: all 0.3s;
+    }
+    
+    .btn-bordo:hover {
+        background: linear-gradient(135deg, var(--bordo-claro), var(--bordo));
+        transform: translateY(-2px);
+        color: white;
+        box-shadow: 0 5px 15px rgba(74, 14, 46, 0.3);
+    }
+    
+    .btn-bordo-outline {
+        background: transparent;
+        border: 1px solid var(--bordo);
+        color: var(--bordo);
+        border-radius: 30px;
+        padding: 8px 24px;
+        transition: all 0.3s;
+    }
+    
+    .btn-bordo-outline:hover {
+        background: var(--bordo);
+        color: white;
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(74, 14, 46, 0.2);
+    }
+
+    /* CARDS DE ESTATÍSTICAS */
+    .stat-card {
+        background: white;
+        border-radius: 16px;
+        padding: 1rem;
+        text-align: center;
+        transition: all 0.2s;
+        border: 1px solid rgba(74, 14, 46, 0.12);
+        height: 100%;
+    }
+    
+    .stat-card:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 8px 25px rgba(74, 14, 46, 0.1);
+        border-color: var(--bordo);
+    }
+    
+    .stat-number {
+        font-size: 2rem;
+        font-weight: 700;
+        line-height: 1;
+    }
+
+    /* TABELAS */
+    .table-bordo {
+        margin-bottom: 0;
+    }
+    
+    .table-bordo thead th {
+        background: var(--bordo-transparente);
+        color: var(--bordo);
+        font-weight: 600;
+        border-bottom: 2px solid rgba(74, 14, 46, 0.15);
+    }
+    
+    .table-bordo tbody tr {
+        border-bottom: 1px solid rgba(74, 14, 46, 0.08);
+        transition: all 0.2s;
+    }
+    
+    .table-bordo tbody tr:hover {
+        background: var(--bordo-transparente);
+    }
+
+    @media (max-width: 768px) {
+        .btn-group {
+            flex-direction: column;
+            margin-top: 1rem;
+        }
+        .btn-group .btn {
+            margin: 2px 0;
+        }
+        .row.align-items-center {
+            flex-direction: column;
+            text-align: center;
+        }
+    }
+</style>
+{% endblock %}
+
 {% block content %}
 <div class="container-fluid py-4">
     <div class="container">
         <!-- Cabeçalho com botões de ação -->
         <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
             <h2 class="mb-0">
-                <i class="bi bi-person-badge"></i> 
-                Visualizar Obreiro
+                <i class="bi bi-person-badge" style="color: var(--bordo);"></i> 
+                <span style="color: var(--bordo);">Visualizar Obreiro</span>
             </h2>
             <div>
-                <a href="/obreiros" class="btn btn-outline-secondary">
+                <a href="/obreiros" class="btn-bordo-outline">
                     <i class="bi bi-arrow-left"></i> Voltar
                 </a>
                 {% if pode_editar %}
-                <a href="/obreiros/{{ obreiro.id }}/editar" class="btn btn-warning ms-2">
+                <a href="/obreiros/{{ obreiro.id }}/editar" class="btn-bordo ms-2">
                     <i class="bi bi-pencil"></i> Editar
                 </a>
                 {% endif %}
@@ -48,62 +214,54 @@
         <!-- Cards de Estatísticas -->
         <div class="row g-3 mb-4">
             <div class="col-md-3 col-sm-6">
-                <div class="card bg-primary text-white shadow-sm h-100">
-                    <div class="card-body">
-                        <div class="d-flex justify-content-between align-items-center">
-                            <div>
-                                <h6 class="card-title mb-0">Cargos</h6>
-                                <h2 class="mb-0">{{ cargos|length if cargos else 0 }}</h2>
-                            </div>
-                            <i class="bi bi-briefcase fs-1 opacity-50"></i>
+                <div class="stat-card">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="card-title mb-0" style="color: var(--bordo-suave);">Cargos</h6>
+                            <h2 class="mb-0 numero-bordo">{{ cargos|length if cargos else 0 }}</h2>
                         </div>
+                        <i class="bi bi-briefcase fs-1" style="color: var(--bordo); opacity: 0.6;"></i>
                     </div>
                 </div>
             </div>
             <div class="col-md-3 col-sm-6">
-                <div class="card bg-success text-white shadow-sm h-100">
-                    <div class="card-body">
-                        <div class="d-flex justify-content-between align-items-center">
-                            <div>
-                                <h6 class="card-title mb-0">Graus</h6>
-                                <h2 class="mb-0">{{ historico_graus|length if historico_graus else 0 }}</h2>
-                            </div>
-                            <i class="bi bi-star-fill fs-1 opacity-50"></i>
+                <div class="stat-card">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="card-title mb-0" style="color: var(--bordo-suave);">Graus</h6>
+                            <h2 class="mb-0 numero-bordo">{{ historico_graus|length if historico_graus else 0 }}</h2>
                         </div>
+                        <i class="bi bi-star-fill fs-1" style="color: var(--ouro); opacity: 0.7;"></i>
                     </div>
                 </div>
             </div>
             <div class="col-md-3 col-sm-6">
-                <div class="card bg-info text-white shadow-sm h-100">
-                    <div class="card-body">
-                        <div class="d-flex justify-content-between align-items-center">
-                            <div>
-                                <h6 class="card-title mb-0">Familiares</h6>
-                                <h2 class="mb-0">{{ familiares_count|default(0) }}</h2>
-                            </div>
-                            <i class="bi bi-people fs-1 opacity-50"></i>
+                <div class="stat-card">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="card-title mb-0" style="color: var(--bordo-suave);">Familiares</h6>
+                            <h2 class="mb-0 numero-bordo">{{ familiares_count|default(0) }}</h2>
                         </div>
+                        <i class="bi bi-people fs-1" style="color: #3b82f6; opacity: 0.6;"></i>
                     </div>
                 </div>
             </div>
             <div class="col-md-3 col-sm-6">
-                <div class="card bg-warning text-dark shadow-sm h-100">
-                    <div class="card-body">
-                        <div class="d-flex justify-content-between align-items-center">
-                            <div>
-                                <h6 class="card-title mb-0">Condecorações</h6>
-                                <h2 class="mb-0">{{ condecoracoes_count|default(0) }}</h2>
-                            </div>
-                            <i class="bi bi-award fs-1 opacity-50"></i>
+                <div class="stat-card">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="card-title mb-0" style="color: var(--bordo-suave);">Condecorações</h6>
+                            <h2 class="mb-0 numero-bordo">{{ condecoracoes_count|default(0) }}</h2>
                         </div>
+                        <i class="bi bi-award fs-1" style="color: #f59e0b; opacity: 0.7;"></i>
                     </div>
                 </div>
             </div>
         </div>
 
         <!-- Perfil do Obreiro -->
-        <div class="card shadow-sm mb-4">
-            <div class="card-header bg-primary text-white">
+        <div class="card-bordo-branco shadow-sm mb-4">
+            <div class="card-header" style="background: var(--bordo); border-bottom: none; color: white;">
                 <h5 class="mb-0"><i class="bi bi-person-circle"></i> Perfil do Obreiro</h5>
             </div>
             <div class="card-body">
@@ -113,11 +271,11 @@
                         <img src="{{ obreiro.foto }}" 
                              alt="Foto de {{ obreiro.nome_completo or obreiro.usuario }}"
                              class="rounded-circle shadow-sm mb-3"
-                             style="width: 150px; height: 150px; object-fit: cover; border: 3px solid #fff;">
+                             style="width: 150px; height: 150px; object-fit: cover; border: 3px solid var(--bordo);">
                         {% else %}
                         <div class="bg-light rounded-circle d-flex align-items-center justify-content-center mx-auto mb-3"
-                             style="width: 150px; height: 150px;">
-                            <i class="bi bi-person-circle fs-1 text-secondary"></i>
+                             style="width: 150px; height: 150px; background: var(--bordo-transparente);">
+                            <i class="bi bi-person-circle fs-1" style="color: var(--bordo);"></i>
                         </div>
                         {% endif %}
                         
@@ -126,20 +284,20 @@
                                 {% if obreiro.ativo == 1 %}Ativo{% else %}Inativo{% endif %}
                             </span>
                             {% if obreiro.tipo == 'admin' %}
-                                <span class="badge bg-danger fs-6">Administrador</span>
+                                <span class="badge" style="background: var(--bordo);">Administrador</span>
                             {% elif obreiro.tipo == 'sindicante' %}
-                                <span class="badge bg-warning text-dark fs-6">Sindicante</span>
+                                <span class="badge" style="background: var(--ouro-escuro); color: white;">Sindicante</span>
                             {% else %}
-                                <span class="badge bg-info fs-6">Obreiro</span>
+                                <span class="badge" style="background: var(--bordo-suave);">Obreiro</span>
                             {% endif %}
                         </div>
                     </div>
                     
                     <div class="col-md-9">
-                        <h3>{{ obreiro.nome_completo or obreiro.usuario }}</h3>
+                        <h3 style="color: var(--bordo);">{{ obreiro.nome_completo or obreiro.usuario }}</h3>
                         {% if obreiro.nome_maconico %}
                         <p class="text-muted">
-                            <i class="bi bi-star-fill text-warning"></i> {{ obreiro.nome_maconico }}
+                            <i class="bi bi-star-fill" style="color: var(--ouro);"></i> {{ obreiro.nome_maconico }}
                         </p>
                         {% endif %}
                         
@@ -148,7 +306,7 @@
                                 <table class="table table-sm table-borderless">
                                     <tr>
                                         <td class="text-muted" style="width: 120px;">Usuário:</td>
-                                        <td><strong>{{ obreiro.usuario }}</strong></td>
+                                        <td><strong style="color: var(--bordo);">{{ obreiro.usuario }}</strong></td>
                                     </tr>
                                     <tr>
                                         <td class="text-muted">Grau Atual:</td>
@@ -161,7 +319,7 @@
                                             {% elif grau_num == 3 %}
                                                 <span class="badge bg-success">Mestre (3º)</span>
                                             {% elif grau_num >= 4 %}
-                                                <span class="badge bg-info">Grau {{ grau_num }}</span>
+                                                <span class="badge" style="background: var(--bordo);">Grau {{ grau_num }}</span>
                                             {% else %}
                                                 <span class="badge bg-secondary">Grau {{ grau_num }}</span>
                                             {% endif %}
@@ -175,11 +333,12 @@
                                         <td class="text-muted">Cargo Atual:</td>
                                         <td>
                                             {% if cargo_atual %}
-                                                <span class="badge bg-secondary">{{ cargo_atual }}</span>
+                                                <span class="badge" style="background: var(--bordo-suave);">{{ cargo_atual }}</span>
                                             {% else %}
                                                 -
                                             {% endif %}
-                                        </tr>
+                                        </td>
+                                    </tr>
                                 </table>
                             </div>
                             <div class="col-md-6">
@@ -207,141 +366,126 @@
                 </div>
             </div>
         </div>
-<!-- Histórico do Candidato (Card de Origem) - APENAS PARA ADMIN -->
-{% if session.tipo == 'admin' and historico_candidato %}
-<div class="card shadow-sm mb-4">
-    <div class="card-header bg-success text-white">
-        <h5 class="mb-0">
-            <i class="bi bi-clock-history me-2"></i>
-            Histórico de Iniciação
-        </h5>
-    </div>
-    <div class="card-body">
-        <div class="row">
-            <div class="col-md-6">
-                <table class="table table-sm table-borderless">
-                    <tr>
-                        <td class="text-muted" style="width: 140px;">Nome como Candidato:</td>
-                        <td><strong>{{ historico_candidato.candidato_nome }}</strong></td>
-                    </tr>
-                    <tr>
-                        <td class="text-muted">CPF:</td>
-                        <td>{{ historico_candidato.cpf or '-' }}</td>
-                    </tr>
-                    <tr>
-                        <td class="text-muted">Data de Cadastro:</td>
-                        <td>{{ historico_candidato.data_criacao.strftime('%d/%m/%Y') if historico_candidato.data_criacao else '-' }}</td>
-                    </tr>
-                    <tr>
-                        <td class="text-muted">Data de Aprovação:</td>
-                        <td>
-                            {% if historico_candidato.data_aprovacao %}
-                                {{ historico_candidato.data_aprovacao.strftime('%d/%m/%Y') }}
-                            {% elif historico_candidato.data_fechamento %}
-                                {{ historico_candidato.data_fechamento.strftime('%d/%m/%Y') }}
-                            {% else %}
-                                -
-                            {% endif %}
-                        </td>
-                    </tr>
-                </table>
+
+        <!-- Histórico do Candidato - APENAS ADMIN -->
+        {% if session.tipo == 'admin' %}
+        <div class="card-bordo-branco shadow-sm mb-4">
+            <div class="card-header" style="background: #059669; border-bottom: none; color: white;">
+                <h5 class="mb-0"><i class="bi bi-clock-history me-2"></i> Histórico de Iniciação</h5>
             </div>
-            <div class="col-md-6">
-                <table class="table table-sm table-borderless">
-                    <tr>
-                        <td class="text-muted" style="width: 140px;">Status da Sindicância:</td>
-                        <td>
-                            {% if historico_candidato.status == 'Aprovado' %}
-                                <span class="badge bg-success">✓ Aprovado</span>
-                            {% elif historico_candidato.status == 'Reprovado' %}
-                                <span class="badge bg-danger">✗ Reprovado</span>
-                            {% else %}
-                                <span class="badge bg-warning">{{ historico_candidato.status or 'Em análise' }}</span>
-                            {% endif %}
-                        </td>
-                    </tr>
-                    <tr>
-                        <td class="text-muted">Placet de Iniciação:</td>
-                        <td>
-                            <code class="bg-light p-1 rounded">{{ historico_candidato.numero_placet or '-' }}</code>
-                        </td>
-                    </tr>
-                    <tr>
-                        <td class="text-muted">Data de Transformação:</td>
-                        <td>{{ historico_candidato.data_transformacao.strftime('%d/%m/%Y %H:%M') if historico_candidato.data_transformacao else '-' }}</td>
-                    </tr>
-                    <tr>
-                        <td class="text-muted">Votação:</td>
-                        <td>
-                            <small>
-                                👍 {{ historico_candidato.votos_positivos or 0 }} positivos
-                                | 👎 {{ historico_candidato.votos_negativos or 0 }} negativos
-                                {% if historico_candidato.total_votos %}
-                                | Total: {{ historico_candidato.total_votos }}
-                                {% endif %}
-                            </small>
-                        </td>
-                    </tr>
-                </table>
+            <div class="card-body">
+                {% if historico_candidato %}
+                <div class="row">
+                    <div class="col-md-6">
+                        <table class="table table-sm table-borderless">
+                            <tr>
+                                <td class="text-muted" style="width: 140px;">Nome como Candidato:</td>
+                                <td><strong style="color: var(--bordo);">{{ historico_candidato.candidato_nome }}</strong></td>
+                            </tr>
+                            <tr>
+                                <td class="text-muted">CPF:</td>
+                                <td>{{ historico_candidato.cpf or '-' }}</td>
+                            </tr>
+                            <tr>
+                                <td class="text-muted">Data de Cadastro:</td>
+                                <td>{{ historico_candidato.data_criacao.strftime('%d/%m/%Y') if historico_candidato.data_criacao else '-' }}</td>
+                            </tr>
+                            <tr>
+                                <td class="text-muted">Data de Aprovação:</td>
+                                <td>
+                                    {% if historico_candidato.data_aprovacao %}
+                                        {{ historico_candidato.data_aprovacao.strftime('%d/%m/%Y') }}
+                                    {% elif historico_candidato.data_fechamento %}
+                                        {{ historico_candidato.data_fechamento.strftime('%d/%m/%Y') }}
+                                    {% else %}
+                                        -
+                                    {% endif %}
+                                </td>
+                            </tr>
+                        </table>
+                    </div>
+                    <div class="col-md-6">
+                        <table class="table table-sm table-borderless">
+                            <tr>
+                                <td class="text-muted" style="width: 140px;">Status da Sindicância:</td>
+                                <td>
+                                    {% if historico_candidato.status == 'Aprovado' %}
+                                        <span class="badge bg-success">✓ Aprovado</span>
+                                    {% elif historico_candidato.status == 'Reprovado' %}
+                                        <span class="badge bg-danger">✗ Reprovado</span>
+                                    {% else %}
+                                        <span class="badge bg-warning">{{ historico_candidato.status or 'Em análise' }}</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            <tr>
+                                <td class="text-muted">Placet de Iniciação:</td>
+                                <td><code class="bg-light p-1 rounded">{{ historico_candidato.numero_placet or '-' }}</code></td>
+                            </tr>
+                            <tr>
+                                <td class="text-muted">Data de Transformação:</td>
+                                <td>{{ historico_candidato.data_transformacao.strftime('%d/%m/%Y %H:%M') if historico_candidato.data_transformacao else '-' }}</td>
+                            </tr>
+                            <tr>
+                                <td class="text-muted">Votação:</td>
+                                <td>
+                                    <small>👍 {{ historico_candidato.votos_positivos or 0 }} positivos | 👎 {{ historico_candidato.votos_negativos or 0 }} negativos</small>
+                                </td>
+                            </tr>
+                        </table>
+                    </div>
+                </div>
+                
+                {% if historico_candidato.parecer_final %}
+                <hr>
+                <div class="mt-2">
+                    <small class="text-muted"><i class="bi bi-chat-text"></i> Parecer Final:</small>
+                    <p class="mb-0 small">{{ historico_candidato.parecer_final }}</p>
+                </div>
+                {% endif %}
+                
+                <div class="alert alert-info mt-3 mb-0" style="background: var(--bordo-transparente); border-color: var(--bordo); color: var(--bordo);">
+                    <i class="bi bi-info-circle-fill me-2"></i>
+                    <strong>Informação:</strong> Este obreiro foi iniciado a partir do processo de sindicância 
+                    do candidato <strong>{{ historico_candidato.candidato_nome }}</strong>.
+                    <a href="/candidato/{{ historico_candidato.candidato_id }}/processo" class="alert-link" style="color: var(--bordo);">
+                        Ver processo completo →
+                    </a>
+                </div>
+                {% else %}
+                <div class="text-center py-4">
+                    <i class="bi bi-archive fs-1 text-muted"></i>
+                    <p class="mt-2 mb-0">Não há histórico de candidato vinculado a este obreiro.</p>
+                    <small class="text-muted">Este obreiro pode ter sido cadastrado diretamente no sistema.</small>
+                </div>
+                {% endif %}
             </div>
-        </div>
-        
-        {% if historico_candidato.parecer_final %}
-        <hr>
-        <div class="mt-2">
-            <small class="text-muted"><i class="bi bi-chat-text"></i> Parecer Final:</small>
-            <p class="mb-0 small">{{ historico_candidato.parecer_final }}</p>
         </div>
         {% endif %}
-        
-        <div class="alert alert-info mt-3 mb-0">
-            <i class="bi bi-info-circle-fill me-2"></i>
-            <strong>Informação:</strong> Este obreiro foi iniciado a partir do processo de sindicância 
-            do candidato <strong>{{ historico_candidato.candidato_nome }}</strong>.
-            <a href="/candidato/{{ historico_candidato.candidato_id }}/processo" class="alert-link">
-                Ver processo completo →
-            </a>
-        </div>
-    </div>
-</div>
-{% elif session.tipo == 'admin' and not historico_candidato %}
-<div class="card shadow-sm mb-4">
-    <div class="card-header bg-secondary text-white">
-        <h5 class="mb-0">
-            <i class="bi bi-question-circle me-2"></i>
-            Histórico de Iniciação
-        </h5>
-    </div>
-    <div class="card-body text-center py-4">
-        <i class="bi bi-archive fs-1 text-muted"></i>
-        <p class="mt-2 mb-0">Não há histórico de candidato vinculado a este obreiro.</p>
-        <small class="text-muted">Este obreiro pode ter sido cadastrado diretamente no sistema.</small>
-    </div>
-</div>
-{% endif %}
+
         <!-- Datas Importantes -->
-        <div class="card shadow-sm mb-4">
-            <div class="card-header bg-info text-white">
+        <div class="card-bordo-branco shadow-sm mb-4">
+            <div class="card-header" style="background: #3b82f6; border-bottom: none; color: white;">
                 <h5 class="mb-0"><i class="bi bi-calendar-event"></i> Datas Importantes</h5>
             </div>
             <div class="card-body">
                 <div class="row g-3 text-center">
                     <div class="col-md-4">
-                        <div class="border rounded p-3 bg-light">
+                        <div class="border rounded p-3" style="border-color: var(--bordo) !important; background: var(--bordo-transparente);">
                             <small class="text-muted">Iniciação</small>
-                            <div class="fw-bold fs-5">{{ obreiro.data_iniciacao.strftime('%d/%m/%Y') if obreiro.data_iniciacao else '-' }}</div>
+                            <div class="fw-bold fs-5" style="color: var(--bordo);">{{ obreiro.data_iniciacao.strftime('%d/%m/%Y') if obreiro.data_iniciacao else '-' }}</div>
                         </div>
                     </div>
                     <div class="col-md-4">
-                        <div class="border rounded p-3 bg-light">
+                        <div class="border rounded p-3" style="border-color: var(--bordo) !important; background: var(--bordo-transparente);">
                             <small class="text-muted">Elevação</small>
-                            <div class="fw-bold fs-5">{{ obreiro.data_elevacao.strftime('%d/%m/%Y') if obreiro.data_elevacao else '-' }}</div>
+                            <div class="fw-bold fs-5" style="color: var(--bordo);">{{ obreiro.data_elevacao.strftime('%d/%m/%Y') if obreiro.data_elevacao else '-' }}</div>
                         </div>
                     </div>
                     <div class="col-md-4">
-                        <div class="border rounded p-3 bg-light">
+                        <div class="border rounded p-3" style="border-color: var(--bordo) !important; background: var(--bordo-transparente);">
                             <small class="text-muted">Exaltação</small>
-                            <div class="fw-bold fs-5">{{ obreiro.data_exaltacao.strftime('%d/%m/%Y') if obreiro.data_exaltacao else '-' }}</div>
+                            <div class="fw-bold fs-5" style="color: var(--bordo);">{{ obreiro.data_exaltacao.strftime('%d/%m/%Y') if obreiro.data_exaltacao else '-' }}</div>
                         </div>
                     </div>
                 </div>
@@ -350,16 +494,16 @@
 
         <!-- Cargos Ocupados e Documentos -->
         <div class="row g-4 mb-4">
-            <!-- Coluna 1: Cargos Ocupados (com formulário de adicionar dentro) -->
+            <!-- Coluna 1: Cargos Ocupados -->
             <div class="col-md-6">
-                <div class="card shadow-sm h-100">
-                    <div class="card-header bg-secondary text-white">
+                <div class="card-bordo-branco h-100">
+                    <div class="card-header" style="background: #64748b; border-bottom: none; color: white;">
                         <h5 class="mb-0"><i class="bi bi-journal"></i> Cargos Ocupados</h5>
                     </div>
                     <div class="card-body">
                         {% if cargos and cargos|length > 0 %}
                             <div class="table-responsive">
-                                <table class="table table-sm table-hover">
+                                <table class="table table-bordo">
                                     <thead>
                                         <tr>
                                             <th>Cargo</th>
@@ -372,7 +516,7 @@
                                         {% for cargo in cargos %}
                                         <tr>
                                             <td>
-                                                <strong>{{ cargo.cargo_nome }}</strong>
+                                                <strong style="color: var(--bordo);">{{ cargo.cargo_nome }}</strong>
                                                 {% if cargo.sigla %}
                                                 <br><small class="text-muted">{{ cargo.sigla }}</small>
                                                 {% endif %}
@@ -401,12 +545,12 @@
                             </div>
                         {% endif %}
 
-                        <!-- Formulário para adicionar novo cargo (dentro do card) -->
+                        <!-- Formulário para adicionar novo cargo -->
                         {% if session.tipo == 'admin' and cargos_disponiveis %}
                         <hr>
-                        <h6 class="mb-3"><i class="bi bi-plus-circle"></i> Adicionar Novo Cargo</h6>
+                        <h6 class="mb-3" style="color: var(--bordo);"><i class="bi bi-plus-circle"></i> Adicionar Novo Cargo</h6>
                         
-                        <div class="alert alert-info small mb-3">
+                        <div class="alert alert-info small mb-3" style="background: var(--bordo-transparente); border-color: var(--bordo); color: var(--bordo);">
                             <i class="bi bi-star-fill"></i>
                             <strong>Grau atual do obreiro:</strong> 
                             {% set grau_num = obreiro.grau_atual|int %}
@@ -470,11 +614,11 @@
 
             <!-- Coluna 2: Documentos -->
             <div class="col-md-6">
-                <div class="card shadow-sm h-100">
-                    <div class="card-header bg-info text-white">
+                <div class="card-bordo-branco h-100">
+                    <div class="card-header" style="background: #3b82f6; border-bottom: none; color: white;">
                         <h5 class="mb-0">
                             <i class="bi bi-cloud-arrow-up"></i> Documentos
-                            <span class="badge bg-light text-dark ms-2" id="totalDocumentosVis">0</span>
+                            <span class="badge bg-white text-dark ms-2" id="totalDocumentosVis">0</span>
                         </h5>
                     </div>
                     <div class="card-body" style="max-height: 400px; overflow-y: auto;">
@@ -491,39 +635,37 @@
 
         <!-- Familiares, Condecorações e Comunicados -->
         <div class="row g-4 mb-4">
-            <!-- Familiares -->
             <div class="col-md-4">
-                <div class="card shadow-sm h-100">
-                    <div class="card-header bg-info text-white">
+                <div class="card-bordo-branco h-100">
+                    <div class="card-header" style="background: #3b82f6; border-bottom: none; color: white;">
                         <h5 class="mb-0"><i class="bi bi-people"></i> Familiares</h5>
                     </div>
                     <div class="card-body text-center">
-                        <i class="bi bi-people-fill fs-1 text-info"></i>
-                        <h2 class="mt-2 fw-bold">{{ familiares_count|default(0) }}</h2>
+                        <i class="bi bi-people-fill fs-1" style="color: #3b82f6;"></i>
+                        <h2 class="mt-2 fw-bold numero-bordo">{{ familiares_count|default(0) }}</h2>
                         <p class="text-muted">familiares cadastrados</p>
-                        <a href="/obreiros/{{ obreiro.id }}/familiares" class="btn btn-outline-info">
+                        <a href="/obreiros/{{ obreiro.id }}/familiares" class="btn-bordo-outline">
                             <i class="bi bi-eye"></i> Gerenciar
                         </a>
                     </div>
                 </div>
             </div>
 
-            <!-- Condecorações -->
             <div class="col-md-4">
-                <div class="card shadow-sm h-100">
-                    <div class="card-header bg-warning text-dark">
+                <div class="card-bordo-branco h-100">
+                    <div class="card-header" style="background: #f59e0b; border-bottom: none; color: white;">
                         <h5 class="mb-0"><i class="bi bi-award"></i> Condecorações</h5>
                     </div>
                     <div class="card-body text-center">
-                        <i class="bi bi-award fs-1 text-warning"></i>
-                        <h2 class="mt-2 fw-bold">{{ condecoracoes_count|default(0) }}</h2>
+                        <i class="bi bi-award fs-1" style="color: #f59e0b;"></i>
+                        <h2 class="mt-2 fw-bold numero-bordo">{{ condecoracoes_count|default(0) }}</h2>
                         <p class="text-muted">condecorações recebidas</p>
                         <div class="d-grid gap-2">
-                            <a href="/obreiros/{{ obreiro.id }}/condecoracoes" class="btn btn-outline-warning">
+                            <a href="/obreiros/{{ obreiro.id }}/condecoracoes" class="btn-bordo-outline">
                                 <i class="bi bi-eye"></i> Ver Todas
                             </a>
                             {% if session.tipo == 'admin' %}
-                            <a href="/obreiros/{{ obreiro.id }}/condecoracoes/nova" class="btn btn-warning">
+                            <a href="/obreiros/{{ obreiro.id }}/condecoracoes/nova" class="btn-bordo">
                                 <i class="bi bi-plus-circle"></i> Nova Condecoração
                             </a>
                             {% endif %}
@@ -532,17 +674,16 @@
                 </div>
             </div>
 
-            <!-- Comunicados -->
             <div class="col-md-4">
-                <div class="card shadow-sm h-100">
-                    <div class="card-header bg-danger text-white">
+                <div class="card-bordo-branco h-100">
+                    <div class="card-header" style="background: #dc2626; border-bottom: none; color: white;">
                         <h5 class="mb-0"><i class="bi bi-envelope-paper"></i> Comunicados</h5>
                     </div>
                     <div class="card-body text-center">
-                        <i class="bi bi-envelope-paper fs-1 text-danger"></i>
-                        <h2 class="mt-2 fw-bold">{{ comunicados_count|default(0) }}</h2>
+                        <i class="bi bi-envelope-paper fs-1" style="color: #dc2626;"></i>
+                        <h2 class="mt-2 fw-bold numero-bordo">{{ comunicados_count|default(0) }}</h2>
                         <p class="text-muted">comunicados registrados</p>
-                        <a href="/obreiros/{{ obreiro.id }}/comunicados" class="btn btn-outline-danger">
+                        <a href="/obreiros/{{ obreiro.id }}/comunicados" class="btn-bordo-outline">
                             <i class="bi bi-eye"></i> Ver Histórico
                         </a>
                     </div>
@@ -779,7 +920,7 @@ function carregarDocumentosVisualizacao() {
                                     <div class="d-flex align-items-center">
                                         <i class="bi ${icone} fs-3 me-3 text-info"></i>
                                         <div>
-                                            <strong>${escapeHtml(doc.titulo)}</strong>
+                                            <strong style="color: var(--bordo);">${escapeHtml(doc.titulo)}</strong>
                                             <br>
                                             <small class="text-muted">
                                                 <i class="bi bi-folder"></i> ${doc.categoria}
@@ -830,40 +971,4 @@ function escapeHtml(text) {
     return div.innerHTML;
 }
 </script>
-
-<style>
-    .card {
-        border-radius: 12px;
-        overflow: hidden;
-        transition: transform 0.2s ease;
-    }
-    .card:hover {
-        transform: translateY(-2px);
-    }
-    .card-header {
-        font-weight: 600;
-    }
-    .table-borderless td {
-        padding: 0.3rem 0;
-    }
-    .rounded-circle {
-        border-radius: 50% !important;
-    }
-    .d-grid {
-        display: grid;
-    }
-    @media (max-width: 768px) {
-        .btn-group {
-            flex-direction: column;
-            margin-top: 1rem;
-        }
-        .btn-group .btn {
-            margin: 2px 0;
-        }
-        .row.align-items-center {
-            flex-direction: column;
-            text-align: center;
-        }
-    }
-</style>
 {% endblock %}

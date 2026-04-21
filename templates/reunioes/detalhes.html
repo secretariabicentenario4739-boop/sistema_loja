@@ -2,79 +2,249 @@
 
 {% block title %}Detalhes da Reunião - {{ reuniao.titulo or 'Reunião' }}{% endblock %}
 
+{% block styles %}
+{{ super() }}
+<style>
+    :root {
+        --bordo: #4A0E2E;
+        --bordo-escuro: #3A0A24;
+        --bordo-claro: #6B1342;
+        --bordo-suave: #8B4A6B;
+        --bordo-transparente: rgba(74, 14, 46, 0.08);
+        --bordo-transparente-hover: rgba(74, 14, 46, 0.12);
+        --ouro: #D4AF37;
+        --ouro-escuro: #996515;
+        --ouro-claro: #F0D68A;
+    }
+
+    /* CARDS BRANCOS COM BORDÔ */
+    .card-bordo-branco {
+        background: white;
+        border: 1px solid rgba(74, 14, 46, 0.15);
+        border-radius: 16px;
+        transition: all 0.3s ease;
+        color: var(--bordo);
+    }
+    
+    .card-bordo-branco:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 8px 25px rgba(74, 14, 46, 0.12);
+        border-color: var(--bordo);
+    }
+    
+    .card-bordo-branco-destaque {
+        background: white;
+        border: 2px solid var(--bordo);
+        border-radius: 16px;
+        transition: all 0.3s ease;
+        color: var(--bordo);
+    }
+    
+    .card-bordo-branco-destaque:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 8px 25px rgba(74, 14, 46, 0.15);
+    }
+    
+    .card-bordo-branco-suave {
+        background: white;
+        border: 1px solid rgba(74, 14, 46, 0.1);
+        border-radius: 16px;
+        transition: all 0.3s ease;
+        color: var(--bordo-suave);
+    }
+    
+    .card-bordo-branco-suave:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 8px 25px rgba(74, 14, 46, 0.1);
+        border-color: var(--bordo-suave);
+    }
+
+    /* NÚMEROS EM DESTAQUE BORDÔ */
+    .numero-bordo {
+        color: var(--bordo);
+        font-weight: 700;
+    }
+    
+    .numero-bordo-claro {
+        color: var(--bordo-claro);
+        font-weight: 700;
+    }
+    
+    .numero-bordo-suave {
+        color: var(--bordo-suave);
+        font-weight: 700;
+    }
+
+    /* BOTÕES DO RITO */
+    .btn-bordo {
+        background: linear-gradient(135deg, var(--bordo), var(--bordo-escuro));
+        border: none;
+        color: white;
+        border-radius: 30px;
+        padding: 8px 24px;
+        transition: all 0.3s;
+    }
+    
+    .btn-bordo:hover {
+        background: linear-gradient(135deg, var(--bordo-claro), var(--bordo));
+        transform: translateY(-2px);
+        color: white;
+        box-shadow: 0 5px 15px rgba(74, 14, 46, 0.3);
+    }
+    
+    .btn-bordo-outline {
+        background: transparent;
+        border: 1px solid var(--bordo);
+        color: var(--bordo);
+        border-radius: 30px;
+        padding: 8px 24px;
+        transition: all 0.3s;
+    }
+    
+    .btn-bordo-outline:hover {
+        background: var(--bordo);
+        color: white;
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(74, 14, 46, 0.2);
+    }
+
+    /* FILTROS */
+    .filtros-card {
+        background: white;
+        border: 1px solid rgba(74, 14, 46, 0.12);
+        border-radius: 16px;
+        overflow: hidden;
+    }
+    
+    .filtros-header {
+        background: var(--bordo-transparente);
+        border-bottom: 1px solid rgba(74, 14, 46, 0.1);
+        padding: 12px 20px;
+    }
+
+    /* TABELA */
+    .table-bordo {
+        margin-bottom: 0;
+    }
+    
+    .table-bordo thead th {
+        background: var(--bordo-transparente);
+        color: var(--bordo);
+        font-weight: 600;
+        border-bottom: 2px solid rgba(74, 14, 46, 0.15);
+    }
+    
+    .table-bordo tbody tr {
+        border-bottom: 1px solid rgba(74, 14, 46, 0.08);
+        transition: all 0.2s;
+    }
+    
+    .table-bordo tbody tr:hover {
+        background: var(--bordo-transparente);
+        cursor: pointer;
+    }
+
+    /* PROGRESS BAR */
+    .progress-bordo {
+        background: rgba(74, 14, 46, 0.1);
+        border-radius: 30px;
+        height: 20px;
+        overflow: hidden;
+    }
+    
+    .progress-bordo .progress-bar {
+        background: linear-gradient(90deg, var(--bordo), var(--bordo-claro));
+        border-radius: 30px;
+        font-size: 10px;
+        line-height: 20px;
+    }
+
+    /* LEGENDA */
+    .legenda-card {
+        background: white;
+        border: 1px solid rgba(74, 14, 46, 0.12);
+        border-radius: 16px;
+    }
+
+    @media (max-width: 768px) {
+        .btn-group { flex-direction: column; }
+        .btn-group .btn { margin-bottom: 5px; }
+        .table-responsive { font-size: 0.8rem; }
+        .progress-bordo { height: 15px; }
+        .progress-bordo .progress-bar { font-size: 8px; line-height: 15px; }
+    }
+</style>
+{% endblock %}
+
 {% block content %}
 <div class="container-fluid py-4">
     <div class="container">
         <!-- Cabeçalho -->
         <div class="d-flex justify-content-between align-items-center mb-4">
+            <h2>
+                <i class="bi bi-calendar-week" style="color: var(--bordo);"></i> 
+                <span style="color: var(--bordo);">{{ reuniao.titulo or 'Reunião' }}</span>
+            </h2>
             <div>
-                <h4 class="fw-bold mb-1">{{ reuniao.titulo or 'Reunião' }}</h4>
-                <div class="text-muted">
-                    <i class="bi bi-calendar3"></i> {{ reuniao.data.strftime('%d/%m/%Y') if reuniao.data else '-' }}
-                    {% if reuniao.hora_inicio %}
-                    • <i class="bi bi-clock"></i> {{ reuniao.hora_inicio.strftime('%H:%M') }}
-                    {% if reuniao.hora_termino %} às {{ reuniao.hora_termino.strftime('%H:%M') }}{% endif %}
-                    {% endif %}
-                </div>
+                <a href="/reunioes" class="btn-bordo-outline">
+                    <i class="bi bi-arrow-left"></i> Voltar
+                </a>
             </div>
-            <a href="/reunioes" class="btn btn-outline-secondary">
-                <i class="bi bi-arrow-left"></i> Voltar
-            </a>
         </div>
 
-        <!-- LINHA 1: 3 CARDS DE ESTATÍSTICAS -->
-        <div class="row g-3 mb-4">
+        <!-- Cards de Estatísticas - Brancos com letras bordô (igual à lista) -->
+        <div class="row mb-4">
             <div class="col-md-4">
-                <div class="card text-white bg-primary shadow-sm">
-                    <div class="card-body py-3">
+                <div class="card-bordo-branco shadow-sm">
+                    <div class="card-body">
                         <div class="d-flex justify-content-between align-items-center">
                             <div>
-                                <div class="small text-white-50">TOTAL</div>
-                                <h2 class="mb-0">{{ total_obreiros or 0 }}</h2>
-                                <div class="small">obreiros</div>
+                                <h6 class="card-title mb-0" style="color: var(--bordo-suave);">TOTAL</h6>
+                                <h2 class="mb-0 fw-bold numero-bordo">{{ total_obreiros or 0 }}</h2>
+                                <div class="small text-muted">obreiros</div>
                             </div>
-                            <i class="bi bi-people-fill fs-1 opacity-50"></i>
+                            <i class="bi bi-people-fill fs-1" style="color: var(--bordo); opacity: 0.6;"></i>
                         </div>
                     </div>
                 </div>
             </div>
             <div class="col-md-4">
-                <div class="card text-white bg-success shadow-sm">
-                    <div class="card-body py-3">
+                <div class="card-bordo-branco-destaque shadow-sm">
+                    <div class="card-body">
                         <div class="d-flex justify-content-between align-items-center">
                             <div>
-                                <div class="small text-white-50">PRESENTES</div>
-                                <h2 class="mb-0">{{ presentes or 0 }}</h2>
-                                <div class="small">obreiros</div>
+                                <h6 class="card-title mb-0" style="color: var(--bordo);">PRESENTES</h6>
+                                <h2 class="mb-0 fw-bold numero-bordo">{{ presentes or 0 }}</h2>
+                                <div class="small text-muted">obreiros</div>
                             </div>
-                            <i class="bi bi-check-circle-fill fs-1 opacity-50"></i>
+                            <i class="bi bi-check-circle-fill fs-1" style="color: #10b981; opacity: 0.7;"></i>
                         </div>
                     </div>
                 </div>
             </div>
             <div class="col-md-4">
-                <div class="card text-white bg-danger shadow-sm">
-                    <div class="card-body py-3">
+                <div class="card-bordo-branco-suave shadow-sm">
+                    <div class="card-body">
                         <div class="d-flex justify-content-between align-items-center">
                             <div>
-                                <div class="small text-white-50">AUSENTES</div>
-                                <h2 class="mb-0">{{ ausentes or 0 }}</h2>
-                                <div class="small">obreiros</div>
+                                <h6 class="card-title mb-0" style="color: var(--bordo-suave);">AUSENTES</h6>
+                                <h2 class="mb-0 fw-bold numero-bordo-suave">{{ ausentes or 0 }}</h2>
+                                <div class="small text-muted">obreiros</div>
                             </div>
-                            <i class="bi bi-x-circle-fill fs-1 opacity-50"></i>
+                            <i class="bi bi-x-circle-fill fs-1" style="color: #ef4444; opacity: 0.6;"></i>
                         </div>
                     </div>
                 </div>
             </div>
         </div>
 
-        <!-- LINHA 2: INFORMAÇÕES E ATA -->
+        <!-- INFORMAÇÕES E ATA -->
         <div class="row g-3 mb-4">
             <!-- Coluna Esquerda: Informações -->
             <div class="col-md-7">
-                <div class="card shadow-sm">
-                    <div class="card-header bg-white fw-semibold">
-                        <i class="bi bi-info-circle text-primary"></i> Informações da Reunião
+                <div class="filtros-card shadow-sm">
+                    <div class="filtros-header">
+                        <h6 class="mb-0" style="color: var(--bordo);"><i class="bi bi-info-circle"></i> Informações da Reunião</h6>
                     </div>
                     <div class="card-body">
                         <div class="row">
@@ -137,20 +307,20 @@
                                             {% else %}
                                                 -
                                             {% endif %}
-                                         </td>
+                                        </td>
                                     </tr>
                                 </table>
                             </div>
                         </div>
                         {% if reuniao.pauta %}
-                        <hr>
+                        <hr style="border-color: var(--bordo-transparente);">
                         <div class="mt-2">
                             <strong class="small text-muted">PAUTA</strong>
                             <div class="mt-1 small">{{ reuniao.pauta|safe }}</div>
                         </div>
                         {% endif %}
                         {% if reuniao.observacoes %}
-                        <hr>
+                        <hr style="border-color: var(--bordo-transparente);">
                         <div class="mt-2">
                             <strong class="small text-muted">OBSERVAÇÕES</strong>
                             <div class="mt-1 small">{{ reuniao.observacoes|safe }}</div>
@@ -162,14 +332,14 @@
 
             <!-- Coluna Direita: Ata da Reunião -->
             <div class="col-md-5">
-                <div class="card shadow-sm">
-                    <div class="card-header bg-white fw-semibold">
-                        <i class="bi bi-file-text text-primary"></i> Ata da Reunião
+                <div class="filtros-card shadow-sm">
+                    <div class="filtros-header">
+                        <h6 class="mb-0" style="color: var(--bordo);"><i class="bi bi-file-text"></i> Ata da Reunião</h6>
                     </div>
                     <div class="card-body text-center">
                         {% if ata_id %}
-                            <i class="bi bi-file-text-fill fs-1 text-success"></i>
-                            <h5 class="mt-2 mb-1">Ata nº {{ ata_numero or '?' }}/{{ ata_ano or '?' }}</h5>
+                            <i class="bi bi-file-text-fill fs-1" style="color: #10b981;"></i>
+                            <h5 class="mt-2 mb-1" style="color: var(--bordo);">Ata nº {{ ata_numero or '?' }}/{{ ata_ano or '?' }}</h5>
                             {% if ata_aprovada %}
                                 <span class="badge bg-success mb-3">Aprovada</span>
                             {% else %}
@@ -218,38 +388,40 @@
             </div>
         </div>
 
-        <!-- LINHA 3: LISTA DE PRESENÇA -->
-        <div class="card shadow-sm">
-            <div class="card-header bg-white fw-semibold d-flex justify-content-between align-items-center">
-                <span><i class="bi bi-people text-primary"></i> Lista de Presença</span>
-                {% if session.tipo == 'admin' and reuniao.status in ['agendada', 'realizada'] %}
-                <div>
-                    <button type="button" class="btn btn-sm btn-success me-1" id="btnTodosPresentes">
-                        <i class="bi bi-check-all"></i> Todos
-                    </button>
-                    <button type="button" class="btn btn-sm btn-danger" id="btnTodosAusentes">
-                        <i class="bi bi-x-lg"></i> Nenhum
-                    </button>
+        <!-- LISTA DE PRESENÇA -->
+        <div class="filtros-card shadow-sm">
+            <div class="filtros-header">
+                <div class="d-flex justify-content-between align-items-center">
+                    <h6 class="mb-0" style="color: var(--bordo);"><i class="bi bi-people"></i> Lista de Presença</h6>
+                    {% if session.tipo == 'admin' and reuniao.status in ['agendada', 'realizada'] %}
+                    <div>
+                        <button type="button" class="btn btn-sm btn-success me-1" id="btnTodosPresentes">
+                            <i class="bi bi-check-all"></i> Todos
+                        </button>
+                        <button type="button" class="btn btn-sm btn-danger" id="btnTodosAusentes">
+                            <i class="bi bi-x-lg"></i> Nenhum
+                        </button>
+                    </div>
+                    {% endif %}
                 </div>
-                {% endif %}
             </div>
             <div class="card-body p-0">
                 {% if session.tipo == 'admin' and reuniao.status in ['agendada', 'realizada'] %}
-                <!-- Formulário para ADMIN (SEM badges de tipo) -->
+                <!-- Formulário para ADMIN -->
                 <form method="POST" action="/reunioes/{{ reuniao.id }}/presenca/lote" id="formPresencaLote">
                     <div class="table-responsive" style="max-height: 450px; overflow-y: auto;">
-                        <table class="table table-sm table-hover mb-0">
-                            <thead class="table-light">
+                        <table class="table table-bordo">
+                            <thead>
                                 <tr style="position: sticky; top: 0; background: white;">
                                     <th style="width: 40px"><input type="checkbox" id="selecionarTodos"></th>
                                     <th>Obreiro</th>
                                     <th style="width: 100px">Grau</th>
                                     <th style="width: 250px">Justificativa (se ausente)</th>
-                                 </tr>
+                                </tr>
                             </thead>
                             <tbody>
                                 {% for p in presenca %}
-                                <tr class="{% if loop.index is even %}table-light{% endif %}">
+                                <tr>
                                     <td class="text-center">
                                         <input type="checkbox" 
                                                name="presenca_{{ p.id }}" 
@@ -257,11 +429,8 @@
                                                data-id="{{ p.id }}"
                                                value="1"
                                                {% if p.presente %}checked{% endif %}>
-                                     </td>
-                                    <td>
-                                        <span class="fw-semibold">{{ p.nome_completo }}</span>
-                                        <!-- ADMIN NÃO vê badges de Admin/Sindicante -->
-                                     </td>
+                                    </td>
+                                    <td><span class="fw-semibold">{{ p.nome_completo }}</span></td>
                                     <td>
                                         {% set grau = p.grau_atual|int %}
                                         {% if grau == 3 %}
@@ -273,7 +442,7 @@
                                         {% else %}
                                             <span class="badge bg-info">Grau {{ grau }}</span>
                                         {% endif %}
-                                     </td>
+                                    </td>
                                     <td>
                                         <div id="justificativa_div_{{ p.id }}" style="{% if p.presente %}display: none;{% endif %}">
                                             <div class="row g-1">
@@ -296,46 +465,45 @@
                                                 </div>
                                             </div>
                                         </div>
-                                     </td>
-                                 </tr>
+                                    </td>
+                                </tr>
                                 {% else %}
-                                 <tr>
+                                <tr>
                                     <td colspan="4" class="text-center py-4 text-muted">
                                         <i class="bi bi-inbox"></i> Nenhum obreiro encontrado
-                                     </td>
-                                 </tr>
+                                    </td>
+                                </tr>
                                 {% endfor %}
                             </tbody>
                         </table>
                     </div>
-                    <div class="card-footer bg-white d-flex justify-content-end gap-2">
-                        <button type="button" class="btn btn-sm btn-secondary" onclick="location.reload()">
-                            <i class="bi bi-arrow-repeat"></i> Resetar
-                        </button>
-                        <button type="submit" class="btn btn-sm btn-primary">
-                            <i class="bi bi-save"></i> Salvar Presenças
-                        </button>
+                    <div class="card-footer" style="background: white; border-top: 1px solid rgba(74, 14, 46, 0.1);">
+                        <div class="d-flex justify-content-end gap-2">
+                            <button type="button" class="btn btn-sm btn-secondary" onclick="location.reload()">
+                                <i class="bi bi-arrow-repeat"></i> Resetar
+                            </button>
+                            <button type="submit" class="btn btn-sm btn-primary">
+                                <i class="bi bi-save"></i> Salvar Presenças
+                            </button>
+                        </div>
                     </div>
                 </form>
                 {% else %}
-                <!-- Visualização para NÃO-ADMIN (SEM badges de tipo) -->
+                <!-- Visualização para NÃO-ADMIN -->
                 <div class="table-responsive" style="max-height: 450px; overflow-y: auto;">
-                    <table class="table table-sm table-hover mb-0">
-                        <thead class="table-light">
+                    <table class="table table-bordo">
+                        <thead>
                             <tr style="position: sticky; top: 0; background: white;">
                                 <th>Obreiro</th>
                                 <th style="width: 100px">Grau</th>
                                 <th style="width: 100px">Status</th>
                                 <th>Justificativa</th>
-                              </tr>
+                            </tr>
                         </thead>
                         <tbody>
                             {% for p in presenca %}
-                            <tr class="{% if loop.index is even %}table-light{% endif %}">
-                                <td>
-                                    <span class="fw-semibold">{{ p.nome_completo }}</span>
-                                    <!-- NÃO-ADMIN NÃO vê badges (Admin/Sindicante) -->
-                                 </td>
+                            <tr>
+                                <td><span class="fw-semibold">{{ p.nome_completo }}</span></td>
                                 <td>
                                     {% set grau = p.grau_atual|int %}
                                     {% if grau == 3 %}
@@ -347,14 +515,14 @@
                                     {% else %}
                                         <span class="badge bg-info">Grau {{ grau }}</span>
                                     {% endif %}
-                                 </td>
+                                </td>
                                 <td>
                                     {% if p.presente %}
                                         <span class="badge bg-success">Presente</span>
                                     {% else %}
                                         <span class="badge bg-danger">Ausente</span>
                                     {% endif %}
-                                 </td>
+                                </td>
                                 <td class="text-muted small">
                                     {% if not p.presente %}
                                         {% if p.tipo_ausencia %}<strong>{{ p.tipo_ausencia }}</strong>{% endif %}
@@ -362,13 +530,55 @@
                                     {% else %}
                                         -
                                     {% endif %}
-                                 </td>
-                             </tr>
+                                </td>
+                            </tr>
                             {% endfor %}
                         </tbody>
                     </table>
                 </div>
                 {% endif %}
+            </div>
+        </div>
+
+        <!-- Legenda -->
+        <div class="legenda-card shadow-sm mt-4">
+            <div class="card-header" style="background: var(--bordo-transparente); border-bottom: 1px solid rgba(74, 14, 46, 0.1);">
+                <h6 class="mb-0" style="color: var(--bordo);"><i class="bi bi-info-circle"></i> Legenda</h6>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-3">
+                        <span class="badge bg-success">Verde</span> = Realizada / Presente<br>
+                        <span class="badge bg-warning">Amarelo</span> = Agendada<br>
+                        <span class="badge bg-danger">Vermelho</span> = Cancelada / Ausente
+                    </div>
+                    <div class="col-md-3">
+                        <i class="bi bi-star-fill text-warning"></i> = Mestre<br>
+                        <i class="bi bi-star text-primary"></i> = Companheiro<br>
+                        <i class="bi bi-star text-secondary"></i> = Aprendiz
+                    </div>
+                    <div class="col-md-3">
+                        <i class="bi bi-eye"></i> = Visualizar<br>
+                        {% if session.tipo == 'admin' %}
+                        <i class="bi bi-pencil"></i> = Editar<br>
+                        <i class="bi bi-file-text"></i> = Criar Ata
+                        {% endif %}
+                    </div>
+                    <div class="col-md-3">
+                        <i class="bi bi-check-circle text-success"></i> = Realizada<br>
+                        <i class="bi bi-calendar-check text-warning"></i> = Agendada<br>
+                        <i class="bi bi-x-circle text-danger"></i> = Cancelada
+                    </div>
+                </div>
+                <hr>
+                <small class="text-muted">
+                    <i class="bi bi-info-circle"></i> 
+                    {% if session.tipo == 'admin' %}
+                        Administradores têm acesso total.
+                    {% else %}
+                        Você está visualizando como {{ session.tipo|capitalize }}. Apenas administradores podem gerenciar.
+                    {% endif %}
+                </small>
             </div>
         </div>
     </div>
@@ -429,19 +639,4 @@
     
     atualizarContador();
 </script>
-
-<style>
-    .card { border-radius: 12px; overflow: hidden; transition: transform 0.2s ease; }
-    .card:hover { transform: translateY(-2px); }
-    .table-sm td, .table-sm th { padding: 0.6rem 0.8rem; vertical-align: middle; }
-    .table-light { background-color: #f8f9fa; }
-    .badge { font-size: 0.7rem; padding: 0.25rem 0.5rem; }
-    .btn-sm { padding: 0.25rem 0.75rem; font-size: 0.75rem; }
-    .form-select-sm, .form-control-sm { font-size: 0.7rem; }
-    @media (max-width: 768px) {
-        .table-sm td, .table-sm th { padding: 0.4rem 0.5rem; font-size: 0.75rem; }
-        .badge { font-size: 0.6rem; }
-        .btn-sm { padding: 0.2rem 0.5rem; }
-    }
-</style>
 {% endblock %}

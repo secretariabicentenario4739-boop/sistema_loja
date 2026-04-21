@@ -2,25 +2,119 @@
 
 {% block title %}Editar Obreiro - {{ obreiro.nome_completo or obreiro.usuario }}{% endblock %}
 
+{% block styles %}
+{{ super() }}
+<style>
+    :root {
+        --bordo: #4A0E2E;
+        --bordo-escuro: #3A0A24;
+        --bordo-claro: #6B1342;
+        --bordo-suave: #8B4A6B;
+        --bordo-transparente: rgba(74, 14, 46, 0.08);
+        --bordo-transparente-hover: rgba(74, 14, 46, 0.12);
+        --ouro: #D4AF37;
+        --ouro-escuro: #996515;
+        --ouro-claro: #F0D68A;
+    }
+
+    /* CARDS BRANCOS COM BORDÔ */
+    .card-bordo-branco {
+        background: white;
+        border: 1px solid rgba(74, 14, 46, 0.15);
+        border-radius: 16px;
+        transition: all 0.3s ease;
+        color: var(--bordo);
+    }
+    
+    .card-bordo-branco:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 8px 25px rgba(74, 14, 46, 0.12);
+        border-color: var(--bordo);
+    }
+
+    /* BOTÕES DO RITO */
+    .btn-bordo {
+        background: linear-gradient(135deg, var(--bordo), var(--bordo-escuro));
+        border: none;
+        color: white;
+        border-radius: 30px;
+        padding: 8px 24px;
+        transition: all 0.3s;
+    }
+    
+    .btn-bordo:hover {
+        background: linear-gradient(135deg, var(--bordo-claro), var(--bordo));
+        transform: translateY(-2px);
+        color: white;
+        box-shadow: 0 5px 15px rgba(74, 14, 46, 0.3);
+    }
+    
+    .btn-bordo-outline {
+        background: transparent;
+        border: 1px solid var(--bordo);
+        color: var(--bordo);
+        border-radius: 30px;
+        padding: 8px 24px;
+        transition: all 0.3s;
+    }
+    
+    .btn-bordo-outline:hover {
+        background: var(--bordo);
+        color: white;
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(74, 14, 46, 0.2);
+    }
+
+    /* FORMULÁRIO */
+    .form-control-custom, .form-select-custom {
+        border-radius: 12px;
+        border: 1px solid rgba(74, 14, 46, 0.2);
+        padding: 0.75rem 1rem;
+        transition: all 0.2s;
+    }
+    
+    .form-control-custom:focus, .form-select-custom:focus {
+        border-color: var(--bordo);
+        box-shadow: 0 0 0 3px rgba(74, 14, 46, 0.1);
+    }
+
+    @media (max-width: 768px) {
+        .d-flex.align-items-center {
+            flex-direction: column;
+            text-align: center;
+        }
+        .btn-group {
+            margin-top: 1rem;
+            flex-direction: column;
+        }
+        .btn-group .btn {
+            margin: 5px 0;
+        }
+    }
+</style>
+{% endblock %}
+
 {% block content %}
 <div class="container-fluid py-4">
     <div class="container">
 
         <div class="d-flex justify-content-between align-items-center mb-4">
             <h2>
-                <i class="bi bi-pencil-square"></i> 
-                {% if is_own_profile %}
-                    Meu Perfil
-                {% else %}
-                    Editar Obreiro: {{ obreiro.nome_completo or obreiro.usuario }}
-                {% endif %}
+                <i class="bi bi-pencil-square" style="color: var(--bordo);"></i> 
+                <span style="color: var(--bordo);">
+                    {% if is_own_profile %}
+                        Meu Perfil
+                    {% else %}
+                        Editar Obreiro: {{ obreiro.nome_completo or obreiro.usuario }}
+                    {% endif %}
+                </span>
             </h2>
 
             <div>
-                <a href="/obreiros/{{ obreiro.id }}" class="btn btn-outline-info me-2">
+                <a href="/obreiros/{{ obreiro.id }}" class="btn-bordo-outline me-2">
                     <i class="bi bi-eye"></i> Visualizar
                 </a>
-                <a href="/obreiros" class="btn btn-outline-secondary">
+                <a href="/obreiros" class="btn-bordo-outline">
                     <i class="bi bi-arrow-left"></i> Voltar
                 </a>
             </div>
@@ -28,8 +122,8 @@
 
         <div class="row">
             <div class="col-md-8">
-                <div class="card shadow">
-                    <div class="card-header bg-primary text-white">
+                <div class="card-bordo-branco shadow-sm">
+                    <div class="card-header" style="background: var(--bordo); border-bottom: none; color: white;">
                         <h5 class="mb-0">
                             <i class="bi bi-person-badge"></i> 
                             {% if is_own_profile %}
@@ -49,23 +143,23 @@
                             <!-- ===================== -->
                             <div class="row">
                                 <div class="col-md-6 mb-3">
-                                    <label class="form-label">Usuário</label>
+                                    <label class="form-label" style="color: var(--bordo);">Usuário</label>
                                     {% if is_admin %}
-                                        <input type="text" class="form-control" name="usuario" value="{{ obreiro.usuario }}" required>
+                                        <input type="text" class="form-control form-control-custom" name="usuario" value="{{ obreiro.usuario }}" required>
                                         <small class="text-warning">
                                             <i class="bi bi-exclamation-triangle"></i> 
                                             Alterar o nome de usuário pode afetar logs. Use com cuidado.
                                         </small>
                                     {% else %}
-                                        <input type="text" class="form-control" value="{{ obreiro.usuario }}" readonly disabled>
+                                        <input type="text" class="form-control form-control-custom" value="{{ obreiro.usuario }}" readonly disabled>
                                         <small class="text-muted">Para alterar o usuário, contate o administrador.</small>
                                     {% endif %}
                                 </div>
 
                                 {% if is_admin %}
                                 <div class="col-md-6 mb-3">
-                                    <label class="form-label">Tipo</label>
-                                    <select class="form-select" name="tipo" id="tipoSelect">
+                                    <label class="form-label" style="color: var(--bordo);">Tipo</label>
+                                    <select class="form-select form-select-custom" name="tipo" id="tipoSelect">
                                         <option value="obreiro" {% if obreiro.tipo == 'obreiro' %}selected{% endif %}>Obreiro</option>
                                         
                                         {% if obreiro.grau_atual >= 3 %}
@@ -79,7 +173,7 @@
                                         <option value="admin" {% if obreiro.tipo == 'admin' %}selected{% endif %}>Administrador</option>
                                     </select>
                                     
-                                    <div id="feedbackSindicante" class="small mt-1">
+                                    <div id="feedbackSindicante" class="small mt-1" style="color: var(--bordo);">
                                         {% if obreiro.grau_atual >= 3 %}
                                             <i class="bi bi-check-circle text-success"></i> 
                                             <span class="text-success">Este obreiro pode ser Sindicante (grau Mestre ou superior)</span>
@@ -94,33 +188,33 @@
                                 {% endif %}
                             </div>
 
-                            <hr>
-                            <h6>📋 Dados Pessoais</h6>
+                            <hr style="border-color: var(--bordo-transparente);">
+                            <h6 style="color: var(--bordo);">📋 Dados Pessoais</h6>
 
                             <div class="row">
                                 <div class="col-md-6 mb-3">
-                                    <label class="form-label">Nome Completo</label>
-                                    <input type="text" class="form-control" name="nome_completo" value="{{ obreiro.nome_completo or obreiro.usuario }}" required>
+                                    <label class="form-label" style="color: var(--bordo);">Nome Completo</label>
+                                    <input type="text" class="form-control form-control-custom" name="nome_completo" value="{{ obreiro.nome_completo or obreiro.usuario }}" required>
                                 </div>
 
                                 <div class="col-md-6 mb-3">
-                                    <label class="form-label">Nome Maçônico</label>
-                                    <input type="text" class="form-control" name="nome_maconico" value="{{ obreiro.nome_maconico or '' }}">
+                                    <label class="form-label" style="color: var(--bordo);">Nome Maçônico</label>
+                                    <input type="text" class="form-control form-control-custom" name="nome_maconico" value="{{ obreiro.nome_maconico or '' }}">
                                 </div>
                             </div>
 
                             <div class="row">
                                 <div class="col-md-4 mb-3">
-                                    <label class="form-label">Data Nascimento</label>
-                                    <input type="date" class="form-control" name="data_nascimento" value="{{ obreiro.data_nascimento or '' }}">
+                                    <label class="form-label" style="color: var(--bordo);">Data Nascimento</label>
+                                    <input type="date" class="form-control form-control-custom" name="data_nascimento" value="{{ obreiro.data_nascimento or '' }}">
                                 </div>
                                 <div class="col-md-4 mb-3">
-                                    <label class="form-label">CPF</label>
-                                    <input type="text" class="form-control" name="cpf" id="cpf" value="{{ obreiro.cpf or '' }}" placeholder="000.000.000-00">
+                                    <label class="form-label" style="color: var(--bordo);">CPF</label>
+                                    <input type="text" class="form-control form-control-custom" name="cpf" id="cpf" value="{{ obreiro.cpf or '' }}" placeholder="000.000.000-00">
                                 </div>
                                 <div class="col-md-4 mb-3">
-                                    <label class="form-label">Tipo Sanguíneo</label>
-                                    <select class="form-select" name="tipo_sanguineo">
+                                    <label class="form-label" style="color: var(--bordo);">Tipo Sanguíneo</label>
+                                    <select class="form-select form-select-custom" name="tipo_sanguineo">
                                         <option value="">Selecione</option>
                                         <option value="A+" {% if obreiro.tipo_sanguineo == 'A+' %}selected{% endif %}>A+</option>
                                         <option value="A-" {% if obreiro.tipo_sanguineo == 'A-' %}selected{% endif %}>A-</option>
@@ -136,23 +230,23 @@
 
                             <div class="row">
                                 <div class="col-md-4 mb-3">
-                                    <label class="form-label">RG</label>
-                                    <input type="text" class="form-control" name="rg" value="{{ obreiro.rg or '' }}">
+                                    <label class="form-label" style="color: var(--bordo);">RG</label>
+                                    <input type="text" class="form-control form-control-custom" name="rg" value="{{ obreiro.rg or '' }}">
                                 </div>
                                 <div class="col-md-4 mb-3">
-                                    <label class="form-label">Órgão Emissor</label>
-                                    <input type="text" class="form-control" name="orgao_emissor" value="{{ obreiro.orgao_emissor or '' }}" placeholder="SSP-DF">
+                                    <label class="form-label" style="color: var(--bordo);">Órgão Emissor</label>
+                                    <input type="text" class="form-control form-control-custom" name="orgao_emissor" value="{{ obreiro.orgao_emissor or '' }}" placeholder="SSP-DF">
                                 </div>
                                 <div class="col-md-4 mb-3">
-                                    <label class="form-label">Naturalidade</label>
-                                    <input type="text" class="form-control" name="naturalidade" value="{{ obreiro.naturalidade or '' }}" placeholder="BRASÍLIA-DF">
+                                    <label class="form-label" style="color: var(--bordo);">Naturalidade</label>
+                                    <input type="text" class="form-control form-control-custom" name="naturalidade" value="{{ obreiro.naturalidade or '' }}" placeholder="BRASÍLIA-DF">
                                 </div>
                             </div>
 
                             <div class="row">
                                 <div class="col-md-4 mb-3">
-                                    <label class="form-label">Grau de Instrução</label>
-                                    <select class="form-select" name="grau_instrucao">
+                                    <label class="form-label" style="color: var(--bordo);">Grau de Instrução</label>
+                                    <select class="form-select form-select-custom" name="grau_instrucao">
                                         <option value="">Selecione</option>
                                         <option value="1º GRAU" {% if obreiro.grau_instrucao == '1º GRAU' %}selected{% endif %}>1º Grau (Fundamental)</option>
                                         <option value="2º GRAU" {% if obreiro.grau_instrucao == '2º GRAU' %}selected{% endif %}>2º Grau (Médio)</option>
@@ -164,12 +258,12 @@
                                     </select>
                                 </div>
                                 <div class="col-md-4 mb-3">
-                                    <label class="form-label">Título de Eleitor</label>
-                                    <input type="text" class="form-control" name="titulo_eleitor" value="{{ obreiro.titulo_eleitor or '' }}">
+                                    <label class="form-label" style="color: var(--bordo);">Título de Eleitor</label>
+                                    <input type="text" class="form-control form-control-custom" name="titulo_eleitor" value="{{ obreiro.titulo_eleitor or '' }}">
                                 </div>
                                 <div class="col-md-4 mb-3">
-                                    <label class="form-label">Estado Civil</label>
-                                    <select class="form-select" name="estado_civil">
+                                    <label class="form-label" style="color: var(--bordo);">Estado Civil</label>
+                                    <select class="form-select form-select-custom" name="estado_civil">
                                         <option value="Solteiro" {% if obreiro.estado_civil == 'Solteiro' %}selected{% endif %}>Solteiro</option>
                                         <option value="Casado" {% if obreiro.estado_civil == 'Casado' %}selected{% endif %}>Casado</option>
                                         <option value="Divorciado" {% if obreiro.estado_civil == 'Divorciado' %}selected{% endif %}>Divorciado</option>
@@ -179,19 +273,19 @@
                                 </div>
                             </div>
 
-                            <hr>
-                            <h6>🏛️ Dados Maçônicos</h6>
+                            <hr style="border-color: var(--bordo-transparente);">
+                            <h6 style="color: var(--bordo);">🏛️ Dados Maçônicos</h6>
 
-                            <!-- DADOS MAÇÔNICOS - APENAS ADMIN PODE EDITAR -->
+                            <!-- DADOS MAÇÔNICOS -->
                             <div class="row">
                                 {% if is_admin %}
                                 <div class="col-md-4 mb-3">
-                                    <label class="form-label">CIM</label>
-                                    <input type="text" class="form-control" name="cim_numero" value="{{ obreiro.cim_numero or '' }}">
+                                    <label class="form-label" style="color: var(--bordo);">CIM</label>
+                                    <input type="text" class="form-control form-control-custom" name="cim_numero" value="{{ obreiro.cim_numero or '' }}">
                                 </div>
                                 <div class="col-md-4 mb-3">
-                                    <label class="form-label">Status Maçônico</label>
-                                    <select class="form-select" name="status_maconico">
+                                    <label class="form-label" style="color: var(--bordo);">Status Maçônico</label>
+                                    <select class="form-select form-select-custom" name="status_maconico">
                                         <option value="Regular" {% if obreiro.status_maconico == 'Regular' %}selected{% endif %}>Regular</option>
                                         <option value="Irregular" {% if obreiro.status_maconico == 'Irregular' %}selected{% endif %}>Irregular</option>
                                         <option value="Suspenso" {% if obreiro.status_maconico == 'Suspenso' %}selected{% endif %}>Suspenso</option>
@@ -199,105 +293,104 @@
                                     </select>
                                 </div>
                                 {% else %}
-                                <!-- Exibir apenas para não-admin (campo somente leitura) -->
                                 <div class="col-md-4 mb-3">
-                                    <label class="form-label">CIM</label>
-                                    <input type="text" class="form-control" value="{{ obreiro.cim_numero or '-' }}" readonly disabled>
+                                    <label class="form-label" style="color: var(--bordo);">CIM</label>
+                                    <input type="text" class="form-control form-control-custom" value="{{ obreiro.cim_numero or '-' }}" readonly disabled>
                                 </div>
                                 <div class="col-md-4 mb-3">
-                                    <label class="form-label">Status Maçônico</label>
-                                    <input type="text" class="form-control" value="{{ obreiro.status_maconico or 'Regular' }}" readonly disabled>
+                                    <label class="form-label" style="color: var(--bordo);">Status Maçônico</label>
+                                    <input type="text" class="form-control form-control-custom" value="{{ obreiro.status_maconico or 'Regular' }}" readonly disabled>
                                 </div>
                                 {% endif %}
                             </div>
 
-                            <!-- DATAS MAÇÔNICAS - APENAS ADMIN PODE EDITAR -->
+                            <!-- DATAS MAÇÔNICAS -->
                             <div class="row">
                                 {% if is_admin %}
                                 <div class="col-md-4 mb-3">
-                                    <label class="form-label">Data de Iniciação</label>
-                                    <input type="date" class="form-control" name="data_iniciacao" value="{{ obreiro.data_iniciacao or '' }}">
+                                    <label class="form-label" style="color: var(--bordo);">Data de Iniciação</label>
+                                    <input type="date" class="form-control form-control-custom" name="data_iniciacao" value="{{ obreiro.data_iniciacao or '' }}">
                                 </div>
                                 <div class="col-md-4 mb-3">
-                                    <label class="form-label">Data de Elevação</label>
-                                    <input type="date" class="form-control" name="data_elevacao" value="{{ obreiro.data_elevacao or '' }}">
+                                    <label class="form-label" style="color: var(--bordo);">Data de Elevação</label>
+                                    <input type="date" class="form-control form-control-custom" name="data_elevacao" value="{{ obreiro.data_elevacao or '' }}">
                                 </div>
                                 <div class="col-md-4 mb-3">
-                                    <label class="form-label">Data de Exaltação</label>
-                                    <input type="date" class="form-control" name="data_exaltacao" value="{{ obreiro.data_exaltacao or '' }}">
+                                    <label class="form-label" style="color: var(--bordo);">Data de Exaltação</label>
+                                    <input type="date" class="form-control form-control-custom" name="data_exaltacao" value="{{ obreiro.data_exaltacao or '' }}">
                                 </div>
                                 {% else %}
                                 <div class="col-md-4 mb-3">
-                                    <label class="form-label">Data de Iniciação</label>
-                                    <input type="text" class="form-control" value="{{ obreiro.data_iniciacao.strftime('%d/%m/%Y') if obreiro.data_iniciacao else '-' }}" readonly disabled>
+                                    <label class="form-label" style="color: var(--bordo);">Data de Iniciação</label>
+                                    <input type="text" class="form-control form-control-custom" value="{{ obreiro.data_iniciacao.strftime('%d/%m/%Y') if obreiro.data_iniciacao else '-' }}" readonly disabled>
                                 </div>
                                 <div class="col-md-4 mb-3">
-                                    <label class="form-label">Data de Elevação</label>
-                                    <input type="text" class="form-control" value="{{ obreiro.data_elevacao.strftime('%d/%m/%Y') if obreiro.data_elevacao else '-' }}" readonly disabled>
+                                    <label class="form-label" style="color: var(--bordo);">Data de Elevação</label>
+                                    <input type="text" class="form-control form-control-custom" value="{{ obreiro.data_elevacao.strftime('%d/%m/%Y') if obreiro.data_elevacao else '-' }}" readonly disabled>
                                 </div>
                                 <div class="col-md-4 mb-3">
-                                    <label class="form-label">Data de Exaltação</label>
-                                    <input type="text" class="form-control" value="{{ obreiro.data_exaltacao.strftime('%d/%m/%Y') if obreiro.data_exaltacao else '-' }}" readonly disabled>
+                                    <label class="form-label" style="color: var(--bordo);">Data de Exaltação</label>
+                                    <input type="text" class="form-control form-control-custom" value="{{ obreiro.data_exaltacao.strftime('%d/%m/%Y') if obreiro.data_exaltacao else '-' }}" readonly disabled>
                                 </div>
                                 {% endif %}
                             </div>
 
-                            <!-- DADOS ADICIONAIS MAÇÔNICOS - APENAS ADMIN -->
+                            <!-- DADOS ADICIONAIS MAÇÔNICOS -->
                             <div class="row">
                                 {% if is_admin %}
                                 <div class="col-md-4 mb-3">
-                                    <label class="form-label">Data de Instalação</label>
-                                    <input type="date" class="form-control" name="data_instalacao" value="{{ obreiro.data_instalacao or '' }}">
+                                    <label class="form-label" style="color: var(--bordo);">Data de Instalação</label>
+                                    <input type="date" class="form-control form-control-custom" name="data_instalacao" value="{{ obreiro.data_instalacao or '' }}">
                                 </div>
                                 <div class="col-md-4 mb-3">
-                                    <label class="form-label">Distinção Maçônica</label>
-                                    <input type="text" class="form-control" name="distincao_maconica" value="{{ obreiro.distincao_maconica or '' }}" placeholder="Ex: Benemérito">
+                                    <label class="form-label" style="color: var(--bordo);">Distinção Maçônica</label>
+                                    <input type="text" class="form-control form-control-custom" name="distincao_maconica" value="{{ obreiro.distincao_maconica or '' }}" placeholder="Ex: Benemérito">
                                 </div>
                                 <div class="col-md-2 mb-3">
-                                    <label class="form-label">Isento</label>
-                                    <select class="form-select" name="isento">
+                                    <label class="form-label" style="color: var(--bordo);">Isento</label>
+                                    <select class="form-select form-select-custom" name="isento">
                                         <option value="NÃO" {% if obreiro.isento == 'NÃO' %}selected{% endif %}>Não</option>
                                         <option value="SIM" {% if obreiro.isento == 'SIM' %}selected{% endif %}>Sim</option>
                                     </select>
                                 </div>
                                 <div class="col-md-2 mb-3">
-                                    <label class="form-label">Artigo 27</label>
-                                    <select class="form-select" name="artigo_27">
+                                    <label class="form-label" style="color: var(--bordo);">Artigo 27</label>
+                                    <select class="form-select form-select-custom" name="artigo_27">
                                         <option value="NÃO" {% if obreiro.artigo_27 == 'NÃO' %}selected{% endif %}>Não</option>
                                         <option value="SIM" {% if obreiro.artigo_27 == 'SIM' %}selected{% endif %}>Sim</option>
                                     </select>
                                 </div>
                                 {% else %}
                                 <div class="col-md-4 mb-3">
-                                    <label class="form-label">Data de Instalação</label>
-                                    <input type="text" class="form-control" value="{{ obreiro.data_instalacao.strftime('%d/%m/%Y') if obreiro.data_instalacao else '-' }}" readonly disabled>
+                                    <label class="form-label" style="color: var(--bordo);">Data de Instalação</label>
+                                    <input type="text" class="form-control form-control-custom" value="{{ obreiro.data_instalacao.strftime('%d/%m/%Y') if obreiro.data_instalacao else '-' }}" readonly disabled>
                                 </div>
                                 <div class="col-md-4 mb-3">
-                                    <label class="form-label">Distinção Maçônica</label>
-                                    <input type="text" class="form-control" value="{{ obreiro.distincao_maconica or '-' }}" readonly disabled>
+                                    <label class="form-label" style="color: var(--bordo);">Distinção Maçônica</label>
+                                    <input type="text" class="form-control form-control-custom" value="{{ obreiro.distincao_maconica or '-' }}" readonly disabled>
                                 </div>
                                 <div class="col-md-2 mb-3">
-                                    <label class="form-label">Isento</label>
-                                    <input type="text" class="form-control" value="{{ obreiro.isento or 'NÃO' }}" readonly disabled>
+                                    <label class="form-label" style="color: var(--bordo);">Isento</label>
+                                    <input type="text" class="form-control form-control-custom" value="{{ obreiro.isento or 'NÃO' }}" readonly disabled>
                                 </div>
                                 <div class="col-md-2 mb-3">
-                                    <label class="form-label">Artigo 27</label>
-                                    <input type="text" class="form-control" value="{{ obreiro.artigo_27 or 'NÃO' }}" readonly disabled>
+                                    <label class="form-label" style="color: var(--bordo);">Artigo 27</label>
+                                    <input type="text" class="form-control form-control-custom" value="{{ obreiro.artigo_27 or 'NÃO' }}" readonly disabled>
                                 </div>
                                 {% endif %}
                             </div>
 
-                            <!-- LOJA - APENAS ADMIN PODE EDITAR -->
+                            <!-- LOJA -->
                             <div class="row">
                                 {% if is_admin %}
                                 <div class="col-md-6 mb-3">
-                                    <label class="form-label">Loja de Iniciação</label>
-                                    <input type="text" class="form-control" name="loja_iniciacao" value="{{ obreiro.loja_iniciacao or '' }}" placeholder="Ex: Loja Maçônica XYZ - Nº 123">
+                                    <label class="form-label" style="color: var(--bordo);">Loja de Iniciação</label>
+                                    <input type="text" class="form-control form-control-custom" name="loja_iniciacao" value="{{ obreiro.loja_iniciacao or '' }}" placeholder="Ex: Loja Maçônica XYZ - Nº 123">
                                     <small class="text-muted">Loja onde foi iniciado (digite livremente)</small>
                                 </div>
                                 <div class="col-md-6 mb-3">
-                                    <label class="form-label">Loja Atual</label>
-                                    <select class="form-select" name="loja_nome" id="lojaSelect">
+                                    <label class="form-label" style="color: var(--bordo);">Loja Atual</label>
+                                    <select class="form-select form-select-custom" name="loja_nome" id="lojaSelect">
                                         <option value="">Selecione a Loja</option>
                                         {% for l in lojas %}
                                             <option value="{{ l.nome }}"
@@ -313,176 +406,176 @@
                                 </div>
                                 {% else %}
                                 <div class="col-md-6 mb-3">
-                                    <label class="form-label">Loja de Iniciação</label>
-                                    <input type="text" class="form-control" value="{{ obreiro.loja_iniciacao or '-' }}" readonly disabled>
+                                    <label class="form-label" style="color: var(--bordo);">Loja de Iniciação</label>
+                                    <input type="text" class="form-control form-control-custom" value="{{ obreiro.loja_iniciacao or '-' }}" readonly disabled>
                                 </div>
                                 <div class="col-md-6 mb-3">
-                                    <label class="form-label">Loja Atual</label>
-                                    <input type="text" class="form-control" value="{{ obreiro.loja_nome or '-' }}" readonly disabled>
+                                    <label class="form-label" style="color: var(--bordo);">Loja Atual</label>
+                                    <input type="text" class="form-control form-control-custom" value="{{ obreiro.loja_nome or '-' }}" readonly disabled>
                                 </div>
                                 {% endif %}
                             </div>
 
-                            <!-- DADOS DA LOJA (somente leitura para não-admin) -->
+                            <!-- DADOS DA LOJA -->
                             <div class="row">
                                 {% if is_admin %}
                                 <div class="col-md-4 mb-3">
-                                    <label class="form-label">Número da Loja</label>
-                                    <input type="text" class="form-control" name="loja_numero" id="lojaNumero" value="{{ obreiro.loja_numero or '' }}">
+                                    <label class="form-label" style="color: var(--bordo);">Número da Loja</label>
+                                    <input type="text" class="form-control form-control-custom" name="loja_numero" id="lojaNumero" value="{{ obreiro.loja_numero or '' }}">
                                 </div>
                                 <div class="col-md-4 mb-3">
-                                    <label class="form-label">Oriente</label>
-                                    <input type="text" class="form-control" name="loja_orient" id="lojaOriente" value="{{ obreiro.loja_orient or '' }}">
+                                    <label class="form-label" style="color: var(--bordo);">Oriente</label>
+                                    <input type="text" class="form-control form-control-custom" name="loja_orient" id="lojaOriente" value="{{ obreiro.loja_orient or '' }}">
                                 </div>
                                 <div class="col-md-2 mb-3">
-                                    <label class="form-label">Cidade da Loja</label>
-                                    <input type="text" class="form-control" name="loja_cidade" id="lojaCidade" value="{{ obreiro.loja_cidade or '' }}">
+                                    <label class="form-label" style="color: var(--bordo);">Cidade da Loja</label>
+                                    <input type="text" class="form-control form-control-custom" name="loja_cidade" id="lojaCidade" value="{{ obreiro.loja_cidade or '' }}">
                                 </div>
                                 <div class="col-md-2 mb-3">
-                                    <label class="form-label">UF</label>
-                                    <input type="text" class="form-control" name="loja_uf" id="lojaUf" value="{{ obreiro.loja_uf or '' }}" maxlength="2">
+                                    <label class="form-label" style="color: var(--bordo);">UF</label>
+                                    <input type="text" class="form-control form-control-custom" name="loja_uf" id="lojaUf" value="{{ obreiro.loja_uf or '' }}" maxlength="2">
                                 </div>
                                 {% else %}
                                 <div class="col-md-4 mb-3">
-                                    <label class="form-label">Número da Loja</label>
-                                    <input type="text" class="form-control" value="{{ obreiro.loja_numero or '-' }}" readonly disabled>
+                                    <label class="form-label" style="color: var(--bordo);">Número da Loja</label>
+                                    <input type="text" class="form-control form-control-custom" value="{{ obreiro.loja_numero or '-' }}" readonly disabled>
                                 </div>
                                 <div class="col-md-4 mb-3">
-                                    <label class="form-label">Oriente</label>
-                                    <input type="text" class="form-control" value="{{ obreiro.loja_orient or '-' }}" readonly disabled>
+                                    <label class="form-label" style="color: var(--bordo);">Oriente</label>
+                                    <input type="text" class="form-control form-control-custom" value="{{ obreiro.loja_orient or '-' }}" readonly disabled>
                                 </div>
                                 <div class="col-md-2 mb-3">
-                                    <label class="form-label">Cidade</label>
-                                    <input type="text" class="form-control" value="{{ obreiro.loja_cidade or '-' }}" readonly disabled>
+                                    <label class="form-label" style="color: var(--bordo);">Cidade</label>
+                                    <input type="text" class="form-control form-control-custom" value="{{ obreiro.loja_cidade or '-' }}" readonly disabled>
                                 </div>
                                 <div class="col-md-2 mb-3">
-                                    <label class="form-label">UF</label>
-                                    <input type="text" class="form-control" value="{{ obreiro.loja_uf or '-' }}" readonly disabled>
+                                    <label class="form-label" style="color: var(--bordo);">UF</label>
+                                    <input type="text" class="form-control form-control-custom" value="{{ obreiro.loja_uf or '-' }}" readonly disabled>
                                 </div>
                                 {% endif %}
                             </div>
 
-                            <!-- RECOLHE - APENAS ADMIN -->
+                            <!-- RECOLHE -->
                             <div class="row">
                                 {% if is_admin %}
                                 <div class="col-md-3 mb-3">
-                                    <label class="form-label">Recolhe</label>
-                                    <select class="form-select" name="recolhe">
+                                    <label class="form-label" style="color: var(--bordo);">Recolhe</label>
+                                    <select class="form-select form-select-custom" name="recolhe">
                                         <option value="Sim" {% if obreiro.recolhe == 'Sim' %}selected{% endif %}>Sim</option>
                                         <option value="Não" {% if obreiro.recolhe == 'Não' %}selected{% endif %}>Não</option>
                                     </select>
                                 </div>
                                 {% else %}
                                 <div class="col-md-3 mb-3">
-                                    <label class="form-label">Recolhe</label>
-                                    <input type="text" class="form-control" value="{{ obreiro.recolhe or 'Não' }}" readonly disabled>
+                                    <label class="form-label" style="color: var(--bordo);">Recolhe</label>
+                                    <input type="text" class="form-control form-control-custom" value="{{ obreiro.recolhe or 'Não' }}" readonly disabled>
                                 </div>
                                 {% endif %}
                             </div>
 
-                            <hr>
-                            <h6>📍 Endereço</h6>
+                            <hr style="border-color: var(--bordo-transparente);">
+                            <h6 style="color: var(--bordo);">📍 Endereço</h6>
 
                             <div class="row">
                                 <div class="col-md-3 mb-3">
-                                    <label class="form-label">CEP</label>
-                                    <input type="text" class="form-control" name="cep" id="cep" value="{{ obreiro.cep or '' }}" placeholder="00000-000">
+                                    <label class="form-label" style="color: var(--bordo);">CEP</label>
+                                    <input type="text" class="form-control form-control-custom" name="cep" id="cep" value="{{ obreiro.cep or '' }}" placeholder="00000-000">
                                 </div>
                                 <div class="col-md-3 mb-3">
-                                    <label class="form-label">Cidade</label>
-                                    <input type="text" class="form-control" name="cidade" value="{{ obreiro.cidade or '' }}">
+                                    <label class="form-label" style="color: var(--bordo);">Cidade</label>
+                                    <input type="text" class="form-control form-control-custom" name="cidade" value="{{ obreiro.cidade or '' }}">
                                 </div>
                                 <div class="col-md-2 mb-3">
-                                    <label class="form-label">UF</label>
-                                    <input type="text" class="form-control" name="uf" value="{{ obreiro.uf or '' }}" maxlength="2">
+                                    <label class="form-label" style="color: var(--bordo);">UF</label>
+                                    <input type="text" class="form-control form-control-custom" name="uf" value="{{ obreiro.uf or '' }}" maxlength="2">
                                 </div>
                                 <div class="col-md-4 mb-3">
-                                    <label class="form-label">Bairro</label>
-                                    <input type="text" class="form-control" name="bairro" value="{{ obreiro.bairro or '' }}">
+                                    <label class="form-label" style="color: var(--bordo);">Bairro</label>
+                                    <input type="text" class="form-control form-control-custom" name="bairro" value="{{ obreiro.bairro or '' }}">
                                 </div>
                             </div>
 
                             <div class="row">
                                 <div class="col-md-8 mb-3">
-                                    <label class="form-label">Endereço</label>
-                                    <input type="text" class="form-control" name="endereco" value="{{ obreiro.endereco or '' }}" placeholder="Rua, Av., etc.">
+                                    <label class="form-label" style="color: var(--bordo);">Endereço</label>
+                                    <input type="text" class="form-control form-control-custom" name="endereco" value="{{ obreiro.endereco or '' }}" placeholder="Rua, Av., etc.">
                                 </div>
                                 <div class="col-md-2 mb-3">
-                                    <label class="form-label">Número</label>
-                                    <input type="text" class="form-control" name="numero" value="{{ obreiro.numero or '' }}">
+                                    <label class="form-label" style="color: var(--bordo);">Número</label>
+                                    <input type="text" class="form-control form-control-custom" name="numero" value="{{ obreiro.numero or '' }}">
                                 </div>
                                 <div class="col-md-2 mb-3">
-                                    <label class="form-label">Complemento</label>
-                                    <input type="text" class="form-control" name="complemento" value="{{ obreiro.complemento or '' }}">
+                                    <label class="form-label" style="color: var(--bordo);">Complemento</label>
+                                    <input type="text" class="form-control form-control-custom" name="complemento" value="{{ obreiro.complemento or '' }}">
                                 </div>
                             </div>
 
-                            <hr>
-                            <h6>👨‍👩‍👧‍👦 Filiação</h6>
+                            <hr style="border-color: var(--bordo-transparente);">
+                            <h6 style="color: var(--bordo);">👨‍👩‍👧‍👦 Filiação</h6>
 
                             <div class="row">
                                 <div class="col-md-6 mb-3">
-                                    <label class="form-label">Nome do Pai</label>
-                                    <input type="text" class="form-control" name="nome_pai" value="{{ obreiro.nome_pai or '' }}">
+                                    <label class="form-label" style="color: var(--bordo);">Nome do Pai</label>
+                                    <input type="text" class="form-control form-control-custom" name="nome_pai" value="{{ obreiro.nome_pai or '' }}">
                                 </div>
                                 <div class="col-md-6 mb-3">
-                                    <label class="form-label">Nome da Mãe</label>
-                                    <input type="text" class="form-control" name="nome_mae" value="{{ obreiro.nome_mae or '' }}">
+                                    <label class="form-label" style="color: var(--bordo);">Nome da Mãe</label>
+                                    <input type="text" class="form-control form-control-custom" name="nome_mae" value="{{ obreiro.nome_mae or '' }}">
                                 </div>
                             </div>
 
-                            <hr>
-                            <h6>💼 Dados Profissionais</h6>
+                            <hr style="border-color: var(--bordo-transparente);">
+                            <h6 style="color: var(--bordo);">💼 Dados Profissionais</h6>
 
                             <div class="row">
                                 <div class="col-md-6 mb-3">
-                                    <label class="form-label">Profissão</label>
-                                    <input type="text" class="form-control" name="profissao" value="{{ obreiro.profissao or '' }}">
+                                    <label class="form-label" style="color: var(--bordo);">Profissão</label>
+                                    <input type="text" class="form-control form-control-custom" name="profissao" value="{{ obreiro.profissao or '' }}">
                                 </div>
                                 <div class="col-md-6 mb-3">
-                                    <label class="form-label">Empresa</label>
-                                    <input type="text" class="form-control" name="empresa" value="{{ obreiro.empresa or '' }}">
+                                    <label class="form-label" style="color: var(--bordo);">Empresa</label>
+                                    <input type="text" class="form-control form-control-custom" name="empresa" value="{{ obreiro.empresa or '' }}">
                                 </div>
                             </div>
 
                             <div class="row">
                                 <div class="col-md-6 mb-3">
-                                    <label class="form-label">E-mail Profissional</label>
-                                    <input type="email" class="form-control" name="email_profissional" value="{{ obreiro.email_profissional or '' }}">
+                                    <label class="form-label" style="color: var(--bordo);">E-mail Profissional</label>
+                                    <input type="email" class="form-control form-control-custom" name="email_profissional" value="{{ obreiro.email_profissional or '' }}">
                                 </div>
                                 <div class="col-md-6 mb-3">
-                                    <label class="form-label">Telefone Profissional</label>
-                                    <input type="text" class="form-control" name="telefone_profissional" id="telefoneProfissional" value="{{ obreiro.telefone_profissional or '' }}">
+                                    <label class="form-label" style="color: var(--bordo);">Telefone Profissional</label>
+                                    <input type="text" class="form-control form-control-custom" name="telefone_profissional" id="telefoneProfissional" value="{{ obreiro.telefone_profissional or '' }}">
                                 </div>
                             </div>
 
                             <div class="mb-3">
-                                <label class="form-label">Endereço Profissional</label>
-                                <input type="text" class="form-control" name="endereco_profissional" value="{{ obreiro.endereco_profissional or '' }}">
+                                <label class="form-label" style="color: var(--bordo);">Endereço Profissional</label>
+                                <input type="text" class="form-control form-control-custom" name="endereco_profissional" value="{{ obreiro.endereco_profissional or '' }}">
                             </div>
 
-                            <hr>
-                            <h6>📞 Contato</h6>
+                            <hr style="border-color: var(--bordo-transparente);">
+                            <h6 style="color: var(--bordo);">📞 Contato</h6>
 
                             <div class="row">
                                 <div class="col-md-6 mb-3">
-                                    <label class="form-label">Telefone</label>
-                                    <input type="text" class="form-control" name="telefone" id="telefone" value="{{ obreiro.telefone or '' }}">
+                                    <label class="form-label" style="color: var(--bordo);">Telefone</label>
+                                    <input type="text" class="form-control form-control-custom" name="telefone" id="telefone" value="{{ obreiro.telefone or '' }}">
                                 </div>
                                 <div class="col-md-6 mb-3">
-                                    <label class="form-label">E-mail</label>
-                                    <input type="email" class="form-control" name="email" value="{{ obreiro.email or '' }}">
+                                    <label class="form-label" style="color: var(--bordo);">E-mail</label>
+                                    <input type="email" class="form-control form-control-custom" name="email" value="{{ obreiro.email or '' }}">
                                 </div>
                             </div>
 
                             {% if is_admin %}
-                            <hr>
-                            <h6>⚙️ Administração</h6>
+                            <hr style="border-color: var(--bordo-transparente);">
+                            <h6 style="color: var(--bordo);">⚙️ Administração</h6>
 
                             <div class="row">
                                 <div class="col-md-6 mb-3">
-                                    <label class="form-label">Grau Principal</label>
-                                    <select class="form-select" name="grau_principal" id="grauPrincipalSelect">
+                                    <label class="form-label" style="color: var(--bordo);">Grau Principal</label>
+                                    <select class="form-select form-select-custom" name="grau_principal" id="grauPrincipalSelect">
                                         <option value="1" {% if obreiro.grau_atual == 1 %}selected{% endif %}>1 - Aprendiz</option>
                                         <option value="2" {% if obreiro.grau_atual == 2 %}selected{% endif %}>2 - Companheiro</option>
                                         <option value="3" {% if obreiro.grau_atual >= 3 %}selected{% endif %}>3 - Mestre</option>
@@ -491,8 +584,8 @@
                                 </div>
 
                                 <div class="col-md-6 mb-3" id="divGrauSuperior">
-                                    <label class="form-label">Grau Superior (Opcional)</label>
-                                    <select class="form-select" name="grau_superior" id="grauSuperiorSelect">
+                                    <label class="form-label" style="color: var(--bordo);">Grau Superior (Opcional)</label>
+                                    <select class="form-select form-select-custom" name="grau_superior" id="grauSuperiorSelect">
                                         <option value="">Nenhum (Mestre)</option>
                                         {% for g in graus_superiores %}
                                         <option value="{{ g.nivel }}" {% if g.nivel == obreiro.grau_atual and obreiro.grau_atual > 3 %}selected{% endif %}>
@@ -511,8 +604,8 @@
 
                             <div class="row">
                                 <div class="col-md-6 mb-3">
-                                    <label class="form-label">Status</label>
-                                    <select class="form-select" name="ativo">
+                                    <label class="form-label" style="color: var(--bordo);">Status</label>
+                                    <select class="form-select form-select-custom" name="ativo">
                                         <option value="1" {% if obreiro.ativo == 1 %}selected{% endif %}>Ativo</option>
                                         <option value="0" {% if obreiro.ativo == 0 %}selected{% endif %}>Inativo</option>
                                     </select>
@@ -524,36 +617,36 @@
                                 <input type="hidden" name="ativo" value="{{ obreiro.ativo }}">
                             {% endif %}
 
-                            <!-- Campos de senha dentro do formulário principal -->
-                            <hr>
-                            <h6>🔐 Alterar Senha</h6>
-                            <div class="alert alert-info small mb-3">
+                            <!-- Campos de senha -->
+                            <hr style="border-color: var(--bordo-transparente);">
+                            <h6 style="color: var(--bordo);">🔐 Alterar Senha</h6>
+                            <div class="alert alert-info small mb-3" style="background: var(--bordo-transparente); border-color: var(--bordo); color: var(--bordo);">
                                 <i class="bi bi-info-circle"></i> 
                                 Preencha apenas se deseja modificar a senha atual.
                             </div>
 
                             <div class="row">
                                 <div class="col-md-12 mb-3">
-                                    <label class="form-label">Senha Atual</label>
-                                    <input type="password" class="form-control" name="senha_atual" id="senha_atual" placeholder="Digite sua senha atual">
+                                    <label class="form-label" style="color: var(--bordo);">Senha Atual</label>
+                                    <input type="password" class="form-control form-control-custom" name="senha_atual" id="senha_atual" placeholder="Digite sua senha atual">
                                     <small class="text-muted">Obrigatório para alterar a senha</small>
                                 </div>
 
                                 <div class="col-md-6 mb-3">
-                                    <label class="form-label">Nova Senha</label>
-                                    <input type="password" class="form-control" name="senha" id="senha" placeholder="Deixe em branco para manter a atual">
+                                    <label class="form-label" style="color: var(--bordo);">Nova Senha</label>
+                                    <input type="password" class="form-control form-control-custom" name="senha" id="senha" placeholder="Deixe em branco para manter a atual">
                                     <small class="text-muted">Mínimo de 6 caracteres</small>
                                 </div>
 
                                 <div class="col-md-6 mb-3">
-                                    <label class="form-label">Confirmar Nova Senha</label>
-                                    <input type="password" class="form-control" id="confirmar_senha" placeholder="Digite a senha novamente">
+                                    <label class="form-label" style="color: var(--bordo);">Confirmar Nova Senha</label>
+                                    <input type="password" class="form-control form-control-custom" id="confirmar_senha" placeholder="Digite a senha novamente">
                                     <small class="text-muted" id="senha_erro" style="color: red; display: none;">As senhas não coincidem</small>
                                 </div>
                             </div>
 
                             <div class="text-center mt-3">
-                                <button type="submit" class="btn btn-success" id="btnSalvar">
+                                <button type="submit" class="btn-bordo" id="btnSalvar">
                                     <i class="bi bi-save"></i> Salvar Alterações
                                 </button>
                             </div>
@@ -566,8 +659,8 @@
 
             <div class="col-md-4">
                 <!-- Card da Foto -->
-                <div class="card shadow mb-4">
-                    <div class="card-header bg-primary text-white">
+                <div class="card-bordo-branco shadow-sm mb-4">
+                    <div class="card-header" style="background: var(--bordo); border-bottom: none; color: white;">
                         <i class="bi bi-camera"></i> Foto do Obreiro
                     </div>
 
@@ -576,20 +669,20 @@
                         {% if obreiro.foto %}
                         <img src="{{ obreiro.foto }}" 
                              class="rounded-circle mb-3 shadow-sm"
-                             style="width:150px; height:150px; object-fit:cover;">
+                             style="width:150px; height:150px; object-fit:cover; border: 2px solid var(--bordo);">
                         {% else %}
-                        <div class="bg-light rounded-circle d-flex align-items-center justify-content-center mx-auto mb-3 shadow-sm"
-                             style="width:150px; height:150px;">
-                            <i class="bi bi-person fs-1 text-secondary"></i>
+                        <div class="rounded-circle d-flex align-items-center justify-content-center mx-auto mb-3 shadow-sm"
+                             style="width:150px; height:150px; background: var(--bordo-transparente);">
+                            <i class="bi bi-person fs-1" style="color: var(--bordo);"></i>
                         </div>
                         {% endif %}
 
                         <form method="POST" action="/obreiros/{{ obreiro.id }}/foto" enctype="multipart/form-data">
-                            <input type="file" name="foto" class="form-control mb-2" accept="image/*" required>
+                            <input type="file" name="foto" class="form-control form-control-custom mb-2" accept="image/*" required>
                             <small class="text-muted d-block mb-2">
                                 JPG, PNG, WEBP • Máx: 5MB
                             </small>
-                            <button type="submit" class="btn btn-primary w-100">
+                            <button type="submit" class="btn-bordo w-100">
                                 <i class="bi bi-upload"></i> Upload
                             </button>
                         </form>
@@ -598,24 +691,24 @@
                 </div>
 
                 <!-- Card de Documentos -->
-                <div class="card shadow mb-4" id="documentos">
-                    <div class="card-header bg-info text-white">
+                <div class="card-bordo-branco shadow-sm mb-4" id="documentos">
+                    <div class="card-header" style="background: #3b82f6; border-bottom: none; color: white;">
                         <i class="bi bi-cloud-upload"></i> Documentos do Obreiro
                     </div>
                     <div class="card-body">
-                        <div class="alert alert-info small mb-3">
+                        <div class="alert alert-info small mb-3" style="background: var(--bordo-transparente); border-color: var(--bordo); color: var(--bordo);">
                             <i class="bi bi-info-circle"></i> 
                             Envie documentos importantes como: CIM, Certificados, Diplomas, etc.
                         </div>
                         
                         <form method="POST" action="/obreiros/{{ obreiro.id }}/documentos/upload" enctype="multipart/form-data" class="mb-3">
                             <div class="mb-2">
-                                <label class="form-label fw-bold">Título do Documento</label>
-                                <input type="text" class="form-control" name="titulo" placeholder="Ex: CIM, Certificado de Mestre, etc." required>
+                                <label class="form-label fw-bold" style="color: var(--bordo);">Título do Documento</label>
+                                <input type="text" class="form-control form-control-custom" name="titulo" placeholder="Ex: CIM, Certificado de Mestre, etc." required>
                             </div>
                             <div class="mb-2">
-                                <label class="form-label fw-bold">Categoria</label>
-                                <select class="form-select" name="categoria" required>
+                                <label class="form-label fw-bold" style="color: var(--bordo);">Categoria</label>
+                                <select class="form-select form-select-custom" name="categoria" required>
                                     <option value="identificacao">Identificação (CIM, RG, CPF)</option>
                                     <option value="certificado">Certificados</option>
                                     <option value="diploma">Diplomas</option>
@@ -624,24 +717,24 @@
                                 </select>
                             </div>
                             <div class="mb-2">
-                                <label class="form-label fw-bold">Arquivo</label>
-                                <input type="file" class="form-control" name="arquivo" accept=".pdf,.jpg,.jpeg,.png,.doc,.docx" required>
+                                <label class="form-label fw-bold" style="color: var(--bordo);">Arquivo</label>
+                                <input type="file" class="form-control form-control-custom" name="arquivo" accept=".pdf,.jpg,.jpeg,.png,.doc,.docx" required>
                                 <small class="text-muted">PDF, imagens, Word (max 10MB)</small>
                             </div>
                             <div class="mb-2">
-                                <label class="form-label">Descrição (opcional)</label>
-                                <textarea class="form-control" name="descricao" rows="2" placeholder="Informações adicionais sobre o documento"></textarea>
+                                <label class="form-label" style="color: var(--bordo);">Descrição (opcional)</label>
+                                <textarea class="form-control form-control-custom" name="descricao" rows="2" placeholder="Informações adicionais sobre o documento"></textarea>
                             </div>
-                            <button type="submit" class="btn btn-info w-100">
+                            <button type="submit" class="btn-bordo w-100">
                                 <i class="bi bi-cloud-upload"></i> Enviar Documento
                             </button>
                         </form>
                         
-                        <hr>
+                        <hr style="border-color: var(--bordo-transparente);">
                         
-                        <h6 class="mb-3">
+                        <h6 class="mb-3" style="color: var(--bordo);">
                             <i class="bi bi-files"></i> Documentos Enviados
-                            <span class="badge bg-secondary" id="totalDocumentos">0</span>
+                            <span class="badge" style="background: var(--bordo); color: white;" id="totalDocumentos">0</span>
                         </h6>
                         
                         <div id="listaDocumentos" style="max-height: 300px; overflow-y: auto;">
@@ -655,8 +748,8 @@
 
                 <!-- Card de Informação sobre Sindicante -->
                 {% if obreiro.tipo == 'sindicante' and obreiro.grau_atual < 3 %}
-                <div class="card shadow border-warning">
-                    <div class="card-header bg-warning text-dark">
+                <div class="card-bordo-branco shadow-sm border-warning">
+                    <div class="card-header" style="background: #f59e0b; border-bottom: none; color: white;">
                         <i class="bi bi-exclamation-triangle"></i> Atenção
                     </div>
                     <div class="card-body">
@@ -988,40 +1081,4 @@ document.addEventListener('DOMContentLoaded', function() {
     atualizarVisibilidade();
 });
 </script>
-
-<style>
-    .card {
-        border-radius: 10px;
-        overflow: hidden;
-    }
-    .card-header {
-        font-weight: 600;
-    }
-    .form-control:focus, .form-select:focus {
-        border-color: #0d6efd;
-        box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.25);
-    }
-    input:disabled, input[readonly] {
-        background-color: #e9ecef;
-        cursor: not-allowed;
-    }
-    @media (max-width: 768px) {
-        .d-flex.align-items-center {
-            flex-direction: column;
-            text-align: center;
-        }
-        .me-4 {
-            margin-right: 0 !important;
-            margin-bottom: 1rem;
-        }
-        .btn-group {
-            margin-top: 1rem;
-            flex-direction: column;
-        }
-        .btn-group .btn {
-            margin: 5px 0;
-        }
-    }
-</style>
-
 {% endblock %}

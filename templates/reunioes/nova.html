@@ -2,24 +2,128 @@
 
 {% block title %}Nova Reunião{% endblock %}
 
+{% block styles %}
+{{ super() }}
+<style>
+    :root {
+        --bordo: #4A0E2E;
+        --bordo-escuro: #3A0A24;
+        --bordo-claro: #6B1342;
+        --bordo-suave: #8B4A6B;
+        --bordo-transparente: rgba(74, 14, 46, 0.08);
+        --bordo-transparente-hover: rgba(74, 14, 46, 0.12);
+        --ouro: #D4AF37;
+        --ouro-escuro: #996515;
+        --ouro-claro: #F0D68A;
+    }
+
+    /* CARDS BRANCOS COM BORDÔ */
+    .card-bordo-branco {
+        background: white;
+        border: 1px solid rgba(74, 14, 46, 0.15);
+        border-radius: 16px;
+        transition: all 0.3s ease;
+    }
+    
+    .card-bordo-branco:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 8px 25px rgba(74, 14, 46, 0.12);
+        border-color: var(--bordo);
+    }
+
+    /* BOTÕES */
+    .btn-bordo {
+        background: linear-gradient(135deg, var(--bordo), var(--bordo-escuro));
+        border: none;
+        color: white;
+        border-radius: 30px;
+        padding: 8px 24px;
+        transition: all 0.3s;
+    }
+    
+    .btn-bordo:hover {
+        background: linear-gradient(135deg, var(--bordo-claro), var(--bordo));
+        transform: translateY(-2px);
+        color: white;
+        box-shadow: 0 5px 15px rgba(74, 14, 46, 0.3);
+    }
+    
+    .btn-bordo-outline {
+        background: transparent;
+        border: 1px solid var(--bordo);
+        color: var(--bordo);
+        border-radius: 30px;
+        padding: 8px 24px;
+        transition: all 0.3s;
+    }
+    
+    .btn-bordo-outline:hover {
+        background: var(--bordo);
+        color: white;
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(74, 14, 46, 0.2);
+    }
+
+    /* FORMULÁRIO */
+    .form-control-custom, .form-select-custom {
+        border-radius: 12px;
+        border: 1px solid rgba(74, 14, 46, 0.2);
+        padding: 0.75rem 1rem;
+        transition: all 0.2s;
+    }
+    
+    .form-control-custom:focus, .form-select-custom:focus {
+        border-color: var(--bordo);
+        box-shadow: 0 0 0 3px rgba(74, 14, 46, 0.1);
+    }
+
+    /* CARDS DE DICAS */
+    .card-dica {
+        background: white;
+        border: 1px solid rgba(74, 14, 46, 0.1);
+        border-radius: 16px;
+        transition: all 0.3s ease;
+    }
+    
+    .card-dica:hover {
+        transform: translateY(-4px);
+        border-color: var(--bordo);
+        box-shadow: 0 8px 25px rgba(74, 14, 46, 0.1);
+    }
+
+    textarea {
+        font-family: monospace;
+        font-size: 14px;
+    }
+
+    @media (max-width: 768px) {
+        .btn-group {
+            flex-direction: column;
+        }
+        .btn-group .btn {
+            margin-bottom: 5px;
+        }
+    }
+</style>
+{% endblock %}
+
 {% block content %}
 <div class="container-fluid py-4">
     <div class="container">
         <div class="d-flex justify-content-between align-items-center mb-4">
             <h2>
-                <i class="bi bi-calendar-plus"></i> 
-                Nova Reunião
+                <i class="bi bi-calendar-plus" style="color: var(--bordo);"></i> 
+                <span style="color: var(--bordo);">Nova Reunião</span>
             </h2>
             <div>
-                <a href="/reunioes" class="btn btn-outline-secondary">
+                <a href="/reunioes" class="btn-bordo-outline">
                     <i class="bi bi-arrow-left"></i> Voltar
                 </a>
             </div>
         </div>
 
-       
-        <div class="card shadow">
-            <div class="card-header bg-primary text-white">
+        <div class="card-bordo-branco shadow-sm">
+            <div class="card-header" style="background: var(--bordo); border-bottom: none; color: white;">
                 <h5 class="mb-0"><i class="bi bi-calendar-event"></i> Dados da Reunião</h5>
             </div>
             <div class="card-body">
@@ -27,13 +131,13 @@
                     <!-- Informações Básicas -->
                     <div class="row">
                         <div class="col-md-8 mb-3">
-                            <label class="form-label">Título da Reunião *</label>
-                            <input type="text" class="form-control" name="titulo" 
+                            <label class="form-label" style="color: var(--bordo);">Título da Reunião *</label>
+                            <input type="text" class="form-control form-control-custom" name="titulo" 
                                    placeholder="Ex: Reunião Ordinária de Março" required>
                         </div>
                         <div class="col-md-4 mb-3">
-                            <label class="form-label">Tipo de Reunião *</label>
-                            <select class="form-select" name="tipo" id="tipoReuniao" required>
+                            <label class="form-label" style="color: var(--bordo);">Tipo de Reunião *</label>
+                            <select class="form-select form-select-custom" name="tipo" id="tipoReuniao" required>
                                 <option value="">Selecione...</option>
                                 {% for tipo in tipos %}
                                 <option value="{{ tipo.nome }}" data-cor="{{ tipo.cor }}" data-descricao="{{ tipo.descricao }}">
@@ -45,16 +149,16 @@
                         </div>
                     </div>
 
-                    <!-- LOCAL e LOJA (movidos para cima) -->
+                    <!-- LOCAL e LOJA -->
                     <div class="row">
                         <div class="col-md-6 mb-3">
-                            <label class="form-label">Local</label>
-                            <input type="text" class="form-control" name="local" 
+                            <label class="form-label" style="color: var(--bordo);">Local</label>
+                            <input type="text" class="form-control form-control-custom" name="local" 
                                    placeholder="Ex: Templo Maçônico, Rua das Acácias, 123">
                         </div>
                         <div class="col-md-6 mb-3">
-                            <label class="form-label">Loja</label>
-                            <select class="form-select" name="loja_id" id="lojaSelect">
+                            <label class="form-label" style="color: var(--bordo);">Loja</label>
+                            <select class="form-select form-select-custom" name="loja_id" id="lojaSelect">
                                 <option value="">Selecione uma loja...</option>
                                 {% for loja in lojas %}
                                 <option value="{{ loja.id }}" 
@@ -73,22 +177,22 @@
                     <!-- DATA, HORA INÍCIO e HORA TÉRMINO -->
                     <div class="row">
                         <div class="col-md-4 mb-3">
-                            <label class="form-label">Data *</label>
-                            <input type="date" class="form-control" name="data" id="dataReuniao" 
+                            <label class="form-label" style="color: var(--bordo);">Data *</label>
+                            <input type="date" class="form-control form-control-custom" name="data" id="dataReuniao" 
                                    value="{{ hoje }}" required>
                         </div>
                         <div class="col-md-4 mb-3">
-                            <label class="form-label">Hora Início *</label>
-                            <input type="time" class="form-control" name="hora_inicio" id="horaInicio" required>
+                            <label class="form-label" style="color: var(--bordo);">Hora Início *</label>
+                            <input type="time" class="form-control form-control-custom" name="hora_inicio" id="horaInicio" required>
                         </div>
                         <div class="col-md-4 mb-3">
-                            <label class="form-label">Hora Término</label>
-                            <input type="time" class="form-control" name="hora_termino" id="horaTermino">
+                            <label class="form-label" style="color: var(--bordo);">Hora Término</label>
+                            <input type="time" class="form-control form-control-custom" name="hora_termino" id="horaTermino">
                         </div>
                     </div>
 
                     <!-- Informações de Horário da Loja -->
-                    <div class="alert alert-info" id="infoHorarios" style="display: none;">
+                    <div class="alert" id="infoHorarios" style="display: none; background: var(--bordo-transparente); border-color: var(--bordo); color: var(--bordo);">
                         <i class="bi bi-info-circle"></i>
                         <span id="infoHorariosTexto"></span>
                     </div>
@@ -96,8 +200,8 @@
                     <!-- Grau e Status -->
                     <div class="row">
                         <div class="col-md-6 mb-3">
-                            <label class="form-label">Grau</label>
-                            <select class="form-select" name="grau">
+                            <label class="form-label" style="color: var(--bordo);">Grau</label>
+                            <select class="form-select form-select-custom" name="grau">
                                 <option value="">Todos os graus</option>
                                 <option value="1">Aprendiz (1º Grau)</option>
                                 <option value="2">Companheiro (2º Grau)</option>
@@ -106,8 +210,8 @@
                             <small class="text-muted">Restringir participação a um grau específico</small>
                         </div>
                         <div class="col-md-6 mb-3">
-                            <label class="form-label">Status</label>
-                            <select class="form-select" name="status">
+                            <label class="form-label" style="color: var(--bordo);">Status</label>
+                            <select class="form-select form-select-custom" name="status">
                                 <option value="agendada">Agendada</option>
                                 <option value="realizada">Realizada</option>
                                 <option value="cancelada">Cancelada</option>
@@ -115,32 +219,32 @@
                         </div>
                     </div>
 
-                    <hr>
+                    <hr style="border-color: var(--bordo-transparente);">
                     
                     <!-- Pauta e Observações -->
-                    <h6 class="mb-3"><i class="bi bi-list-ul"></i> Pauta da Reunião</h6>
+                    <h6 style="color: var(--bordo);"><i class="bi bi-list-ul"></i> Pauta da Reunião</h6>
                     <div class="mb-3">
-                        <textarea class="form-control" name="pauta" id="pauta" rows="6" 
+                        <textarea class="form-control form-control-custom" name="pauta" id="pauta" rows="6" 
                                   placeholder="Descreva os assuntos a serem tratados na reunião..."></textarea>
                         <small class="text-muted">Você pode usar markdown para formatação</small>
                     </div>
 
-                    <h6 class="mb-3"><i class="bi bi-chat-text"></i> Observações</h6>
+                    <h6 style="color: var(--bordo);"><i class="bi bi-chat-text"></i> Observações</h6>
                     <div class="mb-3">
-                        <textarea class="form-control" name="observacoes" id="observacoes" rows="4" 
+                        <textarea class="form-control form-control-custom" name="observacoes" id="observacoes" rows="4" 
                                   placeholder="Observações adicionais sobre a reunião..."></textarea>
                     </div>
 
-                    <hr>
+                    <hr style="border-color: var(--bordo-transparente);">
 
                     <!-- Opções Adicionais -->
-                    <h6 class="mb-3"><i class="bi bi-gear"></i> Opções Adicionais</h6>
+                    <h6 style="color: var(--bordo);"><i class="bi bi-gear"></i> Opções Adicionais</h6>
                     <div class="row">
                         <div class="col-md-12 mb-3">
                             <div class="form-check form-switch">
                                 <input class="form-check-input" type="checkbox" id="notificarWhatsapp" name="notificar_whatsapp" checked>
-                                <label class="form-check-label" for="notificarWhatsapp">
-                                    <i class="bi bi-whatsapp"></i> Notificar obreiros via WhatsApp
+                                <label class="form-check-label" for="notificarWhatsapp" style="color: var(--bordo);">
+                                    <i class="bi bi-whatsapp text-success"></i> Notificar obreiros via WhatsApp
                                 </label>
                                 <small class="text-muted d-block">Enviará uma notificação para todos os obreiros cadastrados</small>
                             </div>
@@ -148,7 +252,7 @@
                         <div class="col-md-12 mb-3">
                             <div class="form-check form-switch">
                                 <input class="form-check-input" type="checkbox" id="notificarEmail" name="notificar_email">
-                                <label class="form-check-label" for="notificarEmail">
+                                <label class="form-check-label" for="notificarEmail" style="color: var(--bordo);">
                                     <i class="bi bi-envelope"></i> Notificar obreiros via E-mail
                                 </label>
                                 <small class="text-muted d-block">Enviará um e-mail para todos os obreiros com e-mail cadastrado</small>
@@ -156,7 +260,7 @@
                         </div>
                     </div>
 
-                    <hr>
+                    <hr style="border-color: var(--bordo-transparente);">
 
                     <!-- Botões de Ação -->
                     <div class="text-center mt-4">
@@ -166,7 +270,7 @@
                         <button type="button" class="btn btn-info me-2" onclick="visualizarPauta()">
                             <i class="bi bi-eye"></i> Visualizar Pauta
                         </button>
-                        <button type="submit" class="btn btn-success btn-lg px-5">
+                        <button type="submit" class="btn-bordo btn-lg px-5">
                             <i class="bi bi-save"></i> Agendar Reunião
                         </button>
                     </div>
@@ -177,29 +281,29 @@
         <!-- Cards de Sugestões -->
         <div class="row mt-4">
             <div class="col-md-4">
-                <div class="card border-info">
+                <div class="card-dica shadow-sm">
                     <div class="card-body text-center">
-                        <i class="bi bi-info-circle fs-1 text-info"></i>
-                        <h6 class="mt-2">Dica</h6>
-                        <p class="small">Preencha todos os campos obrigatórios marcados com * para agendar a reunião.</p>
+                        <i class="bi bi-info-circle fs-1" style="color: var(--bordo);"></i>
+                        <h6 class="mt-2" style="color: var(--bordo);">Dica</h6>
+                        <p class="small text-muted">Preencha todos os campos obrigatórios marcados com * para agendar a reunião.</p>
                     </div>
                 </div>
             </div>
             <div class="col-md-4">
-                <div class="card border-success">
+                <div class="card-dica shadow-sm">
                     <div class="card-body text-center">
                         <i class="bi bi-whatsapp fs-1 text-success"></i>
-                        <h6 class="mt-2">Notificações</h6>
-                        <p class="small">Ative as notificações para avisar os obreiros sobre a nova reunião.</p>
+                        <h6 class="mt-2" style="color: var(--bordo);">Notificações</h6>
+                        <p class="small text-muted">Ative as notificações para avisar os obreiros sobre a nova reunião.</p>
                     </div>
                 </div>
             </div>
             <div class="col-md-4">
-                <div class="card border-warning">
+                <div class="card-dica shadow-sm">
                     <div class="card-body text-center">
-                        <i class="bi bi-calendar-check fs-1 text-warning"></i>
-                        <h6 class="mt-2">Lembretes</h6>
-                        <p class="small">Os obreiros receberão lembretes automáticos 24h antes da reunião.</p>
+                        <i class="bi bi-calendar-check fs-1" style="color: var(--ouro);"></i>
+                        <h6 class="mt-2" style="color: var(--bordo);">Lembretes</h6>
+                        <p class="small text-muted">Os obreiros receberão lembretes automáticos 24h antes da reunião.</p>
                     </div>
                 </div>
             </div>
@@ -211,7 +315,7 @@
 <div class="modal fade" id="modalPauta" tabindex="-1">
     <div class="modal-dialog modal-lg">
         <div class="modal-content">
-            <div class="modal-header bg-primary text-white">
+            <div class="modal-header" style="background: var(--bordo); color: white;">
                 <h5 class="modal-title"><i class="bi bi-eye"></i> Visualização da Pauta</h5>
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
             </div>
@@ -229,7 +333,7 @@
 </div>
 
 <script>
-   // =====================
+// =====================
 // PRÉ-PREENCHIMENTO DE HORÁRIOS DA LOJA
 // =====================
 document.addEventListener('DOMContentLoaded', function() {
@@ -303,28 +407,25 @@ document.addEventListener('DOMContentLoaded', function() {
     if (lojaSelect) {
         lojaSelect.addEventListener('change', preencherHorariosLoja);
         
-        // Se já tiver uma loja pré-selecionada, preencher
         if (lojaSelect.value) {
             preencherHorariosLoja();
         }
     }
 });
 
-    // =====================
-// FORMATAR TEXTO AUTOMATICAMENTE (CORRIGIDO)
+// =====================
+// FORMATAR TEXTO AUTOMATICAMENTE
 // =====================
 function formatarTexto() {
     const dataInput = document.getElementById('dataReuniao');
     const horaInicio = document.getElementById('horaInicio');
     
     if (dataInput && dataInput.value && horaInicio && horaInicio.value) {
-        // CORREÇÃO: Extrair ano, mês e dia diretamente da string YYYY-MM-DD
         const dataParts = dataInput.value.split('-');
         const ano = dataParts[0];
         const mes = parseInt(dataParts[1]);
         const dia = parseInt(dataParts[2]);
         
-        // Formatar a data manualmente (evita problemas de fuso horário)
         const dataFormatada = `${dia.toString().padStart(2, '0')}/${mes.toString().padStart(2, '0')}/${ano}`;
         
         const pauta = document.getElementById('pauta');
@@ -336,209 +437,161 @@ function formatarTexto() {
         }
     }
 }
+
+// =====================
+// VISUALIZAR PAUTA
+// =====================
+function visualizarPauta() {
+    const pauta = document.getElementById('pauta').value;
+    const modalBody = document.getElementById('pautaPreview');
     
-    // =====================
-    // VISUALIZAR PAUTA
-    // =====================
-    function visualizarPauta() {
-        const pauta = document.getElementById('pauta').value;
-        const modalBody = document.getElementById('pautaPreview');
+    if (pauta.trim()) {
+        let html = pauta
+            .replace(/\n/g, '<br>')
+            .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+            .replace(/\*(.*?)\*/g, '<em>$1</em>')
+            .replace(/^## (.*)$/gm, '<h5>$1</h5>')
+            .replace(/^### (.*)$/gm, '<h6>$1</h6>')
+            .replace(/^- (.*)$/gm, '<li>$1</li>')
+            .replace(/<li>(.*?)<\/li>/g, '<ul><li>$1</li></ul>')
+            .replace(/<\/ul><ul>/g, '');
         
-        if (pauta.trim()) {
-            let html = pauta
-                .replace(/\n/g, '<br>')
-                .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
-                .replace(/\*(.*?)\*/g, '<em>$1</em>')
-                .replace(/^## (.*)$/gm, '<h5>$1</h5>')
-                .replace(/^### (.*)$/gm, '<h6>$1</h6>')
-                .replace(/^- (.*)$/gm, '<li>$1</li>')
-                .replace(/<li>(.*?)<\/li>/g, '<ul><li>$1</li></ul>')
-                .replace(/<\/ul><ul>/g, '');
-            
-            modalBody.innerHTML = `<div class="p-3 bg-light rounded">${html}</div>`;
-        } else {
-            modalBody.innerHTML = '<p class="text-muted">Nenhuma pauta definida.</p>';
-        }
-        
-        new bootstrap.Modal(document.getElementById('modalPauta')).show();
+        modalBody.innerHTML = `<div class="p-3 bg-light rounded" style="background: var(--bordo-transparente) !important;">${html}</div>`;
+    } else {
+        modalBody.innerHTML = '<p class="text-muted">Nenhuma pauta definida.</p>';
     }
     
-    // =====================
-    // COPIAR PAUTA
-    // =====================
-    function copiarPauta() {
-        const pauta = document.getElementById('pauta').value;
-        navigator.clipboard.writeText(pauta).then(() => {
-            alert('Pauta copiada para a área de transferência!');
-        });
+    new bootstrap.Modal(document.getElementById('modalPauta')).show();
+}
+
+// =====================
+// COPIAR PAUTA
+// =====================
+function copiarPauta() {
+    const pauta = document.getElementById('pauta').value;
+    navigator.clipboard.writeText(pauta).then(() => {
+        alert('Pauta copiada para a área de transferência!');
+    });
+}
+
+// =====================
+// VALIDAÇÕES
+// =====================
+document.getElementById('horaInicio').addEventListener('change', function() {
+    const horaInicio = this.value;
+    const horaTermino = document.getElementById('horaTermino').value;
+    
+    if (horaTermino && horaInicio >= horaTermino) {
+        alert('O horário de término deve ser maior que o horário de início!');
+        document.getElementById('horaTermino').value = '';
+    }
+});
+
+document.getElementById('horaTermino').addEventListener('change', function() {
+    const horaTermino = this.value;
+    const horaInicio = document.getElementById('horaInicio').value;
+    
+    if (horaInicio && horaTermino <= horaInicio) {
+        alert('O horário de término deve ser maior que o horário de início!');
+        this.value = '';
+    }
+});
+
+document.getElementById('dataReuniao').addEventListener('change', function() {
+    const dataSelecionada = new Date(this.value);
+    const hoje = new Date();
+    hoje.setHours(0, 0, 0, 0);
+    
+    if (dataSelecionada < hoje) {
+        alert('A data da reunião não pode ser anterior à data atual!');
+        this.value = "{{ hoje }}";
+    }
+});
+
+document.getElementById('tipoReuniao').addEventListener('change', function() {
+    const selected = this.options[this.selectedIndex];
+    const descricao = selected.getAttribute('data-descricao');
+    const cor = selected.getAttribute('data-cor');
+    
+    const descElement = document.getElementById('descricaoTipo');
+    if (descricao) {
+        descElement.innerHTML = `<i class="bi bi-info-circle"></i> ${descricao}`;
+        descElement.style.color = cor;
+    } else {
+        descElement.innerHTML = '';
+    }
+});
+
+document.getElementById('dataReuniao').addEventListener('change', function() {
+    const tituloInput = document.querySelector('input[name="titulo"]');
+    if (!tituloInput.value) {
+        const data = new Date(this.value);
+        const mes = data.toLocaleString('pt-BR', { month: 'long' });
+        const ano = data.getFullYear();
+        tituloInput.value = `Reunião Ordinária - ${mes.charAt(0).toUpperCase() + mes.slice(1)}/${ano}`;
+    }
+});
+
+document.getElementById('pauta').addEventListener('focus', function() {
+    if (!this.value) {
+        formatarTexto();
+    }
+});
+
+// =====================
+// VALIDAÇÃO DO FORMULÁRIO
+// =====================
+document.getElementById('formReuniao').addEventListener('submit', function(e) {
+    const titulo = document.querySelector('input[name="titulo"]').value.trim();
+    const data = document.getElementById('dataReuniao').value;
+    const horaInicio = document.getElementById('horaInicio').value;
+    
+    if (!titulo) {
+        e.preventDefault();
+        alert('Por favor, informe o título da reunião!');
+        document.querySelector('input[name="titulo"]').focus();
+        return false;
     }
     
-    // =====================
-    // VALIDAÇÕES
-    // =====================
-    document.getElementById('horaInicio').addEventListener('change', function() {
-        const horaInicio = this.value;
-        const horaTermino = document.getElementById('horaTermino').value;
-        
-        if (horaTermino && horaInicio >= horaTermino) {
-            alert('O horário de término deve ser maior que o horário de início!');
-            document.getElementById('horaTermino').value = '';
-        }
-    });
+    if (!data) {
+        e.preventDefault();
+        alert('Por favor, informe a data da reunião!');
+        return false;
+    }
     
-    document.getElementById('horaTermino').addEventListener('change', function() {
-        const horaTermino = this.value;
-        const horaInicio = document.getElementById('horaInicio').value;
-        
-        if (horaInicio && horaTermino <= horaInicio) {
-            alert('O horário de término deve ser maior que o horário de início!');
-            this.value = '';
-        }
-    });
+    if (!horaInicio) {
+        e.preventDefault();
+        alert('Por favor, informe o horário de início!');
+        return false;
+    }
     
-    document.getElementById('dataReuniao').addEventListener('change', function() {
-        const dataSelecionada = new Date(this.value);
-        const hoje = new Date();
-        hoje.setHours(0, 0, 0, 0);
-        
-        if (dataSelecionada < hoje) {
-            alert('A data da reunião não pode ser anterior à data atual!');
-            this.value = "{{ hoje }}";
-        }
-    });
+    const dataFormatada = new Date(data).toLocaleDateString('pt-BR');
+    const confirmacao = confirm(`Confirmar agendamento da reunião:\n\nTítulo: ${titulo}\nData: ${dataFormatada}\nHorário: ${horaInicio}\n\nDeseja prosseguir?`);
     
-    document.getElementById('tipoReuniao').addEventListener('change', function() {
-        const selected = this.options[this.selectedIndex];
-        const descricao = selected.getAttribute('data-descricao');
-        const cor = selected.getAttribute('data-cor');
-        
-        const descElement = document.getElementById('descricaoTipo');
-        if (descricao) {
-            descElement.innerHTML = `<i class="bi bi-info-circle"></i> ${descricao}`;
-            descElement.style.color = cor;
-        } else {
-            descElement.innerHTML = '';
-        }
-    });
+    if (!confirmacao) {
+        e.preventDefault();
+        return false;
+    }
     
-    document.getElementById('dataReuniao').addEventListener('change', function() {
-        const tituloInput = document.querySelector('input[name="titulo"]');
-        if (!tituloInput.value) {
-            const data = new Date(this.value);
-            const mes = data.toLocaleString('pt-BR', { month: 'long' });
-            const ano = data.getFullYear();
-            tituloInput.value = `Reunião Ordinária - ${mes.charAt(0).toUpperCase() + mes.slice(1)}/${ano}`;
-        }
-    });
+    const btnSubmit = this.querySelector('button[type="submit"]');
+    const originalText = btnSubmit.innerHTML;
+    btnSubmit.innerHTML = '<i class="bi bi-hourglass-split"></i> Salvando...';
+    btnSubmit.disabled = true;
     
-    document.getElementById('pauta').addEventListener('focus', function() {
-        if (!this.value) {
-            formatarTexto();
-        }
-    });
-    
-    // =====================
-    // VALIDAÇÃO DO FORMULÁRIO
-    // =====================
-    document.getElementById('formReuniao').addEventListener('submit', function(e) {
-        const titulo = document.querySelector('input[name="titulo"]').value.trim();
-        const data = document.getElementById('dataReuniao').value;
-        const horaInicio = document.getElementById('horaInicio').value;
-        
-        if (!titulo) {
-            e.preventDefault();
-            alert('Por favor, informe o título da reunião!');
-            document.querySelector('input[name="titulo"]').focus();
-            return false;
-        }
-        
-        if (!data) {
-            e.preventDefault();
-            alert('Por favor, informe a data da reunião!');
-            return false;
-        }
-        
-        if (!horaInicio) {
-            e.preventDefault();
-            alert('Por favor, informe o horário de início!');
-            return false;
-        }
-        
-        const dataFormatada = new Date(data).toLocaleDateString('pt-BR');
-        const confirmacao = confirm(`Confirmar agendamento da reunião:\n\nTítulo: ${titulo}\nData: ${dataFormatada}\nHorário: ${horaInicio}\n\nDeseja prosseguir?`);
-        
-        if (!confirmacao) {
-            e.preventDefault();
-            return false;
-        }
-        
-        const btnSubmit = this.querySelector('button[type="submit"]');
-        const originalText = btnSubmit.innerHTML;
-        btnSubmit.innerHTML = '<i class="bi bi-hourglass-split"></i> Salvando...';
-        btnSubmit.disabled = true;
-        
-        setTimeout(() => {
-            btnSubmit.innerHTML = originalText;
-            btnSubmit.disabled = false;
-        }, 3000);
-    });
-    
-    // Atalhos de teclado
-    document.addEventListener('keydown', function(e) {
-        if (e.ctrlKey && e.key === 's') {
-            e.preventDefault();
-            document.getElementById('formReuniao').submit();
-        }
-    });
-    
-    console.log('Dica: Use Ctrl+S para salvar rapidamente!');
+    setTimeout(() => {
+        btnSubmit.innerHTML = originalText;
+        btnSubmit.disabled = false;
+    }, 3000);
+});
+
+// Atalhos de teclado
+document.addEventListener('keydown', function(e) {
+    if (e.ctrlKey && e.key === 's') {
+        e.preventDefault();
+        document.getElementById('formReuniao').submit();
+    }
+});
+
+console.log('Dica: Use Ctrl+S para salvar rapidamente!');
 </script>
-
-<style>
-    .card {
-        border-radius: 10px;
-        overflow: hidden;
-    }
-    .card-header {
-        font-weight: 600;
-    }
-    textarea {
-        font-family: monospace;
-        font-size: 14px;
-    }
-    .form-control:focus, .form-select:focus {
-        border-color: #0d6efd;
-        box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.25);
-    }
-    .form-check-input:checked {
-        background-color: #0d6efd;
-        border-color: #0d6efd;
-    }
-    .btn {
-        transition: all 0.3s ease;
-    }
-    .btn:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 4px 8px rgba(0,0,0,0.1);
-    }
-    #pautaPreview {
-        max-height: 60vh;
-        overflow-y: auto;
-    }
-    .modal-body ul {
-        padding-left: 1.5rem;
-    }
-    .modal-body li {
-        margin-bottom: 0.5rem;
-    }
-    @media (max-width: 768px) {
-        .btn-group {
-            flex-direction: column;
-        }
-        .btn-group .btn {
-            margin-bottom: 5px;
-        }
-    }
-</style>
-
 {% endblock %}

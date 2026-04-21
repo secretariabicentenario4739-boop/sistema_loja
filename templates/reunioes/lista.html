@@ -2,81 +2,255 @@
 
 {% block title %}Lista de Reuniões{% endblock %}
 
+{% block styles %}
+{{ super() }}
+<style>
+    :root {
+        --bordo: #4A0E2E;
+        --bordo-escuro: #3A0A24;
+        --bordo-claro: #6B1342;
+        --bordo-suave: #8B4A6B;
+        --bordo-transparente: rgba(74, 14, 46, 0.08);
+        --bordo-transparente-hover: rgba(74, 14, 46, 0.12);
+        --ouro: #D4AF37;
+        --ouro-escuro: #996515;
+        --ouro-claro: #F0D68A;
+    }
+
+    /* CARDS BRANCOS COM BORDÔ */
+    .card-bordo-branco {
+        background: white;
+        border: 1px solid rgba(74, 14, 46, 0.15);
+        border-radius: 16px;
+        transition: all 0.3s ease;
+        color: var(--bordo);
+    }
+    
+    .card-bordo-branco:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 8px 25px rgba(74, 14, 46, 0.12);
+        border-color: var(--bordo);
+    }
+    
+    .card-bordo-branco-destaque {
+        background: white;
+        border: 2px solid var(--bordo);
+        border-radius: 16px;
+        transition: all 0.3s ease;
+        color: var(--bordo);
+    }
+    
+    .card-bordo-branco-destaque:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 8px 25px rgba(74, 14, 46, 0.15);
+    }
+    
+    .card-bordo-branco-suave {
+        background: white;
+        border: 1px solid rgba(74, 14, 46, 0.1);
+        border-radius: 16px;
+        transition: all 0.3s ease;
+        color: var(--bordo-suave);
+    }
+    
+    .card-bordo-branco-suave:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 8px 25px rgba(74, 14, 46, 0.1);
+        border-color: var(--bordo-suave);
+    }
+
+    /* NÚMEROS EM DESTAQUE BORDÔ */
+    .numero-bordo {
+        color: var(--bordo);
+        font-weight: 700;
+    }
+    
+    .numero-bordo-claro {
+        color: var(--bordo-claro);
+        font-weight: 700;
+    }
+    
+    .numero-bordo-suave {
+        color: var(--bordo-suave);
+        font-weight: 700;
+    }
+
+    /* BOTÕES DO RITO */
+    .btn-bordo {
+        background: linear-gradient(135deg, var(--bordo), var(--bordo-escuro));
+        border: none;
+        color: white;
+        border-radius: 30px;
+        padding: 8px 24px;
+        transition: all 0.3s;
+    }
+    
+    .btn-bordo:hover {
+        background: linear-gradient(135deg, var(--bordo-claro), var(--bordo));
+        transform: translateY(-2px);
+        color: white;
+        box-shadow: 0 5px 15px rgba(74, 14, 46, 0.3);
+    }
+    
+    .btn-bordo-outline {
+        background: transparent;
+        border: 1px solid var(--bordo);
+        color: var(--bordo);
+        border-radius: 30px;
+        padding: 8px 24px;
+        transition: all 0.3s;
+    }
+    
+    .btn-bordo-outline:hover {
+        background: var(--bordo);
+        color: white;
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(74, 14, 46, 0.2);
+    }
+
+    /* FILTROS */
+    .filtros-card {
+        background: white;
+        border: 1px solid rgba(74, 14, 46, 0.12);
+        border-radius: 16px;
+        overflow: hidden;
+    }
+    
+    .filtros-header {
+        background: var(--bordo-transparente);
+        border-bottom: 1px solid rgba(74, 14, 46, 0.1);
+        padding: 12px 20px;
+    }
+
+    /* TABELA */
+    .table-bordo {
+        margin-bottom: 0;
+    }
+    
+    .table-bordo thead th {
+        background: var(--bordo-transparente);
+        color: var(--bordo);
+        font-weight: 600;
+        border-bottom: 2px solid rgba(74, 14, 46, 0.15);
+    }
+    
+    .table-bordo tbody tr {
+        border-bottom: 1px solid rgba(74, 14, 46, 0.08);
+        transition: all 0.2s;
+    }
+    
+    .table-bordo tbody tr:hover {
+        background: var(--bordo-transparente);
+        cursor: pointer;
+    }
+
+    /* PROGRESS BAR */
+    .progress-bordo {
+        background: rgba(74, 14, 46, 0.1);
+        border-radius: 30px;
+        height: 20px;
+        overflow: hidden;
+    }
+    
+    .progress-bordo .progress-bar {
+        background: linear-gradient(90deg, var(--bordo), var(--bordo-claro));
+        border-radius: 30px;
+        font-size: 10px;
+        line-height: 20px;
+    }
+
+    /* LEGENDA */
+    .legenda-card {
+        background: white;
+        border: 1px solid rgba(74, 14, 46, 0.12);
+        border-radius: 16px;
+    }
+
+    @media (max-width: 768px) {
+        .btn-group { flex-direction: column; }
+        .btn-group .btn { margin-bottom: 5px; }
+        .table-responsive { font-size: 0.8rem; }
+        .progress-bordo { height: 15px; }
+        .progress-bordo .progress-bar { font-size: 8px; line-height: 15px; }
+    }
+</style>
+{% endblock %}
+
 {% block content %}
 <div class="container-fluid py-4">
     <div class="container">
         <!-- Cabeçalho -->
         <div class="d-flex justify-content-between align-items-center mb-4">
             <h2>
-                <i class="bi bi-calendar-week"></i> 
-                Reuniões
-                <span class="badge bg-primary">{{ estatisticas.total_reunioes }}</span>
+                <i class="bi bi-calendar-week" style="color: var(--bordo);"></i> 
+                <span style="color: var(--bordo);">Reuniões</span>
+                <span class="badge" style="background: var(--bordo);">{{ estatisticas.total_reunioes }}</span>
                 {% if estatisticas.reunioes_atrasadas > 0 %}
                 <small class="text-muted fs-6">({{ estatisticas.reunioes_atrasadas }} atrasadas)</small>
                 {% endif %}
             </h2>
             <div>
                 {% if session.tipo == 'admin' %}
-                <a href="/reunioes/nova" class="btn btn-success me-2">
+                <a href="/reunioes/nova" class="btn-bordo me-2">
                     <i class="bi bi-plus-circle"></i> Nova Reunião
                 </a>
                 {% endif %}
-                <a href="/dashboard" class="btn btn-outline-secondary">
+                <a href="/dashboard" class="btn-bordo-outline">
                     <i class="bi bi-arrow-left"></i> Voltar ao Dashboard
                 </a>
             </div>
         </div>
 
-        <!-- Cards de Estatísticas -->
+        <!-- Cards de Estatísticas - Brancos com letras bordô -->
         <div class="row mb-4">
             <div class="col-md-3">
-                <div class="card bg-primary text-white shadow">
+                <div class="card-bordo-branco shadow-sm">
                     <div class="card-body">
                         <div class="d-flex justify-content-between align-items-center">
                             <div>
-                                <h6 class="card-title mb-0">Total de Reuniões</h6>
-                                <h2 class="mb-0">{{ estatisticas.total_reunioes }}</h2>
+                                <h6 class="card-title mb-0" style="color: var(--bordo-suave);">Total de Reuniões</h6>
+                                <h2 class="mb-0 fw-bold numero-bordo">{{ estatisticas.total_reunioes }}</h2>
                             </div>
-                            <i class="bi bi-calendar-week fs-1"></i>
+                            <i class="bi bi-calendar-week fs-1" style="color: var(--bordo); opacity: 0.6;"></i>
                         </div>
                     </div>
                 </div>
             </div>
             <div class="col-md-3">
-                <div class="card bg-success text-white shadow">
+                <div class="card-bordo-branco-destaque shadow-sm">
                     <div class="card-body">
                         <div class="d-flex justify-content-between align-items-center">
                             <div>
-                                <h6 class="card-title mb-0">Realizadas</h6>
-                                <h2 class="mb-0">{{ estatisticas.realizadas }}</h2>
+                                <h6 class="card-title mb-0" style="color: var(--bordo);">Realizadas</h6>
+                                <h2 class="mb-0 fw-bold numero-bordo">{{ estatisticas.realizadas }}</h2>
                             </div>
-                            <i class="bi bi-check-circle-fill fs-1"></i>
+                            <i class="bi bi-check-circle-fill fs-1" style="color: #10b981; opacity: 0.7;"></i>
                         </div>
                     </div>
                 </div>
             </div>
             <div class="col-md-3">
-                <div class="card bg-warning text-dark shadow">
+                <div class="card-bordo-branco shadow-sm">
                     <div class="card-body">
                         <div class="d-flex justify-content-between align-items-center">
                             <div>
-                                <h6 class="card-title mb-0">Agendadas</h6>
-                                <h2 class="mb-0">{{ estatisticas.agendadas }}</h2>
+                                <h6 class="card-title mb-0" style="color: var(--bordo-suave);">Agendadas</h6>
+                                <h2 class="mb-0 fw-bold numero-bordo-claro">{{ estatisticas.agendadas }}</h2>
                             </div>
-                            <i class="bi bi-calendar-check fs-1"></i>
+                            <i class="bi bi-calendar-check fs-1" style="color: #f59e0b; opacity: 0.7;"></i>
                         </div>
                     </div>
                 </div>
             </div>
             <div class="col-md-3">
-                <div class="card bg-danger text-white shadow">
+                <div class="card-bordo-branco-suave shadow-sm">
                     <div class="card-body">
                         <div class="d-flex justify-content-between align-items-center">
                             <div>
-                                <h6 class="card-title mb-0">Canceladas</h6>
-                                <h2 class="mb-0">{{ estatisticas.canceladas }}</h2>
+                                <h6 class="card-title mb-0" style="color: var(--bordo-suave);">Canceladas</h6>
+                                <h2 class="mb-0 fw-bold numero-bordo-suave">{{ estatisticas.canceladas }}</h2>
                             </div>
-                            <i class="bi bi-x-circle-fill fs-1"></i>
+                            <i class="bi bi-x-circle-fill fs-1" style="color: #ef4444; opacity: 0.6;"></i>
                         </div>
                     </div>
                 </div>
@@ -86,53 +260,53 @@
         <!-- Segunda linha de cards -->
         <div class="row mb-4">
             <div class="col-md-3">
-                <div class="card bg-info text-white shadow">
+                <div class="card-bordo-branco-suave shadow-sm">
                     <div class="card-body">
                         <div class="d-flex justify-content-between align-items-center">
                             <div>
-                                <h6 class="card-title mb-0">Este Mês</h6>
-                                <h2 class="mb-0">{{ estatisticas.reunioes_mes }}</h2>
+                                <h6 class="card-title mb-0" style="color: var(--bordo-suave);">Este Mês</h6>
+                                <h2 class="mb-0 fw-bold numero-bordo-suave">{{ estatisticas.reunioes_mes }}</h2>
                             </div>
-                            <i class="bi bi-calendar-month fs-1"></i>
+                            <i class="bi bi-calendar-month fs-1" style="color: #3b82f6; opacity: 0.6;"></i>
                         </div>
                     </div>
                 </div>
             </div>
             <div class="col-md-3">
-                <div class="card bg-secondary text-white shadow">
+                <div class="card-bordo-branco-destaque shadow-sm">
                     <div class="card-body">
                         <div class="d-flex justify-content-between align-items-center">
                             <div>
-                                <h6 class="card-title mb-0">Próximas</h6>
-                                <h2 class="mb-0">{{ estatisticas.proximas }}</h2>
+                                <h6 class="card-title mb-0" style="color: var(--bordo);">Próximas</h6>
+                                <h2 class="mb-0 fw-bold numero-bordo">{{ estatisticas.proximas }}</h2>
                             </div>
-                            <i class="bi bi-clock-history fs-1"></i>
+                            <i class="bi bi-clock-history fs-1" style="color: var(--bordo); opacity: 0.6;"></i>
                         </div>
                     </div>
                 </div>
             </div>
             <div class="col-md-3">
-                <div class="card bg-dark text-white shadow">
+                <div class="card-bordo-branco shadow-sm">
                     <div class="card-body">
                         <div class="d-flex justify-content-between align-items-center">
                             <div>
-                                <h6 class="card-title mb-0">Exibidas</h6>
-                                <h2 class="mb-0">{{ estatisticas.exibidas }}</h2>
+                                <h6 class="card-title mb-0" style="color: var(--bordo-suave);">Exibidas</h6>
+                                <h2 class="mb-0 fw-bold numero-bordo-claro">{{ estatisticas.exibidas }}</h2>
                             </div>
-                            <i class="bi bi-funnel-fill fs-1"></i>
+                            <i class="bi bi-funnel-fill fs-1" style="color: #64748b; opacity: 0.6;"></i>
                         </div>
                     </div>
                 </div>
             </div>
             <div class="col-md-3">
-                <div class="card shadow" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white;">
+                <div class="card-bordo-branco shadow-sm">
                     <div class="card-body">
                         <div class="d-flex justify-content-between align-items-center">
                             <div>
-                                <h6 class="card-title mb-0">Total Presentes</h6>
-                                <h2 class="mb-0">{{ estatisticas.total_presentes }}</h2>
+                                <h6 class="card-title mb-0" style="color: var(--bordo-suave);">Total Presentes</h6>
+                                <h2 class="mb-0 fw-bold numero-bordo">{{ estatisticas.total_presentes }}</h2>
                             </div>
-                            <i class="bi bi-people-fill fs-1"></i>
+                            <i class="bi bi-people-fill fs-1" style="color: var(--bordo); opacity: 0.6;"></i>
                         </div>
                     </div>
                 </div>
@@ -140,9 +314,9 @@
         </div>
 
         <!-- Filtros -->
-        <div class="card shadow mb-4">
-            <div class="card-header bg-light">
-                <h6 class="mb-0"><i class="bi bi-funnel"></i> Filtros</h6>
+        <div class="filtros-card shadow-sm mb-4">
+            <div class="filtros-header">
+                <h6 class="mb-0" style="color: var(--bordo);"><i class="bi bi-funnel"></i> Filtros</h6>
             </div>
             <div class="card-body">
                 <form method="GET" class="row g-3">
@@ -194,10 +368,10 @@
                                placeholder="Buscar local...">
                     </div>
                     <div class="col-md-12 d-flex justify-content-end">
-                        <button type="submit" class="btn btn-primary me-2">
+                        <button type="submit" class="btn-bordo me-2">
                             <i class="bi bi-search"></i> Filtrar
                         </button>
-                        <a href="/reunioes" class="btn btn-secondary">
+                        <a href="/reunioes" class="btn-bordo-outline">
                             <i class="bi bi-eraser"></i> Limpar
                         </a>
                     </div>
@@ -206,11 +380,11 @@
         </div>
 
         <!-- Lista de Reuniões -->
-        <div class="card shadow">
-            <div class="card-body">
+        <div class="filtros-card shadow-sm">
+            <div class="card-body p-0">
                 <div class="table-responsive">
-                    <table class="table table-hover" id="tabelaReunioes">
-                        <thead class="table-light">
+                    <table class="table table-bordo" id="tabelaReunioes">
+                        <thead>
                             <tr>
                                 <th>Título</th>
                                 <th>Data</th>
@@ -285,7 +459,7 @@
                                 </td>
                                 <td class="text-center" style="min-width: 100px;">
                                     {% if reuniao.total_obreiros and reuniao.total_obreiros > 0 %}
-                                        <div class="progress" style="height: 20px;">
+                                        <div class="progress-bordo" style="height: 20px;">
                                             <div class="progress-bar bg-success" role="progressbar" 
                                                  style="width: {{ reuniao.percentual_presenca }}%"
                                                  title="{{ reuniao.presentes_confirmados or 0 }} presentes">
@@ -301,20 +475,17 @@
                                 </th>
                                 <td>
                                     <div class="btn-group btn-group-sm" role="group">
-                                        <!-- Visualizar - Todos podem -->
                                         <a href="/reunioes/{{ reuniao.id }}" class="btn btn-info" title="Visualizar">
                                             <i class="bi bi-eye"></i>
                                         </a>
                                         
                                         {% if session.tipo == 'admin' %}
-                                            <!-- Editar -->
                                             {% if reuniao.status != 'realizada' and reuniao.status != 'cancelada' %}
                                             <a href="/reunioes/{{ reuniao.id }}/editar" class="btn btn-warning" title="Editar">
                                                 <i class="bi bi-pencil"></i>
                                             </a>
                                             {% endif %}
                                             
-                                            <!-- Excluir -->
                                             {% if reuniao.status != 'realizada' and reuniao.status != 'cancelada' %}
                                             <a href="/reunioes/{{ reuniao.id }}/excluir" class="btn btn-danger" 
                                                title="Excluir" onclick="return confirm('Tem certeza que deseja excluir esta reunião?')">
@@ -322,7 +493,6 @@
                                             </a>
                                             {% endif %}
                                             
-                                            <!-- Cancelar -->
                                             {% if reuniao.status == 'realizada' %}
                                             <form method="POST" action="/reunioes/{{ reuniao.id }}/cancelar" style="display: inline;">
                                                 <button type="submit" class="btn btn-secondary" 
@@ -333,21 +503,18 @@
                                             </form>
                                             {% endif %}
                                             
-                                            <!-- Criar Ata (só se não tem ata) -->
                                             {% if reuniao.status == 'realizada' and not reuniao.tem_ata %}
                                             <a href="/atas/nova/{{ reuniao.id }}" class="btn btn-success" title="Criar Ata">
                                                 <i class="bi bi-file-text"></i>
                                             </a>
                                             {% endif %}
                                             
-                                            <!-- Visualizar Ata (se já existe) -->
                                             {% if reuniao.status == 'realizada' and reuniao.tem_ata and reuniao.ata_id %}
                                             <a href="/atas/{{ reuniao.ata_id }}" class="btn btn-info" title="Visualizar Ata">
                                                 <i class="bi bi-file-text-fill"></i>
                                             </a>
                                             {% endif %}
                                             
-                                            <!-- Reativar -->
                                             {% if reuniao.status == 'cancelada' %}
                                             <form method="POST" action="/reunioes/{{ reuniao.id }}/reativar" style="display: inline;">
                                                 <button type="submit" class="btn btn-warning" 
@@ -368,7 +535,7 @@
                                     Nenhuma reunião encontrada
                                     {% if session.tipo == 'admin' %}
                                     <br>
-                                    <a href="/reunioes/nova" class="btn btn-primary mt-3">
+                                    <a href="/reunioes/nova" class="btn-bordo mt-3">
                                         <i class="bi bi-plus-circle"></i> Criar primeira reunião
                                     </a>
                                     {% endif %}
@@ -382,9 +549,9 @@
         </div>
 
         <!-- Legenda -->
-        <div class="card shadow mt-4">
-            <div class="card-header bg-light">
-                <h6 class="mb-0"><i class="bi bi-info-circle"></i> Legenda</h6>
+        <div class="legenda-card shadow-sm mt-4">
+            <div class="card-header" style="background: var(--bordo-transparente); border-bottom: 1px solid rgba(74, 14, 46, 0.1);">
+                <h6 class="mb-0" style="color: var(--bordo);"><i class="bi bi-info-circle"></i> Legenda</h6>
             </div>
             <div class="card-body">
                 <div class="row">
@@ -426,11 +593,9 @@
 </div>
 
 <script>
-    // Tornar a linha da tabela clicável para abrir a reunião
     document.addEventListener('DOMContentLoaded', function() {
         const linhas = document.querySelectorAll('#tabelaReunioes tbody tr');
         linhas.forEach(linha => {
-            // Impedir que o clique em botões dentro da linha dispare o redirecionamento
             const botoes = linha.querySelectorAll('.btn, button, a');
             botoes.forEach(botao => {
                 botao.addEventListener('click', function(e) {
@@ -438,10 +603,8 @@
                 });
             });
             
-            // Adicionar cursor pointer e evento de clique
             linha.style.cursor = 'pointer';
             linha.addEventListener('click', function() {
-                // Buscar o link de visualização dentro da linha
                 const linkVisualizar = this.querySelector('.btn-info[href*="/reunioes/"]');
                 if (linkVisualizar) {
                     window.location.href = linkVisualizar.getAttribute('href');
@@ -450,20 +613,4 @@
         });
     });
 </script>
-
-<style>
-    .card { border-radius: 10px; overflow: hidden; transition: transform 0.2s ease; }
-    .card:hover { transform: translateY(-4px); }
-    .progress { border-radius: 10px; height: 20px; }
-    .progress-bar { transition: width 0.3s ease; font-size: 10px; line-height: 20px; }
-    .table-hover tbody tr:hover { background-color: rgba(0, 123, 255, 0.05); cursor: pointer; }
-    .badge { font-size: 0.75rem; padding: 0.3rem 0.5rem; }
-    @media (max-width: 768px) {
-        .btn-group { flex-direction: column; }
-        .btn-group .btn { margin-bottom: 5px; }
-        .table-responsive { font-size: 0.8rem; }
-        .progress { height: 15px; }
-        .progress-bar { font-size: 8px; line-height: 15px; }
-    }
-</style>
 {% endblock %}

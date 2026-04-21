@@ -2,137 +2,347 @@
 
 {% block title %}Lista de Obreiros{% endblock %}
 
+{% block styles %}
+{{ super() }}
+<style>
+    :root {
+        --bordo: #4A0E2E;
+        --bordo-escuro: #3A0A24;
+        --bordo-claro: #6B1342;
+        --bordo-suave: #8B4A6B;
+        --bordo-transparente: rgba(74, 14, 46, 0.08);
+        --bordo-transparente-hover: rgba(74, 14, 46, 0.12);
+        --ouro: #D4AF37;
+        --ouro-escuro: #996515;
+        --ouro-claro: #F0D68A;
+    }
+
+    /* CARDS BRANCOS COM BORDÔ */
+    .card-bordo-branco {
+        background: white;
+        border: 1px solid rgba(74, 14, 46, 0.15);
+        border-radius: 16px;
+        transition: all 0.3s ease;
+        color: var(--bordo);
+    }
+    
+    .card-bordo-branco:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 8px 25px rgba(74, 14, 46, 0.12);
+        border-color: var(--bordo);
+    }
+    
+    .card-bordo-branco-destaque {
+        background: white;
+        border: 2px solid var(--bordo);
+        border-radius: 16px;
+        transition: all 0.3s ease;
+        color: var(--bordo);
+    }
+    
+    .card-bordo-branco-destaque:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 8px 25px rgba(74, 14, 46, 0.15);
+    }
+    
+    .card-bordo-branco-suave {
+        background: white;
+        border: 1px solid rgba(74, 14, 46, 0.1);
+        border-radius: 16px;
+        transition: all 0.3s ease;
+        color: var(--bordo-suave);
+    }
+    
+    .card-bordo-branco-suave:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 8px 25px rgba(74, 14, 46, 0.1);
+        border-color: var(--bordo-suave);
+    }
+
+    /* NÚMEROS EM DESTAQUE BORDÔ */
+    .numero-bordo {
+        color: var(--bordo);
+        font-weight: 700;
+    }
+    
+    .numero-bordo-claro {
+        color: var(--bordo-claro);
+        font-weight: 700;
+    }
+    
+    .numero-bordo-suave {
+        color: var(--bordo-suave);
+        font-weight: 700;
+    }
+
+    /* BOTÕES DO RITO */
+    .btn-bordo {
+        background: linear-gradient(135deg, var(--bordo), var(--bordo-escuro));
+        border: none;
+        color: white;
+        border-radius: 30px;
+        padding: 8px 24px;
+        transition: all 0.3s;
+    }
+    
+    .btn-bordo:hover {
+        background: linear-gradient(135deg, var(--bordo-claro), var(--bordo));
+        transform: translateY(-2px);
+        color: white;
+        box-shadow: 0 5px 15px rgba(74, 14, 46, 0.3);
+    }
+    
+    .btn-bordo-outline {
+        background: transparent;
+        border: 1px solid var(--bordo);
+        color: var(--bordo);
+        border-radius: 30px;
+        padding: 8px 24px;
+        transition: all 0.3s;
+    }
+    
+    .btn-bordo-outline:hover {
+        background: var(--bordo);
+        color: white;
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(74, 14, 46, 0.2);
+    }
+
+    /* FILTROS */
+    .filtros-card {
+        background: white;
+        border: 1px solid rgba(74, 14, 46, 0.12);
+        border-radius: 16px;
+        overflow: hidden;
+    }
+    
+    .filtros-header {
+        background: var(--bordo-transparente);
+        border-bottom: 1px solid rgba(74, 14, 46, 0.1);
+        padding: 12px 20px;
+    }
+
+    /* TABELA */
+    .table-bordo {
+        margin-bottom: 0;
+    }
+    
+    .table-bordo thead th {
+        background: var(--bordo-transparente);
+        color: var(--bordo);
+        font-weight: 600;
+        border-bottom: 2px solid rgba(74, 14, 46, 0.15);
+    }
+    
+    .table-bordo tbody tr {
+        border-bottom: 1px solid rgba(74, 14, 46, 0.08);
+        transition: all 0.2s;
+    }
+    
+    .table-bordo tbody tr:hover {
+        background: var(--bordo-transparente);
+        cursor: pointer;
+    }
+
+    /* BADGES DE GRAU */
+    .badge-mestre {
+        background: linear-gradient(135deg, #10b981, #059669);
+        padding: 5px 12px;
+        border-radius: 20px;
+        font-size: 0.7rem;
+        font-weight: 600;
+        color: white;
+    }
+    
+    .badge-companheiro {
+        background: linear-gradient(135deg, #3b82f6, #2563eb);
+        padding: 5px 12px;
+        border-radius: 20px;
+        font-size: 0.7rem;
+        font-weight: 600;
+        color: white;
+    }
+    
+    .badge-aprendiz {
+        background: linear-gradient(135deg, #6c757d, #495057);
+        padding: 5px 12px;
+        border-radius: 20px;
+        font-size: 0.7rem;
+        font-weight: 600;
+        color: white;
+    }
+
+    /* PROGRESS BAR */
+    .progress-bordo {
+        background: rgba(74, 14, 46, 0.1);
+        border-radius: 30px;
+        height: 20px;
+        overflow: hidden;
+    }
+    
+    .progress-bordo .progress-bar {
+        background: linear-gradient(90deg, var(--bordo), var(--bordo-claro));
+        border-radius: 30px;
+        font-size: 10px;
+        line-height: 20px;
+    }
+
+    /* LEGENDA */
+    .legenda-card {
+        background: white;
+        border: 1px solid rgba(74, 14, 46, 0.12);
+        border-radius: 16px;
+    }
+
+    @media (max-width: 768px) {
+        .btn-group {
+            flex-direction: column;
+        }
+        .btn-group .btn {
+            margin-bottom: 5px;
+        }
+        .progress-bordo {
+            height: 15px;
+        }
+        .progress-bordo .progress-bar {
+            font-size: 8px;
+            line-height: 15px;
+        }
+    }
+</style>
+{% endblock %}
+
 {% block content %}
 <div class="container-fluid py-4">
     <div class="container">
-        <!-- Cabeçalho com botão Novo Obreiro e Voltar -->
+        <!-- Cabeçalho -->
         <div class="d-flex justify-content-between align-items-center mb-4">
             <h2>
-                <i class="bi bi-people-fill"></i> 
-                Obreiros
-                <span class="badge bg-primary">{{ estatisticas.total_ativos }}</span>
+                <i class="bi bi-people-fill" style="color: var(--bordo);"></i> 
+                <span style="color: var(--bordo);">Obreiros</span>
+                <span class="badge" style="background: var(--bordo);">{{ estatisticas.total_ativos }}</span>
                 {% if estatisticas.total_inativos > 0 %}
                 <small class="text-muted fs-6">(+{{ estatisticas.total_inativos }} inativos)</small>
                 {% endif %}
             </h2>
             <div>
                 {% if session.tipo == 'admin' %}
-                <a href="/obreiros/novo" class="btn btn-success me-2">
+                <a href="/obreiros/novo" class="btn-bordo me-2">
                     <i class="bi bi-plus-circle"></i> Novo Obreiro
                 </a>
                 {% endif %}
-                <a href="/dashboard" class="btn btn-outline-secondary">
+                <a href="/dashboard" class="btn-bordo-outline">
                     <i class="bi bi-arrow-left"></i> Voltar ao Dashboard
                 </a>
             </div>
         </div>
 
-        <!-- Cards de Estatísticas -->
+        <!-- Cards de Estatísticas - Versão Clara -->
         <div class="row mb-4">
             <div class="col-md-3">
-                <div class="card bg-primary text-white shadow">
+                <div class="card-bordo-branco shadow-sm">
                     <div class="card-body">
                         <div class="d-flex justify-content-between align-items-center">
                             <div>
-                                <h6 class="card-title mb-0">Total de Obreiros</h6>
-                                <h2 class="mb-0">{{ estatisticas.total_obreiros }}</h2>
+                                <h6 class="card-title mb-0" style="color: var(--bordo-suave);">Total de Obreiros</h6>
+                                <h2 class="mb-0 fw-bold numero-bordo">{{ estatisticas.total_obreiros }}</h2>
                             </div>
-                            <i class="bi bi-people-fill fs-1"></i>
+                            <i class="bi bi-people-fill fs-1" style="color: var(--bordo); opacity: 0.6;"></i>
                         </div>
                     </div>
                 </div>
             </div>
             <div class="col-md-3">
-                <div class="card bg-success text-white shadow">
+                <div class="card-bordo-branco-destaque shadow-sm">
                     <div class="card-body">
                         <div class="d-flex justify-content-between align-items-center">
                             <div>
-                                <h6 class="card-title mb-0">Ativos</h6>
-                                <h2 class="mb-0">{{ estatisticas.total_ativos }}</h2>
+                                <h6 class="card-title mb-0" style="color: var(--bordo);">Ativos</h6>
+                                <h2 class="mb-0 fw-bold numero-bordo">{{ estatisticas.total_ativos }}</h2>
                             </div>
-                            <i class="bi bi-check-circle-fill fs-1"></i>
+                            <i class="bi bi-check-circle-fill fs-1" style="color: #10b981; opacity: 0.7;"></i>
                         </div>
                     </div>
                 </div>
             </div>
             <div class="col-md-3">
-                <div class="card bg-secondary text-white shadow">
+                <div class="card-bordo-branco-suave shadow-sm">
                     <div class="card-body">
                         <div class="d-flex justify-content-between align-items-center">
                             <div>
-                                <h6 class="card-title mb-0">Inativos</h6>
-                                <h2 class="mb-0">{{ estatisticas.total_inativos }}</h2>
+                                <h6 class="card-title mb-0" style="color: var(--bordo-suave);">Inativos</h6>
+                                <h2 class="mb-0 fw-bold numero-bordo-suave">{{ estatisticas.total_inativos }}</h2>
                             </div>
-                            <i class="bi bi-ban-fill fs-1"></i>
+                            <i class="bi bi-ban-fill fs-1" style="color: #ef4444; opacity: 0.6;"></i>
                         </div>
                     </div>
                 </div>
             </div>
             <div class="col-md-3">
-                <div class="card bg-info text-white shadow">
+                <div class="card-bordo-branco shadow-sm">
                     <div class="card-body">
                         <div class="d-flex justify-content-between align-items-center">
                             <div>
-                                <h6 class="card-title mb-0">Exibidos</h6>
-                                <h2 class="mb-0">{{ estatisticas.exibidos }}</h2>
+                                <h6 class="card-title mb-0" style="color: var(--bordo-suave);">Exibidos</h6>
+                                <h2 class="mb-0 fw-bold numero-bordo">{{ estatisticas.exibidos }}</h2>
                             </div>
-                            <i class="bi bi-funnel-fill fs-1"></i>
+                            <i class="bi bi-funnel-fill fs-1" style="color: #64748b; opacity: 0.6;"></i>
                         </div>
                     </div>
                 </div>
             </div>
         </div>
 
-        <!-- Segunda linha de cards -->
+        <!-- Segunda linha de cards - Versão Clara -->
         <div class="row mb-4">
             <div class="col-md-3">
-                <div class="card bg-dark text-white shadow">
+                <div class="card-bordo-branco-destaque shadow-sm">
                     <div class="card-body">
                         <div class="d-flex justify-content-between align-items-center">
                             <div>
-                                <h6 class="card-title mb-0">Mestres</h6>
-                                <h2 class="mb-0">{{ estatisticas.mestres }}</h2>
+                                <h6 class="card-title mb-0" style="color: var(--bordo);">Mestres</h6>
+                                <h2 class="mb-0 fw-bold numero-bordo">{{ estatisticas.mestres }}</h2>
                             </div>
-                            <i class="bi bi-star-fill fs-1"></i>
+                            <i class="bi bi-star-fill fs-1" style="color: var(--ouro); opacity: 0.7;"></i>
                         </div>
                     </div>
                 </div>
             </div>
             <div class="col-md-3">
-                <div class="card bg-warning text-dark shadow">
+                <div class="card-bordo-branco shadow-sm">
                     <div class="card-body">
                         <div class="d-flex justify-content-between align-items-center">
                             <div>
-                                <h6 class="card-title mb-0">Companheiros</h6>
-                                <h2 class="mb-0">{{ estatisticas.companheiros }}</h2>
+                                <h6 class="card-title mb-0" style="color: var(--bordo-suave);">Companheiros</h6>
+                                <h2 class="mb-0 fw-bold numero-bordo-claro">{{ estatisticas.companheiros }}</h2>
                             </div>
-                            <i class="bi bi-star fs-1"></i>
+                            <i class="bi bi-star fs-1" style="color: #3b82f6; opacity: 0.7;"></i>
                         </div>
                     </div>
                 </div>
             </div>
             <div class="col-md-3">
-                <div class="card bg-light text-dark shadow">
+                <div class="card-bordo-branco-suave shadow-sm">
                     <div class="card-body">
                         <div class="d-flex justify-content-between align-items-center">
                             <div>
-                                <h6 class="card-title mb-0">Aprendizes</h6>
-                                <h2 class="mb-0">{{ estatisticas.aprendizes }}</h2>
+                                <h6 class="card-title mb-0" style="color: var(--bordo-suave);">Aprendizes</h6>
+                                <h2 class="mb-0 fw-bold numero-bordo-suave">{{ estatisticas.aprendizes }}</h2>
                             </div>
-                            <i class="bi bi-star-half fs-1"></i>
+                            <i class="bi bi-star-half fs-1" style="color: #6c757d; opacity: 0.7;"></i>
                         </div>
                     </div>
                 </div>
             </div>
             <div class="col-md-3">
-                <div class="card shadow" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white;">
+                <div class="card-bordo-branco shadow-sm">
                     <div class="card-body">
                         <div class="d-flex justify-content-between align-items-center">
                             <div>
-                                <h6 class="card-title mb-0">Taxa Ativos</h6>
-                                <h2 class="mb-0">{{ "%.0f"|format(estatisticas.taxa_ativos) }}%</h2>
+                                <h6 class="card-title mb-0" style="color: var(--bordo-suave);">Taxa Ativos</h6>
+                                <h2 class="mb-0 fw-bold numero-bordo">{{ "%.0f"|format(estatisticas.taxa_ativos) }}%</h2>
                             </div>
-                            <i class="bi bi-graph-up fs-1"></i>
+                            <i class="bi bi-graph-up fs-1" style="color: var(--bordo); opacity: 0.6;"></i>
                         </div>
                     </div>
                 </div>
@@ -140,9 +350,9 @@
         </div>
 
         <!-- Filtros -->
-        <div class="card shadow mb-4">
-            <div class="card-header bg-light">
-                <h6 class="mb-0"><i class="bi bi-funnel"></i> Filtros</h6>
+        <div class="filtros-card shadow-sm mb-4">
+            <div class="filtros-header">
+                <h6 class="mb-0" style="color: var(--bordo);"><i class="bi bi-funnel"></i> Filtros</h6>
             </div>
             <div class="card-body">
                 <form method="GET" class="row g-3">
@@ -156,13 +366,14 @@
                         <select class="form-select" name="grau">
                             <option value="">Todos</option>
                             {% for g in graus %}
-                            <option value="{{ g.grau }}" {% if filtros.grau == g.grau|string %}selected{% endif %} 
-                                    title="{{ g.nome_detalhado }}">
-                                <i class="bi bi-star"></i> {{ g.nome_grau }}
+                            <option value="{{ g.grau }}" {% if filtros.grau == g.grau|string %}selected{% endif %}>
+                                {% if g.grau == 3 %}Mestre
+                                {% elif g.grau == 2 %}Companheiro
+                                {% elif g.grau == 1 %}Aprendiz
+                                {% else %}Grau {{ g.grau }}{% endif %}
                             </option>
                             {% endfor %}
                         </select>
-                        <small class="text-muted">Grau 3 = Mestre e superiores</small>
                     </div>
                     <div class="col-md-2">
                         <label class="form-label">Cargo</label>
@@ -170,7 +381,7 @@
                             <option value="">Todos</option>
                             {% for c in cargos %}
                             <option value="{{ c.id }}" {% if filtros.cargo == c.id|string %}selected{% endif %}>
-                                <i class="bi bi-briefcase"></i> {{ c.nome }}
+                                {{ c.nome }}
                             </option>
                             {% endfor %}
                         </select>
@@ -181,7 +392,7 @@
                             <option value="">Todas</option>
                             {% for l in lojas %}
                             <option value="{{ l.nome }}" {% if filtros.loja == l.nome %}selected{% endif %}>
-                                <i class="bi bi-building"></i> {{ l.nome }}
+                                {{ l.nome }}
                             </option>
                             {% endfor %}
                         </select>
@@ -189,24 +400,18 @@
                     <div class="col-md-2">
                         <label class="form-label">Status</label>
                         <select class="form-select" name="status">
-                            <option value="ativos" {% if filtros.status == 'ativos' %}selected{% endif %}>
-                                <i class="bi bi-check-circle"></i> Ativos
-                            </option>
-                            <option value="inativos" {% if filtros.status == 'inativos' %}selected{% endif %}>
-                                <i class="bi bi-ban"></i> Inativos
-                            </option>
-                            <option value="todos" {% if filtros.status == 'todos' %}selected{% endif %}>
-                                <i class="bi bi-people"></i> Todos
-                            </option>
+                            <option value="ativos" {% if filtros.status == 'ativos' %}selected{% endif %}>Ativos</option>
+                            <option value="inativos" {% if filtros.status == 'inativos' %}selected{% endif %}>Inativos</option>
+                            <option value="todos" {% if filtros.status == 'todos' %}selected{% endif %}>Todos</option>
                         </select>
                     </div>
                     <div class="col-md-1 d-flex align-items-end">
-                        <button type="submit" class="btn btn-primary w-100">
+                        <button type="submit" class="btn-bordo w-100">
                             <i class="bi bi-search"></i>
                         </button>
                     </div>
                     <div class="col-md-1 d-flex align-items-end">
-                        <a href="/obreiros" class="btn btn-secondary w-100">
+                        <a href="/obreiros" class="btn-bordo-outline w-100 text-center">
                             <i class="bi bi-eraser"></i>
                         </a>
                     </div>
@@ -215,11 +420,11 @@
         </div>
 
         <!-- Lista de Obreiros -->
-        <div class="card shadow">
-            <div class="card-body">
+        <div class="filtros-card shadow-sm">
+            <div class="card-body p-0">
                 <div class="table-responsive">
-                    <table class="table table-hover" id="tabelaObreiros">
-                        <thead class="table-light">
+                    <table class="table table-bordo" id="tabelaObreiros">
+                        <thead>
                             <tr>
                                 <th style="width: 5%">Foto</th>
                                 <th style="width: 25%">Nome</th>
@@ -232,179 +437,185 @@
                             </tr>
                         </thead>
                         <tbody>
-    {% for obreiro in obreiros|sort(attribute='nome_completo') %}
-  <tr class="{% if obreiro.ativo == 1 %}table-active{% else %}table-secondary{% endif %}">
-    <td class="text-center">
-        {% if obreiro.foto %}
-        <img src="{{ obreiro.foto }}" 
-             class="rounded-circle" 
-             style="width: 40px; height: 40px; object-fit: cover;"
-             alt="Foto de {{ obreiro.nome_completo }}">
-        {% else %}
-        <div class="rounded-circle bg-secondary text-white d-flex align-items-center justify-content-center mx-auto"
-             style="width: 40px; height: 40px;">
-            <i class="bi bi-person"></i>
-        </div>
-        {% endif %}
-    </td>
-    <td>
-        <strong>{{ obreiro.nome_completo or obreiro.usuario }}</strong>
-        {% if obreiro.nome_maconico %}
-        <br>
-        <small class="text-muted">
-            <i class="bi bi-handshake"></i> {{ obreiro.nome_maconico }}
-        </small>
-        {% endif %}
-        {% if obreiro.cim_numero %}
-        <br>
-        <small class="text-muted">
-            <i class="bi bi-card-text"></i> CIM: {{ obreiro.cim_numero }}
-        </small>
-        {% endif %}
-        <br>
-        <small class="text-muted">
-            <i class="bi bi-person-circle"></i> {{ obreiro.usuario }}
-        </small>
-    </td>
-    <td class="align-middle">
-        <span class="badge {{ obreiro.grau_badge_class }}" 
-              title="{{ obreiro.grau_detalhado }}">
-            <i class="{{ obreiro.grau_icon }}"></i> {{ obreiro.grau_principal }}
-        </span>
-        {% if obreiro.grau_atual >= 4 %}
-        <br>
-        <small class="text-muted">{{ obreiro.grau_detalhado }}</small>
-        {% endif %}
-    </td>
-    <td>
-        {% if obreiro.cargos_atuais %}
-            {% set cargos_lista = obreiro.cargos_atuais.split(', ') %}
-            {% for cargo in cargos_lista[:2] %}
-            <span class="badge bg-info mb-1 d-block">
-                <i class="bi bi-briefcase"></i> {{ cargo }}
-            </span>
-            {% endfor %}
-            {% if cargos_lista|length > 2 %}
-            <small class="text-muted">
-                <i class="bi bi-plus-circle"></i> +{{ cargos_lista|length - 2 }}
-            </small>
-            {% endif %}
-        {% else %}
-        <span class="text-muted">
-            <i class="bi bi-x-circle"></i> Nenhum cargo
-        </span>
-        {% endif %}
-    </td>
-    <td>
-        {% if obreiro.loja_nome %}
-        <i class="bi bi-building"></i> {{ obreiro.loja_nome }}
-        {% if obreiro.loja_cidade %}
-        <br>
-        <small class="text-muted">
-            <i class="bi bi-geo-alt"></i> {{ obreiro.loja_cidade }}/{{ obreiro.loja_uf }}
-        </small>
-        {% endif %}
-        {% else %}
-        <span class="text-muted">
-            <i class="bi bi-question-circle"></i> Não vinculado
-        </span>
-        {% endif %}
-    </td>
-    <td style="min-width: 100px;">
-        {% if obreiro.presencas_ano > 0 %}
-        <div class="progress" style="height: 20px;"
-             title="{{ obreiro.presencas_confirmadas_ano }}/{{ obreiro.presencas_ano }} presenças">
-            <div class="progress-bar bg-success" 
-                 role="progressbar" 
-                 style="width: {{ obreiro.percentual_presenca }}%;">
-                {{ "%.0f"|format(obreiro.percentual_presenca) }}%
-            </div>
-        </div>
-        <small class="text-muted">
-            <i class="bi bi-calendar-check"></i> 
-            {{ obreiro.presencas_confirmadas_ano }}/{{ obreiro.presencas_ano }}
-        </small>
-        {% else %}
-        <div class="text-center text-muted">
-            <i class="bi bi-chart-line"></i> Sem registros
-        </div>
-        {% endif %}
-    </td>
-    <td class="align-middle">
-        {% if obreiro.ativo == 1 %}
-        <span class="badge bg-success">
-            <i class="bi bi-check-circle"></i> Ativo
-        </span>
-        {% else %}
-        <span class="badge bg-secondary">
-            <i class="bi bi-ban"></i> Inativo
-        </span>
-        {% endif %}
-    </td>
-    <td class="align-middle">
-        <div class="btn-group btn-group-sm" role="group">
-            <a href="/obreiros/{{ obreiro.id }}" 
-               class="btn btn-info" 
-               title="Visualizar detalhes">
-                <i class="bi bi-eye"></i>
-            </a>
-            {% if session.tipo == 'admin' or session.user_id == obreiro.id %}
-            <a href="/obreiros/{{ obreiro.id }}/editar" 
-               class="btn btn-warning" 
-               title="Editar obreiro">
-                <i class="bi bi-pencil"></i>
-            </a>
-            {% endif %}
-            {% if session.tipo == 'admin' %}
-                {% if obreiro.ativo == 1 %}
-                <a href="/obreiros/{{ obreiro.id }}/excluir" 
-                   class="btn btn-danger" 
-                   title="Desativar obreiro"
-                   onclick="return confirm('⚠️ ATENÇÃO!\n\nDeseja DESATIVAR este obreiro?\n\nNome: {{ obreiro.nome_completo }}\nUsuário: {{ obreiro.usuario }}\n\nO obreiro será desativado, mas seus dados serão mantidos no sistema.\n\nPara excluir permanentemente, procure um administrador.')">
-                    <i class="bi bi-person-x"></i>
-                </a>
-                {% else %}
-                <button type="button" 
-                        class="btn btn-danger"
-                        title="Excluir Permanentemente"
-                        onclick="confirmarExclusaoDefinitiva('{{ obreiro.id }}', '{{ obreiro.nome_completo }}')">
-                    <i class="bi bi-trash3-fill"></i>
-                </button>
-                <a href="/obreiros/{{ obreiro.id }}/reativar" 
-                   class="btn btn-success" 
-                   title="Reativar obreiro"
-                   onclick="return confirm('Deseja REATIVAR este obreiro?\n\nNome: {{ obreiro.nome_completo }}\nUsuário: {{ obreiro.usuario }}')">
-                    <i class="bi bi-play-fill"></i>
-                </a>
-                {% endif %}
-            {% endif %}
-        </div>
-    </td>
-</tr>
-    {% else %}
-    <tr>
-        <td colspan="8" class="text-center text-muted py-5">
-            <i class="bi bi-inbox fs-1"></i><br>
-            Nenhum obreiro encontrado
-            {% if session.tipo == 'admin' %}
-            <br>
-            <a href="/obreiros/novo" class="btn btn-primary mt-3">
-                <i class="bi bi-plus-circle"></i> Criar primeiro obreiro
-            </a>
-            {% endif %}
-        </td>
-    </tr>
-    {% endfor %}
-</tbody>
+                            {% for obreiro in obreiros|sort(attribute='nome_completo') %}
+                            <tr>
+                                <td class="text-center">
+                                    {% if obreiro.foto %}
+                                    <img src="{{ obreiro.foto }}" 
+                                         class="rounded-circle" 
+                                         style="width: 40px; height: 40px; object-fit: cover; border: 2px solid var(--bordo);"
+                                         alt="Foto de {{ obreiro.nome_completo }}">
+                                    {% else %}
+                                    <div class="rounded-circle d-flex align-items-center justify-content-center mx-auto"
+                                         style="width: 40px; height: 40px; background: var(--bordo-transparente); color: var(--bordo);">
+                                        <i class="bi bi-person"></i>
+                                    </div>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <strong>{{ obreiro.nome_completo or obreiro.usuario }}</strong>
+                                    {% if obreiro.nome_maconico %}
+                                    <br>
+                                    <small class="text-muted">
+                                        <i class="bi bi-handshake"></i> {{ obreiro.nome_maconico }}
+                                    </small>
+                                    {% endif %}
+                                    {% if obreiro.cim_numero %}
+                                    <br>
+                                    <small class="text-muted">
+                                        <i class="bi bi-card-text"></i> CIM: {{ obreiro.cim_numero }}
+                                    </small>
+                                    {% endif %}
+                                    <br>
+                                    <small class="text-muted">
+                                        <i class="bi bi-person-circle"></i> {{ obreiro.usuario }}
+                                    </small>
+                                </td>
+                                <td class="align-middle">
+                                    {% set grau = obreiro.grau_atual|int %}
+                                    {% if grau >= 3 %}
+                                        <span class="badge-mestre">Mestre</span>
+                                    {% elif grau == 2 %}
+                                        <span class="badge-companheiro">Companheiro</span>
+                                    {% elif grau == 1 %}
+                                        <span class="badge-aprendiz">Aprendiz</span>
+                                    {% else %}
+                                        <span class="badge bg-info">Grau {{ grau }}</span>
+                                    {% endif %}
+                                    {% if obreiro.grau_atual >= 4 %}
+                                    <br>
+                                    <small class="text-muted">{{ obreiro.grau_detalhado }}</small>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if obreiro.cargos_atuais %}
+                                        {% set cargos_lista = obreiro.cargos_atuais.split(', ') %}
+                                        {% for cargo in cargos_lista[:2] %}
+                                        <span class="badge bg-info mb-1 d-block">
+                                            <i class="bi bi-briefcase"></i> {{ cargo }}
+                                        </span>
+                                        {% endfor %}
+                                        {% if cargos_lista|length > 2 %}
+                                        <small class="text-muted">
+                                            <i class="bi bi-plus-circle"></i> +{{ cargos_lista|length - 2 }}
+                                        </small>
+                                        {% endif %}
+                                    {% else %}
+                                    <span class="text-muted">
+                                        <i class="bi bi-x-circle"></i> Nenhum cargo
+                                    </span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if obreiro.loja_nome %}
+                                    <i class="bi bi-building"></i> {{ obreiro.loja_nome }}
+                                    {% if obreiro.loja_cidade %}
+                                    <br>
+                                    <small class="text-muted">
+                                        <i class="bi bi-geo-alt"></i> {{ obreiro.loja_cidade }}/{{ obreiro.loja_uf }}
+                                    </small>
+                                    {% endif %}
+                                    {% else %}
+                                    <span class="text-muted">
+                                        <i class="bi bi-question-circle"></i> Não vinculado
+                                    </span>
+                                    {% endif %}
+                                </td>
+                                <td style="min-width: 100px;">
+                                    {% if obreiro.presencas_ano > 0 %}
+                                    <div class="progress-bordo" style="height: 20px;">
+                                        <div class="progress-bar bg-success" 
+                                             role="progressbar" 
+                                             style="width: {{ obreiro.percentual_presenca }}%;"
+                                             title="{{ obreiro.presencas_confirmadas_ano }}/{{ obreiro.presencas_ano }} presenças">
+                                            {{ "%.0f"|format(obreiro.percentual_presenca) }}%
+                                        </div>
+                                    </div>
+                                    <small class="text-muted">
+                                        <i class="bi bi-calendar-check"></i> 
+                                        {{ obreiro.presencas_confirmadas_ano }}/{{ obreiro.presencas_ano }}
+                                    </small>
+                                    {% else %}
+                                    <div class="text-center text-muted">
+                                        <i class="bi bi-chart-line"></i> Sem registros
+                                    </div>
+                                    {% endif %}
+                                </td>
+                                <td class="align-middle">
+                                    {% if obreiro.ativo == 1 %}
+                                    <span class="badge bg-success">
+                                        <i class="bi bi-check-circle"></i> Ativo
+                                    </span>
+                                    {% else %}
+                                    <span class="badge bg-secondary">
+                                        <i class="bi bi-ban"></i> Inativo
+                                    </span>
+                                    {% endif %}
+                                </td>
+                                <td class="align-middle">
+                                    <div class="btn-group btn-group-sm" role="group">
+                                        <a href="/obreiros/{{ obreiro.id }}" 
+                                           class="btn btn-info" 
+                                           title="Visualizar detalhes">
+                                            <i class="bi bi-eye"></i>
+                                        </a>
+                                        {% if session.tipo == 'admin' or session.user_id == obreiro.id %}
+                                        <a href="/obreiros/{{ obreiro.id }}/editar" 
+                                           class="btn btn-warning" 
+                                           title="Editar obreiro">
+                                            <i class="bi bi-pencil"></i>
+                                        </a>
+                                        {% endif %}
+                                        {% if session.tipo == 'admin' %}
+                                            {% if obreiro.ativo == 1 %}
+                                            <a href="/obreiros/{{ obreiro.id }}/excluir" 
+                                               class="btn btn-danger" 
+                                               title="Desativar obreiro"
+                                               onclick="return confirm('⚠️ ATENÇÃO!\n\nDeseja DESATIVAR este obreiro?\n\nNome: {{ obreiro.nome_completo }}\nUsuário: {{ obreiro.usuario }}\n\nO obreiro será desativado, mas seus dados serão mantidos no sistema.\n\nPara excluir permanentemente, procure um administrador.')">
+                                                <i class="bi bi-person-x"></i>
+                                            </a>
+                                            {% else %}
+                                            <button type="button" 
+                                                    class="btn btn-danger"
+                                                    title="Excluir Permanentemente"
+                                                    onclick="confirmarExclusaoDefinitiva('{{ obreiro.id }}', '{{ obreiro.nome_completo }}')">
+                                                <i class="bi bi-trash3-fill"></i>
+                                            </button>
+                                            <a href="/obreiros/{{ obreiro.id }}/reativar" 
+                                               class="btn btn-success" 
+                                               title="Reativar obreiro"
+                                               onclick="return confirm('Deseja REATIVAR este obreiro?\n\nNome: {{ obreiro.nome_completo }}\nUsuário: {{ obreiro.usuario }}')">
+                                                <i class="bi bi-play-fill"></i>
+                                            </a>
+                                            {% endif %}
+                                        {% endif %}
+                                    </div>
+                                </td>
+                            </tr>
+                            {% else %}
+                            <tr>
+                                <td colspan="8" class="text-center text-muted py-5">
+                                    <i class="bi bi-inbox fs-1"></i><br>
+                                    Nenhum obreiro encontrado
+                                    {% if session.tipo == 'admin' %}
+                                    <br>
+                                    <a href="/obreiros/novo" class="btn-bordo mt-3">
+                                        <i class="bi bi-plus-circle"></i> Criar primeiro obreiro
+                                    </a>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
                     </table>
                 </div>
             </div>
         </div>
 
         <!-- Legenda -->
-        <div class="card shadow mt-4">
-            <div class="card-header bg-light">
-                <h6 class="mb-0"><i class="bi bi-info-circle"></i> Legenda</h6>
+        <div class="legenda-card shadow-sm mt-4">
+            <div class="card-header" style="background: var(--bordo-transparente); border-bottom: 1px solid rgba(74, 14, 46, 0.1);">
+                <h6 class="mb-0" style="color: var(--bordo);"><i class="bi bi-info-circle"></i> Legenda</h6>
             </div>
             <div class="card-body">
                 <div class="row">
@@ -413,16 +624,17 @@
                         <span class="badge bg-secondary">Cinza</span> = Inativo
                     </div>
                     <div class="col-md-3">
-                        <span class="badge bg-warning text-dark">Amarelo</span> = Mestre<br>
-                        <span class="badge bg-info">Azul</span> = Mestre Instalado e Superiores
-                    </div>
-                    <div class="col-md-3">
-                        <i class="bi bi-star-fill text-warning"></i> = Mestre<br>
-                        <i class="bi bi-star-fill text-info"></i> = Mestre Instalado
+                        <span class="badge-mestre">Verde</span> = Mestre<br>
+                        <span class="badge-companheiro">Azul</span> = Companheiro<br>
+                        <span class="badge-aprendiz">Cinza</span> = Aprendiz
                     </div>
                     <div class="col-md-3">
                         <i class="bi bi-briefcase text-info"></i> = Cargo
                         <i class="bi bi-building"></i> = Loja
+                    </div>
+                    <div class="col-md-3">
+                        <i class="bi bi-eye text-info"></i> = Visualizar
+                        <i class="bi bi-pencil text-warning"></i> = Editar
                         <i class="bi bi-trash3-fill text-danger"></i> = Excluir definitivo
                     </div>
                 </div>
@@ -432,7 +644,6 @@
                         <small class="text-muted">
                             <i class="bi bi-info-circle"></i> 
                             <strong>Nota:</strong> Todos os obreiros com grau Mestre (3) ou superior aparecem como "Mestre" na lista.
-                            Passe o mouse sobre o badge para ver o grau detalhado.
                         </small>
                     </div>
                 </div>
@@ -441,7 +652,7 @@
     </div>
 </div>
 
-<!-- Modal de Confirmação para Exclusão Definitiva (mantido igual) -->
+<!-- Modal de Confirmação para Exclusão Definitiva -->
 <div class="modal fade" id="modalConfirmExclusaoDefinitiva" tabindex="-1">
     <div class="modal-dialog">
         <div class="modal-content">
@@ -493,7 +704,6 @@
 document.addEventListener('DOMContentLoaded', function() {
     const linhas = document.querySelectorAll('#tabelaObreiros tbody tr');
     linhas.forEach(linha => {
-        // Impedir que o clique em botões dentro da linha dispare o redirecionamento
         const botoes = linha.querySelectorAll('.btn, button, a');
         botoes.forEach(botao => {
             botao.addEventListener('click', function(e) {
@@ -501,10 +711,8 @@ document.addEventListener('DOMContentLoaded', function() {
             });
         });
         
-        // Adicionar cursor pointer e evento de clique
         linha.style.cursor = 'pointer';
         linha.addEventListener('click', function() {
-            // Buscar o link de visualização dentro da linha
             const linkVisualizar = this.querySelector('.btn-info[href*="/obreiros/"]');
             if (linkVisualizar) {
                 window.location.href = linkVisualizar.getAttribute('href');
@@ -513,7 +721,7 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 });
 
-// Mantido o JavaScript do modal de exclusão
+// Modal de exclusão definitiva
 let modalExclusaoDefinitiva;
 
 document.addEventListener('DOMContentLoaded', function() {
@@ -553,32 +761,22 @@ function executarExclusaoDefinitiva() {
 
     fetch(`/obreiros/${obreiroId}/excluir_definitivo`, {
         method: 'POST',
-        headers: {
-            'Content-Type': 'application/json'
-        }
+        headers: { 'Content-Type': 'application/json' }
     })
     .then(response => response.json())
     .then(data => {
         modalExclusaoDefinitiva.hide();
         
         if (data.success) {
-            mostrarAlerta('success', 
-                `<i class="bi bi-check-circle"></i> ${data.message || 'Obreiro excluído permanentemente com sucesso!'}`,
-                4000);
-            setTimeout(() => {
-                location.reload();
-            }, 1500);
+            mostrarAlerta('success', data.message || 'Obreiro excluído permanentemente!', 4000);
+            setTimeout(() => location.reload(), 1500);
         } else {
-            mostrarAlerta('danger', 
-                `<i class="bi bi-exclamation-triangle"></i> ${data.error || 'Erro ao excluir obreiro'}`,
-                5000);
+            mostrarAlerta('danger', data.error || 'Erro ao excluir obreiro', 5000);
         }
     })
     .catch(error => {
         modalExclusaoDefinitiva.hide();
-        mostrarAlerta('danger', 
-            `<i class="bi bi-bug"></i> Erro na requisição: ${error.message}`,
-            5000);
+        mostrarAlerta('danger', `Erro: ${error.message}`, 5000);
     })
     .finally(() => {
         btn.innerHTML = originalText;
@@ -596,7 +794,6 @@ function mostrarAlerta(tipo, mensagem, timeout = 5000) {
         </div>
     `;
     alertContainer.insertAdjacentHTML('beforeend', alertHtml);
-    
     setTimeout(() => {
         const el = document.getElementById(alertId);
         if (el) el.remove();
@@ -615,63 +812,4 @@ function criarContainerAlerta() {
     return container;
 }
 </script>
-
-<style>
-    .card {
-        border-radius: 10px;
-        overflow: hidden;
-        transition: transform 0.2s ease;
-    }
-    .card:hover {
-        transform: translateY(-4px);
-    }
-    .card-header {
-        font-weight: 600;
-    }
-    .progress {
-        border-radius: 10px;
-        overflow: hidden;
-        margin-bottom: 5px;
-        height: 20px;
-    }
-    .progress-bar {
-        transition: width 0.3s ease;
-        font-size: 10px;
-        line-height: 20px;
-    }
-    .table-hover tbody tr:hover {
-        cursor: pointer;
-        background-color: rgba(0, 123, 255, 0.05);
-    }
-    .badge {
-        font-size: 0.8rem;
-        padding: 0.4rem 0.6rem;
-    }
-    .btn-group-sm .btn {
-        padding: 0.25rem 0.5rem;
-    }
-    .rounded-circle {
-        border: 2px solid #fff;
-        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-    }
-    @media (max-width: 768px) {
-        .btn-group {
-            flex-direction: column;
-        }
-        .btn-group .btn {
-            margin-bottom: 5px;
-        }
-        .table-responsive {
-            font-size: 0.85rem;
-        }
-        .progress {
-            height: 15px;
-        }
-        .progress-bar {
-            font-size: 8px;
-            line-height: 15px;
-        }
-    }
-</style>
-
 {% endblock %}

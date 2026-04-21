@@ -2,19 +2,204 @@
 
 {% block title %}Gerenciar Candidatos{% endblock %}
 
+{% block styles %}
+{{ super() }}
+<style>
+    :root {
+        --bordo: #4A0E2E;
+        --bordo-escuro: #3A0A24;
+        --bordo-claro: #6B1342;
+        --bordo-suave: #8B4A6B;
+        --bordo-transparente: rgba(74, 14, 46, 0.08);
+        --bordo-transparente-hover: rgba(74, 14, 46, 0.12);
+        --ouro: #D4AF37;
+        --ouro-escuro: #996515;
+        --ouro-claro: #F0D68A;
+    }
+
+    /* CARDS BRANCOS COM BORDÔ */
+    .card-bordo-branco {
+        background: white;
+        border: 1px solid rgba(74, 14, 46, 0.15);
+        border-radius: 16px;
+        transition: all 0.3s ease;
+        color: var(--bordo);
+    }
+    
+    .card-bordo-branco:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 8px 25px rgba(74, 14, 46, 0.12);
+        border-color: var(--bordo);
+    }
+    
+    .card-bordo-branco-destaque {
+        background: white;
+        border: 2px solid var(--bordo);
+        border-radius: 16px;
+        transition: all 0.3s ease;
+        color: var(--bordo);
+    }
+    
+    .card-bordo-branco-destaque:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 8px 25px rgba(74, 14, 46, 0.15);
+    }
+    
+    .card-bordo-branco-suave {
+        background: white;
+        border: 1px solid rgba(74, 14, 46, 0.1);
+        border-radius: 16px;
+        transition: all 0.3s ease;
+        color: var(--bordo-suave);
+    }
+    
+    .card-bordo-branco-suave:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 8px 25px rgba(74, 14, 46, 0.1);
+        border-color: var(--bordo-suave);
+    }
+
+    /* NÚMEROS EM DESTAQUE BORDÔ */
+    .numero-bordo {
+        color: var(--bordo);
+        font-weight: 700;
+    }
+    
+    .numero-bordo-claro {
+        color: var(--bordo-claro);
+        font-weight: 700;
+    }
+    
+    .numero-bordo-suave {
+        color: var(--bordo-suave);
+        font-weight: 700;
+    }
+
+    /* BOTÕES DO RITO */
+    .btn-bordo {
+        background: linear-gradient(135deg, var(--bordo), var(--bordo-escuro));
+        border: none;
+        color: white;
+        border-radius: 30px;
+        padding: 8px 24px;
+        transition: all 0.3s;
+    }
+    
+    .btn-bordo:hover {
+        background: linear-gradient(135deg, var(--bordo-claro), var(--bordo));
+        transform: translateY(-2px);
+        color: white;
+        box-shadow: 0 5px 15px rgba(74, 14, 46, 0.3);
+    }
+    
+    .btn-bordo-outline {
+        background: transparent;
+        border: 1px solid var(--bordo);
+        color: var(--bordo);
+        border-radius: 30px;
+        padding: 8px 24px;
+        transition: all 0.3s;
+    }
+    
+    .btn-bordo-outline:hover {
+        background: var(--bordo);
+        color: white;
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(74, 14, 46, 0.2);
+    }
+
+    /* FILTROS */
+    .filtros-card {
+        background: white;
+        border: 1px solid rgba(74, 14, 46, 0.12);
+        border-radius: 16px;
+        overflow: hidden;
+    }
+    
+    .filtros-header {
+        background: var(--bordo-transparente);
+        border-bottom: 1px solid rgba(74, 14, 46, 0.1);
+        padding: 12px 20px;
+    }
+
+    /* TABELA */
+    .table-bordo {
+        margin-bottom: 0;
+    }
+    
+    .table-bordo thead th {
+        background: var(--bordo-transparente);
+        color: var(--bordo);
+        font-weight: 600;
+        border-bottom: 2px solid rgba(74, 14, 46, 0.15);
+    }
+    
+    .table-bordo tbody tr {
+        border-bottom: 1px solid rgba(74, 14, 46, 0.08);
+        transition: all 0.2s;
+    }
+    
+    .table-bordo tbody tr:hover {
+        background: var(--bordo-transparente);
+        cursor: pointer;
+    }
+
+    /* PROGRESS BAR */
+    .progress-bordo {
+        background: rgba(74, 14, 46, 0.1);
+        border-radius: 30px;
+        height: 20px;
+        overflow: hidden;
+    }
+    
+    .progress-bordo .progress-bar {
+        background: linear-gradient(90deg, var(--bordo), var(--bordo-claro));
+        border-radius: 30px;
+        font-size: 10px;
+        line-height: 20px;
+    }
+
+    /* LEGENDA */
+    .legenda-card {
+        background: white;
+        border: 1px solid rgba(74, 14, 46, 0.12);
+        border-radius: 16px;
+    }
+
+    @media (max-width: 768px) {
+        .btn-group {
+            flex-direction: column;
+        }
+        .btn-group .btn {
+            margin-bottom: 5px;
+        }
+        .table-responsive {
+            font-size: 0.85rem;
+        }
+        .progress-bordo {
+            height: 15px;
+        }
+        .progress-bordo .progress-bar {
+            font-size: 8px;
+            line-height: 15px;
+        }
+    }
+</style>
+{% endblock %}
+
 {% block content %}
 <div class="container-fluid py-4">
     <div class="container">
         <!-- Cabeçalho -->
         <div class="d-flex justify-content-between align-items-center mb-4">
             <h2>
-                <i class="bi bi-people-fill"></i> 
-                Candidatos
-                <span class="badge bg-primary">{{ candidatos|length }}</span>
+                <i class="bi bi-people-fill" style="color: var(--bordo);"></i> 
+                <span style="color: var(--bordo);">Candidatos</span>
+                <span class="badge" style="background: var(--bordo);">{{ candidatos|length }}</span>
                 <small class="text-muted fs-6">({{ candidatos|selectattr('fechado', 'equalto', 0)|list|length }} em análise)</small>
             </h2>
             <div>
-                <a href="/dashboard" class="btn btn-outline-secondary">
+                <a href="/dashboard" class="btn-bordo-outline">
                     <i class="bi bi-arrow-left"></i> Voltar ao Dashboard
                 </a>
             </div>
@@ -23,53 +208,53 @@
         <!-- Cards de Estatísticas -->
         <div class="row mb-4">
             <div class="col-md-3">
-                <div class="card bg-primary text-white shadow">
+                <div class="card-bordo-branco shadow-sm">
                     <div class="card-body">
                         <div class="d-flex justify-content-between align-items-center">
                             <div>
-                                <h6 class="card-title mb-0">Total de Candidatos</h6>
-                                <h2 class="mb-0">{{ candidatos|length }}</h2>
+                                <h6 class="card-title mb-0" style="color: var(--bordo-suave);">Total de Candidatos</h6>
+                                <h2 class="mb-0 fw-bold numero-bordo">{{ candidatos|length }}</h2>
                             </div>
-                            <i class="bi bi-people-fill fs-1"></i>
+                            <i class="bi bi-people-fill fs-1" style="color: var(--bordo); opacity: 0.6;"></i>
                         </div>
                     </div>
                 </div>
             </div>
             <div class="col-md-3">
-                <div class="card bg-warning text-dark shadow">
+                <div class="card-bordo-branco shadow-sm">
                     <div class="card-body">
                         <div class="d-flex justify-content-between align-items-center">
                             <div>
-                                <h6 class="card-title mb-0">Em Análise</h6>
-                                <h2 class="mb-0">{{ candidatos|selectattr('fechado', 'equalto', 0)|list|length }}</h2>
+                                <h6 class="card-title mb-0" style="color: var(--bordo-suave);">Em Análise</h6>
+                                <h2 class="mb-0 fw-bold numero-bordo-claro">{{ candidatos|selectattr('fechado', 'equalto', 0)|list|length }}</h2>
                             </div>
-                            <i class="bi bi-clock-fill fs-1"></i>
+                            <i class="bi bi-clock-fill fs-1" style="color: #f59e0b; opacity: 0.7;"></i>
                         </div>
                     </div>
                 </div>
             </div>
             <div class="col-md-3">
-                <div class="card bg-success text-white shadow">
+                <div class="card-bordo-branco-destaque shadow-sm">
                     <div class="card-body">
                         <div class="d-flex justify-content-between align-items-center">
                             <div>
-                                <h6 class="card-title mb-0">Aprovados</h6>
-                                <h2 class="mb-0">{{ candidatos|selectattr('status', 'equalto', 'Aprovado')|list|length }}</h2>
+                                <h6 class="card-title mb-0" style="color: var(--bordo);">Aprovados</h6>
+                                <h2 class="mb-0 fw-bold numero-bordo">{{ candidatos|selectattr('status', 'equalto', 'Aprovado')|list|length }}</h2>
                             </div>
-                            <i class="bi bi-check-circle-fill fs-1"></i>
+                            <i class="bi bi-check-circle-fill fs-1" style="color: #10b981; opacity: 0.7;"></i>
                         </div>
                     </div>
                 </div>
             </div>
             <div class="col-md-3">
-                <div class="card bg-danger text-white shadow">
+                <div class="card-bordo-branco-suave shadow-sm">
                     <div class="card-body">
                         <div class="d-flex justify-content-between align-items-center">
                             <div>
-                                <h6 class="card-title mb-0">Reprovados</h6>
-                                <h2 class="mb-0">{{ candidatos|selectattr('status', 'equalto', 'Reprovado')|list|length }}</h2>
+                                <h6 class="card-title mb-0" style="color: var(--bordo-suave);">Reprovados</h6>
+                                <h2 class="mb-0 fw-bold numero-bordo-suave">{{ candidatos|selectattr('status', 'equalto', 'Reprovado')|list|length }}</h2>
                             </div>
-                            <i class="bi bi-x-circle-fill fs-1"></i>
+                            <i class="bi bi-x-circle-fill fs-1" style="color: #ef4444; opacity: 0.6;"></i>
                         </div>
                     </div>
                 </div>
@@ -77,9 +262,9 @@
         </div>
 
         <!-- Formulário para adicionar candidato -->
-        <div class="card shadow mb-4">
-            <div class="card-header bg-light">
-                <h6 class="mb-0"><i class="bi bi-person-plus"></i> Novo Candidato</h6>
+        <div class="filtros-card shadow-sm mb-4">
+            <div class="filtros-header">
+                <h6 class="mb-0" style="color: var(--bordo);"><i class="bi bi-person-plus"></i> Novo Candidato</h6>
             </div>
             <div class="card-body">
                 <form method="POST">
@@ -89,7 +274,7 @@
                                    placeholder="Digite o nome completo do candidato">
                         </div>
                         <div class="col-md-2">
-                            <button type="submit" class="btn btn-success w-100">
+                            <button type="submit" class="btn-bordo w-100">
                                 <i class="bi bi-save"></i> Adicionar
                             </button>
                         </div>
@@ -102,14 +287,14 @@
         </div>
 
         <!-- Lista de Candidatos -->
-        <div class="card shadow">
-            <div class="card-header bg-light">
-                <h6 class="mb-0"><i class="bi bi-list-ul"></i> Candidatos em Processo</h6>
+        <div class="filtros-card shadow-sm">
+            <div class="card-header" style="background: var(--bordo-transparente); border-bottom: 1px solid rgba(74, 14, 46, 0.1);">
+                <h6 class="mb-0" style="color: var(--bordo);"><i class="bi bi-list-ul"></i> Candidatos em Processo</h6>
             </div>
-            <div class="card-body">
+            <div class="card-body p-0">
                 <div class="table-responsive">
-                    <table class="table table-hover" id="tabelaCandidatos">
-                        <thead class="table-light">
+                    <table class="table table-bordo" id="tabelaCandidatos">
+                        <thead>
                             <tr>
                                 <th style="width: 30%">Candidato</th>
                                 <th style="width: 15%">Cadastro</th>
@@ -193,7 +378,7 @@
                                                     <span class="text-success fw-bold">✓ Completo</span>
                                                 {% endif %}
                                             </div>
-                                            <div class="progress" style="height: 20px;">
+                                            <div class="progress-bordo" style="height: 20px;">
                                                 <div class="progress-bar bg-success" 
                                                      role="progressbar" 
                                                      style="width: {{ percentual }}%;">
@@ -207,7 +392,7 @@
                                                 <span class="text-muted">Documentos</span>
                                                 <span class="text-warning fw-bold">Pendente</span>
                                             </div>
-                                            <div class="progress" style="height: 20px;">
+                                            <div class="progress-bordo" style="height: 20px;">
                                                 <div class="progress-bar" role="progressbar" style="width: 0%">0%</div>
                                             </div>
                                             <div class="small text-muted mt-1">
@@ -219,72 +404,72 @@
                                     {% endif %}
                                 </td>
                                 <td class="align-middle">
-    <div class="btn-group btn-group-sm" role="group">
-        <!-- 1. VISUALIZAR - Todos podem ver -->
-        <a href="/sindicancia/{{ c.id }}" class="btn btn-info" title="Visualizar Sindicância">
-            <i class="bi bi-eye"></i>
-        </a>
-        
-        <!-- 2. ESCOLHER SINDICANTE / DESIGNAR - APENAS ADMIN -->
-        {% if session.tipo == 'admin' %}
-        <button type="button" class="btn btn-outline-secondary" 
-                onclick="abrirModalDesignarSindicantes({{ c.id }}, '{{ c.nome|replace("'", "\\'") }}')"
-                title="Designar Sindicantes">
-            <i class="bi bi-person-plus"></i>
-        </button>
-        {% endif %}
-        
-        <!-- 3. FORMULÁRIO - ADMIN E SINDICANTES -->
-        {% if session.tipo == 'admin' or session.tipo == 'sindicante' %}
-        <a href="/candidato/formulario/{{ c.id }}" class="btn btn-outline-info" title="Preencher Formulário">
-            <i class="bi bi-file-text"></i>
-        </a>
-        {% endif %}
-        
-        <!-- 4. ENVIAR DOCUMENTOS - ADMIN E SINDICANTES -->
-        {% if session.tipo == 'admin' or session.tipo == 'sindicante' %}
-        <a href="/candidatos/{{ c.id }}/documentos" class="btn btn-outline-primary" title="Gerenciar Documentos">
-            <i class="bi bi-folder2-open"></i>
-        </a>
-        {% endif %}
-        
-        <!-- 5. CHECKLIST - ADMIN E SINDICANTES -->
-        {% if session.tipo == 'admin' or session.tipo == 'sindicante' %}
-        <a href="/candidatos/{{ c.id }}/checklist" class="btn btn-success" title="Checklist de Iniciação">
-            <i class="bi bi-check2-square"></i>
-        </a>
-        {% endif %}
-        
-        <!-- 6. ENCERRAR SINDICÂNCIA - APENAS ADMIN (apenas se não estiver fechado) -->
-        {% if session.tipo == 'admin' and not c.fechado %}
-        <a href="/fechar_sindicancia/{{ c.id }}" class="btn btn-warning" 
-           onclick="return confirm('Encerrar sindicância deste candidato? Esta ação não pode ser desfeita!')" 
-           title="Encerrar Sindicância">
-            <i class="bi bi-check2-circle"></i>
-        </a>
-        {% endif %}
-        
-        <!-- 7. EXCLUIR - APENAS ADMIN -->
-        {% if session.tipo == 'admin' %}
-        <form action="/candidatos/excluir/{{ c.id }}" method="POST" style="display:inline;">
-            <button type="submit" class="btn btn-danger" 
-                    onclick="return confirm('Excluir este candidato? Esta ação não pode ser desfeita!')" 
-                    title="Excluir Candidato">
-                <i class="bi bi-trash"></i>
-            </button>
-        </form>
-        {% endif %}
-        
-        <!-- BOTÃO EMITIR PLACET - APENAS ADMIN (quando aprovado e ainda não é obreiro) -->
-        {% if session.tipo == 'admin' and c.fechado == 1 and c.status == 'Aprovado' and not c.obreiro_id %}
-        <button type="button" class="btn btn-primary" 
-                onclick="abrirModalEmitirPlacet({{ c.id }}, '{{ c.nome|replace("'", "\\'") }}')"
-                title="Emitir Placet">
-            <i class="bi bi-file-text"></i>
-        </button>
-        {% endif %}
-    </div>
-</td>
+                                    <div class="btn-group btn-group-sm" role="group">
+                                        <!-- 1. VISUALIZAR - Todos podem ver -->
+                                        <a href="/sindicancia/{{ c.id }}" class="btn btn-info" title="Visualizar Sindicância">
+                                            <i class="bi bi-eye"></i>
+                                        </a>
+                                        
+                                        <!-- 2. ESCOLHER SINDICANTE / DESIGNAR - APENAS ADMIN -->
+                                        {% if session.tipo == 'admin' %}
+                                        <button type="button" class="btn btn-outline-secondary" 
+                                                onclick="abrirModalDesignarSindicantes({{ c.id }}, '{{ c.nome|replace("'", "\\'") }}')"
+                                                title="Designar Sindicantes">
+                                            <i class="bi bi-person-plus"></i>
+                                        </button>
+                                        {% endif %}
+                                        
+                                        <!-- 3. FORMULÁRIO - ADMIN E SINDICANTES -->
+                                        {% if session.tipo == 'admin' or session.tipo == 'sindicante' %}
+                                        <a href="/candidato/formulario/{{ c.id }}" class="btn btn-outline-info" title="Preencher Formulário">
+                                            <i class="bi bi-file-text"></i>
+                                        </a>
+                                        {% endif %}
+                                        
+                                        <!-- 4. ENVIAR DOCUMENTOS - ADMIN E SINDICANTES -->
+                                        {% if session.tipo == 'admin' or session.tipo == 'sindicante' %}
+                                        <a href="/candidatos/{{ c.id }}/documentos" class="btn btn-outline-primary" title="Gerenciar Documentos">
+                                            <i class="bi bi-folder2-open"></i>
+                                        </a>
+                                        {% endif %}
+                                        
+                                        <!-- 5. CHECKLIST - ADMIN E SINDICANTES -->
+                                        {% if session.tipo == 'admin' or session.tipo == 'sindicante' %}
+                                        <a href="/candidatos/{{ c.id }}/checklist" class="btn btn-success" title="Checklist de Iniciação">
+                                            <i class="bi bi-check2-square"></i>
+                                        </a>
+                                        {% endif %}
+                                        
+                                        <!-- 6. ENCERRAR SINDICÂNCIA - APENAS ADMIN (apenas se não estiver fechado) -->
+                                        {% if session.tipo == 'admin' and not c.fechado %}
+                                        <a href="/fechar_sindicancia/{{ c.id }}" class="btn btn-warning" 
+                                           onclick="return confirm('Encerrar sindicância deste candidato? Esta ação não pode ser desfeita!')" 
+                                           title="Encerrar Sindicância">
+                                            <i class="bi bi-check2-circle"></i>
+                                        </a>
+                                        {% endif %}
+                                        
+                                        <!-- 7. EXCLUIR - APENAS ADMIN -->
+                                        {% if session.tipo == 'admin' %}
+                                        <form action="/candidatos/excluir/{{ c.id }}" method="POST" style="display:inline;">
+                                            <button type="submit" class="btn btn-danger" 
+                                                    onclick="return confirm('Excluir este candidato? Esta ação não pode ser desfeita!')" 
+                                                    title="Excluir Candidato">
+                                                <i class="bi bi-trash"></i>
+                                            </button>
+                                        </form>
+                                        {% endif %}
+                                        
+                                        <!-- BOTÃO EMITIR PLACET - APENAS ADMIN (quando aprovado e ainda não é obreiro) -->
+                                        {% if session.tipo == 'admin' and c.fechado == 1 and c.status == 'Aprovado' and not c.obreiro_id %}
+                                        <button type="button" class="btn btn-primary" 
+                                                onclick="abrirModalEmitirPlacet({{ c.id }}, '{{ c.nome|replace("'", "\\'") }}')"
+                                                title="Emitir Placet">
+                                            <i class="bi bi-file-text"></i>
+                                        </button>
+                                        {% endif %}
+                                    </div>
+                                </td>
                             </tr>
                             {% else %}
                             <tr>
@@ -304,14 +489,14 @@
 
         <!-- Sindicantes Ativos - APENAS ADMIN -->
         {% if session.tipo == 'admin' and sindicantes %}
-        <div class="card shadow mt-4">
-            <div class="card-header bg-light">
-                <h6 class="mb-0"><i class="bi bi-person-badge"></i> Sindicantes Ativos</h6>
+        <div class="legenda-card shadow-sm mt-4">
+            <div class="card-header" style="background: var(--bordo-transparente); border-bottom: 1px solid rgba(74, 14, 46, 0.1);">
+                <h6 class="mb-0" style="color: var(--bordo);"><i class="bi bi-person-badge"></i> Sindicantes Ativos</h6>
             </div>
             <div class="card-body">
                 <div class="table-responsive">
-                    <table class="table table-sm">
-                        <thead class="table-light">
+                    <table class="table table-bordo">
+                        <thead>
                             <tr>
                                 <th>Usuário</th>
                                 <th>Nome</th>
@@ -345,9 +530,9 @@
         {% endif %}
 
         <!-- Legenda -->
-        <div class="card shadow mt-4">
-            <div class="card-header bg-light">
-                <h6 class="mb-0"><i class="bi bi-info-circle"></i> Legenda</h6>
+        <div class="legenda-card shadow-sm mt-4">
+            <div class="card-header" style="background: var(--bordo-transparente); border-bottom: 1px solid rgba(74, 14, 46, 0.1);">
+                <h6 class="mb-0" style="color: var(--bordo);"><i class="bi bi-info-circle"></i> Legenda</h6>
             </div>
             <div class="card-body">
                 <div class="row">
@@ -380,7 +565,7 @@
 <div class="modal fade" id="modalDesignarSindicantes" tabindex="-1">
     <div class="modal-dialog modal-dialog-centered modal-lg">
         <div class="modal-content">
-            <div class="modal-header bg-primary text-white">
+            <div class="modal-header" style="background: var(--bordo); color: white;">
                 <h5 class="modal-title">
                     <i class="bi bi-person-plus me-2"></i>
                     Designar Sindicantes
@@ -404,9 +589,7 @@
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-                    <button type="submit" class="btn btn-primary">
-                        <i class="bi bi-save"></i> Salvar Designações
-                    </button>
+                    <button type="submit" class="btn-bordo">Salvar Designações</button>
                 </div>
             </form>
         </div>
@@ -419,7 +602,7 @@
 <div class="modal fade" id="modalEmitirPlacet" tabindex="-1">
     <div class="modal-dialog modal-dialog-centered modal-lg">
         <div class="modal-content">
-            <div class="modal-header bg-primary text-white">
+            <div class="modal-header" style="background: var(--bordo); color: white;">
                 <h5 class="modal-title">
                     <i class="bi bi-file-text me-2"></i>
                     Emitir Placet de Iniciação
@@ -482,7 +665,7 @@
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-                    <button type="submit" class="btn btn-primary">Emitir Placet</button>
+                    <button type="submit" class="btn-bordo">Emitir Placet</button>
                 </div>
             </form>
         </div>
@@ -494,7 +677,6 @@
 document.addEventListener('DOMContentLoaded', function() {
     const linhas = document.querySelectorAll('#tabelaCandidatos tbody tr');
     linhas.forEach(linha => {
-        // Impedir que o clique em botões dentro da linha dispare o redirecionamento
         const botoes = linha.querySelectorAll('.btn, button, a');
         botoes.forEach(botao => {
             botao.addEventListener('click', function(e) {
@@ -502,10 +684,8 @@ document.addEventListener('DOMContentLoaded', function() {
             });
         });
         
-        // Adicionar cursor pointer e evento de clique
         linha.style.cursor = 'pointer';
         linha.addEventListener('click', function() {
-            // Buscar o link de visualização da sindicância dentro da linha
             const linkSindicancia = this.querySelector('.btn-info[href*="/sindicancia/"]');
             if (linkSindicancia) {
                 window.location.href = linkSindicancia.getAttribute('href');
@@ -615,51 +795,4 @@ function escapeHtml(text) {
     return div.innerHTML;
 }
 </script>
-
-<style>
-    .card {
-        border-radius: 10px;
-        overflow: hidden;
-        transition: transform 0.2s ease;
-    }
-    .card:hover {
-        transform: translateY(-4px);
-    }
-    .card-header {
-        font-weight: 600;
-    }
-    .progress {
-        border-radius: 10px;
-        overflow: hidden;
-        height: 20px;
-    }
-    .progress-bar {
-        transition: width 0.3s ease;
-        font-size: 10px;
-        line-height: 20px;
-    }
-    .table-hover tbody tr:hover {
-        cursor: pointer;
-        background-color: rgba(0, 123, 255, 0.05);
-    }
-    .badge {
-        font-size: 0.8rem;
-        padding: 0.4rem 0.6rem;
-    }
-    .btn-group-sm .btn {
-        padding: 0.25rem 0.5rem;
-        margin: 0 2px;
-    }
-    @media (max-width: 768px) {
-        .btn-group {
-            flex-direction: column;
-        }
-        .btn-group .btn {
-            margin-bottom: 5px;
-        }
-        .table-responsive {
-            font-size: 0.85rem;
-        }
-    }
-</style>
 {% endblock %}

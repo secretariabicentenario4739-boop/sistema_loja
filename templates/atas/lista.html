@@ -2,21 +2,190 @@
 
 {% block title %}Lista de Atas{% endblock %}
 
+{% block styles %}
+{{ super() }}
+<style>
+    :root {
+        --bordo: #4A0E2E;
+        --bordo-escuro: #3A0A24;
+        --bordo-claro: #6B1342;
+        --bordo-suave: #8B4A6B;
+        --bordo-transparente: rgba(74, 14, 46, 0.08);
+        --bordo-transparente-hover: rgba(74, 14, 46, 0.12);
+        --ouro: #D4AF37;
+        --ouro-escuro: #996515;
+        --ouro-claro: #F0D68A;
+    }
+
+    /* CARDS BRANCOS COM BORDÔ */
+    .card-bordo-branco {
+        background: white;
+        border: 1px solid rgba(74, 14, 46, 0.15);
+        border-radius: 16px;
+        transition: all 0.3s ease;
+        color: var(--bordo);
+    }
+    
+    .card-bordo-branco:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 8px 25px rgba(74, 14, 46, 0.12);
+        border-color: var(--bordo);
+    }
+    
+    .card-bordo-branco-destaque {
+        background: white;
+        border: 2px solid var(--bordo);
+        border-radius: 16px;
+        transition: all 0.3s ease;
+        color: var(--bordo);
+    }
+    
+    .card-bordo-branco-destaque:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 8px 25px rgba(74, 14, 46, 0.15);
+    }
+    
+    .card-bordo-branco-suave {
+        background: white;
+        border: 1px solid rgba(74, 14, 46, 0.1);
+        border-radius: 16px;
+        transition: all 0.3s ease;
+        color: var(--bordo-suave);
+    }
+    
+    .card-bordo-branco-suave:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 8px 25px rgba(74, 14, 46, 0.1);
+        border-color: var(--bordo-suave);
+    }
+
+    /* NÚMEROS EM DESTAQUE BORDÔ */
+    .numero-bordo {
+        color: var(--bordo);
+        font-weight: 700;
+    }
+    
+    .numero-bordo-claro {
+        color: var(--bordo-claro);
+        font-weight: 700;
+    }
+    
+    .numero-bordo-suave {
+        color: var(--bordo-suave);
+        font-weight: 700;
+    }
+
+    /* BOTÕES DO RITO */
+    .btn-bordo {
+        background: linear-gradient(135deg, var(--bordo), var(--bordo-escuro));
+        border: none;
+        color: white;
+        border-radius: 30px;
+        padding: 8px 24px;
+        transition: all 0.3s;
+    }
+    
+    .btn-bordo:hover {
+        background: linear-gradient(135deg, var(--bordo-claro), var(--bordo));
+        transform: translateY(-2px);
+        color: white;
+        box-shadow: 0 5px 15px rgba(74, 14, 46, 0.3);
+    }
+    
+    .btn-bordo-outline {
+        background: transparent;
+        border: 1px solid var(--bordo);
+        color: var(--bordo);
+        border-radius: 30px;
+        padding: 8px 24px;
+        transition: all 0.3s;
+    }
+    
+    .btn-bordo-outline:hover {
+        background: var(--bordo);
+        color: white;
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(74, 14, 46, 0.2);
+    }
+
+    /* FILTROS */
+    .filtros-card {
+        background: white;
+        border: 1px solid rgba(74, 14, 46, 0.12);
+        border-radius: 16px;
+        overflow: hidden;
+    }
+    
+    .filtros-header {
+        background: var(--bordo-transparente);
+        border-bottom: 1px solid rgba(74, 14, 46, 0.1);
+        padding: 12px 20px;
+    }
+
+    /* TABELA */
+    .table-bordo {
+        margin-bottom: 0;
+    }
+    
+    .table-bordo thead th {
+        background: var(--bordo-transparente);
+        color: var(--bordo);
+        font-weight: 600;
+        border-bottom: 2px solid rgba(74, 14, 46, 0.15);
+    }
+    
+    .table-bordo tbody tr {
+        border-bottom: 1px solid rgba(74, 14, 46, 0.08);
+        transition: all 0.2s;
+    }
+    
+    .table-bordo tbody tr:hover {
+        background: var(--bordo-transparente);
+        cursor: pointer;
+    }
+
+    /* LEGENDA */
+    .legenda-card {
+        background: white;
+        border: 1px solid rgba(74, 14, 46, 0.12);
+        border-radius: 16px;
+    }
+
+    @media (max-width: 768px) {
+        .btn-group {
+            flex-direction: column;
+        }
+        .btn-group .btn {
+            margin-bottom: 5px;
+        }
+        .table-responsive {
+            font-size: 0.85rem;
+        }
+        .table td {
+            min-width: 100px;
+        }
+        td:first-child {
+            min-width: 120px;
+        }
+    }
+</style>
+{% endblock %}
+
 {% block content %}
 <div class="container-fluid py-4">
     <div class="container">
-        <!-- Cabeçalho com botão Voltar -->
+        <!-- Cabeçalho -->
         <div class="d-flex justify-content-between align-items-center mb-4">
             <h2>
-                <i class="bi bi-files"></i> 
-                Atas de Reuniões
-                <span class="badge bg-primary">{{ estatisticas.total_atas }}</span>
+                <i class="bi bi-files" style="color: var(--bordo);"></i> 
+                <span style="color: var(--bordo);">Atas de Reuniões</span>
+                <span class="badge" style="background: var(--bordo);">{{ estatisticas.total_atas }}</span>
                 {% if estatisticas.pendentes > 0 %}
                 <small class="text-muted fs-6">({{ estatisticas.pendentes }} pendentes)</small>
                 {% endif %}
             </h2>
             <div>
-                <a href="/dashboard" class="btn btn-outline-secondary">
+                <a href="/dashboard" class="btn-bordo-outline">
                     <i class="bi bi-arrow-left"></i> Voltar ao Dashboard
                 </a>
             </div>
@@ -25,53 +194,53 @@
         <!-- Cards de Estatísticas -->
         <div class="row mb-4">
             <div class="col-md-3">
-                <div class="card bg-primary text-white shadow">
+                <div class="card-bordo-branco shadow-sm">
                     <div class="card-body">
                         <div class="d-flex justify-content-between align-items-center">
                             <div>
-                                <h6 class="card-title mb-0">Total de Atas</h6>
-                                <h2 class="mb-0">{{ estatisticas.total_atas }}</h2>
+                                <h6 class="card-title mb-0" style="color: var(--bordo-suave);">Total de Atas</h6>
+                                <h2 class="mb-0 fw-bold numero-bordo">{{ estatisticas.total_atas }}</h2>
                             </div>
-                            <i class="bi bi-files fs-1"></i>
+                            <i class="bi bi-files fs-1" style="color: var(--bordo); opacity: 0.6;"></i>
                         </div>
                     </div>
                 </div>
             </div>
             <div class="col-md-3">
-                <div class="card bg-success text-white shadow">
+                <div class="card-bordo-branco-destaque shadow-sm">
                     <div class="card-body">
                         <div class="d-flex justify-content-between align-items-center">
                             <div>
-                                <h6 class="card-title mb-0">Aprovadas</h6>
-                                <h2 class="mb-0">{{ estatisticas.aprovadas }}</h2>
+                                <h6 class="card-title mb-0" style="color: var(--bordo);">Aprovadas</h6>
+                                <h2 class="mb-0 fw-bold numero-bordo">{{ estatisticas.aprovadas }}</h2>
                             </div>
-                            <i class="bi bi-check-circle-fill fs-1"></i>
+                            <i class="bi bi-check-circle-fill fs-1" style="color: #10b981; opacity: 0.7;"></i>
                         </div>
                     </div>
                 </div>
             </div>
             <div class="col-md-3">
-                <div class="card bg-warning text-dark shadow">
+                <div class="card-bordo-branco shadow-sm">
                     <div class="card-body">
                         <div class="d-flex justify-content-between align-items-center">
                             <div>
-                                <h6 class="card-title mb-0">Pendentes</h6>
-                                <h2 class="mb-0">{{ estatisticas.pendentes }}</h2>
+                                <h6 class="card-title mb-0" style="color: var(--bordo-suave);">Pendentes</h6>
+                                <h2 class="mb-0 fw-bold numero-bordo-claro">{{ estatisticas.pendentes }}</h2>
                             </div>
-                            <i class="bi bi-clock-history fs-1"></i>
+                            <i class="bi bi-clock-history fs-1" style="color: #f59e0b; opacity: 0.7;"></i>
                         </div>
                     </div>
                 </div>
             </div>
             <div class="col-md-3">
-                <div class="card bg-info text-white shadow">
+                <div class="card-bordo-branco-suave shadow-sm">
                     <div class="card-body">
                         <div class="d-flex justify-content-between align-items-center">
                             <div>
-                                <h6 class="card-title mb-0">Total Assinaturas</h6>
-                                <h2 class="mb-0">{{ estatisticas.total_assinaturas }}</h2>
+                                <h6 class="card-title mb-0" style="color: var(--bordo-suave);">Total Assinaturas</h6>
+                                <h2 class="mb-0 fw-bold numero-bordo-suave">{{ estatisticas.total_assinaturas }}</h2>
                             </div>
-                            <i class="bi bi-pen-fill fs-1"></i>
+                            <i class="bi bi-pen-fill fs-1" style="color: #8B4A6B; opacity: 0.6;"></i>
                         </div>
                     </div>
                 </div>
@@ -81,53 +250,53 @@
         <!-- Segunda linha de cards -->
         <div class="row mb-4">
             <div class="col-md-3">
-                <div class="card bg-secondary text-white shadow">
+                <div class="card-bordo-branco-suave shadow-sm">
                     <div class="card-body">
                         <div class="d-flex justify-content-between align-items-center">
                             <div>
-                                <h6 class="card-title mb-0">Este Mês</h6>
-                                <h2 class="mb-0">{{ estatisticas.atas_mes }}</h2>
+                                <h6 class="card-title mb-0" style="color: var(--bordo-suave);">Este Mês</h6>
+                                <h2 class="mb-0 fw-bold numero-bordo-suave">{{ estatisticas.atas_mes }}</h2>
                             </div>
-                            <i class="bi bi-calendar-month fs-1"></i>
+                            <i class="bi bi-calendar-month fs-1" style="color: #3b82f6; opacity: 0.6;"></i>
                         </div>
                     </div>
                 </div>
             </div>
             <div class="col-md-3">
-                <div class="card bg-dark text-white shadow">
+                <div class="card-bordo-branco shadow-sm">
                     <div class="card-body">
                         <div class="d-flex justify-content-between align-items-center">
                             <div>
-                                <h6 class="card-title mb-0">Exibidas</h6>
-                                <h2 class="mb-0">{{ estatisticas.exibidas }}</h2>
+                                <h6 class="card-title mb-0" style="color: var(--bordo-suave);">Exibidas</h6>
+                                <h2 class="mb-0 fw-bold numero-bordo-claro">{{ estatisticas.exibidas }}</h2>
                             </div>
-                            <i class="bi bi-funnel-fill fs-1"></i>
+                            <i class="bi bi-funnel-fill fs-1" style="color: #64748b; opacity: 0.6;"></i>
                         </div>
                     </div>
                 </div>
             </div>
             <div class="col-md-3">
-                <div class="card shadow" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white;">
+                <div class="card-bordo-branco-destaque shadow-sm">
                     <div class="card-body">
                         <div class="d-flex justify-content-between align-items-center">
                             <div>
-                                <h6 class="card-title mb-0">Taxa Aprovação</h6>
-                                <h2 class="mb-0">{{ "%.1f"|format(estatisticas.taxa_aprovacao) }}%</h2>
+                                <h6 class="card-title mb-0" style="color: var(--bordo);">Taxa Aprovação</h6>
+                                <h2 class="mb-0 fw-bold numero-bordo">{{ "%.1f"|format(estatisticas.taxa_aprovacao) }}%</h2>
                             </div>
-                            <i class="bi bi-graph-up fs-1"></i>
+                            <i class="bi bi-graph-up fs-1" style="color: var(--bordo); opacity: 0.6;"></i>
                         </div>
                     </div>
                 </div>
             </div>
             <div class="col-md-3">
-                <div class="card shadow" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); color: white;">
+                <div class="card-bordo-branco shadow-sm">
                     <div class="card-body">
                         <div class="d-flex justify-content-between align-items-center">
                             <div>
-                                <h6 class="card-title mb-0">Média Assinaturas</h6>
-                                <h2 class="mb-0">{{ "%.1f"|format(estatisticas.media_assinaturas) }}</h2>
+                                <h6 class="card-title mb-0" style="color: var(--bordo-suave);">Média Assinaturas</h6>
+                                <h2 class="mb-0 fw-bold numero-bordo">{{ "%.1f"|format(estatisticas.media_assinaturas) }}</h2>
                             </div>
-                            <i class="bi bi-person-check fs-1"></i>
+                            <i class="bi bi-person-check fs-1" style="color: var(--bordo); opacity: 0.6;"></i>
                         </div>
                     </div>
                 </div>
@@ -135,9 +304,9 @@
         </div>
 
         <!-- Filtros -->
-        <div class="card shadow mb-4">
-            <div class="card-header bg-light">
-                <h6 class="mb-0"><i class="bi bi-funnel"></i> Filtros</h6>
+        <div class="filtros-card shadow-sm mb-4">
+            <div class="filtros-header">
+                <h6 class="mb-0" style="color: var(--bordo);"><i class="bi bi-funnel"></i> Filtros</h6>
             </div>
             <div class="card-body">
                 <form method="GET" class="row g-3">
@@ -163,7 +332,7 @@
                                value="{{ filtros.reuniao_titulo }}" placeholder="Buscar...">
                     </div>
                     <div class="col-md-1 d-flex align-items-end">
-                        <button type="submit" class="btn btn-primary w-100">
+                        <button type="submit" class="btn-bordo w-100">
                             <i class="bi bi-search"></i>
                         </button>
                     </div>
@@ -172,11 +341,11 @@
         </div>
 
         <!-- Lista de Atas -->
-        <div class="card shadow">
-            <div class="card-body">
+        <div class="filtros-card shadow-sm">
+            <div class="card-body p-0">
                 <div class="table-responsive">
-                    <table class="table table-hover" id="tabelaAtas">
-                        <thead class="table-light">
+                    <table class="table table-bordo" id="tabelaAtas">
+                        <thead>
                             <tr>
                                 <th style="width: 10%">Nº Ata</th>
                                 <th style="width: 25%">Reunião</th>
@@ -259,22 +428,17 @@
                                     {% endif %}
                                 </td>
                                <td class="align-middle">
-    <div>
-        <i class="bi bi-person"></i> 
-        <strong>{{ ata.redator_nome_completo or ata.redator_nome or 'Redator não informado' }}</strong>
-    </div>
-    {% if ata.secretario_nome %}
-    <br>
-    <small class="text-muted">
-        <i class="bi bi-journal"></i> Secretário: {{ ata.secretario_nome }}
-    </small>
-    {% elif ata.secretario_id %}
-    <br>
-    <small class="text-muted">
-        <i class="bi bi-journal"></i> Secretário ID: {{ ata.secretario_id }}
-    </small>
-    {% endif %}
-</td>
+                                    <div>
+                                        <i class="bi bi-person"></i> 
+                                        <strong>{{ ata.redator_nome_completo or ata.redator_nome or 'Redator não informado' }}</strong>
+                                    </div>
+                                    {% if ata.secretario_nome %}
+                                    <br>
+                                    <small class="text-muted">
+                                        <i class="bi bi-journal"></i> Secretário: {{ ata.secretario_nome }}
+                                    </small>
+                                    {% endif %}
+                                </td>
                                 <td class="align-middle">
                                     {% if ata.aprovada == 1 %}
                                         <span class="badge bg-success">
@@ -336,7 +500,6 @@
                                             <i class="bi bi-pencil"></i>
                                         </a>
                                         {% endif %}
-                                        <!-- PDF Oficial -->
                                         <a href="/atas/{{ ata.id }}/pdf-oficial" class="btn btn-primary" title="Baixar PDF Oficial">
                                             <i class="bi bi-file-pdf-fill"></i>
                                         </a>
@@ -376,7 +539,7 @@
                                     <i class="bi bi-inbox fs-1"></i><br>
                                     Nenhuma ata encontrada
                                     <br>
-                                    <a href="/reunioes" class="btn btn-primary mt-3">
+                                    <a href="/reunioes" class="btn-bordo mt-3">
                                         <i class="bi bi-calendar"></i> Ir para Reuniões
                                     </a>
                                 </td>
@@ -388,44 +551,43 @@
             </div>
         </div>
 
-<!-- Resumo por Período -->
-{% if atas %}
-<div class="card shadow mt-4">
-    <div class="card-header bg-light">
-        <h6 class="mb-0"><i class="bi bi-calendar-range"></i> Resumo por Período</h6>
-    </div>
-    <div class="card-body">
-        <div class="row">
-            <div class="col-md-6">
-                <h6><i class="bi bi-file-text"></i> Últimas 5 Atas</h6>
-                <ul class="list-group">
-                    {% for ata in atas[:5] %}
-                    <li class="list-group-item d-flex justify-content-between align-items-center">
-                        <div>
-                            <strong>{{ "%03d"|format(ata.numero_ata or loop.index|int) }}/{{ ata.ano_ata or (ata.reuniao_data.strftime('%Y') if ata.reuniao_data else (ata.data.strftime('%Y') if ata.data else '2026')) }}</strong> - 
-                            {{ ata.reuniao_titulo_original or ata.reuniao_titulo or 'Sem título' }}
-                            <br>
-                            <small class="text-muted">
-                                <i class="bi bi-person"></i> 
-                                <!-- CORRIGIDO: Usando redator_nome_completo -->
-                                {{ ata.redator_nome_completo or ata.redator_nome or 'Redator não informado' }}
-                            </small>
-                            {% if ata.data %}
-                            <br>
-                            <small class="text-muted">
-                                <i class="bi bi-calendar"></i> 
-                                {{ ata.data.strftime('%d/%m/%Y') if ata.data else '-' }}
-                            </small>
-                            {% endif %}
-                        </div>
-                        <span class="badge {% if ata.aprovada %}bg-success{% else %}bg-warning{% endif %}">
-                            {{ 'Aprovada' if ata.aprovada else 'Pendente' }}
-                        </span>
-                    </li>
-                    {% endfor %}
-                </ul>
+        <!-- Resumo por Período -->
+        {% if atas %}
+        <div class="legenda-card shadow-sm mt-4">
+            <div class="card-header" style="background: var(--bordo-transparente); border-bottom: 1px solid rgba(74, 14, 46, 0.1);">
+                <h6 class="mb-0" style="color: var(--bordo);"><i class="bi bi-calendar-range"></i> Resumo por Período</h6>
             </div>
-            <div class="col-md-6">
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <h6><i class="bi bi-file-text"></i> Últimas 5 Atas</h6>
+                        <ul class="list-group">
+                            {% for ata in atas[:5] %}
+                            <li class="list-group-item d-flex justify-content-between align-items-center">
+                                <div>
+                                    <strong>{{ "%03d"|format(ata.numero_ata or loop.index|int) }}/{{ ata.ano_ata or (ata.reuniao_data.strftime('%Y') if ata.reuniao_data else (ata.data.strftime('%Y') if ata.data else '2026')) }}</strong> - 
+                                    {{ ata.reuniao_titulo_original or ata.reuniao_titulo or 'Sem título' }}
+                                    <br>
+                                    <small class="text-muted">
+                                        <i class="bi bi-person"></i> 
+                                        {{ ata.redator_nome_completo or ata.redator_nome or 'Redator não informado' }}
+                                    </small>
+                                    {% if ata.data %}
+                                    <br>
+                                    <small class="text-muted">
+                                        <i class="bi bi-calendar"></i> 
+                                        {{ ata.data.strftime('%d/%m/%Y') if ata.data else '-' }}
+                                    </small>
+                                    {% endif %}
+                                </div>
+                                <span class="badge {% if ata.aprovada %}bg-success{% else %}bg-warning{% endif %}">
+                                    {{ 'Aprovada' if ata.aprovada else 'Pendente' }}
+                                </span>
+                            </li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                    <div class="col-md-6">
                         <h6><i class="bi bi-calendar"></i> Distribuição por Ano</h6>
                         <div id="graficoAnos" class="mt-3">
                             {% set anos = {} %}
@@ -559,38 +721,22 @@ function confirmarExclusao() {
 
     fetch(`/atas/${ataParaExcluir}/excluir`, {
         method: 'POST',
-        headers: {
-            'Content-Type': 'application/json'
-        }
+        headers: { 'Content-Type': 'application/json' }
     })
     .then(response => response.json())
     .then(data => {
         modalConfirmExcluir.hide();
         
         if (data.success) {
-            mostrarAlerta(
-                'success',
-                '<i class="bi bi-check-circle"></i> Ata excluída com sucesso!',
-                4000
-            );
-            setTimeout(() => {
-                location.reload();
-            }, 800);
+            mostrarAlerta('success', '<i class="bi bi-check-circle"></i> Ata excluída com sucesso!', 4000);
+            setTimeout(() => { location.reload(); }, 800);
         } else {
-            mostrarAlerta(
-                'danger',
-                `<i class="bi bi-exclamation-triangle"></i> ${data.error || 'Erro ao excluir ata'}`,
-                5000
-            );
+            mostrarAlerta('danger', `<i class="bi bi-exclamation-triangle"></i> ${data.error || 'Erro ao excluir ata'}`, 5000);
         }
     })
     .catch(error => {
         modalConfirmExcluir.hide();
-        mostrarAlerta(
-            'danger',
-            `<i class="bi bi-bug"></i> Erro na requisição: ${error.message}`,
-            5000
-        );
+        mostrarAlerta('danger', `<i class="bi bi-bug"></i> Erro na requisição: ${error.message}`, 5000);
     })
     .finally(() => {
         btn.innerHTML = originalText;
@@ -611,11 +757,7 @@ function mostrarAlerta(tipo, mensagem, timeout = 5000) {
     `;
 
     alertContainer.insertAdjacentHTML('beforeend', alertHtml);
-
-    setTimeout(() => {
-        const el = document.getElementById(alertId);
-        if (el) el.remove();
-    }, timeout);
+    setTimeout(() => { const el = document.getElementById(alertId); if (el) el.remove(); }, timeout);
 }
 
 function criarContainerAlerta() {
@@ -630,111 +772,4 @@ function criarContainerAlerta() {
     return container;
 }
 </script>
-
-<style>
-    .card {
-        border-radius: 10px;
-        overflow: hidden;
-        transition: transform 0.2s ease;
-    }
-    .card:hover {
-        transform: translateY(-4px);
-    }
-    .card-header {
-        font-weight: 600;
-    }
-    .table-hover tbody tr:hover {
-        cursor: pointer;
-        background-color: rgba(0, 123, 255, 0.05);
-    }
-    .badge {
-        font-size: 0.8rem;
-        padding: 0.4rem 0.6rem;
-    }
-    .btn-group-sm .btn {
-        padding: 0.25rem 0.5rem;
-        margin: 0 2px;
-    }
-    th {
-        position: sticky;
-        top: 0;
-        background-color: #f8f9fa;
-        z-index: 10;
-    }
-    .table-responsive {
-        max-height: 70vh;
-        overflow-y: auto;
-    }
-    
-    /* Animações */
-    @keyframes fadeIn {
-        from { opacity: 0; transform: translateY(-20px); }
-        to { opacity: 1; transform: translateY(0); }
-    }
-    
-    .alert {
-        animation: fadeIn 0.3s ease-out;
-        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-    }
-    
-    /* Modal personalizado */
-    .modal-content {
-        border-radius: 12px;
-        overflow: hidden;
-    }
-    
-    .modal-header {
-        border-bottom: 2px solid rgba(0,0,0,0.1);
-    }
-    
-    .modal-footer {
-        border-top: 1px solid rgba(0,0,0,0.1);
-    }
-    
-    /* Botões com ícones */
-    .btn i {
-        margin-right: 5px;
-    }
-    
-    /* Destaque para o número da ata */
-    td:first-child strong {
-        font-size: 1.1rem;
-        color: #0d6efd;
-    }
-    
-    /* Estilo para o resumo */
-    .list-group-item {
-        transition: all 0.2s ease;
-    }
-    
-    .list-group-item:hover {
-        transform: translateX(5px);
-        background-color: #f8f9fa;
-    }
-    
-    /* Melhorias na tabela */
-    .table td {
-        vertical-align: middle;
-    }
-    
-    /* Responsividade */
-    @media (max-width: 768px) {
-        .btn-group {
-            flex-direction: column;
-        }
-        .btn-group .btn {
-            margin-bottom: 5px;
-        }
-        .table-responsive {
-            font-size: 0.85rem;
-        }
-        .table td {
-            min-width: 100px;
-        }
-        td:first-child {
-            min-width: 120px;
-        }
-    }
-</style>
-
 {% endblock %}

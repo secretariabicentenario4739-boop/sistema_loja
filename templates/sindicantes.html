@@ -6,74 +6,139 @@
 {{ super() }}
 <style>
     :root {
-        --primary: #4f46e5;
-        --primary-dark: #4338ca;
-        --success: #10b981;
-        --warning: #f59e0b;
-        --danger: #ef4444;
-        --info: #3b82f6;
-        --secondary: #64748b;
+        --bordo: #4A0E2E;
+        --bordo-escuro: #3A0A24;
+        --bordo-claro: #6B1342;
+        --bordo-suave: #8B4A6B;
+        --bordo-transparente: rgba(74, 14, 46, 0.08);
+        --bordo-transparente-hover: rgba(74, 14, 46, 0.12);
+        --ouro: #D4AF37;
+        --ouro-escuro: #996515;
+        --ouro-claro: #F0D68A;
     }
 
-    .card-modern {
-        border: none;
-        border-radius: 20px;
-        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
-        transition: transform 0.2s, box-shadow 0.2s;
-        overflow: hidden;
-        height: 100%;
-    }
-    
-    .card-modern:hover {
-        transform: translateY(-3px);
-        box-shadow: 0 12px 35px rgba(0, 0, 0, 0.12);
-    }
-
-    .card-header-gradient {
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        border: none;
-        padding: 1.25rem 1.5rem;
-    }
-
-    .card-header-secondary {
-        background: linear-gradient(135deg, #64748b 0%, #475569 100%);
-        border: none;
-        padding: 1.25rem 1.5rem;
-    }
-
-    .card-header-success {
-        background: linear-gradient(135deg, #10b981 0%, #059669 100%);
-        border: none;
-        padding: 1.25rem 1.5rem;
-    }
-
-    .stat-card {
+    /* CARDS BRANCOS COM BORDÔ */
+    .card-bordo-branco {
         background: white;
+        border: 1px solid rgba(74, 14, 46, 0.15);
         border-radius: 16px;
-        padding: 1.25rem;
-        text-align: center;
-        transition: all 0.2s;
-        border: 1px solid #e2e8f0;
+        transition: all 0.3s ease;
+        color: var(--bordo);
+    }
+    
+    .card-bordo-branco:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 8px 25px rgba(74, 14, 46, 0.12);
+        border-color: var(--bordo);
+    }
+    
+    .card-bordo-branco-destaque {
+        background: white;
+        border: 2px solid var(--bordo);
+        border-radius: 16px;
+        transition: all 0.3s ease;
+        color: var(--bordo);
+    }
+    
+    .card-bordo-branco-destaque:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 8px 25px rgba(74, 14, 46, 0.15);
+    }
+    
+    .card-bordo-branco-suave {
+        background: white;
+        border: 1px solid rgba(74, 14, 46, 0.1);
+        border-radius: 16px;
+        transition: all 0.3s ease;
+        color: var(--bordo-suave);
+    }
+    
+    .card-bordo-branco-suave:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 8px 25px rgba(74, 14, 46, 0.1);
+        border-color: var(--bordo-suave);
+    }
+
+    /* NÚMEROS EM DESTAQUE BORDÔ */
+    .numero-bordo {
+        color: var(--bordo);
+        font-weight: 700;
+    }
+    
+    .numero-bordo-claro {
+        color: var(--bordo-claro);
+        font-weight: 700;
+    }
+    
+    .numero-bordo-suave {
+        color: var(--bordo-suave);
+        font-weight: 700;
+    }
+
+    /* BOTÕES DO RITO */
+    .btn-bordo {
+        background: linear-gradient(135deg, var(--bordo), var(--bordo-escuro));
+        border: none;
+        color: white;
+        border-radius: 30px;
+        padding: 8px 24px;
+        transition: all 0.3s;
+    }
+    
+    .btn-bordo:hover {
+        background: linear-gradient(135deg, var(--bordo-claro), var(--bordo));
+        transform: translateY(-2px);
+        color: white;
+        box-shadow: 0 5px 15px rgba(74, 14, 46, 0.3);
+    }
+    
+    .btn-bordo-outline {
+        background: transparent;
+        border: 1px solid var(--bordo);
+        color: var(--bordo);
+        border-radius: 30px;
+        padding: 8px 24px;
+        transition: all 0.3s;
+    }
+    
+    .btn-bordo-outline:hover {
+        background: var(--bordo);
+        color: white;
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(74, 14, 46, 0.2);
+    }
+
+    /* CARDS DE AÇÃO */
+    .card-acao {
+        background: white;
+        border: 1px solid rgba(74, 14, 46, 0.12);
+        border-radius: 20px;
+        overflow: hidden;
+        transition: all 0.3s ease;
         height: 100%;
     }
     
-    .stat-card:hover {
-        transform: translateY(-3px);
-        box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
-    }
-    
-    .stat-number {
-        font-size: 2.5rem;
-        font-weight: 700;
-        line-height: 1;
-    }
-    
-    .stat-label {
-        font-size: 0.85rem;
-        color: #64748b;
-        margin-top: 0.5rem;
+    .card-acao:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 12px 30px rgba(74, 14, 46, 0.1);
+        border-color: var(--bordo);
     }
 
+    .card-header-acao {
+        background: var(--bordo);
+        border: none;
+        padding: 1.25rem 1.5rem;
+        color: white;
+    }
+    
+    .card-header-acao-suave {
+        background: var(--bordo-suave);
+        border: none;
+        padding: 1.25rem 1.5rem;
+        color: white;
+    }
+
+    /* BADGES DE GRAU */
     .badge-grau {
         padding: 4px 10px;
         border-radius: 20px;
@@ -96,7 +161,92 @@
     
     .badge-superior {
         background: #e0e7ff;
-        color: #4f46e5;
+        color: var(--bordo);
+    }
+
+    /* ESTATÍSTICAS */
+    .stat-card {
+        background: white;
+        border-radius: 16px;
+        padding: 1.25rem;
+        text-align: center;
+        transition: all 0.2s;
+        border: 1px solid rgba(74, 14, 46, 0.12);
+        height: 100%;
+    }
+    
+    .stat-card:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 8px 25px rgba(74, 14, 46, 0.1);
+        border-color: var(--bordo);
+    }
+    
+    .stat-number {
+        font-size: 2.5rem;
+        font-weight: 700;
+        line-height: 1;
+    }
+    
+    .stat-label {
+        font-size: 0.85rem;
+        color: #64748b;
+        margin-top: 0.5rem;
+    }
+
+    /* TABELA */
+    .table-sindicantes {
+        margin-bottom: 0;
+    }
+    
+    .table-sindicantes thead th {
+        background: var(--bordo-transparente);
+        color: var(--bordo);
+        font-weight: 600;
+        border-bottom: 2px solid rgba(74, 14, 46, 0.15);
+        padding: 1rem;
+        font-size: 0.85rem;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+    
+    .table-sindicantes tbody tr {
+        transition: background 0.2s;
+        border-bottom: 1px solid rgba(74, 14, 46, 0.08);
+    }
+    
+    .table-sindicantes tbody tr:hover {
+        background: var(--bordo-transparente);
+        cursor: pointer;
+    }
+    
+    .table-sindicantes td {
+        padding: 1rem;
+        vertical-align: middle;
+    }
+
+    /* FORMULÁRIOS */
+    .form-control-custom {
+        border-radius: 12px;
+        border: 1px solid rgba(74, 14, 46, 0.2);
+        padding: 0.75rem 1rem;
+        transition: all 0.2s;
+    }
+    
+    .form-control-custom:focus {
+        border-color: var(--bordo);
+        box-shadow: 0 0 0 3px rgba(74, 14, 46, 0.1);
+    }
+
+    .form-select-custom {
+        border-radius: 12px;
+        border: 1px solid rgba(74, 14, 46, 0.2);
+        padding: 0.75rem 1rem;
+        transition: all 0.2s;
+    }
+    
+    .form-select-custom:focus {
+        border-color: var(--bordo);
+        box-shadow: 0 0 0 3px rgba(74, 14, 46, 0.1);
     }
 
     .btn-icon {
@@ -114,57 +264,11 @@
         transform: translateY(-2px);
     }
 
-    .form-control-custom {
-        border-radius: 12px;
-        border: 1px solid #e2e8f0;
-        padding: 0.75rem 1rem;
-        transition: all 0.2s;
-    }
-    
-    .form-control-custom:focus {
-        border-color: var(--primary);
-        box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
-    }
-
-    .form-select-custom {
-        border-radius: 12px;
-        border: 1px solid #e2e8f0;
-        padding: 0.75rem 1rem;
-        transition: all 0.2s;
-    }
-    
-    .form-select-custom:focus {
-        border-color: var(--primary);
-        box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
-    }
-
-    .table-sindicantes {
-        margin-bottom: 0;
-    }
-    
-    .table-sindicantes thead th {
-        background: #f8fafc;
-        border-bottom: 2px solid #e2e8f0;
-        color: #1e293b;
-        font-weight: 600;
-        padding: 1rem;
-        font-size: 0.85rem;
-        text-transform: uppercase;
-        letter-spacing: 0.5px;
-    }
-    
-    .table-sindicantes tbody tr {
-        transition: background 0.2s;
-        border-bottom: 1px solid #f1f5f9;
-    }
-    
-    .table-sindicantes tbody tr:hover {
-        background: #f8fafc;
-    }
-    
-    .table-sindicantes td {
-        padding: 1rem;
-        vertical-align: middle;
+    /* LEGENDA */
+    .legenda-card {
+        background: white;
+        border: 1px solid rgba(74, 14, 46, 0.12);
+        border-radius: 16px;
     }
 
     @keyframes fadeIn {
@@ -202,13 +306,13 @@
         <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-3">
             <div>
                 <h2 class="fw-bold mb-1">
-                    <i class="bi bi-person-badge-fill text-primary me-2"></i>
-                    Gerenciar Sindicantes
+                    <i class="bi bi-person-badge-fill" style="color: var(--bordo);"></i>
+                    <span style="color: var(--bordo);">Gerenciar Sindicantes</span>
                 </h2>
                 <p class="text-muted mb-0">Gerencie os sindicantes responsáveis pelas avaliações dos candidatos</p>
             </div>
             <div>
-                <a href="/dashboard" class="btn btn-outline-secondary">
+                <a href="/dashboard" class="btn-bordo-outline">
                     <i class="bi bi-arrow-left me-1"></i> Voltar
                 </a>
             </div>
@@ -217,29 +321,29 @@
         <!-- Cards de Estatísticas -->
         <div class="row g-3 mb-4">
             <div class="col-md-4">
-                <div class="stat-card text-center">
-                    <div class="stat-number text-primary">{{ sindicantes|length }}</div>
+                <div class="stat-card">
+                    <div class="stat-number numero-bordo">{{ sindicantes|length }}</div>
                     <div class="stat-label">Sindicantes Ativos</div>
                     <div class="mt-2">
-                        <span class="badge bg-primary bg-opacity-10 text-primary">Total</span>
+                        <span class="badge" style="background: var(--bordo-transparente); color: var(--bordo);">Total</span>
                     </div>
                 </div>
             </div>
             <div class="col-md-4">
-                <div class="stat-card text-center">
-                    <div class="stat-number text-success">{{ obreiros_mestres|length }}</div>
+                <div class="stat-card">
+                    <div class="stat-number numero-bordo-claro">{{ obreiros_mestres|length }}</div>
                     <div class="stat-label">Mestres Disponíveis</div>
                     <div class="mt-2">
-                        <span class="badge bg-success bg-opacity-10 text-success">Prontos para promoção</span>
+                        <span class="badge" style="background: rgba(16, 185, 129, 0.1); color: #059669;">Prontos para promoção</span>
                     </div>
                 </div>
             </div>
             <div class="col-md-4">
-                <div class="stat-card text-center">
-                    <div class="stat-number text-warning">{{ lojas|length }}</div>
+                <div class="stat-card">
+                    <div class="stat-number numero-bordo-suave">{{ lojas|length }}</div>
                     <div class="stat-label">Lojas Cadastradas</div>
                     <div class="mt-2">
-                        <span class="badge bg-warning bg-opacity-10 text-warning">Oficinas</span>
+                        <span class="badge" style="background: rgba(245, 158, 11, 0.1); color: #d97706;">Oficinas</span>
                     </div>
                 </div>
             </div>
@@ -249,21 +353,21 @@
         <div class="row g-4 mb-4">
             <!-- Promover Mestre a Sindicante -->
             <div class="col-md-6">
-                <div class="card-modern">
-                    <div class="card-header-success text-white">
+                <div class="card-acao">
+                    <div class="card-header-acao">
                         <h5 class="mb-0 fw-bold">
                             <i class="bi bi-arrow-up-circle me-2"></i> Promover a Sindicante
                         </h5>
                     </div>
                     <div class="card-body p-4">
                         <form method="POST" id="formPromover">
-                            <div class="alert alert-info mb-3">
+                            <div class="alert alert-info mb-3" style="background: var(--bordo-transparente); border-color: var(--bordo); color: var(--bordo);">
                                 <i class="bi bi-info-circle me-2"></i> 
                                 Selecione um Mestre ou grau superior da lista abaixo para promovê-lo a sindicante.
                             </div>
                             
                             <div class="mb-3">
-                                <label class="form-label fw-bold">Selecionar Obreiro *</label>
+                                <label class="form-label fw-bold" style="color: var(--bordo);">Selecionar Obreiro *</label>
                                 <select class="form-select form-select-custom" name="obreiro_id" id="obreiroSelect" required>
                                     <option value="">Selecione um Mestre ou grau superior...</option>
                                     {% for obreiro in obreiros_mestres %}
@@ -291,13 +395,13 @@
                                 {% endif %}
                             </div>
                             
-                            <div id="infoObreiroSelecionado" class="alert alert-secondary mb-3" style="display: none;">
-                                <i class="bi bi-star-fill text-warning me-2"></i> 
+                            <div id="infoObreiroSelecionado" class="alert alert-secondary mb-3" style="display: none; background: var(--bordo-transparente); border-color: var(--bordo);">
+                                <i class="bi bi-star-fill me-2" style="color: var(--ouro);"></i> 
                                 <strong>Obreiro selecionado:</strong> <span id="nomeSelecionado"></span><br>
                                 <strong>Grau:</strong> <span id="grauSelecionado"></span>
                             </div>
                             
-                            <button type="submit" class="btn btn-success w-100 py-2 fw-bold" {% if not obreiros_mestres %}disabled{% endif %}>
+                            <button type="submit" class="btn-bordo w-100 py-2 fw-bold" {% if not obreiros_mestres %}disabled{% endif %}>
                                 <i class="bi bi-arrow-up-circle me-2"></i> Promover a Sindicante
                             </button>
                         </form>
@@ -307,44 +411,44 @@
 
             <!-- Cadastrar Novo Sindicante -->
             <div class="col-md-6">
-                <div class="card-modern">
-                    <div class="card-header-secondary text-white">
+                <div class="card-acao">
+                    <div class="card-header-acao-suave">
                         <h5 class="mb-0 fw-bold">
                             <i class="bi bi-person-plus me-2"></i> Cadastrar Novo Sindicante
                         </h5>
                     </div>
                     <div class="card-body p-4">
                         <form method="POST" id="formNovoSindicante">
-                            <div class="alert alert-secondary mb-3">
+                            <div class="alert alert-secondary mb-3" style="background: var(--bordo-transparente); border-color: var(--bordo); color: var(--bordo);">
                                 <i class="bi bi-info-circle me-2"></i> 
                                 Cadastre um novo sindicante (não vinculado a um obreiro existente).
                             </div>
                             
                             <div class="row">
                                 <div class="col-md-6 mb-3">
-                                    <label class="form-label fw-bold">Usuário *</label>
+                                    <label class="form-label fw-bold" style="color: var(--bordo);">Usuário *</label>
                                     <input type="text" class="form-control form-control-custom" name="usuario" id="usuario" required>
                                     <div class="form-text text-muted">Nome de usuário para login</div>
                                 </div>
                                 <div class="col-md-6 mb-3">
-                                    <label class="form-label fw-bold">Senha *</label>
+                                    <label class="form-label fw-bold" style="color: var(--bordo);">Senha *</label>
                                     <input type="password" class="form-control form-control-custom" name="senha" id="senha" required>
                                     <div class="form-text text-muted">Mínimo de 6 caracteres</div>
                                 </div>
                             </div>
                             
                             <div class="mb-3">
-                                <label class="form-label fw-bold">Nome Completo</label>
+                                <label class="form-label fw-bold" style="color: var(--bordo);">Nome Completo</label>
                                 <input type="text" class="form-control form-control-custom" name="nome_completo" id="nome_completo">
                             </div>
                             
                             <div class="row">
                                 <div class="col-md-6 mb-3">
-                                    <label class="form-label fw-bold">CIM Nº</label>
+                                    <label class="form-label fw-bold" style="color: var(--bordo);">CIM Nº</label>
                                     <input type="text" class="form-control form-control-custom" name="cim_numero" id="cim_numero">
                                 </div>
                                 <div class="col-md-6 mb-3">
-                                    <label class="form-label fw-bold">Grau</label>
+                                    <label class="form-label fw-bold" style="color: var(--bordo);">Grau</label>
                                     <select class="form-select form-select-custom" name="grau_atual" id="grau_atual">
                                         <option value="3">Mestre (3º Grau)</option>
                                         <option value="4">Mestre Instalado (4º Grau)</option>
@@ -360,7 +464,7 @@
                             
                             <div class="row">
                                 <div class="col-md-5 mb-3">
-                                    <label class="form-label fw-bold">Loja</label>
+                                    <label class="form-label fw-bold" style="color: var(--bordo);">Loja</label>
                                     <select class="form-select form-select-custom" name="loja_nome" id="lojaSelect">
                                         <option value="">Selecione uma loja...</option>
                                         {% for loja in lojas %}
@@ -373,16 +477,16 @@
                                     </select>
                                 </div>
                                 <div class="col-md-3 mb-3">
-                                    <label class="form-label fw-bold">Nº Loja</label>
+                                    <label class="form-label fw-bold" style="color: var(--bordo);">Nº Loja</label>
                                     <input type="text" class="form-control form-control-custom" name="loja_numero" id="lojaNumero" readonly>
                                 </div>
                                 <div class="col-md-4 mb-3">
-                                    <label class="form-label fw-bold">Oriente</label>
+                                    <label class="form-label fw-bold" style="color: var(--bordo);">Oriente</label>
                                     <input type="text" class="form-control form-control-custom" name="loja_orient" id="lojaOriente" readonly>
                                 </div>
                             </div>
                             
-                            <button type="submit" class="btn btn-primary w-100 py-2 fw-bold">
+                            <button type="submit" class="btn-bordo w-100 py-2 fw-bold">
                                 <i class="bi bi-save me-2"></i> Cadastrar Sindicante
                             </button>
                         </form>
@@ -392,8 +496,8 @@
         </div>
 
         <!-- Lista de Sindicantes -->
-        <div class="card-modern">
-            <div class="card-header-gradient text-white">
+        <div class="card-acao">
+            <div class="card-header-acao">
                 <div class="d-flex justify-content-between align-items-center">
                     <h5 class="mb-0 fw-bold">
                         <i class="bi bi-list-ul me-2"></i> Sindicantes Ativos
@@ -424,9 +528,9 @@
                             <tr>
                                 <td>
                                     <strong><i class="bi bi-person-circle me-1"></i> {{ s.usuario }}</strong>
-                                 </td>
-                                <td>{{ s.nome_completo or '-' }}</td>
-                                <td>{{ s.cim_numero or '-' }}</td>
+                                  </th>
+                                <td>{{ s.nome_completo or '-' }}</th>
+                                <td>{{ s.cim_numero or '-' }}</th>
                                 <td>
                                     {% if s.grau_atual == 3 %}
                                         <span class="badge-grau badge-mestre">
@@ -443,7 +547,7 @@
                                     {% else %}
                                         <span class="badge-grau badge-secondary">Grau {{ s.grau_atual }}</span>
                                     {% endif %}
-                                 </td>
+                                  </th>
                                 <td>
                                     {% if s.loja_nome %}
                                         <i class="bi bi-building me-1 text-muted"></i> {{ s.loja_nome }}
@@ -454,7 +558,7 @@
                                     {% else %}
                                         <span class="text-muted">-</span>
                                     {% endif %}
-                                 </td>
+                                  </th>
                                 <td>
                                     {% if s.telefone %}
                                         <i class="bi bi-whatsapp text-success me-1"></i> {{ s.telefone }}<br>
@@ -465,7 +569,7 @@
                                     {% if not s.telefone and not s.email %}
                                         <span class="text-muted">-</span>
                                     {% endif %}
-                                 </td>
+                                  </th>
                                 <td>
                                     <div class="btn-group btn-group-sm" role="group">
                                         <a href="/obreiros/{{ s.id }}" class="btn btn-info btn-icon" title="Visualizar">
@@ -485,8 +589,8 @@
                                             <i class="bi bi-trash"></i>
                                         </a>
                                     </div>
-                                 </td>
-                             </tr>
+                                  </th>
+                            </tr>
                             {% endfor %}
                         </tbody>
                     </table>
@@ -504,27 +608,27 @@
         <!-- Informações e Legenda -->
         <div class="row g-4 mt-2">
             <div class="col-md-6">
-                <div class="card-modern">
-                    <div class="card-header" style="background: #f8fafc; border-bottom: 1px solid #e2e8f0;">
-                        <h6 class="mb-0 fw-bold">
-                            <i class="bi bi-graph-up text-primary me-2"></i> Informações Importantes
+                <div class="legenda-card">
+                    <div class="card-header" style="background: var(--bordo-transparente); border-bottom: 1px solid rgba(74, 14, 46, 0.1);">
+                        <h6 class="mb-0 fw-bold" style="color: var(--bordo);">
+                            <i class="bi bi-graph-up me-2"></i> Informações Importantes
                         </h6>
                     </div>
                     <div class="card-body">
                         <ul class="list-unstyled mb-0">
                             <li class="mb-2"><i class="bi bi-check-circle-fill text-success me-2"></i> Sindicantes são responsáveis por avaliar candidatos</li>
-                            <li class="mb-2"><i class="bi bi-star-fill text-warning me-2"></i> Apenas <strong>Mestres (3º Grau) ou superiores</strong> podem ser sindicantes</li>
-                            <li class="mb-2"><i class="bi bi-arrow-up-circle-fill text-primary me-2"></i> Promover um Mestre mantém todos os seus dados e histórico</li>
+                            <li class="mb-2"><i class="bi bi-star-fill" style="color: var(--ouro); me-2"></i> Apenas <strong>Mestres (3º Grau) ou superiores</strong> podem ser sindicantes</li>
+                            <li class="mb-2"><i class="bi bi-arrow-up-circle-fill" style="color: var(--bordo); me-2"></i> Promover um Mestre mantém todos os seus dados e histórico</li>
                             <li class="mb-2"><i class="bi bi-arrow-down-circle-fill text-secondary me-2"></i> Rebaixar um sindicante mantém seu grau de Mestre</li>
                         </ul>
                     </div>
                 </div>
             </div>
             <div class="col-md-6">
-                <div class="card-modern">
-                    <div class="card-header" style="background: #f8fafc; border-bottom: 1px solid #e2e8f0;">
-                        <h6 class="mb-0 fw-bold">
-                            <i class="bi bi-palette text-info me-2"></i> Legenda de Graus
+                <div class="legenda-card">
+                    <div class="card-header" style="background: var(--bordo-transparente); border-bottom: 1px solid rgba(74, 14, 46, 0.1);">
+                        <h6 class="mb-0 fw-bold" style="color: var(--bordo);">
+                            <i class="bi bi-palette me-2"></i> Legenda de Graus
                         </h6>
                     </div>
                     <div class="card-body">
@@ -547,11 +651,10 @@
 </div>
 
 <script>
-  // Tornar a linha da tabela clicável para abrir o sindicante
+// Tornar a linha da tabela clicável para abrir o sindicante
 document.addEventListener('DOMContentLoaded', function() {
     const linhas = document.querySelectorAll('#tabelaSindicantes tbody tr');
     linhas.forEach(linha => {
-        // Impedir que o clique em botões dentro da linha dispare o redirecionamento
         const botoes = linha.querySelectorAll('.btn, button, a');
         botoes.forEach(botao => {
             botao.addEventListener('click', function(e) {
@@ -559,10 +662,8 @@ document.addEventListener('DOMContentLoaded', function() {
             });
         });
         
-        // Adicionar cursor pointer e evento de clique
         linha.style.cursor = 'pointer';
         linha.addEventListener('click', function() {
-            // Buscar o link de visualização do obreiro dentro da linha
             const linkVisualizar = this.querySelector('.btn-info[href*="/obreiros/"]');
             if (linkVisualizar) {
                 window.location.href = linkVisualizar.getAttribute('href');

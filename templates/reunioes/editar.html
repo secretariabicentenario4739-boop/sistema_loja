@@ -2,27 +2,131 @@
 
 {% block title %}Editar Reunião - {{ reuniao.titulo }}{% endblock %}
 
+{% block styles %}
+{{ super() }}
+<style>
+    :root {
+        --bordo: #4A0E2E;
+        --bordo-escuro: #3A0A24;
+        --bordo-claro: #6B1342;
+        --bordo-suave: #8B4A6B;
+        --bordo-transparente: rgba(74, 14, 46, 0.08);
+        --bordo-transparente-hover: rgba(74, 14, 46, 0.12);
+        --ouro: #D4AF37;
+        --ouro-escuro: #996515;
+        --ouro-claro: #F0D68A;
+    }
+
+    /* CARDS BRANCOS COM BORDÔ */
+    .card-bordo-branco {
+        background: white;
+        border: 1px solid rgba(74, 14, 46, 0.15);
+        border-radius: 16px;
+        transition: all 0.3s ease;
+    }
+    
+    .card-bordo-branco:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 8px 25px rgba(74, 14, 46, 0.12);
+        border-color: var(--bordo);
+    }
+
+    /* BOTÕES */
+    .btn-bordo {
+        background: linear-gradient(135deg, var(--bordo), var(--bordo-escuro));
+        border: none;
+        color: white;
+        border-radius: 30px;
+        padding: 8px 24px;
+        transition: all 0.3s;
+    }
+    
+    .btn-bordo:hover {
+        background: linear-gradient(135deg, var(--bordo-claro), var(--bordo));
+        transform: translateY(-2px);
+        color: white;
+        box-shadow: 0 5px 15px rgba(74, 14, 46, 0.3);
+    }
+    
+    .btn-bordo-outline {
+        background: transparent;
+        border: 1px solid var(--bordo);
+        color: var(--bordo);
+        border-radius: 30px;
+        padding: 8px 24px;
+        transition: all 0.3s;
+    }
+    
+    .btn-bordo-outline:hover {
+        background: var(--bordo);
+        color: white;
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(74, 14, 46, 0.2);
+    }
+
+    /* FORMULÁRIO */
+    .form-control-custom, .form-select-custom {
+        border-radius: 12px;
+        border: 1px solid rgba(74, 14, 46, 0.2);
+        padding: 0.75rem 1rem;
+        transition: all 0.2s;
+    }
+    
+    .form-control-custom:focus, .form-select-custom:focus {
+        border-color: var(--bordo);
+        box-shadow: 0 0 0 3px rgba(74, 14, 46, 0.1);
+    }
+
+    /* CARDS DE INFORMAÇÃO */
+    .card-info {
+        background: white;
+        border: 1px solid rgba(74, 14, 46, 0.1);
+        border-radius: 16px;
+        transition: all 0.3s ease;
+    }
+    
+    .card-info:hover {
+        transform: translateY(-4px);
+        border-color: var(--bordo);
+        box-shadow: 0 8px 25px rgba(74, 14, 46, 0.1);
+    }
+
+    textarea {
+        font-family: monospace;
+        font-size: 14px;
+    }
+
+    @media (max-width: 768px) {
+        .btn-group {
+            flex-direction: column;
+        }
+        .btn-group .btn {
+            margin-bottom: 5px;
+        }
+    }
+</style>
+{% endblock %}
+
 {% block content %}
 <div class="container-fluid py-4">
     <div class="container">
         <div class="d-flex justify-content-between align-items-center mb-4">
             <h2>
-                <i class="bi bi-pencil-square"></i> 
-                Editar Reunião: {{ reuniao.titulo }}
+                <i class="bi bi-pencil-square" style="color: var(--bordo);"></i> 
+                <span style="color: var(--bordo);">Editar Reunião: {{ reuniao.titulo }}</span>
             </h2>
             <div>
-                <a href="/reunioes/{{ reuniao.id }}" class="btn btn-outline-info me-2">
+                <a href="/reunioes/{{ reuniao.id }}" class="btn-bordo-outline me-2">
                     <i class="bi bi-eye"></i> Visualizar
                 </a>
-                <a href="/reunioes" class="btn btn-outline-secondary">
+                <a href="/reunioes" class="btn-bordo-outline">
                     <i class="bi bi-arrow-left"></i> Voltar
                 </a>
             </div>
         </div>
 
-       
-        <div class="card shadow">
-            <div class="card-header bg-primary text-white">
+        <div class="card-bordo-branco shadow-sm">
+            <div class="card-header" style="background: var(--bordo); border-bottom: none; color: white;">
                 <h5 class="mb-0"><i class="bi bi-calendar-event"></i> Editar Dados da Reunião</h5>
             </div>
             <div class="card-body">
@@ -30,13 +134,13 @@
                     <!-- Informações Básicas -->
                     <div class="row">
                         <div class="col-md-8 mb-3">
-                            <label class="form-label">Título da Reunião *</label>
-                            <input type="text" class="form-control" name="titulo" 
+                            <label class="form-label" style="color: var(--bordo);">Título da Reunião *</label>
+                            <input type="text" class="form-control form-control-custom" name="titulo" 
                                    value="{{ reuniao.titulo }}" required>
                         </div>
                         <div class="col-md-4 mb-3">
-                            <label class="form-label">Tipo de Reunião *</label>
-                            <select class="form-select" name="tipo" id="tipoReuniao" required>
+                            <label class="form-label" style="color: var(--bordo);">Tipo de Reunião *</label>
+                            <select class="form-select form-select-custom" name="tipo" id="tipoReuniao" required>
                                 <option value="">Selecione...</option>
                                 {% for tipo in tipos %}
                                 <option value="{{ tipo.nome }}" 
@@ -53,32 +157,32 @@
 
                     <div class="row">
                         <div class="col-md-4 mb-3">
-                            <label class="form-label">Data *</label>
-                            <input type="date" class="form-control" name="data" id="dataReuniao" 
+                            <label class="form-label" style="color: var(--bordo);">Data *</label>
+                            <input type="date" class="form-control form-control-custom" name="data" id="dataReuniao" 
                                    value="{{ reuniao.data.strftime('%Y-%m-%d') if reuniao.data else '' }}" required>
                         </div>
                         <div class="col-md-4 mb-3">
-                            <label class="form-label">Hora Início *</label>
-                            <input type="time" class="form-control" name="hora_inicio" id="horaInicio" 
+                            <label class="form-label" style="color: var(--bordo);">Hora Início *</label>
+                            <input type="time" class="form-control form-control-custom" name="hora_inicio" id="horaInicio" 
                                    value="{{ reuniao.hora_inicio.strftime('%H:%M') if reuniao.hora_inicio else '19:30' }}" required>
                         </div>
                         <div class="col-md-4 mb-3">
-                            <label class="form-label">Hora Término</label>
-                            <input type="time" class="form-control" name="hora_termino" id="horaTermino" 
+                            <label class="form-label" style="color: var(--bordo);">Hora Término</label>
+                            <input type="time" class="form-control form-control-custom" name="hora_termino" id="horaTermino" 
                                    value="{{ reuniao.hora_termino.strftime('%H:%M') if reuniao.hora_termino else '' }}">
                         </div>
                     </div>
 
                     <div class="row">
                         <div class="col-md-6 mb-3">
-                            <label class="form-label">Local</label>
-                            <input type="text" class="form-control" name="local" 
+                            <label class="form-label" style="color: var(--bordo);">Local</label>
+                            <input type="text" class="form-control form-control-custom" name="local" 
                                    value="{{ reuniao.local or '' }}"
                                    placeholder="Ex: Templo Maçônico, Rua das Acácias, 123">
                         </div>
                         <div class="col-md-6 mb-3">
-                            <label class="form-label">Status</label>
-                            <select class="form-select" name="status">
+                            <label class="form-label" style="color: var(--bordo);">Status</label>
+                            <select class="form-select form-select-custom" name="status">
                                 <option value="agendada" {% if reuniao.status == 'agendada' %}selected{% endif %}>Agendada</option>
                                 <option value="realizada" {% if reuniao.status == 'realizada' %}selected{% endif %}>Realizada</option>
                                 <option value="cancelada" {% if reuniao.status == 'cancelada' %}selected{% endif %}>Cancelada</option>
@@ -88,8 +192,8 @@
 
                     <div class="row">
                         <div class="col-md-6 mb-3">
-                            <label class="form-label">Grau</label>
-                            <select class="form-select" name="grau">
+                            <label class="form-label" style="color: var(--bordo);">Grau</label>
+                            <select class="form-select form-select-custom" name="grau">
                                 <option value="">Todos os graus</option>
                                 <option value="1" {% if reuniao.grau == 1 %}selected{% endif %}>Aprendiz (1º Grau)</option>
                                 <option value="2" {% if reuniao.grau == 2 %}selected{% endif %}>Companheiro (2º Grau)</option>
@@ -99,30 +203,30 @@
                         </div>
                     </div>
 
-                    <hr>
+                    <hr style="border-color: var(--bordo-transparente);">
                     
                     <!-- Pauta e Observações -->
-                    <h6 class="mb-3"><i class="bi bi-list-ul"></i> Pauta da Reunião</h6>
+                    <h6 style="color: var(--bordo);"><i class="bi bi-list-ul"></i> Pauta da Reunião</h6>
                     <div class="mb-3">
-                        <textarea class="form-control" name="pauta" rows="8" 
+                        <textarea class="form-control form-control-custom" name="pauta" rows="8" 
                                   placeholder="Descreva os assuntos a serem tratados na reunião...">{{ reuniao.pauta or '' }}</textarea>
                         <small class="text-muted">Você pode usar markdown para formatação</small>
                     </div>
 
-                    <h6 class="mb-3"><i class="bi bi-chat-text"></i> Observações</h6>
+                    <h6 style="color: var(--bordo);"><i class="bi bi-chat-text"></i> Observações</h6>
                     <div class="mb-3">
-                        <textarea class="form-control" name="observacoes" rows="4" 
+                        <textarea class="form-control form-control-custom" name="observacoes" rows="4" 
                                   placeholder="Observações adicionais sobre a reunião...">{{ reuniao.observacoes or '' }}</textarea>
                     </div>
 
-                    <hr>
+                    <hr style="border-color: var(--bordo-transparente);">
 
                     <!-- Botões de Ação -->
                     <div class="text-center mt-4">
                         <a href="/reunioes/{{ reuniao.id }}" class="btn btn-secondary me-2">
                             <i class="bi bi-x-circle"></i> Cancelar
                         </a>
-                        <button type="submit" class="btn btn-success btn-lg px-5">
+                        <button type="submit" class="btn-bordo btn-lg px-5">
                             <i class="bi bi-save"></i> Salvar Alterações
                         </button>
                     </div>
@@ -133,20 +237,20 @@
         <!-- Cards de Informação -->
         <div class="row mt-4">
             <div class="col-md-6">
-                <div class="card border-info">
+                <div class="card-info shadow-sm">
                     <div class="card-body text-center">
-                        <i class="bi bi-info-circle fs-1 text-info"></i>
-                        <h6 class="mt-2">Informações da Reunião</h6>
-                        <p class="small">Os campos marcados com * são obrigatórios.</p>
+                        <i class="bi bi-info-circle fs-1" style="color: var(--bordo);"></i>
+                        <h6 class="mt-2" style="color: var(--bordo);">Informações da Reunião</h6>
+                        <p class="small text-muted">Os campos marcados com * são obrigatórios.</p>
                     </div>
                 </div>
             </div>
             <div class="col-md-6">
-                <div class="card border-warning">
+                <div class="card-info shadow-sm">
                     <div class="card-body text-center">
-                        <i class="bi bi-calendar-check fs-1 text-warning"></i>
-                        <h6 class="mt-2">Dados de Criação</h6>
-                        <p class="small">
+                        <i class="bi bi-calendar-check fs-1" style="color: var(--ouro);"></i>
+                        <h6 class="mt-2" style="color: var(--bordo);">Dados de Criação</h6>
+                        <p class="small text-muted">
                             Criada em: {{ reuniao.data_criacao.strftime('%d/%m/%Y %H:%M') if reuniao.data_criacao else '-' }}
                             {% if reuniao.criado_por_nome %}
                             <br>Por: {{ reuniao.criado_por_nome }}
@@ -267,38 +371,4 @@
         }
     });
 </script>
-
-<style>
-    .card {
-        border-radius: 10px;
-        overflow: hidden;
-    }
-    .card-header {
-        font-weight: 600;
-    }
-    textarea {
-        font-family: monospace;
-        font-size: 14px;
-    }
-    .form-control:focus, .form-select:focus {
-        border-color: #0d6efd;
-        box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.25);
-    }
-    .btn {
-        transition: all 0.3s ease;
-    }
-    .btn:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 4px 8px rgba(0,0,0,0.1);
-    }
-    @media (max-width: 768px) {
-        .btn-group {
-            flex-direction: column;
-        }
-        .btn-group .btn {
-            margin-bottom: 5px;
-        }
-    }
-</style>
-
 {% endblock %}
