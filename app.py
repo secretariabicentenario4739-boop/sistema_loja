@@ -7715,10 +7715,10 @@ def visualizar_reuniao(id):
             flash("Reunião não encontrada!", "danger")
             return redirect("/reunioes")
         
-        # 🔧 CORREÇÃO: Definir filtro de grau baseado no grau da reunião
-        grau_reuniao = reuniao.get('grau', 1)  # Padrão = 1 (Aprendiz)
+        # Definir filtro de grau baseado no grau da reunião
+        grau_reuniao = reuniao.get('grau', 1)
         
-        # Query base para obreiros ativos (exceto admin, mas admin pode ser incluído?)
+        # Query base para obreiros ativos (incluindo admin, sindicante e obreiro)
         query_obreiros = """
             SELECT 
                 u.id, 
@@ -7733,22 +7733,19 @@ def visualizar_reuniao(id):
             FROM usuarios u
             LEFT JOIN presenca_reuniao pr ON u.id = pr.obreiro_id AND pr.reuniao_id = %s
             WHERE u.ativo = 1 
-              AND u.tipo IN ('obreiro', 'sindicante')
+              AND u.tipo IN ('obreiro', 'sindicante', 'admin')
         """
         
         params = [id]
         
-        # 🔧 FILTRO POR GRAU DA REUNIÃO
+        # FILTRO POR GRAU DA REUNIÃO
         if grau_reuniao == 3:
-            # Reunião de Mestres: apenas obreiros com grau >= 3
             query_obreiros += " AND u.grau_atual >= 3"
             print(f"📌 Reunião de Mestres - Filtrando obreiros com grau >= 3")
         elif grau_reuniao == 2:
-            # Reunião de Companheiros: apenas obreiros com grau >= 2
             query_obreiros += " AND u.grau_atual >= 2"
             print(f"📌 Reunião de Companheiros - Filtrando obreiros com grau >= 2")
         else:
-            # Reunião de Aprendizes: todos os obreiros (sem filtro de grau)
             print(f"📌 Reunião de Aprendizes - Todos os obreiros")
         
         query_obreiros += """
@@ -7765,14 +7762,14 @@ def visualizar_reuniao(id):
         presentes = sum(1 for p in presenca if p['presente'] == True)
         ausentes = total_obreiros - presentes
         
-        # DEBUG - Verificar se os números estão corretos
+        # DEBUG
         print(f"=== DEBUG visualizar_reuniao (ID: {id}) ===")
         print(f"Grau da Reunião: {grau_reuniao}")
         print(f"Total de obreiros elegíveis: {total_obreiros}")
         print(f"Presentes: {presentes}")
         print(f"Ausentes: {ausentes}")
         for p in presenca:
-            print(f"  - {p['nome_completo']} (grau: {p['grau_atual']}): presente={p['presente']}")
+            print(f"  - {p['nome_completo']} (grau: {p['grau_atual']}, tipo: {p['tipo']}): presente={p['presente']}")
         print(f"==========================================")
         
         # Buscar tipos de ausência
@@ -9004,7 +9001,7 @@ def ver_ata_por_id(id):
                     return redirect("/atas")
         
         # ============================================
-        # CORREÇÃO: Filtrar obreiros por grau da reunião
+        # CORREÇÃO: Filtrar obreiros por grau da reunião (incluindo admin)
         # ============================================
         presenca = []
         reuniao_id = ata["reuniao_id"]
@@ -9012,7 +9009,7 @@ def ver_ata_por_id(id):
         
         if verificar_permissao(session['user_id'], 'reuniao.view_one') or is_admin:
             
-            # Query base para obreiros ativos
+            # Query base para obreiros ativos (incluindo admin)
             query_obreiros = """
                 SELECT 
                     u.id,
@@ -9028,12 +9025,12 @@ def ver_ata_por_id(id):
                 LEFT JOIN ocupacao_cargos oc ON u.id = oc.obreiro_id AND oc.ativo = 1
                 LEFT JOIN cargos c ON oc.cargo_id = c.id
                 WHERE u.ativo = 1 
-                  AND u.tipo IN ('obreiro', 'sindicante')
+                  AND u.tipo IN ('obreiro', 'sindicante', 'admin')
             """
             
             params = [reuniao_id]
             
-            # 🔧 FILTRO POR GRAU DA REUNIÃO (igual ao detalhe da reunião)
+            # FILTRO POR GRAU DA REUNIÃO (igual ao detalhe da reunião)
             if reuniao_grau == 3:
                 # Reunião de Mestres: apenas obreiros com grau >= 3
                 query_obreiros += " AND u.grau_atual >= 3"
@@ -9061,11 +9058,11 @@ def ver_ata_por_id(id):
             cursor.execute(query_obreiros, params)
             presenca = cursor.fetchall()
             
-            # DEBUG (remova depois)
+            # DEBUG
             print(f"\n📊 PRESENÇA NA ATA (Reunião ID: {reuniao_id}, Grau: {reuniao_grau})")
             print(f"Total de obreiros elegíveis: {len(presenca)}")
             for p in presenca:
-                print(f"  - {p['nome_completo']} (grau: {p['grau_atual']}): presente={p['presente']}")
+                print(f"  - {p['nome_completo']} (grau: {p['grau_atual']}, tipo: {p['tipo']}): presente={p['presente']}")
         
         # ============================================
         # SISTEMA DE ASSINATURAS POR CARGO
