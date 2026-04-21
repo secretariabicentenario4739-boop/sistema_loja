@@ -2637,7 +2637,7 @@ def candidato_upload_documento_externo(candidato_id, tipo_id):
     
     
 # =============================
-# ROTAS DA BIBLIOTECA
+# ROTAS DE BIBLIOTECA
 # =============================
 
 @app.route("/biblioteca/admin/upload", methods=['GET', 'POST'])
@@ -2657,18 +2657,12 @@ def upload_material():
         autor = request.form.get('autor')
         editora = request.form.get('editora')
         ano_publicacao = request.form.get('ano_publicacao')
-        num_paginas = request.form.get('num_paginas')
-        isbn = request.form.get('isbn')
         tags = request.form.get('tags')
         destaque = request.form.get('destaque') == 'on'
         
         # Validar campos obrigatórios
         if not titulo:
             flash('O título é obrigatório', 'danger')
-            return redirect(url_for('upload_material'))
-        
-        if not tipo:
-            flash('O tipo de material é obrigatório', 'danger')
             return redirect(url_for('upload_material'))
         
         if not categoria_id:
@@ -2696,25 +2690,79 @@ def upload_material():
             flash('Arquivo muito grande! O tamanho máximo é 50MB.', 'danger')
             return redirect(url_for('upload_material'))
         
+        # 🔧 CORREÇÃO: Detectar tipo de arquivo para definir resource_type
+        filename = arquivo.filename.lower()
+        is_pdf = filename.endswith('.pdf')
+        is_doc = filename.endswith(('.doc', '.docx'))
+        is_image = filename.endswith(('.jpg', '.jpeg', '.png', '.gif', '.webp'))
+        is_video = filename.endswith(('.mp4', '.avi', '.mov', '.webm'))
+        is_audio = filename.endswith(('.mp3', '.wav', '.ogg', '.m4a'))
+        
+        # Determinar resource_type baseado no arquivo (CRUCIAL!)
+        if is_pdf:
+            resource_type = "raw"  # 🔑 PDF deve ser "raw", NÃO "image"!
+            folder = "biblioteca_maconica/materiais"
+            formato = "pdf"
+        elif is_doc:
+            resource_type = "raw"  # Documentos também como raw
+            folder = "biblioteca_maconica/documentos"
+            formato = "doc"
+        elif is_video:
+            resource_type = "video"
+            folder = "biblioteca_maconica/videos"
+            formato = "video"
+        elif is_audio:
+            resource_type = "video"  # Áudio como video no Cloudinary
+            folder = "biblioteca_maconica/audios"
+            formato = "audio"
+        else:
+            resource_type = "image"
+            folder = "biblioteca_maconica/imagens"
+            formato = "image"
+        
         try:
-            # Upload do arquivo principal
             import uuid
             from werkzeug.utils import secure_filename
             
-            nome_arquivo = f"{uuid.uuid4().hex}_{secure_filename(arquivo.filename)}"
+            # Gerar nome único para o arquivo
+            nome_base = uuid.uuid4().hex
+            nome_arquivo = f"{nome_base}_{secure_filename(arquivo.filename)}"
             
+            # 🔧 Configurações de upload
+            upload_options = {
+                "folder": folder,
+                "public_id": nome_base,  # Usar apenas o UUID como public_id
+                "use_filename": False,
+                "unique_filename": True,
+                "resource_type": resource_type,  # 🔑 Chave da correção!
+                "overwrite": True
+            }
+            
+            # Adicionar transformações apenas para imagens
+            if resource_type == "image":
+                upload_options["transformation"] = [
+                    {'width': 800, 'height': 600, 'crop': 'limit'},
+                    {'quality': 'auto'}
+                ]
+            
+            print(f"📤 Enviando arquivo: {filename}")
+            print(f"📁 Resource type: {resource_type}")
+            print(f"📂 Folder: {folder}")
+            
+            # Realizar upload
             upload_result = cloudinary.uploader.upload(
                 arquivo,
-                folder="biblioteca_maconica/materiais",
-                public_id=nome_arquivo,
-                resource_type="auto",
-                use_filename=True,
-                unique_filename=False
+                **upload_options
             )
             
+            # 🔧 CORREÇÃO: Construir URL corretamente para PDFs
             arquivo_url = upload_result.get('secure_url')
-            arquivo_tamanho = upload_result.get('bytes')
-            formato = upload_result.get('format')
+            
+            # Para PDFs, garantir que a URL termine com .pdf
+            if is_pdf and not arquivo_url.endswith('.pdf'):
+                arquivo_url = f"{arquivo_url}.pdf"
+            
+            arquivo_tamanho = upload_result.get('bytes', tamanho_arquivo)
             arquivo_nome_original = arquivo.filename
             
             # Upload da capa (se houver)
@@ -2734,6 +2782,7 @@ def upload_material():
             # Inserir no banco
             cursor, conn = get_db()
             
+            # Tratar ano_publicacao
             ano_publicacao_int = None
             if ano_publicacao and ano_publicacao.strip():
                 try:
@@ -2741,25 +2790,18 @@ def upload_material():
                 except:
                     pass
             
-            num_paginas_int = None
-            if num_paginas and num_paginas.strip():
-                try:
-                    num_paginas_int = int(num_paginas)
-                except:
-                    pass
-            
             cursor.execute("""
                 INSERT INTO materiais (
                     titulo, subtitulo, descricao, tipo, categoria_id, grau_acesso,
                     arquivo_url, arquivo_nome, arquivo_tamanho, formato, capa_url,
-                    autor, editora, ano_publicacao, num_paginas, isbn, tags, 
+                    autor, editora, ano_publicacao, tags, 
                     destaque, publicado, created_by, created_at, data_publicacao
-                ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, true, %s, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+                ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, true, %s, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
                 RETURNING id
             """, (
                 titulo, subtitulo, descricao, tipo, categoria_id, grau_acesso,
                 arquivo_url, arquivo_nome_original, arquivo_tamanho, formato, capa_url,
-                autor, editora, ano_publicacao_int, num_paginas_int, isbn, tags,
+                autor, editora, ano_publicacao_int, tags,
                 destaque, session['user_id']
             ))
             
@@ -2774,12 +2816,14 @@ def upload_material():
             
         except cloudinary.exceptions.Error as e:
             print(f"❌ Erro no Cloudinary: {e}")
+            import traceback
             traceback.print_exc()
             flash(f'Erro no envio para a nuvem: {str(e)}', 'danger')
             return redirect(url_for('upload_material'))
         
         except Exception as e:
             print(f"❌ Erro no upload: {e}")
+            import traceback
             traceback.print_exc()
             flash(f'Erro ao enviar arquivo: {str(e)}', 'danger')
             return redirect(url_for('upload_material'))
@@ -2791,6 +2835,153 @@ def upload_material():
     return_connection(conn)
     
     return render_template('biblioteca/upload.html', categorias=categorias)
+
+@app.route("/admin/upload-pdf-corrigido", methods=['GET', 'POST'])
+@login_required
+def upload_pdf_corrigido():
+    """Upload temporário para corrigir PDFs perdidos"""
+    if session.get('tipo') != 'admin':
+        return "Acesso negado", 403
+    
+    if request.method == 'POST':
+        arquivo = request.files.get('arquivo')
+        material_id = request.form.get('material_id')
+        
+        if not arquivo or not material_id:
+            flash('Arquivo e ID do material são obrigatórios', 'danger')
+            return redirect(url_for('upload_pdf_corrigido'))
+        
+        try:
+            cursor, conn = get_db()
+            
+            # Buscar material
+            cursor.execute("SELECT titulo, categoria_id, grau_acesso FROM materiais WHERE id = %s", (material_id,))
+            material = cursor.fetchone()
+            
+            if not material:
+                flash('Material não encontrado', 'danger')
+                return_connection(conn)
+                return redirect(url_for('upload_pdf_corrigido'))
+            
+            # Upload para Cloudinary como RAW
+            import uuid
+            from werkzeug.utils import secure_filename
+            
+            nome_arquivo = f"{uuid.uuid4().hex}_{secure_filename(arquivo.filename)}"
+            
+            upload_result = cloudinary.uploader.upload(
+                arquivo,
+                folder="biblioteca_maconica/materiais",
+                public_id=nome_arquivo.replace('.pdf', ''),
+                resource_type="raw",
+                use_filename=True,
+                unique_filename=False
+            )
+            
+            arquivo_url = upload_result.get('secure_url')
+            if not arquivo_url.endswith('.pdf'):
+                arquivo_url = f"{arquivo_url}.pdf"
+            
+            # Atualizar URL no banco
+            cursor.execute("""
+                UPDATE materiais 
+                SET arquivo_url = %s, formato = 'pdf', updated_at = CURRENT_TIMESTAMP
+                WHERE id = %s
+            """, (arquivo_url, material_id))
+            conn.commit()
+            
+            return_connection(conn)
+            
+            flash(f'✅ PDF corrigido e enviado com sucesso para {material["titulo"]}!', 'success')
+            return redirect(url_for('visualizar_material', material_id=material_id))
+            
+        except Exception as e:
+            if 'conn' in locals():
+                return_connection(conn)
+            flash(f'Erro no upload: {str(e)}', 'danger')
+            return redirect(url_for('upload_pdf_corrigido'))
+    
+    # GET - mostrar formulário
+    cursor, conn = get_db()
+    cursor.execute("SELECT id, titulo FROM materiais WHERE arquivo_url LIKE '%/raw/upload/%'")
+    materiais = cursor.fetchall()
+    return_connection(conn)
+    
+    return '''
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <title>Upload Corrigido de PDF</title>
+        <style>
+            body { font-family: Arial; padding: 20px; max-width: 600px; margin: 0 auto; }
+            .form-group { margin-bottom: 15px; }
+            label { display: block; margin-bottom: 5px; font-weight: bold; }
+            select, input[type="file"] { width: 100%; padding: 8px; border-radius: 4px; border: 1px solid #ccc; }
+            button { background: #4A0E2E; color: white; padding: 10px 20px; border: none; border-radius: 4px; cursor: pointer; }
+            button:hover { background: #6B1342; }
+        </style>
+    </head>
+    <body>
+        <h1>Upload Corrigido de PDF</h1>
+        <form method="POST" enctype="multipart/form-data">
+            <div class="form-group">
+                <label>Selecione o Material:</label>
+                <select name="material_id" required>
+                    <option value="">Selecione...</option>
+                    {% for m in materiais %}
+                    <option value="{{ m.id }}">{{ m.titulo }} (ID: {{ m.id }})</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Arquivo PDF:</label>
+                <input type="file" name="arquivo" accept=".pdf" required>
+            </div>
+            <button type="submit">Enviar PDF Corrigido</button>
+        </form>
+    </body>
+    </html>
+    '''
+
+@app.route("/admin/remover-materiais-404", methods=['POST'])
+@login_required
+def remover_materiais_404():
+    """Remove materiais cujos arquivos não existem mais"""
+    if session.get('tipo') != 'admin':
+        return jsonify({'error': 'Acesso negado'}), 403
+    
+    try:
+        cursor, conn = get_db()
+        
+        # IDs dos materiais com problema
+        ids_para_remover = [7, 9]  # Baseado no seu retorno
+        
+        for material_id in ids_para_remover:
+            # Buscar título para o log
+            cursor.execute("SELECT titulo FROM materiais WHERE id = %s", (material_id,))
+            material = cursor.fetchone()
+            
+            if material:
+                # Remover registros relacionados
+                cursor.execute("DELETE FROM downloads_material WHERE material_id = %s", (material_id,))
+                cursor.execute("DELETE FROM favoritos_material WHERE material_id = %s", (material_id,))
+                cursor.execute("DELETE FROM avaliacoes_material WHERE material_id = %s", (material_id,))
+                cursor.execute("DELETE FROM materiais WHERE id = %s", (material_id,))
+                
+                print(f"Material removido: {material['titulo']} (ID: {material_id})")
+        
+        conn.commit()
+        return_connection(conn)
+        
+        return jsonify({
+            'success': True,
+            'message': f'Materiais removidos: {ids_para_remover}'
+        })
+        
+    except Exception as e:
+        if 'conn' in locals():
+            return_connection(conn)
+        return jsonify({'error': str(e)}), 500    
 
 @app.route("/biblioteca/admin/editar/<int:material_id>", methods=['GET', 'POST'])
 @login_required
@@ -3012,7 +3203,6 @@ def listar_materiais():
         flash('Erro ao carregar a biblioteca. Tente novamente mais tarde.', 'danger')
         return redirect(url_for('dashboard'))
 
-
 @app.route("/biblioteca/material/<int:material_id>")
 @login_required
 @permissao_required('material.view_one')
@@ -3021,7 +3211,6 @@ def visualizar_material(material_id):
     try:
         cursor, conn = get_db()
         
-        # Buscar material com verificação de permissão de grau
         cursor.execute("""
             SELECT m.*, 
                    c.nome as categoria_nome, 
@@ -3054,63 +3243,28 @@ def visualizar_material(material_id):
         """, (material_id,))
         conn.commit()
         
-        # Buscar avaliações
-        cursor.execute("""
-            SELECT a.*, u.nome_completo as usuario_nome
-            FROM avaliacoes_material a
-            LEFT JOIN usuarios u ON a.usuario_id = u.id
-            WHERE a.material_id = %s
-            ORDER BY a.data_avaliacao DESC
-            LIMIT 10
-        """, (material_id,))
-        avaliacoes = cursor.fetchall()
-        
-        # Verificar se usuário já favoritou
-        cursor.execute("""
-            SELECT id FROM favoritos_material 
-            WHERE material_id = %s AND usuario_id = %s
-        """, (material_id, session['user_id']))
-        favoritado = cursor.fetchone() is not None
-        
-        # Verificar se pode baixar
-        pode_baixar = verificar_permissao(session['user_id'], 'material.download')
-        
-        # Verificar se pode avaliar
-        pode_avaliar = verificar_permissao(session['user_id'], 'material.rate')
-        
-        # Buscar avaliação do usuário atual
-        if pode_avaliar:
-            cursor.execute("""
-                SELECT * FROM avaliacoes_material 
-                WHERE material_id = %s AND usuario_id = %s
-            """, (material_id, session['user_id']))
-            avaliacao_usuario = cursor.fetchone()
-        else:
-            avaliacao_usuario = None
-        
-        # Determinar o formato do arquivo baseado na URL
-        arquivo_url = material.get('arquivo_url', '')
-        formato = material.get('formato', '')
-        
-        # Se não tiver formato definido, tentar extrair da URL
-        if not formato and arquivo_url:
-            if '.pdf' in arquivo_url.lower():
-                formato = 'pdf'
-            elif any(ext in arquivo_url.lower() for ext in ['.jpg', '.jpeg', '.png', '.gif', '.webp']):
-                formato = 'imagem'
-            else:
-                formato = 'outro'
-        
         return_connection(conn)
+        
+        # 🔧 CORREÇÃO: Verificar se é PDF
+        arquivo_url = material.get('arquivo_url', '')
+        is_pdf = '.pdf' in arquivo_url.lower() or material.get('formato', '').lower() == 'pdf'
+        
+        # 🔧 CORREÇÃO: Garantir que a URL do PDF esteja no formato correto
+        pdf_url = None
+        if is_pdf:
+            # Corrigir URL se necessário
+            pdf_url = arquivo_url
+            # Se a URL ainda está como image/upload, converter para raw/upload
+            if '/image/upload/' in pdf_url:
+                pdf_url = pdf_url.replace('/image/upload/', '/raw/upload/')
+            # Garantir extensão .pdf
+            if not pdf_url.endswith('.pdf'):
+                pdf_url = f"{pdf_url}.pdf"
         
         return render_template('biblioteca/visualizar.html',
                              material=material,
-                             avaliacoes=avaliacoes,
-                             favoritado=favoritado,
-                             pode_baixar=pode_baixar,
-                             pode_avaliar=pode_avaliar,
-                             avaliacao_usuario=avaliacao_usuario,
-                             formato=formato)  # Passar formato para o template
+                             is_pdf=is_pdf,
+                             pdf_url=pdf_url)
     
     except Exception as e:
         print(f"❌ Erro ao visualizar material: {e}")
@@ -3120,7 +3274,6 @@ def visualizar_material(material_id):
             return_connection(conn)
         flash('Erro ao carregar o material', 'danger')
         return redirect(url_for('listar_materiais'))
-
 
 @app.route("/biblioteca/material/<int:material_id>/download")
 @login_required
@@ -3260,6 +3413,294 @@ def corrigir_urls_materiais():
         if 'conn' in locals():
             return_connection(conn)
         return jsonify({'error': str(e)}), 500        
+        
+@app.route("/biblioteca/verificar-pdf/<int:material_id>")
+@login_required
+def verificar_pdf(material_id):
+    """Verifica se a URL do PDF está acessível"""
+    try:
+        cursor, conn = get_db()
+        cursor.execute("SELECT arquivo_url FROM materiais WHERE id = %s", (material_id,))
+        material = cursor.fetchone()
+        return_connection(conn)
+        
+        if not material:
+            return jsonify({'error': 'Material não encontrado'}), 404
+        
+        arquivo_url = material['arquivo_url']
+        
+        # Tentar diferentes formatos de URL
+        urls_to_try = [
+            arquivo_url,
+            arquivo_url.replace('/image/upload/', '/raw/upload/'),
+            arquivo_url.replace('/image/upload/', '/upload/'),
+            f"{arquivo_url}.pdf" if not arquivo_url.endswith('.pdf') else arquivo_url
+        ]
+        
+        results = []
+        for url in urls_to_try:
+            try:
+                import requests
+                response = requests.head(url, timeout=10, allow_redirects=True)
+                results.append({
+                    'url': url,
+                    'status': response.status_code,
+                    'content_type': response.headers.get('content-type')
+                })
+            except Exception as e:
+                results.append({
+                    'url': url,
+                    'status': 'error',
+                    'error': str(e)
+                })
+        
+        return jsonify({
+            'material_id': material_id,
+            'original_url': arquivo_url,
+            'tests': results
+        })
+        
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+        
+# =============================
+# NOVAS ROTAS PARA LEITURA DE PDF
+# =============================
+
+@app.route("/biblioteca/material/<int:material_id>/pdf-metadata")
+@login_required
+@permissao_required('material.view_one')
+def get_pdf_metadata(material_id):
+    """Retorna metadados do PDF (número de páginas, etc.)"""
+    try:
+        cursor, conn = get_db()
+        
+        cursor.execute("""
+            SELECT arquivo_url, titulo, grau_acesso
+            FROM materiais 
+            WHERE id = %s AND publicado = true
+        """, (material_id,))
+        material = cursor.fetchone()
+        return_connection(conn)
+        
+        if not material or not material['arquivo_url']:
+            return jsonify({'error': 'Material não encontrado'}), 404
+        
+        # Verificar permissão por grau
+        usuario_grau = session.get('grau_atual', 0)
+        grau_acesso = material.get('grau_acesso', 1)
+        
+        if usuario_grau < grau_acesso and session.get('tipo') != 'admin':
+            return jsonify({'error': 'Acesso negado'}), 403
+        
+        # Baixar PDF do Cloudinary para obter metadados
+        import requests
+        import tempfile
+        import fitz  # PyMuPDF
+        
+        arquivo_url = material['arquivo_url']
+        
+        # Fazer download do PDF
+        response = requests.get(arquivo_url, timeout=30)
+        if response.status_code != 200:
+            return jsonify({'error': 'Erro ao baixar PDF'}), 500
+        
+        # Salvar temporariamente
+        with tempfile.NamedTemporaryFile(suffix='.pdf', delete=False) as tmp_file:
+            tmp_file.write(response.content)
+            tmp_path = tmp_file.name
+        
+        try:
+            # Abrir PDF com PyMuPDF
+            doc = fitz.open(tmp_path)
+            num_pages = len(doc)
+            
+            # Extrair informações adicionais
+            metadata = doc.metadata
+            doc.close()
+            
+            # Limpar arquivo temporário
+            import os
+            os.unlink(tmp_path)
+            
+            return jsonify({
+                'success': True,
+                'num_pages': num_pages,
+                'titulo': material['titulo'],
+                'metadata': metadata
+            })
+            
+        except Exception as e:
+            # Limpar arquivo temporário
+            import os
+            if os.path.exists(tmp_path):
+                os.unlink(tmp_path)
+            raise e
+            
+    except Exception as e:
+        print(f"Erro ao obter metadados do PDF: {e}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route("/biblioteca/material/<int:material_id>/pdf-page/<int:page_num>")
+@login_required
+@permissao_required('material.view_one')
+def get_pdf_page(material_id, page_num):
+    """Retorna uma página específica do PDF como imagem base64"""
+    try:
+        cursor, conn = get_db()
+        
+        cursor.execute("""
+            SELECT arquivo_url, grau_acesso
+            FROM materiais 
+            WHERE id = %s AND publicado = true
+        """, (material_id,))
+        material = cursor.fetchone()
+        return_connection(conn)
+        
+        if not material or not material['arquivo_url']:
+            return jsonify({'error': 'Material não encontrado'}), 404
+        
+        # Verificar permissão por grau
+        usuario_grau = session.get('grau_atual', 0)
+        grau_acesso = material.get('grau_acesso', 1)
+        
+        if usuario_grau < grau_acesso and session.get('tipo') != 'admin':
+            return jsonify({'error': 'Acesso negado'}), 403
+        
+        # Parâmetros de renderização
+        scale = float(request.args.get('scale', 1.5))
+        rotate = int(request.args.get('rotate', 0))
+        
+        # Baixar PDF do Cloudinary
+        import requests
+        import tempfile
+        import fitz  # PyMuPDF
+        import base64
+        from io import BytesIO
+        
+        arquivo_url = material['arquivo_url']
+        
+        # Fazer download do PDF
+        response = requests.get(arquivo_url, timeout=30)
+        if response.status_code != 200:
+            return jsonify({'error': 'Erro ao baixar PDF'}), 500
+        
+        # Salvar temporariamente
+        with tempfile.NamedTemporaryFile(suffix='.pdf', delete=False) as tmp_file:
+            tmp_file.write(response.content)
+            tmp_path = tmp_file.name
+        
+        try:
+            # Abrir PDF com PyMuPDF
+            doc = fitz.open(tmp_path)
+            
+            # Verificar se página existe
+            if page_num < 1 or page_num > len(doc):
+                doc.close()
+                return jsonify({'error': 'Página não encontrada'}), 404
+            
+            # Obter a página
+            page = doc[page_num - 1]
+            
+            # Aplicar rotação
+            if rotate:
+                page.set_rotation(rotate)
+            
+            # Renderizar página como imagem
+            zoom = scale
+            mat = fitz.Matrix(zoom, zoom)
+            pix = page.get_pixmap(matrix=mat, alpha=False)
+            
+            # Converter para base64
+            img_data = pix.tobytes("png")
+            img_base64 = base64.b64encode(img_data).decode('utf-8')
+            
+            doc.close()
+            
+            # Limpar arquivo temporário
+            import os
+            os.unlink(tmp_path)
+            
+            return jsonify({
+                'success': True,
+                'page': page_num,
+                'image': f'data:image/png;base64,{img_base64}',
+                'width': pix.width,
+                'height': pix.height
+            })
+            
+        except Exception as e:
+            # Limpar arquivo temporário
+            import os
+            if os.path.exists(tmp_path):
+                os.unlink(tmp_path)
+            raise e
+            
+    except Exception as e:
+        print(f"Erro ao renderizar página: {e}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route("/biblioteca/material/<int:material_id>/download-direct")
+@login_required
+@permissao_required('material.download')
+def download_material_direct(material_id):
+    """Download direto do material (redireciona para Cloudinary)"""
+    try:
+        cursor, conn = get_db()
+        
+        cursor.execute("""
+            SELECT arquivo_url, titulo, grau_acesso
+            FROM materiais 
+            WHERE id = %s AND publicado = true
+        """, (material_id,))
+        material = cursor.fetchone()
+        
+        if not material or not material['arquivo_url']:
+            flash('Material não encontrado', 'danger')
+            return_connection(conn)
+            return redirect(url_for('listar_materiais'))
+        
+        # Verificar permissão por grau
+        usuario_grau = session.get('grau_atual', 0)
+        grau_acesso = material.get('grau_acesso', 1)
+        
+        if usuario_grau < grau_acesso and session.get('tipo') != 'admin':
+            flash('Você não tem permissão para baixar este material', 'danger')
+            return_connection(conn)
+            return redirect(url_for('listar_materiais'))
+        
+        # Registrar download
+        cursor.execute("""
+            INSERT INTO downloads_material (material_id, usuario_id, data_download, ip)
+            VALUES (%s, %s, CURRENT_TIMESTAMP, %s)
+        """, (material_id, session['user_id'], request.remote_addr))
+        
+        # Incrementar contador
+        cursor.execute("""
+            UPDATE materiais SET downloads_count = COALESCE(downloads_count, 0) + 1 
+            WHERE id = %s
+        """, (material_id,))
+        conn.commit()
+        
+        return_connection(conn)
+        
+        # Redirecionar diretamente para o Cloudinary
+        return redirect(material['arquivo_url'])
+        
+    except Exception as e:
+        print(f"Erro no download: {e}")
+        if 'conn' in locals():
+            return_connection(conn)
+        flash('Erro ao baixar o arquivo', 'danger')
+        return redirect(url_for('visualizar_material', material_id=material_id))
+
+        
         
 # =============================
 # ROTAS DO DASHBOARD OTIMIZADO

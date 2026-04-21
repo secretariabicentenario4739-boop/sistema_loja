@@ -5,6 +5,22 @@
 {% block styles %}
 {{ super() }}
 <style>
+    /* ========== Cores do Rito Brasileiro (scrb33.org.br) ========== */
+    :root {
+        --bordo: #4A0E2E;
+        --bordo-escuro: #3A0A24;
+        --bordo-claro: #6B1342;
+        --bordo-suave: #8B4A6B;
+        --bordo-transparente: rgba(74, 14, 46, 0.08);
+        --bordo-transparente-hover: rgba(74, 14, 46, 0.12);
+        --ouro: #D4AF37;
+        --ouro-escuro: #996515;
+        --ouro-claro: #F0D68A;
+        --bege-pergaminho: #F5F0E8;
+        --branco: #FFFFFF;
+        --cinza-texto: #6B7280;
+    }
+
     /* ========== KnightOne Layout Adaptado para Rito Brasileiro ========== */
     
     /* Hero Section */
@@ -38,7 +54,7 @@
         font-weight: 700;
         margin-bottom: 20px;
         animation: fadeInUp 1s ease;
-        color: white;
+        color: var(--branco);
         font-family: 'Georgia', serif;
         letter-spacing: 2px;
     }
@@ -62,12 +78,17 @@
         font-weight: 600;
         transition: all 0.3s;
         color: var(--bordo-escuro);
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
     }
     
     .hero .btn-primary:hover {
         background: var(--ouro-claro);
         transform: translateY(-3px);
         box-shadow: 0 10px 20px rgba(212, 175, 55, 0.3);
+        color: var(--bordo-escuro);
     }
     
     .hero .btn-outline-light {
@@ -77,6 +98,10 @@
         border-radius: 50px;
         transition: all 0.3s;
         background: transparent;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
     }
     
     .hero .btn-outline-light:hover {
@@ -160,6 +185,27 @@
         border-radius: 20px;
         overflow: hidden;
         box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+    }
+    
+    .btn-primary {
+        background: linear-gradient(135deg, var(--bordo), var(--bordo-escuro));
+        color: var(--branco);
+        padding: 10px 24px;
+        border-radius: 30px;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        transition: all 0.3s;
+        border: none;
+        font-weight: 500;
+    }
+    
+    .btn-primary:hover {
+        background: linear-gradient(135deg, var(--bordo-claro), var(--bordo));
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(74, 14, 46, 0.3);
+        color: var(--branco);
     }
     
     /* Services Section */
@@ -305,7 +351,7 @@
     .cta {
         padding: 80px 0;
         background: linear-gradient(135deg, var(--bordo-escuro) 0%, var(--bordo) 100%);
-        color: white;
+        color: var(--branco);
         text-align: center;
         position: relative;
     }
@@ -340,6 +386,7 @@
     
     .cta .btn-primary:hover {
         background: var(--ouro-claro);
+        color: var(--bordo-escuro);
     }
     
     /* Animations */
@@ -387,6 +434,36 @@
         .stat-card {
             margin-bottom: 20px;
         }
+        
+        .hero .btn-group {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+        
+        .hero .btn-primary,
+        .hero .btn-outline-light {
+            text-align: center;
+            justify-content: center;
+        }
+    }
+    
+    @media (max-width: 480px) {
+        .stat-number {
+            font-size: 1.8rem;
+        }
+        
+        .section-header h2 {
+            font-size: 1.8rem;
+        }
+        
+        .service-card {
+            padding: 30px 20px;
+        }
+        
+        .cta h2 {
+            font-size: 1.8rem;
+        }
     }
 </style>
 {% endblock %}
@@ -404,8 +481,8 @@
                 <h1>ARLS Bicentenário</h1>
                 <p class="lead">Loja Maçônica fundada em 16 de julho de 2022, sob os auspícios do Grande Oriente do Brasil, dedicada à busca do conhecimento, fraternidade e evolução espiritual.</p>
                 <div class="btn-group">
-                    <a href="/login" class="btn btn-primary btn-lg me-3">Área Restrita</a>
-                    <a href="/sobre" class="btn btn-outline-light btn-lg">Conheça a Loja</a>
+                    <a href="/login" class="btn-primary btn-lg me-3">Área Restrita</a>
+                    <a href="/sobre" class="btn-outline-light btn-lg">Conheça a Loja</a>
                 </div>
             </div>
         </div>
@@ -549,7 +626,7 @@
     <div class="container">
         <h2>Faça parte da nossa história</h2>
         <p class="mb-4">A Maçonaria está aberta a homens livres e de bons costumes que buscam a verdade e o aperfeiçoamento moral.</p>
-        <a href="/secretaria.bicentenario4739@gmail.com" class="btn-primary">Entre em contato</a>
+        <a href="/contato" class="btn-primary">Entre em contato</a>
     </div>
 </section>
 {% endblock %}
