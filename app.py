@@ -2637,7 +2637,7 @@ def candidato_upload_documento_externo(candidato_id, tipo_id):
     
     
 # =============================
-# RELATÓRIOS
+# ROTAS DE RELATÓRIOS
 # =============================
 
 @app.route("/relatorios")
@@ -2666,92 +2666,102 @@ def relatorios():
                          lojas=lojas)
 
 
+# Adicione estas rotas no seu app.py
+
 @app.route("/relatorios/gerar")
 @login_required
 def gerar_relatorio():
-    """Gera o relatório baseado nos parâmetros"""
-    tipo = request.args.get('tipo')
-    data_inicio = request.args.get('data_inicio')
-    data_fim = request.args.get('data_fim')
-    reuniao_id = request.args.get('reuniao_id')
-    grau = request.args.get('grau')
-    loja = request.args.get('loja')
-    incluir_detalhes = request.args.get('incluir_detalhes') == 'on'
-    agrupar_por_loja = request.args.get('agrupar_por_loja') == 'on'
-    apenas_ativos = request.args.get('apenas_ativos') == 'on'
-    
-    cursor, conn = get_db()
-    
-    html_resultado = ""
-    
-    if tipo == 'presenca':
-        html_resultado = gerar_relatorio_presenca(cursor, data_inicio, data_fim, reuniao_id, grau, loja, apenas_ativos)
-    
-    elif tipo == 'aniversarios':
-        html_resultado = gerar_relatorio_aniversarios(cursor, data_inicio, data_fim, loja, apenas_ativos)
-    
-    elif tipo == 'aniversarios_familiares':
-        html_resultado = gerar_relatorio_aniversarios_familiares(cursor, data_inicio, data_fim, loja, apenas_ativos)
-    
-    elif tipo == 'estatisticas':
-        html_resultado = gerar_relatorio_estatisticas(cursor)
-    
-    elif tipo == 'combinado':
-        html_resultado = gerar_relatorio_combinado(cursor, data_inicio, data_fim, reuniao_id, grau, loja, apenas_ativos)
-    
-    return_connection(conn)
-    
-    return html_resultado
+    """Gera o relatório em HTML (via AJAX)"""
+    try:
+        tipo = request.args.get('tipo')
+        data_inicio = request.args.get('data_inicio')
+        data_fim = request.args.get('data_fim')
+        reuniao_id = request.args.get('reuniao_id')
+        grau = request.args.get('grau')
+        loja = request.args.get('loja')
+        incluir_detalhes = request.args.get('incluir_detalhes') == 'on'
+        agrupar_por_loja = request.args.get('agrupar_por_loja') == 'on'
+        apenas_ativos = request.args.get('apenas_ativos') == 'on'
+        
+        cursor, conn = get_db()
+        
+        html = ""
+        
+        if tipo == 'presenca':
+            html = gerar_relatorio_presenca(cursor, data_inicio, data_fim, reuniao_id, grau, loja, apenas_ativos)
+        elif tipo == 'aniversarios':
+            html = gerar_relatorio_aniversarios(cursor, apenas_ativos)
+        elif tipo == 'aniversarios_familiares':
+            html = gerar_relatorio_aniversarios_familiares(cursor)
+        elif tipo == 'estatisticas':
+            html = gerar_relatorio_estatisticas(cursor, apenas_ativos)
+        elif tipo == 'combinado':
+            html = gerar_relatorio_combinado(cursor, data_inicio, data_fim, reuniao_id, grau, loja, apenas_ativos)
+        
+        return_connection(conn)
+        return html
+        
+    except Exception as e:
+        print(f"Erro ao gerar relatório: {e}")
+        import traceback
+        traceback.print_exc()
+        return f'<div class="alert alert-danger">Erro ao gerar relatório: {str(e)}</div>'
 
 
 def gerar_relatorio_presenca(cursor, data_inicio, data_fim, reuniao_id, grau, loja, apenas_ativos):
-    """Relatório de presença dos obreiros"""
+    """Gera relatório de presença"""
     
+    # Construir query
     query = """
         SELECT 
             u.id,
             u.nome_completo,
             u.grau_atual,
             u.loja_nome,
-            COUNT(DISTINCT r.id) as total_reunioes,
-            COUNT(DISTINCT CASE WHEN pr.presente = true THEN r.id END) as presentes,
-            ROUND(COUNT(DISTINCT CASE WHEN pr.presente = true THEN r.id END) * 100.0 / NULLIF(COUNT(DISTINCT r.id), 0), 1) as percentual
+            COUNT(DISTINCT pr.reuniao_id) as total_reunioes,
+            COUNT(CASE WHEN pr.presente = TRUE THEN 1 END) as presentes,
+            ROUND(COUNT(CASE WHEN pr.presente = TRUE THEN 1 END) * 100.0 / NULLIF(COUNT(DISTINCT pr.reuniao_id), 0), 1) as percentual
         FROM usuarios u
-        CROSS JOIN reunioes r
-        LEFT JOIN presenca_reuniao pr ON pr.reuniao_id = r.id AND pr.obreiro_id = u.id
-        WHERE u.tipo != 'admin'
+        LEFT JOIN presenca_reuniao pr ON u.id = pr.obreiro_id
+        LEFT JOIN reunioes r ON pr.reuniao_id = r.id
+        WHERE u.tipo IN ('obreiro', 'sindicante', 'admin')
     """
     
     params = []
     
-    if data_inicio:
-        query += " AND r.data >= %s"
-        params.append(data_inicio)
-    if data_fim:
-        query += " AND r.data <= %s"
-        params.append(data_fim)
-    if reuniao_id:
-        query += " AND r.id = %s"
-        params.append(reuniao_id)
+    if apenas_ativos:
+        query += " AND u.ativo = 1"
+    
     if grau:
         query += " AND u.grau_atual >= %s"
         params.append(int(grau))
+    
     if loja:
         query += " AND u.loja_nome = %s"
         params.append(loja)
-    if apenas_ativos:
-        query += " AND u.ativo = 1"  # 🔧 CORRIGIDO: usar = 1 em vez de = true
     
-    query += " GROUP BY u.id ORDER BY percentual DESC"
+    if data_inicio:
+        query += " AND r.data >= %s"
+        params.append(data_inicio)
+    
+    if data_fim:
+        query += " AND r.data <= %s"
+        params.append(data_fim)
+    
+    if reuniao_id:
+        query += " AND pr.reuniao_id = %s"
+        params.append(reuniao_id)
+    
+    query += " GROUP BY u.id, u.nome_completo, u.grau_atual, u.loja_nome ORDER BY u.nome_completo"
     
     cursor.execute(query, params)
     resultados = cursor.fetchall()
     
     if not resultados:
-        return '<div class="alert alert-info">Nenhum dado encontrado para os filtros selecionados.</div>'
+        return '<div class="text-center text-muted py-4">Nenhum resultado encontrado</div>'
     
     html = """
-    <div class="table-responsive result-table">
+    <div class="result-table">
         <table class="table">
             <thead>
                 <tr>
@@ -2768,19 +2778,32 @@ def gerar_relatorio_presenca(cursor, data_inicio, data_fim, reuniao_id, grau, lo
     """
     
     for r in resultados:
-        percentual = float(r['percentual']) if r['percentual'] else 0
-        status_class = "badge-presenca" if percentual >= 75 else "badge-ausente"
-        status_text = "Regular" if percentual >= 75 else "Atenção"
+        percentual = r['percentual'] or 0
+        
+        # Definir status baseado no percentual
+        if percentual >= 75:
+            status_badge = '<span class="badge-presenca">Regular</span>'
+        elif percentual >= 50:
+            status_badge = '<span class="badge" style="background: #f59e0b; padding: 4px 12px; border-radius: 20px; font-size: 0.75rem; color: white;">Atenção</span>'
+        else:
+            status_badge = '<span class="badge-ausente">Irregular</span>'
+        
+        # Se não tiver reuniões no período, mostrar como sem registro
+        if r['total_reunioes'] == 0:
+            status_badge = '<span class="badge" style="background: #6c757d; padding: 4px 12px; border-radius: 20px; font-size: 0.75rem; color: white;">Sem registro</span>'
+            percentual_display = "0%"
+        else:
+            percentual_display = f"{percentual}%"
         
         html += f"""
             <tr>
                 <td><strong>{r['nome_completo']}</strong></td>
-                <td>{r['grau_atual']}º Grau</span></td>
+                <td>{r['grau_atual']}º</td>
                 <td>{r['loja_nome'] or '-'}</td>
-                <td class="text-center">{r['total_reunioes']}</td>
-                <td class="text-center">{r['presentes']}</td>
-                <td class="text-center"><strong>{percentual:.1f}%</strong></td>
-                <td><span class="{status_class}">{status_text}</span></td>
+                <td>{r['total_reunioes']}</td>
+                <td>{r['presentes']}</td>
+                <td>{percentual_display}</td>
+                <td>{status_badge}</td>
             </tr>
         """
     
@@ -2792,384 +2815,154 @@ def gerar_relatorio_presenca(cursor, data_inicio, data_fim, reuniao_id, grau, lo
     
     return html
 
-
-def gerar_relatorio_aniversarios(cursor, data_inicio, data_fim, loja, apenas_ativos):
-    """Relatório de aniversários dos obreiros"""
-    
-    from datetime import date
-    hoje = date.today()
-    
-    query = """
-        SELECT 
-            id, nome_completo, grau_atual, loja_nome, 
-            data_nascimento,
-            EXTRACT(MONTH FROM data_nascimento) as mes,
-            EXTRACT(DAY FROM data_nascimento) as dia
-        FROM usuarios
-        WHERE data_nascimento IS NOT NULL
-            AND tipo != 'admin'
-    """
-    
-    params = []
-    
-    if loja:
-        query += " AND loja_nome = %s"
-        params.append(loja)
-    if apenas_ativos:
-        query += " AND ativo = 1"  # 🔧 CORRIGIDO: usar = 1
-    if data_inicio:
-        query += " AND data_nascimento >= %s"
-        params.append(data_inicio)
-    if data_fim:
-        query += " AND data_nascimento <= %s"
-        params.append(data_fim)
-    
-    query += " ORDER BY mes, dia"
-    
-    cursor.execute(query, params)
-    resultados = cursor.fetchall()
-    
-    if not resultados:
-        return '<div class="alert alert-info">Nenhum aniversário encontrado para os filtros selecionados.</div>'
-    
-    html = """
-    <div class="table-responsive result-table">
-        <table class="table">
-            <thead>
-                <tr>
-                    <th>Obreiro</th>
-                    <th>Grau</th>
-                    <th>Loja</th>
-                    <th>Data de Nascimento</th>
-                    <th>Idade</th>
-                    <th>Próximo Aniversário</th>
-                    <th>Dias</th>
-                </tr>
-            </thead>
-            <tbody>
-    """
-    
-    for r in resultados:
-        if r['data_nascimento']:
-            nascimento = r['data_nascimento']
-            
-            idade = hoje.year - nascimento.year
-            if hoje.month < nascimento.month or (hoje.month == nascimento.month and hoje.day < nascimento.day):
-                idade -= 1
-            
-            aniversario_ano = hoje.year
-            data_aniversario = date(aniversario_ano, nascimento.month, nascimento.day)
-            if data_aniversario < hoje:
-                data_aniversario = date(aniversario_ano + 1, nascimento.month, nascimento.day)
-            
-            dias_para = (data_aniversario - hoje).days
-            
-            classe = "bg-warning text-dark" if dias_para <= 7 else "bg-info" if dias_para <= 30 else ""
-            
-            html += f"""
-                <tr>
-                    <td><strong>{r['nome_completo']}</strong></td>
-                    <td>{r['grau_atual']}º</span></td>
-                    <td>{r['loja_nome'] or '-'}</td>
-                    <td>{nascimento.strftime('%d/%m/%Y')}</td>
-                    <td class="text-center">{idade} anos</span></td>
-                    <td><span class="badge {classe}">{data_aniversario.strftime('%d/%m/%Y')}</span></td>
-                    <td class="text-center">{dias_para} dias</span></td>
-                </tr>
-            """
-    
-    html += """
-            </tbody>
-        </table>
-    </div>
-    """
-    
-    return html
-
-def gerar_relatorio_aniversarios_familiares(cursor, data_inicio, data_fim, loja, apenas_ativos):
-    """Relatório de aniversários de familiares dos obreiros"""
-    
-    from datetime import date
-    hoje = date.today()
-    
-    query = """
-        SELECT 
-            u.id as obreiro_id,
-            u.nome_completo as obreiro,
-            u.grau_atual,
-            u.loja_nome,
-            f.id as familiar_id,
-            f.nome as familiar_nome,
-            f.parentesco,
-            f.data_nascimento,
-            f.telefone as familiar_telefone,
-            f.email as familiar_email,
-            EXTRACT(MONTH FROM f.data_nascimento) as mes,
-            EXTRACT(DAY FROM f.data_nascimento) as dia
-        FROM usuarios u
-        JOIN familiares f ON u.id = f.obreiro_id
-        WHERE f.data_nascimento IS NOT NULL
-    """
-    
-    params = []
-    
-    if loja:
-        query += " AND u.loja_nome = %s"
-        params.append(loja)
-    if apenas_ativos:
-        query += " AND u.ativo = 1"  # 🔧 CORRIGIDO: usar = 1
-    if data_inicio:
-        query += " AND f.data_nascimento >= %s"
-        params.append(data_inicio)
-    if data_fim:
-        query += " AND f.data_nascimento <= %s"
-        params.append(data_fim)
-    
-    query += " ORDER BY mes, dia"
-    
-    cursor.execute(query, params)
-    resultados = cursor.fetchall()
-    
-    if not resultados:
-        return '<div class="alert alert-info">Nenhum familiar encontrado com data de nascimento cadastrada.</div>'
-    
-    html = """
-    <div class="table-responsive result-table">
-        <table class="table">
-            <thead>
-                <tr>
-                    <th>Obreiro</th>
-                    <th>Loja</th>
-                    <th>Grau</th>
-                    <th>Familiar</th>
-                    <th>Parentesco</th>
-                    <th>Data de Nascimento</th>
-                    <th>Idade</th>
-                    <th>Próximo Aniversário</th>
-                    <th>Contato</th>
-                </tr>
-            </thead>
-            <tbody>
-    """
-    
-    for r in resultados:
-        if r['data_nascimento']:
-            nascimento = r['data_nascimento']
-            
-            idade = hoje.year - nascimento.year
-            if hoje.month < nascimento.month or (hoje.month == nascimento.month and hoje.day < nascimento.day):
-                idade -= 1
-            
-            aniversario_ano = hoje.year
-            data_aniversario = date(aniversario_ano, nascimento.month, nascimento.day)
-            if data_aniversario < hoje:
-                data_aniversario = date(aniversario_ano + 1, nascimento.month, nascimento.day)
-            
-            dias_para = (data_aniversario - hoje).days
-            classe = "bg-warning text-dark" if dias_para <= 7 else "bg-info" if dias_para <= 30 else ""
-            
-            html += f"""
-                <tr>
-                    <td><strong>{r['obreiro']}</strong></td>
-                    <td>{r['loja_nome'] or '-'}</td>
-                    <td>{r['grau_atual']}º</span></td>
-                    <td><strong>{r['familiar_nome']}</strong></td>
-                    <td>{r['parentesco'] or '-'}</td>
-                    <td>{nascimento.strftime('%d/%m/%Y')} (<span class="text-muted">{idade} anos</span>)</span></td>
-                    <td><span class="badge {classe}">{data_aniversario.strftime('%d/%m/%Y')}</span><br><small>{dias_para} dias</small></td>
-                    <td>
-                        {f'<i class="bi bi-whatsapp text-success"></i> {r["familiar_telefone"]}<br>' if r['familiar_telefone'] else ''}
-                        {f'<i class="bi bi-envelope text-primary"></i> {r["familiar_email"]}' if r['familiar_email'] else ''}
-                        {'' if r['familiar_telefone'] or r['familiar_email'] else '-'}
-                    </td>
-                </tr>
-            """
-    
-    html += """
-            </tbody>
-        </table>
-    </div>
-    """
-    
-    return html
-
-def gerar_relatorio_estatisticas(cursor):
-    """Relatório de estatísticas gerais"""
-    
-    # Total de obreiros
-    cursor.execute("SELECT COUNT(*) as total FROM usuarios WHERE tipo != 'admin'")
-    total_obreiros = cursor.fetchone()['total']
-    
-    # Obreiros ativos (corrigido: usar = 1)
-    cursor.execute("SELECT COUNT(*) as total FROM usuarios WHERE tipo != 'admin' AND ativo = 1")
-    ativos = cursor.fetchone()['total']
-    
-    # Obreiros inativos
-    inativos = total_obreiros - ativos
-    
-    # Obreiros por grau
-    cursor.execute("""
-        SELECT grau_atual, COUNT(*) as total 
-        FROM usuarios 
-        WHERE tipo != 'admin' 
-        GROUP BY grau_atual 
-        ORDER BY grau_atual
-    """)
-    obreiros_por_grau = cursor.fetchall()
-    
-    # Total de lojas
-    cursor.execute("SELECT COUNT(DISTINCT loja_nome) as total FROM usuarios WHERE loja_nome IS NOT NULL AND loja_nome != ''")
-    total_lojas = cursor.fetchone()['total'] or 0
-    
-    # Total de reuniões
-    cursor.execute("SELECT COUNT(*) as total FROM reunioes")
-    total_reunioes = cursor.fetchone()['total']
-    
-    # Média de presença
-    cursor.execute("""
-        SELECT AVG(percentual) as media FROM (
-            SELECT 
-                u.id,
-                COUNT(CASE WHEN pr.presente = true THEN 1 END) * 100.0 / NULLIF(COUNT(r.id), 0) as percentual
-            FROM usuarios u
-            CROSS JOIN reunioes r
-            LEFT JOIN presenca_reuniao pr ON pr.reuniao_id = r.id AND pr.obreiro_id = u.id
-            WHERE u.tipo != 'admin'
-            GROUP BY u.id
-        ) as presencas
-    """)
-    resultado = cursor.fetchone()
-    media_presenca = float(resultado['media']) if resultado and resultado['media'] else 0
-    
-    html = f"""
-    <div class="row">
-        <div class="col-md-4 mb-3">
-            <div class="filter-group text-center">
-                <h3 class="numero-bordo">{total_obreiros}</h3>
-                <p class="text-muted">Total de Obreiros</p>
-                <small class="text-success">{ativos} ativos</small>
-                <small class="text-danger ms-2">{inativos} inativos</small>
-            </div>
-        </div>
-        <div class="col-md-4 mb-3">
-            <div class="filter-group text-center">
-                <h3 class="numero-bordo">{total_lojas}</h3>
-                <p class="text-muted">Lojas Representadas</p>
-            </div>
-        </div>
-        <div class="col-md-4 mb-3">
-            <div class="filter-group text-center">
-                <h3 class="numero-bordo">{total_reunioes}</h3>
-                <p class="text-muted">Total de Reuniões</p>
-            </div>
-        </div>
-    </div>
-    
-    <div class="filter-group mb-3">
-        <h6 class="mb-3" style="color: var(--bordo);">📊 Obreiros por Grau</h6>
-        <div class="table-responsive">
-            <table class="table">
-                <thead>
-                    <tr>
-                        <th>Grau</th>
-                        <th>Quantidade</th>
-                        <th>Percentual</th>
-                    </tr>
-                </thead>
-                <tbody>
-    """
-    
-    for g in obreiros_por_grau:
-        percentual = (g['total'] / total_obreiros * 100) if total_obreiros > 0 else 0
-        html += f"""
-            <tr>
-                <td>{g['grau_atual']}º Grau</span></td>
-                <td class="text-center">{g['total']} </span></td>
-                <td>
-                    <div class="progress" style="height: 25px;">
-                        <div class="progress-bar" role="progressbar" 
-                             style="width: {percentual:.1f}%; background: linear-gradient(90deg, var(--bordo), var(--bordo-claro));">
-                            {percentual:.1f}%
-                        </div>
-                    </div>
-                </td>
-            </tr>
-        """
-    
-    html += f"""
-                </tbody>
-            </table>
-        </div>
-    </div>
-    
-    <div class="filter-group">
-        <h6 class="mb-3" style="color: var(--bordo);">📈 Média de Presença</h6>
-        <div class="progress mb-2" style="height: 30px;">
-            <div class="progress-bar" role="progressbar" 
-                 style="width: {media_presenca:.1f}%; background: linear-gradient(90deg, var(--bordo), var(--bordo-claro));">
-                {media_presenca:.1f}%
-            </div>
-        </div>
-        <p class="text-muted text-center">Média geral de presença dos obreiros</p>
-    </div>
-    """
-    
-    return html
-
-def gerar_relatorio_combinado(cursor, data_inicio, data_fim, reuniao_id, grau, loja, apenas_ativos):
-    """Relatório combinado (presença + aniversários)"""
-    
-    html = "<div>"
-    
-    # Seção de Presença
-    html += "<h5 class='mb-3' style='color: var(--bordo);'><i class='bi bi-calendar-check'></i> 📋 Presença dos Obreiros</h5>"
-    html += gerar_relatorio_presenca(cursor, data_inicio, data_fim, reuniao_id, grau, loja, apenas_ativos)
-    
-    # Seção de Aniversários
-    html += "<h5 class='mb-3 mt-4' style='color: var(--bordo);'><i class='bi bi-gift'></i> 🎂 Próximos Aniversários</h5>"
-    html += gerar_relatorio_aniversarios(cursor, data_inicio, data_fim, loja, apenas_ativos)
-    
-    # Seção de Familiares
-    html += "<h5 class='mb-3 mt-4' style='color: var(--bordo);'><i class='bi bi-people'></i> 👨‍👩‍👧‍👦 Aniversários de Familiares</h5>"
-    html += gerar_relatorio_aniversarios_familiares(cursor, data_inicio, data_fim, loja, apenas_ativos)
-    
-    html += "</div>"
-    
-    return html
 
 @app.route("/relatorios/exportar/excel")
 @login_required
-def exportar_excel():
+def exportar_relatorio_excel():
     """Exporta relatório para Excel"""
-    import io
     import pandas as pd
+    from io import BytesIO
     from flask import send_file
+    from datetime import datetime
     
-    tipo = request.args.get('tipo')
-    
-    # Gerar dados em DataFrame
-    df = pd.DataFrame()
-    
-    if tipo == 'presenca':
-        df = gerar_df_presenca()
-    elif tipo == 'aniversarios':
-        df = gerar_df_aniversarios()
-    elif tipo == 'estatisticas':
-        df = gerar_df_estatisticas()
-    
-    # Exportar para Excel
-    output = io.BytesIO()
-    with pd.ExcelWriter(output, engine='openpyxl') as writer:
-        df.to_excel(writer, sheet_name='Relatório', index=False)
-    
-    output.seek(0)
-    
-    return send_file(
-        output,
-        mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-        as_attachment=True,
-        download_name=f'relatorio_{tipo}_{datetime.now().strftime("%Y%m%d_%H%M%S")}.xlsx'
-    )
+    try:
+        tipo = request.args.get('tipo')
+        data_inicio = request.args.get('data_inicio')
+        data_fim = request.args.get('data_fim')
+        reuniao_id = request.args.get('reuniao_id')
+        grau = request.args.get('grau')
+        loja = request.args.get('loja')
+        apenas_ativos = request.args.get('apenas_ativos') == 'on'
+        
+        cursor, conn = get_db()
+        
+        if tipo == 'presenca':
+            # Query corrigida - criar a coluna percentual diretamente no SQL
+            query = """
+                SELECT 
+                    u.nome_completo as obreiro,
+                    u.grau_atual as grau,
+                    u.loja_nome as loja,
+                    COUNT(DISTINCT pr.reuniao_id) as total_reunioes,
+                    COUNT(CASE WHEN pr.presente = TRUE THEN 1 END) as presentes,
+                    CASE 
+                        WHEN COUNT(DISTINCT pr.reuniao_id) = 0 THEN 0
+                        ELSE ROUND(COUNT(CASE WHEN pr.presente = TRUE THEN 1 END) * 100.0 / COUNT(DISTINCT pr.reuniao_id), 1)
+                    END as percentual
+                FROM usuarios u
+                LEFT JOIN presenca_reuniao pr ON u.id = pr.obreiro_id
+                LEFT JOIN reunioes r ON pr.reuniao_id = r.id
+                WHERE u.tipo IN ('obreiro', 'sindicante', 'admin')
+            """
+            
+            params = []
+            
+            if apenas_ativos:
+                query += " AND u.ativo = 1"
+            
+            if grau:
+                query += " AND u.grau_atual >= %s"
+                params.append(int(grau))
+            
+            if loja:
+                query += " AND u.loja_nome = %s"
+                params.append(loja)
+            
+            if data_inicio:
+                query += " AND r.data >= %s"
+                params.append(data_inicio)
+            
+            if data_fim:
+                query += " AND r.data <= %s"
+                params.append(data_fim)
+            
+            if reuniao_id:
+                query += " AND pr.reuniao_id = %s"
+                params.append(reuniao_id)
+            
+            query += " GROUP BY u.id, u.nome_completo, u.grau_atual, u.loja_nome ORDER BY u.nome_completo"
+            
+            cursor.execute(query, params)
+            resultados = cursor.fetchall()
+            
+            if not resultados:
+                flash("Nenhum dado encontrado para exportar!", "warning")
+                return redirect("/relatorios")
+            
+            # Converter para lista de dicionários
+            dados = []
+            for r in resultados:
+                percentual = r['percentual'] if r['percentual'] is not None else 0
+                
+                # Definir status baseado no percentual
+                if r['total_reunioes'] == 0:
+                    status = 'Sem registro'
+                elif percentual >= 75:
+                    status = 'Regular'
+                elif percentual >= 50:
+                    status = 'Atenção'
+                else:
+                    status = 'Irregular'
+                
+                dados.append({
+                    'Obreiro': r['obreiro'],
+                    'Grau': f"{r['grau']}º",
+                    'Loja': r['loja'] or '-',
+                    'Total Reuniões': r['total_reunioes'],
+                    'Presentes': r['presentes'],
+                    'Percentual': f"{percentual}%",
+                    'Status': status
+                })
+            
+            # Criar DataFrame
+            df = pd.DataFrame(dados)
+            
+            # Criar Excel
+            output = BytesIO()
+            with pd.ExcelWriter(output, engine='openpyxl') as writer:
+                df.to_excel(writer, sheet_name='Relatório de Presença', index=False)
+                
+                # Ajustar largura das colunas
+                worksheet = writer.sheets['Relatório de Presença']
+                for column in worksheet.columns:
+                    max_length = 0
+                    column_letter = column[0].column_letter
+                    for cell in column:
+                        try:
+                            if len(str(cell.value)) > max_length:
+                                max_length = len(str(cell.value))
+                        except:
+                            pass
+                    adjusted_width = min(max_length + 2, 50)
+                    worksheet.column_dimensions[column_letter].width = adjusted_width
+            
+            output.seek(0)
+            
+            return_connection(conn)
+            
+            return send_file(
+                output,
+                mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+                as_attachment=True,
+                download_name=f'relatorio_presenca_{datetime.now().strftime("%Y%m%d_%H%M%S")}.xlsx'
+            )
+        
+        else:
+            return_connection(conn)
+            flash("Exportação para este tipo de relatório ainda não implementada", "warning")
+            return redirect("/relatorios")
+            
+    except Exception as e:
+        print(f"Erro ao exportar Excel: {e}")
+        import traceback
+        traceback.print_exc()
+        if 'conn' in locals():
+            return_connection(conn)
+        flash(f"Erro ao exportar: {str(e)}", "danger")
+        return redirect("/relatorios")
+
+
+
     
 # =============================
 # ROTAS DE BIBLIOTECA

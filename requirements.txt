@@ -16,3 +16,4 @@ pdfkit
 requests==2.31.0
 PyMuPDF==1.24.2
 requests==2.31.0
+pandas openpyxl
