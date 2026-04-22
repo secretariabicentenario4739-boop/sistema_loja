@@ -2819,10 +2819,10 @@ def gerar_relatorio_presenca(cursor, data_inicio, data_fim, reuniao_id, grau, lo
 @app.route("/relatorios/exportar/excel")
 @login_required
 def exportar_relatorio_excel():
-    """Exporta relatório para Excel"""
-    import pandas as pd
-    from io import BytesIO
-    from flask import send_file
+    """Exporta relatório para CSV (compatível com Excel)"""
+    import csv
+    from io import StringIO
+    from flask import Response
     from datetime import datetime
     
     try:
@@ -2837,7 +2837,6 @@ def exportar_relatorio_excel():
         cursor, conn = get_db()
         
         if tipo == 'presenca':
-            # Query corrigida - criar a coluna percentual diretamente no SQL
             query = """
                 SELECT 
                     u.nome_completo as obreiro,
@@ -2889,12 +2888,17 @@ def exportar_relatorio_excel():
                 flash("Nenhum dado encontrado para exportar!", "warning")
                 return redirect("/relatorios")
             
-            # Converter para lista de dicionários
-            dados = []
+            # Criar CSV
+            output = StringIO()
+            writer = csv.writer(output, delimiter=';')
+            
+            # Escrever cabeçalho
+            writer.writerow(['Obreiro', 'Grau', 'Loja', 'Total Reuniões', 'Presentes', 'Percentual', 'Status'])
+            
+            # Escrever dados
             for r in resultados:
                 percentual = r['percentual'] if r['percentual'] is not None else 0
                 
-                # Definir status baseado no percentual
                 if r['total_reunioes'] == 0:
                     status = 'Sem registro'
                 elif percentual >= 75:
@@ -2904,56 +2908,30 @@ def exportar_relatorio_excel():
                 else:
                     status = 'Irregular'
                 
-                dados.append({
-                    'Obreiro': r['obreiro'],
-                    'Grau': f"{r['grau']}º",
-                    'Loja': r['loja'] or '-',
-                    'Total Reuniões': r['total_reunioes'],
-                    'Presentes': r['presentes'],
-                    'Percentual': f"{percentual}%",
-                    'Status': status
-                })
-            
-            # Criar DataFrame
-            df = pd.DataFrame(dados)
-            
-            # Criar Excel
-            output = BytesIO()
-            with pd.ExcelWriter(output, engine='openpyxl') as writer:
-                df.to_excel(writer, sheet_name='Relatório de Presença', index=False)
-                
-                # Ajustar largura das colunas
-                worksheet = writer.sheets['Relatório de Presença']
-                for column in worksheet.columns:
-                    max_length = 0
-                    column_letter = column[0].column_letter
-                    for cell in column:
-                        try:
-                            if len(str(cell.value)) > max_length:
-                                max_length = len(str(cell.value))
-                        except:
-                            pass
-                    adjusted_width = min(max_length + 2, 50)
-                    worksheet.column_dimensions[column_letter].width = adjusted_width
-            
-            output.seek(0)
+                writer.writerow([
+                    r['obreiro'],
+                    f"{r['grau']}º",
+                    r['loja'] or '-',
+                    r['total_reunioes'],
+                    r['presentes'],
+                    f"{percentual}%",
+                    status
+                ])
             
             return_connection(conn)
             
-            return send_file(
-                output,
-                mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-                as_attachment=True,
-                download_name=f'relatorio_presenca_{datetime.now().strftime("%Y%m%d_%H%M%S")}.xlsx'
-            )
-        
+            # Retornar como CSV
+            response = Response(output.getvalue(), mimetype='text/csv; charset=utf-8')
+            response.headers['Content-Disposition'] = f'attachment; filename=relatorio_presenca_{datetime.now().strftime("%Y%m%d_%H%M%S")}.csv'
+            return response
+            
         else:
             return_connection(conn)
             flash("Exportação para este tipo de relatório ainda não implementada", "warning")
             return redirect("/relatorios")
             
     except Exception as e:
-        print(f"Erro ao exportar Excel: {e}")
+        print(f"Erro ao exportar: {e}")
         import traceback
         traceback.print_exc()
         if 'conn' in locals():
