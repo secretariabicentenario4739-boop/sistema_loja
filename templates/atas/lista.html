@@ -552,13 +552,12 @@
                         <thead>
                             <tr>
                                 <th style="width: 10%">Nº Ata</th>
-                                <th style="width: 25%">Reunião</th>
+                                <th style="width: 30%">Reunião</th>
                                 <th style="width: 12%">Data da Ata</th>
                                 <th style="width: 10%">Tipo</th>
-                                <th style="width: 15%">Criado por</th>
                                 <th style="width: 10%">Status</th>
                                 <th style="width: 8%">Assinaturas</th>
-                                <th style="width: 10%">Ações</th>
+                                <th style="width: 20%">Ações</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -584,7 +583,7 @@
                                             </small>
                                         {% endif %}
                                     </div>
-                                 </td>
+                                  </td>
                                 <td class="align-middle">
                                     <strong>{{ ata.reuniao_titulo_original or ata.reuniao_titulo or 'Sem título' }}</strong>
                                     <br>
@@ -604,7 +603,7 @@
                                         <i class="bi bi-tag"></i> {{ ata.reuniao_tipo }}
                                     </small>
                                     {% endif %}
-                                 </td>
+                                  </td>
                                 <td class="align-middle">
                                     <div>
                                         <i class="bi bi-calendar-check"></i>
@@ -619,7 +618,7 @@
                                         <i class="bi bi-clock-history"></i> Criado em: {{ ata.data_criacao.strftime('%d/%m/%Y') if ata.data_criacao else '-' }}
                                     </small>
                                     {% endif %}
-                                 </td>
+                                  </td>
                                 <td class="align-middle">
                                     <span class="badge bg-info">
                                         <i class="bi bi-tag"></i> {{ ata.tipo_ata or 'Ata' }}
@@ -630,19 +629,7 @@
                                         <i class="bi bi-layout-text-window"></i> {{ ata.modelo_ata }}
                                     </small>
                                     {% endif %}
-                                 </td>
-                               <td class="align-middle">
-                                    <div>
-                                        <i class="bi bi-person"></i> 
-                                        <strong>{{ ata.redator_nome_completo or ata.redator_nome or 'Redator não informado' }}</strong>
-                                    </div>
-                                    {% if ata.secretario_nome %}
-                                    <br>
-                                    <small class="text-muted">
-                                        <i class="bi bi-journal"></i> Secretário: {{ ata.secretario_nome }}
-                                    </small>
-                                    {% endif %}
-                                 </td>
+                                  </td>
                                 <td class="align-middle">
                                     {% if ata.aprovada == 1 %}
                                         <span class="badge bg-success">
@@ -670,7 +657,7 @@
                                             <i class="bi bi-hourglass"></i> Aguardando aprovação
                                         </small>
                                     {% endif %}
-                                 </td>
+                                  </td>
                                 <td class="text-center align-middle">
                                     <div>
                                         <span class="badge bg-secondary" style="font-size: 0.9rem;">
@@ -693,7 +680,7 @@
                                         {{ ata.hash_documento[:8] }}...
                                     </small>
                                     {% endif %}
-                                 </td>
+                                  </td>
                                 <td class="align-middle">
                                     <div class="table-actions">
                                         <a href="/atas/{{ ata.id }}" class="btn-icon-info" title="Visualizar Ata">
@@ -735,22 +722,22 @@
                                         <i class="bi bi-printer"></i> Impresso em: {{ ata.data_impressao.strftime('%d/%m/%Y') if ata.data_impressao else '-' }}
                                     </small>
                                     {% endif %}
-                                 </td>
-                             </tr>
+                                  </td>
+                              </tr>
                             {% else %}
                             <tr>
-                                <td colspan="8" class="text-center text-muted py-5">
+                                <td colspan="7" class="text-center text-muted py-5">
                                     <i class="bi bi-inbox fs-1"></i><br>
                                     Nenhuma ata encontrada
                                     <br>
                                     <a href="/reunioes" class="btn-bordo mt-3">
                                         <i class="bi bi-calendar"></i> Ir para Reuniões
                                     </a>
-                                 </td>
-                             </tr>
+                                  </td>
+                              </tr>
                             {% endfor %}
                         </tbody>
-                     </table>
+                      </table>
                 </div>
             </div>
         </div>
@@ -771,11 +758,6 @@
                                 <div>
                                     <strong>{{ "%03d"|format(ata.numero_ata or loop.index|int) }}/{{ ata.ano_ata or (ata.reuniao_data.strftime('%Y') if ata.reuniao_data else (ata.data.strftime('%Y') if ata.data else '2026')) }}</strong> - 
                                     {{ ata.reuniao_titulo_original or ata.reuniao_titulo or 'Sem título' }}
-                                    <br>
-                                    <small class="text-muted">
-                                        <i class="bi bi-person"></i> 
-                                        {{ ata.redator_nome_completo or ata.redator_nome or 'Redator não informado' }}
-                                    </small>
                                     {% if ata.data %}
                                     <br>
                                     <small class="text-muted">
