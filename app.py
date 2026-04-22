@@ -10598,28 +10598,27 @@ def gerenciar_candidatos():
         candidatos = []
     
     # ============================================
-    # CORREÇÃO: BUSCAR STATUS DOS DOCUMENTOS POR CANDIDATO
+    # CORREÇÃO: Usar a tabela correta: tipos_documentos_candidato
     # ============================================
     
     documentos_status = {}
     
     try:
-        # Primeiro: Buscar total de documentos OBRIGATÓRIOS
-        # Tabela correta: tipos_documentos (não tipos_documentos_candidato)
-        cursor.execute("SELECT COUNT(*) as total FROM tipos_documentos WHERE obrigatorio = 1 AND ativo = 1")
+        # Primeiro: Buscar total de documentos OBRIGATÓRIOS na tabela correta
+        cursor.execute("SELECT COUNT(*) as total FROM tipos_documentos_candidato WHERE obrigatorio = 1 AND ativo = 1")
         result = cursor.fetchone()
         total_obrigatorios = result['total'] if result else 0
         
         print(f"📊 Total de documentos obrigatórios: {total_obrigatorios}")
         
-        # Para cada candidato, calcular documentos enviados (obrigatórios e opcionais)
+        # Para cada candidato, calcular documentos enviados
         for candidato in candidatos:
             try:
                 # Documentos OBRIGATÓRIOS enviados (status diferente de rejeitado)
                 cursor.execute("""
                     SELECT COUNT(dc.id) as enviados
                     FROM documentos_candidato dc
-                    JOIN tipos_documentos td ON dc.tipo_documento_id = td.id
+                    JOIN tipos_documentos_candidato td ON dc.tipo_documento_id = td.id
                     WHERE dc.candidato_id = %s 
                       AND td.obrigatorio = 1 
                       AND dc.status != 'rejeitado'
@@ -10630,35 +10629,16 @@ def gerenciar_candidatos():
                 cursor.execute("""
                     SELECT COUNT(dc.id) as enviados
                     FROM documentos_candidato dc
-                    JOIN tipos_documentos td ON dc.tipo_documento_id = td.id
+                    JOIN tipos_documentos_candidato td ON dc.tipo_documento_id = td.id
                     WHERE dc.candidato_id = %s 
                       AND td.obrigatorio = 0 
                       AND dc.status != 'rejeitado'
                 """, (candidato['id'],))
                 enviados_opcionais = cursor.fetchone()['enviados'] or 0
                 
-                # Total de documentos enviados (obrigatórios + opcionais)
-                total_enviados = enviados_obrigatorios + enviados_opcionais
-                
-                # Status de aprovação dos documentos obrigatórios
-                cursor.execute("""
-                    SELECT 
-                        COUNT(CASE WHEN dc.status = 'aprovado' THEN 1 END) as aprovados,
-                        COUNT(CASE WHEN dc.status = 'pendente' THEN 1 END) as pendentes,
-                        COUNT(CASE WHEN dc.status = 'rejeitado' THEN 1 END) as rejeitados
-                    FROM documentos_candidato dc
-                    JOIN tipos_documentos td ON dc.tipo_documento_id = td.id
-                    WHERE dc.candidato_id = %s AND td.obrigatorio = 1
-                """, (candidato['id'],))
-                status_result = cursor.fetchone()
-                
                 documentos_status[candidato['id']] = {
                     'total': total_obrigatorios,
-                    'enviados': total_enviados,
-                    'faltantes': max(0, total_obrigatorios - enviados_obrigatorios),
-                    'aprovados': status_result['aprovados'] or 0,
-                    'pendentes': status_result['pendentes'] or 0,
-                    'rejeitados': status_result['rejeitados'] or 0,
+                    'enviados': enviados_obrigatorios + enviados_opcionais,
                     'total_obrigatorios': total_obrigatorios,
                     'enviados_obrigatorios': enviados_obrigatorios,
                     'enviados_opcionais': enviados_opcionais
@@ -10671,10 +10651,6 @@ def gerenciar_candidatos():
                 documentos_status[candidato['id']] = {
                     'total': total_obrigatorios,
                     'enviados': 0,
-                    'faltantes': total_obrigatorios,
-                    'aprovados': 0,
-                    'pendentes': 0,
-                    'rejeitados': 0,
                     'total_obrigatorios': total_obrigatorios,
                     'enviados_obrigatorios': 0,
                     'enviados_opcionais': 0
@@ -10688,10 +10664,6 @@ def gerenciar_candidatos():
             documentos_status[candidato['id']] = {
                 'total': 0,
                 'enviados': 0,
-                'faltantes': 0,
-                'aprovados': 0,
-                'pendentes': 0,
-                'rejeitados': 0,
                 'total_obrigatorios': 0,
                 'enviados_obrigatorios': 0,
                 'enviados_opcionais': 0
