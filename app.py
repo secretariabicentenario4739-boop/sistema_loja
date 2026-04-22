@@ -5872,10 +5872,49 @@ def editar_obreiro(id):
             senha = request.form.get("senha", "")
             senha_atual = request.form.get("senha_atual", "")
             
+            # =========================================================
+            # CORREÇÃO: ADMIN NÃO PRECISA DE SENHA ATUAL
+            # =========================================================
+            if senha:
+                # Caso 1: Admin editando qualquer obreiro - NÃO precisa de senha atual
+                if is_admin and not is_own_profile:
+                    if len(senha) < 6:
+                        flash("A nova senha deve ter no mínimo 6 caracteres!", "danger")
+                        return redirect(f"/obreiros/{id}/editar")
+                    
+                    from werkzeug.security import generate_password_hash
+                    nova_senha_hash = generate_password_hash(senha)
+                    cursor.execute("UPDATE usuarios SET senha_hash = %s WHERE id = %s", (nova_senha_hash, id))
+                    flash("Senha alterada com sucesso!", "success")
+                
+                # Caso 2: Usuário alterando a própria senha - PRECISA da senha atual
+                elif is_own_profile:
+                    if not senha_atual:
+                        flash("Digite sua senha atual para alterar a senha!", "danger")
+                        return redirect(f"/obreiros/{id}/editar")
+                    
+                    cursor.execute("SELECT senha_hash FROM usuarios WHERE id = %s", (id,))
+                    user_data = cursor.fetchone()
+                    
+                    from werkzeug.security import check_password_hash
+                    if not check_password_hash(user_data['senha_hash'], senha_atual):
+                        flash("Senha atual incorreta!", "danger")
+                        return redirect(f"/obreiros/{id}/editar")
+                    
+                    if len(senha) < 6:
+                        flash("A nova senha deve ter no mínimo 6 caracteres!", "danger")
+                        return redirect(f"/obreiros/{id}/editar")
+                    
+                    from werkzeug.security import generate_password_hash
+                    nova_senha_hash = generate_password_hash(senha)
+                    cursor.execute("UPDATE usuarios SET senha_hash = %s WHERE id = %s", (nova_senha_hash, id))
+                    flash("Senha alterada com sucesso!", "success")
+            
             # Campos de admin
             if is_admin:
                 tipo = request.form.get("tipo", obreiro["tipo"])
                 ativo = 1 if request.form.get("ativo") == '1' else 0
+                motivo_inativo = request.form.get("motivo_inativo") if ativo == 0 else None
                 grau_principal = request.form.get("grau_principal", 1)
                 grau_superior = request.form.get("grau_superior", "")
                 
@@ -5887,33 +5926,11 @@ def editar_obreiro(id):
             else:
                 tipo = obreiro["tipo"]
                 ativo = obreiro["ativo"]
+                motivo_inativo = obreiro.get("motivo_inativo")
                 grau_atual = obreiro["grau_atual"]
                 grau_superior = obreiro.get("grau_superior")
             
             grau_antigo = obreiro["grau_atual"]
-            
-            # Validar senha
-            if senha:
-                if not senha_atual:
-                    flash("Digite sua senha atual para alterar a senha!", "danger")
-                    return redirect(f"/obreiros/{id}/editar")
-                
-                cursor.execute("SELECT senha_hash FROM usuarios WHERE id = %s", (id,))
-                user_data = cursor.fetchone()
-                
-                from werkzeug.security import check_password_hash
-                if not check_password_hash(user_data['senha_hash'], senha_atual):
-                    flash("Senha atual incorreta!", "danger")
-                    return redirect(f"/obreiros/{id}/editar")
-                
-                if len(senha) < 6:
-                    flash("A nova senha deve ter no mínimo 6 caracteres!", "danger")
-                    return redirect(f"/obreiros/{id}/editar")
-                
-                from werkzeug.security import generate_password_hash
-                nova_senha_hash = generate_password_hash(senha)
-                cursor.execute("UPDATE usuarios SET senha_hash = %s WHERE id = %s", (nova_senha_hash, id))
-                flash("Senha alterada com sucesso!", "success")
             
             # Validar sindicante
             if tipo == 'sindicante' and grau_atual < 3:
@@ -5969,7 +5986,8 @@ def editar_obreiro(id):
                     email_profissional = %s,
                     telefone_profissional = %s,
                     endereco_profissional = %s,
-                    grau_superior = %s
+                    grau_superior = %s,
+                    motivo_inativo = %s
                 WHERE id = %s
             """, (
                 nome_completo, nome_maconico, cim_numero, telefone, email,
@@ -5983,6 +6001,7 @@ def editar_obreiro(id):
                 loja_iniciacao, nome_pai, nome_mae, profissao, empresa,
                 email_profissional, telefone_profissional, endereco_profissional,
                 grau_superior if grau_superior else None,
+                motivo_inativo,
                 id
             ))
             
@@ -6047,6 +6066,8 @@ def editar_obreiro(id):
         flash(f"Erro ao atualizar: {str(e)}", "danger")
         return_connection(conn)
         return redirect(f"/obreiros/{id}")
+        
+        
 @app.route("/obreiros/<int:id>")
 @login_required
 def visualizar_obreiro(id):
