@@ -611,46 +611,60 @@
                                         {% endif %}
                                     {% endif %}
                                 </td>
-                                <td>
-                                    {% if doc_status and doc_status.total and doc_status.total > 0 %}
-                                        {% set enviados = doc_status.enviados|default(0) %}
-                                        {% set total = doc_status.total|default(0) %}
-                                        {% set percentual = (enviados / total * 100) if total > 0 else 0 %}
-                                        
-                                        <div class="d-flex flex-column">
-                                            <div class="d-flex justify-content-between small mb-1">
-                                                <span class="text-muted">{{ enviados }}/{{ total }} enviados</span>
-                                                {% if total - enviados > 0 %}
-                                                    <span class="text-danger fw-bold">{{ total - enviados }} faltando</span>
-                                                {% else %}
-                                                    <span class="text-success fw-bold">✓ Completo</span>
-                                                {% endif %}
-                                            </div>
-                                            <div class="progress-bordo" style="height: 20px;">
-                                                <div class="progress-bar bg-success" 
-                                                     role="progressbar" 
-                                                     style="width: {{ percentual }}%;">
-                                                    {{ percentual|int }}%
-                                                </div>
-                                            </div>
-                                        </div>
-                                    {% else %}
-                                        <div class="d-flex flex-column">
-                                            <div class="d-flex justify-content-between small mb-1">
-                                                <span class="text-muted">Documentos</span>
-                                                <span class="text-warning fw-bold">Pendente</span>
-                                            </div>
-                                            <div class="progress-bordo" style="height: 20px;">
-                                                <div class="progress-bar" role="progressbar" style="width: 0%">0%</div>
-                                            </div>
-                                            <div class="small text-muted mt-1">
-                                                <a href="/candidatos/{{ c.id }}/documentos" class="text-primary">
-                                                    <i class="bi bi-folder2-open"></i> Enviar documentos
-                                                </a>
-                                            </div>
-                                        </div>
-                                    {% endif %}
-                                </td>
+                                <td class="align-middle">
+									{% set doc = documentos_status.get(c.id) if documentos_status else None %}
+									{% if doc and doc.total_obrigatorios > 0 %}
+										{% set enviados_obrig = doc.enviados_obrigatorios|default(0) %}
+										{% set total_obrig = doc.total_obrigatorios|default(0) %}
+										{% set percentual = (enviados_obrig / total_obrig * 100) if total_obrig > 0 else 0 %}
+										
+										<div class="d-flex flex-column">
+											<div class="d-flex justify-content-between small mb-1">
+												<span class="text-muted">
+													<i class="bi bi-star-fill text-danger me-1" style="font-size: 0.7rem;"></i>
+													Obrigatórios: {{ enviados_obrig }}/{{ total_obrig }}
+												</span>
+												{% if total_obrig - enviados_obrig > 0 %}
+													<span class="text-danger fw-bold">{{ total_obrig - enviados_obrig }} faltando</span>
+												{% else %}
+													<span class="text-success fw-bold">✓ Completo</span>
+												{% endif %}
+											</div>
+											<div class="progress-bordo" style="height: 20px;">
+												<div class="progress-bar bg-success" 
+													 role="progressbar" 
+													 style="width: {{ percentual }}%;">
+													{{ percentual|int }}%
+												</div>
+											</div>
+											
+											{% if doc.enviados_opcionais|default(0) > 0 %}
+											<div class="small text-muted mt-1">
+												<i class="bi bi-bookmark-fill text-secondary me-1" style="font-size: 0.7rem;"></i>
+												+ {{ doc.enviados_opcionais }} opcional(is) enviado(s)
+											</div>
+											{% endif %}
+										</div>
+									{% else %}
+										<div class="d-flex flex-column">
+											<div class="d-flex justify-content-between small mb-1">
+												<span class="text-muted">
+													<i class="bi bi-star-fill text-danger me-1" style="font-size: 0.7rem;"></i>
+													Documentos Obrigatórios
+												</span>
+												<span class="text-warning fw-bold">Pendente</span>
+											</div>
+											<div class="progress-bordo" style="height: 20px;">
+												<div class="progress-bar" role="progressbar" style="width: 0%">0%</div>
+											</div>
+											<div class="small text-muted mt-1">
+												<a href="/candidatos/{{ c.id }}/documentos" class="text-primary">
+													<i class="bi bi-folder2-open"></i> Enviar documentos
+												</a>
+											</div>
+										</div>
+									{% endif %}
+								</td>
                                 <td class="align-middle">
                                     <div class="table-actions">
                                         <!-- 1. VISUALIZAR - Todos podem ver -->

@@ -10598,51 +10598,92 @@ def gerenciar_candidatos():
         candidatos = []
     
     # ============================================
-    # BUSCAR STATUS DOS DOCUMENTOS POR CANDIDATO
+    # CORREÇÃO: BUSCAR STATUS DOS DOCUMENTOS POR CANDIDATO
     # ============================================
     
     documentos_status = {}
     
     try:
-        cursor.execute("SELECT COUNT(*) as total FROM tipos_documentos_candidato WHERE obrigatorio = 1")
+        # Primeiro: Buscar total de documentos OBRIGATÓRIOS
+        # Tabela correta: tipos_documentos (não tipos_documentos_candidato)
+        cursor.execute("SELECT COUNT(*) as total FROM tipos_documentos WHERE obrigatorio = 1 AND ativo = 1")
         result = cursor.fetchone()
-        total_tipos_obrigatorios = result['total'] if result else 0
+        total_obrigatorios = result['total'] if result else 0
         
-        cursor.execute("""
-            SELECT 
-                d.candidato_id,
-                COUNT(d.id) as enviados,
-                SUM(CASE WHEN d.status = 'aprovado' THEN 1 ELSE 0 END) as aprovados,
-                SUM(CASE WHEN d.status = 'pendente' THEN 1 ELSE 0 END) as pendentes,
-                SUM(CASE WHEN d.status = 'rejeitado' THEN 1 ELSE 0 END) as rejeitados
-            FROM documentos_candidato d
-            GROUP BY d.candidato_id
-        """)
-        docs_enviados = cursor.fetchall()
+        print(f"📊 Total de documentos obrigatórios: {total_obrigatorios}")
         
-        for doc in docs_enviados:
-            documentos_status[doc['candidato_id']] = {
-                'total': total_tipos_obrigatorios,
-                'enviados': doc['enviados'],
-                'faltantes': max(0, total_tipos_obrigatorios - doc['enviados']),
-                'aprovados': doc['aprovados'] or 0,
-                'pendentes': doc['pendentes'] or 0,
-                'rejeitados': doc['rejeitados'] or 0
-            }
-        
+        # Para cada candidato, calcular documentos enviados (obrigatórios e opcionais)
         for candidato in candidatos:
-            if candidato['id'] not in documentos_status:
+            try:
+                # Documentos OBRIGATÓRIOS enviados (status diferente de rejeitado)
+                cursor.execute("""
+                    SELECT COUNT(dc.id) as enviados
+                    FROM documentos_candidato dc
+                    JOIN tipos_documentos td ON dc.tipo_documento_id = td.id
+                    WHERE dc.candidato_id = %s 
+                      AND td.obrigatorio = 1 
+                      AND dc.status != 'rejeitado'
+                """, (candidato['id'],))
+                enviados_obrigatorios = cursor.fetchone()['enviados'] or 0
+                
+                # Documentos OPCIONAIS enviados (status diferente de rejeitado)
+                cursor.execute("""
+                    SELECT COUNT(dc.id) as enviados
+                    FROM documentos_candidato dc
+                    JOIN tipos_documentos td ON dc.tipo_documento_id = td.id
+                    WHERE dc.candidato_id = %s 
+                      AND td.obrigatorio = 0 
+                      AND dc.status != 'rejeitado'
+                """, (candidato['id'],))
+                enviados_opcionais = cursor.fetchone()['enviados'] or 0
+                
+                # Total de documentos enviados (obrigatórios + opcionais)
+                total_enviados = enviados_obrigatorios + enviados_opcionais
+                
+                # Status de aprovação dos documentos obrigatórios
+                cursor.execute("""
+                    SELECT 
+                        COUNT(CASE WHEN dc.status = 'aprovado' THEN 1 END) as aprovados,
+                        COUNT(CASE WHEN dc.status = 'pendente' THEN 1 END) as pendentes,
+                        COUNT(CASE WHEN dc.status = 'rejeitado' THEN 1 END) as rejeitados
+                    FROM documentos_candidato dc
+                    JOIN tipos_documentos td ON dc.tipo_documento_id = td.id
+                    WHERE dc.candidato_id = %s AND td.obrigatorio = 1
+                """, (candidato['id'],))
+                status_result = cursor.fetchone()
+                
                 documentos_status[candidato['id']] = {
-                    'total': total_tipos_obrigatorios,
+                    'total': total_obrigatorios,
+                    'enviados': total_enviados,
+                    'faltantes': max(0, total_obrigatorios - enviados_obrigatorios),
+                    'aprovados': status_result['aprovados'] or 0,
+                    'pendentes': status_result['pendentes'] or 0,
+                    'rejeitados': status_result['rejeitados'] or 0,
+                    'total_obrigatorios': total_obrigatorios,
+                    'enviados_obrigatorios': enviados_obrigatorios,
+                    'enviados_opcionais': enviados_opcionais
+                }
+                
+                print(f"📄 Candidato {candidato['nome'][:30]}: Obrigatórios {enviados_obrigatorios}/{total_obrigatorios}, Opcionais: {enviados_opcionais}")
+                
+            except Exception as e:
+                print(f"Erro ao processar documentos do candidato {candidato['id']}: {e}")
+                documentos_status[candidato['id']] = {
+                    'total': total_obrigatorios,
                     'enviados': 0,
-                    'faltantes': total_tipos_obrigatorios,
+                    'faltantes': total_obrigatorios,
                     'aprovados': 0,
                     'pendentes': 0,
-                    'rejeitados': 0
+                    'rejeitados': 0,
+                    'total_obrigatorios': total_obrigatorios,
+                    'enviados_obrigatorios': 0,
+                    'enviados_opcionais': 0
                 }
+                
     except Exception as e:
         print(f"Erro ao buscar status dos documentos: {str(e)}")
-        conn.rollback()
+        import traceback
+        traceback.print_exc()
         for candidato in candidatos:
             documentos_status[candidato['id']] = {
                 'total': 0,
@@ -10650,7 +10691,10 @@ def gerenciar_candidatos():
                 'faltantes': 0,
                 'aprovados': 0,
                 'pendentes': 0,
-                'rejeitados': 0
+                'rejeitados': 0,
+                'total_obrigatorios': 0,
+                'enviados_obrigatorios': 0,
+                'enviados_opcionais': 0
             }
     
     # Buscar sindicantes
