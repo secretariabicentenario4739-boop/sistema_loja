@@ -9035,6 +9035,9 @@ def ver_ata_por_id(id):
     try:
         cursor, conn = get_db()
         
+        # ============================================
+        # CORREÇÃO: Buscar a ata primeiro com campos que existem
+        # ============================================
         cursor.execute("""
             SELECT 
                 a.*,
@@ -9047,11 +9050,10 @@ def ver_ata_por_id(id):
                 r.local,
                 r.pauta,
                 r.grau as reuniao_grau,
-                u.nome_completo as redator_nome,
+                r.criado_por as reuniao_criado_por,
                 u2.nome_completo as aprovado_por_nome
             FROM atas a
             JOIN reunioes r ON a.reuniao_id = r.id
-            LEFT JOIN usuarios u ON a.redator_id = u.id
             LEFT JOIN usuarios u2 ON a.aprovada_por = u2.id
             WHERE a.id = %s
         """, (id,))
@@ -9062,6 +9064,68 @@ def ver_ata_por_id(id):
             flash("Ata não encontrada", "danger")
             return_connection(conn)
             return redirect("/atas")
+        
+        # ============================================
+        # Buscar o redator correto (Secretário > Criador da Reunião)
+        # ============================================
+        
+        # Buscar Secretário atual da loja
+        cursor.execute("""
+            SELECT u.id, u.nome_completo
+            FROM ocupacao_cargos oc
+            JOIN cargos c ON oc.cargo_id = c.id
+            JOIN usuarios u ON oc.obreiro_id = u.id
+            WHERE LOWER(c.nome) LIKE '%secret%' AND oc.ativo = 1
+            LIMIT 1
+        """)
+        secretario_atual = cursor.fetchone()
+        
+        # Buscar criador da reunião
+        cursor.execute("""
+            SELECT id, nome_completo
+            FROM usuarios
+            WHERE id = %s
+        """, (ata['reuniao_criado_por'],))
+        criador_reuniao = cursor.fetchone()
+        
+        # Definir o redator: Secretário (se existir) ou Criador da Reunião
+        if secretario_atual:
+            redator_nome = secretario_atual['nome_completo']
+            redator_id = secretario_atual['id']
+        else:
+            redator_nome = criador_reuniao['nome_completo'] if criador_reuniao else 'Sistema'
+            redator_id = criador_reuniao['id'] if criador_reuniao else None
+        
+        # Adicionar os campos calculados ao objeto ata (como dicionário)
+        ata = dict(ata)  # Converter para dicionário se for necessário
+        ata['redator_nome'] = redator_nome
+        ata['redator_id'] = redator_id
+        
+        # ============================================
+        # Buscar Venerável e Orador atuais para os nomes
+        # ============================================
+        
+        # Buscar Venerável Mestre atual
+        cursor.execute("""
+            SELECT u.id, u.nome_completo
+            FROM ocupacao_cargos oc
+            JOIN cargos c ON oc.cargo_id = c.id
+            JOIN usuarios u ON oc.obreiro_id = u.id
+            WHERE (LOWER(c.nome) LIKE '%vener%' OR LOWER(c.nome) LIKE '%mestre%') AND oc.ativo = 1
+            LIMIT 1
+        """)
+        veneravel_atual = cursor.fetchone()
+        
+        # Buscar Orador atual
+        cursor.execute("""
+            SELECT u.id, u.nome_completo
+            FROM ocupacao_cargos oc
+            JOIN cargos c ON oc.cargo_id = c.id
+            JOIN usuarios u ON oc.obreiro_id = u.id
+            WHERE LOWER(c.nome) LIKE '%orador%' AND oc.ativo = 1
+            LIMIT 1
+        """)
+        orador_atual = cursor.fetchone()
         
         # Verificar permissão de acesso por grau da reunião
         is_admin = session.get("tipo") == "admin"
@@ -9077,15 +9141,14 @@ def ver_ata_por_id(id):
                     return redirect("/atas")
         
         # ============================================
-        # CORREÇÃO: Filtrar obreiros por grau da reunião (incluindo admin)
+        # Filtrar obreiros por grau da reunião
         # ============================================
         presenca = []
         reuniao_id = ata["reuniao_id"]
-        reuniao_grau = ata.get('reuniao_grau', 1)  # Padrão = 1 (Aprendiz)
+        reuniao_grau = ata.get('reuniao_grau', 1)
         
         if verificar_permissao(session['user_id'], 'reuniao.view_one') or is_admin:
             
-            # Query base para obreiros ativos (incluindo admin)
             query_obreiros = """
                 SELECT 
                     u.id,
@@ -9106,18 +9169,10 @@ def ver_ata_por_id(id):
             
             params = [reuniao_id]
             
-            # FILTRO POR GRAU DA REUNIÃO (igual ao detalhe da reunião)
             if reuniao_grau == 3:
-                # Reunião de Mestres: apenas obreiros com grau >= 3
                 query_obreiros += " AND u.grau_atual >= 3"
-                print(f"📌 ATA - Reunião de Mestres - Filtrando obreiros com grau >= 3")
             elif reuniao_grau == 2:
-                # Reunião de Companheiros: apenas obreiros com grau >= 2
                 query_obreiros += " AND u.grau_atual >= 2"
-                print(f"📌 ATA - Reunião de Companheiros - Filtrando obreiros com grau >= 2")
-            else:
-                # Reunião de Aprendizes: todos os obreiros (sem filtro de grau)
-                print(f"📌 ATA - Reunião de Aprendizes - Todos os obreiros")
             
             query_obreiros += """
                 ORDER BY 
@@ -9133,12 +9188,6 @@ def ver_ata_por_id(id):
             
             cursor.execute(query_obreiros, params)
             presenca = cursor.fetchall()
-            
-            # DEBUG
-            print(f"\n📊 PRESENÇA NA ATA (Reunião ID: {reuniao_id}, Grau: {reuniao_grau})")
-            print(f"Total de obreiros elegíveis: {len(presenca)}")
-            for p in presenca:
-                print(f"  - {p['nome_completo']} (grau: {p['grau_atual']}, tipo: {p['tipo']}): presente={p['presente']}")
         
         # ============================================
         # SISTEMA DE ASSINATURAS POR CARGO
@@ -9199,21 +9248,21 @@ def ver_ata_por_id(id):
                 'cargo': 'Venerável Mestre',
                 'assinado': True,
                 'data_assinatura': ata.get('data_assinatura_veneravel'),
-                'nome': ata.get('veneravel_mestre_nome', 'Venerável Mestre')
+                'nome': veneravel_atual['nome_completo'] if veneravel_atual else 'Venerável Mestre'
             })
         if assinatura_orador:
             assinaturas_lista.append({
                 'cargo': 'Orador',
                 'assinado': True,
                 'data_assinatura': ata.get('data_assinatura_orador'),
-                'nome': ata.get('orador_nome', 'Orador')
+                'nome': orador_atual['nome_completo'] if orador_atual else 'Orador'
             })
         if assinatura_secretario:
             assinaturas_lista.append({
                 'cargo': 'Secretário',
                 'assinado': True,
                 'data_assinatura': ata.get('data_assinatura_secretario'),
-                'nome': ata.get('secretario_nome', 'Secretário')
+                'nome': secretario_atual['nome_completo'] if secretario_atual else 'Secretário'
             })
         
         return_connection(conn)
@@ -9232,7 +9281,10 @@ def ver_ata_por_id(id):
                               percentual_assinaturas=percentual_assinaturas,
                               assinadas=assinadas,
                               total_assinaturas=total_assinaturas,
-                              is_admin=is_admin)
+                              is_admin=is_admin,
+                              secretario_atual=secretario_atual,
+                              veneravel_atual=veneravel_atual,
+                              orador_atual=orador_atual)
         
     except Exception as e:
         print(f"❌ Erro ao ver ata {id}: {e}")
