@@ -715,19 +715,43 @@
 
                             <input type="hidden" name="grau_atual" id="grauAtualHidden" value="{{ obreiro.grau_atual }}">
 
+                            <!-- ============================================ -->
+                            <!-- STATUS E MOTIVO DE INATIVIDADE - CAMPOS JUNTOS -->
+                            <!-- ============================================ -->
                             <div class="row">
                                 <div class="col-md-6 mb-3">
                                     <label class="form-label">Status</label>
-                                    <select class="form-select form-select-custom" name="ativo">
-                                        <option value="1" {% if obreiro.ativo == 1 %}selected{% endif %}>Ativo</option>
-                                        <option value="0" {% if obreiro.ativo == 0 %}selected{% endif %}>Inativo</option>
+                                    <select class="form-select form-select-custom" name="ativo" id="statusSelect">
+                                        <option value="1" {% if obreiro.ativo == 1 %}selected{% endif %}>✅ Ativo</option>
+                                        <option value="0" {% if obreiro.ativo == 0 %}selected{% endif %}>❌ Inativo</option>
                                     </select>
+                                </div>
+                                
+                                <div class="col-md-6 mb-3" id="motivoInativoDiv" style="display: {% if obreiro.ativo == 0 %}block{% else %}none{% endif %};">
+                                    <label class="form-label">Motivo da Inatividade</label>
+                                    <select class="form-select form-select-custom" name="motivo_inativo" id="motivoInativo">
+                                        <option value="">Selecione o motivo...</option>
+                                        <option value="inadiplente" {% if obreiro.motivo_inativo == 'inadiplente' %}selected{% endif %}>💰 Inadiplente (débitos com a loja)</option>
+                                        <option value="falta_frequencia" {% if obreiro.motivo_inativo == 'falta_frequencia' %}selected{% endif %}>📅 Falta de frequência</option>
+                                        <option value="licenca_medica" {% if obreiro.motivo_inativo == 'licenca_medica' %}selected{% endif %}>🏥 Licença médica</option>
+                                        <option value="licenca_estudo" {% if obreiro.motivo_inativo == 'licenca_estudo' %}selected{% endif %}>📚 Licença para estudos</option>
+                                        <option value="licenca_pessoal" {% if obreiro.motivo_inativo == 'licenca_pessoal' %}selected{% endif %}>🏠 Licença pessoal</option>
+                                        <option value="transferencia" {% if obreiro.motivo_inativo == 'transferencia' %}selected{% endif %}>🔄 Transferência para outra loja</option>
+                                        <option value="suspenso" {% if obreiro.motivo_inativo == 'suspenso' %}selected{% endif %}>⛔ Suspenso disciplinarmente</option>
+                                        <option value="excluido" {% if obreiro.motivo_inativo == 'excluido' %}selected{% endif %}>❌ Excluído do quadro social</option>
+                                        <option value="falecido" {% if obreiro.motivo_inativo == 'falecido' %}selected{% endif %}>⚰️ Falecido</option>
+                                        <option value="a_pedido" {% if obreiro.motivo_inativo == 'a_pedido' %}selected{% endif %}>📝 Desligamento a pedido</option>
+                                    </select>
+                                    <small class="text-muted" id="motivoHelp" style="display: none;">
+                                        <i class="bi bi-info-circle"></i> Informe o motivo da inatividade
+                                    </small>
                                 </div>
                             </div>
 
                             {% else %}
                                 <input type="hidden" name="grau_atual" value="{{ obreiro.grau_atual }}">
                                 <input type="hidden" name="ativo" value="{{ obreiro.ativo }}">
+                                <input type="hidden" name="motivo_inativo" value="{{ obreiro.motivo_inativo or '' }}">
                             {% endif %}
 
                             <!-- Campos de senha -->
@@ -955,6 +979,29 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 
 // =====================
+// CONTROLE DE STATUS E MOTIVO DE INATIVIDADE
+// =====================
+const statusSelect = document.getElementById('statusSelect');
+const motivoDiv = document.getElementById('motivoInativoDiv');
+const motivoSelect = document.getElementById('motivoInativo');
+const motivoHelp = document.getElementById('motivoHelp');
+
+if (statusSelect) {
+    statusSelect.addEventListener('change', function() {
+        if (this.value === '0') {  // Inativo
+            motivoDiv.style.display = 'block';
+            motivoSelect.required = true;
+            if (motivoHelp) motivoHelp.style.display = 'inline';
+        } else {  // Ativo
+            motivoDiv.style.display = 'none';
+            motivoSelect.required = false;
+            motivoSelect.value = '';
+            if (motivoHelp) motivoHelp.style.display = 'none';
+        }
+    });
+}
+
+// =====================
 // VALIDAÇÃO DE SENHA
 // =====================
 function validarSenha() {
@@ -1006,6 +1053,16 @@ if (confirmarInput) {
 const btnSalvar = document.getElementById('btnSalvar');
 if (btnSalvar) {
     btnSalvar.addEventListener('click', function(e) {
+        // Validar motivo se for inativo
+        if (statusSelect && statusSelect.value === '0') {
+            if (!motivoSelect.value) {
+                e.preventDefault();
+                alert('❌ Por favor, selecione o motivo da inatividade!');
+                motivoSelect.focus();
+                return false;
+            }
+        }
+        
         if (!validarSenha()) {
             e.preventDefault();
             return false;

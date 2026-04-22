@@ -217,6 +217,73 @@
         color: white;
     }
 
+   /* BADGES DE GRAU - MESMA LINHA */
+.badge-aprendiz,
+.badge-companheiro,
+.badge-mestre,
+.badge-mestre-instalado,
+.badge-superior,
+.badge-presente,
+.badge-ausente {
+    padding: 3px 8px;
+    border-radius: 20px;
+    font-size: 0.65rem;
+    font-weight: 600;
+    color: white;
+    display: inline-block;
+    white-space: nowrap;
+    vertical-align: middle;
+}
+
+.badge-aprendiz {
+    background: linear-gradient(135deg, #6c757d, #495057);
+}
+
+.badge-companheiro {
+    background: linear-gradient(135deg, #3b82f6, #2563eb);
+}
+
+.badge-mestre {
+    background: linear-gradient(135deg, #10b981, #059669);
+}
+
+.badge-mestre-instalado {
+    background: linear-gradient(135deg, #8B5CF6, #6D28D9);
+}
+
+.badge-superior {
+    background: linear-gradient(135deg, #ec489a, #be185d);
+}
+
+.badge-presente {
+    background: linear-gradient(135deg, #10b981, #059669);
+}
+
+.badge-ausente {
+    background: linear-gradient(135deg, #ef4444, #dc2626);
+}
+
+/* Ajuste para a célula da tabela */
+.table-bordo td {
+    vertical-align: middle;
+    white-space: nowrap;
+}
+
+/* Para telas pequenas, permitir quebra se necessário */
+@media (max-width: 768px) {
+    .table-bordo td {
+        white-space: normal;
+    }
+    
+    .badge-aprendiz,
+    .badge-companheiro,
+    .badge-mestre,
+    .badge-mestre-instalado,
+    .badge-superior {
+        white-space: nowrap;
+    }
+}
+
     /* FILTROS */
     .filtros-card {
         background: white;
@@ -389,6 +456,13 @@
         /* Cards de estatísticas responsivos */
         .row.mb-4 .col-md-4 {
             margin-bottom: 0.75rem;
+        }
+        
+        /* Badges responsivos */
+        .badge-aprendiz, .badge-companheiro, .badge-mestre, 
+        .badge-mestre-instalado, .badge-superior {
+            font-size: 0.65rem;
+            padding: 3px 8px;
         }
     }
 
@@ -667,13 +741,20 @@
                                     </td>
                                     <td><span class="fw-semibold">{{ p.nome_completo }}</span></td>
                                     <td>
+                                        {# ============================================ #}
+                                        {# CORREÇÃO: Badges de Grau com Mestre Instalado #}
+                                        {# ============================================ #}
                                         {% set grau = p.grau_atual|int %}
-                                        {% if grau == 3 %}
-                                            <span class="badge bg-success">Mestre</span>
+                                        {% if grau >= 5 %}
+                                            <span class="badge-superior">✨ Grau Superior ({{ grau }}º)</span>
+                                        {% elif grau == 4 %}
+                                            <span class="badge-mestre-instalado">👑 Mestre Instalado (4º)</span>
+                                        {% elif grau == 3 %}
+                                            <span class="badge-mestre">⭐ Mestre (3º)</span>
                                         {% elif grau == 2 %}
-                                            <span class="badge bg-primary">Companheiro</span>
+                                            <span class="badge-companheiro">📘 Companheiro (2º)</span>
                                         {% elif grau == 1 %}
-                                            <span class="badge bg-secondary">Aprendiz</span>
+                                            <span class="badge-aprendiz">📖 Aprendiz (1º)</span>
                                         {% else %}
                                             <span class="badge bg-info">Grau {{ grau }}</span>
                                         {% endif %}
@@ -740,22 +821,29 @@
                             <tr>
                                 <td><span class="fw-semibold">{{ p.nome_completo }}</span></td>
                                 <td>
+                                    {# ============================================ #}
+                                    {# CORREÇÃO: Badges de Grau com Mestre Instalado #}
+                                    {# ============================================ #}
                                     {% set grau = p.grau_atual|int %}
-                                    {% if grau == 3 %}
-                                        <span class="badge bg-success">Mestre</span>
+                                    {% if grau >= 5 %}
+                                        <span class="badge-superior">✨ Grau Superior ({{ grau }}º)</span>
+                                    {% elif grau == 4 %}
+                                        <span class="badge-mestre-instalado">👑 Mestre Instalado (4º)</span>
+                                    {% elif grau == 3 %}
+                                        <span class="badge-mestre">⭐ Mestre (3º)</span>
                                     {% elif grau == 2 %}
-                                        <span class="badge bg-primary">Companheiro</span>
+                                        <span class="badge-companheiro">📘 Companheiro (2º)</span>
                                     {% elif grau == 1 %}
-                                        <span class="badge bg-secondary">Aprendiz</span>
+                                        <span class="badge-aprendiz">📖 Aprendiz (1º)</span>
                                     {% else %}
                                         <span class="badge bg-info">Grau {{ grau }}</span>
                                     {% endif %}
                                 </td>
                                 <td>
                                     {% if p.presente %}
-                                        <span class="badge bg-success">Presente</span>
+                                        <span class="badge-presente">Presente</span>
                                     {% else %}
-                                        <span class="badge bg-danger">Ausente</span>
+                                        <span class="badge-ausente">Ausente</span>
                                     {% endif %}
                                 </td>
                                 <td class="text-muted small">
@@ -788,9 +876,11 @@
                         <span class="badge bg-danger">Vermelho</span> = Cancelada / Ausente
                     </div>
                     <div class="col-md-3 mb-2 mb-md-0">
-                        <i class="bi bi-star-fill text-warning"></i> = Mestre<br>
-                        <i class="bi bi-star text-primary"></i> = Companheiro<br>
-                        <i class="bi bi-star text-secondary"></i> = Aprendiz
+                        <span class="badge-aprendiz">Cinza</span> = Aprendiz (1º)<br>
+                        <span class="badge-companheiro">Azul</span> = Companheiro (2º)<br>
+                        <span class="badge-mestre">Verde</span> = Mestre (3º)<br>
+                        <span class="badge-mestre-instalado">Roxo</span> = Mestre Instalado (4º)<br>
+                        <span class="badge-superior">Rosa</span> = Grau Superior (5º+)
                     </div>
                     <div class="col-md-3 mb-2 mb-md-0">
                         <span class="btn-icon-info d-inline-flex me-1" style="width: 24px; height: 24px;">👁️</span> = Visualizar<br>

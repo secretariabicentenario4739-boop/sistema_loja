@@ -275,55 +275,50 @@
         background: var(--bordo-transparente);
     }
 
-    /* BADGES */
-    .badge-mestre {
-        background: linear-gradient(135deg, #10b981, #059669);
-        padding: 5px 12px;
+    /* BADGES DE GRAU - TAMANHO REDUZIDO E MESMA LINHA */
+    .badge-aprendiz,
+    .badge-companheiro,
+    .badge-mestre,
+    .badge-mestre-instalado,
+    .badge-superior,
+    .badge-presente,
+    .badge-ausente {
+        padding: 3px 8px;
         border-radius: 20px;
-        font-size: 0.7rem;
+        font-size: 0.65rem;
         font-weight: 600;
         color: white;
         display: inline-block;
+        white-space: nowrap;
+        vertical-align: middle;
+    }
+
+    .badge-aprendiz {
+        background: linear-gradient(135deg, #6c757d, #495057);
     }
     
     .badge-companheiro {
         background: linear-gradient(135deg, #3b82f6, #2563eb);
-        padding: 5px 12px;
-        border-radius: 20px;
-        font-size: 0.7rem;
-        font-weight: 600;
-        color: white;
-        display: inline-block;
     }
     
-    .badge-aprendiz {
-        background: linear-gradient(135deg, #6c757d, #495057);
-        padding: 5px 12px;
-        border-radius: 20px;
-        font-size: 0.7rem;
-        font-weight: 600;
-        color: white;
-        display: inline-block;
+    .badge-mestre {
+        background: linear-gradient(135deg, #10b981, #059669);
+    }
+    
+    .badge-mestre-instalado {
+        background: linear-gradient(135deg, #8B5CF6, #6D28D9);
+    }
+    
+    .badge-superior {
+        background: linear-gradient(135deg, #ec489a, #be185d);
     }
 
     .badge-presente {
         background: linear-gradient(135deg, #10b981, #059669);
-        padding: 5px 12px;
-        border-radius: 20px;
-        font-size: 0.7rem;
-        font-weight: 600;
-        color: white;
-        display: inline-block;
     }
     
     .badge-ausente {
         background: linear-gradient(135deg, #ef4444, #dc2626);
-        padding: 5px 12px;
-        border-radius: 20px;
-        font-size: 0.7rem;
-        font-weight: 600;
-        color: white;
-        display: inline-block;
     }
 
     .badge-aprovada {
@@ -344,6 +339,12 @@
         font-weight: 600;
         color: white;
         display: inline-block;
+    }
+
+    /* AJUSTE DA TABELA PARA MESMA LINHA */
+    .table-bordo td {
+        vertical-align: middle;
+        white-space: nowrap;
     }
 
     /* ALERTAS */
@@ -458,6 +459,19 @@
         .ata-conteudo {
             font-size: 13px;
         }
+        
+        /* Permitir quebra em telas pequenas */
+        .table-bordo td {
+            white-space: normal;
+        }
+        
+        .badge-aprendiz,
+        .badge-companheiro,
+        .badge-mestre,
+        .badge-mestre-instalado,
+        .badge-superior {
+            white-space: nowrap;
+        }
     }
 
     @media (max-width: 480px) {
@@ -474,6 +488,15 @@
         
         .ata-conteudo {
             font-size: 12px;
+        }
+        
+        .badge-aprendiz,
+        .badge-companheiro,
+        .badge-mestre,
+        .badge-mestre-instalado,
+        .badge-superior {
+            padding: 2px 6px;
+            font-size: 0.6rem;
         }
     }
 
@@ -652,15 +675,22 @@
                                             {% endif %}
                                         </td>
                                         <td>
+                                            {# ============================================ #}
+                                            {# BADGES DE GRAU ATUALIZADOS #}
+                                            {# ============================================ #}
                                             {% set grau = p.grau_atual|int %}
-                                            {% if grau >= 3 %}
-                                                <span class="badge-mestre">Mestre</span>
+                                            {% if grau >= 5 %}
+                                                <span class="badge-superior">✨ Grau Superior ({{ grau }}º)</span>
+                                            {% elif grau == 4 %}
+                                                <span class="badge-mestre-instalado">👑 Mestre Instalado (4º)</span>
+                                            {% elif grau == 3 %}
+                                                <span class="badge-mestre">⭐ Mestre (3º)</span>
                                             {% elif grau == 2 %}
-                                                <span class="badge-companheiro">Companheiro</span>
+                                                <span class="badge-companheiro">📘 Companheiro (2º)</span>
                                             {% elif grau == 1 %}
-                                                <span class="badge-aprendiz">Aprendiz</span>
+                                                <span class="badge-aprendiz">📖 Aprendiz (1º)</span>
                                             {% else %}
-                                                <span class="badge" style="background: var(--bordo-suave);">Grau {{ grau }}</span>
+                                                <span class="badge bg-info">Grau {{ grau }}</span>
                                             {% endif %}
                                         </td>
                                         <td>
