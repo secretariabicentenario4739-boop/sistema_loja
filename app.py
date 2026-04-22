@@ -7717,59 +7717,103 @@ def visualizar_reuniao(id):
         
         # Definir filtro de grau baseado no grau da reunião
         grau_reuniao = reuniao.get('grau', 1)
+        status_reuniao = reuniao.get('status', 'agendada')
         
-        # Query base para obreiros ativos (incluindo admin, sindicante e obreiro)
+        # =========================================================
+        # QUERY CORRIGIDA: Separar a lógica de ativos e histórico
+        # =========================================================
+        
+        # Parte 1: Obreiros ATIVOS que atendem ao grau da reunião
+        # Parte 2: Obreiros INATIVOS que JÁ TÊM registro de presença (histórico)
+        
         query_obreiros = """
-            SELECT 
-                u.id, 
-                u.nome_completo, 
-                u.grau_atual,
-                u.tipo,
-                u.cim_numero,
-                COALESCE(pr.presente, FALSE) as presente,
-                pr.tipo_ausencia,
-                pr.justificativa,
-                pr.id as presenca_id
-            FROM usuarios u
-            LEFT JOIN presenca_reuniao pr ON u.id = pr.obreiro_id AND pr.reuniao_id = %s
-            WHERE u.ativo = 1 
-              AND u.tipo IN ('obreiro', 'sindicante', 'admin')
+            SELECT * FROM (
+                -- Obreiros ATIVOS que atendem ao grau da reunião
+                SELECT 
+                    u.id, 
+                    u.nome_completo, 
+                    u.grau_atual,
+                    u.tipo,
+                    u.cim_numero,
+                    u.ativo as status_obrero,
+                    COALESCE(pr.presente, FALSE) as presente,
+                    pr.tipo_ausencia,
+                    pr.justificativa,
+                    pr.id as presenca_id
+                FROM usuarios u
+                LEFT JOIN presenca_reuniao pr ON u.id = pr.obreiro_id AND pr.reuniao_id = %s
+                WHERE u.ativo = 1 
+                  AND u.tipo IN ('obreiro', 'sindicante', 'admin')
+                  AND (
         """
         
         params = [id]
         
-        # FILTRO POR GRAU DA REUNIÃO
+        # FILTRO DE GRAU PARA OBRERIOS ATIVOS
         if grau_reuniao == 3:
-            query_obreiros += " AND u.grau_atual >= 3"
-            print(f"📌 Reunião de Mestres - Filtrando obreiros com grau >= 3")
+            query_obreiros += " u.grau_atual >= 3"
+            print(f"📌 Reunião de Mestres - Apenas obreiros ATIVOS com grau >= 3")
         elif grau_reuniao == 2:
-            query_obreiros += " AND u.grau_atual >= 2"
-            print(f"📌 Reunião de Companheiros - Filtrando obreiros com grau >= 2")
-        else:
-            print(f"📌 Reunião de Aprendizes - Todos os obreiros")
+            query_obreiros += " u.grau_atual >= 2"
+            print(f"📌 Reunião de Companheiros - Apenas obreiros ATIVOS com grau >= 2")
+        else:  # grau 1
+            query_obreiros += " 1=1"  # Todos os graus
+            print(f"📌 Reunião de Aprendizes - Todos os obreiros ATIVOS")
         
         query_obreiros += """
+                  )
+                
+                UNION ALL
+                
+                -- Obreiros INATIVOS que JÁ TÊM registro de presença (histórico)
+                -- Estes NÃO devem ser filtrados por grau, pois o histórico deve ser preservado
+                SELECT 
+                    u.id, 
+                    u.nome_completo, 
+                    u.grau_atual,
+                    u.tipo,
+                    u.cim_numero,
+                    u.ativo as status_obrero,
+                    COALESCE(pr.presente, FALSE) as presente,
+                    pr.tipo_ausencia,
+                    pr.justificativa,
+                    pr.id as presenca_id
+                FROM usuarios u
+                INNER JOIN presenca_reuniao pr ON u.id = pr.obreiro_id AND pr.reuniao_id = %s
+                WHERE u.ativo = 0
+            ) AS lista_obreiros
             ORDER BY 
-                u.grau_atual DESC,
-                u.nome_completo
+                status_obrero DESC,  -- Ativos primeiro
+                grau_atual DESC,
+                nome_completo
         """
+        
+        params.append(id)  # Para o UNION ALL (segundo %s)
         
         cursor.execute(query_obreiros, params)
         presenca = cursor.fetchall()
         
-        # Calcular estatísticas
-        total_obreiros = len(presenca)
-        presentes = sum(1 for p in presenca if p['presente'] == True)
+        # Calcular estatísticas (apenas obreiros ativos para total)
+        obreiros_ativos = [p for p in presenca if p['status_obrero'] == 1]
+        total_obreiros = len(obreiros_ativos)
+        presentes = sum(1 for p in presenca if p['presente'] == True and p['status_obrero'] == 1)
         ausentes = total_obreiros - presentes
         
         # DEBUG
         print(f"=== DEBUG visualizar_reuniao (ID: {id}) ===")
+        print(f"Status da Reunião: {status_reuniao}")
         print(f"Grau da Reunião: {grau_reuniao}")
-        print(f"Total de obreiros elegíveis: {total_obreiros}")
+        print(f"Total de obreiros ativos elegíveis: {total_obreiros}")
+        print(f"Total de registros na lista (com inativos históricos): {len(presenca)}")
         print(f"Presentes: {presentes}")
         print(f"Ausentes: {ausentes}")
         for p in presenca:
-            print(f"  - {p['nome_completo']} (grau: {p['grau_atual']}, tipo: {p['tipo']}): presente={p['presente']}")
+            status_texto = "ATIVO" if p['status_obrero'] == 1 else "INATIVO (histórico)"
+            elegivel = "✓" if (p['status_obrero'] == 1 and 
+                               (grau_reuniao == 1 or 
+                                (grau_reuniao == 2 and p['grau_atual'] >= 2) or 
+                                (grau_reuniao == 3 and p['grau_atual'] >= 3))) else "✗"
+            print(f"  [{elegivel}] {p['nome_completo']} ({status_texto}, grau: {p['grau_atual']}): presente={p['presente']}")
         print(f"==========================================")
         
         # Buscar tipos de ausência
@@ -7792,7 +7836,7 @@ def visualizar_reuniao(id):
         if ata:
             ata_numero = ata.get('numero') or ata.get('numero_ata') or ata.get('num_ata') or str(ata.get('id', '?'))
             ata_ano = ata.get('ano') or ata.get('ano_ata') or str(datetime.now().year)
-            ata_aprovada = ata.get('status') == 'aprovada' if ata else False
+            ata_aprovada = ata.get('aprovada') == 1 or ata.get('status') == 'aprovada'
         else:
             ata_numero = None
             ata_ano = None
