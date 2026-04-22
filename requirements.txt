@@ -13,7 +13,5 @@ email-validator==2.0.0
 gunicorn
 resend
 pdfkit
-requests==2.31.0
 PyMuPDF==1.24.2
-requests==2.31.0
-pandas openpyxl
+pandas==2.0.3
