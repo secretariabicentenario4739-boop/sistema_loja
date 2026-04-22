@@ -7750,17 +7750,15 @@ def visualizar_reuniao(id):
         # Definir filtro de grau baseado no grau da reunião
         grau_reuniao = reuniao.get('grau', 1)
         status_reuniao = reuniao.get('status', 'agendada')
+        data_reuniao = reuniao.get('data')
         
         # =========================================================
-        # QUERY CORRIGIDA: Separar a lógica de ativos e histórico
+        # QUERY MELHORADA: Incluir obreiros que eram ativos na data da reunião
         # =========================================================
-        
-        # Parte 1: Obreiros ATIVOS que atendem ao grau da reunião
-        # Parte 2: Obreiros INATIVOS que JÁ TÊM registro de presença (histórico)
         
         query_obreiros = """
             SELECT * FROM (
-                -- Obreiros ATIVOS que atendem ao grau da reunião
+                -- Obreiros ATIVOS HOJE que atendem ao grau da reunião
                 SELECT 
                     u.id, 
                     u.nome_completo, 
@@ -7784,21 +7782,17 @@ def visualizar_reuniao(id):
         # FILTRO DE GRAU PARA OBRERIOS ATIVOS
         if grau_reuniao == 3:
             query_obreiros += " u.grau_atual >= 3"
-            print(f"📌 Reunião de Mestres - Apenas obreiros ATIVOS com grau >= 3")
         elif grau_reuniao == 2:
             query_obreiros += " u.grau_atual >= 2"
-            print(f"📌 Reunião de Companheiros - Apenas obreiros ATIVOS com grau >= 2")
-        else:  # grau 1
-            query_obreiros += " 1=1"  # Todos os graus
-            print(f"📌 Reunião de Aprendizes - Todos os obreiros ATIVOS")
+        else:
+            query_obreiros += " 1=1"
         
         query_obreiros += """
                   )
                 
                 UNION ALL
                 
-                -- Obreiros INATIVOS que JÁ TÊM registro de presença (histórico)
-                -- Estes NÃO devem ser filtrados por grau, pois o histórico deve ser preservado
+                -- Obreiros INATIVOS HOJE que JÁ TÊM registro de presença (histórico)
                 SELECT 
                     u.id, 
                     u.nome_completo, 
@@ -7813,6 +7807,26 @@ def visualizar_reuniao(id):
                 FROM usuarios u
                 INNER JOIN presenca_reuniao pr ON u.id = pr.obreiro_id AND pr.reuniao_id = %s
                 WHERE u.ativo = 0
+                
+                UNION ALL
+                
+                -- EXTRA: Obreiros que ERAM ativos na data da reunião (mas hoje estão inativos)
+                -- e que NÃO foram pegos pelas queries anteriores
+                SELECT 
+                    u.id, 
+                    u.nome_completo, 
+                    u.grau_atual,
+                    u.tipo,
+                    u.cim_numero,
+                    u.ativo as status_obrero,
+                    COALESCE(pr.presente, FALSE) as presente,
+                    pr.tipo_ausencia,
+                    pr.justificativa,
+                    pr.id as presenca_id
+                FROM usuarios u
+                INNER JOIN presenca_reuniao pr ON u.id = pr.obreiro_id AND pr.reuniao_id = %s
+                WHERE u.ativo = 0
+                  AND pr.data_registro <= %s
             ) AS lista_obreiros
             ORDER BY 
                 status_obrero DESC,  -- Ativos primeiro
@@ -7820,10 +7834,19 @@ def visualizar_reuniao(id):
                 nome_completo
         """
         
-        params.append(id)  # Para o UNION ALL (segundo %s)
+        params.append(id)  # Segundo %s (INNER JOIN)
+        params.append(id)  # Terceiro %s (EXTRA)
+        params.append(data_reuniao)  # Data da reunião para referência
         
         cursor.execute(query_obreiros, params)
         presenca = cursor.fetchall()
+        
+        # Remover duplicatas (se houver) baseado no ID do obreiro
+        presenca_unicos = {}
+        for p in presenca:
+            if p['id'] not in presenca_unicos:
+                presenca_unicos[p['id']] = p
+        presenca = list(presenca_unicos.values())
         
         # Calcular estatísticas (apenas obreiros ativos para total)
         obreiros_ativos = [p for p in presenca if p['status_obrero'] == 1]
@@ -7834,6 +7857,7 @@ def visualizar_reuniao(id):
         # DEBUG
         print(f"=== DEBUG visualizar_reuniao (ID: {id}) ===")
         print(f"Status da Reunião: {status_reuniao}")
+        print(f"Data da Reunião: {data_reuniao}")
         print(f"Grau da Reunião: {grau_reuniao}")
         print(f"Total de obreiros ativos elegíveis: {total_obreiros}")
         print(f"Total de registros na lista (com inativos históricos): {len(presenca)}")
@@ -7841,11 +7865,7 @@ def visualizar_reuniao(id):
         print(f"Ausentes: {ausentes}")
         for p in presenca:
             status_texto = "ATIVO" if p['status_obrero'] == 1 else "INATIVO (histórico)"
-            elegivel = "✓" if (p['status_obrero'] == 1 and 
-                               (grau_reuniao == 1 or 
-                                (grau_reuniao == 2 and p['grau_atual'] >= 2) or 
-                                (grau_reuniao == 3 and p['grau_atual'] >= 3))) else "✗"
-            print(f"  [{elegivel}] {p['nome_completo']} ({status_texto}, grau: {p['grau_atual']}): presente={p['presente']}")
+            print(f"  - {p['nome_completo']} ({status_texto}, grau: {p['grau_atual']}): presente={p['presente']}")
         print(f"==========================================")
         
         # Buscar tipos de ausência
@@ -9035,9 +9055,6 @@ def ver_ata_por_id(id):
     try:
         cursor, conn = get_db()
         
-        # ============================================
-        # CORREÇÃO: Buscar a ata primeiro com campos que existem
-        # ============================================
         cursor.execute("""
             SELECT 
                 a.*,
@@ -9051,9 +9068,11 @@ def ver_ata_por_id(id):
                 r.pauta,
                 r.grau as reuniao_grau,
                 r.criado_por as reuniao_criado_por,
+                u.nome_completo as redator_nome,
                 u2.nome_completo as aprovado_por_nome
             FROM atas a
             JOIN reunioes r ON a.reuniao_id = r.id
+            LEFT JOIN usuarios u ON a.redator_id = u.id
             LEFT JOIN usuarios u2 ON a.aprovada_por = u2.id
             WHERE a.id = %s
         """, (id,))
@@ -9064,68 +9083,6 @@ def ver_ata_por_id(id):
             flash("Ata não encontrada", "danger")
             return_connection(conn)
             return redirect("/atas")
-        
-        # ============================================
-        # Buscar o redator correto (Secretário > Criador da Reunião)
-        # ============================================
-        
-        # Buscar Secretário atual da loja
-        cursor.execute("""
-            SELECT u.id, u.nome_completo
-            FROM ocupacao_cargos oc
-            JOIN cargos c ON oc.cargo_id = c.id
-            JOIN usuarios u ON oc.obreiro_id = u.id
-            WHERE LOWER(c.nome) LIKE '%secret%' AND oc.ativo = 1
-            LIMIT 1
-        """)
-        secretario_atual = cursor.fetchone()
-        
-        # Buscar criador da reunião
-        cursor.execute("""
-            SELECT id, nome_completo
-            FROM usuarios
-            WHERE id = %s
-        """, (ata['reuniao_criado_por'],))
-        criador_reuniao = cursor.fetchone()
-        
-        # Definir o redator: Secretário (se existir) ou Criador da Reunião
-        if secretario_atual:
-            redator_nome = secretario_atual['nome_completo']
-            redator_id = secretario_atual['id']
-        else:
-            redator_nome = criador_reuniao['nome_completo'] if criador_reuniao else 'Sistema'
-            redator_id = criador_reuniao['id'] if criador_reuniao else None
-        
-        # Adicionar os campos calculados ao objeto ata (como dicionário)
-        ata = dict(ata)  # Converter para dicionário se for necessário
-        ata['redator_nome'] = redator_nome
-        ata['redator_id'] = redator_id
-        
-        # ============================================
-        # Buscar Venerável e Orador atuais para os nomes
-        # ============================================
-        
-        # Buscar Venerável Mestre atual
-        cursor.execute("""
-            SELECT u.id, u.nome_completo
-            FROM ocupacao_cargos oc
-            JOIN cargos c ON oc.cargo_id = c.id
-            JOIN usuarios u ON oc.obreiro_id = u.id
-            WHERE (LOWER(c.nome) LIKE '%vener%' OR LOWER(c.nome) LIKE '%mestre%') AND oc.ativo = 1
-            LIMIT 1
-        """)
-        veneravel_atual = cursor.fetchone()
-        
-        # Buscar Orador atual
-        cursor.execute("""
-            SELECT u.id, u.nome_completo
-            FROM ocupacao_cargos oc
-            JOIN cargos c ON oc.cargo_id = c.id
-            JOIN usuarios u ON oc.obreiro_id = u.id
-            WHERE LOWER(c.nome) LIKE '%orador%' AND oc.ativo = 1
-            LIMIT 1
-        """)
-        orador_atual = cursor.fetchone()
         
         # Verificar permissão de acesso por grau da reunião
         is_admin = session.get("tipo") == "admin"
@@ -9141,7 +9098,7 @@ def ver_ata_por_id(id):
                     return redirect("/atas")
         
         # ============================================
-        # Filtrar obreiros por grau da reunião
+        # CORREÇÃO: Incluir obreiros inativos que participaram da reunião
         # ============================================
         presenca = []
         reuniao_id = ata["reuniao_id"]
@@ -9149,45 +9106,85 @@ def ver_ata_por_id(id):
         
         if verificar_permissao(session['user_id'], 'reuniao.view_one') or is_admin:
             
+            # Query que inclui obreiros inativos que JÁ TÊM registro de presença
             query_obreiros = """
-                SELECT 
-                    u.id,
-                    u.nome_completo, 
-                    u.grau_atual,
-                    u.tipo,
-                    COALESCE(pr.presente, FALSE) as presente,
-                    pr.tipo_ausencia,
-                    pr.justificativa,
-                    c.nome as cargo_nome
-                FROM usuarios u
-                LEFT JOIN presenca_reuniao pr ON u.id = pr.obreiro_id AND pr.reuniao_id = %s
-                LEFT JOIN ocupacao_cargos oc ON u.id = oc.obreiro_id AND oc.ativo = 1
-                LEFT JOIN cargos c ON oc.cargo_id = c.id
-                WHERE u.ativo = 1 
-                  AND u.tipo IN ('obreiro', 'sindicante', 'admin')
+                SELECT * FROM (
+                    -- Obreiros ATIVOS que atendem ao grau da reunião
+                    SELECT 
+                        u.id,
+                        u.nome_completo, 
+                        u.grau_atual,
+                        u.tipo,
+                        u.ativo as status_obrero,
+                        COALESCE(pr.presente, FALSE) as presente,
+                        pr.tipo_ausencia,
+                        pr.justificativa,
+                        c.nome as cargo_nome
+                    FROM usuarios u
+                    LEFT JOIN presenca_reuniao pr ON u.id = pr.obreiro_id AND pr.reuniao_id = %s
+                    LEFT JOIN ocupacao_cargos oc ON u.id = oc.obreiro_id AND oc.ativo = 1
+                    LEFT JOIN cargos c ON oc.cargo_id = c.id
+                    WHERE u.ativo = 1 
+                      AND u.tipo IN ('obreiro', 'sindicante', 'admin')
+                      AND (
             """
             
             params = [reuniao_id]
             
+            # FILTRO DE GRAU PARA OBRERIOS ATIVOS
             if reuniao_grau == 3:
-                query_obreiros += " AND u.grau_atual >= 3"
+                query_obreiros += " u.grau_atual >= 3"
             elif reuniao_grau == 2:
-                query_obreiros += " AND u.grau_atual >= 2"
+                query_obreiros += " u.grau_atual >= 2"
+            else:
+                query_obreiros += " 1=1"
             
             query_obreiros += """
+                      )
+                    
+                    UNION ALL
+                    
+                    -- Obreiros INATIVOS que JÁ TÊM registro de presença (histórico)
+                    -- Estes NÃO devem ser filtrados por grau
+                    SELECT 
+                        u.id,
+                        u.nome_completo, 
+                        u.grau_atual,
+                        u.tipo,
+                        u.ativo as status_obrero,
+                        COALESCE(pr.presente, FALSE) as presente,
+                        pr.tipo_ausencia,
+                        pr.justificativa,
+                        c.nome as cargo_nome
+                    FROM usuarios u
+                    INNER JOIN presenca_reuniao pr ON u.id = pr.obreiro_id AND pr.reuniao_id = %s
+                    LEFT JOIN ocupacao_cargos oc ON u.id = oc.obreiro_id AND oc.ativo = 1
+                    LEFT JOIN cargos c ON oc.cargo_id = c.id
+                    WHERE u.ativo = 0
+                ) AS lista_obreiros
                 ORDER BY 
+                    status_obrero DESC,
                     CASE 
-                        WHEN c.nome = 'Venerável Mestre' THEN 1
-                        WHEN c.nome = 'Orador' THEN 2
-                        WHEN c.nome = 'Secretário' THEN 3
+                        WHEN cargo_nome = 'Venerável Mestre' THEN 1
+                        WHEN cargo_nome = 'Orador' THEN 2
+                        WHEN cargo_nome = 'Secretário' THEN 3
                         ELSE 4
                     END,
-                    u.grau_atual DESC,
-                    u.nome_completo
+                    grau_atual DESC,
+                    nome_completo
             """
+            
+            params.append(reuniao_id)  # Para o UNION ALL
             
             cursor.execute(query_obreiros, params)
             presenca = cursor.fetchall()
+            
+            # DEBUG
+            print(f"\n📊 PRESENÇA NA ATA (Reunião ID: {reuniao_id}, Grau: {reuniao_grau})")
+            print(f"Total de registros na lista: {len(presenca)}")
+            for p in presenca:
+                status_texto = "ATIVO" if p['status_obrero'] == 1 else "INATIVO (histórico)"
+                print(f"  - {p['nome_completo']} ({status_texto}, grau: {p['grau_atual']}): presente={p['presente']}")
         
         # ============================================
         # SISTEMA DE ASSINATURAS POR CARGO
@@ -9248,21 +9245,21 @@ def ver_ata_por_id(id):
                 'cargo': 'Venerável Mestre',
                 'assinado': True,
                 'data_assinatura': ata.get('data_assinatura_veneravel'),
-                'nome': veneravel_atual['nome_completo'] if veneravel_atual else 'Venerável Mestre'
+                'nome': ata.get('veneravel_mestre_nome', 'Venerável Mestre')
             })
         if assinatura_orador:
             assinaturas_lista.append({
                 'cargo': 'Orador',
                 'assinado': True,
                 'data_assinatura': ata.get('data_assinatura_orador'),
-                'nome': orador_atual['nome_completo'] if orador_atual else 'Orador'
+                'nome': ata.get('orador_nome', 'Orador')
             })
         if assinatura_secretario:
             assinaturas_lista.append({
                 'cargo': 'Secretário',
                 'assinado': True,
                 'data_assinatura': ata.get('data_assinatura_secretario'),
-                'nome': secretario_atual['nome_completo'] if secretario_atual else 'Secretário'
+                'nome': ata.get('secretario_nome', 'Secretário')
             })
         
         return_connection(conn)
@@ -9281,10 +9278,7 @@ def ver_ata_por_id(id):
                               percentual_assinaturas=percentual_assinaturas,
                               assinadas=assinadas,
                               total_assinaturas=total_assinaturas,
-                              is_admin=is_admin,
-                              secretario_atual=secretario_atual,
-                              veneravel_atual=veneravel_atual,
-                              orador_atual=orador_atual)
+                              is_admin=is_admin)
         
     except Exception as e:
         print(f"❌ Erro ao ver ata {id}: {e}")
@@ -9296,7 +9290,6 @@ def ver_ata_por_id(id):
         
         flash(f"Erro ao carregar ata: {str(e)}", "danger")
         return redirect("/atas")
-
 # ============================================
 # ROTAS DE ASSINATURA POR CARGO
 # ============================================
