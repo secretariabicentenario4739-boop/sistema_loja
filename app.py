@@ -10598,20 +10598,20 @@ def gerenciar_candidatos():
         candidatos = []
     
     # ============================================
-    # CORREÇÃO: Usar a tabela correta: tipos_documentos_candidato
+    # CORREÇÃO: Buscar status dos documentos (APENAS OBRIGATÓRIOS)
     # ============================================
     
     documentos_status = {}
     
     try:
-        # Primeiro: Buscar total de documentos OBRIGATÓRIOS na tabela correta
+        # Primeiro: Buscar total de documentos OBRIGATÓRIOS
         cursor.execute("SELECT COUNT(*) as total FROM tipos_documentos_candidato WHERE obrigatorio = 1 AND ativo = 1")
         result = cursor.fetchone()
         total_obrigatorios = result['total'] if result else 0
         
-        print(f"📊 Total de documentos obrigatórios: {total_obrigatorios}")
+        print(f"📊 Total de documentos obrigatórios no sistema: {total_obrigatorios}")
         
-        # Para cada candidato, calcular documentos enviados
+        # Para cada candidato, calcular documentos enviados (apenas obrigatórios)
         for candidato in candidatos:
             try:
                 # Documentos OBRIGATÓRIOS enviados (status diferente de rejeitado)
@@ -10625,7 +10625,7 @@ def gerenciar_candidatos():
                 """, (candidato['id'],))
                 enviados_obrigatorios = cursor.fetchone()['enviados'] or 0
                 
-                # Documentos OPCIONAIS enviados (status diferente de rejeitado)
+                # Documentos OPCIONAIS enviados (apenas para exibição, não entra no progresso)
                 cursor.execute("""
                     SELECT COUNT(dc.id) as enviados
                     FROM documentos_candidato dc
@@ -10636,9 +10636,10 @@ def gerenciar_candidatos():
                 """, (candidato['id'],))
                 enviados_opcionais = cursor.fetchone()['enviados'] or 0
                 
+                # CORREÇÃO: 'enviados' agora é APENAS os obrigatórios
                 documentos_status[candidato['id']] = {
                     'total': total_obrigatorios,
-                    'enviados': enviados_obrigatorios + enviados_opcionais,
+                    'enviados': enviados_obrigatorios,  # <-- CORRIGIDO: apenas obrigatórios
                     'total_obrigatorios': total_obrigatorios,
                     'enviados_obrigatorios': enviados_obrigatorios,
                     'enviados_opcionais': enviados_opcionais
