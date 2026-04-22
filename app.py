@@ -4342,7 +4342,9 @@ def dashboard():
             """)
             documentos_recentes = cursor.fetchall()
             
-            # ========== CANDIDATOS COM SINDICANTES ==========
+            # =========================================================
+            # CORREÇÃO: CANDIDATOS QUE AINDA NÃO SÃO OBREIROS
+            # =========================================================
             cursor.execute("""
                 SELECT c.*, 
                        COALESCE(
@@ -4352,11 +4354,12 @@ def dashboard():
                            ''
                        ) as sindicantes_enviados
                 FROM candidatos c
+                WHERE c.obreiro_id IS NULL  -- <-- FILTRO: exclui quem já virou obreiro
                 ORDER BY c.data_criacao DESC
             """)
             candidatos = cursor.fetchall()
             
-            # ========== DOCUMENTOS STATUS PARA CADA CANDIDATO ==========
+            # ========== DOCUMENTOS STATUS APENAS PARA ESSES CANDIDATOS ==========
             documentos_status = {}
             for candidato in candidatos:
                 try:
@@ -4388,7 +4391,7 @@ def dashboard():
             sindicantes = cursor.fetchall()
             
             total_sindicantes_ativos = len(sindicantes)
-            total_candidatos = len(candidatos)
+            total_candidatos = len(candidatos)  # Agora só candidatos que não são obreiros
             
             # ========== PARECERES CONCLUSIVOS ==========
             pareceres_conclusivos = []
@@ -4423,7 +4426,7 @@ def dashboard():
             ultimos_avisos = cursor.fetchall()
             
             # ============================================
-            # ADMIN VS NÃO-ADMIN
+            # ADMIN VS NÃO-ADMIN (usando apenas candidatos não obreiros)
             # ============================================
             if session["tipo"] == "admin":
                 em_analise = 0
@@ -4435,7 +4438,11 @@ def dashboard():
                 sindicantes_set = {s["usuario"] for s in sindicantes}
                 
                 for c in candidatos:
-                    if c["status"] == "Em análise" and not c["fechado"]:
+                    # Verificar status - usando os campos corretos
+                    status = c.get("status", "")
+                    fechado = c.get("fechado", 0)
+                    
+                    if status == "Em análise" and not fechado:
                         em_analise += 1
                         enviados = c["sindicantes_enviados"].split(',') if c["sindicantes_enviados"] else []
                         faltam = [s for s in sindicantes_set if s not in enviados]
@@ -4443,11 +4450,11 @@ def dashboard():
                             pendentes.append({"candidato": dict(c), "faltam": faltam})
                         if c["data_criacao"]:
                             dias = (datetime.now() - c["data_criacao"]).days
-                            if dias > 7:
+                            if dias > 7:  # Prazo de 7 dias
                                 prazo_vencido.append(dict(c))
-                    elif c["status"] == "Aprovado":
+                    elif status == "Aprovado":
                         aprovados += 1
-                    elif c["status"] == "Reprovado":
+                    elif status == "Reprovado":
                         reprovados += 1
                 
                 cursor.execute("""
@@ -4460,7 +4467,10 @@ def dashboard():
                 proximas_reunioes = cursor.fetchall()
                 
             else:
-                em_analise = aprovados = reprovados = 0
+                # ========== NÃO-ADMIN (SINDICANTE) ==========
+                em_analise = 0
+                aprovados = 0
+                reprovados = 0
                 pendentes = []
                 prazo_vencido = []
                 
@@ -4484,6 +4494,7 @@ def dashboard():
                 """)
                 proximas_reunioes = cursor.fetchall()
                 
+                # Buscar pareceres do sindicante logado
                 cursor.execute("""
                     SELECT candidato_id, parecer 
                     FROM sindicancias 
@@ -4497,7 +4508,7 @@ def dashboard():
                             aprovados += 1
                         else:
                             reprovados += 1
-                    elif not c["fechado"]:
+                    elif not c.get("fechado", 0):
                         em_analise += 1
         
         # Conexão é fechada automaticamente ao sair do with
@@ -4521,8 +4532,8 @@ def dashboard():
             pendentes=pendentes,
             prazo_vencido=prazo_vencido,
             sindicantes=sindicantes,
-            candidatos=candidatos,  # <-- ADICIONADO
-            documentos_status=documentos_status,  # <-- ADICIONADO
+            candidatos=candidatos,
+            documentos_status=documentos_status,
             pareceres_conclusivos=pareceres_conclusivos,
             ultimos_avisos=ultimos_avisos,
             meu_cargo=meu_cargo,
