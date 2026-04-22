@@ -1,0 +1,1235 @@
+{% extends "base.html" %}
+
+{% block title %}Documentos do Candidato - {{ candidato.nome }}{% endblock %}
+
+{% block styles %}
+{{ super() }}
+<style>
+    :root {
+        --bordo: #4A0E2E;
+        --bordo-escuro: #3A0A24;
+        --bordo-claro: #6B1342;
+        --bordo-suave: #8B4A6B;
+        --bordo-transparente: rgba(74, 14, 46, 0.08);
+        --bordo-transparente-hover: rgba(74, 14, 46, 0.12);
+        --ouro: #D4AF37;
+        --ouro-escuro: #996515;
+        --ouro-claro: #F0D68A;
+    }
+
+    /* BOTÕES DO RITO - VERSÃO MOBILE FRIENDLY */
+    .btn-bordo {
+        background: linear-gradient(135deg, var(--bordo), var(--bordo-escuro));
+        border: none;
+        color: white;
+        border-radius: 30px;
+        padding: 8px 20px;
+        transition: all 0.3s;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        text-decoration: none;
+    }
+    
+    .btn-bordo:hover {
+        background: linear-gradient(135deg, var(--bordo-claro), var(--bordo));
+        transform: translateY(-2px);
+        color: white;
+        box-shadow: 0 5px 15px rgba(74, 14, 46, 0.3);
+    }
+    
+    .btn-bordo-outline {
+        background: transparent;
+        border: 1px solid var(--bordo);
+        color: var(--bordo);
+        border-radius: 30px;
+        padding: 8px 20px;
+        transition: all 0.3s;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        text-decoration: none;
+    }
+    
+    .btn-bordo-outline:hover {
+        background: var(--bordo);
+        color: white;
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(74, 14, 46, 0.2);
+    }
+
+    /* BOTÕES ÍCONE APENAS */
+    .btn-icon-info {
+        background: linear-gradient(135deg, #0ea5e9, #0284c7);
+        border: none;
+        color: white;
+        width: 32px;
+        height: 32px;
+        padding: 0;
+        border-radius: 50%;
+        transition: all 0.3s;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+    }
+    
+    .btn-icon-info:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(14, 165, 233, 0.3);
+        color: white;
+    }
+
+    .btn-icon-success {
+        background: linear-gradient(135deg, #10b981, #059669);
+        border: none;
+        color: white;
+        width: 32px;
+        height: 32px;
+        padding: 0;
+        border-radius: 50%;
+        transition: all 0.3s;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+    }
+    
+    .btn-icon-success:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(16, 185, 129, 0.3);
+        color: white;
+    }
+
+    .btn-icon-danger {
+        background: linear-gradient(135deg, #ef4444, #dc2626);
+        border: none;
+        color: white;
+        width: 32px;
+        height: 32px;
+        padding: 0;
+        border-radius: 50%;
+        transition: all 0.3s;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+    }
+    
+    .btn-icon-danger:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(239, 68, 68, 0.3);
+        color: white;
+    }
+
+    .btn-icon-secondary {
+        background: linear-gradient(135deg, #6c757d, #495057);
+        border: none;
+        color: white;
+        width: 32px;
+        height: 32px;
+        padding: 0;
+        border-radius: 50%;
+        transition: all 0.3s;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+    }
+    
+    .btn-icon-secondary:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(108, 117, 125, 0.3);
+        color: white;
+    }
+
+    /* BOTÕES DE APROVAR/REJEITAR */
+    .btn-aprovar {
+        background: linear-gradient(135deg, #10b981, #059669);
+        border: none;
+        color: white;
+        border-radius: 30px;
+        padding: 6px 16px;
+        font-size: 0.75rem;
+        font-weight: 600;
+        transition: all 0.3s;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+    }
+    
+    .btn-aprovar:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(16, 185, 129, 0.3);
+        color: white;
+    }
+
+    .btn-rejeitar {
+        background: linear-gradient(135deg, #ef4444, #dc2626);
+        border: none;
+        color: white;
+        border-radius: 30px;
+        padding: 6px 16px;
+        font-size: 0.75rem;
+        font-weight: 600;
+        transition: all 0.3s;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+    }
+    
+    .btn-rejeitar:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(239, 68, 68, 0.3);
+        color: white;
+    }
+
+    /* CABEÇALHO */
+    .header-gradient {
+        background: linear-gradient(135deg, var(--bordo) 0%, var(--bordo-escuro) 100%);
+        padding: 2rem;
+        border-radius: 20px;
+        margin-bottom: 1.5rem;
+    }
+
+    /* CARDS */
+    .card-elegant {
+        background: white;
+        border: 1px solid rgba(74, 14, 46, 0.15);
+        border-radius: 16px;
+        transition: all 0.3s ease;
+        overflow: hidden;
+    }
+    
+    .card-elegant:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 8px 25px rgba(74, 14, 46, 0.12);
+        border-color: var(--bordo);
+    }
+
+    /* PROGRESS BAR */
+    .progress-custom {
+        height: 25px;
+        border-radius: 30px;
+        background: rgba(74, 14, 46, 0.1);
+        overflow: hidden;
+    }
+    
+    .progress-custom .progress-bar {
+        border-radius: 30px;
+        background: linear-gradient(90deg, #10b981, #34d399);
+        transition: width 0.5s ease;
+        font-size: 0.8rem;
+        font-weight: 600;
+        line-height: 25px;
+        text-align: center;
+        color: white;
+    }
+
+    /* TABELA */
+    .table-documentos {
+        margin-bottom: 0;
+    }
+    
+    .table-documentos thead th {
+        background: var(--bordo-transparente);
+        color: var(--bordo);
+        font-weight: 600;
+        border-bottom: 2px solid rgba(74, 14, 46, 0.15);
+        padding: 1rem;
+    }
+    
+    .table-documentos tbody tr {
+        border-bottom: 1px solid rgba(74, 14, 46, 0.08);
+        transition: all 0.2s;
+    }
+    
+    .table-documentos tbody tr:hover {
+        background: var(--bordo-transparente);
+    }
+    
+    .table-documentos td {
+        padding: 1rem;
+        vertical-align: middle;
+    }
+
+    /* BADGES */
+    .badge-custom {
+        padding: 6px 12px;
+        border-radius: 20px;
+        font-size: 0.75rem;
+        font-weight: 600;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+    }
+    
+    .badge-obrigatorio {
+        background: #fee2e2;
+        color: #dc2626;
+    }
+    
+    .badge-opcional {
+        background: #e0e7ff;
+        color: #4f46e5;
+    }
+    
+    .badge-aprovado {
+        background: #d1fae5;
+        color: #059669;
+    }
+    
+    .badge-pendente {
+        background: #fed7aa;
+        color: #92400e;
+    }
+    
+    .badge-rejeitado {
+        background: #fee2e2;
+        color: #dc2626;
+    }
+
+    /* GRUPO DE AÇÕES DO CABEÇALHO */
+    .header-actions {
+        display: flex;
+        gap: 12px;
+        align-items: center;
+        flex-wrap: wrap;
+    }
+
+    /* ============================================ */
+    /* CORREÇÃO: BOTÕES DE AÇÃO NA MESMA LINHA */
+    /* ============================================ */
+    .table-actions {
+        display: flex !important;
+        flex-direction: row !important;
+        flex-wrap: nowrap !important;
+        gap: 6px !important;
+        align-items: center !important;
+        justify-content: flex-start !important;
+    }
+
+    .table-actions .btn-icon-info,
+    .table-actions .btn-icon-success,
+    .table-actions .btn-icon-danger,
+    .table-actions .btn-icon-secondary {
+        flex-shrink: 0 !important;
+        width: 32px !important;
+        height: 32px !important;
+    }
+
+    .table-actions .btn-aprovar,
+    .table-actions .btn-rejeitar {
+        flex-shrink: 0 !important;
+        white-space: nowrap !important;
+        padding: 6px 16px !important;
+        font-size: 0.75rem !important;
+    }
+
+    /* Garantir que a célula da tabela não quebre */
+    .table-documentos td {
+        vertical-align: middle !important;
+        white-space: nowrap !important;
+    }
+
+    /* STAT CARD */
+    .stat-card {
+        background: var(--bordo-transparente);
+        border-radius: 16px;
+        padding: 1rem;
+        text-align: center;
+        transition: all 0.2s;
+    }
+    
+    .stat-card:hover {
+        background: rgba(74, 14, 46, 0.12);
+        transform: translateY(-2px);
+    }
+    
+    .stat-number {
+        font-size: 2rem;
+        font-weight: 700;
+        line-height: 1;
+        color: var(--bordo);
+    }
+
+    .photo-preview {
+        width: 50px;
+        height: 50px;
+        object-fit: cover;
+        border-radius: 50%;
+        border: 2px solid var(--bordo);
+        transition: transform 0.2s;
+        cursor: pointer;
+    }
+    
+    .photo-preview:hover {
+        transform: scale(1.1);
+    }
+
+    .documento-obrigatorio-destaque {
+        background-color: #fff8f0;
+        border-left: 3px solid #dc2626;
+    }
+
+    /* RESPONSIVIDADE */
+    @media (max-width: 768px) {
+        .btn-bordo, .btn-bordo-outline {
+            padding: 6px 16px;
+            font-size: 0.85rem;
+        }
+        
+        .btn-icon-info, .btn-icon-success, .btn-icon-danger, .btn-icon-secondary {
+            width: 28px;
+            height: 28px;
+            font-size: 0.75rem;
+        }
+        
+        .btn-aprovar, .btn-rejeitar {
+            padding: 4px 12px;
+            font-size: 0.7rem;
+        }
+        
+        .table-responsive {
+            overflow-x: auto !important;
+        }
+        
+        .table-documentos {
+            font-size: 0.85rem;
+        }
+        
+        .table-documentos td,
+        .table-documentos th {
+            padding: 0.75rem;
+        }
+        
+        .table-actions {
+            gap: 4px !important;
+        }
+        
+        .table-actions .btn-aprovar,
+        .table-actions .btn-rejeitar {
+            padding: 4px 10px !important;
+            font-size: 0.7rem !important;
+        }
+        
+        .stat-number {
+            font-size: 1.5rem;
+        }
+        
+        /* Cabeçalho responsivo */
+        .header-gradient .d-flex {
+            flex-direction: column;
+            align-items: flex-start !important;
+            gap: 15px;
+        }
+        
+        .header-actions {
+            width: 100%;
+        }
+        
+        .header-actions .btn-bordo-outline,
+        .header-actions .btn-light {
+            width: 100%;
+            justify-content: center;
+        }
+        
+        /* Cards de estatísticas */
+        .row.g-3 .col-md-3 {
+            margin-bottom: 0.75rem;
+        }
+        
+        /* Modal responsivo */
+        .modal-dialog {
+            margin: 1rem;
+        }
+        
+        .modal-footer {
+            flex-direction: column;
+            gap: 8px;
+        }
+        
+        .modal-footer .btn-secondary,
+        .modal-footer .btn-primary {
+            width: 100%;
+        }
+        
+        /* Progress bar */
+        .progress-custom {
+            height: 20px;
+        }
+        
+        .progress-custom .progress-bar {
+            font-size: 0.7rem;
+            line-height: 20px;
+        }
+    }
+
+    @media (max-width: 480px) {
+        .btn-bordo, .btn-bordo-outline {
+            padding: 5px 12px;
+            font-size: 0.8rem;
+        }
+        
+        .header-gradient {
+            padding: 1.5rem;
+        }
+        
+        .stat-number {
+            font-size: 1.3rem;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="container">
+        <!-- Token de segurança oculto -->
+        <input type="hidden" id="tokenAcesso" value="{{ candidato.token_acesso }}">
+        <input type="hidden" id="candidatoId" value="{{ candidato.id }}">
+
+        <!-- Cabeçalho responsivo -->
+        <div class="header-gradient text-white animate-in">
+            <div class="d-flex justify-content-between align-items-center flex-wrap gap-3">
+                <div>
+                    <div class="d-flex align-items-center gap-3 mb-2">
+                        <div class="bg-white bg-opacity-25 rounded-circle p-3">
+                            <i class="bi bi-file-earmark-text fs-2"></i>
+                        </div>
+                        <div>
+                            <h1 class="h3 mb-1 fw-bold">Documentos do Candidato</h1>
+                            <p class="mb-0 text-white-50">{{ candidato.nome }}</p>
+                        </div>
+                    </div>
+                    <div class="mt-2">
+                        <span class="badge bg-white bg-opacity-25 text-white me-2">
+                            <i class="bi bi-hash"></i> ID: {{ candidato.id }}
+                        </span>
+                        <span class="badge bg-white bg-opacity-25 text-white">
+                            <i class="bi bi-info-circle"></i> Status: {{ candidato.status or 'Em análise' }}
+                        </span>
+                    </div>
+                </div>
+                <div class="header-actions">
+                    <a href="/candidato/acesso/{{ candidato.token_acesso }}" class="btn btn-light" target="_blank">
+                        <i class="bi bi-link-45deg"></i> Link de Acesso
+                    </a>
+                    <a href="/candidatos" class="btn-bordo-outline" style="background: rgba(255,255,255,0.2); color: white; border-color: rgba(255,255,255,0.3);">
+                        <i class="bi bi-arrow-left"></i> Voltar
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- BARRA DE PROGRESSO -->
+        <div class="card-elegant mb-4 animate-in">
+            <div class="card-body p-4">
+                <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap">
+                    <h5 class="mb-0 fw-bold" style="color: var(--bordo);">
+                        <i class="bi bi-check-circle-fill text-success me-2"></i>
+                        Progresso da Documentação
+                    </h5>
+                    <span class="badge bg-primary rounded-pill px-3 py-2">
+                        {{ total_enviados }}/{{ total_obrigatorios }} Obrigatórios
+                    </span>
+                </div>
+                
+                <!-- Barra de progresso visual -->
+                <div class="mb-2">
+                    <div class="d-flex justify-content-between mb-1">
+                        <small class="text-muted">Documentos obrigatórios enviados</small>
+                        <small class="fw-bold" style="color: var(--bordo);">{{ total_enviados }}/{{ total_obrigatorios }} ({{ percentual }}%)</small>
+                    </div>
+                    <div class="progress-custom">
+                        <div class="progress-bar" role="progressbar" 
+                             style="width: {{ percentual }}%" 
+                             aria-valuenow="{{ percentual }}" 
+                             aria-valuemin="0" 
+                             aria-valuemax="100">
+                            {{ percentual }}%
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="text-center mt-3">
+                    {% if percentual == 100 %}
+                        <span class="badge bg-success bg-opacity-10 text-success px-3 py-2">
+                            <i class="bi bi-trophy-fill me-1"></i> 
+                            🎉 Parabéns! Todos os documentos obrigatórios foram enviados!
+                        </span>
+                    {% elif total_enviados > 0 %}
+                        <span class="badge bg-warning bg-opacity-10 text-warning px-3 py-2">
+                            <i class="bi bi-hourglass-split me-1"></i> 
+                            ⏳ Aguardando envio de {{ total_obrigatorios - total_enviados }} documento(s)
+                        </span>
+                    {% else %}
+                        <span class="badge bg-secondary bg-opacity-10 text-secondary px-3 py-2">
+                            <i class="bi bi-info-circle me-1"></i> 
+                            📄 Nenhum documento obrigatório enviado ainda
+                        </span>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Estatísticas Rápidas -->
+        <div class="row g-3 mb-4 animate-in">
+            <div class="col-md-3 col-6">
+                <div class="stat-card">
+                    <div class="stat-number text-primary">{{ total_obrigatorios }}</div>
+                    <small class="text-muted">Documentos Obrigatórios</small>
+                </div>
+            </div>
+            <div class="col-md-3 col-6">
+                <div class="stat-card">
+                    <div class="stat-number text-secondary">{{ documentos_opcionais_count }}</div>
+                    <small class="text-muted">Documentos Opcionais</small>
+                </div>
+            </div>
+            <div class="col-md-3 col-6">
+                <div class="stat-card">
+                    <div class="stat-number text-success">{{ total_enviados }}</div>
+                    <small class="text-muted">Obrigatórios Enviados</small>
+                </div>
+            </div>
+            <div class="col-md-3 col-6">
+                <div class="stat-card">
+                    <div class="stat-number text-warning">{{ documentos_pendentes or 0 }}</div>
+                    <small class="text-muted">Pendentes Aprovação</small>
+                </div>
+            </div>
+        </div>
+
+        <!-- Lista de Documentos -->
+        <div class="card-elegant animate-in">
+            <div class="card-header bg-white border-bottom-0 pt-4 px-4">
+                <h5 class="mb-0 fw-bold" style="color: var(--bordo);">
+                    <i class="bi bi-list-check me-2" style="color: var(--bordo);"></i>
+                    Documentos para Envio
+                </h5>
+                <p class="text-muted small mt-1 mb-0">Gerencie os documentos do candidato</p>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-documentos">
+                        <thead>
+                            <tr>
+                                <th>Documento</th>
+                                <th>Tipo</th>
+                                <th>Status</th>
+                                <th>Data Envio</th>
+                                <th style="width: 320px">Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                           <!-- PRIMEIRO: Documentos OBRIGATÓRIOS -->
+{% for tipo in tipos_documentos if tipo.obrigatorio == 1 %}
+    {% set doc = documentos_map.get(tipo.id) %}
+    <tr class="documento-obrigatorio-destaque">
+        <td style="width: 30%">
+            <div class="d-flex align-items-center gap-2">
+                {% if tipo.nome == 'Foto 3x4' %}
+                    <i class="bi bi-camera-fill fs-5" style="color: #dc2626;"></i>
+                {% elif tipo.nome == 'RG' or tipo.nome == 'CPF' %}
+                    <i class="bi bi-credit-card-fill fs-5" style="color: #3b82f6;"></i>
+                {% else %}
+                    <i class="bi bi-file-text-fill fs-5" style="color: #0ea5e9;"></i>
+                {% endif %}
+                <div>
+                    <strong style="color: var(--bordo);">{{ tipo.nome }}</strong>
+                    {% if tipo.descricao %}
+                        <br><small class="text-muted">{{ tipo.descricao[:80] }}</small>
+                    {% endif %}
+                </div>
+            </div>
+        </td>
+        <td style="width: 15%">
+            <span class="badge-custom badge-obrigatorio">
+                <i class="bi bi-star-fill"></i> Obrigatório
+            </span>
+        </td>
+        <td style="width: 25%">
+            <div class="document-status-area">
+                {% if doc %}
+                    <div class="mb-2">
+                        <span class="badge-custom 
+                            {% if doc.status == 'aprovado' %}badge-aprovado
+                            {% elif doc.status == 'rejeitado' %}badge-rejeitado
+                            else %}badge-pendente{% endif %}">
+                            <i class="bi 
+                                {% if doc.status == 'aprovado' %}bi-check-circle-fill
+                                {% elif doc.status == 'rejeitado' %}bi-x-circle-fill
+                                else %}bi-clock-fill{% endif %}"></i>
+                            {% if doc.status == 'aprovado' %}
+                                Aprovado
+                            {% elif doc.status == 'rejeitado' %}
+                                Rejeitado
+                            else %}
+                                Pendente
+                            {% endif %}
+                        </span>
+                        {% if doc.status == 'rejeitado' and doc.observacao %}
+                            <br><small class="text-danger">{{ doc.observacao }}</small>
+                        {% endif %}
+                    </div>
+                    {% if tipo.nome == 'Foto 3x4' and doc.caminho_arquivo %}
+                        <div class="mt-2">
+                            <img src="{{ doc.caminho_arquivo }}" alt="Foto 3x4" class="photo-preview" onclick="visualizarDocumento('{{ doc.caminho_arquivo }}', '{{ tipo.nome }}')">
+                        </div>
+                    {% endif %}
+                {% else %}
+                    <div class="text-muted py-2">
+                        <i class="bi bi-inbox fs-5 me-2"></i> Nenhum arquivo enviado
+                    </div>
+                {% endif %}
+            </div>
+        </td>
+        <td style="width: 15%">
+            {% if doc %}
+                {{ doc.data_envio.strftime('%d/%m/%Y %H:%M') if doc.data_envio else '-' }}
+            {% else %}
+                <span class="text-muted">-</span>
+            {% endif %}
+        </td>
+        <!-- AÇÕES - BOTÕES NA MESMA LINHA -->
+        <td style="width: 320px; white-space: nowrap;">
+            <div class="table-actions">
+                {% if doc %}
+                    <button type="button" class="btn-icon-info" 
+                            onclick="visualizarDocumento('{{ doc.caminho_arquivo }}', '{{ tipo.nome }}')" 
+                            title="Visualizar">
+                        <i class="bi bi-eye-fill"></i>
+                    </button>
+                    
+                    <a href="{{ doc.caminho_arquivo }}" download 
+                       class="btn-icon-success" title="Baixar">
+                        <i class="bi bi-download"></i>
+                    </a>
+                    
+                    {% if doc.status == 'pendente' %}
+                        <button type="button" class="btn-aprovar" 
+                                onclick="aprovarDocumento({{ doc.id }}, '{{ tipo.nome }}')">
+                            <i class="bi bi-check-lg"></i> Aprovar
+                        </button>
+                        
+                        <button type="button" class="btn-rejeitar" 
+                                onclick="rejeitarDocumento({{ doc.id }}, '{{ tipo.nome }}')">
+                            <i class="bi bi-x-lg"></i> Rejeitar
+                        </button>
+                    {% endif %}
+                    
+                    <button type="button" class="btn-icon-danger" 
+                            onclick="excluirDocumento({{ doc.id }}, '{{ tipo.nome }}', {{ tipo.id }})" 
+                            title="Excluir">
+                        <i class="bi bi-trash-fill"></i>
+                    </button>
+                {% endif %}
+                
+                <button type="button" class="btn-icon-secondary" 
+                        data-bs-toggle="modal" 
+                        data-bs-target="#modalUpload{{ tipo.id }}" 
+                        title="Enviar Novo">
+                    <i class="bi bi-cloud-upload"></i>
+                </button>
+            </div>
+        </td>
+    </tr>
+{% endfor %}
+                            
+                            <!-- Separador para Documentos Opcionais -->
+                            {% set tem_opcionais = tipos_documentos|selectattr('obrigatorio', 'equalto', 0)|list|length > 0 %}
+                            {% if tem_opcionais %}
+                                <tr class="separator-row">
+                                    <td colspan="5">
+                                        <div class="separator" style="display: flex; align-items: center; text-align: center; margin: 1rem 0;">
+                                            <hr style="flex: 1; border-color: rgba(74, 14, 46, 0.15);">
+                                            <span style="padding: 0 1rem; color: var(--bordo-suave); font-size: 0.85rem;">
+                                                <i class="bi bi-bookmark-fill me-1"></i> Documentos Opcionais
+                                            </span>
+                                            <hr style="flex: 1; border-color: rgba(74, 14, 46, 0.15);">
+                                        </div>
+                                    </td>
+                                </tr>
+                            {% endif %}
+                            
+                            <!-- SEGUNDO: Documentos OPCIONAIS -->
+                            {% for tipo in tipos_documentos if tipo.obrigatorio == 0 %}
+                                {% set doc = documentos_map.get(tipo.id) %}
+                                <tr>
+                                    <td style="width: 30%">
+                                        <div class="d-flex align-items-center gap-2">
+                                            <i class="bi bi-file-earmark-text fs-5" style="color: var(--bordo-suave);"></i>
+                                            <div>
+                                                <strong style="color: var(--bordo);">{{ tipo.nome }}</strong>
+                                                {% if tipo.descricao %}
+                                                    <br><small class="text-muted">{{ tipo.descricao[:80] }}</small>
+                                                {% endif %}
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td style="width: 15%">
+                                        <span class="badge-custom badge-opcional">
+                                            <i class="bi bi-bookmark"></i> Opcional
+                                        </span>
+                                    </td>
+                                    <td style="width: 25%">
+                                        <div class="document-status-area">
+                                            {% if doc %}
+                                                <div class="mb-2">
+                                                    <span class="badge-custom 
+                                                        {% if doc.status == 'aprovado' %}badge-aprovado
+                                                        {% elif doc.status == 'rejeitado' %}badge-rejeitado
+                                                        else %}badge-pendente{% endif %}">
+                                                        <i class="bi 
+                                                            {% if doc.status == 'aprovado' %}bi-check-circle-fill
+                                                            {% elif doc.status == 'rejeitado' %}bi-x-circle-fill
+                                                            else %}bi-clock-fill{% endif %}"></i>
+                                                        {% if doc.status == 'aprovado' %}
+                                                            Aprovado
+                                                        {% elif doc.status == 'rejeitado' %}
+                                                            Rejeitado
+                                                        else %}
+                                                            Pendente
+                                                        {% endif %}
+                                                    </span>
+                                                    {% if doc.status == 'rejeitado' and doc.observacao %}
+                                                        <br><small class="text-danger">{{ doc.observacao }}</small>
+                                                    {% endif %}
+                                                </div>
+                                            {% else %}
+                                                <div class="text-muted py-2">
+                                                    <i class="bi bi-inbox fs-5 me-2"></i> Nenhum arquivo enviado
+                                                </div>
+                                            {% endif %}
+                                        </div>
+                                    </td>
+                                    <td style="width: 15%">
+                                        {% if doc %}
+                                            {{ doc.data_envio.strftime('%d/%m/%Y %H:%M') if doc.data_envio else '-' }}
+                                        {% else %}
+                                            <span class="text-muted">-</span>
+                                        {% endif %}
+                                    </td>
+                                    <!-- AÇÕES - BOTÕES NA MESMA LINHA -->
+                                    <td style="width: 320px; white-space: nowrap;">
+                                        <div class="table-actions">
+                                            {% if doc %}
+                                                <button type="button" class="btn-icon-info" 
+                                                        onclick="visualizarDocumento('{{ doc.caminho_arquivo }}', '{{ tipo.nome }}')" 
+                                                        title="Visualizar">
+                                                    <i class="bi bi-eye-fill"></i>
+                                                </button>
+                                                
+                                                <a href="{{ doc.caminho_arquivo }}" download 
+                                                   class="btn-icon-success" title="Baixar">
+                                                    <i class="bi bi-download"></i>
+                                                </a>
+                                                
+                                                {% if doc.status == 'pendente' %}
+                                                    <button type="button" class="btn-aprovar" 
+                                                            onclick="aprovarDocumento({{ doc.id }}, '{{ tipo.nome }}')">
+                                                        <i class="bi bi-check-lg"></i> Aprovar
+                                                    </button>
+                                                    
+                                                    <button type="button" class="btn-rejeitar" 
+                                                            onclick="rejeitarDocumento({{ doc.id }}, '{{ tipo.nome }}')">
+                                                        <i class="bi bi-x-lg"></i> Rejeitar
+                                                    </button>
+                                                {% endif %}
+                                                
+                                                <button type="button" class="btn-icon-danger" 
+                                                        onclick="excluirDocumento({{ doc.id }}, '{{ tipo.nome }}', {{ tipo.id }})" 
+                                                        title="Excluir">
+                                                    <i class="bi bi-trash-fill"></i>
+                                                </button>
+                                            {% endif %}
+                                            
+                                            <button type="button" class="btn-icon-secondary" 
+                                                    data-bs-toggle="modal" 
+                                                    data-bs-target="#modalUpload{{ tipo.id }}" 
+                                                    title="Enviar Novo">
+                                                <i class="bi bi-cloud-upload"></i>
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Informações Adicionais e Links -->
+        <div class="row mt-4 g-4">
+            <div class="col-md-6">
+                <div class="card-elegant h-100">
+                    <div class="card-header bg-white border-bottom-0 pt-4 px-4">
+                        <h5 class="mb-0 fw-bold" style="color: var(--bordo);">
+                            <i class="bi bi-info-circle-fill me-2" style="color: #0ea5e9;"></i>
+                            Informações Importantes
+                        </h5>
+                    </div>
+                    <div class="card-body p-4">
+                        <ul class="list-unstyled mb-0">
+                            <li class="mb-2"><i class="bi bi-star-fill text-danger me-2"></i> <strong class="text-danger">Documentos obrigatórios</strong> são necessários para completar a candidatura</li>
+                            <li class="mb-2"><i class="bi bi-camera-fill text-danger me-2"></i> <strong>Foto 3x4</strong> é obrigatória e será usada no cadastro</li>
+                            <li class="mb-2"><i class="bi bi-credit-card-fill text-primary me-2"></i> <strong>RG e CPF</strong> são documentos obrigatórios</li>
+                            <li class="mb-2"><i class="bi bi-file-text-fill text-info me-2"></i> <strong>Certidões Negativas</strong> são obrigatórias</li>
+                            <li class="mb-2"><i class="bi bi-bookmark-fill text-secondary me-2"></i> <strong>Documentos opcionais</strong> podem ajudar na avaliação, mas não são obrigatórios</li>
+                            <li class="mb-2"><i class="bi bi-check-circle-fill text-success me-2"></i> Documentos <strong>aprovados</strong> são validados pelo sindicante</li>
+                            <li class="mb-2"><i class="bi bi-clock-fill text-warning me-2"></i> Documentos <strong>pendentes</strong> aguardam análise</li>
+                            <li><i class="bi bi-x-circle-fill text-danger me-2"></i> Documentos <strong>rejeitados</strong> precisam ser reenviados</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-md-6">
+                <div class="card-elegant h-100">
+                    <div class="card-header bg-white border-bottom-0 pt-4 px-4">
+                        <h5 class="mb-0 fw-bold" style="color: var(--bordo);">
+                            <i class="bi bi-share-fill me-2" style="color: #10b981;"></i>
+                            Links de Acesso
+                        </h5>
+                    </div>
+                    <div class="card-body p-4">
+                        <div class="alert alert-info mb-3" style="background: var(--bordo-transparente); border-color: var(--bordo); color: var(--bordo); border-radius: 12px;">
+                            <i class="bi bi-link-45deg me-2"></i>
+                            <strong>Link de Acesso do Candidato:</strong>
+                            <div class="input-group mt-2">
+                                <input type="text" class="form-control form-control-sm" id="linkAcesso" 
+                                       value="{{ url_for('candidato_acesso', token=candidato.token_acesso, _external=True) }}" 
+                                       readonly style="border-radius: 30px 0 0 30px;">
+                                <button class="btn-icon-success" onclick="copiarLink()" style="border-radius: 0 30px 30px 0; width: auto; padding: 0 16px;">
+                                    <i class="bi bi-copy"></i> Copiar
+                                </button>
+                            </div>
+                            <small class="text-muted mt-2 d-block">
+                                Envie este link para o candidato. Ele poderá enviar seus documentos e acompanhar o status.
+                            </small>
+                        </div>
+                        
+                        <div class="alert alert-success mb-0" style="background: var(--bordo-transparente); border-color: #10b981; color: #059669; border-radius: 12px;">
+                            <i class="bi bi-envelope-fill me-2"></i>
+                            <strong>Enviar Link por E-mail:</strong>
+                            <div class="input-group mt-2">
+                                <input type="email" class="form-control form-control-sm" id="emailCandidato" 
+                                       placeholder="E-mail do candidato" value="{{ candidato.email or '' }}"
+                                       style="border-radius: 30px 0 0 30px;">
+                                <button class="btn-icon-info" onclick="enviarLinkEmail()" style="border-radius: 0 30px 30px 0; width: auto; padding: 0 16px;">
+                                    <i class="bi bi-send"></i> Enviar
+                                </button>
+                            </div>
+                            <small class="text-muted mt-2 d-block">
+                                O candidato receberá um e-mail com o link para acessar seus documentos.
+                            </small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modais de Upload para cada tipo de documento -->
+{% for tipo in tipos_documentos %}
+<div class="modal fade" id="modalUpload{{ tipo.id }}" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content" style="border-radius: 16px; overflow: hidden;">
+            <form id="formUpload{{ tipo.id }}" enctype="multipart/form-data">
+                <div class="modal-header" style="background: linear-gradient(135deg, var(--bordo), var(--bordo-escuro)); color: white; border: none;">
+                    <h5 class="modal-title">
+                        <i class="bi bi-cloud-upload-fill me-2"></i> 
+                        Enviar {{ tipo.nome }}
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body p-4">
+                    <div class="mb-3">
+                        <label class="fw-bold mb-2" style="color: var(--bordo);">{{ tipo.nome }}</label>
+                        {% if tipo.descricao %}
+                            <p class="small text-muted">{{ tipo.descricao }}</p>
+                        {% endif %}
+                    </div>
+                    
+                    {% if tipo.obrigatorio == 1 %}
+                        <div class="alert alert-danger py-2 small" style="background: #fee2e2; border: 1px solid #fecaca; color: #dc2626; border-radius: 12px;">
+                            <i class="bi bi-exclamation-triangle-fill me-1"></i>
+                            <strong>Documento obrigatório</strong> - O envio é necessário para completar a candidatura.
+                        </div>
+                    {% endif %}
+                    
+                    <div class="mb-3">
+                        <label class="form-label fw-bold" style="color: var(--bordo);">
+                            <i class="bi bi-file-earmark-arrow-up me-1"></i> Arquivo
+                        </label>
+                        <input type="file" class="form-control" name="arquivo" required 
+                               accept=".pdf,.jpg,.jpeg,.png" style="border-radius: 12px;">
+                        <div class="form-text">
+                            <i class="bi bi-info-circle"></i> Formatos permitidos: PDF, JPG, PNG. Tamanho máximo: 10MB
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer" style="border-top-color: rgba(74, 14, 46, 0.1);">
+                    <button type="button" class="btn-bordo-secondary" data-bs-dismiss="modal">
+                        <i class="bi bi-x-circle"></i> Cancelar
+                    </button>
+                    <button type="submit" class="btn-bordo" onclick="uploadDocumento({{ tipo.id }}, '{{ tipo.nome }}'); return false;">
+                        <i class="bi bi-cloud-upload-fill"></i> Enviar Documento
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endfor %}
+
+<script>
+// Adicionar estilos para btn-bordo-secondary
+const btnStyle = document.createElement('style');
+btnStyle.textContent = `
+    .btn-bordo-secondary {
+        background: linear-gradient(135deg, #6c757d, #495057);
+        border: none;
+        color: white;
+        border-radius: 30px;
+        padding: 8px 20px;
+        transition: all 0.3s;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        text-decoration: none;
+    }
+    .btn-bordo-secondary:hover {
+        background: linear-gradient(135deg, #5a6268, #3d4246);
+        transform: translateY(-2px);
+        color: white;
+        box-shadow: 0 5px 15px rgba(108, 117, 125, 0.3);
+    }
+`;
+document.head.appendChild(btnStyle);
+
+const token = document.getElementById('tokenAcesso')?.value;
+const candidatoId = document.getElementById('candidatoId')?.value;
+
+if (!token || !candidatoId) {
+    console.error('Token ou ID do candidato não encontrado');
+    window.location.href = '/';
+}
+
+function mostrarNotificacao(mensagem, tipo = 'success') {
+    const toastDiv = document.createElement('div');
+    toastDiv.className = `toast-notification alert alert-${tipo === 'success' ? 'success' : 'danger'} shadow-lg`;
+    toastDiv.style.cssText = 'position: fixed; top: 20px; right: 20px; z-index: 9999; min-width: 300px; border-radius: 12px;';
+    toastDiv.innerHTML = `
+        <div class="d-flex align-items-center">
+            <i class="bi ${tipo === 'success' ? 'bi-check-circle-fill' : 'bi-exclamation-triangle-fill'} fs-4 me-2"></i>
+            <div>${mensagem}</div>
+            <button type="button" class="btn-close ms-auto" onclick="this.parentElement.parentElement.remove()"></button>
+        </div>
+    `;
+    document.body.appendChild(toastDiv);
+    setTimeout(() => {
+        if (toastDiv && toastDiv.remove) toastDiv.remove();
+    }, 5000);
+}
+
+function visualizarDocumento(caminho, nome) {
+    if (!caminho) {
+        mostrarNotificacao('❌ Caminho do documento não encontrado', 'error');
+        return;
+    }
+    
+    let urlCompleta = caminho;
+    if (!caminho.startsWith('http')) {
+        urlCompleta = window.location.origin + caminho;
+    }
+    
+    window.open(urlCompleta, '_blank');
+}
+
+async function uploadDocumento(tipoId, nomeDocumento) {
+    const form = document.getElementById(`formUpload${tipoId}`);
+    const formData = new FormData(form);
+    
+    const btn = event.target;
+    const originalText = btn.innerHTML;
+    btn.innerHTML = '<i class="bi bi-hourglass-split"></i> Enviando...';
+    btn.disabled = true;
+    
+    try {
+        const response = await fetch(`/candidatos/${candidatoId}/documentos/upload/${tipoId}`, {
+            method: 'POST',
+            body: formData
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            mostrarNotificacao(`✅ ${nomeDocumento} enviado com sucesso!`, 'success');
+            setTimeout(() => location.reload(), 1500);
+        } else {
+            mostrarNotificacao(`❌ ${data.error || 'Erro ao enviar documento'}`, 'error');
+        }
+    } catch (error) {
+        console.error('Erro:', error);
+        mostrarNotificacao(`❌ Erro ao enviar ${nomeDocumento}`, 'error');
+    } finally {
+        btn.innerHTML = originalText;
+        btn.disabled = false;
+    }
+}
+
+function aprovarDocumento(docId, nomeDocumento) {
+    if (!confirm(`✅ Confirmar aprovação do documento "${nomeDocumento}"?`)) return;
+    
+    const btn = event.target;
+    const originalText = btn.innerHTML;
+    btn.innerHTML = '<i class="bi bi-hourglass-split"></i> Aprovando...';
+    btn.disabled = true;
+    
+    fetch(`/api/documentos-candidato/${docId}/aprovar`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: 'aprovado' })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            mostrarNotificacao(`✅ ${nomeDocumento} aprovado!`, 'success');
+            setTimeout(() => location.reload(), 1000);
+        } else {
+            throw new Error(data.error || 'Erro desconhecido');
+        }
+    })
+    .catch(error => {
+        console.error('Erro:', error);
+        mostrarNotificacao(`❌ Erro ao aprovar: ${error.message}`, 'error');
+    })
+    .finally(() => {
+        btn.innerHTML = originalText;
+        btn.disabled = false;
+    });
+}
+
+function rejeitarDocumento(docId, nomeDocumento) {
+    const motivo = prompt(`❌ Rejeitar documento "${nomeDocumento}"\n\nDigite o motivo da rejeição:`);
+    
+    if (!motivo || motivo.trim() === '') {
+        if (motivo !== null) {
+            mostrarNotificacao('❌ Motivo da rejeição é obrigatório!', 'error');
+        }
+        return;
+    }
+    
+    const btn = event.target;
+    const originalText = btn.innerHTML;
+    btn.innerHTML = '<i class="bi bi-hourglass-split"></i> Rejeitando...';
+    btn.disabled = true;
+    
+    fetch(`/api/documentos-candidato/${docId}/aprovar`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+            status: 'rejeitado',
+            observacao: motivo.trim()
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            mostrarNotificacao(`❌ ${nomeDocumento} rejeitado: ${motivo}`, 'error');
+            setTimeout(() => location.reload(), 1500);
+        } else {
+            throw new Error(data.error || 'Erro desconhecido');
+        }
+    })
+    .catch(error => {
+        console.error('Erro:', error);
+        mostrarNotificacao(`❌ Erro ao rejeitar: ${error.message}`, 'error');
+    })
+    .finally(() => {
+        btn.innerHTML = originalText;
+        btn.disabled = false;
+    });
+}
+
+async function excluirDocumento(docId, nomeDocumento, tipoId) {
+    if (!confirm(`⚠️ ATENÇÃO!\n\nDeseja excluir o documento "${nomeDocumento}"?\n\nEsta ação não pode ser desfeita.`)) return;
+    
+    const btn = event.target;
+    const originalText = btn.innerHTML;
+    btn.innerHTML = '<i class="bi bi-hourglass-split"></i> Excluindo...';
+    btn.disabled = true;
+    
+    try {
+        const response = await fetch(`/api/documentos-candidato/${docId}/excluir?token=${token}`, {
+            method: 'DELETE',
+            headers: { 'Content-Type': 'application/json' }
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            mostrarNotificacao(`✅ ${nomeDocumento} excluído!`, 'success');
+            location.reload();
+        } else {
+            mostrarNotificacao(`❌ Erro ao excluir: ${data.error || 'Erro desconhecido'}`, 'error');
+        }
+    } catch (error) {
+        console.error('Erro:', error);
+        mostrarNotificacao(`❌ Erro ao excluir documento`, 'error');
+    } finally {
+        btn.innerHTML = originalText;
+        btn.disabled = false;
+    }
+}
+
+function copiarLink() {
+    const linkInput = document.getElementById('linkAcesso');
+    linkInput.select();
+    document.execCommand('copy');
+    mostrarNotificacao('✅ Link copiado!', 'success');
+}
+
+function enviarLinkEmail() {
+    const email = document.getElementById('emailCandidato').value;
+    const link = document.getElementById('linkAcesso').value;
+    
+    if (!email) {
+        mostrarNotificacao('❌ Digite o e-mail do candidato!', 'error');
+        return;
+    }
+    
+    const btn = event.target;
+    const originalText = btn.innerHTML;
+    btn.innerHTML = '<i class="bi bi-hourglass-split"></i> Enviando...';
+    btn.disabled = true;
+    
+    fetch('/candidatos/enviar-link', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+            email: email,
+            link: link,
+            candidato_id: {{ candidato.id }},
+            candidato_nome: '{{ candidato.nome|replace("'", "\\'") }}'
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            mostrarNotificacao('✅ Link enviado por e-mail!', 'success');
+        } else {
+            throw new Error(data.error || 'Erro desconhecido');
+        }
+    })
+    .catch(error => {
+        console.error('Erro:', error);
+        mostrarNotificacao('❌ Erro ao enviar e-mail: ' + error.message, 'error');
+    })
+    .finally(() => {
+        btn.innerHTML = originalText;
+        btn.disabled = false;
+    });
+}
+</script>
+{% endblock %}
