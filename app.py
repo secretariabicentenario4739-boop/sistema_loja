@@ -10616,7 +10616,7 @@ def gerenciar_candidatos():
             try:
                 # Documentos OBRIGATÓRIOS enviados (status diferente de rejeitado)
                 cursor.execute("""
-                    SELECT COUNT(dc.id) as enviados
+                    SELECT COUNT(DISTINCT dc.tipo_documento_id) as enviados
                     FROM documentos_candidato dc
                     JOIN tipos_documentos_candidato td ON dc.tipo_documento_id = td.id
                     WHERE dc.candidato_id = %s 
@@ -10627,7 +10627,7 @@ def gerenciar_candidatos():
                 
                 # Documentos OPCIONAIS enviados (apenas para exibição, não entra no progresso)
                 cursor.execute("""
-                    SELECT COUNT(dc.id) as enviados
+                    SELECT COUNT(DISTINCT dc.tipo_documento_id) as enviados
                     FROM documentos_candidato dc
                     JOIN tipos_documentos_candidato td ON dc.tipo_documento_id = td.id
                     WHERE dc.candidato_id = %s 
@@ -10636,10 +10636,9 @@ def gerenciar_candidatos():
                 """, (candidato['id'],))
                 enviados_opcionais = cursor.fetchone()['enviados'] or 0
                 
-                # CORREÇÃO: 'enviados' agora é APENAS os obrigatórios
                 documentos_status[candidato['id']] = {
                     'total': total_obrigatorios,
-                    'enviados': enviados_obrigatorios,  # <-- CORRIGIDO: apenas obrigatórios
+                    'enviados': enviados_obrigatorios,
                     'total_obrigatorios': total_obrigatorios,
                     'enviados_obrigatorios': enviados_obrigatorios,
                     'enviados_opcionais': enviados_opcionais
@@ -11482,182 +11481,7 @@ def verificar_tabelas_sistema():
     html += '</body></html>'
     return html
         
-@app.route("/admin/criar-tabelas-sistema")
-@login_required
-def criar_tabelas_sistema():
-    """Cria apenas as tabelas necessárias para o sistema"""
-    if session.get('tipo') != 'admin':
-        return "Acesso negado", 403
-    
-    try:
-        cursor, conn = get_db()
-        
-        comandos = []
-        
-        # 1. Verificar se a tabela sindicantes_candidato existe
-        comandos.append("""
-            CREATE TABLE IF NOT EXISTS sindicantes_candidato (
-                id SERIAL PRIMARY KEY,
-                candidato_id INTEGER NOT NULL REFERENCES candidatos(id) ON DELETE CASCADE,
-                sindicante_id INTEGER NOT NULL REFERENCES usuarios(id) ON DELETE CASCADE,
-                data_designacao DATE NOT NULL,
-                data_conclusao DATE,
-                recomendacao VARCHAR(20),
-                status VARCHAR(20) DEFAULT 'designado',
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-            )
-        """)
-        
-        # 2. Verificar se a tabela placet_iniciacao existe
-        comandos.append("""
-            CREATE TABLE IF NOT EXISTS placet_iniciacao (
-                id SERIAL PRIMARY KEY,
-                candidato_id INTEGER NOT NULL REFERENCES candidatos(id) ON DELETE CASCADE,
-                numero_placet VARCHAR(50) UNIQUE NOT NULL,
-                data_emissao DATE NOT NULL,
-                data_iniciacao DATE,
-                loja_id INTEGER REFERENCES lojas(id),
-                status VARCHAR(20) DEFAULT 'emitido',
-                observacoes TEXT,
-                emitido_por INTEGER REFERENCES usuarios(id),
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-            )
-        """)
-        
-        # 3. Verificar se a tabela fluxo_iniciacao existe
-        comandos.append("""
-            CREATE TABLE IF NOT EXISTS fluxo_iniciacao (
-                id SERIAL PRIMARY KEY,
-                candidato_id INTEGER NOT NULL REFERENCES candidatos(id) ON DELETE CASCADE,
-                etapa VARCHAR(50) NOT NULL,
-                status VARCHAR(20) DEFAULT 'pendente',
-                data_entrada TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                data_saida TIMESTAMP,
-                observacoes TEXT,
-                usuario_id INTEGER REFERENCES usuarios(id),
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-            )
-        """)
-        
-        # 4. Verificar se a tabela votacao_candidato existe
-        comandos.append("""
-            CREATE TABLE IF NOT EXISTS votacao_candidato (
-                id SERIAL PRIMARY KEY,
-                candidato_id INTEGER NOT NULL REFERENCES candidatos(id) ON DELETE CASCADE,
-                data_votacao DATE NOT NULL,
-                votos_favoraveis INTEGER DEFAULT 0,
-                votos_contrarios INTEGER DEFAULT 0,
-                votos_brancos INTEGER DEFAULT 0,
-                resultado VARCHAR(20),
-                observacoes TEXT,
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-            )
-        """)
-        
-        # 5. Verificar se a tabela leituras_loja existe
-        comandos.append("""
-            CREATE TABLE IF NOT EXISTS leituras_loja (
-                id SERIAL PRIMARY KEY,
-                candidato_id INTEGER NOT NULL REFERENCES candidatos(id) ON DELETE CASCADE,
-                tipo_documento VARCHAR(20) NOT NULL,
-                numero_leitura INTEGER NOT NULL,
-                data_leitura DATE NOT NULL,
-                observacoes TEXT,
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-            )
-        """)
-        
-        # 6. Verificar se a tabela historico_graus existe
-        comandos.append("""
-            CREATE TABLE IF NOT EXISTS historico_graus (
-                id SERIAL PRIMARY KEY,
-                obreiro_id INTEGER NOT NULL REFERENCES usuarios(id) ON DELETE CASCADE,
-                grau INTEGER NOT NULL,
-                data DATE NOT NULL,
-                motivo TEXT,
-                autorizado_por INTEGER REFERENCES usuarios(id),
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-            )
-        """)
-        
-        # 7. Verificar se a tabela password_reset_tokens existe
-        comandos.append("""
-            CREATE TABLE IF NOT EXISTS password_reset_tokens (
-                id SERIAL PRIMARY KEY,
-                usuario_id INTEGER NOT NULL REFERENCES usuarios(id) ON DELETE CASCADE,
-                token VARCHAR(255) NOT NULL UNIQUE,
-                expira_em TIMESTAMP NOT NULL,
-                usado BOOLEAN DEFAULT FALSE,
-                criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-            )
-        """)
-        
-        # 8. Verificar se a tabela email_logs existe
-        comandos.append("""
-            CREATE TABLE IF NOT EXISTS email_logs (
-                id SERIAL PRIMARY KEY,
-                usuario_id INTEGER REFERENCES usuarios(id) ON DELETE SET NULL,
-                tipo VARCHAR(50),
-                destinatario VARCHAR(255),
-                status VARCHAR(50),
-                mensagem_id VARCHAR(255),
-                erro TEXT,
-                data_envio TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-            )
-        """)
-        
-        # Executar comandos
-        for cmd in comandos:
-            cursor.execute(cmd)
-            conn.commit()
-        
-        # Criar índices
-        indices = [
-            "CREATE INDEX IF NOT EXISTS idx_placet_candidato ON placet_iniciacao(candidato_id)",
-            "CREATE INDEX IF NOT EXISTS idx_sindicantes_candidato ON sindicantes_candidato(candidato_id)",
-            "CREATE INDEX IF NOT EXISTS idx_fluxo_candidato ON fluxo_iniciacao(candidato_id)",
-            "CREATE INDEX IF NOT EXISTS idx_votacao_candidato ON votacao_candidato(candidato_id)"
-        ]
-        
-        for idx in indices:
-            try:
-                cursor.execute(idx)
-                conn.commit()
-            except:
-                pass
-        
-        return_connection(conn)
-        
-        return """
-        <!DOCTYPE html>
-        <html>
-        <head>
-            <title>Tabelas Criadas</title>
-            <style>
-                body { font-family: Arial, sans-serif; margin: 20px; }
-                .success { color: green; }
-            </style>
-        </head>
-        <body>
-            <h1>✅ Tabelas do sistema criadas com sucesso!</h1>
-            <ul>
-                <li class="success">✅ sindicantes_candidato</li>
-                <li class="success">✅ placet_iniciacao</li>
-                <li class="success">✅ fluxo_iniciacao</li>
-                <li class="success">✅ votacao_candidato</li>
-                <li class="success">✅ leituras_loja</li>
-                <li class="success">✅ historico_graus</li>
-                <li class="success">✅ password_reset_tokens</li>
-                <li class="success">✅ email_logs</li>
-            </ul>
-            <p><a href="/admin/verificar-tabelas-sistema">Verificar novamente</a></p>
-            <p><a href="/dashboard">Voltar ao Dashboard</a></p>
-        </body>
-        </html>
-        """
-        
-    except Exception as e:
-        return f"❌ Erro ao criar tabelas: {str(e)}"        
+  
 
 # =============================
 # ROTAS DE CANDIDATOS E SINDICÂNCIA
@@ -13023,149 +12847,7 @@ def enviar_parecer(candidato_id):
 # =============================
 # ROTAS DE DOCUMENTOS DO CANDIDATO
 # =============================
-@app.route("/candidatos/<int:candidato_id>/documentos")
-@login_required
-def listar_documentos_candidato(candidato_id):
-    """Lista documentos do candidato e tipos obrigatórios"""
-    cursor, conn = get_db()
-    
-    # Verificar permissão (admin ou sindicante)
-    if session.get('tipo') not in ['admin', 'sindicante']:
-        flash("Permissão negada!", "danger")
-        return redirect("/candidatos")
-    
-    # Buscar candidato
-    cursor.execute("""
-        SELECT id, nome, status, token_acesso, email 
-        FROM candidatos 
-        WHERE id = %s
-    """, (candidato_id,))
-    candidato = cursor.fetchone()
-    
-    if not candidato:
-        flash("Candidato não encontrado!", "danger")
-        return_connection(conn)
-        return redirect("/candidatos")
-    
-    # Gerar token se não existir
-    if not candidato['token_acesso']:
-        import secrets
-        token = secrets.token_hex(32)
-        cursor.execute("UPDATE candidatos SET token_acesso = %s WHERE id = %s", (token, candidato_id))
-        conn.commit()
-        candidato['token_acesso'] = token
-    
-    # ============================================
-    # CORREÇÃO: Garantir que TODOS os documentos obrigatórios existem
-    # ============================================
-    
-    # Lista obrigatória completa
-    documentos_obrigatorios_padrao = [
-        ('Certidão Negativa Eleitoral', 'Certidão Negativa da Justiça Eleitoral', 1, 1),
-        ('Certidão Negativa Militar', 'Certidão Negativa do Serviço Militar', 1, 2),
-        ('Tribunal Regional Federal da 1ª Região', 'Certidão Negativa do TRF1', 1, 3),
-        ('Certidões Negativas do TJDFT', 'Certidão Negativa do Tribunal de Justiça do DF', 1, 4),
-        ('Certidão de Antecedentes Criminais Polícia Federal', 'Certidão de Antecedentes Criminais da PF', 1, 5),
-        ('Certidão Negativa de Débitos - GDF', 'Certidão Negativa de Débitos do Governo do DF', 1, 6),
-        ('RG', 'Registro Geral - Documento de Identidade', 1, 7),
-        ('CPF', 'Cadastro de Pessoa Física', 1, 8),
-        ('Foto 3x4', 'Foto 3x4 recente e fundo branco', 1, 9)
-    ]
-    
-    # Verificar se os tipos obrigatórios existem e ATUALIZAR os existentes
-    for nome, descricao, obrigatorio, ordem in documentos_obrigatorios_padrao:
-        cursor.execute("SELECT id, obrigatorio FROM tipos_documentos_candidato WHERE nome = %s", (nome,))
-        resultado = cursor.fetchone()
-        
-        if not resultado:
-            # Criar se não existe
-            cursor.execute("""
-                INSERT INTO tipos_documentos_candidato (nome, descricao, obrigatorio, ordem, ativo)
-                VALUES (%s, %s, %s, %s, 1)
-            """, (nome, descricao, obrigatorio, ordem))
-            print(f"✅ Criado: {nome}")
-        else:
-            # ATUALIZAR se existir mas não está marcado como obrigatório
-            if resultado['obrigatorio'] != obrigatorio:
-                cursor.execute("""
-                    UPDATE tipos_documentos_candidato 
-                    SET obrigatorio = %s, ordem = %s, descricao = %s, ativo = 1
-                    WHERE nome = %s
-                """, (obrigatorio, ordem, descricao, nome))
-                print(f"🔄 Atualizado: {nome} - obrigatorio={obrigatorio}")
-        
-        conn.commit()
-    
-    # Buscar TODOS os tipos de documentos ativos
-    cursor.execute("""
-        SELECT id, nome, descricao, obrigatorio, ordem
-        FROM tipos_documentos_candidato 
-        WHERE ativo = 1 
-        ORDER BY obrigatorio DESC, ordem, nome
-    """)
-    tipos_documentos = cursor.fetchall()
-    
-    # Buscar documentos já enviados
-    cursor.execute("""
-        SELECT d.*, t.nome as tipo_nome, u.nome_completo as enviado_por_nome,
-               a.nome_completo as aprovado_por_nome
-        FROM documentos_candidato d
-        JOIN tipos_documentos_candidato t ON d.tipo_documento_id = t.id
-        LEFT JOIN usuarios u ON d.enviado_por = u.id
-        LEFT JOIN usuarios a ON d.aprovado_por = a.id
-        WHERE d.candidato_id = %s
-        ORDER BY d.data_envio DESC
-    """, (candidato_id,))
-    documentos = cursor.fetchall()
-    
-    # Mapear documentos enviados por tipo
-    documentos_map = {d['tipo_documento_id']: d for d in documentos}
-    
-    # Calcular progresso (apenas documentos obrigatórios)
-    total_obrigatorios = sum(1 for t in tipos_documentos if t['obrigatorio'] == 1)
-    total_enviados = 0
-    for t in tipos_documentos:
-        if t['obrigatorio'] == 1 and t['id'] in documentos_map:
-            total_enviados += 1
-    
-    percentual = int((total_enviados / total_obrigatorios * 100)) if total_obrigatorios > 0 else 0
-    
-    # Documentos pendentes de aprovação (apenas obrigatórios)
-    documentos_pendentes = 0
-    for t in tipos_documentos:
-        if t['obrigatorio'] == 1 and t['id'] in documentos_map:
-            doc = documentos_map[t['id']]
-            if doc['status'] == 'pendente':
-                documentos_pendentes += 1
-    
-    # Documentos opcionais
-    documentos_opcionais_count = sum(1 for t in tipos_documentos if t['obrigatorio'] == 0)
-    
-    # DEBUG: Imprimir no console para verificar
-    print(f"\n{'='*50}")
-    print(f"📊 CANDIDATO: {candidato['nome']}")
-    print(f"{'='*50}")
-    for t in tipos_documentos:
-        status = "OBRIGATÓRIO" if t['obrigatorio'] == 1 else "opcional"
-        enviado = "✅" if t['id'] in documentos_map else "❌"
-        print(f"  {enviado} {t['nome']} - {status}")
-    print(f"{'='*50}")
-    print(f"Total obrigatórios: {total_obrigatorios}")
-    print(f"Total enviados: {total_enviados}")
-    print(f"Percentual: {percentual}%")
-    print(f"{'='*50}\n")
-    
-    return_connection(conn)
-    
-    return render_template("candidatos/documentos.html",
-                          candidato=candidato,
-                          tipos_documentos=tipos_documentos,
-                          documentos_map=documentos_map,
-                          total_obrigatorios=total_obrigatorios,
-                          total_enviados=total_enviados,
-                          percentual=percentual,
-                          documentos_pendentes=documentos_pendentes,
-                          documentos_opcionais_count=documentos_opcionais_count)
+
 @app.route("/candidatos/<int:candidato_id>/documentos/upload/<int:tipo_id>", methods=["POST"])
 @login_required
 def upload_documento_candidato(candidato_id, tipo_id):
@@ -13314,29 +12996,6 @@ def aprovar_documento_candidato(doc_id):
     finally:
         return_connection(conn)
         
-@app.route("/candidatos/<int:candidato_id>/documentos/ver/<int:doc_id>")
-@login_required
-def ver_documento_candidato(candidato_id, doc_id):
-    """Visualizar documento do candidato"""
-    cursor, conn = get_db()
-    
-    cursor.execute("""
-        SELECT d.*, t.nome as tipo_nome
-        FROM documentos_candidato d
-        JOIN tipos_documentos_candidato t ON d.tipo_documento_id = t.id
-        WHERE d.id = %s AND d.candidato_id = %s
-    """, (doc_id, candidato_id))
-    documento = cursor.fetchone()
-    
-    return_connection(conn)
-    
-    if not documento:
-        flash("Documento não encontrado!", "danger")
-        return redirect(f"/candidatos/{candidato_id}/documentos")
-    
-    # Redirecionar para a URL do arquivo
-    return redirect(documento['caminho_arquivo'])        
-
 
 @app.route("/api/documentos-candidato/<int:doc_id>/excluir", methods=["DELETE"])
 @login_required
