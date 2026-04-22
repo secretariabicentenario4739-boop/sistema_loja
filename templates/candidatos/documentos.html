@@ -1038,11 +1038,26 @@ function visualizarDocumento(caminho, nome) {
         return;
     }
     
-    let urlCompleta = caminho;
-    if (!caminho.startsWith('http')) {
-        urlCompleta = window.location.origin + caminho;
+    console.log('Caminho do documento:', caminho);
+    console.log('Tipo do documento:', nome);
+    
+    // Se já for uma URL completa (http:// ou https://)
+    if (caminho.startsWith('http://') || caminho.startsWith('https://')) {
+        // Abrir diretamente a URL do Cloudinary
+        window.open(caminho, '_blank');
+        return;
     }
     
+    // Se for caminho relativo
+    let urlCompleta = caminho;
+    if (!urlCompleta.startsWith('/')) {
+        urlCompleta = '/' + urlCompleta;
+    }
+    if (!urlCompleta.startsWith('http')) {
+        urlCompleta = window.location.origin + urlCompleta;
+    }
+    
+    console.log('URL completa:', urlCompleta);
     window.open(urlCompleta, '_blank');
 }
 
