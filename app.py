@@ -10526,6 +10526,214 @@ def api_marcar_aviso_visto(id):
 # =============================
 # ROTAS DE CANDIDATOS PLACET E OBREIRO
 # =============================
+@app.route("/candidatos", methods=["GET", "POST"])
+@login_required
+@permissao_required('candidato.view')
+def gerenciar_candidatos():
+    cursor, conn = get_db()
+    
+    if request.method == "POST":
+        nome = request.form.get("nome", "").strip()
+        
+        if nome:
+            try:
+                from datetime import datetime
+                agora = datetime.now()
+                cursor.execute("INSERT INTO candidatos (nome, data_criacao) VALUES (%s, %s)", (nome, agora))
+                conn.commit()
+                candidato_id = cursor.lastrowid
+                
+                try:
+                    registrar_log("criar", "candidato", candidato_id, dados_novos={"nome": nome})
+                except Exception as log_err:
+                    print(f"Erro no log: {log_err}")
+                
+                flash(f"Candidato '{nome}' adicionado com sucesso!", "success")
+                
+            except Exception as e:
+                conn.rollback()
+                print(f"Erro ao inserir: {str(e)}")
+                flash(f"Erro ao adicionar candidato: {str(e)}", "danger")
+        else:
+            flash("Nome do candidato não pode estar vazio", "danger")
+        
+        return_connection(conn)
+        return redirect("/candidatos")
+    
+    # ============================================
+    # GET - Buscar candidatos (APENAS NÃO OBREIROS)
+    # ============================================
+    
+    try:
+        conn.rollback()
+    except:
+        pass
+    
+    try:
+        cursor.execute("""
+            SELECT 
+                c.*,
+                COALESCE(pc.total_votos, 0) as total_votos,
+                COALESCE(pc.votos_positivos, 0) as votos_positivos,
+                COALESCE(pc.votos_negativos, 0) as votos_negativos,
+                (SELECT COUNT(*) FROM usuarios WHERE tipo = 'sindicante' AND ativo = 1) as total_sindicantes
+            FROM candidatos c
+            LEFT JOIN (
+                SELECT 
+                    candidato_id,
+                    COUNT(*) as total_votos,
+                    COUNT(CASE WHEN conclusao = 'APROVADO' THEN 1 END) as votos_positivos,
+                    COUNT(CASE WHEN conclusao = 'REPROVADO' THEN 1 END) as votos_negativos
+                FROM pareceres_conclusivos
+                GROUP BY candidato_id
+            ) pc ON c.id = pc.candidato_id
+            WHERE c.obreiro_id IS NULL
+            ORDER BY c.data_criacao DESC
+        """)
+        candidatos = cursor.fetchall()
+        
+    except Exception as e:
+        print(f"Erro ao buscar candidatos: {str(e)}")
+        conn.rollback()
+        candidatos = []
+    
+    # ============================================
+    # CORREÇÃO: Usar a tabela correta: tipos_documentos_candidato
+    # ============================================
+    
+    documentos_status = {}
+    
+    try:
+        # Primeiro: Buscar total de documentos OBRIGATÓRIOS na tabela correta
+        cursor.execute("SELECT COUNT(*) as total FROM tipos_documentos_candidato WHERE obrigatorio = 1 AND ativo = 1")
+        result = cursor.fetchone()
+        total_obrigatorios = result['total'] if result else 0
+        
+        print(f"📊 Total de documentos obrigatórios: {total_obrigatorios}")
+        
+        # Para cada candidato, calcular documentos enviados
+        for candidato in candidatos:
+            try:
+                # Documentos OBRIGATÓRIOS enviados (status diferente de rejeitado)
+                cursor.execute("""
+                    SELECT COUNT(dc.id) as enviados
+                    FROM documentos_candidato dc
+                    JOIN tipos_documentos_candidato td ON dc.tipo_documento_id = td.id
+                    WHERE dc.candidato_id = %s 
+                      AND td.obrigatorio = 1 
+                      AND dc.status != 'rejeitado'
+                """, (candidato['id'],))
+                enviados_obrigatorios = cursor.fetchone()['enviados'] or 0
+                
+                # Documentos OPCIONAIS enviados (status diferente de rejeitado)
+                cursor.execute("""
+                    SELECT COUNT(dc.id) as enviados
+                    FROM documentos_candidato dc
+                    JOIN tipos_documentos_candidato td ON dc.tipo_documento_id = td.id
+                    WHERE dc.candidato_id = %s 
+                      AND td.obrigatorio = 0 
+                      AND dc.status != 'rejeitado'
+                """, (candidato['id'],))
+                enviados_opcionais = cursor.fetchone()['enviados'] or 0
+                
+                documentos_status[candidato['id']] = {
+                    'total': total_obrigatorios,
+                    'enviados': enviados_obrigatorios + enviados_opcionais,
+                    'total_obrigatorios': total_obrigatorios,
+                    'enviados_obrigatorios': enviados_obrigatorios,
+                    'enviados_opcionais': enviados_opcionais
+                }
+                
+                print(f"📄 Candidato {candidato['nome'][:30]}: Obrigatórios {enviados_obrigatorios}/{total_obrigatorios}, Opcionais: {enviados_opcionais}")
+                
+            except Exception as e:
+                print(f"Erro ao processar documentos do candidato {candidato['id']}: {e}")
+                documentos_status[candidato['id']] = {
+                    'total': total_obrigatorios,
+                    'enviados': 0,
+                    'total_obrigatorios': total_obrigatorios,
+                    'enviados_obrigatorios': 0,
+                    'enviados_opcionais': 0
+                }
+                
+    except Exception as e:
+        print(f"Erro ao buscar status dos documentos: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        for candidato in candidatos:
+            documentos_status[candidato['id']] = {
+                'total': 0,
+                'enviados': 0,
+                'total_obrigatorios': 0,
+                'enviados_obrigatorios': 0,
+                'enviados_opcionais': 0
+            }
+    
+    # Buscar sindicantes
+    try:
+        cursor.execute("""
+            SELECT id, usuario, nome_completo, cim_numero, 
+                   loja_nome, loja_numero, loja_orient, ativo,
+                   telefone
+            FROM usuarios 
+            WHERE tipo = 'sindicante' AND ativo = 1 AND grau_atual >= 3
+            ORDER BY nome_completo
+        """)
+        sindicantes = cursor.fetchall()
+    except Exception as e:
+        print(f"Erro ao buscar sindicantes: {str(e)}")
+        conn.rollback()
+        sindicantes = []
+    
+    # Buscar lojas para o modal do Placet
+    try:
+        cursor.execute("SELECT id, nome, numero FROM lojas WHERE ativo = 1 ORDER BY nome")
+        lojas = cursor.fetchall()
+    except Exception as e:
+        print(f"Erro ao buscar lojas: {str(e)}")
+        lojas = []
+    
+    # Buscar sindicantes disponíveis (para o modal de designação)
+    try:
+        cursor.execute("""
+            SELECT id, usuario, nome_completo, cim_numero 
+            FROM usuarios 
+            WHERE tipo = 'sindicante' AND ativo = 1
+            ORDER BY nome_completo
+        """)
+        sindicantes_disponiveis = cursor.fetchall()
+    except Exception as e:
+        print(f"Erro ao buscar sindicantes disponíveis: {str(e)}")
+        sindicantes_disponiveis = []
+    
+    # Buscar designações existentes por candidato
+    try:
+        cursor.execute("""
+            SELECT candidato_id, sindicante_id 
+            FROM sindicantes_candidato
+        """)
+        designacoes = cursor.fetchall()
+        
+        designados_por_candidato = {}
+        for d in designacoes:
+            if d['candidato_id'] not in designados_por_candidato:
+                designados_por_candidato[d['candidato_id']] = []
+            designados_por_candidato[d['candidato_id']].append(d['sindicante_id'])
+    except Exception as e:
+        print(f"Erro ao buscar designações: {str(e)}")
+        designados_por_candidato = {}
+    
+    return_connection(conn)
+    
+    return render_template("candidatos.html", 
+                          candidatos=candidatos, 
+                          sindicantes=sindicantes, 
+                          documentos_status=documentos_status,
+                          lojas=lojas,
+                          sindicantes_disponiveis=sindicantes_disponiveis,
+                          designados_por_candidato=designados_por_candidato,
+                          tipo=session.get("tipo", "admin"))
+
 @app.route("/candidatos/<int:id>/documentos")
 @login_required
 def documentos_candidato(id):
@@ -10547,9 +10755,7 @@ def documentos_candidato(id):
                 flash("Acesso negado!", "danger")
                 return redirect("/candidatos")
         
-        # =========================================================
         # Buscar tipos de documentos
-        # =========================================================
         cursor.execute("""
             SELECT * FROM tipos_documentos_candidato 
             WHERE ativo = 1 
@@ -10557,7 +10763,7 @@ def documentos_candidato(id):
         """)
         tipos_documentos = cursor.fetchall()
         
-        # Buscar documentos enviados pelo candidato
+        # Buscar documentos enviados
         cursor.execute("""
             SELECT dc.*, td.nome as tipo_nome, td.obrigatorio
             FROM documentos_candidato dc
@@ -10572,7 +10778,7 @@ def documentos_candidato(id):
             documentos_map[doc['tipo_documento_id']] = doc
         
         # =========================================================
-        # CORREÇÃO: Calcular estatísticas APENAS com obrigatórios
+        # CORREÇÃO: Calcular apenas documentos OBRIGATÓRIOS
         # =========================================================
         
         # Total de documentos OBRIGATÓRIOS
@@ -10601,7 +10807,6 @@ def documentos_candidato(id):
         print(f"   - Total obrigatórios: {total_obrigatorios}")
         print(f"   - Enviados obrigatórios: {enviados_obrigatorios}")
         print(f"   - Percentual: {percentual}%")
-        print(f"   - Opcionais disponíveis: {documentos_opcionais_count}")
         
         return_connection(conn)
         
@@ -10622,7 +10827,7 @@ def documentos_candidato(id):
         if conn:
             return_connection(conn)
         flash(f"Erro ao carregar documentos: {str(e)}", "danger")
-        return redirect("/candidatos")
+        return redirect("/candidatos")                          
 
 @app.route("/candidatos/<int:candidato_id>/foto", methods=["POST"])
 @login_required
