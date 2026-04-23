@@ -1,80 +1,120 @@
 {% extends "base.html" %}
 
-{% block title %}Modelos de Ata{% endblock %}
+{% block title %}Gerenciar Modelos de Ata{% endblock %}
+
+{% block styles %}
+{{ super() }}
+<style>
+    .btn-bordo {
+        background: linear-gradient(135deg, #4A0E2E, #3A0A24);
+        border: none;
+        color: white;
+        border-radius: 30px;
+        padding: 8px 20px;
+        transition: all 0.3s;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        text-decoration: none;
+    }
+    .btn-bordo:hover {
+        background: linear-gradient(135deg, #6B1342, #4A0E2E);
+        transform: translateY(-2px);
+        color: white;
+    }
+    .btn-bordo-outline {
+        background: transparent;
+        border: 1px solid #4A0E2E;
+        color: #4A0E2E;
+        border-radius: 30px;
+        padding: 8px 20px;
+        transition: all 0.3s;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        text-decoration: none;
+    }
+    .btn-bordo-outline:hover {
+        background: #4A0E2E;
+        color: white;
+    }
+    .card-modelo {
+        transition: all 0.3s ease;
+        border-radius: 16px;
+        overflow: hidden;
+    }
+    .card-modelo:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 8px 25px rgba(74, 14, 46, 0.12);
+    }
+</style>
+{% endblock %}
 
 {% block content %}
 <div class="container-fluid py-4">
     <div class="container">
         <div class="d-flex justify-content-between align-items-center mb-4">
             <h2>
-                <i class="bi bi-diagram-3"></i> 
-                Modelos de Ata
+                <i class="bi bi-files" style="color: #4A0E2E;"></i> 
+                <span style="color: #4A0E2E;">Modelos de Ata</span>
             </h2>
             <div>
-                <a href="/atas/modelos/novo" class="btn btn-success">
-                    <i class="bi bi-plus-circle"></i> Novo Modelo
-                </a>
-                <a href="/atas" class="btn btn-outline-secondary">
+                <a href="/atas" class="btn-bordo-outline">
                     <i class="bi bi-arrow-left"></i> Voltar
                 </a>
             </div>
         </div>
 
-        {% with messages = get_flashed_messages(with_categories=true) %}
-            {% if messages %}
-                {% for category, message in messages %}
-                    <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
-                        {{ message }}
-                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-                    </div>
-                {% endfor %}
-            {% endif %}
-        {% endwith %}
-
         <div class="row">
             {% for modelo in modelos %}
-            <div class="col-md-4 mb-4">
-                <div class="card h-100 shadow">
-                    <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
-                        <h5 class="mb-0">{{ modelo.nome }}</h5>
-                        <div>
-                            <a href="/atas/modelos/editar/{{ modelo.id }}" class="btn btn-sm btn-light text-dark me-1" title="Editar">
-                                <i class="bi bi-pencil"></i>
-                            </a>
-                            <a href="/atas/modelos/excluir/{{ modelo.id }}" class="btn btn-sm btn-light text-danger" title="Excluir" onclick="return confirm('Tem certeza que deseja excluir este modelo?')">
-                                <i class="bi bi-trash"></i>
-                            </a>
-                        </div>
+            <div class="col-md-6 col-lg-4 mb-4">
+                <div class="card card-modelo shadow-sm h-100">
+                    <div class="card-header" style="background: linear-gradient(135deg, #4A0E2E, #3A0A24); color: white;">
+                        <h5 class="mb-0">
+                            <i class="bi bi-file-text"></i> {{ modelo.nome }}
+                        </h5>
                     </div>
                     <div class="card-body">
-                        <p><strong>Tipo:</strong> {{ modelo.tipo }}</p>
-                        <p class="small">{{ modelo.descricao or 'Sem descrição' }}</p>
-                        
+                        <p class="text-muted small">
+                            <i class="bi bi-tag"></i> Tipo: {{ modelo.tipo or 'Personalizado' }}
+                        </p>
+                        <p class="text-muted small">
+                            <i class="bi bi-calendar"></i> Criado em: {{ modelo.created_at.strftime('%d/%m/%Y') if modelo.created_at else '-' }}
+                        </p>
                         <hr>
-                        
-                        <h6>Estrutura:</h6>
-                        <ul class="small">
-                            {% set estrutura = modelo.estrutura_dict %}
-                            {% if estrutura.cabecalho %}
-                                <li>Cabeçalho: {{ estrutura.cabecalho|length }} itens</li>
-                            {% endif %}
-                            {% if estrutura.expediente %}
-                                <li>Expediente: {{ estrutura.expediente|length }} itens</li>
-                            {% endif %}
-                            {% if estrutura.ordem_do_dia %}
-                                <li>Ordem do Dia: {{ estrutura.ordem_do_dia|length }} itens</li>
-                            {% endif %}
-                            {% if estrutura.encerramento %}
-                                <li>Encerramento: {{ estrutura.encerramento|length }} itens</li>
-                            {% endif %}
-                        </ul>
+                        <p class="small">
+                            <strong>Estrutura:</strong><br>
+                            <span class="text-muted">
+                                {% if modelo.estrutura %}
+                                    {% if modelo.estrutura is string %}
+                                        {{ modelo.estrutura[:100] }}...
+                                    {% elif modelo.estrutura is mapping %}
+                                        {{ modelo.estrutura.keys()|join(', ') }}
+                                    {% else %}
+                                        {{ modelo.estrutura|string|truncate(100) }}
+                                    {% endif %}
+                                {% else %}
+                                    Sem estrutura definida
+                                {% endif %}
+                            </span>
+                        </p>
                     </div>
                     <div class="card-footer bg-transparent">
-                        <small class="text-muted">Criado em: {{ modelo.created_at[:10] }}</small>
+                        <div class="d-flex gap-2">
+                            <a href="/atas/modelos/{{ modelo.id }}/editar" class="btn-bordo w-100" style="text-align: center;">
+                                <i class="bi bi-pencil"></i> Editar
+                            </a>
+                        </div>
                     </div>
                 </div>
             </div>
             {% endfor %}
+        </div>
+
+        <div class="text-center mt-4">
+            <a href="/atas/modelos/novo" class="btn-bordo">
+                <i class="bi bi-plus-circle"></i> Novo Modelo
+            </a>
         </div>
     </div>
 </div>

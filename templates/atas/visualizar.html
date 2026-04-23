@@ -792,12 +792,33 @@
                             {% endif %}
                             
                             {% if session.tipo == 'admin' %}
-                            <form method="POST" action="/atas/{{ ata.id }}/excluir" style="display: inline;" 
-      onsubmit="return confirm('⚠️ ATENÇÃO!\n\nDeseja EXCLUIR esta ata?\n\nEsta ação não pode ser desfeita!\n\nDeseja continuar?')">
-    <button type="submit" class="btn-bordo-danger">
-        <i class="bi bi-trash"></i> Excluir Ata
-    </button>
-</form>
+                            <button class="btn-bordo-danger" onclick="excluirAta('{{ ata.id }}')">
+    <i class="bi bi-trash"></i> Excluir Ata
+</button>
+
+<script>
+function excluirAta(ataId) {
+    if (confirm('⚠️ Deseja EXCLUIR esta ata?')) {
+        fetch(`/atas/${ataId}/excluir`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                window.location.href = '/atas';
+            } else {
+                alert('Erro: ' + data.error);
+            }
+        })
+        .catch(error => {
+            alert('Erro na requisição');
+        });
+    }
+}
+</script>
                             {% endif %}
                         </div>
                         

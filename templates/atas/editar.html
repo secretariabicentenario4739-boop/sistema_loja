@@ -239,7 +239,6 @@
             font-size: 0.85rem;
         }
         
-        /* Cabeçalho responsivo */
         .d-flex.justify-content-between {
             flex-direction: column;
             align-items: flex-start !important;
@@ -261,7 +260,6 @@
             font-size: 1.5rem;
         }
         
-        /* Botões do formulário */
         .btn-group-mobile {
             flex-direction: column;
             width: 100%;
@@ -277,7 +275,6 @@
             font-size: 0.875rem;
         }
         
-        /* TinyMCE toolbar responsiva */
         .tox-toolbar__group {
             flex-wrap: wrap;
         }
@@ -365,10 +362,24 @@
                             <label class="form-label">Modelo Rápido</label>
                             <select class="form-select" id="modeloSelect">
                                 <option value="">Selecione um modelo...</option>
-                                <option value="padrao">📄 Modelo Padrão</option>
-                                <option value="formal">📜 Modelo Formal</option>
-                                <option value="simples">📝 Modelo Simples</option>
+                                {% for modelo in modelos %}
+                                <option value="{{ modelo.id }}" 
+                                        data-conteudo="{{ modelo.estrutura or modelo.conteudo | escape }}">
+                                    {% if modelo.tipo == 'padrao' %}📄
+                                    {% elif modelo.tipo == 'formal' %}📜
+                                    {% elif modelo.tipo == 'simples' %}📝
+                                    {% else %}📋{% endif %}
+                                    {{ modelo.nome }}
+                                </option>
+                                {% endfor %}
                             </select>
+                            {% if modelos|length == 0 %}
+                            <small class="text-muted">
+                                <i class="bi bi-info-circle"></i> 
+                                Nenhum modelo cadastrado. 
+                                <a href="/atas/modelos/novo" class="text-primary">Cadastre modelos</a> para facilitar a criação de atas.
+                            </small>
+                            {% endif %}
                         </div>
                     </div>
 
@@ -421,6 +432,11 @@
 <script src="https://cdn.jsdelivr.net/npm/tinymce@6.8.3/plugins/emoticons/plugin.min.js"></script>
 
 <script>
+    // Modelos do banco de dados (passados pelo backend)
+    const modelosFromDB = {{ modelos|tojson|safe }};
+    
+    console.log('Modelos carregados:', modelosFromDB);
+    
     tinymce.init({
         selector: '#editor',
         language: 'pt_BR',
@@ -437,37 +453,156 @@
         }
     });
     
-    // Modelos
-    document.getElementById('modeloSelect').addEventListener('change', function() {
-        const modelo = this.value;
-        let conteudo = '';
+    // Função para converter a estrutura JSON em HTML
+    function converterEstruturaJSONParaHTML(estrutura) {
+        let html = '';
         
-        switch(modelo) {
-            case 'padrao':
-                conteudo = `<h2 style="text-align: center;">ATA DA REUNIÃO</h2>
-<p>&nbsp;</p>
-<p style="text-align: justify;">Aos <strong>[DATA]</strong> dias do mês de <strong>[MÊS]</strong> de <strong>[ANO]</strong>, reuniu-se a Loja Maçônica...</p>`;
-                break;
-            case 'formal':
-                conteudo = `<h1 style="text-align: center;">ATA DA REUNIÃO ORDINÁRIA</h1>
-<p style="text-align: justify;">Aos <strong>[DATA]</strong> dias do mês de <strong>[MÊS]</strong> do ano de <strong>[ANO]</strong>, sob os auspícios do Grande Oriente do Brasil...</p>`;
-                break;
-            case 'simples':
-                conteudo = `<h3>ATA DA REUNIÃO</h3>
-<p><strong>Data:</strong> [DATA]</p>
-<p><strong>Local:</strong> [LOCAL]</p>`;
-                break;
-            default:
-                return;
+        if (typeof estrutura === 'string') {
+            try {
+                estrutura = JSON.parse(estrutura);
+            } catch(e) {
+                return estrutura; // Se não for JSON, retorna como está
+            }
         }
         
-        if (conteudo && tinymce.get('editor')) {
-            tinymce.get('editor').setContent(conteudo);
-            document.getElementById('preview').innerHTML = conteudo;
+        // Cabeçalho da ata
+        html += '<div style="text-align: center; margin-bottom: 30px;">\n';
+        html += '<h1 style="color: #4A0E2E;">ARLS BICENTENÁRIO Nº 4739</h1>\n';
+        html += '<h2 style="color: #4A0E2E;">ORIENTE DE CEILÂNDIA - DF</h2>\n';
+        html += '<hr style="border: 1px solid #D4AF37;">\n';
+        html += '</div>\n\n';
+        
+        // Processar cada seção da estrutura
+        for (const [secao, itens] of Object.entries(estrutura)) {
+            if (Array.isArray(itens) && itens.length > 0) {
+                // Título da seção (capitalizado)
+                const tituloSecao = secao.charAt(0).toUpperCase() + secao.slice(1);
+                html += `<h3 style="color: #4A0E2E; margin-top: 20px; border-bottom: 1px solid #D4AF37; padding-bottom: 5px;">${tituloSecao}</h3>\n`;
+                html += '<ul style="margin-bottom: 20px;">\n';
+                for (const item of itens) {
+                    html += `<li>${item}: <span style="color: #666;">_________________________</span></li>\n`;
+                }
+                html += '</ul>\n\n';
+            } else if (typeof itens === 'object' && itens !== null) {
+                // Subseções
+                html += `<h3 style="color: #4A0E2E; margin-top: 20px;">${secao}</h3>\n`;
+                for (const [subsecao, subitens] of Object.entries(itens)) {
+                    if (Array.isArray(subitens)) {
+                        html += `<h4 style="margin-left: 15px;">${subsecao}</h4>\n`;
+                        html += '<ul style="margin-left: 30px;">\n';
+                        for (const item of subitens) {
+                            html += `<li>${item}: _________________________</li>\n`;
+                        }
+                        html += '</ul>\n';
+                    }
+                }
+            }
+        }
+        
+        // Rodapé com assinaturas
+        html += '\n<div style="margin-top: 50px;">\n';
+        html += '<hr style="border: 1px solid #D4AF37;">\n';
+        html += '<table style="width: 100%; margin-top: 30px;">\n';
+        html += '  <tr>\n';
+        html += '    <td style="text-align: center; width: 50%;">\n';
+        html += '      _________________________________<br>\n';
+        html += '      <strong>Venerável Mestre</strong>\n';
+        html += '    </td>\n';
+        html += '    <td style="text-align: center; width: 50%;">\n';
+        html += '      _________________________________<br>\n';
+        html += '      <strong>Secretário</strong>\n';
+        html += '    </td>\n';
+        html += '  </tr>\n';
+        html += '</table>\n';
+        html += '</div>\n';
+        
+        return html;
+    }
+    
+    // Função para gerar HTML básico quando não houver estrutura
+    function gerarHTMLBasico(nomeModelo) {
+        const dataAtual = new Date().toLocaleDateString('pt-BR');
+        
+        return `
+<div style="text-align: center; margin-bottom: 30px;">
+    <h1 style="color: #4A0E2E;">ARLS BICENTENÁRIO Nº 4739</h1>
+    <h2 style="color: #4A0E2E;">ORIENTE DE CEILÂNDIA - DF</h2>
+    <hr style="border: 1px solid #D4AF37;">
+</div>
+
+<h2 style="text-align: center; color: #4A0E2E;">${nomeModelo}</h2>
+
+<p><strong>Data:</strong> ${dataAtual}</p>
+<p><strong>Horário:</strong> ___ : ___</p>
+<p><strong>Local:</strong> Templo Maçônico</p>
+
+<h3 style="color: #4A0E2E; margin-top: 20px;">1. Abertura</h3>
+<p>Aos ${dataAtual} às ___ horas, reuniu-se a Loja Maçônica...</p>
+
+<h3 style="color: #4A0E2E; margin-top: 20px;">2. Expediente</h3>
+<p>...</p>
+
+<h3 style="color: #4A0E2E; margin-top: 20px;">3. Ordem do Dia</h3>
+<p>...</p>
+
+<h3 style="color: #4A0E2E; margin-top: 20px;">4. Encerramento</h3>
+<p>Nada mais havendo a tratar, foi encerrada a reunião às ___ horas.</p>
+
+<div style="margin-top: 50px;">
+    <hr>
+    <table style="width: 100%; margin-top: 30px;">
+        <tr>
+            <td style="text-align: center;">_________________________________<br><strong>Venerável Mestre</strong></td>
+            <td style="text-align: center;">_________________________________<br><strong>Secretário</strong></td>
+        </tr>
+    </table>
+</div>`;
+    }
+    
+    // Carregar modelos do banco de dados
+    document.getElementById('modeloSelect').addEventListener('change', function() {
+        const modeloId = this.value;
+        
+        if (!modeloId) return;
+        
+        // Buscar o modelo na lista
+        const modelo = modelosFromDB.find(m => m.id == modeloId);
+        
+        console.log('Modelo selecionado:', modelo);
+        
+        if (modelo && tinymce.get('editor')) {
+            let conteudo = '';
+            
+            // Verificar se tem estrutura JSON
+            if (modelo.estrutura && typeof modelo.estrutura === 'object') {
+                conteudo = converterEstruturaJSONParaHTML(modelo.estrutura);
+            } else if (modelo.estrutura && typeof modelo.estrutura === 'string') {
+                try {
+                    const estruturaJSON = JSON.parse(modelo.estrutura);
+                    conteudo = converterEstruturaJSONParaHTML(estruturaJSON);
+                } catch(e) {
+                    // Se não for JSON válido, usar como HTML
+                    conteudo = modelo.estrutura;
+                }
+            } else if (modelo.conteudo) {
+                conteudo = modelo.conteudo;
+            } else {
+                // Gerar HTML básico baseado no nome do modelo
+                conteudo = gerarHTMLBasico(modelo.nome);
+            }
+            
+            console.log('Conteúdo gerado:', conteudo.substring(0, 200) + '...');
+            
+            if (conteudo && conteudo.trim()) {
+                tinymce.get('editor').setContent(conteudo);
+                document.getElementById('preview').innerHTML = conteudo;
+            } else {
+                alert(`O modelo "${modelo.nome}" não possui conteúdo definido. Por favor, edite o modelo.`);
+            }
         }
     });
     
-    // Inicializar preview
+    // Inicializar preview com o conteúdo atual
     setTimeout(() => {
         if (tinymce.get('editor')) {
             const conteudo = tinymce.get('editor').getContent();

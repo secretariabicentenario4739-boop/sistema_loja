@@ -9371,7 +9371,7 @@ def nova_ata(reuniao_id):
     
     cursor.execute("""
         SELECT r.*, 
-               (SELECT COUNT(*) FROM presenca WHERE reuniao_id = r.id AND presente = 1) as presentes
+               (SELECT COUNT(*) FROM presenca_reuniao WHERE reuniao_id = r.id AND presente = TRUE) as presentes
         FROM reunioes r
         WHERE r.id = %s
     """, (reuniao_id,))
@@ -9419,12 +9419,17 @@ def nova_ata(reuniao_id):
             ata_id = cursor.fetchone()['id']
             conn.commit()
             
-            registrar_log("criar", "ata", ata_id, dados_novos={"reuniao_id": reuniao_id, "numero": numero_ata, "ano": ano_atual})
+            registrar_log("criar", "ata", ata_id, dados_novos={
+                "reuniao_id": reuniao_id, 
+                "numero": numero_ata, 
+                "ano": ano_atual
+            })
             
             flash(f"Ata nº {numero_ata}/{ano_atual} criada com sucesso!", "success")
             
             return_connection(conn)
-            return redirect(f"/atas/{ata_id}/visualizar")
+            # CORRIGIDO: sem /visualizar
+            return redirect(f"/atas/{ata_id}")
             
         except Exception as e:
             print(f"ERRO ao criar ata: {e}")
@@ -9436,8 +9441,11 @@ def nova_ata(reuniao_id):
     # GET - Carregar modelos
     modelos = []
     if verificar_permissao(session['user_id'], 'ata.use_template'):
-        cursor.execute("SELECT * FROM modelos_ata WHERE ativo = 1")
-        modelos = cursor.fetchall()
+        try:
+            cursor.execute("SELECT * FROM modelos_ata WHERE ativo = 1")
+            modelos = cursor.fetchall()
+        except:
+            pass
     
     return_connection(conn)
     
@@ -9445,12 +9453,13 @@ def nova_ata(reuniao_id):
 
 
 @app.route("/atas/<int:id>/editar", methods=["GET", "POST"])
-@admin_required
+@login_required
 def editar_ata(id):
     cursor, conn = get_db()
     
+    # Buscar a ata
     cursor.execute("""
-        SELECT a.*, r.titulo as reuniao_titulo, r.status as reuniao_status, r.data as reuniao_data
+        SELECT a.*, r.titulo as reuniao_titulo
         FROM atas a
         JOIN reunioes r ON a.reuniao_id = r.id
         WHERE a.id = %s
@@ -9458,53 +9467,42 @@ def editar_ata(id):
     ata = cursor.fetchone()
     
     if not ata:
-        flash("Ata não encontrada", "danger")
+        flash("Ata não encontrada!", "danger")
         return_connection(conn)
         return redirect("/atas")
     
-    if ata["aprovada"] == 1:
-        flash("Ata já aprovada, não pode ser editada!", "warning")
+    # Verificar permissão
+    if session.get('tipo') != 'admin' and ata.get('aprovada') == 1:
+        flash("Não é possível editar uma ata já aprovada!", "danger")
         return_connection(conn)
         return redirect(f"/atas/{id}")
     
+    # Buscar modelos do banco de dados
+    cursor.execute("SELECT * FROM modelos_ata WHERE ativo = 1 ORDER BY nome")
+    modelos = cursor.fetchall()
+    
     if request.method == "POST":
-        titulo = request.form.get("titulo")
         conteudo = request.form.get("conteudo")
-        tipo_ata = request.form.get("tipo_ata")
+        titulo = request.form.get("titulo")
         numero_ata = request.form.get("numero_ata")
         ano_ata = request.form.get("ano_ata")
+        tipo_ata = request.form.get("tipo_ata")
         
-        if not conteudo:
-            flash("Conteúdo da ata é obrigatório", "danger")
-        else:
-            try:
-                versao_atual = ata.get('versao') or 0
-                nova_versao = versao_atual + 1
-                
-                cursor.execute("""
-                    UPDATE atas 
-                    SET titulo = %s,
-                        conteudo = %s,
-                        tipo_ata = %s,
-                        numero_ata = %s,
-                        ano_ata = %s,
-                        versao = %s
-                    WHERE id = %s
-                """, (titulo, conteudo, tipo_ata, numero_ata, ano_ata, nova_versao, id))
-                
-                conn.commit()
-                registrar_log("editar", "ata", id, dados_novos={"versao": nova_versao, "titulo": titulo})
-                flash("Ata atualizada com sucesso!", "success")
-                return_connection(conn)
-                return redirect(f"/atas/{id}")
-                
-            except Exception as e:
-                print(f"Erro ao atualizar ata: {e}")
-                conn.rollback()
-                flash(f"Erro ao atualizar ata: {str(e)}", "danger")
+        cursor.execute("""
+            UPDATE atas 
+            SET conteudo = %s, titulo = %s, numero_ata = %s, ano_ata = %s, tipo_ata = %s
+            WHERE id = %s
+        """, (conteudo, titulo, numero_ata, ano_ata, tipo_ata, id))
+        conn.commit()
+        
+        registrar_log("editar", "ata", id, dados_novos={"titulo": titulo})
+        flash("Ata atualizada com sucesso!", "success")
+        return_connection(conn)
+        return redirect(f"/atas/{id}")
     
     return_connection(conn)
-    return render_template("atas/editar.html", ata=ata)
+    
+    return render_template("atas/editar.html", ata=ata, modelos=modelos)
 
 
 @app.route("/atas/<int:id>/aprovar", methods=["POST"])
@@ -9524,51 +9522,6 @@ def aprovar_ata(id):
     return_connection(conn)
     return redirect(f"/atas/{id}")
 
-
-@app.route("/atas/<int:id>/excluir", methods=["POST"])
-@login_required
-@permissao_required('ata.delete')
-def excluir_ata(id):
-    """Exclui uma ata (apenas se não estiver aprovada ou se for admin)"""
-    cursor, conn = get_db()
-    
-    try:
-        cursor.execute("""
-            SELECT a.id, a.numero_ata, a.ano_ata, a.aprovada, r.titulo as reuniao_titulo
-            FROM atas a
-            JOIN reunioes r ON a.reuniao_id = r.id
-            WHERE a.id = %s
-        """, (id,))
-        ata = cursor.fetchone()
-        
-        if not ata:
-            flash("Ata não encontrada!", "danger")
-            return_connection(conn)
-            return redirect("/atas")
-        
-        if ata['aprovada'] == 1 and session.get('tipo') != 'admin':
-            flash("Não é possível excluir uma ata já aprovada!", "danger")
-            return_connection(conn)
-            return redirect(f"/atas/{id}")
-        
-        registrar_log("excluir", "ata", id, dados_anteriores={
-            "numero": ata['numero_ata'],
-            "ano": ata['ano_ata'],
-            "reuniao": ata['reuniao_titulo']
-        })
-        
-        cursor.execute("DELETE FROM atas WHERE id = %s", (id,))
-        conn.commit()
-        
-        flash(f"Ata nº {ata['numero_ata']}/{ata['ano_ata']} excluída com sucesso!", "success")
-        
-    except Exception as e:
-        print(f"Erro ao excluir ata: {e}")
-        conn.rollback()
-        flash(f"Erro ao excluir ata: {str(e)}", "danger")
-    
-    return_connection(conn)
-    return redirect("/atas")
 
 
 @app.route("/atas/modelos")
