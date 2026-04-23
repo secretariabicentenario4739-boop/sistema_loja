@@ -638,69 +638,73 @@
                 </div>
             </div>
 
-            <!-- Coluna Direita: Ata da Reunião (padrão visualizar.html) -->
-            <div class="col-md-5">
-                <div class="filtros-card shadow-sm">
-                    <div class="card-header-bordo-primary">
-                        <h5><i class="bi bi-file-text"></i> Ata da Reunião</h5>
-                    </div>
-                    <div class="card-body p-4">
-                        {% if ata_id %}
-                            <div class="text-center mb-3">
-                                <i class="bi bi-file-text-fill fs-1" style="color: #10b981;"></i>
-                                <h5 class="mt-2 mb-1" style="color: var(--bordo);">Ata nº {{ ata_numero or '?' }}/{{ ata_ano or '?' }}</h5>
-                                {% if ata_aprovada %}
-                                    <span class="badge-aprovada">Aprovada</span>
-                                {% else %}
-                                    <span class="badge-pendente">Pendente</span>
-                                {% endif %}
-                            </div>
-                            
-                            <!-- Botões no estilo do visualizar.html -->
-                            <div class="btn-group-mobile">
-                                <a href="/atas/{{ ata_id }}" class="btn-bordo-primary w-100">
-                                    <i class="bi bi-eye-fill"></i> Visualizar Ata
-                                </a>
-                                <a href="/atas/{{ ata_id }}/pdf-oficial" class="btn-bordo-primary w-100" target="_blank">
-                                    <i class="bi bi-file-pdf-fill"></i> Baixar PDF
-                                </a>
-                                {% if session.tipo == 'admin' %}
-                                    {% if not ata_aprovada %}
-                                    <a href="/atas/{{ ata_id }}/editar" class="btn-bordo-warning w-100">
-                                        <i class="bi bi-pencil-fill"></i> Editar Ata
-                                    </a>
-                                    {% endif %}
-                                    <button class="btn-bordo-danger w-100" 
-                                            onclick="if(confirm('⚠️ ATENÇÃO!\n\nDeseja EXCLUIR esta ata?\n\nEsta ação não pode ser desfeita!\n\nDeseja continuar?')) { location.href='/atas/{{ ata_id }}/excluir' }">
-                                        <i class="bi bi-trash-fill"></i> Excluir Ata
-                                    </button>
-                                    {% if not ata_aprovada %}
-                                    <form method="POST" action="/atas/{{ ata_id }}/aprovar" class="w-100">
-                                        <button type="submit" class="btn-bordo-success w-100" 
-                                                onclick="return confirm('Aprovar esta ata?')">
-                                            <i class="bi bi-check-lg"></i> Aprovar Ata
-                                        </button>
-                                    </form>
-                                    {% endif %}
-                                {% endif %}
-                            </div>
-                        {% else %}
-                            <div class="text-center">
-                                <i class="bi bi-file-earmark-text fs-1 text-muted"></i>
-                                <p class="text-muted mt-2 mb-3">Nenhuma ata registrada</p>
-                                {% if session.tipo == 'admin' %}
-                                    <a href="/atas/nova/{{ reuniao.id }}" class="btn-bordo">
-                                        <i class="bi bi-plus-circle"></i> Criar Ata
-                                    </a>
-                                {% else %}
-                                    <small class="text-muted">Apenas administradores podem criar atas</small>
-                                {% endif %}
-                            </div>
-                        {% endif %}
-                    </div>
-                </div>
-            </div>
+<!-- Coluna Direita: Ata da Reunião (padrão visualizar.html) -->
+<div class="col-md-5">
+    <div class="filtros-card shadow-sm">
+        <div class="card-header-bordo-primary">
+            <h5><i class="bi bi-file-text"></i> Ata da Reunião</h5>
         </div>
+        <div class="card-body p-4">
+            {% if ata_id %}
+                <div class="text-center mb-3">
+                    <i class="bi bi-file-text-fill fs-1" style="color: #10b981;"></i>
+                    <h5 class="mt-2 mb-1" style="color: var(--bordo);">Ata nº {{ ata_numero or '?' }}/{{ ata_ano or '?' }}</h5>
+                    {% if ata_aprovada %}
+                        <span class="badge-aprovada">Aprovada</span>
+                    {% else %}
+                        <span class="badge-pendente">Pendente</span>
+                    {% endif %}
+                </div>
+                
+                <!-- Botões no estilo do visualizar.html -->
+                <div class="btn-group-mobile">
+                    <a href="/atas/{{ ata_id }}" class="btn-bordo-primary w-100">
+                        <i class="bi bi-eye-fill"></i> Visualizar Ata
+                    </a>
+                    <a href="/atas/{{ ata_id }}/print" class="btn-bordo-primary w-100" target="_blank">
+                        <i class="bi bi-file-pdf-fill"></i> Imprimir
+                    </a>
+                    {% if session.tipo == 'admin' %}
+                        {% if not ata_aprovada %}
+                        <a href="/atas/{{ ata_id }}/editar" class="btn-bordo-warning w-100">
+                            <i class="bi bi-pencil-fill"></i> Editar Ata
+                        </a>
+                        {% endif %}
+                        
+                        <!-- CORRIGIDO: Formulário POST para excluir -->
+                        <form method="POST" action="/atas/{{ ata_id }}/excluir" class="w-100" 
+                              onsubmit="return confirm('⚠️ ATENÇÃO!\n\nDeseja EXCLUIR esta ata?\n\nEsta ação não pode ser desfeita!\n\nDeseja continuar?')">
+                            <button type="submit" class="btn-bordo-danger w-100">
+                                <i class="bi bi-trash-fill"></i> Excluir Ata
+                            </button>
+                        </form>
+                        
+                        {% if not ata_aprovada %}
+                        <form method="POST" action="/atas/{{ ata_id }}/aprovar" class="w-100">
+                            <button type="submit" class="btn-bordo-success w-100" 
+                                    onclick="return confirm('Aprovar esta ata?')">
+                                <i class="bi bi-check-lg"></i> Aprovar Ata
+                            </button>
+                        </form>
+                        {% endif %}
+                    {% endif %}
+                </div>
+            {% else %}
+                <div class="text-center">
+                    <i class="bi bi-file-earmark-text fs-1 text-muted"></i>
+                    <p class="text-muted mt-2 mb-3">Nenhuma ata registrada</p>
+                    {% if session.tipo == 'admin' %}
+                        <a href="/atas/nova/{{ reuniao.id }}" class="btn-bordo">
+                            <i class="bi bi-plus-circle"></i> Criar Ata
+                        </a>
+                    {% else %}
+                        <small class="text-muted">Apenas administradores podem criar atas</small>
+                    {% endif %}
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
 
         <!-- LISTA DE PRESENÇA -->
 <div class="filtros-card shadow-sm">
