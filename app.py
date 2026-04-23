@@ -9664,6 +9664,7 @@ def editar_modelo(id):
     cursor.execute("SELECT * FROM modelos_ata WHERE id = %s", (id,))
     modelo = cursor.fetchone()
     return_connection(conn)
+    
     return render_template("atas/modelo_editar.html", modelo=modelo)
 
 # =============================
@@ -10379,8 +10380,21 @@ def gerenciar_candidatos():
         if nome:
             try:
                 from datetime import datetime
+                import hashlib
+                import uuid
+                
                 agora = datetime.now()
-                cursor.execute("INSERT INTO candidatos (nome, data_criacao) VALUES (%s, %s)", (nome, agora))
+                
+                # Gerar token único para o candidato
+                # Opção 1: Hash simples
+                token = hashlib.sha256(f"{nome}{agora}{uuid.uuid4()}".encode()).hexdigest()
+                # Opção 2: Token mais curto (8 caracteres) - descomente se preferir
+                # token = str(uuid.uuid4())[:8]
+                
+                cursor.execute("""
+                    INSERT INTO candidatos (nome, data_criacao, token_acesso) 
+                    VALUES (%s, %s, %s)
+                """, (nome, agora, token))
                 conn.commit()
                 candidato_id = cursor.lastrowid
                 

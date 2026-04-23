@@ -1,38 +1,243 @@
 {% extends "base.html" %}
 
-{% block title %}Editar Modelo de Ata{% endblock %}
+{% block title %}Editar Modelo de Ata - {{ modelo.nome }}{% endblock %}
+
+{% block styles %}
+{{ super() }}
+<style>
+    :root {
+        --bordo: #4A0E2E;
+        --bordo-escuro: #3A0A24;
+        --bordo-claro: #6B1342;
+        --bordo-suave: #8B4A6B;
+        --bordo-transparente: rgba(74, 14, 46, 0.08);
+        --bordo-transparente-hover: rgba(74, 14, 46, 0.12);
+        --ouro: #D4AF37;
+        --ouro-escuro: #996515;
+        --ouro-claro: #F0D68A;
+    }
+
+    .card-bordo-branco {
+        background: white;
+        border: 1px solid rgba(74, 14, 46, 0.15);
+        border-radius: 16px;
+        transition: all 0.3s ease;
+    }
+    
+    .card-bordo-branco:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 8px 25px rgba(74, 14, 46, 0.12);
+        border-color: var(--bordo);
+    }
+
+    .btn-bordo {
+        background: linear-gradient(135deg, var(--bordo), var(--bordo-escuro));
+        border: none;
+        color: white;
+        border-radius: 30px;
+        padding: 8px 20px;
+        transition: all 0.3s;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        text-decoration: none;
+    }
+    
+    .btn-bordo:hover {
+        background: linear-gradient(135deg, var(--bordo-claro), var(--bordo));
+        transform: translateY(-2px);
+        color: white;
+        box-shadow: 0 5px 15px rgba(74, 14, 46, 0.3);
+    }
+    
+    .btn-bordo-outline {
+        background: transparent;
+        border: 1px solid var(--bordo);
+        color: var(--bordo);
+        border-radius: 30px;
+        padding: 8px 20px;
+        transition: all 0.3s;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        text-decoration: none;
+    }
+    
+    .btn-bordo-outline:hover {
+        background: var(--bordo);
+        color: white;
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(74, 14, 46, 0.2);
+    }
+
+    .card-header-bordo {
+        background: var(--bordo-transparente);
+        border-bottom: 1px solid rgba(74, 14, 46, 0.1);
+        padding: 15px 20px;
+        border-radius: 16px 16px 0 0 !important;
+    }
+    
+    .card-header-bordo h5 {
+        color: var(--bordo);
+        margin: 0;
+        font-weight: 600;
+    }
+
+    .card-header-bordo-primary {
+        background: linear-gradient(135deg, var(--bordo), var(--bordo-escuro));
+        padding: 15px 20px;
+        border-radius: 16px 16px 0 0 !important;
+    }
+    
+    .card-header-bordo-primary h5 {
+        color: white;
+        margin: 0;
+        font-weight: 600;
+    }
+
+    .form-label {
+        color: var(--bordo);
+        font-weight: 500;
+        margin-bottom: 0.5rem;
+    }
+    
+    .form-control, .form-select {
+        border-radius: 12px;
+        border: 1px solid rgba(74, 14, 46, 0.2);
+        transition: all 0.3s;
+        padding: 0.5rem 1rem;
+    }
+    
+    .form-control:focus, .form-select:focus {
+        border-color: var(--bordo);
+        box-shadow: 0 0 0 0.2rem rgba(74, 14, 46, 0.25);
+        outline: none;
+    }
+
+    .tox-tinymce {
+        border-radius: 12px !important;
+        min-height: 500px;
+    }
+    
+    .toolbar-preview {
+        background: var(--bordo-transparente);
+        border: 1px solid rgba(74, 14, 46, 0.15);
+        border-radius: 12px;
+        padding: 20px;
+        min-height: 200px;
+        max-height: 500px;
+        overflow-y: auto;
+    }
+
+    .header-actions {
+        display: flex;
+        gap: 12px;
+        align-items: center;
+        flex-wrap: wrap;
+    }
+
+    .btn-group-mobile {
+        display: flex;
+        gap: 12px;
+        justify-content: center;
+        flex-wrap: wrap;
+    }
+
+    @media (max-width: 768px) {
+        .btn-bordo, .btn-bordo-outline {
+            padding: 6px 16px;
+            font-size: 0.85rem;
+        }
+        
+        .d-flex.justify-content-between {
+            flex-direction: column;
+            align-items: flex-start !important;
+            gap: 15px;
+        }
+        
+        .header-actions {
+            width: 100%;
+        }
+        
+        .header-actions .btn-bordo-outline {
+            width: 100%;
+            justify-content: center;
+        }
+        
+        h2 {
+            font-size: 1.5rem;
+        }
+        
+        .btn-group-mobile {
+            flex-direction: column;
+            width: 100%;
+        }
+        
+        .btn-group-mobile .btn-bordo {
+            width: 100%;
+            justify-content: center;
+        }
+        
+        .form-control, .form-select {
+            font-size: 0.875rem;
+        }
+        
+        .toolbar-preview {
+            font-size: 0.875rem;
+        }
+    }
+
+    @media (max-width: 480px) {
+        .btn-bordo, .btn-bordo-outline {
+            padding: 5px 12px;
+            font-size: 0.8rem;
+        }
+        
+        .card-body {
+            padding: 1rem !important;
+        }
+        
+        .toolbar-preview {
+            padding: 15px;
+        }
+    }
+</style>
+{% endblock %}
 
 {% block content %}
 <div class="container-fluid py-4">
     <div class="container">
         <div class="d-flex justify-content-between align-items-center mb-4">
-            <h2>
-                <i class="bi bi-pencil-square"></i> 
-                Editar Modelo: {{ modelo.nome }}
+            <h2 class="mb-2 mb-md-0">
+                <i class="bi bi-file-text" style="color: var(--bordo);"></i> 
+                <span style="color: var(--bordo);">Editar Modelo de Ata</span>
             </h2>
-            <a href="/atas/modelos" class="btn btn-outline-secondary">
-                <i class="bi bi-arrow-left"></i> Voltar
-            </a>
+            <div class="header-actions">
+                <a href="/atas/modelos" class="btn-bordo-outline">
+                    <i class="bi bi-arrow-left"></i> Voltar
+                </a>
+            </div>
         </div>
 
-        <div class="card shadow">
-            <div class="card-header bg-warning">
-                <h5 class="mb-0">Dados do Modelo</h5>
+        <div class="card-bordo-branco shadow-sm">
+            <div class="card-header-bordo-primary">
+                <h5><i class="bi bi-pencil-square"></i> Editando Modelo: {{ modelo.nome }}</h5>
             </div>
-            <div class="card-body">
-                <form method="POST">
+            <div class="card-body p-4">
+                <form method="POST" id="formModelo">
                     <div class="row">
-                        <div class="col-md-8 mb-3">
-                            <label class="form-label">Nome do Modelo *</label>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Nome do Modelo <span class="text-danger">*</span></label>
                             <input type="text" class="form-control" name="nome" value="{{ modelo.nome }}" required>
                         </div>
-                        <div class="col-md-4 mb-3">
+                        <div class="col-md-6 mb-3">
                             <label class="form-label">Tipo</label>
                             <select class="form-select" name="tipo">
                                 <option value="Ordinária" {% if modelo.tipo == 'Ordinária' %}selected{% endif %}>Ordinária</option>
                                 <option value="Magna" {% if modelo.tipo == 'Magna' %}selected{% endif %}>Magna</option>
-                                <option value="Extraordinária" {% if modelo.tipo == 'Extraordinária' %}selected{% endif %}>Extraordinária</option>
                                 <option value="Administrativa" {% if modelo.tipo == 'Administrativa' %}selected{% endif %}>Administrativa</option>
+                                <option value="Extraordinária" {% if modelo.tipo == 'Extraordinária' %}selected{% endif %}>Extraordinária</option>
+                                <option value="Solenidade" {% if modelo.tipo == 'Solenidade' %}selected{% endif %}>Solenidade</option>
                             </select>
                         </div>
                     </div>
@@ -42,34 +247,80 @@
                         <textarea class="form-control" name="descricao" rows="2">{{ modelo.descricao or '' }}</textarea>
                     </div>
 
-                    <hr>
-                    <h6 class="mb-3">Estrutura da Ata (JSON)</h6>
                     <div class="mb-3">
-                        <label class="form-label">Estrutura *</label>
-                        <textarea class="form-control" name="estrutura" rows="10" required>{{ modelo.estrutura }}</textarea>
-                        <small class="text-muted">
-                            Formato JSON com as seções: cabecalho, expediente, ordem_do_dia, encerramento
+                        <label class="form-label">Conteúdo do Modelo (HTML) <span class="text-danger">*</span></label>
+                        <textarea name="estrutura" id="editor" class="form-control">{{ modelo.estrutura if modelo.estrutura else modelo.conteudo or '' }}</textarea>
+                        <small class="text-muted mt-2 d-block">
+                            <i class="bi bi-info-circle"></i> 
+                            Use a barra de ferramentas para formatar o texto. Você pode usar HTML, imagens, tabelas, etc.
                         </small>
                     </div>
 
-                    <div class="mb-3">
-                        <div class="form-check">
-                            <input class="form-check-input" type="checkbox" name="ativo" id="ativo" value="1"
-                                   {% if modelo.ativo == 1 %}checked{% endif %}>
-                            <label class="form-check-label" for="ativo">
-                                Ativo
-                            </label>
-                        </div>
-                    </div>
-
-                    <div class="text-center mt-4">
-                        <button type="submit" class="btn btn-warning btn-lg px-5">
-                            <i class="bi bi-save"></i> Salvar Alterações
+                    <div class="btn-group-mobile mt-4">
+                        <a href="/atas/modelos" class="btn-bordo-outline">
+                            <i class="bi bi-x-circle"></i> Cancelar
+                        </a>
+                        <button type="submit" class="btn-bordo">
+                            <i class="bi bi-save"></i> Salvar Modelo
                         </button>
                     </div>
                 </form>
             </div>
         </div>
+
+        <!-- Pré-visualização -->
+        <div class="card-bordo-branco shadow-sm mt-4">
+            <div class="card-header-bordo">
+                <h5><i class="bi bi-eye"></i> Pré-visualização</h5>
+            </div>
+            <div class="card-body p-4">
+                <div id="preview" class="toolbar-preview">
+                    <em>Digite ou cole o conteúdo acima para ver a pré-visualização...</em>
+                </div>
+            </div>
+        </div>
     </div>
 </div>
+
+<!-- TinyMCE -->
+<script src="https://cdn.jsdelivr.net/npm/tinymce@6.8.3/tinymce.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/tinymce@6.8.3/themes/silver/theme.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/tinymce@6.8.3/plugins/advlist/plugin.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/tinymce@6.8.3/plugins/lists/plugin.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/tinymce@6.8.3/plugins/link/plugin.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/tinymce@6.8.3/plugins/image/plugin.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/tinymce@6.8.3/plugins/table/plugin.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/tinymce@6.8.3/plugins/align/plugin.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/tinymce@6.8.3/plugins/code/plugin.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/tinymce@6.8.3/plugins/emoticons/plugin.min.js"></script>
+
+<script>
+    tinymce.init({
+        selector: '#editor',
+        language: 'pt_BR',
+        height: 500,
+        menubar: true,
+        plugins: 'advlist lists link image table align code emoticons',
+        toolbar: 'undo redo | blocks | fontfamily fontsize | bold italic underline strikethrough | alignleft aligncenter alignright alignjustify | bullist numlist | outdent indent | link image table | forecolor backcolor | removeformat | code',
+        toolbar_mode: 'wrap',
+        content_style: 'body { font-family: Arial, sans-serif; font-size: 14px; line-height: 1.6; }',
+        fontsize_formats: '8pt 10pt 12pt 14pt 16pt 18pt 20pt 24pt 28pt 32pt 36pt 48pt',
+        font_family_formats: 'Arial=arial,helvetica,sans-serif; Times New Roman=times new roman,times; Courier New=courier new,courier; Verdana=verdana,geneva; Georgia=georgia;',
+        setup: function(editor) {
+            editor.on('change', function() {
+                document.getElementById('preview').innerHTML = editor.getContent();
+            });
+        }
+    });
+    
+    // Inicializar preview com o conteúdo atual
+    setTimeout(() => {
+        if (tinymce.get('editor')) {
+            const conteudo = tinymce.get('editor').getContent();
+            if (conteudo && conteudo !== '<p><br data-mce-bogus="1"></p>') {
+                document.getElementById('preview').innerHTML = conteudo;
+            }
+        }
+    }, 1000);
+</script>
 {% endblock %}
