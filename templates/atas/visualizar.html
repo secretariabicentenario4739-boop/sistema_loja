@@ -792,10 +792,12 @@
                             {% endif %}
                             
                             {% if session.tipo == 'admin' %}
-                            <button class="btn-bordo-danger" 
-                                    onclick="if(confirm('⚠️ ATENÇÃO!\n\nDeseja EXCLUIR esta ata?\n\nEsta ação não pode ser desfeita!\n\nDeseja continuar?')) { window.location.href='/atas/{{ ata.id }}/excluir' }">
-                                <i class="bi bi-trash"></i> Excluir Ata
-                            </button>
+                            <form method="POST" action="/atas/{{ ata.id }}/excluir" style="display: inline;" 
+      onsubmit="return confirm('⚠️ ATENÇÃO!\n\nDeseja EXCLUIR esta ata?\n\nEsta ação não pode ser desfeita!\n\nDeseja continuar?')">
+    <button type="submit" class="btn-bordo-danger">
+        <i class="bi bi-trash"></i> Excluir Ata
+    </button>
+</form>
                             {% endif %}
                         </div>
                         
