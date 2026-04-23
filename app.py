@@ -8645,7 +8645,7 @@ def gerar_pdf_ata_oficial(id):
     
     cursor, conn = get_db()
     
-    # Buscar dados da ata, reunião e assinaturas
+    # Buscar dados da ata
     cursor.execute("""
         SELECT a.*, 
                a.id as ata_id, 
@@ -8673,11 +8673,7 @@ def gerar_pdf_ata_oficial(id):
                r.observacoes as reuniao_observacoes,
                l.nome as loja_nombre, 
                l.numero as loja_numero, 
-               l.oriente as loja_oriente,
-               l.veneravel_mestre as loja_veneravel_mestre,
-               l.secretario as loja_secretario,
-               l.tesoureiro as loja_tesoureiro,
-               l.orador as loja_orador
+               l.oriente as loja_oriente
         FROM atas a
         JOIN reunioes r ON a.reuniao_id = r.id
         LEFT JOIN lojas l ON r.loja_id = l.id
@@ -8725,7 +8721,7 @@ def gerar_pdf_ata_oficial(id):
     
     return_connection(conn)
     
-    # Preparar dados para o template
+    # Preparar dados
     reuniao = {
         'id': ata['reuniao_id'],
         'titulo': ata['reuniao_titulo'],
@@ -8737,18 +8733,7 @@ def gerar_pdf_ata_oficial(id):
         'local': ata['reuniao_local'] or 'Templo Maçônico'
     }
     
-    # Converter logo para base64
-    logo_base64 = None
-    import requests as requests_lib
-    try:
-        logo_url = "https://res.cloudinary.com/da57u8plb/image/upload/v1776881108/Logo_ihoyyp.png"
-        response = requests_lib.get(logo_url, timeout=10)
-        if response.status_code == 200:
-            logo_base64 = base64.b64encode(response.content).decode('utf-8')
-    except Exception as e:
-        print(f"Erro ao carregar logo: {e}")
-    
-    # Renderizar HTML para PDF
+    # Renderizar HTML
     html = render_template("atas/pdf_ata.html",
                           ata=ata,
                           reuniao=reuniao,
@@ -8769,12 +8754,12 @@ def gerar_pdf_ata_oficial(id):
                           loja_nome=ata.get('loja_nombre', 'ARLS Bicentenário'),
                           loja_numero=ata.get('loja_numero', '4739'),
                           loja_oriente=ata.get('loja_oriente', 'Ceilândia - DF'),
-                          logo_base64=logo_base64,
                           now=datetime.now())
     
     try:
-        # Gerar PDF com WeasyPrint
-        pdf = HTML(string=html).write_pdf()
+        # Gerar PDF com WeasyPrint - CORRIGIDO
+        html_obj = HTML(string=html)
+        pdf = html_obj.write_pdf()
         
         # Gerar nome do arquivo
         grau_nome = "Mestre" if reuniao['grau'] >= 3 else "Companheiro" if reuniao['grau'] == 2 else "Aprendiz"
