@@ -9340,10 +9340,42 @@ def nova_ata(reuniao_id):
         try:
             # Formatar dados da reunião
             data_formatada = reuniao['data'].strftime('%d/%m/%Y') if reuniao['data'] else ''
-            data_extenso = reuniao['data'].strftime('%d de %B de %Y') if reuniao['data'] else ''
+            
+            # ============================================
+            # DATA POR EXTENSO NO FORMATO BRASILEIRO
+            # ============================================
+            meses = {
+                1: 'janeiro', 2: 'fevereiro', 3: 'março', 4: 'abril',
+                5: 'maio', 6: 'junho', 7: 'julho', 8: 'agosto',
+                9: 'setembro', 10: 'outubro', 11: 'novembro', 12: 'dezembro'
+            }
+            
+            dias_semana = {
+                0: 'segunda-feira', 1: 'terça-feira', 2: 'quarta-feira',
+                3: 'quinta-feira', 4: 'sexta-feira', 5: 'sábado', 6: 'domingo'
+            }
+            
+            if reuniao['data']:
+                dia_numero = reuniao['data'].strftime('%d')
+                mes_numero = int(reuniao['data'].strftime('%m'))
+                ano_numero = reuniao['data'].strftime('%Y')
+                mes_extenso = meses[mes_numero]
+                data_extenso = f"{dia_numero} de {mes_extenso} de {ano_numero}"
+                
+                dia_semana = dias_semana[reuniao['data'].weekday()]
+                data_extenso_com_dia = f"{dia_semana}, {data_extenso}"
+            else:
+                dia_numero = ''
+                mes_numero = ''
+                ano_numero = ''
+                mes_extenso = ''
+                data_extenso = ''
+                data_extenso_com_dia = ''
+                dia_semana = ''
+            
             dia = reuniao['data'].strftime('%d') if reuniao['data'] else ''
             mes = reuniao['data'].strftime('%B').capitalize() if reuniao['data'] else ''
-            mes_numero = reuniao['data'].strftime('%m') if reuniao['data'] else ''
+            mes_numero_str = reuniao['data'].strftime('%m') if reuniao['data'] else ''
             ano = reuniao['data'].strftime('%Y') if reuniao['data'] else ''
             hora_inicio = reuniao['hora_inicio'].strftime('%H:%M') if reuniao['hora_inicio'] else ''
             hora_termino = reuniao['hora_termino'].strftime('%H:%M') if reuniao['hora_termino'] else ''
@@ -9356,9 +9388,11 @@ def nova_ata(reuniao_id):
             substituicoes = {
                 '[DATA_REUNIAO]': data_formatada,
                 '[DATA_EXTENSO]': data_extenso,
+                '[DATA_EXTENSO_COM_DIA]': data_extenso_com_dia,
+                '[DIA_SEMANA]': dia_semana,
                 '[DIA]': dia,
-                '[MES]': mes,
-                '[MES_NUMERO]': mes_numero,
+                '[MES]': mes_extenso,
+                '[MES_NUMERO]': mes_numero_str,
                 '[ANO]': ano,
                 '[HORA_INICIO]': hora_inicio,
                 '{{ HORA_INICIO }}': hora_inicio,
