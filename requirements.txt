@@ -13,3 +13,4 @@ email-validator==2.0.0
 gunicorn
 resend
 PyMuPDF==1.24.2
+weasyprint==61.2

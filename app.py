@@ -8632,16 +8632,16 @@ def gerar_alertas():
 # =============================
 # ROTAS DE ATAS 
 # =============================
-
 @app.route("/atas/<int:id>/pdf-oficial")
 @login_required
 def gerar_pdf_ata_oficial(id):
     """Gera PDF oficial da ata com cabeçalho da loja e assinaturas"""
-    from flask import render_template, url_for, Response
-    import pdfkit
+    from flask import render_template, Response
+    from weasyprint import HTML
     import os
     import base64
     import re
+    from datetime import datetime
     
     cursor, conn = get_db()
     
@@ -8691,9 +8691,7 @@ def gerar_pdf_ata_oficial(id):
         return_connection(conn)
         return redirect("/atas")
     
-    # ============================================
-    # BUSCAR TODOS OS OBREIROS COM STATUS DE PRESENÇA
-    # ============================================
+    # Buscar presenças
     cursor.execute("""
         SELECT 
             u.id, 
@@ -8722,51 +8720,10 @@ def gerar_pdf_ata_oficial(id):
     """, (ata['reuniao_id'],))
     
     todos_obreiros = cursor.fetchall()
-    
-    # Separar presentes e ausentes
     presentes = [p for p in todos_obreiros if p['presente'] == True or p['presente'] == 1]
     ausentes = [p for p in todos_obreiros if p['presente'] == False or p['presente'] == 0]
     
     return_connection(conn)
-    
-    # ============================================
-    # GERAR NOME DO ARQUIVO PDF
-    # ============================================
-    
-    # Mapear grau da reunião
-    grau_reuniao = ata.get('reuniao_grau', 0)
-    if grau_reuniao >= 3:
-        grau_nome = "Mestre"
-    elif grau_reuniao == 2:
-        grau_nome = "Companheiro"
-    elif grau_reuniao == 1:
-        grau_nome = "Aprendiz"
-    else:
-        grau_nome = "Geral"
-    
-    # Mapear tipo da reunião
-    tipo_reuniao = ata.get('reuniao_tipo', 'ordinaria')
-    tipo_reuniao_lower = str(tipo_reuniao).lower()
-    
-    if 'magn' in tipo_reuniao_lower or 'magna' in tipo_reuniao_lower:
-        tipo_nome = "Magna"
-    elif 'extra' in tipo_reuniao_lower or 'extraordinaria' in tipo_reuniao_lower:
-        tipo_nome = "Extraordinaria"
-    elif 'admin' in tipo_reuniao_lower or 'administrativa' in tipo_reuniao_lower:
-        tipo_nome = "Administrativa"
-    else:
-        tipo_nome = "Ordinaria"
-    
-    # Gerar nome do arquivo: Ata-[numero]-[ano]-[grau]-[tipo].pdf
-    numero_ata = ata.get('numero_ata', '000')
-    ano_ata = ata.get('ano_ata', '2024')
-    
-    nome_arquivo = f"Ata-{numero_ata}-{ano_ata}-{grau_nome}-{tipo_nome}.pdf"
-    
-    # Remover caracteres especiais
-    nome_arquivo = re.sub(r'[^a-zA-Z0-9\-_.]', '', nome_arquivo)
-    
-    print(f"📄 Nome do arquivo PDF: {nome_arquivo}")
     
     # Preparar dados para o template
     reuniao = {
@@ -8782,15 +8739,14 @@ def gerar_pdf_ata_oficial(id):
     
     # Converter logo para base64
     logo_base64 = None
-    logo_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'static', 'images', 'Logo.png')
-    
-    if os.path.exists(logo_path):
-        try:
-            with open(logo_path, 'rb') as image_file:
-                image_data = image_file.read()
-                logo_base64 = base64.b64encode(image_data).decode('utf-8')
-        except Exception as e:
-            print(f"❌ Erro ao converter logo: {e}")
+    import requests as requests_lib
+    try:
+        logo_url = "https://res.cloudinary.com/da57u8plb/image/upload/v1776881108/Logo_ihoyyp.png"
+        response = requests_lib.get(logo_url, timeout=10)
+        if response.status_code == 200:
+            logo_base64 = base64.b64encode(response.content).decode('utf-8')
+    except Exception as e:
+        print(f"Erro ao carregar logo: {e}")
     
     # Renderizar HTML para PDF
     html = render_template("atas/pdf_ata.html",
@@ -8798,8 +8754,8 @@ def gerar_pdf_ata_oficial(id):
                           reuniao=reuniao,
                           presentes=presentes,
                           ausentes=ausentes,
-                          numero_ata=numero_ata,
-                          ano_ata=ano_ata,
+                          numero_ata=ata['numero_ata'],
+                          ano_ata=ata['ano_ata'],
                           conteudo=ata['conteudo'],
                           assinatura_veneravel=ata['assinatura_veneravel'],
                           assinatura_orador=ata['assinatura_orador'],
@@ -8816,29 +8772,15 @@ def gerar_pdf_ata_oficial(id):
                           logo_base64=logo_base64,
                           now=datetime.now())
     
-    # Configurar opções do PDF
-    options = {
-        'page-size': 'A4',
-        'margin-top': '20mm',
-        'margin-bottom': '20mm',
-        'margin-left': '15mm',
-        'margin-right': '15mm',
-        'encoding': 'UTF-8',
-        'no-outline': None,
-        'enable-local-file-access': None
-    }
-    
     try:
-        config = None
-        if os.name == 'nt':  # Windows
-            wkhtmltopdf_path = r'C:\Program Files\wkhtmltopdf\bin\wkhtmltopdf.exe'
-            if os.path.exists(wkhtmltopdf_path):
-                config = pdfkit.configuration(wkhtmltopdf=wkhtmltopdf_path)
+        # Gerar PDF com WeasyPrint
+        pdf = HTML(string=html).write_pdf()
         
-        if config:
-            pdf = pdfkit.from_string(html, False, options=options, configuration=config)
-        else:
-            pdf = pdfkit.from_string(html, False, options=options)
+        # Gerar nome do arquivo
+        grau_nome = "Mestre" if reuniao['grau'] >= 3 else "Companheiro" if reuniao['grau'] == 2 else "Aprendiz"
+        tipo_nome = str(ata['reuniao_tipo']).capitalize()
+        nome_arquivo = f"Ata-{ata['numero_ata']}-{ata['ano_ata']}-{grau_nome}-{tipo_nome}.pdf"
+        nome_arquivo = re.sub(r'[^a-zA-Z0-9\-_.]', '', nome_arquivo)
         
         response = Response(pdf, content_type='application/pdf')
         response.headers['Content-Disposition'] = f'attachment; filename={nome_arquivo}'
@@ -8846,7 +8788,10 @@ def gerar_pdf_ata_oficial(id):
         
     except Exception as e:
         print(f"Erro ao gerar PDF: {e}")
-        return html
+        import traceback
+        traceback.print_exc()
+        flash(f"Erro ao gerar PDF: {str(e)}", "danger")
+        return redirect(f"/atas/{id}")
 
 
 @app.route("/atas/<int:id>")
