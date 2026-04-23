@@ -9304,7 +9304,8 @@ def nova_ata(reuniao_id):
     
     cursor.execute("""
         SELECT r.*, 
-               (SELECT COUNT(*) FROM presenca_reuniao WHERE reuniao_id = r.id AND presente = TRUE) as presentes
+               (SELECT COUNT(*) FROM presenca_reuniao WHERE reuniao_id = r.id AND presente = TRUE) as presentes,
+               (SELECT COUNT(*) FROM presenca_reuniao WHERE reuniao_id = r.id AND presente = FALSE) as ausentes
         FROM reunioes r
         WHERE r.id = %s
     """, (reuniao_id,))
@@ -9325,6 +9326,43 @@ def nova_ata(reuniao_id):
                 return_connection(conn)
                 return redirect(f"/reunioes/{reuniao_id}")
     
+    # ============================================
+    # BUSCAR CARGOS ATUAIS (Venerável, Secretário, Orador)
+    # ============================================
+    try:
+        cursor.execute("""
+            SELECT u.nome_completo, c.nome as cargo_nome
+            FROM ocupacao_cargos oc
+            JOIN usuarios u ON oc.obreiro_id = u.id
+            JOIN cargos c ON oc.cargo_id = c.id
+            WHERE oc.ativo = 1 
+              AND (LOWER(c.nome) LIKE '%vener%' OR LOWER(c.nome) LIKE '%secret%' OR LOWER(c.nome) LIKE '%orador%')
+        """)
+        cargos = cursor.fetchall()
+    except:
+        cargos = []
+    
+    veneravel_nome = None
+    secretario_nome = None
+    orador_nome = None
+    
+    for cargo in cargos:
+        cargo_nome_lower = cargo['cargo_nome'].lower() if cargo['cargo_nome'] else ''
+        if 'vener' in cargo_nome_lower:
+            veneravel_nome = cargo['nome_completo']
+        elif 'secret' in cargo_nome_lower:
+            secretario_nome = cargo['nome_completo']
+        elif 'orador' in cargo_nome_lower:
+            orador_nome = cargo['nome_completo']
+    
+    # Fallbacks
+    if not veneravel_nome:
+        veneravel_nome = "Venerável Mestre"
+    if not secretario_nome:
+        secretario_nome = "Secretário(a)"
+    if not orador_nome:
+        orador_nome = "Orador(a)"
+    
     if request.method == "POST":
         conteudo = request.form.get("conteudo")
         modelo_id = request.form.get("modelo_id")
@@ -9338,6 +9376,9 @@ def nova_ata(reuniao_id):
         # SUBSTITUIR PLACEHOLDERS PELOS DADOS REAIS
         # ============================================
         try:
+            from datetime import datetime
+            now = datetime.now()
+            
             # Formatar dados da reunião
             data_formatada = reuniao['data'].strftime('%d/%m/%Y') if reuniao['data'] else ''
             
@@ -9364,6 +9405,9 @@ def nova_ata(reuniao_id):
                 
                 dia_semana = dias_semana[reuniao['data'].weekday()]
                 data_extenso_com_dia = f"{dia_semana}, {data_extenso}"
+                
+                # Ano maçônico (Anno Lucis = ano + 4000)
+                ano_maconico = int(ano_numero) + 4000
             else:
                 dia_numero = ''
                 mes_numero = ''
@@ -9372,36 +9416,102 @@ def nova_ata(reuniao_id):
                 data_extenso = ''
                 data_extenso_com_dia = ''
                 dia_semana = ''
+                ano_maconico = ''
             
             dia = reuniao['data'].strftime('%d') if reuniao['data'] else ''
             mes = reuniao['data'].strftime('%B').capitalize() if reuniao['data'] else ''
             mes_numero_str = reuniao['data'].strftime('%m') if reuniao['data'] else ''
             ano = reuniao['data'].strftime('%Y') if reuniao['data'] else ''
             hora_inicio = reuniao['hora_inicio'].strftime('%H:%M') if reuniao['hora_inicio'] else ''
+            hora_inicio_numero = reuniao['hora_inicio'].strftime('%H') if reuniao['hora_inicio'] else ''
+            hora_inicio_minuto = reuniao['hora_inicio'].strftime('%M') if reuniao['hora_inicio'] else ''
             hora_termino = reuniao['hora_termino'].strftime('%H:%M') if reuniao['hora_termino'] else ''
+            hora_termino_numero = reuniao['hora_termino'].strftime('%H') if reuniao['hora_termino'] else ''
+            hora_termino_minuto = reuniao['hora_termino'].strftime('%M') if reuniao['hora_termino'] else ''
             local = reuniao['local'] or 'Templo Maçônico'
             titulo = reuniao['titulo'] or ''
             tipo = reuniao['tipo'] or ''
+            grau = reuniao['grau'] or ''
             presentes = str(reuniao['presentes'] or 0)
+            ausentes = str(reuniao['ausentes'] or 0)
+            total_participantes = str((reuniao['presentes'] or 0) + (reuniao['ausentes'] or 0))
+            
+            # Grau por extenso
+            if grau == 3:
+                grau_extenso = "Mestre"
+                grau_numero_romano = "III"
+            elif grau == 2:
+                grau_extenso = "Companheiro"
+                grau_numero_romano = "II"
+            elif grau == 1:
+                grau_extenso = "Aprendiz"
+                grau_numero_romano = "I"
+            else:
+                grau_extenso = "Todos os Graus"
+                grau_numero_romano = ""
+            
+            # Data e hora atuais (para o rodapé)
+            data_atual = now.strftime('%d/%m/%Y')
+            hora_atual = now.strftime('%H:%M')
+            data_hora_atual = now.strftime('%d/%m/%Y %H:%M')
+            
+            # Mês por extenso com primeira letra maiúscula
+            mes_extenso_capitalizado = mes_extenso.capitalize() if mes_extenso else ''
             
             # Dicionário de substituições
             substituicoes = {
+                # Datas
                 '[DATA_REUNIAO]': data_formatada,
                 '[DATA_EXTENSO]': data_extenso,
                 '[DATA_EXTENSO_COM_DIA]': data_extenso_com_dia,
                 '[DIA_SEMANA]': dia_semana,
                 '[DIA]': dia,
-                '[MES]': mes_extenso,
+                '[MES]': mes_extenso_capitalizado,
                 '[MES_NUMERO]': mes_numero_str,
                 '[ANO]': ano,
+                '[ANO_MAÇONICO]': str(ano_maconico) if ano_maconico else '',
+                '[ANO_LUCIS]': str(ano_maconico) if ano_maconico else '',
+                
+                # Horários
                 '[HORA_INICIO]': hora_inicio,
-                '{{ HORA_INICIO }}': hora_inicio,
+                '[HORA_INICIO_NUMERO]': hora_inicio_numero,
+                '[HORA_INICIO_MINUTO]': hora_inicio_minuto,
                 '[HORA_TERMINO]': hora_termino,
+                '[HORA_TERMINO_NUMERO]': hora_termino_numero,
+                '[HORA_TERMINO_MINUTO]': hora_termino_minuto,
+                '[HORA]': hora_inicio,
+                
+                # Local e reunião
                 '[LOCAL]': local,
                 '[TITULO]': titulo,
                 '[TIPO]': tipo,
+                '[GRAU]': str(grau) if grau else '',
+                '[GRAU_EXTENSO]': grau_extenso,
+                '[GRAU_ROMANO]': grau_numero_romano,
+                
+                # Participantes
                 '[PRESENTES]': presentes,
-                '[HORA]': hora_inicio,
+                '[AUSENTES]': ausentes,
+                '[TOTAL_PARTICIPANTES]': total_participantes,
+                
+                # Cargos
+                '[VENERAVEL]': veneravel_nome,
+                '[SECRETARIO]': secretario_nome,
+                '[ORADOR]': orador_nome,
+                
+                # Data/hora atual
+                '[DATA_ATUAL]': data_atual,
+                '[HORA_ATUAL]': hora_atual,
+                '[DATA_HORA_ATUAL]': data_hora_atual,
+                
+                # Aliases para compatibilidade
+                '{{ DATA_REUNIAO }}': data_formatada,
+                '{{ HORA_INICIO }}': hora_inicio,
+                '{{ HORA_TERMINO }}': hora_termino,
+                '{{ LOCAL }}': local,
+                '{{ PRESENTES }}': presentes,
+                '{{ TITULO }}': titulo,
+                '{{ TIPO }}': tipo,
                 '[DATA]': data_formatada
             }
             
@@ -9412,7 +9522,8 @@ def nova_ata(reuniao_id):
                     
         except Exception as e:
             print(f"Erro ao substituir placeholders: {e}")
-            # Continua com o conteúdo original
+            import traceback
+            traceback.print_exc()
         
         try:
             ano_atual = datetime.now().year
