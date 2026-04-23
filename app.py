@@ -9413,7 +9413,7 @@ def nova_ata(reuniao_id):
         return_connection(conn)
         return redirect("/reunioes")
     
-    # Verificar permissão específica para criar ata nesta reunião
+    # Verificar permissão
     if session.get('tipo') != 'admin':
         usuario_grau = session.get('grau_atual', 0)
         reuniao_grau = reuniao.get('grau', 0)
@@ -9432,11 +9432,57 @@ def nova_ata(reuniao_id):
             return_connection(conn)
             return redirect(f"/atas/nova/{reuniao_id}")
         
+        # ============================================
+        # SUBSTITUIR PLACEHOLDERS PELOS DADOS REAIS
+        # ============================================
+        try:
+            # Formatar dados da reunião
+            data_formatada = reuniao['data'].strftime('%d/%m/%Y') if reuniao['data'] else ''
+            data_extenso = reuniao['data'].strftime('%d de %B de %Y') if reuniao['data'] else ''
+            dia = reuniao['data'].strftime('%d') if reuniao['data'] else ''
+            mes = reuniao['data'].strftime('%B').capitalize() if reuniao['data'] else ''
+            mes_numero = reuniao['data'].strftime('%m') if reuniao['data'] else ''
+            ano = reuniao['data'].strftime('%Y') if reuniao['data'] else ''
+            hora_inicio = reuniao['hora_inicio'].strftime('%H:%M') if reuniao['hora_inicio'] else ''
+            hora_termino = reuniao['hora_termino'].strftime('%H:%M') if reuniao['hora_termino'] else ''
+            local = reuniao['local'] or 'Templo Maçônico'
+            titulo = reuniao['titulo'] or ''
+            tipo = reuniao['tipo'] or ''
+            presentes = str(reuniao['presentes'] or 0)
+            
+            # Dicionário de substituições
+            substituicoes = {
+                '[DATA_REUNIAO]': data_formatada,
+                '[DATA_EXTENSO]': data_extenso,
+                '[DIA]': dia,
+                '[MES]': mes,
+                '[MES_NUMERO]': mes_numero,
+                '[ANO]': ano,
+                '[HORA_INICIO]': hora_inicio,
+                '{{ HORA_INICIO }}': hora_inicio,
+                '[HORA_TERMINO]': hora_termino,
+                '[LOCAL]': local,
+                '[TITULO]': titulo,
+                '[TIPO]': tipo,
+                '[PRESENTES]': presentes,
+                '[HORA]': hora_inicio,
+                '[DATA]': data_formatada
+            }
+            
+            # Aplicar todas as substituições
+            for placeholder, valor in substituicoes.items():
+                if valor:
+                    conteudo = conteudo.replace(placeholder, valor)
+                    
+        except Exception as e:
+            print(f"Erro ao substituir placeholders: {e}")
+            # Continua com o conteúdo original
+        
         try:
             ano_atual = datetime.now().year
-            cursor.execute("SELECT COUNT(*) as total FROM atas WHERE ano_ata = %s", (ano_atual,))
-            total = cursor.fetchone()["total"]
-            numero_ata = total + 1
+            cursor.execute("SELECT COALESCE(MAX(numero_ata), 0) + 1 as proximo_numero FROM atas WHERE ano_ata = %s", (ano_atual,))
+            resultado = cursor.fetchone()
+            numero_ata = resultado['proximo_numero'] if resultado else 1
             
             cursor.execute("""
                 INSERT INTO atas (
@@ -9459,7 +9505,6 @@ def nova_ata(reuniao_id):
             flash(f"Ata nº {numero_ata}/{ano_atual} criada com sucesso!", "success")
             
             return_connection(conn)
-            # CORRIGIDO: sem /visualizar
             return redirect(f"/atas/{ata_id}")
             
         except Exception as e:
@@ -9473,7 +9518,7 @@ def nova_ata(reuniao_id):
     modelos = []
     if verificar_permissao(session['user_id'], 'ata.use_template'):
         try:
-            cursor.execute("SELECT * FROM modelos_ata WHERE ativo = 1")
+            cursor.execute("SELECT * FROM modelos_ata WHERE ativo = 1 ORDER BY nome")
             modelos = cursor.fetchall()
         except:
             pass

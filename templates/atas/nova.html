@@ -17,13 +17,11 @@
         --ouro-claro: #F0D68A;
     }
 
-    /* CARDS BRANCOS COM BORDÔ */
     .card-bordo-branco {
         background: white;
         border: 1px solid rgba(74, 14, 46, 0.15);
         border-radius: 16px;
         transition: all 0.3s ease;
-        color: var(--bordo);
     }
     
     .card-bordo-branco:hover {
@@ -32,7 +30,6 @@
         border-color: var(--bordo);
     }
 
-    /* BOTÕES DO RITO - VERSÃO MOBILE FRIENDLY */
     .btn-bordo {
         background: linear-gradient(135deg, var(--bordo), var(--bordo-escuro));
         border: none;
@@ -111,7 +108,6 @@
         color: white;
     }
 
-    /* CABEÇALHO DOS CARDS */
     .card-header-bordo {
         background: var(--bordo-transparente);
         border-bottom: 1px solid rgba(74, 14, 46, 0.1);
@@ -150,7 +146,6 @@
         font-weight: 600;
     }
 
-    /* FORMULÁRIO */
     .form-label {
         color: var(--bordo);
         font-weight: 500;
@@ -170,7 +165,6 @@
         outline: none;
     }
 
-    /* TINYMCE */
     .tox-tinymce {
         border-radius: 12px !important;
         min-height: 500px;
@@ -185,8 +179,7 @@
         max-height: 500px;
         overflow-y: auto;
     }
-    
-    /* GRUPO DE AÇÕES DO CABEÇALHO */
+
     .header-actions {
         display: flex;
         gap: 12px;
@@ -194,7 +187,6 @@
         flex-wrap: wrap;
     }
 
-    /* GRUPO DE BOTÕES */
     .btn-group-mobile {
         display: flex;
         gap: 12px;
@@ -202,7 +194,6 @@
         flex-wrap: wrap;
     }
 
-    /* RESPONSIVIDADE */
     @media (max-width: 768px) {
         .btn-bordo, .btn-bordo-outline, .btn-bordo-info, .btn-bordo-success {
             padding: 6px 16px;
@@ -234,12 +225,6 @@
             width: 100%;
         }
         
-        .btn-group-mobile .btn-bordo-secondary,
-        .btn-group-mobile .btn-bordo-info {
-            width: 100%;
-            justify-content: center;
-        }
-        
         .form-control, .form-select {
             font-size: 0.875rem;
         }
@@ -269,7 +254,6 @@
 {% block content %}
 <div class="container-fluid py-4">
     <div class="container">
-        <!-- Cabeçalho responsivo -->
         <div class="d-flex justify-content-between align-items-center mb-4">
             <h2 class="mb-2 mb-md-0">
                 <i class="bi bi-file-text" style="color: var(--bordo);"></i> 
@@ -282,7 +266,6 @@
             </div>
         </div>
 
-        <!-- Aviso de rascunho -->
         {% if reuniao.status != 'realizada' %}
         <div class="alert alert-info mb-4" style="background: var(--bordo-transparente); border: 1px solid var(--bordo); color: var(--bordo); border-radius: 12px;">
             <div class="d-flex align-items-start">
@@ -303,7 +286,6 @@
                         <h5 class="mb-0"><i class="bi bi-pencil-square"></i> Redigir Ata</h5>
                     </div>
                     <div class="card-body p-4">
-                        <!-- Informações da Reunião -->
                         <div class="alert alert-light border mb-4" style="background: var(--bordo-transparente); border-color: rgba(74, 14, 46, 0.15); border-radius: 12px;">
                             <div class="row">
                                 <div class="col-md-6">
@@ -334,8 +316,7 @@
                                 <select class="form-select" name="modelo_id" id="modeloSelect">
                                     <option value="">Selecione um modelo...</option>
                                     {% for modelo in modelos %}
-                                    <option value="{{ modelo.id }}" 
-                                            data-conteudo="{{ modelo.estrutura or modelo.conteudo or '' }}">
+                                    <option value="{{ modelo.id }}">
                                         {{ modelo.nome }} {% if modelo.tipo %} - {{ modelo.tipo }}{% endif %}
                                     </option>
                                     {% endfor %}
@@ -353,7 +334,7 @@
 
                             <div class="mb-3">
                                 <label class="form-label">Conteúdo da Ata *</label>
-                                <textarea class="form-control" name="conteudo" id="editor" rows="20" required></textarea>
+                                <textarea name="conteudo" id="editor" class="form-control" rows="20" required></textarea>
                                 <small class="text-muted">
                                     <i class="bi bi-info-circle"></i> 
                                     Use o editor para formatar o texto. Inclua todos os pontos importantes da reunião.
@@ -374,67 +355,21 @@
             </div>
 
             <div class="col-md-4">
-                <!-- Dicas para a Ata -->
                 <div class="card-bordo-branco shadow-sm mb-4">
                     <div class="card-header-bordo">
                         <h5 class="mb-0"><i class="bi bi-lightbulb"></i> Dicas para a Ata</h5>
                     </div>
                     <div class="card-body p-4">
                         <ul class="list-unstyled">
-                            <li class="mb-2">
-                                <i class="bi bi-check-circle-fill text-success"></i> 
-                                Inclua a data e horário da reunião
-                            </li>
-                            <li class="mb-2">
-                                <i class="bi bi-check-circle-fill text-success"></i> 
-                                Liste os presentes e ausentes
-                            </li>
-                            <li class="mb-2">
-                                <i class="bi bi-check-circle-fill text-success"></i> 
-                                Descreva os assuntos discutidos
-                            </li>
-                            <li class="mb-2">
-                                <i class="bi bi-check-circle-fill text-success"></i> 
-                                Registre as deliberações e votações
-                            </li>
-                            <li class="mb-2">
-                                <i class="bi bi-check-circle-fill text-success"></i> 
-                                Inclua data e hora do encerramento
-                            </li>
+                            <li class="mb-2"><i class="bi bi-check-circle-fill text-success"></i> Inclua a data e horário da reunião</li>
+                            <li class="mb-2"><i class="bi bi-check-circle-fill text-success"></i> Liste os presentes e ausentes</li>
+                            <li class="mb-2"><i class="bi bi-check-circle-fill text-success"></i> Descreva os assuntos discutidos</li>
+                            <li class="mb-2"><i class="bi bi-check-circle-fill text-success"></i> Registre as deliberações e votações</li>
+                            <li class="mb-2"><i class="bi bi-check-circle-fill text-success"></i> Inclua data e hora do encerramento</li>
                         </ul>
                     </div>
                 </div>
 
-                <!-- Estrutura Sugerida -->
-                <div class="card-bordo-branco shadow-sm mb-4">
-                    <div class="card-header-bordo">
-                        <h5 class="mb-0"><i class="bi bi-list-ul"></i> Estrutura Sugerida</h5>
-                    </div>
-                    <div class="card-body p-4">
-                        <ol class="small">
-                            <li><strong>Abertura</strong> - Data, hora, local</li>
-                            <li><strong>Verificação de Quórum</strong> - Número de presentes</li>
-                            <li><strong>Leitura da Ata Anterior</strong> - Aprovação ou correções</li>
-                            <li><strong>Ordem do Dia</strong> - Assuntos tratados</li>
-                            <li><strong>Palavra Livre</strong> - Manifestações</li>
-                            <li><strong>Encerramento</strong> - Hora e assinaturas</li>
-                        </ol>
-                        <hr style="border-color: rgba(74, 14, 46, 0.15);">
-                        <div class="d-grid gap-2">
-                            <button class="btn-bordo-outline btn-sm" onclick="inserirEstrutura()">
-                                <i class="bi bi-file-text"></i> Inserir Estrutura Básica
-                            </button>
-                            <button class="btn-bordo-outline btn-sm" onclick="inserirModeloOficial()">
-                                <i class="bi bi-journal"></i> Inserir Modelo Oficial
-                            </button>
-                            <button class="btn-bordo-outline btn-sm" onclick="inserirModeloCompleto()">
-                                <i class="bi bi-book"></i> Inserir Modelo Completo
-                            </button>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Informações sobre rascunho -->
                 {% if reuniao.status != 'realizada' %}
                 <div class="card-bordo-branco shadow-sm border-warning">
                     <div class="card-header-bordo" style="background: #fef3c7; border-bottom-color: #fde68a;">
@@ -443,14 +378,10 @@
                     <div class="card-body p-4">
                         <div class="text-center">
                             <i class="bi bi-file-earmark-text fs-1" style="color: #f59e0b;"></i>
-                            <p class="mt-2 small">
-                                Esta ata está em modo <strong>rascunho</strong>.<br>
-                                Você pode salvar e editar quantas vezes quiser antes da reunião.
-                            </p>
+                            <p class="mt-2 small">Esta ata está em modo <strong>rascunho</strong>.<br>Você pode salvar e editar quantas vezes quiser antes da reunião.</p>
                             <hr style="border-color: rgba(74, 14, 46, 0.15);">
                             <div class="alert alert-light small mb-0" style="background: var(--bordo-transparente);">
-                                <i class="bi bi-info-circle"></i>
-                                Após a reunião, não se esqueça de revisar e aprovar a ata final.
+                                <i class="bi bi-info-circle"></i> Após a reunião, não se esqueça de revisar e aprovar a ata final.
                             </div>
                         </div>
                     </div>
@@ -459,7 +390,6 @@
             </div>
         </div>
 
-        <!-- Pré-visualização -->
         <div class="card-bordo-branco shadow-sm mt-4">
             <div class="card-header-bordo-info">
                 <h5 class="mb-0"><i class="bi bi-eye"></i> Pré-visualização</h5>
@@ -473,7 +403,6 @@
     </div>
 </div>
 
-<!-- Modal de Visualização -->
 <div class="modal fade" id="modalVisualizarAta" tabindex="-1">
     <div class="modal-dialog modal-xl">
         <div class="modal-content" style="border-radius: 16px; overflow: hidden;">
@@ -485,18 +414,13 @@
                 <p class="text-muted">Clique em "Visualizar" para ver o conteúdo formatado.</p>
             </div>
             <div class="modal-footer" style="border-top-color: rgba(74, 14, 46, 0.1);">
-                <button type="button" class="btn-bordo-outline" data-bs-dismiss="modal">
-                    <i class="bi bi-x-circle"></i> Fechar
-                </button>
-                <button type="button" class="btn-bordo" onclick="copiarConteudo()">
-                    <i class="bi bi-clipboard"></i> Copiar
-                </button>
+                <button type="button" class="btn-bordo-outline" data-bs-dismiss="modal">Fechar</button>
+                <button type="button" class="btn-bordo" onclick="copiarConteudo()">Copiar</button>
             </div>
         </div>
     </div>
 </div>
 
-<!-- TinyMCE -->
 <script src="https://cdn.jsdelivr.net/npm/tinymce@6.8.3/tinymce.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/tinymce@6.8.3/themes/silver/theme.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/tinymce@6.8.3/plugins/advlist/plugin.min.js"></script>
@@ -507,10 +431,82 @@
 <script src="https://cdn.jsdelivr.net/npm/tinymce@6.8.3/plugins/align/plugin.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/tinymce@6.8.3/plugins/code/plugin.min.js"></script>
 
+
 <script>
-    // Modelos do banco de dados
-    const modelosFromDB = {{ modelos|tojson|safe }};
+    console.log('=== INICIANDO PÁGINA DE NOVA ATA ===');
     
+    // Modelos do banco de dados - declarado apenas uma vez
+    const modelosFromDB = {{ modelos|tojson|safe }};
+    console.log('Modelos carregados:', modelosFromDB);
+    
+    // Função para converter estrutura JSON em HTML
+    function converterEstruturaJSONParaHTML(estrutura) {
+        let html = '';
+        
+        if (typeof estrutura === 'string') {
+            try {
+                estrutura = JSON.parse(estrutura);
+            } catch(e) {
+                return estrutura;
+            }
+        }
+        
+        html += '<div style="text-align: center; margin-bottom: 30px;">\n';
+        html += '<h1 style="color: #4A0E2E;">ARLS BICENTENÁRIO Nº 4739</h1>\n';
+        html += '<h2 style="color: #4A0E2E;">ORIENTE DE CEILÂNDIA - DF</h2>\n';
+        html += '<hr style="border: 1px solid #D4AF37;">\n';
+        html += '</div>\n\n';
+        
+        for (const [secao, itens] of Object.entries(estrutura)) {
+            if (Array.isArray(itens) && itens.length > 0) {
+                const tituloSecao = secao.charAt(0).toUpperCase() + secao.slice(1);
+                html += `<h3 style="color: #4A0E2E; margin-top: 20px; border-bottom: 1px solid #D4AF37; padding-bottom: 5px;">${tituloSecao}</h3>\n`;
+                html += '<ul style="margin-bottom: 20px;">\n';
+                for (const item of itens) {
+                    html += `<li>${item}: <span style="color: #666;">_________________________</span></li>\n`;
+                }
+                html += '</ul>\n\n';
+            } else if (typeof itens === 'object' && itens !== null) {
+                html += `<h3 style="color: #4A0E2E; margin-top: 20px;">${secao}</h3>\n`;
+                for (const [subsecao, subitens] of Object.entries(itens)) {
+                    if (Array.isArray(subitens)) {
+                        html += `<h4 style="margin-left: 15px;">${subsecao}</h4>\n`;
+                        html += '<ul style="margin-left: 30px;">\n';
+                        for (const item of subitens) {
+                            html += `<li>${item}: _________________________</li>\n`;
+                        }
+                        html += '</ul>\n';
+                    }
+                }
+            }
+        }
+        
+        html += '\n<div style="margin-top: 50px;">\n';
+        html += '<hr style="border: 1px solid #D4AF37;">\n';
+        html += '<table style="width: 100%; margin-top: 30px;">\n';
+        html += '  <tr>\n';
+        html += '    <td style="text-align: center; width: 50%;">\n';
+        html += '      _________________________________<br>\n';
+        html += '      <strong>Venerável Mestre</strong>\n';
+        html += '    </td>\n';
+        html += '    <td style="text-align: center; width: 50%;">\n';
+        html += '      _________________________________<br>\n';
+        html += '      <strong>Secretário</strong>\n';
+        html += '    </td>\n';
+        html += '  </tr>\n';
+        html += '<tr>\n';
+        html += '</div>\n';
+        
+        return html;
+    }
+    
+// Garantir que o campo textarea tenha um valor padrão
+const textareaEditor = document.getElementById('editor');
+if (textareaEditor && !textareaEditor.value) {
+    textareaEditor.value = '<p>Digite o conteúdo da ata aqui...</p>';
+}
+	
+    // Inicializar TinyMCE
     tinymce.init({
         selector: '#editor',
         language: 'pt_BR',
@@ -535,8 +531,27 @@
         
         const modelo = modelosFromDB.find(m => m.id == modeloId);
         
+        console.log('Modelo selecionado:', modelo);
+        
         if (modelo && tinymce.get('editor')) {
-            let conteudo = modelo.estrutura || modelo.conteudo || '';
+            let conteudo = '';
+            
+            if (modelo.estrutura && typeof modelo.estrutura === 'object') {
+                conteudo = converterEstruturaJSONParaHTML(modelo.estrutura);
+            } else if (modelo.estrutura && typeof modelo.estrutura === 'string') {
+                try {
+                    const estruturaJSON = JSON.parse(modelo.estrutura);
+                    conteudo = converterEstruturaJSONParaHTML(estruturaJSON);
+                } catch(e) {
+                    conteudo = modelo.estrutura;
+                }
+            } else if (modelo.conteudo) {
+                conteudo = modelo.conteudo;
+            } else {
+                conteudo = '<p>Conteúdo do modelo não disponível.</p>';
+            }
+            
+            console.log('Conteúdo gerado:', conteudo.substring(0, 200));
             
             if (conteudo && conteudo.trim()) {
                 tinymce.get('editor').setContent(conteudo);
@@ -545,269 +560,12 @@
         }
     });
     
-    // Inserir Estrutura Básica
-    function inserirEstrutura() {
-        const data = "{{ reuniao.data.strftime('%d/%m/%Y') if reuniao.data else '' }}";
-        const horaInicio = "{{ reuniao.hora_inicio.strftime('%H:%M') if reuniao.hora_inicio else '' }}";
-        const horaTermino = "{{ reuniao.hora_termino.strftime('%H:%M') if reuniao.hora_termino else '' }}";
-        const local = "{{ reuniao.local or 'Templo Maçônico' }}";
-        
-        const estruturaBasica = `<h1 style="text-align: center;">ARLS BICENTENÁRIO Nº 4739</h1>
-<h2 style="text-align: center;">ORIENTE DE CEILÂNDIA - DF</h2>
-<hr>
-
-<h2 style="text-align: center;">ATA DA REUNIÃO - {{ reuniao.titulo }}</h2>
-
-<h3>DADOS DA REUNIÃO</h3>
-<ul>
-<li><strong>Data:</strong> ${data}</li>
-<li><strong>Horário:</strong> ${horaInicio} às ${horaTermino}</li>
-<li><strong>Local:</strong> ${local}</li>
-</ul>
-
-<h3>1. ABERTURA</h3>
-<p>Aos ${data} às ${horaInicio}, foi aberta a reunião...</p>
-
-<h3>2. VERIFICAÇÃO DE QUÓRUM</h3>
-<p>Presentes ___ obreiros, suficiente para deliberação.</p>
-
-<h3>3. LEITURA DA ATA ANTERIOR</h3>
-<p>A ata da reunião anterior foi lida e...</p>
-
-<h3>4. ORDEM DO DIA</h3>
-<ul>
-<li></li>
-</ul>
-
-<h3>5. PALAVRA LIVRE</h3>
-<ul>
-<li></li>
-</ul>
-
-<h3>6. ENCERRAMENTO</h3>
-<p>Nada mais havendo a tratar, a reunião foi encerrada às ${horaTermino}.</p>
-
-<hr>
-
-<p><strong>Eu, __________________________________, Secretário, lavrei a presente ata que, após lida e aprovada, vai assinada pelos presentes.</strong></p>
-
-<div style="margin-top: 50px;">
-    <table style="width: 100%;">
-        <tr>
-            <td style="text-align: center;">_________________________________<br><strong>Venerável Mestre</strong></td>
-            <td style="text-align: center;">_________________________________<br><strong>Secretário(a)</strong></td>
-        </tr>
-    </table>
-</div>`;
-        
-        if (tinymce.get('editor')) {
-            tinymce.get('editor').setContent(estruturaBasica);
-            document.getElementById('preview').innerHTML = estruturaBasica;
-        }
-    }
-    
-    // Inserir Modelo Oficial
-    function inserirModeloOficial() {
-        const data = "{{ reuniao.data.strftime('%d/%m/%Y') if reuniao.data else '' }}";
-        const dataExtenso = "{{ reuniao.data.strftime('%d') if reuniao.data else '' }} de {{ reuniao.data.strftime('%B') if reuniao.data else '' }} de {{ reuniao.data.strftime('%Y') if reuniao.data else '' }}";
-        const horaInicio = "{{ reuniao.hora_inicio.strftime('%H:%M') if reuniao.hora_inicio else '' }}";
-        const horaTermino = "{{ reuniao.hora_termino.strftime('%H:%M') if reuniao.hora_termino else '' }}";
-        const local = "{{ reuniao.local or 'Templo Maçônico - ARLS Bicentenário' }}";
-        
-        const modeloOficial = `<h1 style="text-align: center;">ARLS BICENTENÁRIO Nº 4739</h1>
-<h2 style="text-align: center;">ORIENTE DE CEILÂNDIA - DF</h2>
-<hr>
-
-<h2 style="text-align: center;">ATA DA SESSÃO {{ reuniao.tipo|upper }}</h2>
-
-<h3>DADOS DA SESSÃO</h3>
-<ul>
-<li><strong>Data:</strong> ${data}</li>
-<li><strong>Horário:</strong> ${horaInicio} às ${horaTermino}</li>
-<li><strong>Local:</strong> ${local}</li>
-<li><strong>Tipo de Sessão:</strong> {{ reuniao.tipo }}</li>
-</ul>
-
-<h3>1. ABERTURA</h3>
-<p>Aos ${dataExtenso}, às ${horaInicio} horas, reunida a ARLS BICENTENÁRIO Nº 4739 em seu Templo, situado no Oriente de Ceilândia, Distrito Federal, sob os auspícios do Grande Oriente do Brasil, foi aberta a Sessão {{ reuniao.tipo.lower() }} com a presença do Venerável Mestre, demais Dignidades e Irmãos presentes.</p>
-
-<h3>2. VERIFICAÇÃO DE QUÓRUM</h3>
-<p>O Irmão Secretário procedeu à leitura da lista de presença, verificando-se a presença de ___ Irmãos, número suficiente para deliberação, conforme o Regimento Interno.</p>
-
-<h3>3. LEITURA E APROVAÇÃO DA ATA ANTERIOR</h3>
-<p>Foi procedida à leitura da ata da sessão anterior. Após análise e discussão, a ata foi aprovada por unanimidade, com ___ abstenções.</p>
-
-<h3>4. EXPEDIENTE</h3>
-<ul>
-<li>Leitura e apreciação de expedientes recebidos;</li>
-<li>Comunicações da Secretaria;</li>
-<li>Informes da Tesouraria;</li>
-<li>Convites e correspondências.</li>
-</ul>
-
-<h3>5. ORDEM DO DIA</h3>
-<h4>5.1. Assuntos em discussão</h4>
-<ul><li></li></ul>
-<h4>5.2. Propostas e deliberações</h4>
-<ul><li></li></ul>
-<h4>5.3. Votações realizadas</h4>
-<ul><li></li></ul>
-
-<h3>6. PALAVRA LIVRE</h3>
-<p>O Venerável Mestre concedeu a palavra aos Irmãos que desejaram se manifestar sobre assunto de interesse da Ordem.</p>
-
-<h3>7. ENCERRAMENTO</h3>
-<p>Nada mais havendo a tratar, o Venerável Mestre declarou encerrada a sessão às ${horaTermino} horas, dando por findos os trabalhos, agradecendo a presença de todos e desejando uma boa noite.</p>
-
-<hr>
-
-<p><strong>A presente ata foi lavrada pelo Irmão Secretário, que a subscreve juntamente com o Venerável Mestre e demais Irmãos que desejarem assinar.</strong></p>
-
-<div style="margin-top: 50px;">
-    <table style="width: 100%;">
-        <tr>
-            <td style="text-align: center;">_________________________________<br><strong>Venerável Mestre</strong></td>
-            <td style="text-align: center;">_________________________________<br><strong>1º Vigilante</strong></td>
-            <td style="text-align: center;">_________________________________<br><strong>2º Vigilante</strong></td>
-        </tr>
-        <tr>
-            <td style="text-align: center;">_________________________________<br><strong>Secretário</strong></td>
-            <td style="text-align: center;">_________________________________<br><strong>Orador</strong></td>
-            <td style="text-align: center;">_________________________________<br><strong>Tesoureiro</strong></td>
-        </tr>
-    </table>
-</div>
-
-<p><strong>Data da lavratura:</strong> ${data}</p>
-<p><strong>Secretário(a):</strong> __________________________________</p>
-<p><strong>Visto:</strong> __________________________________ (Venerável Mestre)</p>`;
-        
-        if (tinymce.get('editor')) {
-            tinymce.get('editor').setContent(modeloOficial);
-            document.getElementById('preview').innerHTML = modeloOficial;
-        }
-    }
-    
-    // Inserir Modelo Completo
-    function inserirModeloCompleto() {
-        const data = "{{ reuniao.data.strftime('%d/%m/%Y') if reuniao.data else '' }}";
-        const horaInicio = "{{ reuniao.hora_inicio.strftime('%H:%M') if reuniao.hora_inicio else '' }}";
-        const horaTermino = "{{ reuniao.hora_termino.strftime('%H:%M') if reuniao.hora_termino else '' }}";
-        const local = "{{ reuniao.local or 'Templo Maçônico - ARLS Bicentenário' }}";
-        
-        const modeloCompleto = `<h1 style="text-align: center;">ARLS BICENTENÁRIO Nº 4739</h1>
-<h2 style="text-align: center;">ORIENTE DE CEILÂNDIA - DF</h2>
-<hr>
-
-<h2 style="text-align: center;">ATA DA REUNIÃO {{ reuniao.tipo|upper }}</h2>
-
-<h3>CABEÇALHO</h3>
-<p><strong>ARLS BICENTENÁRIO Nº 4739</strong><br>
-<strong>ORIENTE DE CEILÂNDIA - DF</strong></p>
-
-<h3>DADOS DA REUNIÃO</h3>
-<ul>
-<li><strong>Data:</strong> ${data}</li>
-<li><strong>Horário de Início:</strong> ${horaInicio}</li>
-<li><strong>Horário de Término:</strong> ${horaTermino}</li>
-<li><strong>Local:</strong> ${local}</li>
-<li><strong>Tipo:</strong> {{ reuniao.tipo }}</li>
-</ul>
-
-<h3>PRESENÇAS</h3>
-<ol>
-<li></li>
-<li></li>
-<li></li>
-</ol>
-
-<h3>AUSÊNCIAS JUSTIFICADAS</h3>
-<ol>
-<li></li>
-<li></li>
-</ol>
-
-<h3>PAUTA</h3>
-<h4>1. Abertura</h4>
-<h4>2. Leitura da Ata Anterior</h4>
-<h4>3. Expediente</h4>
-<h4>4. Ordem do Dia</h4>
-<h4>5. Palavra Livre</h4>
-<h4>6. Encerramento</h4>
-
-<h3>DELIBERAÇÕES</h3>
-<table style="width: 100%; border-collapse: collapse;">
-    <thead>
-        <tr><th>Item</th><th>Descrição</th><th>Situação</th></tr>
-    </thead>
-    <tbody>
-        <tr><td>1</td><td></td><td>Aprovado</td></tr>
-        <tr><td>2</td><td></td><td>Aprovado</td></tr>
-        <tr><td>3</td><td></td><td>Rejeitado</td></tr>
-    </tbody>
-</table>
-
-<h3>PRÓXIMA REUNIÃO</h3>
-<ul>
-<li><strong>Data:</strong> __/__/____</li>
-<li><strong>Horário:</strong> __:__</li>
-<li><strong>Local:</strong> ${local}</li>
-</ul>
-
-<h3>OBSERVAÇÕES GERAIS</h3>
-<p></p>
-
-<h3>ASSINATURAS</h3>
-<div style="margin-top: 30px;">
-    <table style="width: 100%;">
-        <tr>
-            <td style="text-align: center;">_________________________________<br><strong>Venerável Mestre</strong></td>
-            <td style="text-align: center;">_________________________________<br><strong>Secretário(a)</strong></td>
-        </tr>
-    </table>
-</div>`;
-        
-        if (tinymce.get('editor')) {
-            tinymce.get('editor').setContent(modeloCompleto);
-            document.getElementById('preview').innerHTML = modeloCompleto;
-        }
-    }
-    
-    // Visualizar ata formatada
     function visualizarAta() {
         const conteudo = tinymce.get('editor') ? tinymce.get('editor').getContent() : document.getElementById('editor').value;
         const modalBody = document.getElementById('visualizarAtaContent');
         
         if (conteudo && conteudo.trim()) {
-            const htmlContent = `
-            <!DOCTYPE html>
-            <html>
-            <head>
-                <meta charset="UTF-8">
-                <style>
-                    body {
-                        font-family: 'Times New Roman', Times, serif;
-                        line-height: 1.5;
-                        padding: 20px;
-                        max-width: 900px;
-                        margin: 0 auto;
-                        background: white;
-                    }
-                    h1 { color: #4A0E2E; text-align: center; }
-                    h2 { color: #4A0E2E; }
-                    h3 { color: #4A0E2E; }
-                    table { width: 100%; border-collapse: collapse; margin: 20px 0; }
-                    td, th { border: 1px solid #ddd; padding: 8px; }
-                    hr { border: 1px solid #D4AF37; margin: 20px 0; }
-                </style>
-            </head>
-            <body>
-                ${conteudo}
-            </body>
-            </html>
-            `;
-            
-            modalBody.innerHTML = `<iframe srcdoc="${htmlContent.replace(/"/g, '&quot;').replace(/'/g, '&#39;')}" style="width: 100%; height: 70vh; border: none; background: white;"></iframe>`;
+            modalBody.innerHTML = `<iframe srcdoc="${conteudo.replace(/"/g, '&quot;').replace(/'/g, '&#39;')}" style="width: 100%; height: 70vh; border: none; background: white;"></iframe>`;
         } else {
             modalBody.innerHTML = '<p class="text-muted">Nenhum conteúdo para visualizar.</p>';
         }
@@ -815,114 +573,55 @@
         new bootstrap.Modal(document.getElementById('modalVisualizarAta')).show();
     }
     
-    // Copiar conteúdo
-function copiarConteudo() {
-    const conteudo = tinymce.get('editor') ? tinymce.get('editor').getContent() : document.getElementById('editor').value;
-    navigator.clipboard.writeText(conteudo).then(() => {
-        alert('Conteúdo copiado para a área de transferência!');
-    }).catch(() => {
-        alert('Erro ao copiar conteúdo!');
-    });
-}
-
-// Validar formulário antes de enviar
+    function copiarConteudo() {
+        const conteudo = tinymce.get('editor') ? tinymce.get('editor').getContent() : document.getElementById('editor').value;
+        navigator.clipboard.writeText(conteudo);
+        alert('Conteúdo copiado!');
+    }
+    
 document.getElementById('formAta').addEventListener('submit', function(e) {
-    const conteudo = tinymce.get('editor') ? tinymce.get('editor').getContent() : document.getElementById('editor').value;
+    console.log('=== FORMULÁRIO SUBMETIDO ===');
     
-    // Validar se há conteúdo
+    // Forçar atualização do textarea com o conteúdo do TinyMCE
+    if (tinymce.get('editor')) {
+        tinymce.get('editor').save();
+        console.log('TinyMCE salvou o conteúdo');
+    }
+    
+    const conteudo = document.getElementById('editor').value;
+    console.log('Conteúdo após save:', conteudo ? conteudo.substring(0, 100) : 'VAZIO');
+    
+    // Se ainda estiver vazio, adicionar um conteúdo padrão
     if (!conteudo || !conteudo.trim() || conteudo === '<p><br data-mce-bogus="1"></p>') {
-        e.preventDefault();
-        alert('❌ Por favor, preencha o conteúdo da ata antes de salvar!');
-        return false;
+        console.log('Conteúdo vazio, adicionando conteúdo padrão');
+        document.getElementById('editor').value = '<p>Conteúdo da ata não informado.</p>';
+        if (tinymce.get('editor')) {
+            tinymce.get('editor').setContent('<p>Conteúdo da ata não informado.</p>');
+        }
     }
     
-    // Perguntar se deseja salvar
-    if (!confirm('✅ Tem certeza que deseja salvar esta ata?\n\nApós salva, você poderá editá-la posteriormente.')) {
-        e.preventDefault();
-        return false;
-    }
-    
-    // Se passou por todas as validações, o formulário será enviado
+    // Não prevenir o envio
     return true;
 });
-
-// Atalho Ctrl+S para salvar
-document.addEventListener('keydown', function(e) {
-    if (e.ctrlKey && e.key === 's') {
-        e.preventDefault();
-        const form = document.getElementById('formAta');
-        const conteudo = tinymce.get('editor') ? tinymce.get('editor').getContent() : document.getElementById('editor').value;
-        
-        if (!conteudo || !conteudo.trim() || conteudo === '<p><br data-mce-bogus="1"></p>') {
-            alert('❌ Por favor, preencha o conteúdo da ata antes de salvar!');
-            return false;
+    
+    // Atalho Ctrl+S
+    document.addEventListener('keydown', function(e) {
+        if (e.ctrlKey && e.key === 's') {
+            e.preventDefault();
+            console.log('Ctrl+S pressionado - salvando...');
+            document.getElementById('formAta').submit();
         }
-        
-        if (confirm('✅ Salvar ata?')) {
-            form.submit();
-        }
-    }
-});
-
-// Auto-salvar rascunho
-let autoSaveTimeout;
-if (tinymce.get('editor')) {
-    tinymce.get('editor').on('change', function() {
-        clearTimeout(autoSaveTimeout);
-        autoSaveTimeout = setTimeout(() => {
+    });
+    
+    // Inicializar preview
+    setTimeout(() => {
+        if (tinymce.get('editor')) {
             const conteudo = tinymce.get('editor').getContent();
-            if (conteudo && conteudo.length > 100 && conteudo !== '<p><br data-mce-bogus="1"></p>') {
-                localStorage.setItem('rascunho_ata_{{ reuniao.id }}', conteudo);
-                console.log('📝 Rascunho salvo automaticamente');
-                
-                // Mostrar indicador visual de salvamento
-                const previewDiv = document.getElementById('preview');
-                if (previewDiv) {
-                    const originalBg = previewDiv.style.background;
-                    previewDiv.style.background = '#d1fae5';
-                    setTimeout(() => {
-                        previewDiv.style.background = originalBg;
-                    }, 500);
-                }
-            }
-        }, 3000);
-    });
-}
-
-// Carregar rascunho salvo
-window.addEventListener('load', function() {
-    const rascunhoSalvo = localStorage.getItem('rascunho_ata_{{ reuniao.id }}');
-    if (rascunhoSalvo && tinymce.get('editor')) {
-        const conteudoAtual = tinymce.get('editor').getContent();
-        if ((!conteudoAtual || conteudoAtual === '<p><br data-mce-bogus="1"></p>') && rascunhoSalvo) {
-            if (confirm('📋 Há um rascunho salvo anteriormente.\n\nDeseja carregá-lo?')) {
-                tinymce.get('editor').setContent(rascunhoSalvo);
-                document.getElementById('preview').innerHTML = rascunhoSalvo;
-                console.log('📝 Rascunho carregado com sucesso');
+            if (conteudo && conteudo !== '<p><br data-mce-bogus="1"></p>') {
+                document.getElementById('preview').innerHTML = conteudo;
             }
         }
-    }
-});
-
-// Inicializar preview com o conteúdo do editor
-function atualizarPreview() {
-    if (tinymce.get('editor')) {
-        const conteudo = tinymce.get('editor').getContent();
-        if (conteudo && conteudo !== '<p><br data-mce-bogus="1"></p>') {
-            document.getElementById('preview').innerHTML = conteudo;
-        }
-    }
-}
-
-// Inicializar preview após carregar
-setTimeout(() => {
-    atualizarPreview();
-}, 1000);
-
-// Atualizar preview sempre que o conteúdo mudar
-if (tinymce.get('editor')) {
-    tinymce.get('editor').on('change', function() {
-        atualizarPreview();
-    });
-}
+        console.log('Página inicializada com sucesso!');
+    }, 1000);
+</script>
 {% endblock %}
