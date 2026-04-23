@@ -2,7 +2,10 @@ services:
   - type: web
     name: sistema-maconico
     runtime: python
-    buildCommand: pip install -r requirements.txt
+    buildCommand: |
+      apt-get update
+      apt-get install -y wkhtmltopdf
+      pip install -r requirements.txt
     startCommand: gunicorn app:app
     envVars:
       - key: DATABASE_URL
