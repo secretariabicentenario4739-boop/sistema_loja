@@ -416,7 +416,6 @@
             font-size: 0.85rem;
         }
         
-        /* Cabeçalho responsivo */
         .d-flex.justify-content-between {
             flex-direction: column;
             align-items: flex-start !important;
@@ -436,12 +435,10 @@
             font-size: 1.5rem;
         }
         
-        /* Cards de assinatura responsivos */
         .assinatura-card {
             margin-bottom: 1rem;
         }
         
-        /* Botões de ação responsivos */
         .btn-group-mobile {
             flex-direction: column;
             width: 100%;
@@ -460,7 +457,6 @@
             font-size: 13px;
         }
         
-        /* Permitir quebra em telas pequenas */
         .table-bordo td {
             white-space: normal;
         }
@@ -675,9 +671,6 @@
                                             {% endif %}
                                         </td>
                                         <td>
-                                            {# ============================================ #}
-                                            {# BADGES DE GRAU ATUALIZADOS #}
-                                            {# ============================================ #}
                                             {% set grau = p.grau_atual|int %}
                                             {% if grau >= 5 %}
                                                 <span class="badge-superior">✨ Grau Superior ({{ grau }}º)</span>
@@ -792,33 +785,12 @@
                             {% endif %}
                             
                             {% if session.tipo == 'admin' %}
-                            <button class="btn-bordo-danger" onclick="excluirAta('{{ ata.id }}')">
-    <i class="bi bi-trash"></i> Excluir Ata
-</button>
-
-<script>
-function excluirAta(ataId) {
-    if (confirm('⚠️ Deseja EXCLUIR esta ata?')) {
-        fetch(`/atas/${ataId}/excluir`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            }
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                window.location.href = '/atas';
-            } else {
-                alert('Erro: ' + data.error);
-            }
-        })
-        .catch(error => {
-            alert('Erro na requisição');
-        });
-    }
-}
-</script>
+                            <form method="POST" action="/atas/{{ ata.id }}/excluir" style="display: inline;" 
+                                  onsubmit="return confirm('⚠️ ATENÇÃO!\n\nDeseja EXCLUIR esta ata?\n\nEsta ação não pode ser desfeita!\n\nDeseja continuar?')">
+                                <button type="submit" class="btn-bordo-danger">
+                                    <i class="bi bi-trash"></i> Excluir Ata
+                                </button>
+                            </form>
                             {% endif %}
                         </div>
                         

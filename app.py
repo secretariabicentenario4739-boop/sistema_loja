@@ -9451,6 +9451,47 @@ def nova_ata(reuniao_id):
     
     return render_template("atas/nova.html", reuniao=reuniao, modelos=modelos)
 
+@app.route("/atas/<int:id>/excluir", methods=["POST"])
+@login_required
+def excluir_ata(id):
+    """Exclui uma ata"""
+    cursor, conn = get_db()
+    
+    try:
+        # Verificar se o usuário tem permissão
+        if session.get('tipo') != 'admin':
+            flash("Apenas administradores podem excluir atas!", "danger")
+            return_connection(conn)
+            return redirect(f"/atas/{id}")
+        
+        # Buscar a ata antes de excluir
+        cursor.execute("SELECT * FROM atas WHERE id = %s", (id,))
+        ata = cursor.fetchone()
+        
+        if not ata:
+            flash("Ata não encontrada!", "danger")
+            return_connection(conn)
+            return redirect("/atas")
+        
+        # Verificar se a ata está aprovada
+        if ata.get('aprovada') == 1:
+            flash("Não é possível excluir uma ata já aprovada!", "danger")
+            return_connection(conn)
+            return redirect(f"/atas/{id}")
+        
+        # Excluir a ata
+        cursor.execute("DELETE FROM atas WHERE id = %s", (id,))
+        conn.commit()
+        
+        flash(f"Ata nº {ata.get('numero_ata', id)}/{ata.get('ano_ata', '')} excluída com sucesso!", "success")
+        
+    except Exception as e:
+        print(f"Erro ao excluir ata: {e}")
+        conn.rollback()
+        flash(f"Erro ao excluir ata: {str(e)}", "danger")
+    
+    return_connection(conn)
+    return redirect("/atas")
 
 @app.route("/atas/<int:id>/editar", methods=["GET", "POST"])
 @login_required

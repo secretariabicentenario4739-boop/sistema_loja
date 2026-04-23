@@ -946,30 +946,38 @@ function confirmarExclusao() {
     btn.innerHTML = '<i class="bi bi-hourglass-split"></i> Excluindo...';
     btn.disabled = true;
 
-    fetch(`/atas/${ataParaExcluir}/excluir`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' }
-    })
-    .then(response => response.json())
-    .then(data => {
-        modalConfirmExcluir.hide();
-        
-        if (data.success) {
-            mostrarAlerta('success', '<i class="bi bi-check-circle"></i> Ata excluída com sucesso!', 4000);
-            setTimeout(() => { location.reload(); }, 800);
-        } else {
-            mostrarAlerta('danger', `<i class="bi bi-exclamation-triangle"></i> ${data.error || 'Erro ao excluir ata'}`, 5000);
-        }
-    })
-    .catch(error => {
-        modalConfirmExcluir.hide();
-        mostrarAlerta('danger', `<i class="bi bi-bug"></i> Erro na requisição: ${error.message}`, 5000);
-    })
-    .finally(() => {
-        btn.innerHTML = originalText;
-        btn.disabled = false;
-        ataParaExcluir = null;
-    });
+    // Usar formulário em vez de fetch para evitar problemas de CSRF
+    const form = document.createElement('form');
+    form.method = 'POST';
+    form.action = `/atas/${ataParaExcluir}/excluir`;
+    form.style.display = 'none';
+    
+    // Adicionar token CSRF se existir no meta tag
+    const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
+    if (csrfToken) {
+        const csrfInput = document.createElement('input');
+        csrfInput.type = 'hidden';
+        csrfInput.name = 'csrf_token';
+        csrfInput.value = csrfToken;
+        form.appendChild(csrfInput);
+    }
+    
+    document.body.appendChild(form);
+    
+    // Fechar modal
+    const modalElement = document.getElementById('modalConfirmExcluir');
+    const modal = bootstrap.Modal.getInstance(modalElement);
+    if (modal) {
+        modal.hide();
+    }
+    
+    // Submeter formulário
+    form.submit();
+    
+    // Reset do botão (não será necessário porque a página vai recarregar)
+    btn.innerHTML = originalText;
+    btn.disabled = false;
+    ataParaExcluir = null;
 }
 
 function mostrarAlerta(tipo, mensagem, timeout = 5000) {
