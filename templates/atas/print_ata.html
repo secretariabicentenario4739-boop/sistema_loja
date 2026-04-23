@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <title>Ata - {{ ata.reuniao_titulo }}</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Times New Roman', Times, serif;
+            font-size: 12pt;
+            line-height: 1.5;
+            margin: 2cm;
+            background: white;
+        }
+        
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        
+        .header h1 {
+            color: #4A0E2E;
+            font-size: 18pt;
+            margin-bottom: 5px;
+        }
+        
+        .header h2 {
+            color: #4A0E2E;
+            font-size: 14pt;
+            margin-bottom: 10px;
+        }
+        
+        hr {
+            border: 1px solid #D4AF37;
+            margin: 15px 0;
+        }
+        
+        .titulo-ata {
+            text-align: center;
+            margin: 20px 0;
+        }
+        
+        .titulo-ata h2 {
+            color: #4A0E2E;
+            font-size: 16pt;
+        }
+        
+        .info-reuniao {
+            margin: 20px 0;
+            padding: 10px;
+            border: 1px solid #ddd;
+        }
+        
+        .info-reuniao p {
+            margin: 5px 0;
+        }
+        
+        .conteudo {
+            margin: 30px 0;
+            text-align: justify;
+        }
+        
+        .assinaturas {
+            margin-top: 50px;
+        }
+        
+        .assinaturas table {
+            width: 100%;
+            margin-top: 30px;
+        }
+        
+        .assinaturas td {
+            text-align: center;
+            padding-top: 50px;
+            width: 33%;
+        }
+        
+        .linha-assinatura {
+            border-top: 1px solid #000;
+            width: 90%;
+            margin: 0 auto 5px auto;
+        }
+        
+        .no-break {
+            page-break-inside: avoid;
+        }
+        
+        .footer {
+            text-align: center;
+            margin-top: 50px;
+            font-size: 10pt;
+            color: #666;
+        }
+        
+        @media print {
+            body {
+                margin: 2cm;
+            }
+            .print-button {
+                display: none;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>{{ loja_nome }} Nº {{ loja_numero }}</h1>
+        <h2>ORIENTE DE {{ loja_oriente }}</h2>
+        <hr>
+    </div>
+
+    <div class="titulo-ata">
+        <h2>ATA DA REUNIÃO - {{ reuniao.titulo }}</h2>
+    </div>
+
+    <div class="info-reuniao">
+        <p><strong>Data:</strong> {{ reuniao.data.strftime('%d/%m/%Y') if reuniao.data else '-' }}</p>
+        <p><strong>Horário:</strong> {{ reuniao.hora_inicio.strftime('%H:%M') if reuniao.hora_inicio else '-' }}h</p>
+        <p><strong>Local:</strong> {{ reuniao.local }}</p>
+        <p><strong>Tipo:</strong> {{ reuniao.tipo }}</p>
+    </div>
+
+    <div class="conteudo">
+        {{ conteudo|safe }}
+    </div>
+
+    <hr>
+
+    <div class="assinaturas">
+        <table>
+            <tr>
+                <td>
+                    <div class="linha-assinatura"></div>
+                    <strong>Venerável Mestre</strong>
+                </td>
+                <td>
+                    <div class="linha-assinatura"></div>
+                    <strong>Secretário(a)</strong>
+                </td>
+                <td>
+                    <div class="linha-assinatura"></div>
+                    <strong>Orador(a)</strong>
+                </td>
+            </tr>
+        </table>
+    </div>
+
+    <div class="footer">
+        <p>Documento gerado em {{ now.strftime('%d/%m/%Y %H:%M') }}</p>
+    </div>
+
+    <div class="print-button" style="text-align: center; margin-top: 30px;">
+        <button onclick="window.print()" style="padding: 10px 20px; font-size: 14px;">🖨️ Imprimir / Salvar como PDF</button>
+        <button onclick="window.close()" style="padding: 10px 20px; font-size: 14px;">❌ Fechar</button>
+    </div>
+
+    <script>
+        // Auto-abrir a caixa de impressão ao carregar a página
+        // Descomente a linha abaixo se quiser abrir automaticamente
+        // window.onload = function() { window.print(); }
+    </script>
+</body>
+</html>

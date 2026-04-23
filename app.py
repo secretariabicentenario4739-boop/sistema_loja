@@ -8635,13 +8635,9 @@ def gerar_alertas():
 @app.route("/atas/<int:id>/pdf-oficial")
 @login_required
 def gerar_pdf_ata_oficial(id):
-    """Gera PDF oficial da ata com cabeçalho da loja e assinaturas"""
-    from flask import render_template, Response
-    from weasyprint import HTML
-    import os
-    import base64
-    import re
+    """Gera versão para impressão da ata (HTML formatado)"""
     from datetime import datetime
+    from flask import render_template
     
     cursor, conn = get_db()
     
@@ -8733,8 +8729,7 @@ def gerar_pdf_ata_oficial(id):
         'local': ata['reuniao_local'] or 'Templo Maçônico'
     }
     
-    # Renderizar HTML
-    html = render_template("atas/pdf_ata.html",
+    return render_template("atas/print_ata.html",
                           ata=ata,
                           reuniao=reuniao,
                           presentes=presentes,
@@ -8755,29 +8750,6 @@ def gerar_pdf_ata_oficial(id):
                           loja_numero=ata.get('loja_numero', '4739'),
                           loja_oriente=ata.get('loja_oriente', 'Ceilândia - DF'),
                           now=datetime.now())
-    
-    try:
-        # Gerar PDF com WeasyPrint - CORRIGIDO
-        html_obj = HTML(string=html)
-        pdf = html_obj.write_pdf()
-        
-        # Gerar nome do arquivo
-        grau_nome = "Mestre" if reuniao['grau'] >= 3 else "Companheiro" if reuniao['grau'] == 2 else "Aprendiz"
-        tipo_nome = str(ata['reuniao_tipo']).capitalize()
-        nome_arquivo = f"Ata-{ata['numero_ata']}-{ata['ano_ata']}-{grau_nome}-{tipo_nome}.pdf"
-        nome_arquivo = re.sub(r'[^a-zA-Z0-9\-_.]', '', nome_arquivo)
-        
-        response = Response(pdf, content_type='application/pdf')
-        response.headers['Content-Disposition'] = f'attachment; filename={nome_arquivo}'
-        return response
-        
-    except Exception as e:
-        print(f"Erro ao gerar PDF: {e}")
-        import traceback
-        traceback.print_exc()
-        flash(f"Erro ao gerar PDF: {str(e)}", "danger")
-        return redirect(f"/atas/{id}")
-
 
 @app.route("/atas/<int:id>")
 @login_required
