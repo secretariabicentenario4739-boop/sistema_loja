@@ -320,8 +320,8 @@
                     <div class="row">
                         <div class="col-md-4 mb-3">
                             <label class="form-label">Data <span class="text-danger">*</span></label>
-                            <input type="date" class="form-control form-control-custom" name="data" id="dataReuniao" 
-                                   value="{{ hoje }}" required>
+                           <input type="date" class="form-control form-control-custom" name="data" id="dataReuniao" 
+							value="{{ hoje }}" min="{{ hoje }}" required>
                         </div>
                         <div class="col-md-4 mb-3">
                             <label class="form-label">Hora Início <span class="text-danger">*</span></label>
@@ -478,85 +478,60 @@
 
 <script>
 // =====================
-// PRÉ-PREENCHIMENTO DE HORÁRIOS DA LOJA
+// PRÉ-PREENCHIMENTO DE HORÁRIOS DA LOJA (VERSÃO SIMPLIFICADA)
 // =====================
 document.addEventListener('DOMContentLoaded', function() {
     const lojaSelect = document.getElementById('lojaSelect');
     const horaInicio = document.getElementById('horaInicio');
     const horaTermino = document.getElementById('horaTermino');
-    const observacoes = document.getElementById('observacoes');
     const infoHorarios = document.getElementById('infoHorarios');
     const infoHorariosTexto = document.getElementById('infoHorariosTexto');
     
-    function preencherHorariosLoja() {
+    // Mapeamento de horários por loja (você pode ajustar conforme necessário)
+    const horariosLoja = {
+        // Exemplo: quando o ID da loja for 1, preenche com esses horários
+        // '1': { inicio: '09:00', termino: '11:00', observacoes: 'Sessão ordinária' },
+        // '2': { inicio: '09:00', termino: '11:00', observacoes: 'Sessão magna' }
+    };
+    
+    function preencherDadosLoja() {
         const selectedOption = lojaSelect.options[lojaSelect.selectedIndex];
+        const lojaId = selectedOption.value;
         
-        if (selectedOption && selectedOption.value) {
-            const horarioInicioLoja = selectedOption.dataset.horarioInicio;
-            const horarioTerminoLoja = selectedOption.dataset.horarioTermino;
-            const diasSessao = selectedOption.dataset.diasSessao;
-            const observacoesHorario = selectedOption.dataset.observacoes;
+        if (lojaId && horariosLoja[lojaId]) {
+            const horarios = horariosLoja[lojaId];
             
-            if (horarioInicioLoja) {
-                horaInicio.value = horarioInicioLoja;
+            if (horarios.inicio) {
+                horaInicio.value = horarios.inicio;
+            }
+            if (horarios.termino) {
+                horaTermino.value = horarios.termino;
             }
             
-            if (horarioTerminoLoja) {
-                horaTermino.value = horarioTerminoLoja;
-            }
-            
-            if (observacoesHorario && !observacoes.value) {
-                observacoes.value = observacoesHorario;
-            }
-            
-            // Mostrar informações adicionais da loja
-            if (diasSessao || observacoesHorario) {
+            if (horarios.observacoes) {
                 infoHorarios.style.display = 'block';
-                let texto = '';
-                
-                if (diasSessao) {
-                    let diasTexto = '';
-                    if (diasSessao === '2,4') {
-                        diasTexto = 'Terças e Quintas-feiras';
-                    } else if (diasSessao === '3,5') {
-                        diasTexto = 'Quartas e Sextas-feiras';
-                    } else if (diasSessao === '1,3') {
-                        diasTexto = 'Segundas e Quartas-feiras';
-                    } else if (diasSessao === 'sabados') {
-                        diasTexto = 'Sábados (2º e 4º do mês)';
-                    } else if (diasSessao === 'domingos') {
-                        diasTexto = 'Domingos';
-                    } else {
-                        diasTexto = diasSessao;
-                    }
-                    
-                    texto += `<strong>Dias padrão da loja:</strong> ${diasTexto}<br>`;
-                }
-                
-                if (observacoesHorario) {
-                    texto += `<strong>Observações de horário:</strong> ${observacoesHorario}`;
-                }
-                
-                infoHorariosTexto.innerHTML = texto;
+                infoHorariosTexto.innerHTML = `<strong>Observações:</strong> ${horarios.observacoes}`;
             } else {
                 infoHorarios.style.display = 'none';
             }
         } else {
-            if (!horaInicio.value) horaInicio.value = '';
-            if (!horaTermino.value) horaTermino.value = '';
+            // Horários padrão para qualquer loja
+            if (!horaInicio.value) horaInicio.value = '09:00';
+            if (!horaTermino.value) horaTermino.value = '11:00';
             infoHorarios.style.display = 'none';
         }
     }
     
     if (lojaSelect) {
-        lojaSelect.addEventListener('change', preencherHorariosLoja);
+        lojaSelect.addEventListener('change', preencherDadosLoja);
         
-        if (lojaSelect.value) {
-            preencherHorariosLoja();
+        // Preencher horário inicial ao carregar a página
+        if (!horaInicio.value) {
+            horaInicio.value = '09:00';
+            horaTermino.value = '11:00';
         }
     }
 });
-
 // =====================
 // FORMATAR TEXTO AUTOMATICAMENTE
 // =====================
@@ -641,16 +616,6 @@ document.getElementById('horaTermino').addEventListener('change', function() {
     }
 });
 
-document.getElementById('dataReuniao').addEventListener('change', function() {
-    const dataSelecionada = new Date(this.value);
-    const hoje = new Date();
-    hoje.setHours(0, 0, 0, 0);
-    
-    if (dataSelecionada < hoje) {
-        alert('A data da reunião não pode ser anterior à data atual!');
-        this.value = "{{ hoje }}";
-    }
-});
 
 document.getElementById('tipoReuniao').addEventListener('change', function() {
     const selected = this.options[this.selectedIndex];

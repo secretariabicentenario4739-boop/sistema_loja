@@ -7843,6 +7843,7 @@ def reativar_reuniao(id):
     
     return_connection(conn)
     return redirect("/reunioes")    
+    
 
 @app.route("/reunioes/nova", methods=["GET", "POST"])
 @login_required
@@ -7873,7 +7874,6 @@ def nova_reuniao():
         if grau and grau.strip():
             try:
                 grau_int = int(grau)
-                # Se o grau da reunião for maior que o grau do usuário, verificar permissão
                 usuario_grau = session.get('grau_atual', 0)
                 if grau_int > usuario_grau and session.get('tipo') != 'admin':
                     if not verificar_permissao(session['user_id'], 'reuniao.create_superior'):
@@ -7882,6 +7882,33 @@ def nova_reuniao():
                         return redirect("/reunioes/nova")
             except ValueError:
                 pass
+        
+        # ============================================
+        # VALIDAÇÃO DE DATA - CORREÇÃO
+        # ============================================
+        try:
+            from datetime import date, datetime
+            
+            # Converter data para objeto date
+            data_obj = datetime.strptime(data, '%Y-%m-%d').date()
+            data_atual = date.today()
+            
+            print(f"📅 Data recebida: {data_obj}")
+            print(f"📅 Data atual: {data_atual}")
+            print(f"📅 É anterior? {data_obj < data_atual}")
+            
+            # Verificar se a data é anterior à data atual
+            if data_obj < data_atual:
+                data_formatada = data_obj.strftime('%d/%m/%Y')
+                data_atual_formatada = data_atual.strftime('%d/%m/%Y')
+                flash(f"⚠️ A data da reunião ({data_formatada}) não pode ser anterior à data atual ({data_atual_formatada})!", "danger")
+                return_connection(conn)
+                return redirect("/reunioes/nova")
+                
+        except ValueError as e:
+            flash(f"Erro no formato da data: {str(e)}", "danger")
+            return_connection(conn)
+            return redirect("/reunioes/nova")
         
         # Tratamento dos campos
         grau = grau if grau and grau.strip() else None
@@ -7903,13 +7930,12 @@ def nova_reuniao():
         pauta = pauta if pauta and pauta.strip() else None
         observacoes = observacoes if observacoes and observacoes.strip() else None
         
-        # Validar datas
+        # Validar horas
         try:
-            data_obj = datetime.strptime(data, '%Y-%m-%d').date() if data else None
             hora_inicio_obj = datetime.strptime(hora_inicio, '%H:%M').time() if hora_inicio else None
             hora_termino_obj = datetime.strptime(hora_termino, '%H:%M').time() if hora_termino else None
         except ValueError as e:
-            flash(f"Erro no formato da data/hora: {str(e)}", "danger")
+            flash(f"Erro no formato da hora: {str(e)}", "danger")
             return_connection(conn)
             return redirect("/reunioes/nova")
         
@@ -7937,7 +7963,6 @@ def nova_reuniao():
             
             try:
                 # Buscar participantes com permissão para ver a reunião
-                # Apenas usuários com grau >= grau da reunião podem ser notificados
                 if grau:
                     cursor.execute("""
                         SELECT id, nome_completo, email 
@@ -7982,7 +8007,7 @@ def nova_reuniao():
                         'data': data_formatada,
                         'hora_inicio': hora_formatada,
                         'hora_termino': hora_termino_obj.strftime('%H:%M') if hora_termino_obj else None,
-                        'local': local or (loja_nome if loja_nome else 'Templo Maçônico'),
+                        'local': local or (loja_nome if loja_nome else 'Templo Maçônique'),
                         'pauta': pauta,
                         'observacoes': observacoes
                     }
@@ -8031,16 +8056,22 @@ def nova_reuniao():
             return_connection(conn)
             return redirect("/reunioes/nova")
     
+    # ============================================
     # GET - Carregar formulário
+    # ============================================
+    
+    # CORREÇÃO: Removido "WHERE ativo = 1" pois a coluna não existe
     cursor.execute("SELECT * FROM tipos_reuniao ORDER BY nome")
     tipos = cursor.fetchall()
     
-    cursor.execute("SELECT * FROM lojas ORDER BY nome")
+    cursor.execute("SELECT id, nome, numero, oriente FROM lojas WHERE ativo = 1 ORDER BY nome")
     lojas = cursor.fetchall()
     
     return_connection(conn)
     
-    hoje = datetime.now().strftime("%Y-%m-%d")
+    from datetime import date
+    hoje = date.today().strftime("%Y-%m-%d")
+    print(f"📅 Data de hoje para o template: {hoje}")
     
     return render_template("reunioes/nova.html", tipos=tipos, lojas=lojas, hoje=hoje)
     
