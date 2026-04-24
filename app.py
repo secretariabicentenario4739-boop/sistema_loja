@@ -2684,8 +2684,6 @@ def relatorios():
                          lojas=lojas)
 
 
-# Adicione estas rotas no seu app.py
-
 @app.route("/relatorios/gerar")
 @login_required
 def gerar_relatorio():
@@ -2715,6 +2713,8 @@ def gerar_relatorio():
             html = gerar_relatorio_estatisticas(cursor, apenas_ativos)
         elif tipo == 'combinado':
             html = gerar_relatorio_combinado(cursor, data_inicio, data_fim, reuniao_id, grau, loja, apenas_ativos)
+        else:
+            html = '<div class="alert alert-warning">Tipo de relatório não suportado</div>'
         
         return_connection(conn)
         return html
@@ -2725,6 +2725,10 @@ def gerar_relatorio():
         traceback.print_exc()
         return f'<div class="alert alert-danger">Erro ao gerar relatório: {str(e)}</div>'
 
+
+# ============================================
+# FUNÇÕES PARA RELATÓRIOS
+# ============================================
 
 def gerar_relatorio_presenca(cursor, data_inicio, data_fim, reuniao_id, grau, loja, apenas_ativos):
     """Gera relatório de presença"""
@@ -2798,7 +2802,6 @@ def gerar_relatorio_presenca(cursor, data_inicio, data_fim, reuniao_id, grau, lo
     for r in resultados:
         percentual = r['percentual'] or 0
         
-        # Definir status baseado no percentual
         if percentual >= 75:
             status_badge = '<span class="badge-presenca">Regular</span>'
         elif percentual >= 50:
@@ -2806,7 +2809,6 @@ def gerar_relatorio_presenca(cursor, data_inicio, data_fim, reuniao_id, grau, lo
         else:
             status_badge = '<span class="badge-ausente">Irregular</span>'
         
-        # Se não tiver reuniões no período, mostrar como sem registro
         if r['total_reunioes'] == 0:
             status_badge = '<span class="badge" style="background: #6c757d; padding: 4px 12px; border-radius: 20px; font-size: 0.75rem; color: white;">Sem registro</span>'
             percentual_display = "0%"
@@ -2830,6 +2832,231 @@ def gerar_relatorio_presenca(cursor, data_inicio, data_fim, reuniao_id, grau, lo
         </table>
     </div>
     """
+    
+    return html
+
+
+def gerar_relatorio_aniversarios(cursor, apenas_ativos):
+    """Gera relatório de aniversários"""
+    
+    query = """
+        SELECT 
+            id,
+            nome_completo,
+            grau_atual,
+            loja_nome,
+            data_nascimento,
+            EXTRACT(MONTH FROM data_nascimento) as mes,
+            EXTRACT(DAY FROM data_nascimento) as dia
+        FROM usuarios
+        WHERE data_nascimento IS NOT NULL
+    """
+    
+    if apenas_ativos:
+        query += " AND ativo = 1"
+    
+    query += " ORDER BY EXTRACT(MONTH FROM data_nascimento), EXTRACT(DAY FROM data_nascimento)"
+    
+    cursor.execute(query)
+    resultados = cursor.fetchall()
+    
+    if not resultados:
+        return '<div class="text-center text-muted py-4">Nenhum aniversário cadastrado</div>'
+    
+    meses = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 
+             'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro']
+    
+    html = """
+    <div class="result-table">
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>Obreiro</th>
+                    <th>Grau</th>
+                    <th>Loja</th>
+                    <th>Data Nascimento</th>
+                    <th>Mês</th>
+                    <th>Dia</th>
+                </tr>
+            </thead>
+            <tbody>
+    """
+    
+    for r in resultados:
+        mes_nome = meses[int(r['mes']) - 1] if r['mes'] else '-'
+        data_nasc = r['data_nascimento'].strftime('%d/%m/%Y') if r['data_nascimento'] else '-'
+        
+        html += f"""
+            <tr>
+                <td><strong>{r['nome_completo']}</strong></td>
+                <td>{r['grau_atual']}º</td>
+                <td>{r['loja_nome'] or '-'}</td>
+                <td>{data_nasc}</td>
+                <td>{mes_nome}</td>
+                <td>{int(r['dia']) if r['dia'] else '-'}</td>
+            </tr>
+        """
+    
+    html += """
+            </tbody>
+        </table>
+    </div>
+    """
+    
+    return html
+
+
+def gerar_relatorio_aniversarios_familiares(cursor):
+    """Gera relatório de aniversários de familiares"""
+    
+    query = """
+        SELECT 
+            f.nome,
+            f.parentesco,
+            f.data_nascimento,
+            u.nome_completo as obreiro_nome,
+            EXTRACT(MONTH FROM f.data_nascimento) as mes,
+            EXTRACT(DAY FROM f.data_nascimento) as dia
+        FROM familiares f
+        JOIN usuarios u ON f.obreiro_id = u.id
+        WHERE f.data_nascimento IS NOT NULL
+        ORDER BY EXTRACT(MONTH FROM f.data_nascimento), EXTRACT(DAY FROM f.data_nascimento)
+    """
+    
+    cursor.execute(query)
+    resultados = cursor.fetchall()
+    
+    if not resultados:
+        return '<div class="text-center text-muted py-4">Nenhum familiar com aniversário cadastrado</div>'
+    
+    meses = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 
+             'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro']
+    
+    html = """
+    <div class="result-table">
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>Nome do Familiar</th>
+                    <th>Parentesco</th>
+                    <th>Obreiro</th>
+                    <th>Data Nascimento</th>
+                    <th>Mês</th>
+                    <th>Dia</th>
+                </tr>
+            </thead>
+            <tbody>
+    """
+    
+    for r in resultados:
+        mes_nome = meses[int(r['mes']) - 1] if r['mes'] else '-'
+        data_nasc = r['data_nascimento'].strftime('%d/%m/%Y') if r['data_nascimento'] else '-'
+        
+        html += f"""
+            <tr>
+                <td><strong>{r['nome']}</strong></td>
+                <td>{r['parentesco'] or '-'}</td>
+                <td>{r['obreiro_nome']}</td>
+                <td>{data_nasc}</td>
+                <td>{mes_nome}</td>
+                <td>{int(r['dia']) if r['dia'] else '-'}</td>
+            </tr>
+        """
+    
+    html += """
+            </tbody>
+        </table>
+    </div>
+    """
+    
+    return html
+
+
+def gerar_relatorio_estatisticas(cursor, apenas_ativos):
+    """Gera relatório de estatísticas gerais"""
+    
+    # Total de obreiros
+    query_obreiros = "SELECT COUNT(*) as total FROM usuarios WHERE tipo IN ('obreiro', 'sindicante', 'admin')"
+    if apenas_ativos:
+        query_obreiros += " AND ativo = 1"
+    cursor.execute(query_obreiros)
+    total_obreiros = cursor.fetchone()['total']
+    
+    # Total por grau
+    cursor.execute("""
+        SELECT 
+            COUNT(CASE WHEN grau_atual = 1 THEN 1 END) as aprendizes,
+            COUNT(CASE WHEN grau_atual = 2 THEN 1 END) as companheiros,
+            COUNT(CASE WHEN grau_atual >= 3 THEN 1 END) as mestres
+        FROM usuarios
+        WHERE tipo IN ('obreiro', 'sindicante', 'admin')
+    """ + (" AND ativo = 1" if apenas_ativos else ""))
+    graus = cursor.fetchone()
+    
+    # Total de reuniões
+    cursor.execute("SELECT COUNT(*) as total FROM reunioes")
+    total_reunioes = cursor.fetchone()['total']
+    
+    # Total de atas
+    cursor.execute("SELECT COUNT(*) as total FROM atas")
+    total_atas = cursor.fetchone()['total']
+    
+    html = f"""
+    <div class="row">
+        <div class="col-md-6 mb-3">
+            <div class="card text-center p-3">
+                <h3>{total_obreiros}</h3>
+                <p class="text-muted">Total de Obreiros</p>
+            </div>
+        </div>
+        <div class="col-md-6 mb-3">
+            <div class="card text-center p-3">
+                <h3>{graus['aprendizes'] or 0}</h3>
+                <p class="text-muted">Aprendizes</p>
+            </div>
+        </div>
+        <div class="col-md-6 mb-3">
+            <div class="card text-center p-3">
+                <h3>{graus['companheiros'] or 0}</h3>
+                <p class="text-muted">Companheiros</p>
+            </div>
+        </div>
+        <div class="col-md-6 mb-3">
+            <div class="card text-center p-3">
+                <h3>{graus['mestres'] or 0}</h3>
+                <p class="text-muted">Mestres</p>
+            </div>
+        </div>
+        <div class="col-md-6 mb-3">
+            <div class="card text-center p-3">
+                <h3>{total_reunioes}</h3>
+                <p class="text-muted">Total de Reuniões</p>
+            </div>
+        </div>
+        <div class="col-md-6 mb-3">
+            <div class="card text-center p-3">
+                <h3>{total_atas}</h3>
+                <p class="text-muted">Total de Atas</p>
+            </div>
+        </div>
+    </div>
+    """
+    
+    return html
+
+
+def gerar_relatorio_combinado(cursor, data_inicio, data_fim, reuniao_id, grau, loja, apenas_ativos):
+    """Gera relatório combinado com várias informações"""
+    
+    html = "<h4>📊 Relatório Combinado</h4><hr>"
+    
+    # Estatísticas Gerais
+    html += "<h5>📈 Estatísticas Gerais</h5>"
+    html += gerar_relatorio_estatisticas(cursor, apenas_ativos)
+    
+    # Presença
+    html += "<h5 class='mt-4'>📋 Resumo de Presença</h5>"
+    html += gerar_relatorio_presenca(cursor, data_inicio, data_fim, reuniao_id, grau, loja, apenas_ativos)
     
     return html
 
