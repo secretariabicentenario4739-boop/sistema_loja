@@ -1926,6 +1926,107 @@ def get_email_config():
             'sender_name': 'Sistema Maçônico'
         }      
 
+# ============================================
+# AGENDADOR DE TAREFAS (SCHEDULER)
+# ============================================
+
+from apscheduler.schedulers.background import BackgroundScheduler
+from apscheduler.triggers.cron import CronTrigger
+import atexit
+from datetime import datetime
+
+# Criar scheduler
+scheduler = BackgroundScheduler()
+
+def executar_tarefas_diarias():
+    """Executa todas as tarefas diárias: lembretes de reuniões e aniversários"""
+    from datetime import datetime
+    print(f"\n{'='*50}")
+    print(f"🕐 Executando tarefas diárias em {datetime.now().strftime('%d/%m/%Y %H:%M:%S')}")
+    print(f"{'='*50}")
+    
+    # 1. Verificar reuniões e enviar lembretes
+    print("\n📅 Verificando reuniões para amanhã...")
+    resultado_reunioes = verificar_reunioes_e_enviar_notificacoes()
+    if resultado_reunioes.get('success'):
+        print(f"   ✅ {resultado_reunioes.get('reunioes_amanha', 0)} reuniões amanhã")
+        print(f"   📧 {resultado_reunioes.get('participantes_notificados', 0)} lembretes enviados")
+    else:
+        print(f"   ❌ Erro: {resultado_reunioes.get('error', 'Desconhecido')}")
+    
+    # 2. Verificar aniversários
+    print("\n🎂 Verificando aniversários...")
+    resultado_aniversarios = verificar_aniversarios_e_enviar_notificacoes()
+    if resultado_aniversarios.get('success'):
+        print(f"   ✅ {resultado_aniversarios.get('obreiro_aniversariantes', 0)} obreiros aniversariantes")
+        print(f"   👨‍👩‍👧‍👦 {resultado_aniversarios.get('familiar_aniversariantes', 0)} familiares aniversariantes")
+    else:
+        print(f"   ❌ Erro: {resultado_aniversarios.get('error', 'Desconhecido')}")
+    
+    print(f"\n{'='*50}")
+    print(f"✅ Tarefas diárias concluídas em {datetime.now().strftime('%d/%m/%Y %H:%M:%S')}")
+    print(f"{'='*50}\n")
+
+def executar_lembretes_reunioes():
+    """Executa apenas lembretes de reuniões (pode ser usado com scheduler separado)"""
+    print(f"\n📅 Executando verificação de reuniões em {datetime.now().strftime('%d/%m/%Y %H:%M:%S')}")
+    resultado = verificar_reunioes_e_enviar_notificacoes()
+    if resultado.get('success'):
+        print(f"   ✅ {resultado.get('reunioes_amanha', 0)} reuniões amanhã")
+        print(f"   📧 {resultado.get('participantes_notificados', 0)} lembretes enviados")
+    else:
+        print(f"   ❌ Erro: {resultado.get('error', 'Desconhecido')}")
+
+def executar_lembretes_aniversarios():
+    """Executa apenas lembretes de aniversários"""
+    print(f"\n🎂 Executando verificação de aniversários em {datetime.now().strftime('%d/%m/%Y %H:%M:%S')}")
+    resultado = verificar_aniversarios_e_enviar_notificacoes()
+    if resultado.get('success'):
+        print(f"   ✅ {resultado.get('obreiro_aniversariantes', 0)} obreiros aniversariantes")
+        print(f"   👨‍👩‍👧‍👦 {resultado.get('familiar_aniversariantes', 0)} familiares aniversariantes")
+    else:
+        print(f"   ❌ Erro: {resultado.get('error', 'Desconhecido')}")
+
+# ============================================
+# CONFIGURAR AGENDADORES
+# ============================================
+
+# Opção 1: Executar todas as tarefas diariamente às 08:00
+scheduler.add_job(
+    func=executar_tarefas_diarias,
+    trigger=CronTrigger(hour=8, minute=0),
+    id='tarefas_diarias',
+    replace_existing=True
+)
+
+# Opção 2: Executar lembretes de reuniões também às 18:00 (um dia antes)
+scheduler.add_job(
+    func=executar_lembretes_reunioes,
+    trigger=CronTrigger(hour=18, minute=0),
+    id='lembretes_reunioes_tarde',
+    replace_existing=True
+)
+
+# Opção 3: Executar verificação de aniversários às 06:00
+scheduler.add_job(
+    func=executar_lembretes_aniversarios,
+    trigger=CronTrigger(hour=6, minute=0),
+    id='lembretes_aniversarios',
+    replace_existing=True
+)
+
+# Iniciar scheduler
+scheduler.start()
+print("✅ Scheduler iniciado com sucesso!")
+print("   - Tarefas diárias: 08:00")
+print("   - Lembretes de reuniões: 18:00")
+print("   - Aniversários: 06:00")
+
+# Parar scheduler ao fechar a aplicação
+atexit.register(lambda: scheduler.shutdown())
+
+
+
 @app.route("/diagnostico-email")
 @login_required
 def diagnostico_email():
