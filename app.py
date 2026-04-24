@@ -9582,6 +9582,7 @@ def nova_ata(reuniao_id):
                 '[MES]': mes_extenso_capitalizado,
                 '[ANO]': ano_numero,
                 '[ANO_MAÇONICO]': str(ano_maconico) if ano_maconico else '',
+                '[ANO_LUCIS]': str(ano_maconico) if ano_maconico else '',
                 
                 # Horários
                 '[HORA_INICIO]': hora_inicio,
