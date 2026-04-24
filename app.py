@@ -9363,6 +9363,47 @@ def nova_ata(reuniao_id):
         orador_nome = "Orador(a)"
     
     # ============================================
+    # DADOS DA LOJA
+    # ============================================
+    loja_nome = ''
+    loja_numero = ''
+    loja_oriente = ''
+    loja_cidade = ''
+    loja_uf = ''
+    loja_endereco = ''
+    loja_telefone = ''
+    loja_email = ''
+    
+    if reuniao.get('loja_id'):
+        try:
+            cursor.execute("""
+                SELECT nome, numero, oriente, cidade, uf, endereco, telefone, email
+                FROM lojas 
+                WHERE id = %s AND ativo = 1
+            """, (reuniao['loja_id'],))
+            loja = cursor.fetchone()
+            if loja:
+                loja_nome = loja.get('nome', '')
+                loja_numero = str(loja.get('numero', '')) if loja.get('numero') else ''
+                loja_oriente = loja.get('oriente', '')
+                loja_cidade = loja.get('cidade', '')
+                loja_uf = loja.get('uf', '')
+                loja_endereco = loja.get('endereco', '')
+                loja_telefone = loja.get('telefone', '')
+                loja_email = loja.get('email', '')
+        except:
+            pass
+    
+    if not loja_nome:
+        loja_nome = "ARLS Bicentenário"
+        loja_numero = "4739"
+        loja_oriente = "Ceilândia - DF"
+        loja_cidade = "Ceilândia"
+        loja_uf = "DF"
+    
+    loja_nome_completo = f"{loja_nome} Nº {loja_numero}" if loja_numero else loja_nome
+    
+    # ============================================
     # CALCULAR PRÓXIMO NÚMERO DA ATA
     # ============================================
     ano_atual = datetime.now().year
@@ -9462,6 +9503,20 @@ def nova_ata(reuniao_id):
             local = reuniao['local'] or 'Templo Maçônico'
             titulo = reuniao['titulo'] or ''
             tipo = reuniao['tipo'] or ''
+            grau = reuniao.get('grau', 0)
+            
+            if grau == 3:
+                grau_extenso = "Mestre"
+                grau_romano = "III"
+            elif grau == 2:
+                grau_extenso = "Companheiro"
+                grau_romano = "II"
+            elif grau == 1:
+                grau_extenso = "Aprendiz"
+                grau_romano = "I"
+            else:
+                grau_extenso = "Todos os Graus"
+                grau_romano = ""
             
             presentes_num = reuniao['presentes'] or 0
             ausentes_num = reuniao['ausentes'] or 0
@@ -9498,17 +9553,33 @@ def nova_ata(reuniao_id):
                 '[LOCAL]': local,
                 '[TITULO]': titulo,
                 '[TIPO]': tipo,
+                '[GRAU]': str(grau),
+                '[GRAU_EXTENSO]': grau_extenso,
+                '[GRAU_ROMANO]': grau_romano,
                 
                 # Participantes
                 '[PRESENTES]': str(presentes_num),
                 '[PRESENTES_EXTENSO]': numero_por_extenso(presentes_num),
                 '[AUSENTES]': str(ausentes_num),
+                '[AUSENTES_EXTENSO]': numero_por_extenso(ausentes_num),
                 '[TOTAL_PARTICIPANTES]': str(total_participantes_num),
+                '[TOTAL_EXTENSO]': numero_por_extenso(total_participantes_num),
                 
                 # Cargos
                 '[VENERAVEL]': veneravel_nome,
                 '[SECRETARIO]': secretario_nome,
                 '[ORADOR]': orador_nome,
+                
+                # Dados da Loja
+                '[LOJA_NOME]': loja_nome,
+                '[LOJA_NUMERO]': loja_numero,
+                '[LOJA_NOME_COMPLETO]': loja_nome_completo,
+                '[LOJA_ORIENTE]': loja_oriente,
+                '[LOJA_CIDADE]': loja_cidade,
+                '[LOJA_UF]': loja_uf,
+                '[LOJA_ENDERECO]': loja_endereco,
+                '[LOJA_TELEFONE]': loja_telefone,
+                '[LOJA_EMAIL]': loja_email,
                 
                 # Data/hora atual
                 '[DATA_ATUAL]': now.strftime('%d/%m/%Y'),
@@ -9527,6 +9598,8 @@ def nova_ata(reuniao_id):
                     
         except Exception as e:
             print(f"Erro ao substituir placeholders: {e}")
+            import traceback
+            traceback.print_exc()
         
         try:
             cursor.execute("""
