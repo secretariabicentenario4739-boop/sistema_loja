@@ -9300,6 +9300,9 @@ def listar_atas():
 @permissao_required('ata.create')
 def nova_ata(reuniao_id):
     """Cria uma nova ata para uma reunião"""
+    from datetime import datetime
+    import traceback
+    
     cursor, conn = get_db()
     
     cursor.execute("""
@@ -9327,34 +9330,58 @@ def nova_ata(reuniao_id):
                 return redirect(f"/reunioes/{reuniao_id}")
     
     # ============================================
-    # BUSCAR CARGOS ATUAIS
+    # BUSCAR TODOS OS CARGOS DA LOJA
     # ============================================
     try:
         cursor.execute("""
-            SELECT u.nome_completo, c.nome as cargo_nome
+            SELECT u.nome_completo, u.grau_atual, c.nome as cargo_nome, c.id as cargo_id
             FROM ocupacao_cargos oc
             JOIN usuarios u ON oc.obreiro_id = u.id
             JOIN cargos c ON oc.cargo_id = c.id
-            WHERE oc.ativo = 1 
-              AND (LOWER(c.nome) LIKE '%vener%' OR LOWER(c.nome) LIKE '%secret%' OR LOWER(c.nome) LIKE '%orador%')
+            WHERE oc.ativo = 1
+            ORDER BY oc.data_inicio DESC
         """)
-        cargos = cursor.fetchall()
+        todos_cargos = cursor.fetchall()
     except:
-        cargos = []
+        todos_cargos = []
     
+    # Cargos específicos
     veneravel_nome = None
     secretario_nome = None
     orador_nome = None
+    primeiro_vigilante_nome = None
+    segundo_vigilante_nome = None
+    tesoureiro_nome = None
+    chanceler_nome = None
+    mestre_cerimonias_nome = None
+    hospedeiro_nome = None
+    porta_bandeira_nome = None
     
-    for cargo in cargos:
+    for cargo in todos_cargos:
         cargo_nome_lower = cargo['cargo_nome'].lower() if cargo['cargo_nome'] else ''
+        
         if 'vener' in cargo_nome_lower:
             veneravel_nome = cargo['nome_completo']
         elif 'secret' in cargo_nome_lower:
             secretario_nome = cargo['nome_completo']
         elif 'orador' in cargo_nome_lower:
             orador_nome = cargo['nome_completo']
+        elif '1º vigilante' in cargo_nome_lower or 'primeiro vigilante' in cargo_nome_lower:
+            primeiro_vigilante_nome = cargo['nome_completo']
+        elif '2º vigilante' in cargo_nome_lower or 'segundo vigilante' in cargo_nome_lower:
+            segundo_vigilante_nome = cargo['nome_completo']
+        elif 'tesoureiro' in cargo_nome_lower:
+            tesoureiro_nome = cargo['nome_completo']
+        elif 'chanceler' in cargo_nome_lower:
+            chanceler_nome = cargo['nome_completo']
+        elif 'mestre de cerimônias' in cargo_nome_lower or 'mestre de cerimonias' in cargo_nome_lower:
+            mestre_cerimonias_nome = cargo['nome_completo']
+        elif 'hospedeiro' in cargo_nome_lower:
+            hospedeiro_nome = cargo['nome_completo']
+        elif 'porta bandeira' in cargo_nome_lower or 'porta-bandeira' in cargo_nome_lower:
+            porta_bandeira_nome = cargo['nome_completo']
     
+    # Fallbacks
     if not veneravel_nome:
         veneravel_nome = "Venerável Mestre"
     if not secretario_nome:
@@ -9424,7 +9451,6 @@ def nova_ata(reuniao_id):
         # SUBSTITUIR PLACEHOLDERS
         # ============================================
         try:
-            from datetime import datetime
             now = datetime.now()
             
             def numero_por_extenso(num):
@@ -9448,6 +9474,19 @@ def nova_ata(reuniao_id):
                     else:
                         return f"{dezenas[dezena]} e {unidades[unidade]}"
                 return str(num_int)
+            
+            def numero_ordinal(num):
+                if not num:
+                    return ''
+                ordinais = {
+                    1: 'primeiro', 2: 'segundo', 3: 'terceiro', 4: 'quarto', 5: 'quinto',
+                    6: 'sexto', 7: 'sétimo', 8: 'oitavo', 9: 'nono', 10: 'décimo',
+                    11: 'décimo primeiro', 12: 'décimo segundo', 13: 'décimo terceiro',
+                    14: 'décimo quarto', 15: 'décimo quinto', 16: 'décimo sexto',
+                    17: 'décimo sétimo', 18: 'décimo oitavo', 19: 'décimo nono', 20: 'vigésimo'
+                }
+                num_int = int(num) if num else 0
+                return ordinais.get(num_int, str(num_int))
             
             def converter_12h(hora_str):
                 if not hora_str:
@@ -9529,6 +9568,7 @@ def nova_ata(reuniao_id):
                 # Número da ata
                 '[NUMERO_ATA]': str(proximo_numero_ata),
                 '[NUMERO_ATA_ZEROS]': f"{proximo_numero_ata:03d}",
+                '[NUMERO_ATA_ORDINAL]': numero_ordinal(proximo_numero_ata),
                 '[ANO_ATA]': str(ano_atual),
                 
                 # Datas
@@ -9538,6 +9578,7 @@ def nova_ata(reuniao_id):
                 '[DATA_AMERICANA]': data_americana,
                 '[DIA_SEMANA]': dia_semana_extenso,
                 '[DIA]': dia_numero,
+                '[DIA_ORDINAL]': numero_ordinal(dia_numero),
                 '[MES]': mes_extenso_capitalizado,
                 '[ANO]': ano_numero,
                 '[ANO_MAÇONICO]': str(ano_maconico) if ano_maconico else '',
@@ -9560,15 +9601,25 @@ def nova_ata(reuniao_id):
                 # Participantes
                 '[PRESENTES]': str(presentes_num),
                 '[PRESENTES_EXTENSO]': numero_por_extenso(presentes_num),
+                '[PRESENTES_ORDINAL]': numero_ordinal(presentes_num),
                 '[AUSENTES]': str(ausentes_num),
                 '[AUSENTES_EXTENSO]': numero_por_extenso(ausentes_num),
+                '[AUSENTES_ORDINAL]': numero_ordinal(ausentes_num),
                 '[TOTAL_PARTICIPANTES]': str(total_participantes_num),
                 '[TOTAL_EXTENSO]': numero_por_extenso(total_participantes_num),
+                '[TOTAL_ORDINAL]': numero_ordinal(total_participantes_num),
                 
-                # Cargos
+                # Cargos da Loja
                 '[VENERAVEL]': veneravel_nome,
                 '[SECRETARIO]': secretario_nome,
                 '[ORADOR]': orador_nome,
+                '[PRIMEIRO_VIGILANTE]': primeiro_vigilante_nome or '1º Vigilante',
+                '[SEGUNDO_VIGILANTE]': segundo_vigilante_nome or '2º Vigilante',
+                '[TESOUREIRO]': tesoureiro_nome or 'Tesoureiro',
+                '[CHANCELER]': chanceler_nome or 'Chanceler',
+                '[MESTRE_CERIMONIAS]': mestre_cerimonias_nome or 'Mestre de Cerimônias',
+                '[HOSPEDEIRO]': hospedeiro_nome or 'Hospedeiro',
+                '[PORTA_BANDEIRA]': porta_bandeira_nome or 'Porta Bandeira',
                 
                 # Dados da Loja
                 '[LOJA_NOME]': loja_nome,
@@ -9598,7 +9649,6 @@ def nova_ata(reuniao_id):
                     
         except Exception as e:
             print(f"Erro ao substituir placeholders: {e}")
-            import traceback
             traceback.print_exc()
         
         try:

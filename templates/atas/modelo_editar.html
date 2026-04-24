@@ -142,6 +142,41 @@
         justify-content: center;
         flex-wrap: wrap;
     }
+    
+    /* Estilos para a lista de placeholders */
+    .placeholder-list {
+        max-height: 400px;
+        overflow-y: auto;
+    }
+    
+    .placeholder-item {
+        font-family: monospace;
+        font-size: 12px;
+        background: var(--bordo-transparente);
+        padding: 4px 8px;
+        border-radius: 6px;
+        margin: 3px;
+        display: inline-block;
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+    
+    .placeholder-item:hover {
+        background: var(--bordo);
+        color: white;
+        transform: scale(1.02);
+    }
+    
+    .placeholder-category {
+        margin-bottom: 15px;
+    }
+    
+    .placeholder-category h6 {
+        color: var(--bordo);
+        border-bottom: 1px solid var(--bordo);
+        padding-bottom: 5px;
+        margin-bottom: 10px;
+    }
 
     @media (max-width: 768px) {
         .btn-bordo, .btn-bordo-outline {
@@ -219,63 +254,202 @@
             </div>
         </div>
 
-        <div class="card-bordo-branco shadow-sm">
-            <div class="card-header-bordo-primary">
-                <h5><i class="bi bi-pencil-square"></i> Editando Modelo: {{ modelo.nome }}</h5>
+        <div class="row">
+            <div class="col-md-8">
+                <div class="card-bordo-branco shadow-sm">
+                    <div class="card-header-bordo-primary">
+                        <h5><i class="bi bi-pencil-square"></i> Editando Modelo: {{ modelo.nome }}</h5>
+                    </div>
+                    <div class="card-body p-4">
+                        <form method="POST" id="formModelo">
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label">Nome do Modelo <span class="text-danger">*</span></label>
+                                    <input type="text" class="form-control" name="nome" value="{{ modelo.nome }}" required>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label">Tipo</label>
+                                    <select class="form-select" name="tipo">
+                                        <option value="Ordinária" {% if modelo.tipo == 'Ordinária' %}selected{% endif %}>Ordinária</option>
+                                        <option value="Magna" {% if modelo.tipo == 'Magna' %}selected{% endif %}>Magna</option>
+                                        <option value="Administrativa" {% if modelo.tipo == 'Administrativa' %}selected{% endif %}>Administrativa</option>
+                                        <option value="Extraordinária" {% if modelo.tipo == 'Extraordinária' %}selected{% endif %}>Extraordinária</option>
+                                        <option value="Solenidade" {% if modelo.tipo == 'Solenidade' %}selected{% endif %}>Solenidade</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div class="mb-3">
+                                <label class="form-label">Descrição</label>
+                                <textarea class="form-control" name="descricao" rows="2">{{ modelo.descricao or '' }}</textarea>
+                            </div>
+
+                            <div class="mb-3">
+                                <label class="form-label">Conteúdo do Modelo (HTML) <span class="text-danger">*</span></label>
+                                <textarea name="estrutura" id="editor" class="form-control">{{ modelo.estrutura if modelo.estrutura else modelo.conteudo or '' }}</textarea>
+                                <small class="text-muted mt-2 d-block">
+                                    <i class="bi bi-info-circle"></i> 
+                                    Use a barra de ferramentas para formatar o texto. Você pode usar HTML, imagens, tabelas, etc.
+                                </small>
+                            </div>
+
+                            <div class="btn-group-mobile mt-4">
+                                <a href="/atas/modelos" class="btn-bordo-outline">
+                                    <i class="bi bi-x-circle"></i> Cancelar
+                                </a>
+                                <button type="submit" class="btn-bordo">
+                                    <i class="bi bi-save"></i> Salvar Modelo
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+
+                <!-- Pré-visualização -->
+                <div class="card-bordo-branco shadow-sm mt-4">
+                    <div class="card-header-bordo">
+                        <h5><i class="bi bi-eye"></i> Pré-visualização</h5>
+                    </div>
+                    <div class="card-body p-4">
+                        <div id="preview" class="toolbar-preview">
+                            <em>Digite ou cole o conteúdo acima para ver a pré-visualização...</em>
+                        </div>
+                    </div>
+                </div>
             </div>
-            <div class="card-body p-4">
-                <form method="POST" id="formModelo">
-                    <div class="row">
-                        <div class="col-md-6 mb-3">
-                            <label class="form-label">Nome do Modelo <span class="text-danger">*</span></label>
-                            <input type="text" class="form-control" name="nome" value="{{ modelo.nome }}" required>
-                        </div>
-                        <div class="col-md-6 mb-3">
-                            <label class="form-label">Tipo</label>
-                            <select class="form-select" name="tipo">
-                                <option value="Ordinária" {% if modelo.tipo == 'Ordinária' %}selected{% endif %}>Ordinária</option>
-                                <option value="Magna" {% if modelo.tipo == 'Magna' %}selected{% endif %}>Magna</option>
-                                <option value="Administrativa" {% if modelo.tipo == 'Administrativa' %}selected{% endif %}>Administrativa</option>
-                                <option value="Extraordinária" {% if modelo.tipo == 'Extraordinária' %}selected{% endif %}>Extraordinária</option>
-                                <option value="Solenidade" {% if modelo.tipo == 'Solenidade' %}selected{% endif %}>Solenidade</option>
-                            </select>
-                        </div>
-                    </div>
 
-                    <div class="mb-3">
-                        <label class="form-label">Descrição</label>
-                        <textarea class="form-control" name="descricao" rows="2">{{ modelo.descricao or '' }}</textarea>
+            <div class="col-md-4">
+                <!-- Card com Placeholders Disponíveis -->
+                <div class="card-bordo-branco shadow-sm">
+                    <div class="card-header-bordo-primary">
+                        <h5><i class="bi bi-tags"></i> Placeholders Disponíveis</h5>
                     </div>
-
-                    <div class="mb-3">
-                        <label class="form-label">Conteúdo do Modelo (HTML) <span class="text-danger">*</span></label>
-                        <textarea name="estrutura" id="editor" class="form-control">{{ modelo.estrutura if modelo.estrutura else modelo.conteudo or '' }}</textarea>
-                        <small class="text-muted mt-2 d-block">
+                    <div class="card-body p-4">
+                        <p class="small text-muted mb-3">
                             <i class="bi bi-info-circle"></i> 
-                            Use a barra de ferramentas para formatar o texto. Você pode usar HTML, imagens, tabelas, etc.
-                        </small>
+                            Clique em qualquer placeholder para inseri-lo no editor.
+                        </p>
+                        
+                        <div class="placeholder-list">
+                            <!-- Datas -->
+                            <div class="placeholder-category">
+                                <h6><i class="bi bi-calendar"></i> Datas</h6>
+                                <div>
+                                    <span class="placeholder-item" onclick="inserirPlaceholder('[DATA_REUNIAO]')">[DATA_REUNIAO]</span>
+                                    <span class="placeholder-item" onclick="inserirPlaceholder('[DATA_EXTENSO]')">[DATA_EXTENSO]</span>
+                                    <span class="placeholder-item" onclick="inserirPlaceholder('[DATA_EXTENSO_COM_DIA]')">[DATA_EXTENSO_COM_DIA]</span>
+                                    <span class="placeholder-item" onclick="inserirPlaceholder('[DATA_AMERICANA]')">[DATA_AMERICANA]</span>
+                                    <span class="placeholder-item" onclick="inserirPlaceholder('[DIA_SEMANA]')">[DIA_SEMANA]</span>
+                                    <span class="placeholder-item" onclick="inserirPlaceholder('[DIA]')">[DIA]</span>
+                                    <span class="placeholder-item" onclick="inserirPlaceholder('[DIA_ORDINAL]')">[DIA_ORDINAL]</span>
+                                    <span class="placeholder-item" onclick="inserirPlaceholder('[MES]')">[MES]</span>
+                                    <span class="placeholder-item" onclick="inserirPlaceholder('[MES_NUMERO]')">[MES_NUMERO]</span>
+                                    <span class="placeholder-item" onclick="inserirPlaceholder('[ANO]')">[ANO]</span>
+                                    <span class="placeholder-item" onclick="inserirPlaceholder('[ANO_MAÇONICO]')">[ANO_MAÇONICO]</span>
+                                </div>
+                            </div>
+                            
+                            <!-- Horários -->
+                            <div class="placeholder-category">
+                                <h6><i class="bi bi-clock"></i> Horários</h6>
+                                <div>
+                                    <span class="placeholder-item" onclick="inserirPlaceholder('[HORA_INICIO]')">[HORA_INICIO]</span>
+                                    <span class="placeholder-item" onclick="inserirPlaceholder('[HORA_INICIO_12H]')">[HORA_INICIO_12H]</span>
+                                    <span class="placeholder-item" onclick="inserirPlaceholder('[HORA_INICIO_NUMERO]')">[HORA_INICIO_NUMERO]</span>
+                                    <span class="placeholder-item" onclick="inserirPlaceholder('[HORA_INICIO_MINUTO]')">[HORA_INICIO_MINUTO]</span>
+                                    <span class="placeholder-item" onclick="inserirPlaceholder('[HORA_TERMINO]')">[HORA_TERMINO]</span>
+                                    <span class="placeholder-item" onclick="inserirPlaceholder('[HORA_TERMINO_12H]')">[HORA_TERMINO_12H]</span>
+                                    <span class="placeholder-item" onclick="inserirPlaceholder('[HORA]')">[HORA]</span>
+                                </div>
+                            </div>
+                            
+                            <!-- Reunião -->
+                            <div class="placeholder-category">
+                                <h6><i class="bi bi-calendar-event"></i> Reunião</h6>
+                                <div>
+                                    <span class="placeholder-item" onclick="inserirPlaceholder('[TITULO]')">[TITULO]</span>
+                                    <span class="placeholder-item" onclick="inserirPlaceholder('[TIPO]')">[TIPO]</span>
+                                    <span class="placeholder-item" onclick="inserirPlaceholder('[LOCAL]')">[LOCAL]</span>
+                                    <span class="placeholder-item" onclick="inserirPlaceholder('[GRAU]')">[GRAU]</span>
+                                    <span class="placeholder-item" onclick="inserirPlaceholder('[GRAU_EXTENSO]')">[GRAU_EXTENSO]</span>
+                                    <span class="placeholder-item" onclick="inserirPlaceholder('[GRAU_ROMANO]')">[GRAU_ROMANO]</span>
+                                </div>
+                            </div>
+                            
+                            <!-- Participantes -->
+                            <div class="placeholder-category">
+                                <h6><i class="bi bi-people"></i> Participantes</h6>
+                                <div>
+                                    <span class="placeholder-item" onclick="inserirPlaceholder('[PRESENTES]')">[PRESENTES]</span>
+                                    <span class="placeholder-item" onclick="inserirPlaceholder('[PRESENTES_EXTENSO]')">[PRESENTES_EXTENSO]</span>
+                                    <span class="placeholder-item" onclick="inserirPlaceholder('[AUSENTES]')">[AUSENTES]</span>
+                                    <span class="placeholder-item" onclick="inserirPlaceholder('[AUSENTES_EXTENSO]')">[AUSENTES_EXTENSO]</span>
+                                    <span class="placeholder-item" onclick="inserirPlaceholder('[TOTAL_PARTICIPANTES]')">[TOTAL_PARTICIPANTES]</span>
+                                    <span class="placeholder-item" onclick="inserirPlaceholder('[TOTAL_EXTENSO]')">[TOTAL_EXTENSO]</span>
+                                </div>
+                            </div>
+                            
+                            <!-- Cargos da Loja -->
+                            <div class="placeholder-category">
+                                <h6><i class="bi bi-person-badge"></i> Cargos da Loja</h6>
+                                <div>
+                                    <span class="placeholder-item" onclick="inserirPlaceholder('[VENERAVEL]')">[VENERAVEL]</span>
+                                    <span class="placeholder-item" onclick="inserirPlaceholder('[SECRETARIO]')">[SECRETARIO]</span>
+                                    <span class="placeholder-item" onclick="inserirPlaceholder('[ORADOR]')">[ORADOR]</span>
+                                    <span class="placeholder-item" onclick="inserirPlaceholder('[PRIMEIRO_VIGILANTE]')">[PRIMEIRO_VIGILANTE]</span>
+                                    <span class="placeholder-item" onclick="inserirPlaceholder('[SEGUNDO_VIGILANTE]')">[SEGUNDO_VIGILANTE]</span>
+                                    <span class="placeholder-item" onclick="inserirPlaceholder('[TESOUREIRO]')">[TESOUREIRO]</span>
+                                    <span class="placeholder-item" onclick="inserirPlaceholder('[CHANCELER]')">[CHANCELER]</span>
+                                    <span class="placeholder-item" onclick="inserirPlaceholder('[MESTRE_CERIMONIAS]')">[MESTRE_CERIMONIAS]</span>
+                                    <span class="placeholder-item" onclick="inserirPlaceholder('[HOSPEDEIRO]')">[HOSPEDEIRO]</span>
+                                    <span class="placeholder-item" onclick="inserirPlaceholder('[PORTA_BANDEIRA]')">[PORTA_BANDEIRA]</span>
+                                </div>
+                            </div>
+                            
+                            <!-- Dados da Loja -->
+                            <div class="placeholder-category">
+                                <h6><i class="bi bi-building"></i> Dados da Loja</h6>
+                                <div>
+                                    <span class="placeholder-item" onclick="inserirPlaceholder('[LOJA_NOME]')">[LOJA_NOME]</span>
+                                    <span class="placeholder-item" onclick="inserirPlaceholder('[LOJA_NUMERO]')">[LOJA_NUMERO]</span>
+                                    <span class="placeholder-item" onclick="inserirPlaceholder('[LOJA_NOME_COMPLETO]')">[LOJA_NOME_COMPLETO]</span>
+                                    <span class="placeholder-item" onclick="inserirPlaceholder('[LOJA_ORIENTE]')">[LOJA_ORIENTE]</span>
+                                    <span class="placeholder-item" onclick="inserirPlaceholder('[LOJA_CIDADE]')">[LOJA_CIDADE]</span>
+                                    <span class="placeholder-item" onclick="inserirPlaceholder('[LOJA_UF]')">[LOJA_UF]</span>
+                                </div>
+                            </div>
+                            
+                            <!-- Números da Ata -->
+                            <div class="placeholder-category">
+                                <h6><i class="bi bi-hash"></i> Números da Ata</h6>
+                                <div>
+                                    <span class="placeholder-item" onclick="inserirPlaceholder('[NUMERO_ATA]')">[NUMERO_ATA]</span>
+                                    <span class="placeholder-item" onclick="inserirPlaceholder('[NUMERO_ATA_ZEROS]')">[NUMERO_ATA_ZEROS]</span>
+                                    <span class="placeholder-item" onclick="inserirPlaceholder('[NUMERO_ATA_ORDINAL]')">[NUMERO_ATA_ORDINAL]</span>
+                                    <span class="placeholder-item" onclick="inserirPlaceholder('[ANO_ATA]')">[ANO_ATA]</span>
+                                </div>
+                            </div>
+                            
+                            <!-- Data/Hora Atual -->
+                            <div class="placeholder-category">
+                                <h6><i class="bi bi-clock-history"></i> Data/Hora Atual</h6>
+                                <div>
+                                    <span class="placeholder-item" onclick="inserirPlaceholder('[DATA_ATUAL]')">[DATA_ATUAL]</span>
+                                    <span class="placeholder-item" onclick="inserirPlaceholder('[HORA_ATUAL]')">[HORA_ATUAL]</span>
+                                    <span class="placeholder-item" onclick="inserirPlaceholder('[DATA_HORA_ATUAL]')">[DATA_HORA_ATUAL]</span>
+                                </div>
+                            </div>
+                            
+                            <!-- Separadores -->
+                            <div class="placeholder-category">
+                                <h6><i class="bi bi-dash"></i> Separadores</h6>
+                                <div>
+                                    <span class="placeholder-item" onclick="inserirPlaceholder('[SEPARADOR_LINHA]')">[SEPARADOR_LINHA]</span>
+                                    <span class="placeholder-item" onclick="inserirPlaceholder('[SEPARADOR_TRACEJADO]')">[SEPARADOR_TRACEJADO]</span>
+                                </div>
+                            </div>
+                        </div>
                     </div>
-
-                    <div class="btn-group-mobile mt-4">
-                        <a href="/atas/modelos" class="btn-bordo-outline">
-                            <i class="bi bi-x-circle"></i> Cancelar
-                        </a>
-                        <button type="submit" class="btn-bordo">
-                            <i class="bi bi-save"></i> Salvar Modelo
-                        </button>
-                    </div>
-                </form>
-            </div>
-        </div>
-
-        <!-- Pré-visualização -->
-        <div class="card-bordo-branco shadow-sm mt-4">
-            <div class="card-header-bordo">
-                <h5><i class="bi bi-eye"></i> Pré-visualização</h5>
-            </div>
-            <div class="card-body p-4">
-                <div id="preview" class="toolbar-preview">
-                    <em>Digite ou cole o conteúdo acima para ver a pré-visualização...</em>
                 </div>
             </div>
         </div>
@@ -312,6 +486,23 @@
             });
         }
     });
+    
+    // Função para inserir placeholder no editor
+    function inserirPlaceholder(placeholder) {
+        if (tinymce.get('editor')) {
+            tinymce.get('editor').insertContent(placeholder);
+            document.getElementById('preview').innerHTML = tinymce.get('editor').getContent();
+        } else {
+            const editor = document.getElementById('editor');
+            const start = editor.selectionStart;
+            const end = editor.selectionEnd;
+            const text = editor.value;
+            editor.value = text.substring(0, start) + placeholder + text.substring(end);
+            editor.focus();
+            editor.setSelectionRange(start + placeholder.length, start + placeholder.length);
+            document.getElementById('preview').innerHTML = editor.value;
+        }
+    }
     
     // Inicializar preview com o conteúdo atual
     setTimeout(() => {
