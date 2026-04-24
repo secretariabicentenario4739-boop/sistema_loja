@@ -294,25 +294,28 @@
                     <!-- LOCAL e LOJA -->
                     <div class="row">
                         <div class="col-md-6 mb-3">
+    <label class="form-label">Loja</label>
+    <select class="form-select form-select-custom" name="loja_id" id="lojaSelect">
+        <option value="">Selecione uma loja...</option>
+        {% for loja in lojas %}
+        <option value="{{ loja.id }}" 
+                data-horario-inicio="{{ loja.horario_inicio.strftime('%H:%M') if loja.horario_inicio else '' }}"
+                data-horario-termino="{{ loja.horario_termino.strftime('%H:%M') if loja.horario_termino else '' }}"
+                data-dias-sessao="{{ loja.dias_sessao or '' }}"
+                data-observacoes="{{ loja.observacoes_horario or '' }}"
+                data-endereco="{{ loja.endereco or '' }}"
+                data-cidade="{{ loja.cidade or '' }}"
+                data-uf="{{ loja.uf or '' }}">
+            {{ loja.nome }} - Nº {{ loja.numero }}
+            {% if loja.oriente %} - {{ loja.oriente }}{% endif %}
+        </option>
+        {% endfor %}
+    </select>
+</div>
+<div class="col-md-6 mb-3">
                             <label class="form-label">Local</label>
                             <input type="text" class="form-control form-control-custom" name="local" 
                                    placeholder="Ex: Templo Maçônico, Rua das Acácias, 123">
-                        </div>
-                        <div class="col-md-6 mb-3">
-                            <label class="form-label">Loja</label>
-                            <select class="form-select form-select-custom" name="loja_id" id="lojaSelect">
-                                <option value="">Selecione uma loja...</option>
-                                {% for loja in lojas %}
-                                <option value="{{ loja.id }}" 
-                                        data-horario-inicio="{{ loja.horario_inicio.strftime('%H:%M') if loja.horario_inicio else '' }}"
-                                        data-horario-termino="{{ loja.horario_termino.strftime('%H:%M') if loja.horario_termino else '' }}"
-                                        data-dias-sessao="{{ loja.dias_sessao or '' }}"
-                                        data-observacoes="{{ loja.observacoes_horario or '' }}">
-                                    {{ loja.nome }} - Nº {{ loja.numero }}
-                                    {% if loja.oriente %} - {{ loja.oriente }}{% endif %}
-                                </option>
-                                {% endfor %}
-                            </select>
                         </div>
                     </div>
 
@@ -478,46 +481,100 @@
 
 <script>
 // =====================
-// PRÉ-PREENCHIMENTO DE HORÁRIOS DA LOJA (VERSÃO SIMPLIFICADA)
+// PRÉ-PREENCHIMENTO DE HORÁRIOS E LOCAL DA LOJA
 // =====================
 document.addEventListener('DOMContentLoaded', function() {
     const lojaSelect = document.getElementById('lojaSelect');
     const horaInicio = document.getElementById('horaInicio');
     const horaTermino = document.getElementById('horaTermino');
+    const localInput = document.querySelector('input[name="local"]');
     const infoHorarios = document.getElementById('infoHorarios');
     const infoHorariosTexto = document.getElementById('infoHorariosTexto');
     
-    // Mapeamento de horários por loja (você pode ajustar conforme necessário)
-    const horariosLoja = {
-        // Exemplo: quando o ID da loja for 1, preenche com esses horários
-        // '1': { inicio: '09:00', termino: '11:00', observacoes: 'Sessão ordinária' },
-        // '2': { inicio: '09:00', termino: '11:00', observacoes: 'Sessão magna' }
-    };
-    
     function preencherDadosLoja() {
         const selectedOption = lojaSelect.options[lojaSelect.selectedIndex];
-        const lojaId = selectedOption.value;
         
-        if (lojaId && horariosLoja[lojaId]) {
-            const horarios = horariosLoja[lojaId];
+        if (selectedOption && selectedOption.value) {
+            // Dados da loja (usando dataset)
+            const horarioInicioLoja = selectedOption.dataset.horarioInicio;
+            const horarioTerminoLoja = selectedOption.dataset.horarioTermino;
+            const diasSessao = selectedOption.dataset.diasSessao;
+            const observacoesHorario = selectedOption.dataset.observacoes;
+            const lojaNome = selectedOption.text.split(' - ')[0];
+            const lojaEndereco = selectedOption.dataset.endereco || '';
+            const lojaCidade = selectedOption.dataset.cidade || '';
+            const lojaUf = selectedOption.dataset.uf || '';
             
-            if (horarios.inicio) {
-                horaInicio.value = horarios.inicio;
-            }
-            if (horarios.termino) {
-                horaTermino.value = horarios.termino;
+            // Preencher horário de início
+            if (horarioInicioLoja) {
+                horaInicio.value = horarioInicioLoja;
             }
             
-            if (horarios.observacoes) {
+            // Preencher horário de término
+            if (horarioTerminoLoja) {
+                horaTermino.value = horarioTerminoLoja;
+            }
+            
+            // Preencher local automaticamente com o endereço da loja
+            let localCompleto = '';
+            if (lojaEndereco) {
+                localCompleto = lojaEndereco;
+                if (lojaCidade) {
+                    localCompleto += `, ${lojaCidade}`;
+                }
+                if (lojaUf) {
+                    localCompleto += ` - ${lojaUf}`;
+                }
+            } else if (lojaNome) {
+                localCompleto = lojaNome;
+                if (lojaCidade) {
+                    localCompleto += ` - ${lojaCidade}`;
+                }
+            }
+            
+            if (localCompleto && (!localInput.value || localInput.value === '')) {
+                localInput.value = localCompleto;
+            }
+            
+            // Mostrar informações adicionais da loja
+            if (diasSessao || observacoesHorario) {
                 infoHorarios.style.display = 'block';
-                infoHorariosTexto.innerHTML = `<strong>Observações:</strong> ${horarios.observacoes}`;
+                let texto = '';
+                
+                if (diasSessao) {
+                    let diasTexto = '';
+                    if (diasSessao === '2,4') {
+                        diasTexto = 'Terças e Quintas-feiras';
+                    } else if (diasSessao === '3,5') {
+                        diasTexto = 'Quartas e Sextas-feiras';
+                    } else if (diasSessao === '1,3') {
+                        diasTexto = 'Segundas e Quartas-feiras';
+                    } else if (diasSessao === 'sabados') {
+                        diasTexto = 'Sábados (2º e 4º do mês)';
+                    } else if (diasSessao === 'domingos') {
+                        diasTexto = 'Domingos';
+                    } else {
+                        diasTexto = diasSessao;
+                    }
+                    texto += `<strong>Dias padrão da loja:</strong> ${diasTexto}<br>`;
+                }
+                
+                if (observacoesHorario) {
+                    texto += `<strong>Observações de horário:</strong> ${observacoesHorario}`;
+                }
+                
+                infoHorariosTexto.innerHTML = texto;
             } else {
                 infoHorarios.style.display = 'none';
             }
         } else {
-            // Horários padrão para qualquer loja
-            if (!horaInicio.value) horaInicio.value = '09:00';
-            if (!horaTermino.value) horaTermino.value = '11:00';
+            // Se nenhuma loja selecionada, apenas manter valores padrão
+            if (!horaInicio.value || horaInicio.value === '') {
+                horaInicio.value = '19:30';
+            }
+            if (!horaTermino.value || horaTermino.value === '') {
+                horaTermino.value = '22:00';
+            }
             infoHorarios.style.display = 'none';
         }
     }
@@ -527,8 +584,13 @@ document.addEventListener('DOMContentLoaded', function() {
         
         // Preencher horário inicial ao carregar a página
         if (!horaInicio.value) {
-            horaInicio.value = '09:00';
-            horaTermino.value = '11:00';
+            horaInicio.value = '19:30';
+            horaTermino.value = '22:00';
+        }
+        
+        // Se já houver uma loja selecionada, preencher automaticamente
+        if (lojaSelect.value) {
+            preencherDadosLoja();
         }
     }
 });

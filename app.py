@@ -8025,20 +8025,14 @@ def nova_reuniao():
                 pass
         
         # ============================================
-        # VALIDAÇÃO DE DATA - CORREÇÃO
+        # VALIDAÇÃO DE DATA
         # ============================================
         try:
             from datetime import date, datetime
             
-            # Converter data para objeto date
             data_obj = datetime.strptime(data, '%Y-%m-%d').date()
             data_atual = date.today()
             
-            print(f"📅 Data recebida: {data_obj}")
-            print(f"📅 Data atual: {data_atual}")
-            print(f"📅 É anterior? {data_obj < data_atual}")
-            
-            # Verificar se a data é anterior à data atual
             if data_obj < data_atual:
                 data_formatada = data_obj.strftime('%d/%m/%Y')
                 data_atual_formatada = data_atual.strftime('%d/%m/%Y')
@@ -8081,7 +8075,6 @@ def nova_reuniao():
             return redirect("/reunioes/nova")
         
         try:
-            # Inserir reunião com status padrão 'agendada'
             cursor.execute("""
                 INSERT INTO reunioes 
                 (titulo, tipo, grau, data, hora_inicio, hora_termino, local, loja_id, pauta, observacoes, criado_por, status)
@@ -8093,17 +8086,14 @@ def nova_reuniao():
             reuniao_id = cursor.fetchone()['id']
             conn.commit()
             
-            print(f"✅ Reunião criada com ID: {reuniao_id}")
-            
             registrar_log("criar", "reuniao", reuniao_id, dados_novos={"titulo": titulo, "data": data, "tipo": tipo})
             
             # ============================================
-            # ENVIO DE E-MAILS VIA RESEND
+            # ENVIO DE E-MAILS
             # ============================================
             emails_enviados = 0
             
             try:
-                # Buscar participantes com permissão para ver a reunião
                 if grau:
                     cursor.execute("""
                         SELECT id, nome_completo, email 
@@ -8126,8 +8116,6 @@ def nova_reuniao():
                 participantes = cursor.fetchall()
                 
                 if participantes:
-                    print(f"📧 Enviando e-mails para {len(participantes)} participantes...")
-                    
                     data_formatada = data_obj.strftime('%d/%m/%Y') if data_obj else data
                     hora_formatada = hora_inicio_obj.strftime('%H:%M') if hora_inicio_obj else hora_inicio
                     
@@ -8137,8 +8125,8 @@ def nova_reuniao():
                             cursor.execute("SELECT nome FROM lojas WHERE id = %s", (loja_id,))
                             loja_result = cursor.fetchone()
                             loja_nome = loja_result['nome'] if loja_result else None
-                        except Exception as e:
-                            print(f"Erro ao buscar loja: {e}")
+                        except:
+                            pass
                     
                     dados_reuniao = {
                         'id': reuniao_id,
@@ -8148,44 +8136,34 @@ def nova_reuniao():
                         'data': data_formatada,
                         'hora_inicio': hora_formatada,
                         'hora_termino': hora_termino_obj.strftime('%H:%M') if hora_termino_obj else None,
-                        'local': local or (loja_nome if loja_nome else 'Templo Maçônique'),
+                        'local': local or (loja_nome if loja_nome else 'Templo Maçônico'),
                         'pauta': pauta,
                         'observacoes': observacoes
                     }
                     
                     for participante in participantes:
                         try:
-                            if 'enviar_email_reuniao' not in globals():
-                                print("❌ Função enviar_email_reuniao não encontrada!")
-                                continue
-                                
-                            resultado = enviar_email_reuniao(
-                                destinatario=participante['email'],
-                                nome_destinatario=participante['nome_completo'],
-                                dados_reuniao=dados_reuniao
-                            )
-                            
-                            if resultado.get('success'):
-                                emails_enviados += 1
-                                print(f"✅ E-mail enviado para {participante['email']}")
-                            else:
-                                print(f"❌ Falha ao enviar para {participante['email']}: {resultado.get('message')}")
-                                
+                            if 'enviar_email_reuniao' in globals():
+                                resultado = enviar_email_reuniao(
+                                    destinatario=participante['email'],
+                                    nome_destinatario=participante['nome_completo'],
+                                    dados_reuniao=dados_reuniao
+                                )
+                                if resultado.get('success'):
+                                    emails_enviados += 1
                         except Exception as e:
-                            print(f"❌ Erro ao enviar para {participante['email']}: {e}")
+                            print(f"Erro ao enviar e-mail: {e}")
                     
                     if emails_enviados > 0:
                         flash(f"✅ Reunião agendada com sucesso! {emails_enviados} e-mail(s) enviado(s).", "success")
                     else:
-                        flash("✅ Reunião agendada com sucesso! Nenhum e-mail enviado (verifique e-mails dos participantes).", "success")
+                        flash("✅ Reunião agendada com sucesso!", "success")
                 else:
-                    flash("✅ Reunião agendada com sucesso! Nenhum participante com e-mail cadastrado.", "success")
+                    flash("✅ Reunião agendada com sucesso!", "success")
                     
             except Exception as e:
-                print(f"❌ Erro no envio de e-mails: {e}")
-                import traceback
-                traceback.print_exc()
-                flash(f"✅ Reunião agendada com sucesso! Mas houve erro no envio de e-mails: {str(e)}", "warning")
+                print(f"Erro no envio de e-mails: {e}")
+                flash("✅ Reunião agendada com sucesso!", "success")
             
             return_connection(conn)
             return redirect(f"/reunioes/{reuniao_id}")
@@ -8198,14 +8176,21 @@ def nova_reuniao():
             return redirect("/reunioes/nova")
     
     # ============================================
-    # GET - Carregar formulário
+    # GET - Carregar formulário (CORRIGIDO - sem duplicação)
     # ============================================
     
     # CORREÇÃO: Removido "WHERE ativo = 1" pois a coluna não existe
     cursor.execute("SELECT * FROM tipos_reuniao ORDER BY nome")
     tipos = cursor.fetchall()
     
-    cursor.execute("SELECT id, nome, numero, oriente FROM lojas WHERE ativo = 1 ORDER BY nome")
+    # Buscar lojas com informações completas
+    cursor.execute("""
+        SELECT id, nome, numero, oriente, endereco, cidade, uf, 
+               horario_inicio, horario_termino, dias_sessao, observacoes_horario
+        FROM lojas 
+        WHERE ativo = 1 
+        ORDER BY nome
+    """)
     lojas = cursor.fetchall()
     
     return_connection(conn)
