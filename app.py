@@ -8991,6 +8991,8 @@ def gerar_pdf_ata_oficial(id):
                           loja_numero=ata.get('loja_numero', '4739'),
                           loja_oriente=ata.get('loja_oriente', 'Ceilândia - DF'),
                           now=datetime.now())
+                          
+                          
 @app.route("/atas/<int:id>")
 @login_required
 @permissao_required('ata.view_one')

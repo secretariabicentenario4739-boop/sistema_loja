@@ -23,21 +23,17 @@
             margin-bottom: 30px;
         }
         
-        .header h1 {
-            color: #4A0E2E;
-            font-size: 18pt;
-            margin-bottom: 5px;
+        .logo-container {
+            text-align: center;
+            margin-bottom: 20px;
         }
         
-        .header h2 {
-            color: #4A0E2E;
-            font-size: 14pt;
-            margin-bottom: 10px;
-        }
-        
-        hr {
-            border: 1px solid #D4AF37;
-            margin: 15px 0;
+        .logo {
+            max-width: 120px;
+            max-height: 120px;
+            width: auto;
+            height: auto;
+            object-fit: contain;
         }
         
         .titulo-ata {
@@ -54,6 +50,7 @@
             margin: 20px 0;
             padding: 10px;
             border: 1px solid #ddd;
+            background: #f9f9f9;
         }
         
         .info-reuniao p {
@@ -86,8 +83,21 @@
             margin: 0 auto 5px auto;
         }
         
-        .no-break {
-            page-break-inside: avoid;
+        .assinatura-nome {
+            font-size: 11pt;
+            margin-top: 5px;
+            color: #333;
+        }
+        
+        .assinatura-cargo {
+            font-size: 10pt;
+            color: #666;
+        }
+        
+        .assinatura-data {
+            font-size: 9pt;
+            color: #666;
+            margin-top: 5px;
         }
         
         .footer {
@@ -95,34 +105,44 @@
             margin-top: 50px;
             font-size: 10pt;
             color: #666;
+            border-top: 1px solid #ddd;
+            padding-top: 10px;
+        }
+        
+        hr {
+            border: 1px solid #D4AF37;
+            margin: 15px 0;
         }
         
         @media print {
             body {
-                margin: 2cm;
+                margin: 1.5cm;
             }
             .print-button {
                 display: none;
+            }
+            .info-reuniao {
+                background: none;
+                border-color: #000;
             }
         }
     </style>
 </head>
 <body>
     <div class="header">
-        <h1>{{ loja_nome }} Nº {{ loja_numero }}</h1>
-        <h2>ORIENTE DE {{ loja_oriente }}</h2>
-        <hr>
+        <!-- Apenas a Logo -->
+        <div class="logo-container">
+            <img src="{{ url_for('static', filename='images/logo.png') }}" alt="Logo da Loja" class="logo" onerror="this.style.display='none'">
+        </div>
     </div>
 
     <div class="titulo-ata">
-        <h2>ATA DA REUNIÃO - {{ reuniao.titulo }}</h2>
+        <h2>REUNIÃO {{ reuniao.titulo|upper }}</h2>
     </div>
 
     <div class="info-reuniao">
-        <p><strong>Data:</strong> {{ reuniao.data.strftime('%d/%m/%Y') if reuniao.data else '-' }}</p>
-        <p><strong>Horário:</strong> {{ reuniao.hora_inicio.strftime('%H:%M') if reuniao.hora_inicio else '-' }}h</p>
-        <p><strong>Local:</strong> {{ reuniao.local }}</p>
-        <p><strong>Tipo:</strong> {{ reuniao.tipo }}</p>
+        <p><strong>Data:</strong> {{ reuniao.data.strftime('%d/%m/%Y') if reuniao.data else '-' }} - <strong>Horário:</strong> {{ reuniao.hora_inicio.strftime('%H:%M') if reuniao.hora_inicio else '-' }}h</p>
+        <p><strong>Local:</strong> {{ reuniao.local }} - <strong>Tipo:</strong> {{ reuniao.tipo }}</p>
     </div>
 
     <div class="conteudo">
@@ -132,37 +152,90 @@
     <hr>
 
     <div class="assinaturas">
+        <h3 style="text-align: center; margin-bottom: 20px;">ASSINATURAS</h3>
         <table>
             <tr>
                 <td>
                     <div class="linha-assinatura"></div>
-                    <strong>Venerável Mestre</strong>
+                    <div class="assinatura-nome">{{ veneravel_mestre_nome or '_________________________' }}</div>
+                    <div class="assinatura-cargo">Venerável Mestre</div>
+                    {% if assinatura_veneravel and data_assinatura_veneravel %}
+                    <div class="assinatura-data">
+                        Assinado em: {{ data_assinatura_veneravel.strftime('%d/%m/%Y') }}
+                    </div>
+                    {% endif %}
                 </td>
                 <td>
                     <div class="linha-assinatura"></div>
-                    <strong>Secretário(a)</strong>
+                    <div class="assinatura-nome">{{ secretario_nome or '_________________________' }}</div>
+                    <div class="assinatura-cargo">Secretário</div>
+                    {% if assinatura_secretario and data_assinatura_secretario %}
+                    <div class="assinatura-data">
+                        Assinado em: {{ data_assinatura_secretario.strftime('%d/%m/%Y') }}
+                    </div>
+                    {% endif %}
                 </td>
                 <td>
                     <div class="linha-assinatura"></div>
-                    <strong>Orador(a)</strong>
+                    <div class="assinatura-nome">{{ orador_nome or '_________________________' }}</div>
+                    <div class="assinatura-cargo">Orador</div>
+                    {% if assinatura_orador and data_assinatura_orador %}
+                    <div class="assinatura-data">
+                        Assinado em: {{ data_assinatura_orador.strftime('%d/%m/%Y') }}
+                    </div>
+                    {% endif %}
                 </td>
             </tr>
         </table>
     </div>
 
     <div class="footer">
-        <p>Documento gerado em {{ now.strftime('%d/%m/%Y %H:%M') }}</p>
+        <p>Documento gerado em {{ now.strftime('%d/%m/%Y às %H:%M') }}</p>
     </div>
 
     <div class="print-button" style="text-align: center; margin-top: 30px;">
-        <button onclick="window.print()" style="padding: 10px 20px; font-size: 14px;">🖨️ Imprimir / Salvar como PDF</button>
-        <button onclick="window.close()" style="padding: 10px 20px; font-size: 14px;">❌ Fechar</button>
+        <button onclick="window.print()" style="padding: 10px 20px; font-size: 14px; margin: 0 5px; cursor: pointer; background: #4A0E2E; color: white; border: none; border-radius: 5px;">
+            🖨️ Imprimir / Salvar como PDF
+        </button>
+        <button onclick="window.close()" style="padding: 10px 20px; font-size: 14px; margin: 0 5px; cursor: pointer; background: #6c757d; color: white; border: none; border-radius: 5px;">
+            ❌ Fechar
+        </button>
     </div>
 
     <script>
-        // Auto-abrir a caixa de impressão ao carregar a página
-        // Descomente a linha abaixo se quiser abrir automaticamente
-        // window.onload = function() { window.print(); }
+        // Tenta carregar diferentes formatos de logo caso o padrão não exista
+        document.addEventListener('DOMContentLoaded', function() {
+            const logoImg = document.querySelector('.logo');
+            if (logoImg) {
+                const possiveisLogos = [
+                    '{{ url_for("static", filename="images/logo.png") }}',
+                    '{{ url_for("static", filename="images/logo.jpg") }}',
+                    '{{ url_for("static", filename="images/logo.jpeg") }}',
+                    '{{ url_for("static", filename="images/logo.webp") }}',
+                    '{{ url_for("static", filename="images/logo.svg") }}',
+                    '{{ url_for("static", filename="images/brasao.png") }}',
+                    '{{ url_for("static", filename="images/brasao.jpg") }}',
+                    '{{ url_for("static", filename="images/loja-logo.png") }}'
+                ];
+                
+                let tentativaAtual = 0;
+                
+                function tentarProximoLogo() {
+                    if (tentativaAtual < possiveisLogos.length) {
+                        logoImg.src = possiveisLogos[tentativaAtual];
+                        tentativaAtual++;
+                    }
+                }
+                
+                logoImg.onerror = function() {
+                    if (tentativaAtual < possiveisLogos.length) {
+                        tentarProximoLogo();
+                    } else {
+                        logoImg.style.display = 'none';
+                    }
+                };
+            }
+        });
     </script>
 </body>
 </html>
