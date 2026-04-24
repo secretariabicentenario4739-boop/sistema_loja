@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}Dashboard - Loja Bicentenário: Ceilândia | Rito Brasileiro{% endblock %}
+{% block title %}Dashboard - Loja Bicentenário: Ceilândia com Compasso e o Esquadro | Rito Brasileiro{% endblock %}
 
 {% block styles %}
 {{ super() }}
@@ -881,7 +881,10 @@
                         "Pela Verdade e Justiça - Ordo Ab Chao"
                     </p>
                     <p class="small text-muted">
-                        <i class="bi bi-c-circle"></i> {{ now.year }} - Loja Bicentenário: Ceilândia | Rito Brasileiro - GOB
+                        <i class="bi bi-c-circle"></i> {{ now.year }} - Loja Bicentenário: Ceilândia com Compasso e o Esquadro
+                    </p>
+					<p class="small text-muted">
+                        Rito Brasileiro - GOB
                     </p>
                     <p class="small text-muted mt-1">
                         <i class="bi bi-book me-1"></i> Anno Lucis {{ now.year + 4000 }}
@@ -898,9 +901,9 @@
 const cargosOrdem = [
     'Venerável Mestre',
     'Orador',
-    'Secretário',
     '1º Vigilante',
     '2º Vigilante',
+	'Secretário',
     'Tesoureiro',
     'Mestre de Cerimônias',
     '1º Diácono',

@@ -644,75 +644,80 @@
                     </div>
                 </div>
 
-                <!-- Lista de Presença -->
-                {% if presenca %}
-                <div class="card-bordo-branco shadow-sm">
-                    <div class="card-header-bordo">
-                        <h5><i class="bi bi-people"></i> Lista de Presença</h5>
-                    </div>
-                    <div class="card-body p-0">
-                        <div class="table-responsive">
-                            <table class="table table-bordo">
-                                <thead>
-                                    <tr>
-                                        <th>Obreiro</th>
-                                        <th>Grau</th>
-                                        <th>Status</th>
-                                        <th>Justificativa</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {% for p in presenca %}
-                                    <tr>
-                                        <td>
-                                            <span class="fw-semibold" style="color: var(--bordo);">{{ p.nome_completo }}</span>
-                                            {% if p.cargo_nome in ['Venerável Mestre', 'Orador', 'Secretário'] %}
-                                                <span class="badge" style="background: var(--bordo);">{{ p.cargo_nome }}</span>
-                                            {% endif %}
-                                        </td>
-                                        <td>
-                                            {% set grau = p.grau_atual|int %}
-                                            {% if grau >= 5 %}
-                                                <span class="badge-superior">✨ Grau Superior ({{ grau }}º)</span>
-                                            {% elif grau == 4 %}
-                                                <span class="badge-mestre-instalado">👑 Mestre Instalado (4º)</span>
-                                            {% elif grau == 3 %}
-                                                <span class="badge-mestre">⭐ Mestre (3º)</span>
-                                            {% elif grau == 2 %}
-                                                <span class="badge-companheiro">📘 Companheiro (2º)</span>
-                                            {% elif grau == 1 %}
-                                                <span class="badge-aprendiz">📖 Aprendiz (1º)</span>
-                                            {% else %}
-                                                <span class="badge bg-info">Grau {{ grau }}</span>
-                                            {% endif %}
-                                        </td>
-                                        <td>
-                                            {% if p.presente == 1 %}
-                                                <span class="badge-presente">Presente</span>
-                                            {% else %}
-                                                <span class="badge-ausente">Ausente</span>
-                                            {% endif %}
-                                        </td>
-                                        <td>
-                                            {% if p.presente != 1 %}
-                                                {% if p.tipo_ausencia %}
-                                                    <strong>{{ p.tipo_ausencia }}</strong>
-                                                {% endif %}
-                                                {% if p.justificativa %}
-                                                    <br><small class="text-muted">{{ p.justificativa|truncate(50) }}</small>
-                                                {% endif %}
-                                            {% else %}
-                                                <span class="text-muted">-</span>
-                                            {% endif %}
-                                        </td>
-                                    </tr>
-                                    {% endfor %}
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-                </div>
-                {% endif %}
+               <!-- Lista de Presença -->
+{% if presenca %}
+<div class="card-bordo-branco shadow-sm">
+    <div class="card-header-bordo">
+        <h5><i class="bi bi-people"></i> Lista de Presença</h5>
+    </div>
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-bordo">
+                <thead>
+                    <tr>
+                        <th style="width: 40%">Obreiro / Cargo</th>
+                        <th style="width: 15%">Grau</th>
+                        <th style="width: 15%">Status</th>
+                        <th style="width: 30%">Justificativa</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for p in presenca %}
+                    <tr>
+                        <td class="align-middle" style="white-space: nowrap;">
+                            <span class="fw-semibold" style="color: var(--bordo);">{{ p.nome_completo }}</span>
+                            {% if p.cargo_nome %}
+                                <span class="badge ms-2" style="background: var(--bordo); font-size: 0.7rem; padding: 3px 8px;">
+                                    <i class="bi bi-briefcase-fill"></i> {{ p.cargo_nome }}
+                                </span>
+                            {% endif %}
+                            {% if p.status_obrero == 0 %}
+                                <span class="badge bg-secondary ms-2" style="font-size: 0.65rem;">
+                                    <i class="bi bi-person-x"></i> Inativo
+                                </span>
+                            {% endif %}
+                        </td>
+                        <td class="align-middle">
+                            {% set grau = p.grau_atual|int %}
+                            {% if grau >= 5 %}
+                                <span class="badge-superior">✨ Grau Superior ({{ grau }}º)</span>
+                            {% elif grau == 4 %}
+                                <span class="badge-mestre-instalado">👑 Mestre Instalado (4º)</span>
+                            {% elif grau == 3 %}
+                                <span class="badge-mestre">⭐ Mestre (3º)</span>
+                            {% elif grau == 2 %}
+                                <span class="badge-companheiro">📘 Companheiro (2º)</span>
+                            {% elif grau == 1 %}
+                                <span class="badge-aprendiz">📖 Aprendiz (1º)</span>
+                            {% else %}
+                                <span class="badge bg-info">Grau {{ grau }}</span>
+                            {% endif %}
+                        </td>
+                        <td class="align-middle">
+                            {% if p.presente == 1 %}
+                                <span class="badge-presente">Presente</span>
+                            {% else %}
+                                <span class="badge-ausente">Ausente</span>
+                            {% endif %}
+                        </td>
+                        <td class="text-muted small">
+                            {% if p.presente != 1 %}
+                                {% if p.tipo_ausencia %}
+                                    <strong>{{ p.tipo_ausencia }}</strong><br>
+                                {% endif %}
+                                {{ p.justificativa|truncate(60) if p.justificativa else '' }}
+                            {% else %}
+                                -
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endif %}
             </div>
 
             <div class="col-md-4">

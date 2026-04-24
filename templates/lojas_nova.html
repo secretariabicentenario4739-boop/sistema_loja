@@ -2,30 +2,230 @@
 
 {% block title %}Nova Loja{% endblock %}
 
+{% block styles %}
+{{ super() }}
+<style>
+    :root {
+        --bordo: #4A0E2E;
+        --bordo-escuro: #3A0A24;
+        --bordo-claro: #6B1342;
+        --bordo-suave: #8B4A6B;
+        --bordo-transparente: rgba(74, 14, 46, 0.08);
+        --bordo-transparente-hover: rgba(74, 14, 46, 0.12);
+        --ouro: #D4AF37;
+        --ouro-escuro: #996515;
+        --ouro-claro: #F0D68A;
+    }
+
+    .card-bordo-branco {
+        background: white;
+        border: 1px solid rgba(74, 14, 46, 0.15);
+        border-radius: 16px;
+        transition: all 0.3s ease;
+    }
+    
+    .card-bordo-branco:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 8px 25px rgba(74, 14, 46, 0.12);
+        border-color: var(--bordo);
+    }
+
+    .btn-bordo {
+        background: linear-gradient(135deg, var(--bordo), var(--bordo-escuro));
+        border: none;
+        color: white;
+        border-radius: 30px;
+        padding: 8px 20px;
+        transition: all 0.3s;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        text-decoration: none;
+    }
+    
+    .btn-bordo:hover {
+        background: linear-gradient(135deg, var(--bordo-claro), var(--bordo));
+        transform: translateY(-2px);
+        color: white;
+        box-shadow: 0 5px 15px rgba(74, 14, 46, 0.3);
+    }
+    
+    .btn-bordo-outline {
+        background: transparent;
+        border: 1px solid var(--bordo);
+        color: var(--bordo);
+        border-radius: 30px;
+        padding: 8px 20px;
+        transition: all 0.3s;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        text-decoration: none;
+    }
+    
+    .btn-bordo-outline:hover {
+        background: var(--bordo);
+        color: white;
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(74, 14, 46, 0.2);
+    }
+
+    .btn-bordo-secondary {
+        background: linear-gradient(135deg, #6c757d, #495057);
+        border: none;
+        color: white;
+        border-radius: 30px;
+        padding: 8px 20px;
+        transition: all 0.3s;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        text-decoration: none;
+    }
+    
+    .btn-bordo-secondary:hover {
+        background: linear-gradient(135deg, #5a6268, #3d4246);
+        transform: translateY(-2px);
+        color: white;
+        box-shadow: 0 5px 15px rgba(108, 117, 125, 0.3);
+    }
+
+    .card-header-custom {
+        background: linear-gradient(135deg, var(--bordo), var(--bordo-escuro));
+        border-bottom: none;
+        color: white;
+        border-radius: 16px 16px 0 0;
+        padding: 15px 20px;
+    }
+    
+    .card-header-custom h5 {
+        margin: 0;
+    }
+
+    .form-label {
+        color: var(--bordo);
+        font-weight: 500;
+        margin-bottom: 0.5rem;
+    }
+    
+    .form-control, .form-select {
+        border-radius: 12px;
+        border: 1px solid rgba(74, 14, 46, 0.2);
+        transition: all 0.3s;
+        padding: 0.5rem 1rem;
+    }
+    
+    .form-control:focus, .form-select:focus {
+        border-color: var(--bordo);
+        box-shadow: 0 0 0 0.2rem rgba(74, 14, 46, 0.25);
+        outline: none;
+    }
+
+    .form-check-input:checked {
+        background-color: var(--bordo);
+        border-color: var(--bordo);
+    }
+    
+    .form-check-label {
+        color: var(--bordo);
+    }
+
+    .header-actions {
+        display: flex;
+        gap: 12px;
+        align-items: center;
+        flex-wrap: wrap;
+    }
+
+    .btn-group-mobile {
+        display: flex;
+        gap: 12px;
+        justify-content: center;
+        flex-wrap: wrap;
+    }
+
+    @media (max-width: 768px) {
+        .btn-bordo, .btn-bordo-outline, .btn-bordo-secondary {
+            padding: 6px 16px;
+            font-size: 0.85rem;
+        }
+        
+        .d-flex.justify-content-between {
+            flex-direction: column;
+            align-items: flex-start !important;
+            gap: 15px;
+        }
+        
+        .header-actions {
+            width: 100%;
+        }
+        
+        .header-actions .btn-bordo-outline {
+            width: 100%;
+            justify-content: center;
+        }
+        
+        h2 {
+            font-size: 1.5rem;
+        }
+        
+        .btn-group-mobile {
+            flex-direction: column;
+            width: 100%;
+        }
+        
+        .btn-group-mobile .btn-bordo-secondary,
+        .btn-group-mobile .btn-bordo {
+            width: 100%;
+            justify-content: center;
+        }
+        
+        .form-control, .form-select {
+            font-size: 0.875rem;
+        }
+    }
+
+    @media (max-width: 480px) {
+        .btn-bordo, .btn-bordo-outline, .btn-bordo-secondary {
+            padding: 5px 12px;
+            font-size: 0.8rem;
+        }
+        
+        .card-body {
+            padding: 1rem !important;
+        }
+    }
+</style>
+{% endblock %}
+
 {% block content %}
 <div class="container-fluid py-4">
     <div class="container">
         <div class="d-flex justify-content-between align-items-center mb-4">
             <h2>
-                <i class="bi bi-building-add"></i> 
-                Nova Loja Maçônica
+                <i class="bi bi-building-add" style="color: var(--bordo);"></i> 
+                <span style="color: var(--bordo);">Nova Loja Maçônica</span>
             </h2>
-            <a href="/lojas" class="btn btn-outline-secondary">
-                <i class="bi bi-arrow-left"></i> Voltar
-            </a>
+            <div class="header-actions">
+                <a href="/lojas" class="btn-bordo-outline">
+                    <i class="bi bi-arrow-left"></i> Voltar
+                </a>
+            </div>
         </div>
 
-       
-        <div class="card shadow">
-            <div class="card-body">
+        <div class="card-bordo-branco shadow-sm">
+            <div class="card-header-custom">
+                <h5><i class="bi bi-building"></i> Dados da Loja</h5>
+            </div>
+            <div class="card-body p-4">
                 <form method="POST">
                     <!-- Informações Básicas -->
-                    <h5 class="mb-3 text-primary">
+                    <h6 class="mb-3" style="color: var(--bordo); border-left: 3px solid var(--bordo); padding-left: 10px;">
                         <i class="bi bi-info-circle"></i> Informações Básicas
-                    </h5>
+                    </h6>
                     <div class="row">
                         <div class="col-md-6 mb-3">
-                            <label class="form-label">Nome da Loja *</label>
+                            <label class="form-label">Nome da Loja <span class="text-danger">*</span></label>
                             <input type="text" name="nome" class="form-control" required>
                         </div>
                         <div class="col-md-3 mb-3">
@@ -34,28 +234,28 @@
                         </div>
                         <div class="col-md-3 mb-3">
                             <label class="form-label">Oriente</label>
-                            <input type="text" name="oriente" class="form-control">
+                            <input type="text" name="oriente" class="form-control" placeholder="Ex: Ceilândia - DF">
                         </div>
                         <div class="col-md-6 mb-3">
                             <label class="form-label">Rito</label>
-                            <input type="text" name="rito" class="form-control">
+                            <input type="text" name="rito" class="form-control" placeholder="Ex: Rito Brasileiro">
                         </div>
                         <div class="col-md-6 mb-3">
-                            <label class="form-check mt-4">
+                            <div class="form-check mt-4">
                                 <input type="checkbox" name="ativo" class="form-check-input" id="ativo" checked>
                                 <label class="form-check-label" for="ativo">Loja Ativa</label>
-                            </label>
+                            </div>
                         </div>
                     </div>
 
                     <!-- Endereço -->
-                    <h5 class="mb-3 text-primary mt-4">
+                    <h6 class="mb-3 mt-4" style="color: var(--bordo); border-left: 3px solid var(--bordo); padding-left: 10px;">
                         <i class="bi bi-geo-alt"></i> Endereço
-                    </h5>
+                    </h6>
                     <div class="row">
                         <div class="col-md-8 mb-3">
                             <label class="form-label">Endereço</label>
-                            <input type="text" name="endereco" class="form-control">
+                            <input type="text" name="endereco" class="form-control" placeholder="Rua, Av., etc.">
                         </div>
                         <div class="col-md-4 mb-3">
                             <label class="form-label">Bairro</label>
@@ -67,37 +267,37 @@
                         </div>
                         <div class="col-md-2 mb-3">
                             <label class="form-label">UF</label>
-                            <input type="text" name="uf" class="form-control" maxlength="2">
+                            <input type="text" name="uf" class="form-control" maxlength="2" placeholder="DF">
                         </div>
                         <div class="col-md-3 mb-3">
                             <label class="form-label">CEP</label>
-                            <input type="text" name="cep" class="form-control">
+                            <input type="text" name="cep" class="form-control" id="cep" placeholder="00000-000">
                         </div>
                     </div>
 
                     <!-- Contato -->
-                    <h5 class="mb-3 text-primary mt-4">
+                    <h6 class="mb-3 mt-4" style="color: var(--bordo); border-left: 3px solid var(--bordo); padding-left: 10px;">
                         <i class="bi bi-envelope"></i> Contato
-                    </h5>
+                    </h6>
                     <div class="row">
                         <div class="col-md-4 mb-3">
                             <label class="form-label">Telefone</label>
-                            <input type="text" name="telefone" class="form-control" id="telefone">
+                            <input type="text" name="telefone" class="form-control" id="telefone" placeholder="(61) 99999-9999">
                         </div>
                         <div class="col-md-4 mb-3">
                             <label class="form-label">Email</label>
-                            <input type="email" name="email" class="form-control">
+                            <input type="email" name="email" class="form-control" placeholder="contato@loja.com">
                         </div>
                         <div class="col-md-4 mb-3">
                             <label class="form-label">Site</label>
-                            <input type="text" name="site" class="form-control">
+                            <input type="text" name="site" class="form-control" placeholder="www.loja.com.br">
                         </div>
                     </div>
 
                     <!-- Datas Importantes -->
-                    <h5 class="mb-3 text-primary mt-4">
+                    <h6 class="mb-3 mt-4" style="color: var(--bordo); border-left: 3px solid var(--bordo); padding-left: 10px;">
                         <i class="bi bi-calendar"></i> Datas Importantes
-                    </h5>
+                    </h6>
                     <div class="row">
                         <div class="col-md-4 mb-3">
                             <label class="form-label">Data de Fundação</label>
@@ -114,17 +314,17 @@
                     </div>
 
                     <!-- Horários e Sessões -->
-                    <h5 class="mb-3 text-primary mt-4">
+                    <h6 class="mb-3 mt-4" style="color: var(--bordo); border-left: 3px solid var(--bordo); padding-left: 10px;">
                         <i class="bi bi-clock-history"></i> Horários e Sessões
-                    </h5>
+                    </h6>
                     <div class="row">
                         <div class="col-md-3 mb-3">
                             <label class="form-label">Horário de Início</label>
-                            <input type="time" class="form-control" name="horario_inicio" value="09:00">
+                            <input type="time" class="form-control" name="horario_inicio" value="19:30">
                         </div>
                         <div class="col-md-3 mb-3">
                             <label class="form-label">Horário de Término</label>
-                            <input type="time" class="form-control" name="horario_termino" value="11:00">
+                            <input type="time" class="form-control" name="horario_termino" value="22:00">
                         </div>
                         <div class="col-md-3 mb-3">
                             <label class="form-label">Frequência</label>
@@ -153,9 +353,9 @@
                     </div>
 
                     <!-- Dirigentes -->
-                    <h5 class="mb-3 text-primary mt-4">
+                    <h6 class="mb-3 mt-4" style="color: var(--bordo); border-left: 3px solid var(--bordo); padding-left: 10px;">
                         <i class="bi bi-people"></i> Dirigentes
-                    </h5>
+                    </h6>
                     <div class="row">
                         <div class="col-md-6 mb-3">
                             <label class="form-label">Venerável Mestre</label>
@@ -176,22 +376,22 @@
                     </div>
 
                     <!-- Observações Gerais -->
-                    <h5 class="mb-3 text-primary mt-4">
+                    <h6 class="mb-3 mt-4" style="color: var(--bordo); border-left: 3px solid var(--bordo); padding-left: 10px;">
                         <i class="bi bi-chat-text"></i> Observações Gerais
-                    </h5>
+                    </h6>
                     <div class="row">
                         <div class="col-12 mb-3">
-                            <textarea name="observacoes" class="form-control" rows="4"></textarea>
+                            <textarea name="observacoes" class="form-control" rows="4" placeholder="Informações adicionais sobre a loja..."></textarea>
                         </div>
                     </div>
 
-                    <div class="text-end mt-4">
-                        <button type="submit" class="btn btn-primary btn-lg px-5">
-                            <i class="bi bi-save"></i> Salvar
-                        </button>
-                        <a href="/lojas" class="btn btn-secondary btn-lg px-5 ms-2">
+                    <div class="btn-group-mobile mt-4">
+                        <a href="/lojas" class="btn-bordo-secondary">
                             <i class="bi bi-x-circle"></i> Cancelar
                         </a>
+                        <button type="submit" class="btn-bordo">
+                            <i class="bi bi-save"></i> Salvar Loja
+                        </button>
                     </div>
                 </form>
             </div>
@@ -213,17 +413,18 @@ if (telefoneInput) {
         e.target.value = value;
     });
 }
-</script>
 
-<style>
-    .card {
-        border-radius: 10px;
-        overflow: hidden;
-    }
-    h5 {
-        border-left: 4px solid #0d6efd;
-        padding-left: 12px;
-    }
-</style>
+// Máscara para CEP
+const cepInput = document.getElementById('cep');
+if (cepInput) {
+    cepInput.addEventListener('input', function(e) {
+        let value = e.target.value.replace(/\D/g, '');
+        if (value.length <= 8) {
+            value = value.replace(/^(\d{5})(\d{3})/, '$1-$2');
+            e.target.value = value.substring(0, 9);
+        }
+    });
+}
+</script>
 
 {% endblock %}

@@ -1,0 +1,184 @@
+{% extends "base.html" %}
+
+{% block title %}{{ aviso.titulo }}{% endblock %}
+
+{% block styles %}
+{{ super() }}
+<style>
+    .card-aviso {
+        background: white;
+        border: 1px solid rgba(74, 14, 46, 0.15);
+        border-radius: 16px;
+        overflow: hidden;
+    }
+    
+    .card-header-aviso {
+        background: linear-gradient(135deg, var(--bordo), var(--bordo-escuro));
+        color: white;
+        padding: 20px;
+    }
+    
+    .card-header-aviso-urgente {
+        background: linear-gradient(135deg, #dc2626, #b91c1c);
+        color: white;
+        padding: 20px;
+    }
+    
+    .card-header-aviso-importante {
+        background: linear-gradient(135deg, #f59e0b, #d97706);
+        color: white;
+        padding: 20px;
+    }
+    
+    .conteudo-aviso {
+        padding: 30px;
+        line-height: 1.8;
+        font-size: 1rem;
+        white-space: pre-wrap;
+        word-wrap: break-word;
+        background: #fafafa;
+        border-radius: 12px;
+        margin: 20px;
+    }
+    
+    .conteudo-aviso p {
+        margin-bottom: 1rem;
+    }
+    
+    .badge-prioridade {
+        padding: 5px 12px;
+        border-radius: 30px;
+        font-size: 0.75rem;
+        font-weight: 600;
+    }
+    
+    .info-row {
+        border-bottom: 1px solid rgba(74, 14, 46, 0.1);
+        padding: 12px 0;
+    }
+    
+    .btn-voltar {
+        background: var(--bordo);
+        border: none;
+        color: white;
+        border-radius: 30px;
+        padding: 8px 20px;
+        transition: all 0.3s;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        text-decoration: none;
+    }
+    
+    .btn-voltar:hover {
+        background: var(--bordo-claro);
+        transform: translateY(-2px);
+        color: white;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="container">
+        <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+            <h2 style="color: var(--bordo);">
+                <i class="bi bi-megaphone"></i> {{ aviso.titulo }}
+            </h2>
+            <a href="/avisos" class="btn-voltar">
+                <i class="bi bi-arrow-left"></i> Voltar para lista
+            </a>
+        </div>
+
+        <div class="card-aviso shadow-sm">
+            <div class="{% if aviso.prioridade == 'urgente' %}card-header-aviso-urgente{% elif aviso.prioridade == 'importante' %}card-header-aviso-importante{% else %}card-header-aviso{% endif %}">
+                <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+                    <h4 class="mb-0">{{ aviso.titulo }}</h4>
+                    <span class="badge-prioridade" style="background: rgba(255,255,255,0.2); color: white;">
+                        {% if aviso.prioridade == 'urgente' %}
+                            🚨 Urgente
+                        {% elif aviso.prioridade == 'importante' %}
+                            ⭐ Importante
+                        {% else %}
+                            📌 Normal
+                        {% endif %}
+                    </span>
+                </div>
+            </div>
+            
+            <div class="card-body p-0">
+                <div class="p-4">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="info-row">
+                                <strong><i class="bi bi-person"></i> Autor:</strong>
+                                <span class="ms-2">{{ aviso.autor_nome or 'Sistema' }}</span>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="info-row">
+                                <strong><i class="bi bi-calendar"></i> Publicado em:</strong>
+                                <span class="ms-2">{{ aviso.created_at.strftime('%d/%m/%Y %H:%M') if aviso.created_at else '-' }}</span>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="info-row">
+                                <strong><i class="bi bi-calendar-range"></i> Expira em:</strong>
+                                <span class="ms-2">
+                                    {% if aviso.data_fim %}
+                                        {{ aviso.data_fim.strftime('%d/%m/%Y') }}
+                                    {% else %}
+                                        Não expira
+                                    {% endif %}
+                                </span>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="info-row">
+                                <strong><i class="bi bi-eye"></i> Visualizações:</strong>
+                                <span class="ms-2">{{ (aviso.visualizacoes or 0) + 1 }}</span>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="info-row">
+                                <strong><i class="bi bi-people"></i> Destinado a:</strong>
+                                <span class="ms-2">
+                                    {% if aviso.grau_destino >= 4 %}
+                                        Todos os Graus
+                                    {% elif aviso.grau_destino == 3 %}
+                                        Mestres
+                                    {% elif aviso.grau_destino == 2 %}
+                                        Companheiros
+                                    {% else %}
+                                        Aprendizes
+                                    {% endif %}
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <hr style="border-color: rgba(74, 14, 46, 0.15); margin: 0;">
+                
+                <div class="conteudo-aviso">
+                    {{ aviso.conteudo|safe }}
+                </div>
+                
+                <div class="p-4 text-center border-top" style="border-color: rgba(74, 14, 46, 0.15);">
+                    <small class="text-muted">
+                        <i class="bi bi-info-circle"></i>
+                        Este comunicado foi visualizado por você em {{ now.strftime('%d/%m/%Y às %H:%M') }}
+                    </small>
+                </div>
+            </div>
+        </div>
+        
+        {% if not aviso.ja_visto %}
+        <div class="alert alert-success mt-3" style="border-radius: 12px;">
+            <i class="bi bi-check-circle-fill me-2"></i>
+            Este comunicado foi marcado como lido automaticamente.
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

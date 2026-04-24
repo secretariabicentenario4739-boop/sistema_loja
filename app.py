@@ -7763,15 +7763,13 @@ def visualizar_reuniao(id):
             flash("Reunião não encontrada!", "danger")
             return redirect("/reunioes")
         
-        # Definir filtro de grau baseado no grau da reunião
         grau_reuniao = reuniao.get('grau', 1)
         status_reuniao = reuniao.get('status', 'agendada')
         data_reuniao = reuniao.get('data')
         
         # =========================================================
-        # QUERY MELHORADA: Incluir obreiros que eram ativos na data da reunião
+        # QUERY CORRIGIDA - INCLUINDO O CARGO DO OBREIRO
         # =========================================================
-        
         query_obreiros = """
             SELECT * FROM (
                 -- Obreiros ATIVOS HOJE que atendem ao grau da reunião
@@ -7785,9 +7783,12 @@ def visualizar_reuniao(id):
                     COALESCE(pr.presente, FALSE) as presente,
                     pr.tipo_ausencia,
                     pr.justificativa,
-                    pr.id as presenca_id
+                    pr.id as presenca_id,
+                    c.nome as cargo_nome
                 FROM usuarios u
                 LEFT JOIN presenca_reuniao pr ON u.id = pr.obreiro_id AND pr.reuniao_id = %s
+                LEFT JOIN ocupacao_cargos oc ON u.id = oc.obreiro_id AND oc.ativo = 1
+                LEFT JOIN cargos c ON oc.cargo_id = c.id
                 WHERE u.ativo = 1 
                   AND u.tipo IN ('obreiro', 'sindicante', 'admin')
                   AND (
@@ -7819,15 +7820,17 @@ def visualizar_reuniao(id):
                     COALESCE(pr.presente, FALSE) as presente,
                     pr.tipo_ausencia,
                     pr.justificativa,
-                    pr.id as presenca_id
+                    pr.id as presenca_id,
+                    c.nome as cargo_nome
                 FROM usuarios u
                 INNER JOIN presenca_reuniao pr ON u.id = pr.obreiro_id AND pr.reuniao_id = %s
+                LEFT JOIN ocupacao_cargos oc ON u.id = oc.obreiro_id AND oc.ativo = 1
+                LEFT JOIN cargos c ON oc.cargo_id = c.id
                 WHERE u.ativo = 0
                 
                 UNION ALL
                 
                 -- EXTRA: Obreiros que ERAM ativos na data da reunião (mas hoje estão inativos)
-                -- e que NÃO foram pegos pelas queries anteriores
                 SELECT 
                     u.id, 
                     u.nome_completo, 
@@ -7838,14 +7841,17 @@ def visualizar_reuniao(id):
                     COALESCE(pr.presente, FALSE) as presente,
                     pr.tipo_ausencia,
                     pr.justificativa,
-                    pr.id as presenca_id
+                    pr.id as presenca_id,
+                    c.nome as cargo_nome
                 FROM usuarios u
                 INNER JOIN presenca_reuniao pr ON u.id = pr.obreiro_id AND pr.reuniao_id = %s
+                LEFT JOIN ocupacao_cargos oc ON u.id = oc.obreiro_id AND oc.ativo = 1
+                LEFT JOIN cargos c ON oc.cargo_id = c.id
                 WHERE u.ativo = 0
                   AND pr.data_registro <= %s
             ) AS lista_obreiros
             ORDER BY 
-                status_obrero DESC,  -- Ativos primeiro
+                status_obrero DESC,
                 grau_atual DESC,
                 nome_completo
         """
@@ -7864,25 +7870,11 @@ def visualizar_reuniao(id):
                 presenca_unicos[p['id']] = p
         presenca = list(presenca_unicos.values())
         
-        # Calcular estatísticas (apenas obreiros ativos para total)
+        # Calcular estatísticas
         obreiros_ativos = [p for p in presenca if p['status_obrero'] == 1]
         total_obreiros = len(obreiros_ativos)
         presentes = sum(1 for p in presenca if p['presente'] == True and p['status_obrero'] == 1)
         ausentes = total_obreiros - presentes
-        
-        # DEBUG
-        print(f"=== DEBUG visualizar_reuniao (ID: {id}) ===")
-        print(f"Status da Reunião: {status_reuniao}")
-        print(f"Data da Reunião: {data_reuniao}")
-        print(f"Grau da Reunião: {grau_reuniao}")
-        print(f"Total de obreiros ativos elegíveis: {total_obreiros}")
-        print(f"Total de registros na lista (com inativos históricos): {len(presenca)}")
-        print(f"Presentes: {presentes}")
-        print(f"Ausentes: {ausentes}")
-        for p in presenca:
-            status_texto = "ATIVO" if p['status_obrero'] == 1 else "INATIVO (histórico)"
-            print(f"  - {p['nome_completo']} ({status_texto}, grau: {p['grau_atual']}): presente={p['presente']}")
-        print(f"==========================================")
         
         # Buscar tipos de ausência
         try:
@@ -7902,7 +7894,7 @@ def visualizar_reuniao(id):
         
         ata_id = ata['id'] if ata else None
         if ata:
-            ata_numero = ata.get('numero') or ata.get('numero_ata') or ata.get('num_ata') or str(ata.get('id', '?'))
+            ata_numero = ata.get('numero') or ata.get('numero_ata') or str(ata.get('id', '?'))
             ata_ano = ata.get('ano') or ata.get('ano_ata') or str(datetime.now().year)
             ata_aprovada = ata.get('aprovada') == 1 or ata.get('status') == 'aprovada'
         else:
@@ -7933,102 +7925,6 @@ def visualizar_reuniao(id):
             return_connection(conn)
         flash(f"Erro ao carregar reunião: {str(e)}", "danger")
         return redirect("/reunioes")
-        
-@app.route("/reunioes/calendario")
-@login_required
-def calendario_reunioes():
-    return render_template("reunioes/calendario.html")
-
-@app.route("/api/reunioes")
-@login_required
-def api_reunioes():
-    cursor, conn = get_db()
-@app.route("/api/lojas/<int:loja_id>/horarios")
-@login_required
-def api_loja_horarios(loja_id):
-    """Retorna os horários configurados da loja"""
-    cursor, conn = get_db()
-    
-    cursor.execute("""
-        SELECT horario_inicio, horario_termino, dias_sessao, frequencia_sessao, observacoes_horario
-        FROM lojas WHERE id = %s
-    """, (loja_id,))
-    
-    loja = cursor.fetchone()
-    return_connection(conn)
-    
-    if loja:
-        return jsonify({
-            'success': True,
-            'horario_inicio': loja['horario_inicio'].strftime('%H:%M') if loja['horario_inicio'] else None,
-            'horario_termino': loja['horario_termino'].strftime('%H:%M') if loja['horario_termino'] else None,
-            'dias_sessao': loja['dias_sessao'],
-            'frequencia_sessao': loja['frequencia_sessao'],
-            'observacoes': loja['observacoes_horario']
-        })
-    else:
-        return jsonify({'success': False, 'error': 'Loja não encontrada'}), 404
-    
-    # ============================================
-    # PERMISSÃO POR GRAU
-    # ============================================
-    usuario_grau = session.get('grau_atual', 1)
-    usuario_tipo = session.get('tipo', 'obreiro')
-    
-    query = """
-        SELECT r.id, r.titulo, r.data, r.hora_inicio, r.hora_termino, 
-               r.tipo, r.local, r.status,
-               t.cor, t.nome as tipo_nome,
-               COUNT(p.id) as total_obreiros,
-               SUM(CASE WHEN p.presente = 1 THEN 1 ELSE 0 END) as presentes
-        FROM reunioes r
-        LEFT JOIN tipos_reuniao t ON r.tipo = t.nome
-        LEFT JOIN presenca p ON r.id = p.reuniao_id
-        WHERE 1=1
-    """
-    params = []
-    
-    # Filtrar por grau do usuário
-    if usuario_tipo != 'admin':
-        if usuario_grau == 1:
-            query += " AND (r.grau = 1 OR r.grau IS NULL)"
-        elif usuario_grau == 2:
-            query += " AND (r.grau IN (1, 2) OR r.grau IS NULL)"
-        elif usuario_grau >= 3:
-            query += " AND (r.grau <= 3 OR r.grau IS NULL OR r.grau > 3)"
-    
-    query += """
-        GROUP BY r.id, r.titulo, r.data, r.hora_inicio, r.hora_termino, 
-                 r.tipo, r.local, r.status, t.cor, t.nome
-        ORDER BY r.data
-    """
-    
-    cursor.execute(query, params)
-    rows = cursor.fetchall()
-    return_connection(conn)
-    
-    eventos = []
-    for row in rows:
-        r = dict(row)
-        start = f"{r['data']}T{r['hora_inicio']}" if r.get('hora_inicio') else str(r['data'])
-        end = f"{r['data']}T{r['hora_termino']}" if r.get('hora_termino') else None
-        eventos.append({
-            "id": r["id"],
-            "title": r["titulo"],
-            "start": start,
-            "end": end,
-            "color": r.get("cor", "#3788d8"),
-            "textColor": "#ffffff",
-            "url": f"/reunioes/{r['id']}",
-            "extendedProps": {
-                "tipo": r.get("tipo"),
-                "local": r.get("local"),
-                "status": r.get("status"),
-                "presentes": f"{r.get('presentes', 0)}/{r.get('total_obreiros', 0)}"
-            }
-        })
-    
-    return {"eventos": eventos}
     
 @app.route("/reunioes/<int:id>/cancelar", methods=["POST"])
 @login_required
@@ -8995,7 +8891,6 @@ def gerar_pdf_ata_oficial(id):
                           loja_numero=ata.get('loja_numero', '4739'),
                           loja_oriente=ata.get('loja_oriente', 'Ceilândia - DF'),
                           now=datetime.now())
-
 @app.route("/atas/<int:id>")
 @login_required
 @permissao_required('ata.view_one')
@@ -9117,7 +9012,14 @@ def ver_ata_por_id(id):
                         WHEN cargo_nome = 'Venerável Mestre' THEN 1
                         WHEN cargo_nome = 'Orador' THEN 2
                         WHEN cargo_nome = 'Secretário' THEN 3
-                        ELSE 4
+                        WHEN cargo_nome = '1º Vigilante' THEN 4
+                        WHEN cargo_nome = '2º Vigilante' THEN 5
+                        WHEN cargo_nome = 'Tesoureiro' THEN 6
+                        WHEN cargo_nome = 'Chanceler' THEN 7
+                        WHEN cargo_nome = 'Mestre de Cerimônias' THEN 8
+                        WHEN cargo_nome = 'Hospedeiro' THEN 9
+                        WHEN cargo_nome = 'Porta Bandeira' THEN 10
+                        ELSE 11
                     END,
                     grau_atual DESC,
                     nome_completo
@@ -9133,7 +9035,8 @@ def ver_ata_por_id(id):
             print(f"Total de registros na lista: {len(presenca)}")
             for p in presenca:
                 status_texto = "ATIVO" if p['status_obrero'] == 1 else "INATIVO (histórico)"
-                print(f"  - {p['nome_completo']} ({status_texto}, grau: {p['grau_atual']}): presente={p['presente']}")
+                print(f"  - {p['nome_completo']} ({status_texto}, grau: {p['grau_atual']}, cargo: {p['cargo_nome']}): presente={p['presente']}")
+        
         
         # ============================================
         # SISTEMA DE ASSINATURAS POR CARGO
@@ -10479,6 +10382,57 @@ def upload_documento_comunicado(id):
 # =============================
 # ROTAS DE AVISOS/COMUNICADOS
 # =============================
+
+@app.route("/avisos/<int:id>")
+@login_required
+def visualizar_aviso(id):
+    """Visualizar um aviso específico"""
+    cursor, conn = get_db()
+    
+    usuario_grau = session.get('grau_atual', 1)
+    usuario_id = session['user_id']
+    
+    # Buscar o aviso
+    cursor.execute("""
+        SELECT a.*, u.nome_completo as autor_nome,
+               CASE WHEN av.id IS NOT NULL THEN 1 ELSE 0 END as ja_visto
+        FROM avisos a
+        LEFT JOIN usuarios u ON a.created_by = u.id
+        LEFT JOIN avisos_visualizacoes av ON a.id = av.aviso_id AND av.usuario_id = %s
+        WHERE a.id = %s
+    """, (usuario_id, id))
+    
+    aviso = cursor.fetchone()
+    
+    if not aviso:
+        flash("Aviso não encontrado!", "danger")
+        return redirect("/avisos")
+    
+    # Verificar permissão
+    if aviso['grau_destino'] < usuario_grau and session.get('tipo') != 'admin':
+        flash("Você não tem permissão para visualizar este aviso!", "danger")
+        return redirect("/avisos")
+    
+    # Marcar como visualizado
+    if not aviso['ja_visto']:
+        try:
+            cursor.execute("""
+                INSERT INTO avisos_visualizacoes (aviso_id, usuario_id, visualizado_em)
+                VALUES (%s, %s, CURRENT_TIMESTAMP)
+            """, (id, usuario_id))
+            
+            cursor.execute("""
+                UPDATE avisos SET visualizacoes = COALESCE(visualizacoes, 0) + 1
+                WHERE id = %s
+            """, (id,))
+            conn.commit()
+        except Exception as e:
+            print(f"Erro ao marcar como visto: {e}")
+    
+    return_connection(conn)
+    
+    # CORREÇÃO: Passar a variável como 'aviso' (não 'comunicado')
+    return render_template("avisos/visualizar.html", aviso=aviso, now=datetime.now())
 
 @app.route("/avisos")
 @login_required

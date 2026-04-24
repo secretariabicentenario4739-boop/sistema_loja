@@ -711,6 +711,9 @@
     </div>
     <div class="dropdown-content">
         <!-- COMUNICADOS -->
+        <a class="nav-link" href="/avisos/novo">
+            <i class="bi bi-megaphone"></i> <span>Novo Comunicado</span>
+        </a>
         <a class="nav-link" href="/avisos">
             <i class="bi bi-bell"></i> <span>Gerenciar Comunicados</span>
         </a>
@@ -723,6 +726,10 @@
         
         <a class="nav-link" href="/atas/modelos">
             <i class="bi bi-files"></i> <span>Modelos de Ata</span>
+        </a>
+        
+        <a class="nav-link" href="/lojas">
+            <i class="bi bi-building"></i> <span>Lojas</span>
         </a>
         
         <div style="height: 1px; background: rgba(74, 14, 46, 0.1); margin: 8px 0;"></div>
@@ -848,7 +855,7 @@
         
         <div class="footer">
             <i class="bi bi-compass me-1"></i>
-            &copy; {{ now.year }} - Loja Bicentenário: Ceilândia | Rito Brasileiro - GOB
+            &copy; {{ now.year }} - Loja Bicentenário: Ceilândia com Compasso e o Esquadro | Rito Brasileiro - GOB
             <i class="bi bi-easel ms-1"></i>
         </div>
     </div>
@@ -1011,12 +1018,13 @@ function carregarNotificacoes() {
                         prioridadeIcone = '<i class="bi bi-info-circle text-info"></i> ';
                     }
                     
+                    // Link para a página do aviso
                     html += `
-                        <div class="dropdown-item notification-item ${!aviso.ja_visto ? 'notification-unread' : ''}" data-id="${aviso.id}" onclick="marcarVisto(${aviso.id})">
+                        <a href="/avisos/${aviso.id}" class="dropdown-item notification-item ${!aviso.ja_visto ? 'notification-unread' : ''}" style="text-decoration: none; display: block;">
                             <div class="d-flex justify-content-between align-items-start">
                                 <div class="flex-grow-1">
                                     <div class="fw-bold ${prioridadeClasse} mb-1">${prioridadeIcone} ${escapeHtml(aviso.titulo)}</div>
-                                    <p class="small text-muted mb-1">${escapeHtml(aviso.conteudo.substring(0, 80))}${aviso.conteudo.length > 80 ? '...' : ''}</p>
+                                    <p class="small text-muted mb-1">${escapeHtml(aviso.conteudo.substring(0, 100))}${aviso.conteudo.length > 100 ? '...' : ''}</p>
                                     <small class="text-muted">
                                         <i class="bi bi-person"></i> ${escapeHtml(aviso.autor_nome || 'Sistema')}
                                         <i class="bi bi-calendar ms-2"></i> ${dataFormatada} às ${horaFormatada}
@@ -1024,7 +1032,7 @@ function carregarNotificacoes() {
                                 </div>
                                 ${!aviso.ja_visto ? '<span class="badge bg-danger rounded-pill ms-2 align-self-start">Novo</span>' : ''}
                             </div>
-                        </div>
+                        </a>
                     `;
                 });
                 container.innerHTML = html;
