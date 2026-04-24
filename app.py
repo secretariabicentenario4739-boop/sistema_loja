@@ -9327,7 +9327,7 @@ def nova_ata(reuniao_id):
                 return redirect(f"/reunioes/{reuniao_id}")
     
     # ============================================
-    # BUSCAR CARGOS ATUAIS (Venerável, Secretário, Orador)
+    # BUSCAR CARGOS ATUAIS
     # ============================================
     try:
         cursor.execute("""
@@ -9355,13 +9355,20 @@ def nova_ata(reuniao_id):
         elif 'orador' in cargo_nome_lower:
             orador_nome = cargo['nome_completo']
     
-    # Fallbacks
     if not veneravel_nome:
         veneravel_nome = "Venerável Mestre"
     if not secretario_nome:
         secretario_nome = "Secretário(a)"
     if not orador_nome:
         orador_nome = "Orador(a)"
+    
+    # ============================================
+    # CALCULAR PRÓXIMO NÚMERO DA ATA
+    # ============================================
+    ano_atual = datetime.now().year
+    cursor.execute("SELECT COALESCE(MAX(numero_ata), 0) + 1 as proximo_numero FROM atas WHERE ano_ata = %s", (ano_atual,))
+    resultado_temp = cursor.fetchone()
+    proximo_numero_ata = resultado_temp['proximo_numero'] if resultado_temp else 1
     
     if request.method == "POST":
         conteudo = request.form.get("conteudo")
@@ -9373,18 +9380,48 @@ def nova_ata(reuniao_id):
             return redirect(f"/atas/nova/{reuniao_id}")
         
         # ============================================
-        # SUBSTITUIR PLACEHOLDERS PELOS DADOS REAIS
+        # SUBSTITUIR PLACEHOLDERS
         # ============================================
         try:
             from datetime import datetime
             now = datetime.now()
             
-            # Formatar dados da reunião
-            data_formatada = reuniao['data'].strftime('%d/%m/%Y') if reuniao['data'] else ''
+            def numero_por_extenso(num):
+                if not num:
+                    return 'zero'
+                unidades = ['zero', 'um', 'dois', 'três', 'quatro', 'cinco', 'seis', 'sete', 'oito', 'nove']
+                especiais = {10: 'dez', 11: 'onze', 12: 'doze', 13: 'treze', 14: 'quatorze', 
+                             15: 'quinze', 16: 'dezesseis', 17: 'dezessete', 18: 'dezoito', 19: 'dezenove'}
+                dezenas = ['', '', 'vinte', 'trinta', 'quarenta', 'cinquenta', 'sessenta', 'setenta', 'oitenta', 'noventa']
+                
+                num_int = int(num) if num else 0
+                if 0 <= num_int <= 9:
+                    return unidades[num_int]
+                elif 10 <= num_int <= 19:
+                    return especiais.get(num_int, '')
+                elif 20 <= num_int <= 99:
+                    dezena = num_int // 10
+                    unidade = num_int % 10
+                    if unidade == 0:
+                        return dezenas[dezena]
+                    else:
+                        return f"{dezenas[dezena]} e {unidades[unidade]}"
+                return str(num_int)
             
-            # ============================================
-            # DATA POR EXTENSO NO FORMATO BRASILEIRO
-            # ============================================
+            def converter_12h(hora_str):
+                if not hora_str:
+                    return ''
+                try:
+                    h = int(hora_str.split(':')[0])
+                    m = hora_str.split(':')[1]
+                    periodo = 'AM' if h < 12 else 'PM'
+                    h12 = h if h <= 12 else h - 12
+                    if h12 == 0:
+                        h12 = 12
+                    return f"{h12}:{m} {periodo}"
+                except:
+                    return hora_str
+            
             meses = {
                 1: 'janeiro', 2: 'fevereiro', 3: 'março', 4: 'abril',
                 5: 'maio', 6: 'junho', 7: 'julho', 8: 'agosto',
@@ -9398,101 +9435,75 @@ def nova_ata(reuniao_id):
             
             if reuniao['data']:
                 dia_numero = reuniao['data'].strftime('%d')
-                mes_numero = int(reuniao['data'].strftime('%m'))
+                mes_numero_int = int(reuniao['data'].strftime('%m'))
                 ano_numero = reuniao['data'].strftime('%Y')
-                mes_extenso = meses[mes_numero]
+                mes_extenso = meses[mes_numero_int]
+                mes_extenso_capitalizado = mes_extenso.capitalize()
+                
+                data_formatada = f"{dia_numero}/{mes_numero_int:02d}/{ano_numero}"
+                data_americana = f"{ano_numero}-{mes_numero_int:02d}-{dia_numero}"
                 data_extenso = f"{dia_numero} de {mes_extenso} de {ano_numero}"
                 
-                dia_semana = dias_semana[reuniao['data'].weekday()]
-                data_extenso_com_dia = f"{dia_semana}, {data_extenso}"
+                dia_semana_extenso = dias_semana[reuniao['data'].weekday()]
+                data_extenso_com_dia = f"{dia_semana_extenso}, {data_extenso}"
                 
-                # Ano maçônico (Anno Lucis = ano + 4000)
                 ano_maconico = int(ano_numero) + 4000
             else:
-                dia_numero = ''
-                mes_numero = ''
-                ano_numero = ''
-                mes_extenso = ''
-                data_extenso = ''
-                data_extenso_com_dia = ''
-                dia_semana = ''
+                data_formatada = data_americana = data_extenso = data_extenso_com_dia = ''
+                dia_semana_extenso = ''
                 ano_maconico = ''
+                dia_numero = mes_numero_int = ano_numero = mes_extenso = mes_extenso_capitalizado = ''
             
-            dia = reuniao['data'].strftime('%d') if reuniao['data'] else ''
-            mes = reuniao['data'].strftime('%B').capitalize() if reuniao['data'] else ''
-            mes_numero_str = reuniao['data'].strftime('%m') if reuniao['data'] else ''
-            ano = reuniao['data'].strftime('%Y') if reuniao['data'] else ''
             hora_inicio = reuniao['hora_inicio'].strftime('%H:%M') if reuniao['hora_inicio'] else ''
-            hora_inicio_numero = reuniao['hora_inicio'].strftime('%H') if reuniao['hora_inicio'] else ''
-            hora_inicio_minuto = reuniao['hora_inicio'].strftime('%M') if reuniao['hora_inicio'] else ''
+            hora_inicio_12h = converter_12h(hora_inicio)
             hora_termino = reuniao['hora_termino'].strftime('%H:%M') if reuniao['hora_termino'] else ''
-            hora_termino_numero = reuniao['hora_termino'].strftime('%H') if reuniao['hora_termino'] else ''
-            hora_termino_minuto = reuniao['hora_termino'].strftime('%M') if reuniao['hora_termino'] else ''
+            hora_termino_12h = converter_12h(hora_termino)
+            
             local = reuniao['local'] or 'Templo Maçônico'
             titulo = reuniao['titulo'] or ''
             tipo = reuniao['tipo'] or ''
-            grau = reuniao['grau'] or ''
-            presentes = str(reuniao['presentes'] or 0)
-            ausentes = str(reuniao['ausentes'] or 0)
-            total_participantes = str((reuniao['presentes'] or 0) + (reuniao['ausentes'] or 0))
             
-            # Grau por extenso
-            if grau == 3:
-                grau_extenso = "Mestre"
-                grau_numero_romano = "III"
-            elif grau == 2:
-                grau_extenso = "Companheiro"
-                grau_numero_romano = "II"
-            elif grau == 1:
-                grau_extenso = "Aprendiz"
-                grau_numero_romano = "I"
-            else:
-                grau_extenso = "Todos os Graus"
-                grau_numero_romano = ""
+            presentes_num = reuniao['presentes'] or 0
+            ausentes_num = reuniao['ausentes'] or 0
+            total_participantes_num = presentes_num + ausentes_num
             
-            # Data e hora atuais (para o rodapé)
-            data_atual = now.strftime('%d/%m/%Y')
-            hora_atual = now.strftime('%H:%M')
-            data_hora_atual = now.strftime('%d/%m/%Y %H:%M')
-            
-            # Mês por extenso com primeira letra maiúscula
-            mes_extenso_capitalizado = mes_extenso.capitalize() if mes_extenso else ''
-            
-            # Dicionário de substituições
+            # ============================================
+            # DICIONÁRIO DE SUBSTITUIÇÕES
+            # ============================================
             substituicoes = {
+                # Número da ata
+                '[NUMERO_ATA]': str(proximo_numero_ata),
+                '[NUMERO_ATA_ZEROS]': f"{proximo_numero_ata:03d}",
+                '[ANO_ATA]': str(ano_atual),
+                
                 # Datas
                 '[DATA_REUNIAO]': data_formatada,
                 '[DATA_EXTENSO]': data_extenso,
                 '[DATA_EXTENSO_COM_DIA]': data_extenso_com_dia,
-                '[DIA_SEMANA]': dia_semana,
-                '[DIA]': dia,
+                '[DATA_AMERICANA]': data_americana,
+                '[DIA_SEMANA]': dia_semana_extenso,
+                '[DIA]': dia_numero,
                 '[MES]': mes_extenso_capitalizado,
-                '[MES_NUMERO]': mes_numero_str,
-                '[ANO]': ano,
+                '[ANO]': ano_numero,
                 '[ANO_MAÇONICO]': str(ano_maconico) if ano_maconico else '',
-                '[ANO_LUCIS]': str(ano_maconico) if ano_maconico else '',
                 
                 # Horários
                 '[HORA_INICIO]': hora_inicio,
-                '[HORA_INICIO_NUMERO]': hora_inicio_numero,
-                '[HORA_INICIO_MINUTO]': hora_inicio_minuto,
+                '[HORA_INICIO_12H]': hora_inicio_12h,
                 '[HORA_TERMINO]': hora_termino,
-                '[HORA_TERMINO_NUMERO]': hora_termino_numero,
-                '[HORA_TERMINO_MINUTO]': hora_termino_minuto,
+                '[HORA_TERMINO_12H]': hora_termino_12h,
                 '[HORA]': hora_inicio,
                 
                 # Local e reunião
                 '[LOCAL]': local,
                 '[TITULO]': titulo,
                 '[TIPO]': tipo,
-                '[GRAU]': str(grau) if grau else '',
-                '[GRAU_EXTENSO]': grau_extenso,
-                '[GRAU_ROMANO]': grau_numero_romano,
                 
                 # Participantes
-                '[PRESENTES]': presentes,
-                '[AUSENTES]': ausentes,
-                '[TOTAL_PARTICIPANTES]': total_participantes,
+                '[PRESENTES]': str(presentes_num),
+                '[PRESENTES_EXTENSO]': numero_por_extenso(presentes_num),
+                '[AUSENTES]': str(ausentes_num),
+                '[TOTAL_PARTICIPANTES]': str(total_participantes_num),
                 
                 # Cargos
                 '[VENERAVEL]': veneravel_nome,
@@ -9500,44 +9511,31 @@ def nova_ata(reuniao_id):
                 '[ORADOR]': orador_nome,
                 
                 # Data/hora atual
-                '[DATA_ATUAL]': data_atual,
-                '[HORA_ATUAL]': hora_atual,
-                '[DATA_HORA_ATUAL]': data_hora_atual,
+                '[DATA_ATUAL]': now.strftime('%d/%m/%Y'),
+                '[HORA_ATUAL]': now.strftime('%H:%M'),
+                '[DATA_HORA_ATUAL]': now.strftime('%d/%m/%Y %H:%M'),
                 
-                # Aliases para compatibilidade
-                '{{ DATA_REUNIAO }}': data_formatada,
-                '{{ HORA_INICIO }}': hora_inicio,
-                '{{ HORA_TERMINO }}': hora_termino,
-                '{{ LOCAL }}': local,
-                '{{ PRESENTES }}': presentes,
-                '{{ TITULO }}': titulo,
-                '{{ TIPO }}': tipo,
-                '[DATA]': data_formatada
+                # Separadores
+                '[SEPARADOR_LINHA]': '__________________________________',
+                '[SEPARADOR_TRACEJADO]': '_________________________',
             }
             
-            # Aplicar todas as substituições
+            # Aplicar substituições
             for placeholder, valor in substituicoes.items():
                 if valor:
                     conteudo = conteudo.replace(placeholder, valor)
                     
         except Exception as e:
             print(f"Erro ao substituir placeholders: {e}")
-            import traceback
-            traceback.print_exc()
         
         try:
-            ano_atual = datetime.now().year
-            cursor.execute("SELECT COALESCE(MAX(numero_ata), 0) + 1 as proximo_numero FROM atas WHERE ano_ata = %s", (ano_atual,))
-            resultado = cursor.fetchone()
-            numero_ata = resultado['proximo_numero'] if resultado else 1
-            
             cursor.execute("""
                 INSERT INTO atas (
                     reuniao_id, conteudo, redator_id, numero_ata, 
                     ano_ata, tipo_ata, data_criacao
                 ) VALUES (%s, %s, %s, %s, %s, %s, CURRENT_TIMESTAMP)
                 RETURNING id
-            """, (reuniao_id, conteudo, session["user_id"], numero_ata, 
+            """, (reuniao_id, conteudo, session["user_id"], proximo_numero_ata, 
                   ano_atual, reuniao["tipo"]))
             
             ata_id = cursor.fetchone()['id']
@@ -9545,11 +9543,11 @@ def nova_ata(reuniao_id):
             
             registrar_log("criar", "ata", ata_id, dados_novos={
                 "reuniao_id": reuniao_id, 
-                "numero": numero_ata, 
+                "numero": proximo_numero_ata, 
                 "ano": ano_atual
             })
             
-            flash(f"Ata nº {numero_ata}/{ano_atual} criada com sucesso!", "success")
+            flash(f"Ata nº {proximo_numero_ata}/{ano_atual} criada com sucesso!", "success")
             
             return_connection(conn)
             return redirect(f"/atas/{ata_id}")
