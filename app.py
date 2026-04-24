@@ -9345,7 +9345,6 @@ def nova_ata(reuniao_id):
     except:
         todos_cargos = []
     
-    # Cargos específicos
     veneravel_nome = None
     secretario_nome = None
     orador_nome = None
@@ -9381,7 +9380,6 @@ def nova_ata(reuniao_id):
         elif 'porta bandeira' in cargo_nome_lower or 'porta-bandeira' in cargo_nome_lower:
             porta_bandeira_nome = cargo['nome_completo']
     
-    # Fallbacks
     if not veneravel_nome:
         veneravel_nome = "Venerável Mestre"
     if not secretario_nome:
@@ -9513,6 +9511,9 @@ def nova_ata(reuniao_id):
                 3: 'quinta-feira', 4: 'sexta-feira', 5: 'sábado', 6: 'domingo'
             }
             
+            # ============================================
+            # DADOS DA REUNIÃO
+            # ============================================
             if reuniao['data']:
                 dia_numero = reuniao['data'].strftime('%d')
                 mes_numero_int = int(reuniao['data'].strftime('%m'))
@@ -9527,18 +9528,27 @@ def nova_ata(reuniao_id):
                 dia_semana_extenso = dias_semana[reuniao['data'].weekday()]
                 data_extenso_com_dia = f"{dia_semana_extenso}, {data_extenso}"
                 
+                # Mês número
+                mes_numero_str = f"{mes_numero_int:02d}"
+                mes_numero_sem_zero = str(mes_numero_int)
+                
+                # Ano maçônico
                 ano_maconico = int(ano_numero) + 4000
+                ano_maconico_str = str(ano_maconico)
             else:
                 data_formatada = data_americana = data_extenso = data_extenso_com_dia = ''
                 dia_semana_extenso = ''
-                ano_maconico = ''
                 dia_numero = mes_numero_int = ano_numero = mes_extenso = mes_extenso_capitalizado = ''
+                mes_numero_str = mes_numero_sem_zero = ''
+                ano_maconico_str = ''
             
+            # Horários
             hora_inicio = reuniao['hora_inicio'].strftime('%H:%M') if reuniao['hora_inicio'] else ''
             hora_inicio_12h = converter_12h(hora_inicio)
             hora_termino = reuniao['hora_termino'].strftime('%H:%M') if reuniao['hora_termino'] else ''
             hora_termino_12h = converter_12h(hora_termino)
             
+            # Local e reunião
             local = reuniao['local'] or 'Templo Maçônico'
             titulo = reuniao['titulo'] or ''
             tipo = reuniao['tipo'] or ''
@@ -9557,6 +9567,7 @@ def nova_ata(reuniao_id):
                 grau_extenso = "Todos os Graus"
                 grau_romano = ""
             
+            # Participantes
             presentes_num = reuniao['presentes'] or 0
             ausentes_num = reuniao['ausentes'] or 0
             total_participantes_num = presentes_num + ausentes_num
@@ -9580,11 +9591,11 @@ def nova_ata(reuniao_id):
                 '[DIA]': dia_numero,
                 '[DIA_ORDINAL]': numero_ordinal(dia_numero),
                 '[MES]': mes_extenso_capitalizado,
+                '[MES_NUMERO]': mes_numero_str,
+                '[MES_NUMERO_SEM_ZERO]': mes_numero_sem_zero,
                 '[ANO]': ano_numero,
-                '[ANO_MAÇONICO]': str(ano_maconico) if ano_maconico else '',
-                '[ANO_LUCIS]': str(ano_maconico) if ano_maconico else '',
-                '[MES_NUMERO]': mes_numero_str,  # Com zero: 04
-                '[MES_NUMERO_SEM_ZERO]': mes_numero_sem_zero,  # Sem zero: 4
+                '[ANO_MAÇONICO]': ano_maconico_str,
+                '[ANO_LUCIS]': ano_maconico_str,
                 
                 # Horários
                 '[HORA_INICIO]': hora_inicio,
