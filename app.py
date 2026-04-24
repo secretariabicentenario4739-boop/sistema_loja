@@ -5904,6 +5904,9 @@ def editar_obreiro(id):
         # =============================
         if request.method == "POST":
             
+            # Flag para controlar mensagens flash
+            mensagens_flash = []
+            
             # ========== ALTERAR USUÁRIO (apenas admin) ==========
             if is_admin:
                 novo_usuario = request.form.get("usuario")
@@ -5917,10 +5920,13 @@ def editar_obreiro(id):
                         return redirect(f"/obreiros/{id}/editar")
                     
                     cursor.execute("UPDATE usuarios SET usuario = %s WHERE id = %s", (novo_usuario, id))
+                    conn.commit()
                     registrar_log("alterar_usuario", "obreiro", id, 
                                  dados_anteriores={"usuario": usuario_atual},
                                  dados_novos={"usuario": novo_usuario})
-                    flash("Nome de usuário alterado com sucesso!", "success")
+                    
+                    # Armazenar mensagem em vez de flash imediato
+                    mensagens_flash.append(f"✅ Nome de usuário alterado de '{usuario_atual}' para '{novo_usuario}'")
                     
                     # Atualizar sessão se for o próprio perfil
                     if is_own_profile:
@@ -5990,11 +5996,11 @@ def editar_obreiro(id):
             senha_atual = request.form.get("senha_atual", "")
             
             # =========================================================
-            # CORREÇÃO: ADMIN NÃO PRECISA DE SENHA ATUAL
+            # ALTERAR SENHA - ADMIN NÃO PRECISA DE SENHA ATUAL
             # =========================================================
             if senha:
-                # Caso 1: Admin editando qualquer obreiro - NÃO precisa de senha atual
-                if is_admin and not is_own_profile:
+                # Caso 1: Admin editando qualquer obreiro (incluindo a si mesmo)
+                if is_admin:
                     if len(senha) < 6:
                         flash("A nova senha deve ter no mínimo 6 caracteres!", "danger")
                         return redirect(f"/obreiros/{id}/editar")
@@ -6002,9 +6008,9 @@ def editar_obreiro(id):
                     from werkzeug.security import generate_password_hash
                     nova_senha_hash = generate_password_hash(senha)
                     cursor.execute("UPDATE usuarios SET senha_hash = %s WHERE id = %s", (nova_senha_hash, id))
-                    flash("Senha alterada com sucesso!", "success")
+                    mensagens_flash.append("🔐 Senha alterada com sucesso!")
                 
-                # Caso 2: Usuário alterando a própria senha - PRECISA da senha atual
+                # Caso 2: Usuário comum alterando a própria senha
                 elif is_own_profile:
                     if not senha_atual:
                         flash("Digite sua senha atual para alterar a senha!", "danger")
@@ -6025,7 +6031,7 @@ def editar_obreiro(id):
                     from werkzeug.security import generate_password_hash
                     nova_senha_hash = generate_password_hash(senha)
                     cursor.execute("UPDATE usuarios SET senha_hash = %s WHERE id = %s", (nova_senha_hash, id))
-                    flash("Senha alterada com sucesso!", "success")
+                    mensagens_flash.append("🔐 Senha alterada com sucesso!")
             
             # Campos de admin
             if is_admin:
@@ -6133,6 +6139,7 @@ def editar_obreiro(id):
                         VALUES (%s, %s, CURRENT_DATE, %s)
                     """, (id, grau_atual, f"Alteração de grau de {grau_antigo} para {grau_atual} - {nome_grau}"))
                     conn.commit()
+                    mensagens_flash.append(f"📈 Grau alterado para {nome_grau}")
                 except Exception as e:
                     print(f"⚠️ Erro ao registrar histórico: {e}")
             
@@ -6143,7 +6150,15 @@ def editar_obreiro(id):
                 session['tipo'] = tipo
             
             registrar_log("editar", "obreiro", id, dados_novos={"nome": nome_completo})
-            flash("Obreiro atualizado com sucesso!", "success")
+            
+            # ========== EXIBIR APENAS UM FLASH COM TODAS AS ALTERAÇÕES ==========
+            if mensagens_flash:
+                # Juntar todas as mensagens em uma única notificação
+                mensagem_unica = " | ".join(mensagens_flash)
+                flash(mensagem_unica, "success")
+            else:
+                flash("Obreiro atualizado com sucesso!", "success")
+            
             return_connection(conn)
             return redirect(f"/obreiros/{id}")
 
@@ -6183,7 +6198,6 @@ def editar_obreiro(id):
         flash(f"Erro ao atualizar: {str(e)}", "danger")
         return_connection(conn)
         return redirect(f"/obreiros/{id}")
-        
         
 @app.route("/obreiros/<int:id>")
 @login_required

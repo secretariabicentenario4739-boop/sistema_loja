@@ -816,33 +816,39 @@
                                 <input type="hidden" name="motivo_inativo" value="{{ obreiro.motivo_inativo or '' }}">
                             {% endif %}
 
-                            <!-- Campos de senha -->
-                            <hr style="border-color: var(--bordo-transparente);">
-                            <h6 style="color: var(--bordo);">🔐 Alterar Senha</h6>
-                            <div class="alert small mb-3" style="background: var(--bordo-transparente); border-color: var(--bordo); color: var(--bordo); border-radius: 12px;">
-                                <i class="bi bi-info-circle"></i> 
-                                Preencha apenas se deseja modificar a senha atual.
-                            </div>
+                           <!-- Campos de senha -->
+<hr style="border-color: var(--bordo-transparente);">
+<h6 style="color: var(--bordo);">🔐 Alterar Senha</h6>
+<div class="alert small mb-3" style="background: var(--bordo-transparente); border-color: var(--bordo); color: var(--bordo); border-radius: 12px;">
+    <i class="bi bi-info-circle"></i> 
+    {% if is_admin %}
+        Como administrador, você pode alterar a senha sem precisar da senha atual.
+    {% else %}
+        Preencha sua senha atual e a nova senha para alterar.
+    {% endif %}
+</div>
 
-                            <div class="row">
-                                <div class="col-md-12 mb-3">
-                                    <label class="form-label">Senha Atual</label>
-                                    <input type="password" class="form-control form-control-custom" name="senha_atual" id="senha_atual" placeholder="Digite sua senha atual">
-                                    <small class="text-muted">Obrigatório para alterar a senha</small>
-                                </div>
+<div class="row">
+    {% if not is_admin %}
+    <div class="col-md-12 mb-3">
+        <label class="form-label">Senha Atual</label>
+        <input type="password" class="form-control form-control-custom" name="senha_atual" id="senha_atual" placeholder="Digite sua senha atual">
+        <small class="text-muted">Obrigatória para alterar a senha</small>
+    </div>
+    {% endif %}
 
-                                <div class="col-md-6 mb-3">
-                                    <label class="form-label">Nova Senha</label>
-                                    <input type="password" class="form-control form-control-custom" name="senha" id="senha" placeholder="Deixe em branco para manter a atual">
-                                    <small class="text-muted">Mínimo de 6 caracteres</small>
-                                </div>
+    <div class="{% if is_admin %}col-md-6{% else %}col-md-6{% endif %} mb-3">
+        <label class="form-label">Nova Senha</label>
+        <input type="password" class="form-control form-control-custom" name="senha" id="senha" placeholder="Deixe em branco para manter a atual">
+        <small class="text-muted">Mínimo de 6 caracteres</small>
+    </div>
 
-                                <div class="col-md-6 mb-3">
-                                    <label class="form-label">Confirmar Nova Senha</label>
-                                    <input type="password" class="form-control form-control-custom" id="confirmar_senha" placeholder="Digite a senha novamente">
-                                    <small class="text-muted" id="senha_erro" style="color: #dc2626; display: none;">As senhas não coincidem</small>
-                                </div>
-                            </div>
+    <div class="{% if is_admin %}col-md-6{% else %}col-md-6{% endif %} mb-3">
+        <label class="form-label">Confirmar Nova Senha</label>
+        <input type="password" class="form-control form-control-custom" id="confirmar_senha" placeholder="Digite a senha novamente">
+        <small class="text-muted" id="senha_erro" style="color: #dc2626; display: none;">As senhas não coincidem</small>
+    </div>
+</div>
 
                             <!-- Botão Salvar com layout responsivo -->
                             <div class="btn-group-mobile mt-3">
@@ -1526,5 +1532,28 @@ btnIconStyle.textContent = `
     }
 `;
 document.head.appendChild(btnIconStyle);
+
+// Adicione antes do fechamento do script
+document.getElementById('formEditarObreiro').addEventListener('submit', function(e) {
+    const usuarioInput = document.querySelector('input[name="usuario"]');
+    if (usuarioInput) {
+        console.log('🔍 Frontend - Valor do usuário:', usuarioInput.value);
+        console.log('🔍 Frontend - Campo disabled?', usuarioInput.disabled);
+        console.log('🔍 Frontend - Campo readonly?', usuarioInput.readOnly);
+        
+        // Verificar se o valor mudou
+        const valorOriginal = '{{ obreiro.usuario }}';
+        console.log('🔍 Frontend - Valor original:', valorOriginal);
+        console.log('🔍 Frontend - Valor mudou?', usuarioInput.value !== valorOriginal);
+    }
+    
+    // Mostrar todos os dados do formulário
+    const formData = new FormData(e.target);
+    console.log('🔍 Frontend - Dados do formulário:');
+    for (let pair of formData.entries()) {
+        console.log(`   ${pair[0]}: ${pair[1]}`);
+    }
+});
+
 </script>
 {% endblock %}
