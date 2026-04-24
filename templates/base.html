@@ -490,6 +490,43 @@
         color: white;
     }
     
+    /* NOTIFICAÇÕES - SINO */
+    .notification-badge {
+        position: absolute;
+        top: -8px;
+        right: -8px;
+        background: #ef4444;
+        color: white;
+        border-radius: 50%;
+        padding: 2px 6px;
+        font-size: 0.65rem;
+        font-weight: bold;
+        min-width: 18px;
+        text-align: center;
+    }
+    
+    .notification-dropdown {
+        width: 350px;
+        max-height: 450px;
+        overflow-y: auto;
+        border-radius: 12px;
+        box-shadow: 0 5px 20px rgba(0,0,0,0.15);
+    }
+    
+    .notification-item {
+        cursor: pointer;
+        transition: background 0.2s;
+        border-bottom: 1px solid rgba(74,14,46,0.08);
+    }
+    
+    .notification-item:hover {
+        background: rgba(74,14,46,0.05);
+    }
+    
+    .notification-unread {
+        background: rgba(74,14,46,0.03);
+    }
+    
     /* FOOTER */
     .footer {
         background: white;
@@ -560,6 +597,12 @@
             left: 0;
             right: 0;
             z-index: 998;
+        }
+        .notification-dropdown {
+            width: 300px;
+            position: absolute;
+            right: 0;
+            left: auto;
         }
     }
     
@@ -656,7 +699,7 @@
             {% endif %}
             <hr>
             
-           <!-- MENU ADMINISTRATIVO -->
+<!-- MENU ADMINISTRATIVO -->
 {% if session.tipo == 'admin' %}
 <div class="menu-dropdown" id="adminMenu">
     <div class="dropdown-header" onclick="toggleDropdown('adminMenu')">
@@ -667,6 +710,13 @@
         <i class="bi bi-chevron-down dropdown-icon"></i>
     </div>
     <div class="dropdown-content">
+        <!-- COMUNICADOS -->
+        <a class="nav-link" href="/avisos">
+            <i class="bi bi-bell"></i> <span>Gerenciar Comunicados</span>
+        </a>
+        
+        <div style="height: 1px; background: rgba(74, 14, 46, 0.1); margin: 8px 0;"></div>
+        
         <a class="nav-link" href="/relatorios">
             <i class="bi bi-graph-up"></i> <span>Relatórios</span>
         </a>
@@ -674,6 +724,8 @@
         <a class="nav-link" href="/atas/modelos">
             <i class="bi bi-files"></i> <span>Modelos de Ata</span>
         </a>
+        
+        <div style="height: 1px; background: rgba(74, 14, 46, 0.1); margin: 8px 0;"></div>
         
         <a class="nav-link" href="/cargos">
             <i class="bi bi-briefcase-fill"></i> <span>Gerenciar Cargos</span>
@@ -691,6 +743,8 @@
             <i class="bi bi-journal"></i> <span>Auditoria</span>
         </a>
         
+        <div style="height: 1px; background: rgba(74, 14, 46, 0.1); margin: 8px 0;"></div>
+        
         <a class="nav-link" href="/config/email">
             <i class="bi bi-envelope"></i> <span>Config. E-mail</span>
         </a>
@@ -702,6 +756,8 @@
         <a class="nav-link" href="/configuracoes/notificacoes">
             <i class="bi bi-bell"></i> <span>Notificações</span>
         </a>
+        
+        <div style="height: 1px; background: rgba(74, 14, 46, 0.1); margin: 8px 0;"></div>
         
         <a class="nav-link" href="/sugestoes">
             <i class="bi bi-lightbulb"></i> <span>Sugestões</span>
@@ -729,7 +785,39 @@
                     <i class="bi bi-list"></i> Menu
                 </button>
             </div>
-            <div class="d-flex align-items-center gap-2 flex-wrap">
+            <div class="d-flex align-items-center gap-3 flex-wrap">
+                <!-- SINO DE NOTIFICAÇÕES -->
+                <div class="dropdown">
+                    <a href="#" class="position-relative text-decoration-none" id="notificacoesDropdown" data-bs-toggle="dropdown" aria-expanded="false" onclick="carregarNotificacoes()">
+                        <i class="bi bi-bell-fill fs-5" style="color: var(--bordo);"></i>
+                        <span id="badgeNotificacoes" class="notification-badge" style="display: none;">0</span>
+                    </a>
+                    <ul class="dropdown-menu dropdown-menu-end shadow notification-dropdown" aria-labelledby="notificacoesDropdown">
+                        <li class="dropdown-header" style="background: linear-gradient(135deg, var(--bordo), var(--bordo-escuro)); color: white; border-radius: 12px 12px 0 0;">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <span><i class="bi bi-bell-fill me-2"></i> Notificações</span>
+                                <button type="button" class="btn btn-sm btn-link text-white p-0" onclick="marcarTodasComoLidas()" style="text-decoration: none;">
+                                    <small><i class="bi bi-check-all"></i> Marcar todas</small>
+                                </button>
+                            </div>
+                        </li>
+                        <li id="listaNotificacoes" style="max-height: 350px; overflow-y: auto;">
+                            <div class="text-center py-4">
+                                <div class="spinner-border spinner-border-sm text-primary" role="status">
+                                    <span class="visually-hidden">Carregando...</span>
+                                </div>
+                                <p class="mt-2 small text-muted">Carregando notificações...</p>
+                            </div>
+                        </li>
+                        <li><hr class="dropdown-divider m-0"></li>
+                        <li>
+                            <a class="dropdown-item text-center" href="/avisos" style="border-radius: 0 0 12px 12px;">
+                                <i class="bi bi-envelope-open"></i> Ver todos os avisos
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+                
                 <span class="badge-user"><i class="bi bi-person-circle"></i> {{ session.usuario }}</span>
                 <span class="badge-user">
                     <i class="bi bi-shield-check"></i>
@@ -768,7 +856,9 @@
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script>
-        // Sidebar functions
+        // ============================================
+        // FUNÇÕES DO SIDEBAR
+        // ============================================
         const sidebar = document.getElementById('sidebar');
         const mainContent = document.getElementById('mainContent');
         const toggleBtn = document.getElementById('toggleSidebar');
@@ -827,23 +917,19 @@
         function updateActiveLinks() {
             const currentPath = window.location.pathname;
             
-            // Remove active de todos os links
             document.querySelectorAll('.sidebar .nav-link').forEach(link => {
                 link.classList.remove('active');
             });
             
-            // Remove has-active de todos os dropdowns
             document.querySelectorAll('.menu-dropdown').forEach(dropdown => {
                 dropdown.classList.remove('has-active');
             });
             
-            // Adiciona active ao link correspondente
             document.querySelectorAll('.sidebar .nav-link').forEach(link => {
                 const href = link.getAttribute('href');
                 if (href && href !== '#' && (currentPath === href || (href !== '/' && currentPath.startsWith(href)))) {
                     link.classList.add('active');
                     
-                    // Se o link estiver dentro de um dropdown, marca o dropdown
                     const parentDropdown = link.closest('.menu-dropdown');
                     if (parentDropdown) {
                         parentDropdown.classList.add('has-active');
@@ -856,22 +942,17 @@
         function toggleDropdown(menuId) {
             const menu = document.getElementById(menuId);
             if (!menu) return;
-            
-            // Alterna o menu atual
             menu.classList.toggle('open');
         }
         
-        // Executar ao carregar
         document.addEventListener('DOMContentLoaded', function() {
             updateActiveLinks();
         });
         
-        // Atualiza quando a navegação ocorre
         window.addEventListener('load', function() {
             updateActiveLinks();
         });
         
-        // Para links dentro do dropdown
         document.querySelectorAll('.dropdown-content .nav-link').forEach(link => {
             link.addEventListener('click', function() {
                 if (isMobile()) {
@@ -885,13 +966,146 @@
             });
         });
         
-        // Links normais
         document.querySelectorAll('.sidebar > .nav > .nav-link').forEach(link => {
             link.addEventListener('click', function() {
                 setTimeout(() => {
                     updateActiveLinks();
                 }, 100);
             });
+        });
+        
+        // ============================================
+        // FUNÇÕES DAS NOTIFICAÇÕES
+        // ============================================
+        function escapeHtml(text) {
+            if (!text) return '';
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+        
+        function carregarNotificacoes() {
+            const container = document.getElementById('listaNotificacoes');
+            const badge = document.getElementById('badgeNotificacoes');
+            
+            if (!container) return;
+            
+            fetch('/api/avisos/ultimos')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success && data.avisos && data.avisos.length > 0) {
+                        let html = '';
+                        data.avisos.forEach(aviso => {
+                            const dataFormatada = new Date(aviso.created_at).toLocaleDateString('pt-BR');
+                            const horaFormatada = new Date(aviso.created_at).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+                            let prioridadeIcone = '';
+                            
+                            if (aviso.prioridade === 'urgente') {
+                                prioridadeIcone = '<i class="bi bi-exclamation-triangle-fill text-danger"></i> ';
+                            } else if (aviso.prioridade === 'importante') {
+                                prioridadeIcone = '<i class="bi bi-star-fill text-warning"></i> ';
+                            } else {
+                                prioridadeIcone = '<i class="bi bi-info-circle text-info"></i> ';
+                            }
+                            
+                            html += `
+                                <div class="dropdown-item notification-item ${!aviso.ja_visto ? 'notification-unread' : ''}" data-id="${aviso.id}" onclick="marcarVisto(${aviso.id})">
+                                    <div class="d-flex justify-content-between align-items-start">
+                                        <div class="flex-grow-1">
+                                            <div class="fw-bold mb-1">${prioridadeIcone} ${escapeHtml(aviso.titulo)}</div>
+                                            <p class="small text-muted mb-1">${escapeHtml(aviso.conteudo.substring(0, 80))}${aviso.conteudo.length > 80 ? '...' : ''}</p>
+                                            <small class="text-muted">
+                                                <i class="bi bi-person"></i> ${escapeHtml(aviso.autor_nome || 'Sistema')}
+                                                <i class="bi bi-calendar ms-2"></i> ${dataFormatada} às ${horaFormatada}
+                                            </small>
+                                        </div>
+                                        ${!aviso.ja_visto ? '<span class="badge bg-danger rounded-pill ms-2 align-self-start">Novo</span>' : ''}
+                                    </div>
+                                </div>
+                            `;
+                        });
+                        container.innerHTML = html;
+                        
+                        if (data.nao_lidos > 0) {
+                            badge.textContent = data.nao_lidos > 9 ? '9+' : data.nao_lidos;
+                            badge.style.display = 'inline-block';
+                        } else {
+                            badge.style.display = 'none';
+                        }
+                    } else {
+                        container.innerHTML = `
+                            <div class="text-center py-4">
+                                <i class="bi bi-inbox fs-1 text-muted"></i>
+                                <p class="mt-2 small text-muted mb-0">Nenhuma notificação</p>
+                            </div>
+                        `;
+                        badge.style.display = 'none';
+                    }
+                })
+                .catch(error => {
+                    console.error('Erro:', error);
+                    container.innerHTML = `
+                        <div class="text-center py-3 text-danger">
+                            <i class="bi bi-exclamation-triangle-fill"></i>
+                            <p class="mt-2 small">Erro ao carregar notificações</p>
+                        </div>
+                    `;
+                });
+        }
+        
+        function marcarVisto(avisoId) {
+            fetch(`/api/avisos/marcar-visto/${avisoId}`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    carregarNotificacoes();
+                    atualizarBadge();
+                }
+            })
+            .catch(error => console.error('Erro:', error));
+        }
+        
+        function marcarTodasComoLidas() {
+            if (!confirm('Marcar todas as notificações como lidas?')) return;
+            
+            fetch('/api/avisos/marcar-todas-vistas', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    carregarNotificacoes();
+                    const badge = document.getElementById('badgeNotificacoes');
+                    if (badge) badge.style.display = 'none';
+                }
+            })
+            .catch(error => console.error('Erro:', error));
+        }
+        
+        function atualizarBadge() {
+            fetch('/api/avisos/nao-lidos')
+                .then(response => response.json())
+                .then(data => {
+                    const badge = document.getElementById('badgeNotificacoes');
+                    if (badge) {
+                        if (data.nao_lidos > 0) {
+                            badge.textContent = data.nao_lidos > 9 ? '9+' : data.nao_lidos;
+                            badge.style.display = 'inline-block';
+                        } else {
+                            badge.style.display = 'none';
+                        }
+                    }
+                })
+                .catch(error => console.error('Erro:', error));
+        }
+        
+        document.addEventListener('DOMContentLoaded', function() {
+            atualizarBadge();
+            setInterval(atualizarBadge, 60000);
         });
     </script>
     

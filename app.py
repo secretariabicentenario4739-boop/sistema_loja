@@ -2301,55 +2301,32 @@ def login():
         usuario = request.form.get("usuario")
         senha = request.form.get("senha")
         
-        # Validar campos vazios
         if not usuario or not senha:
             flash('❌ Preencha usuário e senha!', 'danger')
             return render_template("login.html")
         
         cursor, conn = get_db()
-        
-        # Verificar se a coluna ultimo_login existe
         cursor.execute("""
-            SELECT EXISTS (
-                SELECT 1 FROM information_schema.columns 
-                WHERE table_name = 'usuarios' AND column_name = 'ultimo_login'
-            ) as existe
-        """)
-        result = cursor.fetchone()
-        coluna_existe = result['existe'] if result else False
-        
-        # Query com ou sem ultimo_login
-        if coluna_existe:
-            cursor.execute("""
-                SELECT id, usuario, senha_hash, tipo, grau_atual, nome_completo, ultimo_login
-                FROM usuarios
-                WHERE usuario = %s AND ativo = 1
-            """, (usuario,))
-        else:
-            cursor.execute("""
-                SELECT id, usuario, senha_hash, tipo, grau_atual, nome_completo
-                FROM usuarios
-                WHERE usuario = %s AND ativo = 1
-            """, (usuario,))
-        
+            SELECT id, usuario, senha_hash, tipo, grau_atual, nome_completo
+            FROM usuarios
+            WHERE usuario = %s AND ativo = 1
+        """, (usuario,))
         user = cursor.fetchone()
         
-        # Verificar senha
         if user and check_password_hash(user['senha_hash'], senha):
             from datetime import datetime
             now = datetime.now()
             
-            # Atualizar último login se a coluna existir
-            if coluna_existe:
-                try:
-                    cursor.execute("""
-                        UPDATE usuarios 
-                        SET ultimo_login = %s 
-                        WHERE id = %s
-                    """, (now, user['id']))
-                    conn.commit()
-                except Exception as e:
-                    print(f"Erro ao atualizar último login: {e}")
+            # Atualizar último login no banco
+            try:
+                cursor.execute("""
+                    UPDATE usuarios 
+                    SET ultimo_login = %s 
+                    WHERE id = %s
+                """, (now, user['id']))
+                conn.commit()
+            except Exception as e:
+                print(f"Erro ao atualizar último login: {e}")
             
             # Salvar informações na sessão
             session['usuario_id'] = user['id']
@@ -2359,8 +2336,8 @@ def login():
             session['nome_completo'] = user['nome_completo']
             session['user_id'] = user['id']
             
-            # Salvar último login formatado
-            session['ultimo_login'] = now.strftime('%d/%m/%Y %H:%M')
+            # Salvar último login APENAS com a data (sem horas)
+            session['ultimo_login'] = now.strftime('%d/%m/%Y')
             
             return_connection(conn)
             
@@ -2381,6 +2358,8 @@ def logout():
     session.clear()
     flash("Você saiu do sistema com sucesso!", "success")
     return redirect("/")
+
+
 
 # =============================
 # ROTAS DE CRIAR TABELAS DO WHATSAPP

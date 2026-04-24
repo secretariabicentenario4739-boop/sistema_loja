@@ -232,8 +232,6 @@
                                 </div>
                             </div>
 
-                            
-
                             <div class="row">
                                 <div class="col-md-6 mb-3">
                                     <label class="form-label">CIM Nº</label>
@@ -246,10 +244,12 @@
                                     <small class="text-muted">Grau atual no sistema maçônico</small>
                                 </div>
                             </div>
-							<div class="mb-3">
+                            
+                            <div class="mb-3">
                                 <label class="form-label">Nome Completo</label>
                                 <input type="text" class="form-control" name="nome_completo" value="{{ usuario.nome_completo or '' }}">
                             </div>
+                            
                             <div class="row">
                                 <div class="col-md-6 mb-3">
                                     <label class="form-label">Telefone</label>
@@ -291,7 +291,7 @@
                             {% if session.get('ultimo_login') %}
                                 {{ session.get('ultimo_login') }}
                             {% elif usuario.ultimo_login %}
-                                {{ usuario.ultimo_login.strftime('%d/%m/%Y %H:%M') if usuario.ultimo_login else '-' }}
+                                {{ usuario.ultimo_login.strftime('%d/%m/%Y') if usuario.ultimo_login else '-' }}
                             {% else %}
                                 -
                             {% endif %}
