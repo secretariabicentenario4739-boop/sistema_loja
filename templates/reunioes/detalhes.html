@@ -686,254 +686,229 @@
 </div>
         </div>
 
-        <!-- LISTA DE PRESENÇA -->
-        <div class="filtros-card shadow-sm">
-            <div class="card-header-bordo">
-                <div class="d-flex justify-content-between align-items-center flex-wrap">
-                    <h6><i class="bi bi-people"></i> Lista de Presença</h6>
-                    {% if session.tipo == 'admin' and reuniao.status == 'agendada' %}
-                    <div class="presenca-actions">
-                        <button type="button" class="btn-bordo-success" id="btnTodosPresentes" style="padding: 5px 15px;">
-                            <i class="bi bi-check-all"></i> Todos Presentes
-                        </button>
-                        <button type="button" class="btn-bordo-danger" id="btnTodosAusentes" style="padding: 5px 15px;">
-                            <i class="bi bi-x-lg"></i> Todos Ausentes
-                        </button>
-                    </div>
-                    {% endif %}
-                </div>
-            </div>
-            <div class="card-body p-0">
-                <!-- ADMIN e reunião AGENDADA -> pode editar -->
+       <!-- LISTA DE PRESENÇA -->
+<div class="filtros-card shadow-sm">
+    <div class="card-header-bordo">
+        <div class="d-flex justify-content-between align-items-center flex-wrap">
+            <h6><i class="bi bi-people"></i> Lista de Presença</h6>
+            <div class="d-flex gap-2 align-items-center">
+                <span class="badge-presente" style="padding: 4px 12px;">Presente: {{ presentes|default(0) }}</span>
+                <span class="badge-ausente" style="padding: 4px 12px;">Ausente: {{ ausentes|default(0) }}</span>
                 {% if session.tipo == 'admin' and reuniao.status == 'agendada' %}
-                <form method="POST" action="/reunioes/{{ reuniao.id }}/presenca/lote" id="formPresencaLote">
-                    <div class="table-responsive" style="max-height: 450px; overflow-y: auto;">
-                        <table class="table table-bordo">
-                            <thead>
-                                <tr style="position: sticky; top: 0; background: white;">
-                                    <th style="width: 40px"><input type="checkbox" id="selecionarTodos"></th>
-                                    <th>Obreiro / Cargo</th>
-                                    <th style="width: 100px">Grau</th>
-                                    <th style="width: 250px">Justificativa (se ausente)</th>
-                                  </tr>
-                            </thead>
-                            <tbody>
-                                {% for p in presenca %}
-                                <tr>
-                                    <td class="text-center">
-                                        <input type="checkbox" 
-                                               name="presenca_{{ p.id }}" 
-                                               class="presenca-checkbox"
-                                               data-id="{{ p.id }}"
-                                               value="1"
-                                               {% if p.presente %}checked{% endif %}>
-                                    </td>
-                                    <td style="white-space: nowrap;">
-                                        <span class="fw-semibold">{{ p.nome_completo }}</span>
-                                        {% if p.cargo_nome %}
-                                            <span class="badge ms-1" style="background: var(--bordo);">
-                                                <i class="bi bi-briefcase-fill"></i> {{ p.cargo_nome }}
-                                            </span>
-                                        {% endif %}
-                                        {% if p.status_obrero == 'inativo' %}
-                                            <span class="badge bg-secondary ms-1">Inativo</span>
-                                        {% endif %}
-                                    </td>
-                                    <td>
-                                        {% set grau = p.grau_atual|int %}
-                                        {% if grau >= 5 %}
-                                            <span class="badge-superior">✨ Grau Superior ({{ grau }}º)</span>
-                                        {% elif grau == 4 %}
-                                            <span class="badge-mestre-instalado">👑 Mestre Instalado (4º)</span>
-                                        {% elif grau == 3 %}
-                                            <span class="badge-mestre">⭐ Mestre (3º)</span>
-                                        {% elif grau == 2 %}
-                                            <span class="badge-companheiro">📘 Companheiro (2º)</span>
-                                        {% elif grau == 1 %}
-                                            <span class="badge-aprendiz">📖 Aprendiz (1º)</span>
-                                        {% else %}
-                                            <span class="badge bg-info">Grau {{ grau }}</span>
-                                        {% endif %}
-                                    </td>
-                                    <td>
-                                        <div id="justificativa_div_{{ p.id }}" style="{% if p.presente %}display: none;{% endif %}">
-                                            <div class="row g-1">
-                                                <div class="col-6">
-                                                    <select name="tipo_ausencia_{{ p.id }}" class="form-select form-select-sm">
-                                                        <option value="">Motivo</option>
-                                                        {% for tipo in tipos_ausencia %}
-                                                        <option value="{{ tipo.nome }}" {% if p.tipo_ausencia == tipo.nome %}selected{% endif %}>
-                                                            {{ tipo.nome }}
-                                                        </option>
-                                                        {% endfor %}
-                                                    </select>
-                                                </div>
-                                                <div class="col-6">
-                                                    <input type="text" 
-                                                           name="justificativa_{{ p.id }}" 
-                                                           class="form-control form-control-sm"
-                                                           placeholder="Justificativa"
-                                                           value="{{ p.justificativa or '' }}">
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </td>
-                                </tr>
-                                {% else %}
-                                </tr>
-                                    <td colspan="4" class="text-center py-4 text-muted">
-                                        <i class="bi bi-inbox"></i> Nenhum obreiro encontrado
-                                    </td>
-                                </tr>
-                                {% endfor %}
-                            </tbody>
-                        </table>
-                    </div>
-                    <div class="card-footer" style="background: white; border-top: 1px solid rgba(74, 14, 46, 0.1);">
-                        <div class="d-flex justify-content-end gap-2">
-                            <button type="button" class="btn-bordo-outline" onclick="location.reload()">
-                                <i class="bi bi-arrow-repeat"></i> Resetar
-                            </button>
-                            <button type="submit" class="btn-bordo">
-                                <i class="bi bi-save"></i> Salvar Presenças
-                            </button>
-                        </div>
-                    </div>
-                </form>
-                
-                <!-- ADMIN e reunião REALIZADA ou CANCELADA -> apenas leitura -->
-                {% elif session.tipo == 'admin' and reuniao.status in ['realizada', 'cancelada'] %}
-                <div class="table-responsive" style="max-height: 450px; overflow-y: auto;">
-                    <table class="table table-bordo">
-                        <thead>
-                            <tr style="position: sticky; top: 0; background: white;">
-                                <th style="width: 40%">Obreiro / Cargo</th>
-                                <th style="width: 15%">Grau</th>
-                                <th style="width: 15%">Status</th>
-                                <th style="width: 30%">Justificativa</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% for p in presenca %}
-                            <tr>
-                                <td style="white-space: nowrap;">
-                                    <span class="fw-semibold">{{ p.nome_completo }}</span>
-                                    {% if p.cargo_nome %}
-                                        <span class="badge ms-1" style="background: var(--bordo);">
-                                            <i class="bi bi-briefcase-fill"></i> {{ p.cargo_nome }}
-                                        </span>
-                                    {% endif %}
-                                    {% if p.status_obrero == 'inativo' %}
-                                        <span class="badge bg-secondary ms-1">Inativo</span>
-                                    {% endif %}
-                                </td>
-                                <td>
-                                    {% set grau = p.grau_atual|int %}
-                                    {% if grau >= 5 %}
-                                        <span class="badge-superior">✨ Grau Superior ({{ grau }}º)</span>
-                                    {% elif grau == 4 %}
-                                        <span class="badge-mestre-instalado">👑 Mestre Instalado (4º)</span>
-                                    {% elif grau == 3 %}
-                                        <span class="badge-mestre">⭐ Mestre (3º)</span>
-                                    {% elif grau == 2 %}
-                                        <span class="badge-companheiro">📘 Companheiro (2º)</span>
-                                    {% elif grau == 1 %}
-                                        <span class="badge-aprendiz">📖 Aprendiz (1º)</span>
-                                    {% else %}
-                                        <span class="badge bg-info">Grau {{ grau }}</span>
-                                    {% endif %}
-                                </td>
-                                <td>
-                                    {% if p.presente %}
-                                        <span class="badge-presente">Presente</span>
-                                    {% else %}
-                                        <span class="badge-ausente">Ausente</span>
-                                    {% endif %}
-                                </td>
-                                <td class="text-muted small">
-                                    {% if not p.presente %}
-                                        {% if p.tipo_ausencia %}<strong>{{ p.tipo_ausencia }}</strong>{% endif %}
-                                        {% if p.justificativa %}<br>{{ p.justificativa|truncate(60) }}{% endif %}
-                                    {% else %}
-                                        -
-                                    {% endif %}
-                                </td>
-                            </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
-                </div>
-                <div class="card-footer" style="background: white; border-top: 1px solid rgba(74, 14, 46, 0.1);">
-                    <div class="text-center text-muted">
-                        <small><i class="bi bi-lock-fill"></i> Esta reunião está {{ reuniao.status }}. A lista de presença é apenas para consulta.</small>
-                    </div>
-                </div>
-                
-                <!-- USUÁRIO NÃO-ADMIN -> apenas leitura -->
-                {% else %}
-                <div class="table-responsive" style="max-height: 450px; overflow-y: auto;">
-                    <table class="table table-bordo">
-                        <thead>
-                            <tr style="position: sticky; top: 0; background: white;">
-                                <th style="width: 40%">Obreiro / Cargo</th>
-                                <th style="width: 15%">Grau</th>
-                                <th style="width: 15%">Status</th>
-                                <th style="width: 30%">Justificativa</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% for p in presenca %}
-                            <tr>
-                                <td style="white-space: nowrap;">
-                                    <span class="fw-semibold">{{ p.nome_completo }}</span>
-                                    {% if p.cargo_nome %}
-                                        <span class="badge ms-1" style="background: var(--bordo);">
-                                            <i class="bi bi-briefcase-fill"></i> {{ p.cargo_nome }}
-                                        </span>
-                                    {% endif %}
-                                    {% if p.status_obrero == 'inativo' %}
-                                        <span class="badge bg-secondary ms-1">Inativo</span>
-                                    {% endif %}
-                                </td>
-                                <td>
-                                    {% set grau = p.grau_atual|int %}
-                                    {% if grau >= 5 %}
-                                        <span class="badge-superior">✨ Grau Superior ({{ grau }}º)</span>
-                                    {% elif grau == 4 %}
-                                        <span class="badge-mestre-instalado">👑 Mestre Instalado (4º)</span>
-                                    {% elif grau == 3 %}
-                                        <span class="badge-mestre">⭐ Mestre (3º)</span>
-                                    {% elif grau == 2 %}
-                                        <span class="badge-companheiro">📘 Companheiro (2º)</span>
-                                    {% elif grau == 1 %}
-                                        <span class="badge-aprendiz">📖 Aprendiz (1º)</span>
-                                    {% else %}
-                                        <span class="badge bg-info">Grau {{ grau }}</span>
-                                    {% endif %}
-                                </td>
-                                <td>
-                                    {% if p.presente %}
-                                        <span class="badge-presente">Presente</span>
-                                    {% else %}
-                                        <span class="badge-ausente">Ausente</span>
-                                    {% endif %}
-                                </td>
-                                <td class="text-muted small">
-                                    {% if not p.presente %}
-                                        {% if p.tipo_ausencia %}<strong>{{ p.tipo_ausencia }}</strong>{% endif %}
-                                        {% if p.justificativa %}<br>{{ p.justificativa|truncate(60) }}{% endif %}
-                                    {% else %}
-                                        -
-                                    {% endif %}
-                                </table>
-                            </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
+                <div class="dropdown">
+                    <button class="btn-bordo-outline dropdown-toggle" type="button" data-bs-toggle="dropdown" style="padding: 5px 10px;">
+                        <i class="bi bi-gear"></i> Ações
+                    </button>
+                    <ul class="dropdown-menu">
+                        <li><a class="dropdown-item" href="#" id="btnTodosPresentes"><i class="bi bi-check-all text-success"></i> Todos Presentes</a></li>
+                        <li><a class="dropdown-item" href="#" id="btnTodosAusentes"><i class="bi bi-x-lg text-danger"></i> Todos Ausentes</a></li>
+                        <li><hr class="dropdown-divider"></li>
+                        <li><a class="dropdown-item" href="#" id="limparFiltros"><i class="bi bi-eraser"></i> Limpar Seleção</a></li>
+                    </ul>
                 </div>
                 {% endif %}
             </div>
         </div>
+    </div>
+    <div class="card-body p-0">
+        
+        {% if session.tipo == 'admin' and reuniao.status == 'agendada' %}
+        <!-- MODO EDIÇÃO: ADMIN com reunião agendada -->
+        <form method="POST" action="/reunioes/{{ reuniao.id }}/presenca/lote" id="formPresencaLote">
+            <div class="table-responsive" style="max-height: 500px; overflow-y: auto;">
+                <table class="table table-bordo table-hover" style="min-width: 800px;">
+                    <thead>
+                        <tr style="position: sticky; top: 0; background: white; z-index: 10;">
+                            <th style="width: 40px; background: white;">
+                                <input type="checkbox" id="selecionarTodos" style="margin-left: 10px;">
+                            </th>
+                            <th style="background: white;">Obreiro / Cargo</th>
+                            <th style="width: 130px; background: white;">Grau</th>
+                            <th style="width: 250px; background: white;">Justificativa (se ausente)</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for p in presenca %}
+                        <tr>
+                            <td class="text-center">
+                                <input type="checkbox" 
+                                       name="presenca_{{ p.id }}" 
+                                       class="presenca-checkbox"
+                                       data-id="{{ p.id }}"
+                                       value="1"
+                                       {% if p.presente %}checked{% endif %}>
+                            </td>
+                            <td>
+                                <div class="d-flex align-items-center flex-wrap gap-1">
+                                    <span class="fw-semibold">{{ p.nome_completo }}</span>
+                                    {% if p.cargo_nome %}
+                                        <span class="badge" style="background: var(--bordo);">
+                                            <i class="bi bi-briefcase-fill"></i> {{ p.cargo_nome }}
+                                        </span>
+                                    {% endif %}
+                                    {% if p.status_obrero == 'inativo' %}
+                                        <span class="badge bg-secondary">Inativo</span>
+                                    {% endif %}
+                                </div>
+                            </td>
+                            <td>
+                                {% set grau = p.grau_atual|int %}
+                                {% if grau >= 5 %}
+                                    <span class="badge-superior">✨ Grau Superior ({{ grau }}º)</span>
+                                {% elif grau == 4 %}
+                                    <span class="badge-mestre-instalado">👑 Mestre Instalado (4º)</span>
+                                {% elif grau == 3 %}
+                                    <span class="badge-mestre">⭐ Mestre (3º)</span>
+                                {% elif grau == 2 %}
+                                    <span class="badge-companheiro">📘 Companheiro (2º)</span>
+                                {% elif grau == 1 %}
+                                    <span class="badge-aprendiz">📖 Aprendiz (1º)</span>
+                                {% else %}
+                                    <span class="badge bg-info">Grau {{ grau }}</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <div id="justificativa_div_{{ p.id }}" style="{% if p.presente %}display: none;{% endif %}">
+                                    <div class="row g-1">
+                                        <div class="col-6">
+                                            <select name="tipo_ausencia_{{ p.id }}" class="form-select form-select-sm">
+                                                <option value="">Selecione</option>
+                                                {% for tipo in tipos_ausencia %}
+                                                <option value="{{ tipo.nome }}" {% if p.tipo_ausencia == tipo.nome %}selected{% endif %}>
+                                                    {{ tipo.nome }}
+                                                </option>
+                                                {% endfor %}
+                                            </select>
+                                        </div>
+                                        <div class="col-6">
+                                            <input type="text" 
+                                                   name="justificativa_{{ p.id }}" 
+                                                   class="form-control form-control-sm"
+                                                   placeholder="Justificativa"
+                                                   value="{{ p.justificativa or '' }}">
+                                        </div>
+                                    </div>
+                                </div>
+                            </td>
+                        </tr>
+                        {% else %}
+                        <tr>
+                            <td colspan="4" class="text-center py-4 text-muted">
+                                <i class="bi bi-inbox fs-3 d-block"></i>
+                                Nenhum obreiro encontrado
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            <div class="card-footer bg-white" style="border-top: 1px solid rgba(74, 14, 46, 0.1);">
+                <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+                    <div class="text-muted small">
+                        <i class="bi bi-info-circle"></i> 
+                        <span id="contadorSelecionados">0</span> obreiro(s) marcado(s) como presente
+                    </div>
+                    <div class="d-flex gap-2">
+                        <button type="button" class="btn-bordo-outline" onclick="location.reload()">
+                            <i class="bi bi-arrow-repeat"></i> Resetar
+                        </button>
+                        <button type="submit" class="btn-bordo">
+                            <i class="bi bi-save"></i> Salvar Presenças
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </form>
+        
+        {% else %}
+        <!-- MODO LEITURA: Admin com reunião finalizada ou usuário comum -->
+        <div class="table-responsive" style="max-height: 500px; overflow-y: auto;">
+            <table class="table table-bordo" style="min-width: 800px;">
+                <thead>
+                    <tr style="position: sticky; top: 0; background: white; z-index: 10;">
+                        <th style="background: white;">Obreiro / Cargo</th>
+                        <th style="width: 130px; background: white;">Grau</th>
+                        <th style="width: 100px; background: white;">Status</th>
+                        <th style="width: 250px; background: white;">Justificativa</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for p in presenca %}
+                    <tr>
+                        <td>
+                            <div class="d-flex align-items-center flex-wrap gap-1">
+                                <span class="fw-semibold">{{ p.nome_completo }}</span>
+                                {% if p.cargo_nome %}
+                                    <span class="badge" style="background: var(--bordo);">
+                                        <i class="bi bi-briefcase-fill"></i> {{ p.cargo_nome }}
+                                    </span>
+                                {% endif %}
+                                {% if p.status_obrero == 'inativo' %}
+                                    <span class="badge bg-secondary">Inativo</span>
+                                {% endif %}
+                            </div>
+                        </td>
+                        <td>
+                            {% set grau = p.grau_atual|int %}
+                            {% if grau >= 5 %}
+                                <span class="badge-superior">✨ Grau Superior ({{ grau }}º)</span>
+                            {% elif grau == 4 %}
+                                <span class="badge-mestre-instalado">👑 Mestre Instalado (4º)</span>
+                            {% elif grau == 3 %}
+                                <span class="badge-mestre">⭐ Mestre (3º)</span>
+                            {% elif grau == 2 %}
+                                <span class="badge-companheiro">📘 Companheiro (2º)</span>
+                            {% elif grau == 1 %}
+                                <span class="badge-aprendiz">📖 Aprendiz (1º)</span>
+                            {% else %}
+                                <span class="badge bg-info">Grau {{ grau }}</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if p.presente %}
+                                <span class="badge-presente">✅ Presente</span>
+                            {% else %}
+                                <span class="badge-ausente">❌ Ausente</span>
+                            {% endif %}
+                        </td>
+                        <td class="text-muted small">
+                            {% if not p.presente %}
+                                {% if p.tipo_ausencia %}
+                                    <strong>{{ p.tipo_ausencia }}</strong>
+                                {% endif %}
+                                {% if p.justificativa %}
+                                    <div class="mt-1">{{ p.justificativa|truncate(80) }}</div>
+                                {% endif %}
+                            {% else %}
+                                -
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="4" class="text-center py-4 text-muted">
+                            <i class="bi bi-inbox fs-3 d-block"></i>
+                            Nenhum obreiro encontrado
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        <div class="card-footer bg-white" style="border-top: 1px solid rgba(74, 14, 46, 0.1);">
+            <div class="text-center text-muted">
+                {% if reuniao.status == 'realizada' %}
+                    <small><i class="bi bi-check-circle-fill text-success"></i> Esta reunião foi REALIZADA. A lista de presença está congelada.</small>
+                {% elif reuniao.status == 'cancelada' %}
+                    <small><i class="bi bi-x-circle-fill text-danger"></i> Esta reunião foi CANCELADA.</small>
+                {% else %}
+                    <small><i class="bi bi-lock-fill"></i> Apenas administradores podem editar a lista de presença de reuniões agendadas.</small>
+                {% endif %}
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
 
         <!-- Legenda -->
         <div class="legenda-card shadow-sm mt-4">
@@ -986,11 +961,15 @@
     function toggleJustificativa(checkbox, id) {
         const div = document.getElementById(`justificativa_div_${id}`);
         if (div) div.style.display = checkbox.checked ? 'none' : 'block';
+        atualizarContador();
     }
     
     function atualizarContador() {
         const checkboxes = document.querySelectorAll('.presenca-checkbox:checked');
-        console.log('Presentes selecionados:', checkboxes.length);
+        const contadorSpan = document.getElementById('contadorSelecionados');
+        if (contadorSpan) {
+            contadorSpan.textContent = checkboxes.length;
+        }
     }
     
     function marcarTodosPresentes() {
@@ -1013,7 +992,36 @@
         atualizarContador();
     }
     
+    function limparSelecao() {
+        document.querySelectorAll('.presenca-checkbox').forEach(cb => {
+            cb.checked = false;
+            const id = cb.getAttribute('data-id');
+            const div = document.getElementById(`justificativa_div_${id}`);
+            if (div) div.style.display = 'block';
+        });
+        atualizarContador();
+    }
+    
+    const btnTodosPresentes = document.getElementById('btnTodosPresentes');
+    const btnTodosAusentes = document.getElementById('btnTodosAusentes');
+    const limparFiltros = document.getElementById('limparFiltros');
     const selecionarTodos = document.getElementById('selecionarTodos');
+    
+    if (btnTodosPresentes) btnTodosPresentes.addEventListener('click', (e) => {
+        e.preventDefault();
+        marcarTodosPresentes();
+    });
+    
+    if (btnTodosAusentes) btnTodosAusentes.addEventListener('click', (e) => {
+        e.preventDefault();
+        marcarTodosAusentes();
+    });
+    
+    if (limparFiltros) limparFiltros.addEventListener('click', (e) => {
+        e.preventDefault();
+        limparSelecao();
+    });
+    
     if (selecionarTodos) {
         selecionarTodos.addEventListener('change', function() {
             document.querySelectorAll('.presenca-checkbox').forEach(cb => {
@@ -1028,12 +1036,12 @@
     
     document.querySelectorAll('.presenca-checkbox').forEach(cb => {
         const id = cb.getAttribute('data-id');
-        cb.addEventListener('change', () => toggleJustificativa(cb, id));
+        if (id) {
+            cb.addEventListener('change', () => toggleJustificativa(cb, id));
+        }
     });
     
-    document.getElementById('btnTodosPresentes')?.addEventListener('click', marcarTodosPresentes);
-    document.getElementById('btnTodosAusentes')?.addEventListener('click', marcarTodosAusentes);
-    
+    // Inicializar contador
     atualizarContador();
 </script>
 {% endblock %}
