@@ -2307,28 +2307,67 @@ def login():
             return render_template("login.html")
         
         cursor, conn = get_db()
+        
+        # Verificar se a coluna ultimo_login existe
         cursor.execute("""
-            SELECT id, usuario, senha_hash, tipo, grau_atual, nome_completo
-            FROM usuarios
-            WHERE usuario = %s AND ativo = 1
-        """, (usuario,))
+            SELECT EXISTS (
+                SELECT 1 FROM information_schema.columns 
+                WHERE table_name = 'usuarios' AND column_name = 'ultimo_login'
+            ) as existe
+        """)
+        result = cursor.fetchone()
+        coluna_existe = result['existe'] if result else False
+        
+        # Query com ou sem ultimo_login
+        if coluna_existe:
+            cursor.execute("""
+                SELECT id, usuario, senha_hash, tipo, grau_atual, nome_completo, ultimo_login
+                FROM usuarios
+                WHERE usuario = %s AND ativo = 1
+            """, (usuario,))
+        else:
+            cursor.execute("""
+                SELECT id, usuario, senha_hash, tipo, grau_atual, nome_completo
+                FROM usuarios
+                WHERE usuario = %s AND ativo = 1
+            """, (usuario,))
+        
         user = cursor.fetchone()
-        return_connection(conn)
         
         # Verificar senha
         if user and check_password_hash(user['senha_hash'], senha):
+            from datetime import datetime
+            now = datetime.now()
+            
+            # Atualizar último login se a coluna existir
+            if coluna_existe:
+                try:
+                    cursor.execute("""
+                        UPDATE usuarios 
+                        SET ultimo_login = %s 
+                        WHERE id = %s
+                    """, (now, user['id']))
+                    conn.commit()
+                except Exception as e:
+                    print(f"Erro ao atualizar último login: {e}")
+            
+            # Salvar informações na sessão
             session['usuario_id'] = user['id']
             session['usuario'] = user['usuario']
             session['tipo'] = user['tipo']
             session['grau_atual'] = user['grau_atual']
             session['nome_completo'] = user['nome_completo']
             session['user_id'] = user['id']
-            session['nivel_acesso'] = user.get('nivel_acesso', 1)
+            
+            # Salvar último login formatado
+            session['ultimo_login'] = now.strftime('%d/%m/%Y %H:%M')
+            
+            return_connection(conn)
             
             flash(f'✅ Bem-vindo, {user["nome_completo"]}!', 'success')
             return redirect(url_for('dashboard'))
         else:
-            # Mensagem de erro clara
+            return_connection(conn)
             flash('❌ Usuário ou senha incorretos! Tente novamente.', 'danger')
             return render_template("login.html")
     
