@@ -10147,6 +10147,24 @@ def editar_modelo(id):
 # =============================
 # ROTAS DE COMUNICADOS/OCORRÊNCIAS
 # =============================
+@app.route('/testar-lembretes')
+@login_required
+def testar_lembretes():
+    """Rota para testar manualmente os lembretes (apenas admin)"""
+    if session.get('tipo') != 'admin':
+        flash("Acesso negado", "danger")
+        return redirect('/')
+    
+    from scheduler import verificar_e_disparar_lembretes
+    
+    try:
+        # Executar a função manualmente
+        verificar_e_disparar_lembretes()
+        flash("✅ Lembretes executados com sucesso! Verifique os logs.", "success")
+    except Exception as e:
+        flash(f"❌ Erro ao executar: {str(e)}", "danger")
+    
+    return redirect('/')
 
 @app.route("/obreiros/<int:obreiro_id>/comunicados")
 @login_required
