@@ -1,77 +1,150 @@
 {% extends "base.html" %}
 
-{% block title %}{{ 'Editar' if aviso else 'Novo' }} Aviso{% endblock %}
+{% block title %}Novo Comunicado{% endblock %}
+
+{% block styles %}
+{{ super() }}
+<style>
+    .card-bordo-branco {
+        background: white;
+        border: 1px solid rgba(74, 14, 46, 0.15);
+        border-radius: 16px;
+    }
+    
+    .card-header-custom {
+        background: linear-gradient(135deg, var(--bordo), var(--bordo-escuro));
+        border-bottom: none;
+        color: white;
+        border-radius: 16px 16px 0 0;
+        padding: 15px 20px;
+    }
+    
+    .btn-bordo {
+        background: linear-gradient(135deg, var(--bordo), var(--bordo-escuro));
+        border: none;
+        color: white;
+        border-radius: 30px;
+        padding: 8px 20px;
+        transition: all 0.3s;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        text-decoration: none;
+    }
+    
+    .btn-bordo:hover {
+        background: linear-gradient(135deg, var(--bordo-claro), var(--bordo));
+        transform: translateY(-2px);
+        color: white;
+    }
+    
+    .btn-bordo-outline {
+        background: transparent;
+        border: 1px solid var(--bordo);
+        color: var(--bordo);
+        border-radius: 30px;
+        padding: 8px 20px;
+        transition: all 0.3s;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        text-decoration: none;
+    }
+    
+    .btn-bordo-outline:hover {
+        background: var(--bordo);
+        color: white;
+    }
+    
+    .form-control, .form-select {
+        border-radius: 12px;
+        border: 1px solid rgba(74, 14, 46, 0.2);
+        padding: 0.5rem 1rem;
+    }
+    
+    .form-control:focus, .form-select:focus {
+        border-color: var(--bordo);
+        box-shadow: 0 0 0 0.2rem rgba(74, 14, 46, 0.25);
+    }
+    
+    .form-label {
+        color: var(--bordo);
+        font-weight: 500;
+    }
+</style>
+{% endblock %}
 
 {% block content %}
-<div class="container py-4">
-    <div class="row justify-content-center">
-        <div class="col-md-8">
-            <div class="card shadow">
-                <div class="card-header {% if aviso %}bg-warning{% else %}bg-primary{% endif %} text-white">
-                    <h4 class="mb-0">
-                        <i class="bi bi-megaphone-fill"></i> 
-                        {{ 'Editar Aviso' if aviso else 'Novo Aviso' }}
-                    </h4>
-                </div>
-                <div class="card-body">
-                    <form method="POST">
-                        <div class="mb-3">
-                            <label class="form-label fw-bold">Título *</label>
-                            <input type="text" class="form-control" name="titulo" 
-                                   value="{{ aviso.titulo if aviso else '' }}" required>
+<div class="container-fluid py-4">
+    <div class="container">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h2>
+                <i class="bi bi-megaphone" style="color: var(--bordo);"></i> 
+                <span style="color: var(--bordo);">Novo Comunicado</span>
+            </h2>
+            <div>
+                <a href="/avisos" class="btn-bordo-outline">
+                    <i class="bi bi-arrow-left"></i> Voltar
+                </a>
+            </div>
+        </div>
+
+        <div class="card-bordo-branco shadow-sm">
+            <div class="card-header-custom">
+                <h5><i class="bi bi-pencil-square"></i> Dados do Comunicado</h5>
+            </div>
+            <div class="card-body p-4">
+                <form method="POST">
+                    <div class="mb-3">
+                        <label class="form-label">Título <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control" name="titulo" required>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Conteúdo <span class="text-danger">*</span></label>
+                        <textarea class="form-control" name="conteudo" rows="5" required></textarea>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label">Grau Destino</label>
+                            <select class="form-select" name="grau_destino">
+                                <option value="1">1º Grau - Aprendiz</option>
+                                <option value="2">2º Grau - Companheiro</option>
+                                <option value="3" selected>3º Grau - Mestre</option>
+                                <option value="4">Todos os Graus</option>
+                            </select>
+                            <small class="text-muted">Apenas obreiros deste grau verão o aviso</small>
                         </div>
-                        
-                        <div class="mb-3">
-                            <label class="form-label fw-bold">Conteúdo *</label>
-                            <textarea class="form-control" name="conteudo" rows="6" required>{{ aviso.conteudo if aviso else '' }}</textarea>
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label">Prioridade</label>
+                            <select class="form-select" name="prioridade">
+                                <option value="normal">Normal</option>
+                                <option value="importante">Importante</option>
+                                <option value="urgente">Urgente</option>
+                            </select>
                         </div>
-                        
-                        <div class="row">
-                            <div class="col-md-6 mb-3">
-                                <label class="form-label fw-bold">Grau Destino</label>
-                                <select class="form-select" name="grau_destino" required>
-                                    <option value="1" {% if aviso and aviso.grau_destino == 1 %}selected{% endif %}>📘 Aprendiz (Grau 1)</option>
-                                    <option value="2" {% if aviso and aviso.grau_destino == 2 %}selected{% endif %}>📙 Companheiro (Grau 2)</option>
-                                    <option value="3" {% if aviso and aviso.grau_destino == 3 %}selected{% endif %}>📕 Mestre (Grau 3+)</option>
-                                </select>
-                            </div>
-                            
-                            <div class="col-md-6 mb-3">
-                                <label class="form-label fw-bold">Prioridade</label>
-                                <select class="form-select" name="prioridade">
-                                    <option value="normal" {% if aviso and aviso.prioridade == 'normal' %}selected{% endif %}>🔵 Normal</option>
-                                    <option value="importante" {% if aviso and aviso.prioridade == 'importante' %}selected{% endif %}>🟡 Importante</option>
-                                    <option value="urgente" {% if aviso and aviso.prioridade == 'urgente' %}selected{% endif %}>🔴 Urgente</option>
-                                </select>
-                            </div>
-                        </div>
-                        
-                        <div class="mb-3">
-                            <label class="form-label fw-bold">Data de Expiração (opcional)</label>
-                            <input type="date" class="form-control" name="data_fim" 
-                                   value="{{ aviso.data_fim.strftime('%Y-%m-%d') if aviso and aviso.data_fim else '' }}">
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label">Data de Expiração (opcional)</label>
+                            <input type="date" class="form-control" name="data_fim">
                             <small class="text-muted">Deixe em branco para não expirar</small>
                         </div>
-                        
-                        {% if aviso %}
-                        <div class="mb-3 form-check">
-                            <input type="checkbox" class="form-check-input" name="ativo" id="ativo" {% if aviso.ativo == 1 %}checked{% endif %}>
-                            <label class="form-check-label" for="ativo">
-                                <i class="bi bi-check-circle"></i> Ativo (visível para os obreiros)
-                            </label>
-                        </div>
-                        {% endif %}
-                        
-                        <div class="d-grid gap-2 d-md-flex justify-content-md-end">
-                            <a href="/avisos" class="btn btn-secondary">
-                                <i class="bi bi-arrow-left"></i> Cancelar
-                            </a>
-                            <button type="submit" class="btn btn-primary">
-                                <i class="bi bi-save"></i> {{ 'Salvar Alterações' if aviso else 'Publicar Aviso' }}
-                            </button>
-                        </div>
-                    </form>
-                </div>
+                    </div>
+
+                    <div class="alert alert-info mt-3 mb-3" style="background: var(--bordo-transparente); border-color: var(--bordo); color: var(--bordo); border-radius: 12px;">
+                        <i class="bi bi-info-circle me-2"></i>
+                        O aviso será publicado imediatamente com a data de hoje.
+                    </div>
+
+                    <div class="mt-4">
+                        <button type="submit" class="btn-bordo">
+                            <i class="bi bi-save"></i> Publicar Comunicado
+                        </button>
+                        <a href="/avisos" class="btn-bordo-outline ms-2">
+                            Cancelar
+                        </a>
+                    </div>
+                </form>
             </div>
         </div>
     </div>

@@ -974,139 +974,155 @@
             });
         });
         
-        // ============================================
-        // FUNÇÕES DAS NOTIFICAÇÕES
-        // ============================================
-        function escapeHtml(text) {
-            if (!text) return '';
-            const div = document.createElement('div');
-            div.textContent = text;
-            return div.innerHTML;
-        }
-        
-        function carregarNotificacoes() {
-            const container = document.getElementById('listaNotificacoes');
-            const badge = document.getElementById('badgeNotificacoes');
-            
-            if (!container) return;
-            
-            fetch('/api/avisos/ultimos')
-                .then(response => response.json())
-                .then(data => {
-                    if (data.success && data.avisos && data.avisos.length > 0) {
-                        let html = '';
-                        data.avisos.forEach(aviso => {
-                            const dataFormatada = new Date(aviso.created_at).toLocaleDateString('pt-BR');
-                            const horaFormatada = new Date(aviso.created_at).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
-                            let prioridadeIcone = '';
-                            
-                            if (aviso.prioridade === 'urgente') {
-                                prioridadeIcone = '<i class="bi bi-exclamation-triangle-fill text-danger"></i> ';
-                            } else if (aviso.prioridade === 'importante') {
-                                prioridadeIcone = '<i class="bi bi-star-fill text-warning"></i> ';
-                            } else {
-                                prioridadeIcone = '<i class="bi bi-info-circle text-info"></i> ';
-                            }
-                            
-                            html += `
-                                <div class="dropdown-item notification-item ${!aviso.ja_visto ? 'notification-unread' : ''}" data-id="${aviso.id}" onclick="marcarVisto(${aviso.id})">
-                                    <div class="d-flex justify-content-between align-items-start">
-                                        <div class="flex-grow-1">
-                                            <div class="fw-bold mb-1">${prioridadeIcone} ${escapeHtml(aviso.titulo)}</div>
-                                            <p class="small text-muted mb-1">${escapeHtml(aviso.conteudo.substring(0, 80))}${aviso.conteudo.length > 80 ? '...' : ''}</p>
-                                            <small class="text-muted">
-                                                <i class="bi bi-person"></i> ${escapeHtml(aviso.autor_nome || 'Sistema')}
-                                                <i class="bi bi-calendar ms-2"></i> ${dataFormatada} às ${horaFormatada}
-                                            </small>
-                                        </div>
-                                        ${!aviso.ja_visto ? '<span class="badge bg-danger rounded-pill ms-2 align-self-start">Novo</span>' : ''}
-                                    </div>
-                                </div>
-                            `;
-                        });
-                        container.innerHTML = html;
-                        
-                        if (data.nao_lidos > 0) {
-                            badge.textContent = data.nao_lidos > 9 ? '9+' : data.nao_lidos;
-                            badge.style.display = 'inline-block';
-                        } else {
-                            badge.style.display = 'none';
-                        }
+// ============================================
+// FUNÇÕES DAS NOTIFICAÇÕES CORRIGIDAS
+// ============================================
+function escapeHtml(text) {
+    if (!text) return '';
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+}
+
+function carregarNotificacoes() {
+    const container = document.getElementById('listaNotificacoes');
+    const badge = document.getElementById('badgeNotificacoes');
+    
+    if (!container) return;
+    
+    fetch('/api/avisos/ultimos')
+        .then(response => response.json())
+        .then(data => {
+            if (data.success && data.avisos && data.avisos.length > 0) {
+                let html = '';
+                data.avisos.forEach(aviso => {
+                    const dataFormatada = new Date(aviso.created_at).toLocaleDateString('pt-BR');
+                    const horaFormatada = new Date(aviso.created_at).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+                    let prioridadeIcone = '';
+                    let prioridadeClasse = '';
+                    
+                    if (aviso.prioridade === 'urgente') {
+                        prioridadeIcone = '<i class="bi bi-exclamation-triangle-fill text-danger"></i> ';
+                        prioridadeClasse = 'text-danger';
+                    } else if (aviso.prioridade === 'importante') {
+                        prioridadeIcone = '<i class="bi bi-star-fill text-warning"></i> ';
+                        prioridadeClasse = 'text-warning';
                     } else {
-                        container.innerHTML = `
-                            <div class="text-center py-4">
-                                <i class="bi bi-inbox fs-1 text-muted"></i>
-                                <p class="mt-2 small text-muted mb-0">Nenhuma notificação</p>
-                            </div>
-                        `;
-                        badge.style.display = 'none';
+                        prioridadeIcone = '<i class="bi bi-info-circle text-info"></i> ';
                     }
-                })
-                .catch(error => {
-                    console.error('Erro:', error);
-                    container.innerHTML = `
-                        <div class="text-center py-3 text-danger">
-                            <i class="bi bi-exclamation-triangle-fill"></i>
-                            <p class="mt-2 small">Erro ao carregar notificações</p>
+                    
+                    html += `
+                        <div class="dropdown-item notification-item ${!aviso.ja_visto ? 'notification-unread' : ''}" data-id="${aviso.id}" onclick="marcarVisto(${aviso.id})">
+                            <div class="d-flex justify-content-between align-items-start">
+                                <div class="flex-grow-1">
+                                    <div class="fw-bold ${prioridadeClasse} mb-1">${prioridadeIcone} ${escapeHtml(aviso.titulo)}</div>
+                                    <p class="small text-muted mb-1">${escapeHtml(aviso.conteudo.substring(0, 80))}${aviso.conteudo.length > 80 ? '...' : ''}</p>
+                                    <small class="text-muted">
+                                        <i class="bi bi-person"></i> ${escapeHtml(aviso.autor_nome || 'Sistema')}
+                                        <i class="bi bi-calendar ms-2"></i> ${dataFormatada} às ${horaFormatada}
+                                    </small>
+                                </div>
+                                ${!aviso.ja_visto ? '<span class="badge bg-danger rounded-pill ms-2 align-self-start">Novo</span>' : ''}
+                            </div>
                         </div>
                     `;
                 });
-        }
-        
-        function marcarVisto(avisoId) {
-            fetch(`/api/avisos/marcar-visto/${avisoId}`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' }
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    carregarNotificacoes();
-                    atualizarBadge();
+                container.innerHTML = html;
+                
+                if (data.nao_lidos > 0) {
+                    badge.textContent = data.nao_lidos > 9 ? '9+' : data.nao_lidos;
+                    badge.style.display = 'inline-block';
+                } else {
+                    badge.style.display = 'none';
                 }
-            })
-            .catch(error => console.error('Erro:', error));
-        }
-        
-        function marcarTodasComoLidas() {
-            if (!confirm('Marcar todas as notificações como lidas?')) return;
-            
-            fetch('/api/avisos/marcar-todas-vistas', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' }
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    carregarNotificacoes();
-                    const badge = document.getElementById('badgeNotificacoes');
-                    if (badge) badge.style.display = 'none';
-                }
-            })
-            .catch(error => console.error('Erro:', error));
-        }
-        
-        function atualizarBadge() {
-            fetch('/api/avisos/nao-lidos')
-                .then(response => response.json())
-                .then(data => {
-                    const badge = document.getElementById('badgeNotificacoes');
-                    if (badge) {
-                        if (data.nao_lidos > 0) {
-                            badge.textContent = data.nao_lidos > 9 ? '9+' : data.nao_lidos;
-                            badge.style.display = 'inline-block';
-                        } else {
-                            badge.style.display = 'none';
-                        }
-                    }
-                })
-                .catch(error => console.error('Erro:', error));
-        }
-        
-        document.addEventListener('DOMContentLoaded', function() {
-            atualizarBadge();
-            setInterval(atualizarBadge, 60000);
+            } else {
+                container.innerHTML = `
+                    <div class="text-center py-4">
+                        <i class="bi bi-inbox fs-1 text-muted"></i>
+                        <p class="mt-2 small text-muted mb-0">Nenhuma notificação</p>
+                    </div>
+                `;
+                badge.style.display = 'none';
+            }
+        })
+        .catch(error => {
+            console.error('Erro ao carregar notificações:', error);
+            container.innerHTML = `
+                <div class="text-center py-3 text-danger">
+                    <i class="bi bi-exclamation-triangle-fill"></i>
+                    <p class="mt-2 small">Erro ao carregar notificações</p>
+                </div>
+            `;
         });
+}
+
+function marcarVisto(avisoId) {
+    // Impedir que o evento se propague
+    if (event) event.stopPropagation();
+    
+    console.log('Marcando visto para aviso:', avisoId);
+    
+    fetch(`/api/avisos/marcar-visto/${avisoId}`, {
+        method: 'POST',
+        headers: { 
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({})
+    })
+    .then(response => response.json())
+    .then(data => {
+        console.log('Resposta:', data);
+        if (data.success) {
+            // Recarregar as notificações
+            carregarNotificacoes();
+            atualizarBadge();
+        } else {
+            console.error('Erro ao marcar como lido:', data.error);
+        }
+    })
+    .catch(error => console.error('Erro na requisição:', error));
+}
+
+function marcarTodasComoLidas() {
+    if (!confirm('Marcar todas as notificações como lidas?')) return;
+    
+    fetch('/api/avisos/marcar-todas-vistas', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            carregarNotificacoes();
+            const badge = document.getElementById('badgeNotificacoes');
+            if (badge) badge.style.display = 'none';
+        }
+    })
+    .catch(error => console.error('Erro:', error));
+}
+
+function atualizarBadge() {
+    fetch('/api/avisos/nao-lidos')
+        .then(response => response.json())
+        .then(data => {
+            const badge = document.getElementById('badgeNotificacoes');
+            if (badge) {
+                if (data.nao_lidos > 0) {
+                    badge.textContent = data.nao_lidos > 9 ? '9+' : data.nao_lidos;
+                    badge.style.display = 'inline-block';
+                } else {
+                    badge.style.display = 'none';
+                }
+            }
+        })
+        .catch(error => console.error('Erro:', error));
+}
+
+// Carregar badge e notificações ao iniciar
+document.addEventListener('DOMContentLoaded', function() {
+    atualizarBadge();
+    setInterval(atualizarBadge, 60000);
+});
     </script>
     
     {% block scripts %}{% endblock %}

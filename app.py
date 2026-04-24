@@ -10332,14 +10332,21 @@ def novo_aviso():
             return redirect("/avisos/novo")
         
         try:
+            from datetime import datetime
+            
+            # CORREÇÃO: Sempre definir data_inicio como data atual
+            data_inicio = datetime.now().strftime('%Y-%m-%d')
+            
+            # Se data_fim foi informada, usar; senão NULL
             data_fim = data_fim if data_fim and data_fim.strip() else None
             
+            # CORREÇÃO: Garantir que ativo = 1
             cursor.execute("""
                 INSERT INTO avisos (titulo, conteudo, grau_destino, prioridade, 
-                                   data_fim, created_by, created_at)
-                VALUES (%s, %s, %s, %s, %s, %s, CURRENT_TIMESTAMP)
+                                   data_inicio, data_fim, created_by, created_at, ativo)
+                VALUES (%s, %s, %s, %s, %s, %s, %s, CURRENT_TIMESTAMP, 1)
                 RETURNING id
-            """, (titulo, conteudo, grau_destino, prioridade, data_fim, session['user_id']))
+            """, (titulo, conteudo, grau_destino, prioridade, data_inicio, data_fim, session['user_id']))
             
             aviso_id = cursor.fetchone()['id']
             conn.commit()
@@ -10530,7 +10537,7 @@ def api_avisos_nao_lidos():
 @app.route("/api/avisos/ultimos")
 @login_required
 def api_avisos_ultimos():
-    """Retorna os últimos 5 avisos para o sininho"""
+    """Retorna os últimos avisos para o sininho"""
     cursor, conn = get_db()
     
     usuario_grau = session.get('grau_atual', 1)
@@ -10547,8 +10554,14 @@ def api_avisos_ultimos():
         AND a.data_inicio <= CURRENT_TIMESTAMP
         AND (a.data_fim IS NULL OR a.data_fim >= CURRENT_TIMESTAMP)
         AND a.grau_destino <= %s
-        ORDER BY a.created_at DESC
-        LIMIT 5
+        ORDER BY 
+            CASE a.prioridade 
+                WHEN 'urgente' THEN 1 
+                WHEN 'importante' THEN 2 
+                ELSE 3 
+            END,
+            a.created_at DESC
+        LIMIT 10
     """, (usuario_id, usuario_grau))
     
     avisos = cursor.fetchall()
@@ -10596,19 +10609,38 @@ def api_marcar_aviso_visto(id):
     cursor, conn = get_db()
     
     try:
+        # Verificar se já existe registro
         cursor.execute("""
-            INSERT INTO avisos_visualizacoes (aviso_id, usuario_id, visualizado_em)
-            VALUES (%s, %s, CURRENT_TIMESTAMP)
-            ON CONFLICT (aviso_id, usuario_id) DO NOTHING
+            SELECT id FROM avisos_visualizacoes 
+            WHERE aviso_id = %s AND usuario_id = %s
         """, (id, session['user_id']))
         
-        conn.commit()
+        if not cursor.fetchone():
+            # Inserir visualização
+            cursor.execute("""
+                INSERT INTO avisos_visualizacoes (aviso_id, usuario_id, visualizado_em)
+                VALUES (%s, %s, CURRENT_TIMESTAMP)
+            """, (id, session['user_id']))
+            
+            # Incrementar contador de visualizações no aviso
+            cursor.execute("""
+                UPDATE avisos SET visualizacoes = COALESCE(visualizacoes, 0) + 1
+                WHERE id = %s
+            """, (id,))
+            
+            conn.commit()
+            print(f"✅ Aviso {id} marcado como visto pelo usuário {session['user_id']}")
+        else:
+            print(f"ℹ️ Aviso {id} já foi marcado como visto")
+        
         return jsonify({'success': True})
+        
     except Exception as e:
-        print(f"Erro ao marcar visto: {e}")
+        print(f"❌ Erro ao marcar visto: {e}")
+        conn.rollback()
         return jsonify({'success': False, 'error': str(e)}), 500
     finally:
-        return_connection(conn)    
+        return_connection(conn)
 
 # =============================
 # ROTAS DE CANDIDATOS PLACET E OBREIRO
