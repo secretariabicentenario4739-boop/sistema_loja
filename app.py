@@ -10148,7 +10148,7 @@ def editar_modelo(id):
 # ROTAS DE COMUNICADOS/OCORRÊNCIAS
 # =============================
 @app.route('/testar-lembretes')
-@login_required
+#@login_required
 def testar_lembretes():
     """Rota para testar manualmente os lembretes (apenas admin)"""
     if session.get('tipo') != 'admin':
