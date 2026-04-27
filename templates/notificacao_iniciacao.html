@@ -1,0 +1,241 @@
+{% extends "base.html" %}
+
+{% block title %}Notificação de Iniciação ao GOB - {{ candidato.nome }}{% endblock %}
+
+{% block styles %}
+{{ super() }}
+<style>
+    :root {
+        --bordo: #4A0E2E;
+        --ouro: #D4AF37;
+    }
+    
+    .form-section {
+        background: white;
+        border-radius: 15px;
+        padding: 25px;
+        margin-bottom: 25px;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    }
+    
+    .section-title {
+        color: var(--bordo);
+        border-left: 4px solid var(--ouro);
+        padding-left: 15px;
+        margin-bottom: 20px;
+        font-weight: bold;
+    }
+    
+    .status-badge {
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        z-index: 1000;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="container">
+        <!-- Status da Notificação -->
+        {% if notificacao and notificacao.status_envio == 'enviado' %}
+        <div class="alert alert-success status-badge">
+            <i class="bi bi-check-circle"></i>
+            Notificação enviada em {{ notificacao.data_envio.strftime('%d/%m/%Y %H:%M') }}
+            <br>
+            <small>Protocolo GOB: {{ notificacao.protocolo_gob }}</small>
+        </div>
+        {% endif %}
+        
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h2>
+                <i class="bi bi-envelope-paper" style="color: var(--bordo);"></i>
+                Notificação de Iniciação ao GOB
+            </h2>
+            <a href="/sindicancia/{{ candidato.id }}" class="btn btn-outline-secondary">
+                <i class="bi bi-arrow-left"></i> Voltar
+            </a>
+        </div>
+        
+        <form method="POST" id="formNotificacao">
+            <!-- Dados da Sessão -->
+            <div class="form-section">
+                <h5 class="section-title">
+                    <i class="bi bi-calendar-event"></i> Dados da Sessão
+                </h5>
+                <div class="row">
+                    <div class="col-md-4 mb-3">
+                        <label class="form-label">Data da Sessão *</label>
+                        <input type="date" name="data_sessao" class="form-control" 
+                               value="{{ notificacao.data_sessao.strftime('%Y-%m-%d') if notificacao and notificacao.data_sessao else '' }}"
+                               required>
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <label class="form-label">Número da Ata *</label>
+                        <input type="text" name="ata_numero" class="form-control" 
+                               placeholder="Ex: 001/2024"
+                               value="{{ notificacao.ata_numero if notificacao else '' }}"
+                               required>
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <label class="form-label">Data da Ata *</label>
+                        <input type="date" name="ata_data" class="form-control"
+                               value="{{ notificacao.ata_data.strftime('%Y-%m-%d') if notificacao and notificacao.ata_data else '' }}"
+                               required>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Dados da Loja -->
+            <div class="form-section">
+                <h5 class="section-title">
+                    <i class="bi bi-building"></i> Dados da Loja
+                </h5>
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label">Loja *</label>
+                        <input type="text" name="loja_nome" class="form-control"
+                               value="{{ notificacao.loja_nome if notificacao else candidato.loja_nome }}"
+                               required>
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <label class="form-label">Número *</label>
+                        <input type="text" name="loja_numero" class="form-control"
+                               value="{{ notificacao.loja_numero if notificacao else candidato.loja_numero }}"
+                               required>
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <label class="form-label">Oriente *</label>
+                        <input type="text" name="loja_oriente" class="form-control"
+                               value="{{ notificacao.loja_oriente if notificacao else candidato.loja_orient }}"
+                               required>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label">Presidente da Comissão de Iniciação *</label>
+                        <input type="text" name="presidente_comissao" class="form-control"
+                               value="{{ notificacao.presidente_comissao if notificacao else '' }}"
+                               required>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label">Membros da Comissão</label>
+                        <textarea name="membros_comissao" class="form-control" rows="2"
+                                  placeholder="Digite os nomes dos membros, um por linha">{{ notificacao.membros_comissao if notificacao else '' }}</textarea>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Dados da Iniciação -->
+            <div class="form-section">
+                <h5 class="section-title">
+                    <i class="bi bi-person-badge"></i> Dados da Iniciação
+                </h5>
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label">Nome do Candidato *</label>
+                        <input type="text" class="form-control" value="{{ candidato.nome }}" readonly>
+                        <input type="hidden" name="nome_candidato" value="{{ candidato.nome }}">
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <label class="form-label">Data da Iniciação *</label>
+                        <input type="date" name="data_iniciacao" class="form-control"
+                               value="{{ notificacao.data_iniciacao.strftime('%Y-%m-%d') if notificacao and notificacao.data_iniciacao else '' }}"
+                               required>
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <label class="form-label">Horário *</label>
+                        <input type="time" name="hora_iniciacao" class="form-control"
+                               value="{{ notificacao.hora_iniciacao if notificacao else '20:00' }}"
+                               required>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label">Ritual Utilizado *</label>
+                        <select name="ritual_utilizado" class="form-control" required>
+                            <option value="">Selecione...</option>
+                            <option value="Ritual de Aprendiz - REAA" {% if notificacao and notificacao.ritual_utilizado == 'Ritual de Aprendiz - REAA' %}selected{% endif %}>
+                                Ritual de Aprendiz - REAA
+                            </option>
+                            <option value="Ritual de Aprendiz - Rito Francês" {% if notificacao and notificacao.ritual_utilizado == 'Ritual de Aprendiz - Rito Francês' %}selected{% endif %}>
+                                Ritual de Aprendiz - Rito Francês
+                            </option>
+                            <option value="Ritual de Aprendiz - Rito Schröder" {% if notificacao and notificacao.ritual_utilizado == 'Ritual de Aprendiz - Rito Schröder' %}selected{% endif %}>
+                                Ritual de Aprendiz - Rito Schröder
+                            </option>
+                        </select>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label">Nº de Obreiros Presentes *</label>
+                        <input type="number" name="numero_obreiros_presentes" class="form-control"
+                               value="{{ notificacao.numero_obreiros_presentes if notificacao else '' }}"
+                               required>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Número do Processo -->
+            <div class="form-section">
+                <h5 class="section-title">
+                    <i class="bi bi-file-text"></i> Identificação do Processo
+                </h5>
+                <div class="row">
+                    <div class="col-md-12">
+                        <label class="form-label">Número do Processo GOB</label>
+                        <input type="text" name="numero_processo" class="form-control"
+                               value="{{ notificacao.numero_processo if notificacao else 'PROC-' + candidato.id|string + '-' + now.year|string }}"
+                               placeholder="Será gerado automaticamente se deixado em branco">
+                        <small class="text-muted">Deixe em branco para gerar automaticamente</small>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Botões -->
+            <div class="form-section">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <button type="button" class="btn btn-secondary" onclick="salvarRascunho()">
+                            <i class="bi bi-save"></i> Salvar Rascunho
+                        </button>
+                    </div>
+                    <div>
+                        <button type="submit" name="acao" value="preview" class="btn btn-info">
+                            <i class="bi bi-eye"></i> Visualizar
+                        </button>
+                        <button type="submit" name="acao" value="enviar" class="btn btn-primary" 
+                                onclick="return confirm('Enviar notificação ao GOB?')">
+                            <i class="bi bi-send"></i> Enviar ao GOB
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+function salvarRascunho() {
+    const form = document.getElementById('formNotificacao');
+    const formData = new FormData(form);
+    formData.append('acao', 'rascunho');
+    
+    fetch(window.location.href, {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert('Rascunho salvo com sucesso!');
+        } else {
+            alert('Erro ao salvar rascunho: ' + data.message);
+        }
+    })
+    .catch(error => {
+        alert('Erro ao salvar rascunho');
+    });
+}
+</script>
+{% endblock %}

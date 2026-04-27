@@ -35,11 +35,14 @@ import openpyxl
 from openpyxl.styles import Font, Alignment, PatternFill
 from openpyxl.utils import get_column_letter
 from database import get_db, return_connection, get_db_connection
+from routes.notificacoes_routes import notificacoes_bp
+from flask_login import LoginManager, login_required, current_user, login_user, logout_user
 
 # =============================
 # BLUEPRINT DA BIBLIOTECA
 # =============================
 biblioteca_bp = Blueprint('biblioteca', __name__, url_prefix='/biblioteca')
+
 
 
 # =============================
@@ -699,6 +702,32 @@ def from_json_filter(value):
 app.secret_key = os.getenv('SECRET_KEY', os.urandom(24))
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 app.config['MAX_CONTENT_LENGTH'] = 50 * 1024 * 1024  # 50MB
+
+# Configurar LoginManager
+login_manager = LoginManager()
+login_manager.init_app(app)
+login_manager.login_view = 'login'
+
+@login_manager.user_loader
+def load_user(user_id):
+    with get_db_connection() as cursor:
+        cursor.execute("SELECT id, nome, email, tipo, ativo FROM usuarios WHERE id = %s", (user_id,))
+        user_data = cursor.fetchone()
+        if user_data:
+            class User:
+                def __init__(self, data):
+                    self.id = data['id']
+                    self.nome = data['nome']
+                    self.email = data['email']
+                    self.tipo = data['tipo']
+                    self.ativo = data['ativo']
+                    self.is_authenticated = True
+                    self.is_active = True
+                    self.is_anonymous = False
+                def get_id(self):
+                    return str(self.id)
+            return User(user_data)
+    return None
 
 # =============================
 # REGISTRAR BLUEPRINT DA BIBLIOTECA
@@ -11644,6 +11673,101 @@ def emitir_placet(candidato_id):
             return_connection(conn)
         flash(f"Erro ao emitir placet: {str(e)}", "danger")
         return redirect("/candidatos")
+@app.route('/notificacoes/candidato/<int:candidato_id>/notificar-iniciacao', methods=['GET', 'POST'])
+@login_required
+def notificar_iniciacao(candidato_id):
+    from models.notificacoes_gob import NotificacaoIniciacao
+    from services.pdf_service import PDFService
+    from database import get_db_connection
+    from datetime import datetime
+    from flask import flash, redirect, url_for, render_template, request
+    from flask_login import current_user
+    
+    # Buscar candidato
+    with get_db_connection() as cursor:
+        cursor.execute("""
+            SELECT id, nome, email, celular, status, fechado, loja_nome, loja_numero
+            FROM candidatos 
+            WHERE id = %s
+        """, (candidato_id,))
+        candidato = cursor.fetchone()
+    
+    if not candidato:
+        flash('Candidato não encontrado!', 'danger')
+        return redirect(url_for('index'))
+    
+    notificacao = NotificacaoIniciacao.buscar_por_candidato(candidato_id)
+    
+    if request.method == 'POST':
+        acao = request.form.get('acao')
+        
+        dados = {
+            'candidato_id': candidato_id,
+            'numero_processo': request.form.get('numero_processo') or f"PROC-{candidato_id}-{datetime.now().year}",
+            'loja_nome': request.form.get('loja_nome') or candidato.get('loja_nome', ''),
+            'loja_numero': request.form.get('loja_numero') or candidato.get('loja_numero', ''),
+            'loja_oriente': request.form.get('loja_oriente', ''),
+            'uf': request.form.get('uf', 'DF'),
+            'gob_uf': request.form.get('gob_uf', 'GODF'),
+            'data_sessao': request.form.get('data_sessao'),
+            'nome_candidato': candidato['nome'],
+            'data_iniciacao': request.form.get('data_iniciacao'),
+            'hora_iniciacao': request.form.get('hora_iniciacao'),
+            'ritual_utilizado': request.form.get('ritual_utilizado'),
+            'numero_obreiros': request.form.get('numero_obreiros_presentes'),
+            'presidente_comissao': request.form.get('presidente_comissao'),
+            'membros_comissao': request.form.get('membros_comissao'),
+            'ata_numero': request.form.get('ata_numero'),
+            'ata_data': request.form.get('ata_data'),
+            'veneravel_nome': request.form.get('veneravel_nome'),
+            'veneravel_cim': request.form.get('veneravel_cim'),
+            'secretario_nome': request.form.get('secretario_nome'),
+            'secretario_cim': request.form.get('secretario_cim'),
+        }
+        
+        # Gerar protocolo
+        protocolo = f"GOB-{datetime.now().year}-{candidato_id}-{int(datetime.now().timestamp())}"
+        dados['protocolo'] = protocolo
+        
+        if notificacao:
+            dados['id'] = notificacao['id']
+        
+        id_salvo = NotificacaoIniciacao.salvar(dados)
+        
+        if acao == 'rascunho':
+            flash('Rascunho salvo com sucesso!', 'success')
+            return redirect(url_for('notificar_iniciacao', candidato_id=candidato_id))
+        
+        elif acao == 'enviar':
+            pdf_service = PDFService()
+            pdf_service.init_app(app)
+            
+            dados_pdf = dados.copy()
+            dados_pdf['protocolo'] = protocolo
+            
+            try:
+                resultado_pdf = pdf_service.gerar_comunicado_iniciacao(dados_pdf)
+                
+                NotificacaoIniciacao.atualizar_status(
+                    id_salvo, 
+                    'enviado',
+                    protocolo=protocolo,
+                    data_envio=datetime.now()
+                )
+                
+                flash('✅ Notificação enviada com sucesso ao GOB!', 'success')
+                flash(f'📄 PDF gerado: {resultado_pdf["url"]}', 'info')
+                
+            except Exception as e:
+                flash(f'Erro ao gerar PDF: {str(e)}', 'danger')
+            
+            # Redirecionar usando URL direta (funciona independente do nome da rota)
+            return redirect(f'/sindicancia/{candidato_id}')
+    
+    return render_template('notificacao_iniciacao.html', 
+                         candidato=candidato, 
+                         notificacao=notificacao,
+                         now=datetime.now())
         
 @app.route("/candidatos/<int:candidato_id>/foto/excluir", methods=["POST"])
 @login_required
@@ -12647,7 +12771,6 @@ def api_sindicantes_disponiveis(candidato_id):
             return_connection(conn)
         return jsonify({'error': str(e)}), 500        
 
-        
 
 @app.route("/fechar_sindicancia/<int:id>")
 @admin_required
@@ -13275,7 +13398,83 @@ def enviar_parecer(candidato_id):
         print(f"Erro ao enviar parecer: {str(e)}")
         flash(f"❌ Erro ao enviar parecer: {str(e)}", "danger")
     
-    return redirect(f"/candidatos")  # ← MUDE PARA REDIRECIONAR PARA CANDIDATOS, NÃO PARA SINDICANCIA
+    return redirect(f"/candidatos")
+    
+
+@app.route('/gerar-comunicado-gob/<int:candidato_id>', methods=['POST'])
+@login_required
+def gerar_comunicado_gob(candidato_id):
+    from services.pdf_service import PDFService
+    from database import get_db_connection
+    
+    dados = request.json
+    
+    # Buscar dados do candidato
+    with get_db_connection() as cursor:
+        cursor.execute("""
+            SELECT nome, cim FROM candidatos WHERE id = %s
+        """, (candidato_id,))
+        candidato = cursor.fetchone()
+    
+    # Preparar dados para o PDF
+    pdf_data = {
+        'tipo': dados.get('tipo', 'INICIACAO'),
+        'loja_nome': dados.get('loja_nome'),
+        'loja_numero': dados.get('loja_numero'),
+        'loja_oriente': dados.get('loja_oriente'),
+        'uf': dados.get('uf', 'DF'),
+        'gob_uf': dados.get('gob_uf', 'GODF'),
+        'data_sessao': dados.get('data_sessao'),
+        'nome_maçom': candidato['nome'],
+        'cim': candidato.get('cim', ''),
+        'veneravel_mestre_nome': dados.get('veneravel_mestre_nome'),
+        'veneravel_mestre_cim': dados.get('veneravel_mestre_cim'),
+        'secretario_nome': dados.get('secretario_nome'),
+        'secretario_cim': dados.get('secretario_cim'),
+    }
+    
+    pdf_service = PDFService()
+    resultado = pdf_service.gerar_comunicado_gob(pdf_data)
+    
+    return jsonify({
+        'success': True,
+        'url': resultado['url'],
+        'message': 'PDF gerado e enviado para o Cloudinary!'
+    })    
+
+from docx import Document
+import cloudinary.uploader
+
+def preencher_docx_gob(dados, template_path):
+    doc = Document(template_path)
+    
+    # Substituir placeholders no documento
+    for paragraph in doc.paragraphs:
+        replacements = {
+            '{LOJA_NOME}': dados['loja_nome'],
+            '{LOJA_NUMERO}': dados['loja_numero'],
+            '{DATA_SESSAO}': dados['data_sessao'],
+            '{NOME_OBREIRO}': dados['nome_obreiro'],
+            '{CIM}': dados['cim'],
+            '{VENERAVEL_NOME}': dados['veneravel_nome'],
+            '{SECRETARIO_NOME}': dados['secretario_nome']
+        }
+        
+        for key, value in replacements.items():
+            if key in paragraph.text:
+                paragraph.text = paragraph.text.replace(key, value)
+    
+    # Salvar e enviar para Cloudinary
+    output_path = f"/tmp/comunicado_{dados['cim']}.docx"
+    doc.save(output_path)
+    
+    resultado = cloudinary.uploader.upload(
+        output_path,
+        resource_type='raw',
+        folder='comunicados_gob'
+    )
+    
+    return resultado['secure_url']
         
 # =============================
 # ROTAS DE DOCUMENTOS DO CANDIDATO

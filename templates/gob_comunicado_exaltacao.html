@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Comunicado de Exaltação - GOB</title>
+    <style>
+        @page {
+            size: A4;
+            margin: 2cm;
+        }
+        
+        body {
+            font-family: 'Times New Roman', Arial, sans-serif;
+            font-size: 12pt;
+            line-height: 1.5;
+        }
+        
+        .container {
+            max-width: 100%;
+            margin: 0 auto;
+        }
+        
+        .bordered-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 15px;
+        }
+        
+        .bordered-table td {
+            border: 1px solid #000;
+            padding: 8px;
+            vertical-align: top;
+        }
+        
+        .bordered-table td:first-child {
+            width: 120px;
+            font-weight: bold;
+        }
+        
+        .full-width {
+            width: 100%;
+            border: 1px solid #000;
+            padding: 15px;
+            margin-bottom: 15px;
+            text-align: center;
+        }
+        
+        .signature-table {
+            width: 100%;
+            margin-top: 40px;
+        }
+        
+        .signature-cell {
+            width: 48%;
+            text-align: center;
+            vertical-align: top;
+        }
+        
+        .signature-line {
+            border-top: 1px solid #000;
+            margin-top: 40px;
+            padding-top: 10px;
+            width: 90%;
+            margin-left: auto;
+            margin-right: auto;
+        }
+        
+        .signature-name {
+            font-weight: bold;
+            margin-top: 5px;
+        }
+        
+        .signature-cim {
+            font-size: 10pt;
+            color: #555;
+        }
+        
+        .date-place {
+            text-align: right;
+            margin-top: 30px;
+            margin-bottom: 40px;
+        }
+        
+        .to {
+            margin: 20px 0;
+            font-weight: bold;
+        }
+        
+        .content-text {
+            text-align: center;
+            margin: 20px 0;
+            font-size: 13pt;
+        }
+        
+        .protocolo {
+            text-align: right;
+            margin-bottom: 20px;
+            font-size: 10pt;
+        }
+        
+        .camaras-box {
+            background: #f9f9f9;
+            padding: 10px;
+            margin-top: 15px;
+            border: 1px solid #ddd;
+            text-align: left;
+        }
+        
+        .camara-status {
+            display: inline-block;
+            padding: 2px 10px;
+            border-radius: 20px;
+            font-size: 10pt;
+            font-weight: bold;
+        }
+        
+        .camara-aprovado {
+            background: #28a745;
+            color: white;
+        }
+        
+        .camara-nao {
+            background: #dc3545;
+            color: white;
+        }
+        
+        hr {
+            margin: 20px 0;
+        }
+        
+        .footer {
+            text-align: center;
+            font-size: 9pt;
+            color: #666;
+            margin-top: 30px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Protocolo -->
+        <div class="protocolo">
+            <strong>Protocolo GOB:</strong> {{ dados.protocolo }}<br>
+            <strong>Data de Emissão:</strong> {{ dados.data_emissao }}
+        </div>
+        
+        <!-- Cabeçalho da Loja -->
+        <table class="bordered-table">
+            <tr>
+                <td>Loja Maçônica:</td>
+                <td><strong>{{ dados.loja_nome }}</strong></td>
+                <td style="width: 50px;">Nº:</td>
+                <td style="width: 80px;"><strong>{{ dados.loja_numero }}</strong></td>
+            </tr>
+            <tr>
+                <td>Oriente:</td>
+                <td><strong>{{ dados.loja_oriente }}</strong></td>
+                <td>UF:</td>
+                <td><strong>{{ dados.uf }}</strong></td>
+            </tr>
+        </table>
+        
+        <!-- Destinatário -->
+        <div class="to">
+            À<br>
+            Sec∴ da Guarda dos Selos<br>
+            Gr∴ Or∴ do Brasil -- UF: {{ dados.gob_uf }}
+        </div>
+        
+        <!-- Conteúdo Principal -->
+        <div class="full-width">
+            <div class="content-text">
+                <strong>
+                    Comunicamos que em Sessão Magna de <strong style="color: #D4AF37;">EXALTAÇÃO</strong>, 
+                    realizada nesta Loja em <strong>{{ dados.data_sessao }}</strong>, 
+                    foi exaltado ao Sublime Grau de Mestre o Maçom <strong>{{ dados.nome_candidato }}</strong>
+                    {% if dados.cim %} - CIM {{ dados.cim }}{% endif %}.
+                </strong>
+            </div>
+        </div>
+        
+        <!-- Datas Importantes -->
+        <table class="bordered-table">
+            <tr>
+                <td>Data da Iniciação:</td>
+                <td><strong>{{ dados.data_iniciacao }}</strong></td>
+                <td>Data da Elevação:</td>
+                <td><strong>{{ dados.data_elevacao }}</strong></td>
+            </tr>
+            <tr>
+                <td>Data da Exaltação:</td>
+                <td colspan="3"><strong>{{ dados.data_exaltacao }}</strong></td>
+            </tr>
+            <tr>
+                <td>Ata Nº:</td>
+                <td colspan="3"><strong>{{ dados.ata_numero }}</strong></td>
+            </tr>
+        </table>
+        
+        <!-- Trabalhos e Câmaras -->
+        <div class="camaras-box">
+            <strong>📜 Trabalhos e Provas Realizadas:</strong><br><br>
+            
+            <strong>Trabalhos Apresentados:</strong><br>
+            {{ dados.trabalhos_apresentados }}<br><br>
+            
+            <strong>Provas das Câmaras:</strong><br>
+            🏛️ Terça Câmara: 
+            <span class="camara-status {% if dados.terca_camara == 'Aprovado' %}camara-aprovado{% else %}camara-nao{% endif %}">
+                {{ dados.terca_camara }}
+            </span><br>
+            
+            ⚖️ Câmara de Meio: 
+            <span class="camara-status {% if dados.prova_camara_meio == 'Aprovado' %}camara-aprovado{% else %}camara-nao{% endif %}">
+                {{ dados.prova_camara_meio }}
+            </span><br>
+            
+            ⭐ Câmara de Justiça: 
+            <span class="camara-status {% if dados.prova_camara_justica == 'Aprovado' %}camara-aprovado{% else %}camara-nao{% endif %}">
+                {{ dados.prova_camara_justica }}
+            </span>
+        </div>
+        
+        <!-- Solicitação -->
+        <div class="full-width" style="margin-top: 15px;">
+            Solicitamos informar à Sec∴ Geral da Guarda dos Selos para os devidos registros.
+        </div>
+        
+        <!-- Data e Local -->
+        <div class="date-place">
+            Oriente de <strong>{{ dados.loja_oriente }}</strong>, UF: <strong>{{ dados.uf }}</strong>, 
+            em <strong>{{ dados.data_extenso }}</strong>.
+        </div>
+        
+        <!-- Assinaturas -->
+        <table class="signature-table">
+            <tr>
+                <td class="signature-cell">
+                    <div class="signature-line"></div>
+                    <div class="signature-name"><strong>Venerável Mestre</strong></div>
+                    <div>Nome: <strong>{{ dados.veneravel_nome }}</strong></div>
+                    <div class="signature-cim">CIM n. {{ dados.veneravel_cim }}</div>
+                </td>
+                <td style="width: 4%;"></td>
+                <td class="signature-cell">
+                    <div class="signature-line"></div>
+                    <div class="signature-name"><strong>Secretário</strong></div>
+                    <div>Nome: <strong>{{ dados.secretario_nome }}</strong></div>
+                    <div class="signature-cim">CIM n. {{ dados.secretario_cim }}</div>
+                </td>
+            </tr>
+        </table>
+        
+        <!-- Rodapé -->
+        <hr>
+        <div class="footer">
+            Documento gerado eletronicamente pelo Sistema da Loja {{ dados.loja_nome }}<br>
+            Este documento tem validade como comprovante de notificação ao GOB
+        </div>
+    </div>
+</body>
+</html>

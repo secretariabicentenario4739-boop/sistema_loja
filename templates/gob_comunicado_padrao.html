@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Comunicado de Colação de Grau - GOB</title>
+    <style>
+        @page {
+            size: A4;
+            margin: 2.5cm;
+        }
+        
+        body {
+            font-family: 'Times New Roman', Times, serif;
+            font-size: 11pt;
+            margin: 0;
+            padding: 0;
+        }
+        
+        .container {
+            width: 100%;
+            margin: 0 auto;
+        }
+        
+        /* Tabela principal igual ao modelo */
+        .main-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 20px;
+        }
+        
+        .main-table td, .main-table th {
+            border: 1px solid #000000;
+            padding: 6px 8px;
+            vertical-align: top;
+        }
+        
+        .main-table td:first-child {
+            width: 120px;
+            font-weight: normal;
+        }
+        
+        /* Linha de título da tabela */
+        .main-table tr:first-child td {
+            font-weight: normal;
+        }
+        
+        /* Bloco de texto cheio (borda em volta) */
+        .full-border {
+            border: 1px solid #000000;
+            padding: 15px;
+            margin-bottom: 15px;
+            text-align: center;
+        }
+        
+        /* Área de assinaturas */
+        .signatures {
+            width: 100%;
+            margin-top: 40px;
+            border-collapse: collapse;
+        }
+        
+        .signatures td {
+            width: 48%;
+            text-align: center;
+            vertical-align: top;
+            padding-top: 30px;
+        }
+        
+        .signature-line {
+            border-top: 1px solid #000000;
+            width: 90%;
+            margin: 0 auto;
+            padding-top: 8px;
+        }
+        
+        .signature-name {
+            font-weight: bold;
+            margin-top: 5px;
+        }
+        
+        /* Título "À" */
+        .to {
+            margin: 15px 0;
+            font-weight: normal;
+            line-height: 1.4;
+        }
+        
+        /* Botões de ação */
+        .action-buttons {
+            margin-top: 20px;
+            text-align: center;
+        }
+        
+        .btn {
+            display: inline-block;
+            padding: 10px 20px;
+            margin: 5px;
+            border-radius: 5px;
+            text-decoration: none;
+            cursor: pointer;
+        }
+        
+        .btn-primary {
+            background: #4A0E2E;
+            color: white;
+            border: none;
+        }
+        
+        .btn-secondary {
+            background: #6c757d;
+            color: white;
+            border: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Tabela de cabeçalho da Loja -->
+        <table class="main-table">
+            <tr>
+                <td>Loja Maçônica:</td>
+                <td><strong>{{ dados.loja_nome }}</strong></td>
+                <td style="width: 40px;">Nº:</td>
+                <td style="width: 80px;"><strong>{{ dados.loja_numero }}</strong></td>
+            </tr>
+            <tr>
+                <td>Oriente:</td>
+                <td><strong>{{ dados.loja_oriente }}</strong></td>
+                <td>UF:</td>
+                <td><strong>{{ dados.uf }}</strong></td>
+            </tr>
+        </table>
+        
+        <!-- Destinatário -->
+        <div class="to">
+            À<br>
+            Sec∴ da Guarda dos Selos<br>
+            Gr∴ Or∴ do Brasil -- UF: {{ dados.gob_uf }}
+        </div>
+        
+        <!-- Conteúdo principal (borda) -->
+        <div class="full-border">
+            <strong>
+                Comunicamos que em Sessão Magna de 
+                <strong style="text-transform: uppercase;">{{ dados.tipo }}</strong>, 
+                realizada nesta Loja em <strong>{{ dados.data_sessao }}</strong>, 
+                {% if dados.tipo == 'INICIAÇÃO' %}foi iniciado{% else %}colou Grau{% endif %} 
+                o Maçom <strong>{{ dados.nome_candidato }}</strong> 
+                {% if dados.cim %}- CIM {{ dados.cim }}{% endif %}.
+            </strong>
+        </div>
+        
+        <!-- Detalhes específicos por tipo (serão preenchidos dinamicamente) -->
+        {{ dados.detalhes_html|safe if dados.detalhes_html else '' }}
+        
+        <!-- Solicitação -->
+        <div class="full-border">
+            Solicitamos informar à Sec∴ Geral da Guarda dos Selos para os devidos registros.
+        </div>
+        
+        <!-- Data e Local -->
+        <div style="text-align: right; margin-top: 25px; margin-bottom: 40px;">
+            Oriente de <strong>{{ dados.loja_oriente }}</strong>, UF: <strong>{{ dados.uf }}</strong>, 
+            em <strong>{{ dados.data_extenso }}</strong>.
+        </div>
+        
+        <!-- Assinaturas -->
+        <table class="signatures">
+            <tr>
+                <td>
+                    <div class="signature-line"></div>
+                    <div class="signature-name"><strong>Venerável Mestre</strong></div>
+                    <div>Nome: <strong>{{ dados.veneravel_nome }}</strong></div>
+                    <div style="font-size: 9pt;">CIM n. {{ dados.veneravel_cim }}</div>
+                </td>
+                <td>
+                    <div class="signature-line"></div>
+                    <div class="signature-name"><strong>Secretário</strong></div>
+                    <div>Nome: <strong>{{ dados.secretario_nome }}</strong></div>
+                    <div style="font-size: 9pt;">CIM n. {{ dados.secretario_cim }}</div>
+                </td>
+            </tr>
+        </table>
+        
+        <!-- Rodapé com protocolo -->
+        <div style="text-align: center; font-size: 8pt; color: #666; margin-top: 30px; border-top: 1px solid #ccc; padding-top: 10px;">
+            Protocolo: {{ dados.protocolo }} | Emitido em: {{ dados.data_emissao }}
+        </div>
+    </div>
+</body>
+</html>
