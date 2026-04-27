@@ -1,0 +1,67 @@
+{% extends "base.html" %}
+
+{% block title %}Histórico de Notificações GOB{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="container">
+        <h2 class="mb-4">Histórico de Notificações ao GOB</h2>
+        
+        <ul class="nav nav-tabs" id="notificacoesTab" role="tablist">
+            <li class="nav-item">
+                <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#iniciacoes">
+                    Iniciações ({{ iniciacoes|length }})
+                </button>
+            </li>
+            <li class="nav-item">
+                <button class="nav-link" data-bs-toggle="tab" data-bs-target="#elevacoes">
+                    Elevações ({{ elevacoes|length }})
+                </button>
+            </li>
+            <li class="nav-item">
+                <button class="nav-link" data-bs-toggle="tab" data-bs-target="#exaltacoes">
+                    Exaltações ({{ exaltacoes|length }})
+                </button>
+            </li>
+        </ul>
+        
+        <div class="tab-content mt-3">
+            <div class="tab-pane fade show active" id="iniciacoes">
+                <div class="table-responsive">
+                    <table class="table table-striped">
+                        <thead>
+                            <tr>
+                                <th>Protocolo</th>
+                                <th>Candidato</th>
+                                <th>Loja</th>
+                                <th>Data Iniciação</th>
+                                <th>Status</th>
+                                <th>Data Envio</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for n in iniciacoes %}
+                            <tr>
+                                <td>{{ n.protocolo_gob or '-' }}</td>
+                                <td>{{ n.nome_candidato }}</td>
+                                <td>{{ n.loj桝me }}/{{ n.loja_numero }}</td>
+                                <td>{{ n.data_iniciacao.strftime('%d/%m/%Y') if n.data_iniciacao else '-' }}</td>
+                                <td>
+                                    {% if n.status_envio == 'enviado' %}
+                                        <span class="badge bg-success">Enviado</span>
+                                    {% else %}
+                                        <span class="badge bg-warning">Pendente</span>
+                                    {% endif %}
+                                </td>
+                                <td>{{ n.data_envio.strftime('%d/%m/%Y %H:%M') if n.data_envio else '-' }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            <!-- Similar para Elevações e Exaltações -->
+        </div>
+    </div>
+</div>
+{% endblock %}

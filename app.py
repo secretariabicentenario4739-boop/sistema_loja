@@ -11673,6 +11673,8 @@ def emitir_placet(candidato_id):
             return_connection(conn)
         flash(f"Erro ao emitir placet: {str(e)}", "danger")
         return redirect("/candidatos")
+        
+        
 @app.route('/notificacoes/candidato/<int:candidato_id>/notificar-iniciacao', methods=['GET', 'POST'])
 @login_required
 def notificar_iniciacao(candidato_id):

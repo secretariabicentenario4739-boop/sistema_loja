@@ -194,12 +194,28 @@ def notificar_exaltacao(candidato_id):
 @notificacoes_bp.route('/historico')
 @login_required
 def historico_notificacoes():
-    from app.models.notificacoes_gob import NotificacaoIniciacao, NotificacaoElevacao, NotificacaoExaltacao
+    from models.notificacoes_gob import NotificacaoIniciacao, NotificacaoElevacao, NotificacaoExaltacao
+    from database import get_db_connection
     
-    """Lista todas as notificações enviadas"""
-    iniciacoes = NotificacaoIniciacao.query.filter_by(status_envio='enviado').order_by(NotificacaoIniciacao.data_envio.desc()).all()
-    elevacoes = NotificacaoElevacao.query.filter_by(status_envio='enviado').order_by(NotificacaoElevacao.data_envio.desc()).all()
-    exaltacoes = NotificacaoExaltacao.query.filter_by(status_envio='enviado').order_by(NotificacaoExaltacao.data_envio.desc()).all()
+    # Buscar todas as notificações
+    with get_db_connection() as cursor:
+        cursor.execute("""
+            SELECT * FROM notificacoes_iniciacao 
+            ORDER BY created_at DESC
+        """)
+        iniciacoes = cursor.fetchall()
+        
+        cursor.execute("""
+            SELECT * FROM notificacoes_elevacao 
+            ORDER BY created_at DESC
+        """)
+        elevacoes = cursor.fetchall()
+        
+        cursor.execute("""
+            SELECT * FROM notificacoes_exaltacao 
+            ORDER BY created_at DESC
+        """)
+        exaltacoes = cursor.fetchall()
     
     return render_template('historico_notificacoes.html', 
                          iniciacoes=iniciacoes,
