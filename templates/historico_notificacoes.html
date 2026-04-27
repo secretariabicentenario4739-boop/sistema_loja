@@ -2,65 +2,286 @@
 
 {% block title %}Histórico de Notificações GOB{% endblock %}
 
+{% block styles %}
+{{ super() }}
+<style>
+    :root {
+        --bordo: #4A0E2E;
+        --bordo-escuro: #3A0A24;
+        --bordo-claro: #6B1342;
+        --bordo-suave: #8B4A6B;
+        --bordo-transparente: rgba(74, 14, 46, 0.08);
+        --ouro: #D4AF37;
+    }
+
+    .card-bordo-branco {
+        background: white;
+        border: 1px solid rgba(74, 14, 46, 0.15);
+        border-radius: 16px;
+        transition: all 0.3s ease;
+    }
+    
+    .card-header-bordo-primary {
+        background: linear-gradient(135deg, var(--bordo), var(--bordo-escuro));
+        padding: 15px 20px;
+        border-radius: 16px 16px 0 0 !important;
+    }
+    
+    .card-header-bordo-primary h5 {
+        color: white;
+        margin: 0;
+        font-weight: 600;
+    }
+
+    .btn-pdf {
+        background: linear-gradient(135deg, #ef4444, #dc2626);
+        border: none;
+        color: white;
+        border-radius: 20px;
+        padding: 4px 12px;
+        font-size: 0.75rem;
+        transition: all 0.3s;
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+        text-decoration: none;
+    }
+    
+    .btn-pdf:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(239, 68, 68, 0.3);
+        color: white;
+    }
+
+    .badge-enviado {
+        background: #10b981;
+        padding: 3px 10px;
+        border-radius: 20px;
+        font-size: 0.7rem;
+        font-weight: 600;
+        color: white;
+        display: inline-block;
+    }
+    
+    .btn-bordo-outline {
+        background: transparent;
+        border: 1px solid var(--bordo);
+        color: var(--bordo);
+        border-radius: 30px;
+        padding: 8px 20px;
+        transition: all 0.3s;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        text-decoration: none;
+    }
+    
+    .btn-bordo-outline:hover {
+        background: var(--bordo);
+        color: white;
+    }
+</style>
+{% endblock %}
+
 {% block content %}
 <div class="container-fluid py-4">
     <div class="container">
-        <h2 class="mb-4">Histórico de Notificações ao GOB</h2>
-        
-        <ul class="nav nav-tabs" id="notificacoesTab" role="tablist">
-            <li class="nav-item">
-                <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#iniciacoes">
-                    Iniciações ({{ iniciacoes|length }})
+        <!-- Cabeçalho -->
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h2 class="mb-2 mb-md-0">
+                <i class="bi bi-clock-history" style="color: var(--bordo);"></i> 
+                <span style="color: var(--bordo);">Histórico de Notificações ao GOB</span>
+            </h2>
+            <div class="header-actions">
+                <a href="/obreiros" class="btn-bordo-outline">
+                    <i class="bi bi-arrow-left"></i> Voltar
+                </a>
+            </div>
+        </div>
+
+        <!-- Tabs -->
+        <ul class="nav nav-tabs mb-4" id="notificacoesTab" role="tablist">
+            <li class="nav-item" role="presentation">
+                <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#iniciacoes" type="button" role="tab">
+                    <i class="bi bi-stars"></i> Iniciações <span class="badge bg-secondary ms-1">{{ iniciacoes|length }}</span>
                 </button>
             </li>
-            <li class="nav-item">
-                <button class="nav-link" data-bs-toggle="tab" data-bs-target="#elevacoes">
-                    Elevações ({{ elevacoes|length }})
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" data-bs-toggle="tab" data-bs-target="#elevacoes" type="button" role="tab">
+                    <i class="bi bi-arrow-up-circle"></i> Elevações <span class="badge bg-secondary ms-1">{{ elevacoes|length }}</span>
                 </button>
             </li>
-            <li class="nav-item">
-                <button class="nav-link" data-bs-toggle="tab" data-bs-target="#exaltacoes">
-                    Exaltações ({{ exaltacoes|length }})
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" data-bs-toggle="tab" data-bs-target="#exaltacoes" type="button" role="tab">
+                    <i class="bi bi-star"></i> Exaltações <span class="badge bg-secondary ms-1">{{ exaltacoes|length }}</span>
                 </button>
             </li>
         </ul>
-        
-        <div class="tab-content mt-3">
-            <div class="tab-pane fade show active" id="iniciacoes">
-                <div class="table-responsive">
-                    <table class="table table-striped">
-                        <thead>
-                            <tr>
-                                <th>Protocolo</th>
-                                <th>Candidato</th>
-                                <th>Loja</th>
-                                <th>Data Iniciação</th>
-                                <th>Status</th>
-                                <th>Data Envio</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% for n in iniciacoes %}
-                            <tr>
-                                <td>{{ n.protocolo_gob or '-' }}</td>
-                                <td>{{ n.nome_candidato }}</td>
-                                <td>{{ n.loj桝me }}/{{ n.loja_numero }}</td>
-                                <td>{{ n.data_iniciacao.strftime('%d/%m/%Y') if n.data_iniciacao else '-' }}</td>
-                                <td>
-                                    {% if n.status_envio == 'enviado' %}
-                                        <span class="badge bg-success">Enviado</span>
+
+        <!-- Conteúdo das Tabs -->
+        <div class="tab-content">
+            
+            <!-- Tab Iniciações -->
+            <div class="tab-pane fade show active" id="iniciacoes" role="tabpanel">
+                <div class="card-bordo-branco shadow-sm">
+                    <div class="card-header-bordo-primary">
+                        <h5 class="mb-0"><i class="bi bi-stars"></i> Notificações de Iniciação</h5>
+                    </div>
+                    <div class="card-body p-0">
+                        <div class="table-responsive">
+                            <table class="table table-bordo mb-0">
+                                <thead>
+                                    <tr>
+                                        <th>Protocolo</th>
+                                        <th>Candidato</th>
+                                        <th>Loja</th>
+                                        <th>Data Iniciação</th>
+                                        <th>Status</th>
+                                        <th>Data Envio</th>
+                                        <th>PDF</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for n in iniciacoes %}
+                                    <tr>
+                                        <td><code>{{ n.protocolo_gob or '-' }}</code></td>
+                                        <td>{{ n.nome_candidato }}</td>
+                                        <td>{{ n.loja_nome }}/{{ n.loja_numero }}</td>
+                                        <td>{{ n.data_iniciacao.strftime('%d/%m/%Y') if n.data_iniciacao else '-' }}</td>
+                                        <td><span class="badge-enviado">✓ Enviado</span></td>
+                                        <td>{{ n.data_envio.strftime('%d/%m/%Y %H:%M') if n.data_envio else '-' }}</td>
+                                        <td>
+                                            {% if n.pdf_url %}
+                                            <a href="{{ n.pdf_url }}" target="_blank" class="btn-pdf">
+                                                <i class="bi bi-file-pdf-fill"></i> Ver PDF
+                                            </a>
+                                            {% else %}
+                                            <span class="text-muted">-</span>
+                                            {% endif %}
+                                        </td>
+                                    </tr>
                                     {% else %}
-                                        <span class="badge bg-warning">Pendente</span>
-                                    {% endif %}
-                                </td>
-                                <td>{{ n.data_envio.strftime('%d/%m/%Y %H:%M') if n.data_envio else '-' }}</td>
-                            </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
+                                    <tr>
+                                        <td colspan="7" class="text-center text-muted py-4">
+                                            <i class="bi bi-inbox fs-1"></i><br>
+                                            Nenhuma notificação de iniciação encontrada
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
                 </div>
             </div>
-            <!-- Similar para Elevações e Exaltações -->
+
+            <!-- Tab Elevações -->
+            <div class="tab-pane fade" id="elevacoes" role="tabpanel">
+                <div class="card-bordo-branco shadow-sm">
+                    <div class="card-header-bordo-primary">
+                        <h5 class="mb-0"><i class="bi bi-arrow-up-circle"></i> Notificações de Elevação</h5>
+                    </div>
+                    <div class="card-body p-0">
+                        <div class="table-responsive">
+                            <table class="table table-bordo mb-0">
+                                <thead>
+                                    <tr>
+                                        <th>Protocolo</th>
+                                        <th>Obreiro</th>
+                                        <th>Loja</th>
+                                        <th>Data Elevação</th>
+                                        <th>Status</th>
+                                        <th>Data Envio</th>
+                                        <th>PDF</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for n in elevacoes %}
+                                    <tr>
+                                        <td><code>{{ n.protocolo_gob or '-' }}</code></td>
+                                        <td>{{ n.nome_aprendiz }}</td>
+                                        <td>{{ n.loja_nome }}/{{ n.loja_numero }}</td>
+                                        <td>{{ n.data_elevacao.strftime('%d/%m/%Y') if n.data_elevacao else '-' }}</td>
+                                        <td><span class="badge-enviado">✓ Enviado</span></td>
+                                        <td>{{ n.data_envio.strftime('%d/%m/%Y %H:%M') if n.data_envio else '-' }}</td>
+                                        <td>
+                                            {% if n.pdf_url %}
+                                            <a href="{{ n.pdf_url }}" target="_blank" class="btn-pdf">
+                                                <i class="bi bi-file-pdf-fill"></i> Ver PDF
+                                            </a>
+                                            {% else %}
+                                            <span class="text-muted">-</span>
+                                            {% endif %}
+                                        </td>
+                                    </tr>
+                                    {% else %}
+                                    <tr>
+                                        <td colspan="7" class="text-center text-muted py-4">
+                                            <i class="bi bi-inbox fs-1"></i><br>
+                                            Nenhuma notificação de elevação encontrada
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tab Exaltações -->
+            <div class="tab-pane fade" id="exaltacoes" role="tabpanel">
+                <div class="card-bordo-branco shadow-sm">
+                    <div class="card-header-bordo-primary">
+                        <h5 class="mb-0"><i class="bi bi-star"></i> Notificações de Exaltação</h5>
+                    </div>
+                    <div class="card-body p-0">
+                        <div class="table-responsive">
+                            <table class="table table-bordo mb-0">
+                                <thead>
+                                    <tr>
+                                        <th>Protocolo</th>
+                                        <th>Obreiro</th>
+                                        <th>Loja</th>
+                                        <th>Data Exaltação</th>
+                                        <th>Status</th>
+                                        <th>Data Envio</th>
+                                        <th>PDF</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for n in exaltacoes %}
+                                    <tr>
+                                        <td><code>{{ n.protocolo_gob or '-' }}</code></td>
+                                        <td>{{ n.nome_companheiro }}</td>
+                                        <td>{{ n.loja_nome }}/{{ n.loja_numero }}</td>
+                                        <td>{{ n.data_exaltacao.strftime('%d/%m/%Y') if n.data_exaltacao else '-' }}</td>
+                                        <td><span class="badge-enviado">✓ Enviado</span></td>
+                                        <td>{{ n.data_envio.strftime('%d/%m/%Y %H:%M') if n.data_envio else '-' }}</td>
+                                        <td>
+                                            {% if n.pdf_url %}
+                                            <a href="{{ n.pdf_url }}" target="_blank" class="btn-pdf">
+                                                <i class="bi bi-file-pdf-fill"></i> Ver PDF
+                                            </a>
+                                            {% else %}
+                                            <span class="text-muted">-</span>
+                                            {% endif %}
+                                        </td>
+                                    </tr>
+                                    {% else %}
+                                    <tr>
+                                        <td colspan="7" class="text-center text-muted py-4">
+                                            <i class="bi bi-inbox fs-1"></i><br>
+                                            Nenhuma notificação de exaltação encontrada
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 </div>

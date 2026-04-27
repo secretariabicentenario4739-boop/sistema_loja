@@ -782,7 +782,104 @@
                 </div>
             </div>
         </div>
-
+		
+               <!-- Notificações ao GOB - Só aparece se NÃO for exaltado -->
+{% if session.tipo == 'admin' and not obreiro.data_exaltacao %}
+<div class="card-bordo-branco shadow-sm mb-4">
+    <div class="card-header" style="background: linear-gradient(135deg, var(--bordo), var(--bordo-escuro)); border-bottom: none; color: white; border-radius: 16px 16px 0 0;">
+        <h5 class="mb-0"><i class="bi bi-send"></i> Notificações ao GOB</h5>
+    </div>
+    <div class="card-body p-4">
+        <div class="alert alert-bordo-light mb-3">
+            <i class="bi bi-info-circle-fill me-2"></i>
+            <strong>Documentação Oficial:</strong> Envie as notificações de Elevação e Exaltação ao Grande Oriente do Brasil conforme as datas registradas.
+        </div>
+        
+        <div class="row">
+            <!-- Notificação de Elevação - Só mostra se NÃO foi elevado -->
+            {% if not obreiro.data_elevacao %}
+            <div class="col-md-6 mb-3">
+                <div class="card text-center p-3 h-100" style="border: 1px solid rgba(74, 14, 46, 0.15); border-radius: 12px;">
+                    <i class="bi bi-arrow-up-circle fs-1" style="color: #3b82f6;"></i>
+                    <h6 class="mt-2">Elevação a Companheiro</h6>
+                    <p class="small text-muted">
+                        <span class="badge bg-warning text-dark">⏳ Pendente</span>
+                        <br>
+                        <small>Enviar notificação de elevação ao GOB</small>
+                    </p>
+                    <div class="mt-auto">
+                        <a href="/notificacoes/obreiro/{{ obreiro.id }}/notificar-elevacao" 
+                           class="btn-bordo-outline w-100">
+                            <i class="bi bi-pencil"></i> Preencher Notificação de Elevação
+                        </a>
+                    </div>
+                </div>
+            </div>
+            {% else %}
+            <div class="col-md-6 mb-3">
+                <div class="card text-center p-3 h-100" style="border: 1px solid #10b981; border-radius: 12px; background: #f0fdf4;">
+                    <i class="bi bi-check-circle-fill fs-1" style="color: #10b981;"></i>
+                    <h6 class="mt-2">Elevação a Companheiro</h6>
+                    <p class="small text-muted">
+                        <span class="badge bg-success">✓ Já Elevado</span>
+                        <br>
+                        <small>Data: {{ obreiro.data_elevacao.strftime('%d/%m/%Y') }}</small>
+                    </p>
+                    <div class="mt-auto">
+                        <button class="btn-bordo-outline w-100" disabled style="opacity: 0.6; cursor: not-allowed;">
+                            <i class="bi bi-check-circle"></i> Notificação já enviada
+                        </button>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+            
+            <!-- Notificação de Exaltação - Só mostra se foi elevado E NÃO foi exaltado -->
+            {% if obreiro.data_elevacao and not obreiro.data_exaltacao %}
+            <div class="col-md-6 mb-3">
+                <div class="card text-center p-3 h-100" style="border: 1px solid rgba(74, 14, 46, 0.15); border-radius: 12px;">
+                    <i class="bi bi-star fs-1" style="color: var(--ouro);"></i>
+                    <h6 class="mt-2">Exaltação a Mestre</h6>
+                    <p class="small text-muted">
+                        <span class="badge bg-warning text-dark">⏳ Pendente</span>
+                        <br>
+                        <small>Enviar notificação de exaltação ao GOB</small>
+                    </p>
+                    <div class="mt-auto">
+                        <a href="/notificacoes/obreiro/{{ obreiro.id }}/notificar-exaltacao" 
+                           class="btn-bordo-outline w-100">
+                            <i class="bi bi-pencil"></i> Preencher Notificação de Exaltação
+                        </a>
+                    </div>
+                </div>
+            </div>
+            {% elif obreiro.data_exaltacao %}
+            <!-- Este bloco não será exibido porque o card inteiro já foi ocultado -->
+            {% endif %}
+        </div>
+        
+        <!-- Status das notificações -->
+        <div class="row mt-3">
+            <div class="col-12">
+                <hr class="my-2" style="border-color: rgba(74, 14, 46, 0.15);">
+                <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+                    <div>
+                        <small class="text-muted">
+                            <i class="bi bi-info-circle"></i>
+                            As notificações geram um protocolo oficial do GOB.
+                        </small>
+                    </div>
+                    <a href="/notificacoes/historico" class="btn-bordo-secondary" style="padding: 4px 12px; font-size: 0.75rem;">
+                        <i class="bi bi-clock-history"></i> Ver Histórico de Notificações
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+		
+		
         <!-- Cargos Ocupados e Documentos -->
         <div class="row g-4 mb-4">
             <!-- Coluna 1: Cargos Ocupados -->

@@ -35,7 +35,6 @@ import openpyxl
 from openpyxl.styles import Font, Alignment, PatternFill
 from openpyxl.utils import get_column_letter
 from database import get_db, return_connection, get_db_connection
-from routes.notificacoes_routes import notificacoes_bp
 from flask_login import LoginManager, login_required, current_user, login_user, logout_user
 
 # =============================
@@ -708,31 +707,13 @@ login_manager = LoginManager()
 login_manager.init_app(app)
 login_manager.login_view = 'login'
 
-@login_manager.user_loader
-def load_user(user_id):
-    with get_db_connection() as cursor:
-        cursor.execute("SELECT id, nome, email, tipo, ativo FROM usuarios WHERE id = %s", (user_id,))
-        user_data = cursor.fetchone()
-        if user_data:
-            class User:
-                def __init__(self, data):
-                    self.id = data['id']
-                    self.nome = data['nome']
-                    self.email = data['email']
-                    self.tipo = data['tipo']
-                    self.ativo = data['ativo']
-                    self.is_authenticated = True
-                    self.is_active = True
-                    self.is_anonymous = False
-                def get_id(self):
-                    return str(self.id)
-            return User(user_data)
-    return None
+
 
 # =============================
 # REGISTRAR BLUEPRINT DA BIBLIOTECA
 # =============================
 app.register_blueprint(biblioteca_bp)
+
 
 # =============================
 # CONEXÃO COM BANCO DE DADOS
@@ -969,6 +950,29 @@ def get_db_connection():
         raise
     finally:
         return_connection(conn)
+# ============================================
+# DEFINIR O USER_LOADER
+# ============================================
+@login_manager.user_loader
+def load_user(user_id):
+    with get_db_connection() as cursor:
+        cursor.execute("SELECT id, nome, email, tipo, ativo FROM usuarios WHERE id = %s", (user_id,))
+        user_data = cursor.fetchone()
+        if user_data:
+            class User:
+                def __init__(self, data):
+                    self.id = data['id']
+                    self.nome = data['nome']
+                    self.email = data['email']
+                    self.tipo = data['tipo']
+                    self.ativo = data['ativo']
+                    self.is_authenticated = True
+                    self.is_active = True
+                    self.is_anonymous = False
+                def get_id(self):
+                    return str(self.id)
+            return User(user_data)
+    return None
 
 # =============================
 # IMPORTANTE: Chamar test_connection() DEPOIS de definir as funções
@@ -986,10 +990,11 @@ def test_connection():
         print(f"❌ Erro na conexão com o banco: {e}")
         return False
         
-# Verificar conexão (opcional)
-#if __name__ != '__main__':
- #   print(f"🔧 Banco configurado: LOCAL (localhost:5432/sistema_maconico)")
-  #  test_connection()
+# ============================================
+# REGISTRO DE BLUEPRINTS
+# ============================================
+from routes.notificacoes_routes import notificacoes_bp
+app.register_blueprint(notificacoes_bp)
 
 # ============================================
 # CONFIGURAÇÕES INICIAIS DO WHATSAPP
@@ -1589,6 +1594,8 @@ def gerar_pdf_certificado(visitante):
     doc.build(story)
     buffer.seek(0)
     return buffer
+    
+   
     
 def enviar_certificado_email(visitante):
     """Envia o certificado de visita por e-mail"""
@@ -2418,7 +2425,6 @@ def noticias():
 @app.route("/galeria")
 def galeria():
     return render_template("public/galeria.html")
-
 
 
 # =============================
@@ -11394,7 +11400,7 @@ def upload_foto_candidato(candidato_id):
 @app.route("/emitir-placet/<int:candidato_id>", methods=["POST"])
 @login_required
 def emitir_placet(candidato_id):
-    """Emitir placet de iniciação e transformar candidato em obreiro"""
+    """Emitir placet de iniciação e transformar candidato em obreiro - VERSÃO CORRIGIDA"""
     if session.get('tipo') != 'admin':
         flash("Acesso negado! Apenas administradores podem emitir placet.", "danger")
         return redirect("/candidatos")
@@ -11402,7 +11408,7 @@ def emitir_placet(candidato_id):
     try:
         cursor, conn = get_db()
         
-        # 1. Buscar candidato aprovado
+        # 1. Buscar TODOS os dados do candidato
         cursor.execute("""
             SELECT c.*, u.id as usuario_id 
             FROM candidatos c
@@ -11415,7 +11421,7 @@ def emitir_placet(candidato_id):
             flash("Candidato não encontrado ou não está aprovado!", "danger")
             return redirect("/candidatos")
         
-        # 2. Coletar dados do formulário
+        # 2. Coletar dados do formulário do placet
         numero_placet = request.form.get("numero_placet")
         data_emissao = request.form.get("data_emissao")
         data_iniciacao = request.form.get("data_iniciacao")
@@ -11438,74 +11444,22 @@ def emitir_placet(candidato_id):
             return redirect("/candidatos")
         
         # 5. Buscar dados da loja
-        loja_nome = None
-        loja_numero = None
-        loja_orient = None
+        loja_nome = candidato.get('loja_nome')
+        loja_numero = candidato.get('loja_numero')
+        loja_orient = candidato.get('loja_orient')
+        
         if loja_id:
-            cursor.execute("SELECT nome, numero, oriente FROM lojas WHERE id = %s", (loja_id,))
+            cursor.execute("SELECT nome, numero, oriente, cidade, uf FROM lojas WHERE id = %s", (loja_id,))
             loja = cursor.fetchone()
             if loja:
                 loja_nome = loja['nome']
                 loja_numero = loja['numero']
                 loja_orient = loja['oriente']
         
-        # ============================================
-        # COPIAR A FOTO DO CANDIDATO PARA O OBREIRO VIA CLOUDINARY
-        # ============================================
-        foto_url = None
-        foto_public_id = None
+        # 6. Processar foto
+        foto_url = candidato.get('foto')
         
-        if candidato.get('foto'):
-            try:
-                import cloudinary.uploader
-                import requests
-                
-                foto_antiga = candidato.get('foto')
-                foto_public_id_antigo = candidato.get('foto_public_id')
-                
-                if foto_public_id_antigo:
-                    # Método 1: Usar o public_id para fazer upload
-                    # Cloudinary permite transformar imagens existentes
-                    # Criamos um novo public_id baseado no antigo
-                    novo_public_id = foto_public_id_antigo.replace('candidatos', 'obreiros')
-                    
-                    # Fazer upload da imagem existente para a nova pasta
-                    upload_result = cloudinary.uploader.upload(
-                        foto_antiga,  # Pode usar a URL diretamente
-                        folder="obreiros",
-                        public_id=f"obreiro_{candidato_id}",
-                        overwrite=True
-                    )
-                    
-                    foto_url = upload_result['secure_url']
-                    foto_public_id = upload_result['public_id']
-                    
-                    print(f"Foto copiada com sucesso para: {foto_url}")
-                    
-                else:
-                    # Método 2: Se não tem public_id, baixar e re-upload
-                    response = requests.get(foto_antiga)
-                    if response.status_code == 200:
-                        upload_result = cloudinary.uploader.upload(
-                            response.content,
-                            folder="obreiros",
-                            public_id=f"obreiro_{candidato_id}",
-                            overwrite=True
-                        )
-                        foto_url = upload_result['secure_url']
-                        foto_public_id = upload_result['public_id']
-                        print(f"Foto copiada com sucesso (download/upload) para: {foto_url}")
-                    else:
-                        # Fallback: usar a URL original
-                        foto_url = foto_antiga
-                        print(f"Usando URL original da foto: {foto_url}")
-                        
-            except Exception as e:
-                print(f"Erro ao copiar foto via Cloudinary: {e}")
-                # Em caso de erro, tenta usar a URL original
-                foto_url = candidato.get('foto')
-        
-        # 6. Gerar CIM
+        # 7. Gerar CIM
         import hashlib
         import secrets
         import re
@@ -11516,7 +11470,7 @@ def emitir_placet(candidato_id):
         cim_numero = hashlib.md5(cim_base.encode()).hexdigest()[:12].upper()
         cim_numero = f"GOB-{cim_numero[:4]}-{cim_numero[4:]}"
         
-        # 7. Gerar nome de usuário (login)
+        # 8. Gerar nome de usuário
         nome_original = candidato['nome']
         nome_usuario = nome_original.lower()
         nome_usuario = re.sub(r'[^a-z0-9]', '.', nome_usuario)
@@ -11527,81 +11481,202 @@ def emitir_placet(candidato_id):
         if not nome_usuario or len(nome_usuario) < 3:
             nome_usuario = f"obreiro_{candidato['id']}"
         
-        # Verificar se o nome de usuário já existe
         cursor.execute("SELECT id FROM usuarios WHERE usuario = %s", (nome_usuario,))
         if cursor.fetchone():
             nome_usuario = f"{nome_usuario}_{secrets.token_hex(3)}"
         
-        # 8. Gerar senha temporária
+        # 9. Gerar senha temporária
         senha_temporaria = secrets.token_urlsafe(8)
         senha_hash = generate_password_hash(senha_temporaria)
         
-        # 9. Processar data de iniciação
+        # 10. Processar data de iniciação
         data_iniciacao_date = None
         if data_iniciacao:
             data_iniciacao_date = datetime.strptime(data_iniciacao, '%Y-%m-%d').date()
         else:
             data_iniciacao_date = datetime.now().date()
         
-        # 10. Verificar se o candidato já tem usuário (pelo CPF)
+        # 11. ============================================
+        #     MAPEAMENTO COMPLETO DOS CAMPOS
+        # ============================================
+        
+        # Verificar se o candidato já tem usuário (pelo CPF)
         cursor.execute("SELECT id FROM usuarios WHERE cpf = %s", (candidato['cpf'],))
         usuario_existente = cursor.fetchone()
         
         if usuario_existente:
-            # Usuário já existe, apenas atualizar
+            # ATUALIZAR usuário existente
             obreiro_id = usuario_existente['id']
             cursor.execute("""
-                UPDATE usuarios 
-                SET tipo = 'obreiro',
+                UPDATE usuarios SET 
+                    tipo = 'obreiro',
                     cim_numero = %s,
                     data_iniciacao = %s,
                     grau_atual = 1,
                     status_membro = 'ativo',
                     ativo = 1,
+                    nome_completo = %s,
+                    nome_maconico = %s,
+                    data_nascimento = %s,
+                    cpf = %s,
+                    rg = %s,
+                    orgao_emissor = %s,
+                    naturalidade = %s,
+                    estado_civil = %s,
+                    nome_pai = %s,
+                    nome_mae = %s,
+                    profissao = %s,
+                    empresa = %s,
+                    endereco = %s,
+                    numero = %s,
+                    bairro = %s,
+                    cidade = %s,
+                    uf = %s,
+                    cep = %s,
+                    endereco_profissional = %s,
+                    telefone = %s,
+                    telefone_profissional = %s,
+                    email = %s,
+                    email_profissional = %s,
+                    tipo_sanguineo = %s,
+                    grau_instrucao = %s,
                     loja_nome = %s,
                     loja_numero = %s,
                     loja_orient = %s,
-                    nome_completo = %s,
+                    titulo_eleitor = %s,
                     foto = %s,
-                    foto_public_id = %s
+                    usuario = %s,
+                    senha_hash = %s
                 WHERE id = %s
-            """, (cim_numero, data_iniciacao_date, loja_nome, loja_numero, loja_orient, 
-                  candidato['nome'], foto_url, foto_public_id, obreiro_id))
+            """, (
+                cim_numero,
+                data_iniciacao_date,
+                candidato['nome'],
+                candidato.get('nome_maconico') or candidato['nome'],
+                candidato.get('data_nascimento'),
+                candidato['cpf'],
+                candidato.get('rg'),
+                candidato.get('orgao_expedidor'),
+                candidato.get('naturalidade'),
+                candidato.get('estado_civil'),
+                candidato.get('nome_pai'),
+                candidato.get('nome_mae'),
+                candidato.get('profissao'),
+                candidato.get('empregador'),
+                candidato.get('endereco_residencial') or candidato.get('endereco'),
+                candidato.get('numero_residencial') or candidato.get('numero'),
+                candidato.get('bairro'),
+                candidato.get('cidade'),
+                candidato.get('uf_residencial') or candidato.get('uf'),
+                candidato.get('cep'),
+                candidato.get('endereco_profissional'),
+                candidato.get('celular') or candidato.get('telefone_fixo'),
+                candidato.get('telefone_comercial'),
+                candidato.get('email'),
+                None,  # email_profissional
+                candidato.get('tipo_sanguineo'),
+                candidato.get('grau_instrucao'),
+                loja_nome,
+                loja_numero,
+                loja_orient,
+                None,  # titulo_eleitor
+                foto_url,
+                nome_usuario,
+                senha_hash,
+                obreiro_id
+            ))
         else:
-            # Criar novo usuário (obreiro)
+            # CRIAR novo usuário obreiro
             cursor.execute("""
                 INSERT INTO usuarios (
-                    usuario, senha_hash, tipo, data_cadastro,
-                    nome_completo, cim_numero, grau_atual, data_iniciacao,
-                    telefone, email, loja_nome, loja_numero, loja_orient,
-                    cpf, status_membro, ativo, nome_maconico, endereco, 
-                    foto, foto_public_id
+                    usuario,
+                    senha_hash,
+                    tipo,
+                    data_cadastro,
+                    nome_completo,
+                    nome_maconico,
+                    cim_numero,
+                    grau_atual,
+                    data_iniciacao,
+                    telefone,
+                    telefone_profissional,
+                    email,
+                    email_profissional,
+                    loja_nome,
+                    loja_numero,
+                    loja_orient,
+                    cpf,
+                    status_membro,
+                    ativo,
+                    nome_pai,
+                    nome_mae,
+                    endereco,
+                    numero,
+                    bairro,
+                    cidade,
+                    uf,
+                    cep,
+                    endereco_profissional,
+                    data_nascimento,
+                    rg,
+                    orgao_emissor,
+                    naturalidade,
+                    estado_civil,
+                    profissao,
+                    empresa,
+                    tipo_sanguineo,
+                    grau_instrucao,
+                    foto,
+                    titulo_eleitor
                 )
-                VALUES (%s, %s, %s, NOW(), %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, 1, %s, %s, %s, %s)
+                VALUES (
+                    %s, %s, %s, NOW(), %s, %s, %s, %s, %s, %s, %s, %s, %s,
+                    %s, %s, %s, %s, %s, 1, %s, %s, %s, %s, %s, %s, %s, %s,
+                    %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s
+                )
                 RETURNING id
             """, (
                 nome_usuario,
                 senha_hash,
                 'obreiro',
                 candidato['nome'],
+                candidato.get('nome_maconico') or candidato['nome'],
                 cim_numero,
-                1,  # Aprendiz
+                1,
                 data_iniciacao_date,
-                candidato.get('telefone') or candidato.get('celular'),
+                candidato.get('celular') or candidato.get('telefone_fixo'),
+                candidato.get('telefone_comercial'),
                 candidato.get('email'),
+                None,
                 loja_nome,
                 loja_numero,
                 loja_orient,
                 candidato['cpf'],
                 'ativo',
-                candidato['nome'],  # nome_maconico
+                candidato.get('nome_pai'),
+                candidato.get('nome_mae'),
                 candidato.get('endereco_residencial') or candidato.get('endereco'),
+                candidato.get('numero_residencial') or candidato.get('numero'),
+                candidato.get('bairro'),
+                candidato.get('cidade'),
+                candidato.get('uf_residencial') or candidato.get('uf'),
+                candidato.get('cep'),
+                candidato.get('endereco_profissional'),
+                candidato.get('data_nascimento'),
+                candidato.get('rg'),
+                candidato.get('orgao_expedidor'),
+                candidato.get('naturalidade'),
+                candidato.get('estado_civil'),
+                candidato.get('profissao'),
+                candidato.get('empregador'),
+                candidato.get('tipo_sanguineo'),
+                candidato.get('grau_instrucao'),
                 foto_url,
-                foto_public_id
+                None  # titulo_eleitor
             ))
             obreiro_id = cursor.fetchone()['id']
         
-        # 11. Registrar Placet
+        # 12. Registrar Placet
         cursor.execute("""
             INSERT INTO placet_iniciacao (
                 candidato_id, numero_placet, data_emissao, 
@@ -11616,7 +11691,7 @@ def emitir_placet(candidato_id):
         ))
         placet_id = cursor.fetchone()['id']
         
-        # 12. Registrar fluxo de iniciação
+        # 13. Registrar fluxo de iniciação
         cursor.execute("""
             INSERT INTO fluxo_iniciacao (
                 candidato_id, etapa, status, data_entrada, usuario_id
@@ -11624,7 +11699,7 @@ def emitir_placet(candidato_id):
             VALUES (%s, %s, %s, %s, %s)
         """, (candidato_id, 'iniciado', 'concluido', datetime.now(), session['user_id']))
         
-        # 13. Atualizar candidato
+        # 14. Atualizar candidato
         cursor.execute("""
             UPDATE candidatos 
             SET obreiro_id = %s, 
@@ -11636,31 +11711,8 @@ def emitir_placet(candidato_id):
         
         conn.commit()
         
-        # 14. Registrar log
-        registrar_log(
-            acao=f"emitir_placet_{placet_id}",
-            entidade="placet_iniciacao",
-            entidade_id=placet_id,
-            dados_anteriores=None,
-            dados_novos={'candidato': candidato['nome'], 'placet': numero_placet, 'obreiro_id': obreiro_id}
-        )
-        
         flash(f"✅ Placet {numero_placet} emitido com sucesso!", "success")
-        flash(f"📝 Usuário criado: {nome_usuario} | Senha temporária: {senha_temporaria}", "info")
-        
-        # 15. Enviar e-mail de confirmação com senha
-        if candidato.get('email'):
-            try:
-                enviar_email_iniciacao_com_senha(
-                    candidato['email'], 
-                    candidato['nome'], 
-                    numero_placet, 
-                    cim_numero,
-                    nome_usuario,
-                    senha_temporaria
-                )
-            except Exception as e:
-                print(f"Erro ao enviar e-mail: {e}")
+        flash(f"📝 Usuário: {nome_usuario} | Senha: {senha_temporaria}", "info")
         
         return_connection(conn)
         return redirect("/candidatos")
@@ -11673,8 +11725,6 @@ def emitir_placet(candidato_id):
             return_connection(conn)
         flash(f"Erro ao emitir placet: {str(e)}", "danger")
         return redirect("/candidatos")
-        
-        
 @app.route('/notificacoes/candidato/<int:candidato_id>/notificar-iniciacao', methods=['GET', 'POST'])
 @login_required
 def notificar_iniciacao(candidato_id):
@@ -11684,6 +11734,19 @@ def notificar_iniciacao(candidato_id):
     from datetime import datetime
     from flask import flash, redirect, url_for, render_template, request
     from flask_login import current_user
+    
+    # Verificar se o usuário está logado (fallback)
+    user_id = None
+    try:
+        user_id = current_user.id if hasattr(current_user, 'id') else None
+    except:
+        user_id = None
+    
+    # Se não conseguir obter o user_id, pode usar um valor padrão
+    # ou buscar de outra forma (ex: session)
+    if not user_id:
+        from flask import session
+        user_id = session.get('user_id')
     
     # Buscar candidato
     with get_db_connection() as cursor:
@@ -11703,6 +11766,20 @@ def notificar_iniciacao(candidato_id):
     if request.method == 'POST':
         acao = request.form.get('acao')
         
+        # Buscar dados do usuário logado
+        usuario_nome = None
+        usuario_cim = None
+        
+        if user_id:
+            with get_db_connection() as cursor:
+                cursor.execute("""
+                    SELECT nome, cim FROM usuarios WHERE id = %s
+                """, (user_id,))
+                usuario = cursor.fetchone()
+                if usuario:
+                    usuario_nome = usuario['nome']
+                    usuario_cim = usuario.get('cim', '')
+        
         dados = {
             'candidato_id': candidato_id,
             'numero_processo': request.form.get('numero_processo') or f"PROC-{candidato_id}-{datetime.now().year}",
@@ -11721,8 +11798,8 @@ def notificar_iniciacao(candidato_id):
             'membros_comissao': request.form.get('membros_comissao'),
             'ata_numero': request.form.get('ata_numero'),
             'ata_data': request.form.get('ata_data'),
-            'veneravel_nome': request.form.get('veneravel_nome'),
-            'veneravel_cim': request.form.get('veneravel_cim'),
+            'veneravel_nome': request.form.get('veneravel_nome') or usuario_nome,
+            'veneravel_cim': request.form.get('veneravel_cim') or usuario_cim,
             'secretario_nome': request.form.get('secretario_nome'),
             'secretario_cim': request.form.get('secretario_cim'),
         }
@@ -11741,30 +11818,35 @@ def notificar_iniciacao(candidato_id):
             return redirect(url_for('notificar_iniciacao', candidato_id=candidato_id))
         
         elif acao == 'enviar':
+            # GERAR PDF e enviar para Cloudinary
             pdf_service = PDFService()
             pdf_service.init_app(app)
             
+            veneravel_nome = request.form.get('veneravel_nome')
+            veneravel_cim = request.form.get('veneravel_cim')
+            secretario_nome = request.form.get('secretario_nome')
+            secretario_cim = request.form.get('secretario_cim')
+            
             dados_pdf = dados.copy()
+            dados_pdf['veneravel_nome'] = veneravel_nome or usuario_nome
+            dados_pdf['veneravel_cim'] = veneravel_cim or usuario_cim
+            dados_pdf['secretario_nome'] = secretario_nome
+            dados_pdf['secretario_cim'] = secretario_cim
             dados_pdf['protocolo'] = protocolo
             
-            try:
-                resultado_pdf = pdf_service.gerar_comunicado_iniciacao(dados_pdf)
-                
-                NotificacaoIniciacao.atualizar_status(
-                    id_salvo, 
-                    'enviado',
-                    protocolo=protocolo,
-                    data_envio=datetime.now()
-                )
-                
-                flash('✅ Notificação enviada com sucesso ao GOB!', 'success')
-                flash(f'📄 PDF gerado: {resultado_pdf["url"]}', 'info')
-                
-            except Exception as e:
-                flash(f'Erro ao gerar PDF: {str(e)}', 'danger')
+            resultado_pdf = pdf_service.gerar_comunicado_iniciacao(dados_pdf)
             
-            # Redirecionar usando URL direta (funciona independente do nome da rota)
-            return redirect(f'/sindicancia/{candidato_id}')
+            NotificacaoIniciacao.atualizar_status(
+                id_salvo, 
+                'enviado',
+                protocolo=protocolo,
+                data_envio=datetime.now()
+            )
+            
+            flash(f'✅ Notificação enviada com sucesso ao GOB!', 'success')
+            flash(f'📄 PDF gerado: {resultado_pdf["url"]}', 'info')
+            
+            return redirect(url_for('sindicancia', candidato_id=candidato_id))
     
     return render_template('notificacao_iniciacao.html', 
                          candidato=candidato, 

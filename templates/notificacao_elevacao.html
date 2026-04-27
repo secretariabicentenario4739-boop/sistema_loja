@@ -1,0 +1,409 @@
+{% extends "base.html" %}
+
+{% block title %}Notificação de Elevação - {{ obreiro.nome }}{% endblock %}
+
+{% block styles %}
+{{ super() }}
+<style>
+    :root {
+        --bordo: #4A0E2E;
+        --bordo-escuro: #3A0A24;
+        --bordo-claro: #6B1342;
+        --bordo-suave: #8B4A6B;
+        --bordo-transparente: rgba(74, 14, 46, 0.08);
+        --bordo-transparente-hover: rgba(74, 14, 46, 0.12);
+        --ouro: #D4AF37;
+        --ouro-escuro: #996515;
+        --ouro-claro: #F0D68A;
+    }
+
+    .card-bordo-branco {
+        background: white;
+        border: 1px solid rgba(74, 14, 46, 0.15);
+        border-radius: 16px;
+        transition: all 0.3s ease;
+        color: var(--bordo);
+    }
+    
+    .card-bordo-branco:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 8px 25px rgba(74, 14, 46, 0.12);
+        border-color: var(--bordo);
+    }
+
+    .card-header-bordo-primary {
+        background: linear-gradient(135deg, var(--bordo), var(--bordo-escuro));
+        padding: 15px 20px;
+        border-radius: 16px 16px 0 0 !important;
+    }
+    
+    .card-header-bordo-primary h5 {
+        color: white;
+        margin: 0;
+        font-weight: 600;
+    }
+
+    .section-bordo {
+        background: var(--bordo-transparente);
+        border: 1px solid rgba(74, 14, 46, 0.1);
+        border-radius: 12px;
+        padding: 1.25rem;
+        margin-bottom: 1.5rem;
+    }
+    
+    .section-title {
+        color: var(--bordo);
+        font-weight: 600;
+        margin-bottom: 1rem;
+        padding-bottom: 0.5rem;
+        border-bottom: 2px solid rgba(74, 14, 46, 0.15);
+    }
+    
+    .section-title i {
+        margin-right: 0.5rem;
+        color: var(--bordo-claro);
+    }
+
+    .form-label {
+        color: var(--bordo);
+        font-weight: 500;
+        margin-bottom: 0.5rem;
+    }
+    
+    .form-control, .form-select {
+        border-radius: 12px;
+        border: 1px solid rgba(74, 14, 46, 0.2);
+        transition: all 0.3s;
+        padding: 0.5rem 1rem;
+    }
+    
+    .form-control:focus, .form-select:focus {
+        border-color: var(--bordo);
+        box-shadow: 0 0 0 0.2rem rgba(74, 14, 46, 0.25);
+        outline: none;
+    }
+
+    .btn-bordo {
+        background: linear-gradient(135deg, var(--bordo), var(--bordo-escuro));
+        border: none;
+        color: white;
+        border-radius: 30px;
+        padding: 8px 20px;
+        transition: all 0.3s;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        text-decoration: none;
+    }
+    
+    .btn-bordo:hover {
+        background: linear-gradient(135deg, var(--bordo-claro), var(--bordo));
+        transform: translateY(-2px);
+        color: white;
+        box-shadow: 0 5px 15px rgba(74, 14, 46, 0.3);
+    }
+    
+    .btn-bordo-outline {
+        background: transparent;
+        border: 1px solid var(--bordo);
+        color: var(--bordo);
+        border-radius: 30px;
+        padding: 8px 20px;
+        transition: all 0.3s;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        text-decoration: none;
+    }
+    
+    .btn-bordo-outline:hover {
+        background: var(--bordo);
+        color: white;
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(74, 14, 46, 0.2);
+    }
+
+    .btn-bordo-success {
+        background: linear-gradient(135deg, #10b981, #059669);
+        border: none;
+        color: white;
+        border-radius: 30px;
+        padding: 8px 20px;
+        transition: all 0.3s;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        text-decoration: none;
+    }
+    
+    .btn-bordo-success:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(16, 185, 129, 0.3);
+        color: white;
+    }
+
+    .btn-bordo-secondary {
+        background: linear-gradient(135deg, #6c757d, #495057);
+        border: none;
+        color: white;
+        border-radius: 30px;
+        padding: 8px 20px;
+        transition: all 0.3s;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        text-decoration: none;
+    }
+    
+    .btn-bordo-secondary:hover {
+        background: linear-gradient(135deg, #5a6268, #3d4246);
+        transform: translateY(-2px);
+        color: white;
+        box-shadow: 0 5px 15px rgba(108, 117, 125, 0.3);
+    }
+
+    .btn-group-mobile {
+        display: flex;
+        gap: 12px;
+        justify-content: center;
+        flex-wrap: wrap;
+    }
+
+    .alert-bordo-light {
+        background: var(--bordo-transparente);
+        border-left: 4px solid var(--bordo);
+        border-radius: 12px;
+        color: var(--bordo);
+    }
+
+    .header-actions {
+        display: flex;
+        gap: 12px;
+        align-items: center;
+        flex-wrap: wrap;
+    }
+
+    @media (max-width: 768px) {
+        .btn-bordo, .btn-bordo-outline, .btn-bordo-success, .btn-bordo-secondary {
+            padding: 6px 16px;
+            font-size: 0.85rem;
+        }
+        
+        .btn-group-mobile {
+            flex-direction: column;
+            width: 100%;
+        }
+        
+        .btn-group-mobile .btn-bordo-secondary,
+        .btn-group-mobile .btn-bordo-success {
+            width: 100%;
+            justify-content: center;
+        }
+        
+        .section-bordo {
+            padding: 1rem;
+        }
+        
+        .d-flex.justify-content-between {
+            flex-direction: column;
+            align-items: flex-start !important;
+            gap: 15px;
+        }
+        
+        .header-actions {
+            width: 100%;
+        }
+        
+        .header-actions .btn-bordo-outline {
+            width: 100%;
+            justify-content: center;
+        }
+        
+        h2 {
+            font-size: 1.5rem;
+        }
+    }
+
+    @media (max-width: 480px) {
+        .btn-bordo, .btn-bordo-outline, .btn-bordo-success, .btn-bordo-secondary {
+            padding: 5px 12px;
+            font-size: 0.8rem;
+        }
+        
+        .card-body {
+            padding: 1rem !important;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="container">
+        <!-- Cabeçalho -->
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h2 class="mb-2 mb-md-0">
+                <i class="bi bi-arrow-up-circle" style="color: var(--bordo);"></i> 
+                <span style="color: var(--bordo);">Notificação de Elevação ao GOB</span>
+            </h2>
+            <div class="header-actions">
+                <a href="/obreiros" class="btn-bordo-outline">
+                    <i class="bi bi-arrow-left"></i> Voltar
+                </a>
+            </div>
+        </div>
+
+        <div class="card-bordo-branco shadow-sm">
+            <div class="card-header-bordo-primary">
+                <h5 class="mb-0">
+                    <i class="bi bi-person-badge"></i> Obreiro: {{ obreiro.nome }}
+                </h5>
+                <p class="mb-0 mt-1 small text-white-50">
+                    CIM: {{ obreiro.cim_numero or 'Não informado' }}
+                </p>
+            </div>
+            <div class="card-body p-4">
+                <form method="POST">
+                    <input type="hidden" name="acao" id="acao" value="rascunho">
+
+                    <!-- Informação de ajuda -->
+                    <div class="alert alert-bordo-light mb-4">
+                        <i class="bi bi-info-circle-fill me-2"></i>
+                        <strong>Informação:</strong> Esta notificação será enviada ao GOB para registrar a Elevação do obreiro ao Grau de Companheiro.
+                    </div>
+
+                    <!-- Dados da Loja -->
+                    <div class="section-bordo">
+                        <h6 class="section-title">
+                            <i class="bi bi-building"></i> Dados da Loja
+                        </h6>
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Loja Maçônica <span class="text-danger">*</span></label>
+                                <input type="text" name="loja_nome" class="form-control" 
+                                       value="{{ obreiro.loja_nome or '' }}" required>
+                            </div>
+                            <div class="col-md-3 mb-3">
+                                <label class="form-label">Nº da Loja</label>
+                                <input type="text" name="loja_numero" class="form-control" 
+                                       value="{{ obreiro.loja_numero or '' }}">
+                            </div>
+                            <div class="col-md-3 mb-3">
+                                <label class="form-label">Oriente</label>
+                                <input type="text" name="loja_oriente" class="form-control" 
+                                       value="{{ obreiro.loja_orient or '' }}">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Dados da Sessão -->
+                    <div class="section-bordo">
+                        <h6 class="section-title">
+                            <i class="bi bi-calendar-event"></i> Dados da Sessão
+                        </h6>
+                        <div class="row">
+                            <div class="col-md-4 mb-3">
+                                <label class="form-label">Data da Sessão <span class="text-danger">*</span></label>
+                                <input type="date" name="data_sessao" class="form-control" 
+                                       value="{{ now.strftime('%Y-%m-%d') }}" required>
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <label class="form-label">Nº da Ata</label>
+                                <input type="text" name="ata_numero" class="form-control" 
+                                       placeholder="Ex: 001/2024">
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <label class="form-label">Data da Ata</label>
+                                <input type="date" name="ata_data" class="form-control">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Dados da Elevação -->
+                    <div class="section-bordo">
+                        <h6 class="section-title">
+                            <i class="bi bi-arrow-up-circle"></i> Dados da Elevação
+                        </h6>
+                        <div class="row">
+                            <div class="col-md-4 mb-3">
+                                <label class="form-label">Data da Elevação <span class="text-danger">*</span></label>
+                                <input type="date" name="data_elevacao" class="form-control" required>
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <label class="form-label">Data da Iniciação</label>
+                                <input type="date" name="data_iniciacao" class="form-control" 
+                                       value="{{ obreiro.data_iniciacao.strftime('%Y-%m-%d') if obreiro.data_iniciacao else '' }}">
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <label class="form-label">Tempo como Aprendiz</label>
+                                <input type="text" name="tempo_aprendiz" class="form-control" 
+                                       placeholder="Ex: 12 meses" readonly>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Avaliação -->
+                    <div class="section-bordo">
+                        <h6 class="section-title">
+                            <i class="bi bi-clipboard-data"></i> Avaliação
+                        </h6>
+                        <div class="row">
+                            <div class="col-md-3 mb-3">
+                                <label class="form-label">Frequência (%)</label>
+                                <input type="number" name="frequencia_sessoes" class="form-control" 
+                                       step="1" min="0" max="100" placeholder="Ex: 85">
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Trabalhos Apresentados</label>
+                                <input type="text" name="trabalhos_apresentados" class="form-control" 
+                                       placeholder="Ex: Plano de Estudo, Trabalho sobre Simbolismo">
+                            </div>
+                            <div class="col-md-3 mb-3">
+                                <label class="form-label">Nota do Exame</label>
+                                <input type="number" name="nota_exame" class="form-control" 
+                                       step="0.1" min="0" max="10" placeholder="Ex: 8.5">
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-12 mb-3">
+                                <label class="form-label">Conceito Final</label>
+                                <select name="conceito_final" class="form-select">
+                                    <option value="">Selecione...</option>
+                                    <option value="Aprovado com Louvor">Aprovado com Louvor</option>
+                                    <option value="Aprovado">Aprovado</option>
+                                    <option value="Aprovado com Restrições">Aprovado com Restrições</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Botões -->
+                    <div class="btn-group-mobile mt-4">
+                        <button type="button" class="btn-bordo-secondary" onclick="salvarRascunho()">
+                            <i class="bi bi-save"></i> Salvar Rascunho
+                        </button>
+                        <button type="button" class="btn-bordo-success" onclick="confirmarEnvio()">
+                            <i class="bi bi-send"></i> Enviar ao GOB
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function salvarRascunho() {
+    const form = document.querySelector('form');
+    document.getElementById('acao').value = 'rascunho';
+    form.submit();
+}
+
+function confirmarEnvio() {
+    if (confirm('⚠️ Confirmar envio da notificação de ELEVAÇÃO ao GOB?\n\nEsta ação irá gerar um protocolo oficial e atualizar a data de elevação do obreiro.')) {
+        document.getElementById('acao').value = 'enviar';
+        document.querySelector('form').submit();
+    }
+}
+</script>
+{% endblock %}
