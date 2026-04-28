@@ -11926,7 +11926,7 @@ def visualizar_processo_candidato(candidato_id):
             flash("Candidato não encontrado!", "danger")
             return redirect("/candidatos")
         
-        # 2. Buscar pareceres (tratar erro)
+        # 2. Buscar pareceres
         pareceres = []
         try:
             cursor.execute("""
@@ -11937,7 +11937,6 @@ def visualizar_processo_candidato(candidato_id):
                 ORDER BY pc.data_envio DESC
             """, (candidato_id,))
             pareceres = cursor.fetchall()
-            print(f"✅ Encontrados {len(pareceres)} pareceres")
         except Exception as e:
             print(f"⚠️ Erro ao buscar pareceres: {e}")
         
@@ -11951,7 +11950,6 @@ def visualizar_processo_candidato(candidato_id):
                 WHERE sc.candidato_id = %s
             """, (candidato_id,))
             sindicantes_designados = cursor.fetchall()
-            print(f"✅ Encontrados {len(sindicantes_designados)} sindicantes designados")
         except Exception as e:
             print(f"⚠️ Erro ao buscar sindicantes: {e}")
         
@@ -11965,7 +11963,6 @@ def visualizar_processo_candidato(candidato_id):
                 LIMIT 1
             """, (candidato_id,))
             votacao = cursor.fetchone()
-            print(f"✅ Votação encontrada: {votacao is not None}")
         except Exception as e:
             print(f"⚠️ Erro ao buscar votação: {e}")
         
@@ -11978,7 +11975,6 @@ def visualizar_processo_candidato(candidato_id):
                 ORDER BY data_leitura ASC
             """, (candidato_id,))
             leituras = cursor.fetchall()
-            print(f"✅ Encontradas {len(leituras)} leituras")
         except Exception as e:
             print(f"⚠️ Erro ao buscar leituras: {e}")
         
@@ -11991,7 +11987,6 @@ def visualizar_processo_candidato(candidato_id):
                 ORDER BY data_entrada ASC
             """, (candidato_id,))
             fluxo = cursor.fetchall()
-            print(f"✅ Encontradas {len(fluxo)} etapas no fluxo")
         except Exception as e:
             print(f"⚠️ Erro ao buscar fluxo: {e}")
         
@@ -11999,16 +11994,62 @@ def visualizar_processo_candidato(candidato_id):
         documentos = []
         try:
             cursor.execute("""
-                SELECT d.*, t.nome as tipo_nome
+                SELECT d.*, t.nome as tipo_nome, t.obrigatorio
                 FROM documentos_candidato d
                 LEFT JOIN tipos_documentos_candidato t ON d.tipo_documento_id = t.id
                 WHERE d.candidato_id = %s
                 ORDER BY d.data_upload DESC
             """, (candidato_id,))
             documentos = cursor.fetchall()
-            print(f"✅ Encontrados {len(documentos)} documentos")
         except Exception as e:
             print(f"⚠️ Erro ao buscar documentos: {e}")
+        
+        # ============================================
+        # 8. BUSCAR STATUS DOS DOCUMENTOS
+        # ============================================
+        documentos_status = {
+            'total_obrigatorios': 0,
+            'enviados_obrigatorios': 0,
+            'enviados_opcionais': 0
+        }
+        
+        try:
+            # Total de documentos obrigatórios
+            cursor.execute("SELECT COUNT(*) as total FROM tipos_documentos_candidato WHERE obrigatorio = 1 AND ativo = 1")
+            result = cursor.fetchone()
+            total_obrigatorios = result['total'] if result else 0
+            
+            # Documentos obrigatórios enviados (status diferente de rejeitado)
+            cursor.execute("""
+                SELECT COUNT(DISTINCT dc.tipo_documento_id) as enviados
+                FROM documentos_candidato dc
+                JOIN tipos_documentos_candidato td ON dc.tipo_documento_id = td.id
+                WHERE dc.candidato_id = %s 
+                  AND td.obrigatorio = 1 
+                  AND dc.status != 'rejeitado'
+            """, (candidato_id,))
+            enviados_obrigatorios = cursor.fetchone()['enviados'] or 0
+            
+            # Documentos opcionais enviados
+            cursor.execute("""
+                SELECT COUNT(DISTINCT dc.tipo_documento_id) as enviados
+                FROM documentos_candidato dc
+                JOIN tipos_documentos_candidato td ON dc.tipo_documento_id = td.id
+                WHERE dc.candidato_id = %s 
+                  AND td.obrigatorio = 0 
+                  AND dc.status != 'rejeitado'
+            """, (candidato_id,))
+            enviados_opcionais = cursor.fetchone()['enviados'] or 0
+            
+            documentos_status = {
+                'total_obrigatorios': total_obrigatorios,
+                'enviados_obrigatorios': enviados_obrigatorios,
+                'enviados_opcionais': enviados_opcionais
+            }
+            print(f"📊 Documentos Status: Obrigatórios {enviados_obrigatorios}/{total_obrigatorios}, Opcionais: {enviados_opcionais}")
+            
+        except Exception as e:
+            print(f"⚠️ Erro ao buscar status dos documentos: {e}")
         
         return_connection(conn)
         
@@ -12019,7 +12060,8 @@ def visualizar_processo_candidato(candidato_id):
                               votacao=votacao,
                               leituras=leituras,
                               fluxo=fluxo,
-                              documentos=documentos)
+                              documentos=documentos,
+                              documentos_status=documentos_status)
         
     except Exception as e:
         print(f"❌ Erro geral: {e}")
