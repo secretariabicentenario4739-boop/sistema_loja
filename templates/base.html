@@ -41,7 +41,68 @@
         background: var(--bege-pergaminho);
         color: var(--cinza-texto);
     }
-    
+    /* SUBMENUS */
+.submenu {
+    margin: 0;
+    padding: 0;
+}
+
+.submenu-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 15px;
+    color: var(--bordo);
+    cursor: pointer;
+    transition: all 0.2s;
+    border-radius: 8px;
+    margin: 2px 0;
+}
+
+.submenu-header:hover {
+    background: var(--bordo-transparente);
+}
+
+.submenu-header i:first-child {
+    margin-right: 10px;
+    width: 20px;
+    text-align: center;
+}
+
+.submenu-header span {
+    flex: 1;
+    font-size: 0.9rem;
+}
+
+.submenu-icon {
+    transition: transform 0.3s;
+    font-size: 0.8rem;
+    color: var(--bordo-suave);
+}
+
+.submenu-header.open .submenu-icon {
+    transform: rotate(90deg);
+}
+
+.submenu-content {
+    display: none;
+    padding-left: 35px;
+}
+
+.submenu-content.show {
+    display: block;
+}
+
+.submenu-content .nav-link {
+    padding: 8px 15px !important;
+    font-size: 0.85rem !important;
+}
+
+.submenu-content .nav-link i {
+    font-size: 0.8rem;
+    width: 25px;
+}
+	
     /* ============================================
        ESTILOS DO DASHBOARD (UNIFICADOS)
        ============================================ */
@@ -710,65 +771,115 @@
         <i class="bi bi-chevron-down dropdown-icon"></i>
     </div>
     <div class="dropdown-content">
-        <!-- COMUNICADOS -->
-        <a class="nav-link" href="/avisos/novo">
-            <i class="bi bi-megaphone"></i> <span>Novo Comunicado</span>
-        </a>
-        <a class="nav-link" href="/avisos">
-            <i class="bi bi-bell"></i> <span>Gerenciar Comunicados</span>
-        </a>
-        
-        <div style="height: 1px; background: rgba(74, 14, 46, 0.1); margin: 8px 0;"></div>
-        
-        <a class="nav-link" href="/relatorios">
-            <i class="bi bi-graph-up"></i> <span>Relatórios</span>
-        </a>
-        
-        <a class="nav-link" href="/atas/modelos">
-            <i class="bi bi-files"></i> <span>Modelos de Ata</span>
-        </a>
-        
+        <!-- SUBMENU: COMUNICADOS -->
+        <div class="submenu">
+            <div class="submenu-header" onclick="toggleSubmenu('submenuComunicados')">
+                <i class="bi bi-megaphone"></i>
+                <span>Comunicados</span>
+                <i class="bi bi-chevron-right submenu-icon"></i>
+            </div>
+            <div class="submenu-content" id="submenuComunicados">
+                <a class="nav-link" href="/avisos/novo">
+                    <i class="bi bi-plus-circle"></i> <span>Novo Comunicado</span>
+                </a>
+                <a class="nav-link" href="/avisos">
+                    <i class="bi bi-list-ul"></i> <span>Gerenciar Comunicados</span>
+                </a>
+            </div>
+        </div>
+
+        <!-- SUBMENU: RELATÓRIOS E DOCUMENTOS -->
+        <div class="submenu">
+            <div class="submenu-header" onclick="toggleSubmenu('submenuRelatorios')">
+                <i class="bi bi-graph-up"></i>
+                <span>Relatórios e Documentos</span>
+                <i class="bi bi-chevron-right submenu-icon"></i>
+            </div>
+            <div class="submenu-content" id="submenuRelatorios">
+                <a class="nav-link" href="/relatorios">
+                    <i class="bi bi-bar-chart"></i> <span>Relatórios</span>
+                </a>
+                <a class="nav-link" href="/atas/modelos">
+                    <i class="bi bi-files"></i> <span>Modelos de Ata</span>
+                </a>
+            </div>
+        </div>
+
+       <!-- SUBMENU: LOJAS, CARGOS E GRAUS -->
+<div class="submenu">
+    <div class="submenu-header" onclick="toggleSubmenu('submenuLojas')">
+        <i class="bi bi-building"></i>
+        <span>Lojas, Cargos e Graus</span>
+        <i class="bi bi-chevron-right submenu-icon"></i>
+    </div>
+    <div class="submenu-content" id="submenuLojas">
         <a class="nav-link" href="/lojas">
-            <i class="bi bi-building"></i> <span>Lojas</span>
+            <i class="bi bi-building"></i> <span>Gerenciar Lojas</span>
         </a>
-        
-        <div style="height: 1px; background: rgba(74, 14, 46, 0.1); margin: 8px 0;"></div>
-        
         <a class="nav-link" href="/cargos">
             <i class="bi bi-briefcase-fill"></i> <span>Gerenciar Cargos</span>
         </a>
-        
-        <a class="nav-link" href="/admin/permissoes">
-            <i class="bi bi-shield-lock"></i> <span>Permissões</span>
+        <a class="nav-link" href="/graus">
+            <i class="bi bi-star-fill"></i> <span>Gerenciar Graus</span>
         </a>
-        
-        <a class="nav-link" href="/backups">
-            <i class="bi bi-database"></i> <span>Backup</span>
-        </a>
-        
-        <a class="nav-link" href="/auditoria">
-            <i class="bi bi-journal"></i> <span>Auditoria</span>
-        </a>
-        
+    </div>
+</div>
+
+        <!-- SUBMENU: SEGURANÇA E SISTEMA -->
+        <div class="submenu">
+            <div class="submenu-header" onclick="toggleSubmenu('submenuSeguranca')">
+                <i class="bi bi-shield-lock"></i>
+                <span>Segurança e Sistema</span>
+                <i class="bi bi-chevron-right submenu-icon"></i>
+            </div>
+            <div class="submenu-content" id="submenuSeguranca">
+                <a class="nav-link" href="/admin/permissoes">
+                    <i class="bi bi-person-badge"></i> <span>Permissões</span>
+                </a>
+                <a class="nav-link" href="/backups">
+                    <i class="bi bi-database"></i> <span>Backup</span>
+                </a>
+                <a class="nav-link" href="/auditoria">
+                    <i class="bi bi-journal"></i> <span>Auditoria</span>
+                </a>
+            </div>
+        </div>
+
+        <!-- SUBMENU: CONFIGURAÇÕES -->
+        <div class="submenu">
+            <div class="submenu-header" onclick="toggleSubmenu('submenuConfiguracoes')">
+                <i class="bi bi-gear"></i>
+                <span>Configurações</span>
+                <i class="bi bi-chevron-right submenu-icon"></i>
+            </div>
+            <div class="submenu-content" id="submenuConfiguracoes">
+                <a class="nav-link" href="/config/email">
+                    <i class="bi bi-envelope"></i> <span>Config. E-mail</span>
+                </a>
+                <a class="nav-link" href="/config/whatsapp">
+                    <i class="bi bi-whatsapp"></i> <span>WhatsApp</span>
+                </a>
+                <a class="nav-link" href="/configuracoes/notificacoes">
+                    <i class="bi bi-bell"></i> <span>Notificações</span>
+                </a>
+            </div>
+        </div>
+
         <div style="height: 1px; background: rgba(74, 14, 46, 0.1); margin: 8px 0;"></div>
-        
-        <a class="nav-link" href="/config/email">
-            <i class="bi bi-envelope"></i> <span>Config. E-mail</span>
-        </a>
-        
-        <a class="nav-link" href="/config/whatsapp">
-            <i class="bi bi-whatsapp"></i> <span>WhatsApp</span>
-        </a>
-        
-        <a class="nav-link" href="/configuracoes/notificacoes">
-            <i class="bi bi-bell"></i> <span>Notificações</span>
-        </a>
-        
-        <div style="height: 1px; background: rgba(74, 14, 46, 0.1); margin: 8px 0;"></div>
-        
-        <a class="nav-link" href="/sugestoes">
-            <i class="bi bi-lightbulb"></i> <span>Sugestões</span>
-        </a>
+
+        <!-- SUBMENU: FEEDBACK -->
+        <div class="submenu">
+            <div class="submenu-header" onclick="toggleSubmenu('submenuFeedback')">
+                <i class="bi bi-chat-dots"></i>
+                <span>Feedback</span>
+                <i class="bi bi-chevron-right submenu-icon"></i>
+            </div>
+            <div class="submenu-content" id="submenuFeedback">
+                <a class="nav-link" href="/sugestoes">
+                    <i class="bi bi-lightbulb"></i> <span>Sugestões</span>
+                </a>
+            </div>
+        </div>
     </div>
 </div>
 <hr>
@@ -1130,6 +1241,25 @@ function atualizarBadge() {
 document.addEventListener('DOMContentLoaded', function() {
     atualizarBadge();
     setInterval(atualizarBadge, 60000);
+});
+
+// Função para alternar submenu
+function toggleSubmenu(submenuId) {
+    const content = document.getElementById(submenuId);
+    const header = content.previousElementSibling;
+    
+    content.classList.toggle('show');
+    header.classList.toggle('open');
+}
+
+// Fechar todos os submenus ao clicar fora (opcional)
+document.addEventListener('click', function(event) {
+    if (!event.target.closest('.submenu') && !event.target.closest('.menu-dropdown')) {
+        document.querySelectorAll('.submenu-content').forEach(content => {
+            content.classList.remove('show');
+            content.previousElementSibling.classList.remove('open');
+        });
+    }
 });
     </script>
     
