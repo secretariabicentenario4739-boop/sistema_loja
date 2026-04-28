@@ -11235,6 +11235,10 @@ def documentos_candidato(id):
             flash("Candidato não encontrado!", "danger")
             return redirect("/candidatos")
         
+        # Verificar se o candidato já foi transformado em obreiro
+        is_obreiro = candidato.get('obreiro_id') is not None
+        print(f"🔍 DEBUG: candidato_id={id}, obreiro_id={candidato.get('obreiro_id')}, is_obreiro={is_obreiro}")
+        
         # Verificar permissão
         if session.get('tipo') not in ['admin', 'sindicante']:
             token = request.args.get('token')
@@ -11294,6 +11298,7 @@ def documentos_candidato(id):
         print(f"   - Total obrigatórios: {total_obrigatorios}")
         print(f"   - Enviados obrigatórios: {enviados_obrigatorios}")
         print(f"   - Percentual: {percentual}%")
+        print(f"   - É obreiro: {is_obreiro}")
         
         return_connection(conn)
         
@@ -11305,7 +11310,8 @@ def documentos_candidato(id):
                               total_enviados=enviados_obrigatorios,
                               percentual=percentual,
                               documentos_pendentes=documentos_pendentes,
-                              documentos_opcionais_count=documentos_opcionais_count)
+                              documentos_opcionais_count=documentos_opcionais_count,
+                              is_obreiro=is_obreiro)  # ← ADICIONADO
         
     except Exception as e:
         print(f"Erro ao carregar documentos: {e}")
@@ -11314,7 +11320,7 @@ def documentos_candidato(id):
         if conn:
             return_connection(conn)
         flash(f"Erro ao carregar documentos: {str(e)}", "danger")
-        return redirect("/candidatos")                          
+        return redirect("/candidatos")
 
 @app.route("/candidatos/<int:candidato_id>/foto", methods=["POST"])
 @login_required
