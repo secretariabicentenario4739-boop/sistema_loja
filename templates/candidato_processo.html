@@ -312,7 +312,7 @@
             </div>
         </div>
 
-        <!-- Documentação -->
+              <!-- Documentação -->
         <div class="card-bordo-branco shadow-sm mb-4">
             <div class="card-header" style="background: linear-gradient(135deg, #3b82f6, #2563eb); color: white; border-radius: 16px 16px 0 0;">
                 <h5 class="mb-0"><i class="bi bi-files"></i> Documentação</h5>
@@ -341,16 +341,35 @@
                     </div>
                     
                     <div class="text-center">
-                        <a href="/candidatos/{{ candidato.id }}/documentos" class="btn-bordo">
-                            <i class="bi bi-folder2-open"></i> Visualizar Todos os Documentos
-                        </a>
+                        <!-- Verifica se todos os documentos obrigatórios foram enviados -->
+                        {% if documentos_status.enviados_obrigatorios >= documentos_status.total_obrigatorios %}
+                            <a href="/candidatos/{{ candidato.id }}/documentos" class="btn-bordo-outline">
+                                <i class="bi bi-folder2-open"></i> Ver Documentos
+                            </a>
+                            <small class="d-block text-success mt-2">
+                                <i class="bi bi-check-circle-fill"></i> Todos os documentos obrigatórios foram enviados!
+                            </small>
+                        {% else %}
+                            {% if session.tipo == 'admin' or session.tipo == 'sindicante' %}
+                                <a href="/candidatos/{{ candidato.id }}/documentos" class="btn-bordo">
+                                    <i class="bi bi-upload"></i> Enviar Documentos
+                                </a>
+                                <small class="d-block text-muted mt-2">
+                                    Faltam {{ documentos_status.total_obrigatorios - documentos_status.enviados_obrigatorios }} documento(s) obrigatório(s)
+                                </small>
+                            {% else %}
+                                <a href="/candidatos/{{ candidato.id }}/documentos" class="btn-bordo-outline">
+                                    <i class="bi bi-folder2-open"></i> Ver Documentos
+                                </a>
+                            {% endif %}
+                        {% endif %}
                     </div>
                 {% else %}
                     <div class="text-center text-muted py-3">
                         <i class="bi bi-cloud-slash fs-1"></i>
                         <p class="mb-0 mt-2">Nenhum documento cadastrado</p>
                         {% if session.tipo == 'admin' or session.tipo == 'sindicante' %}
-                        <a href="/candidatos/{{ candidato.id }}/documentos" class="btn-bordo-outline mt-2">
+                        <a href="/candidatos/{{ candidato.id }}/documentos" class="btn-bordo mt-2">
                             <i class="bi bi-upload"></i> Enviar Documentos
                         </a>
                         {% endif %}
