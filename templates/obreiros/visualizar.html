@@ -658,101 +658,93 @@
             </div>
         </div>
 
-        <!-- Histórico do Candidato - APENAS ADMIN -->
-        {% if session.tipo == 'admin' %}
-        <div class="card-bordo-branco shadow-sm mb-4">
-            <div class="card-header" style="background: linear-gradient(135deg, #10b981, #059669); border-bottom: none; color: white; border-radius: 16px 16px 0 0;">
-                <h5 class="mb-0"><i class="bi bi-clock-history me-2"></i> Histórico de Iniciação</h5>
+        <!-- <!-- Histórico do Candidato - APENAS ADMIN e se tiver histórico -->
+{% if session.tipo == 'admin' and historico_candidato %}
+<div class="card-bordo-branco shadow-sm mb-4">
+    <div class="card-header" style="background: linear-gradient(135deg, #10b981, #059669); border-bottom: none; color: white; border-radius: 16px 16px 0 0;">
+        <h5 class="mb-0"><i class="bi bi-clock-history me-2"></i> Histórico de Iniciação</h5>
+    </div>
+    <div class="card-body p-4">
+        <div class="row">
+            <div class="col-md-6">
+                <table class="table table-sm table-borderless">
+                    <tr>
+                        <td class="text-muted" style="width: 140px;">Nome como Candidato:</td>
+                        <td><strong style="color: var(--bordo);">{{ historico_candidato.candidato_nome }}</strong></td>
+                    </tr>
+                    <tr>
+                        <td class="text-muted">CPF:</td>
+                        <td>{{ historico_candidato.cpf or '-' }}</td>
+                    </tr>
+                    <tr>
+                        <td class="text-muted">Data de Cadastro:</td>
+                        <td>{{ historico_candidato.data_criacao.strftime('%d/%m/%Y') if historico_candidato.data_criacao else '-' }}</td>
+                    </tr>
+                    <tr>
+                        <td class="text-muted">Data de Aprovação:</td>
+                        <td>
+                            {% if historico_candidato.data_aprovacao %}
+                                {{ historico_candidato.data_aprovacao.strftime('%d/%m/%Y') }}
+                            {% elif historico_candidato.data_fechamento %}
+                                {{ historico_candidato.data_fechamento.strftime('%d/%m/%Y') }}
+                            {% else %}
+                                -
+                            {% endif %}
+                        </td>
+                    </tr>
+                </table>
             </div>
-            <div class="card-body p-4">
-                {% if historico_candidato %}
-                <div class="row">
-                    <div class="col-md-6">
-                        <table class="table table-sm table-borderless">
-                            <tr>
-                                <td class="text-muted" style="width: 140px;">Nome como Candidato:</td>
-                                <td><strong style="color: var(--bordo);">{{ historico_candidato.candidato_nome }}</strong></td>
-                            </tr>
-                            <tr>
-                                <td class="text-muted">CPF:</td>
-                                <td>{{ historico_candidato.cpf or '-' }}</td>
-                            </tr>
-                            <tr>
-                                <td class="text-muted">Data de Cadastro:</td>
-                                <td>{{ historico_candidato.data_criacao.strftime('%d/%m/%Y') if historico_candidato.data_criacao else '-' }}</td>
-                            </tr>
-                            <tr>
-                                <td class="text-muted">Data de Aprovação:</td>
-                                <td>
-                                    {% if historico_candidato.data_aprovacao %}
-                                        {{ historico_candidato.data_aprovacao.strftime('%d/%m/%Y') }}
-                                    {% elif historico_candidato.data_fechamento %}
-                                        {{ historico_candidato.data_fechamento.strftime('%d/%m/%Y') }}
-                                    {% else %}
-                                        -
-                                    {% endif %}
-                                </td>
-                            </tr>
-                        </table>
-                    </div>
-                    <div class="col-md-6">
-                        <table class="table table-sm table-borderless">
-                            <tr>
-                                <td class="text-muted" style="width: 140px;">Status da Sindicância:</td>
-                                <td>
-                                    {% if historico_candidato.status == 'Aprovado' %}
-                                        <span class="badge-mestre">✓ Aprovado</span>
-                                    {% elif historico_candidato.status == 'Reprovado' %}
-                                        <span class="badge-inativo">✗ Reprovado</span>
-                                    {% else %}
-                                        <span class="badge" style="background: #f59e0b; color: white;">{{ historico_candidato.status or 'Em análise' }}</span>
-                                    {% endif %}
-                                </td>
-                            </tr>
-                            <tr>
-                                <td class="text-muted">Placet de Iniciação:</td>
-                                <td><code class="bg-light p-1 rounded">{{ historico_candidato.numero_placet or '-' }}</code></td>
-                            </tr>
-                            <tr>
-                                <td class="text-muted">Data de Transformação:</td>
-                                <td>{{ historico_candidato.data_transformacao.strftime('%d/%m/%Y %H:%M') if historico_candidato.data_transformacao else '-' }}</td>
-                            </tr>
-                            <tr>
-                                <td class="text-muted">Votação:</td>
-                                <td>
-                                    <small>👍 {{ historico_candidato.votos_positivos or 0 }} positivos | 👎 {{ historico_candidato.votos_negativos or 0 }} negativos</small>
-                                </td>
-                            </tr>
-                        </table>
-                    </div>
-                </div>
-                
-                {% if historico_candidato.parecer_final %}
-                <hr class="my-3" style="border-color: rgba(74, 14, 46, 0.15);">
-                <div class="mt-2">
-                    <small class="text-muted"><i class="bi bi-chat-text"></i> Parecer Final:</small>
-                    <p class="mb-0 small">{{ historico_candidato.parecer_final }}</p>
-                </div>
-                {% endif %}
-                
-                <div class="alert mt-3 mb-0" style="background: var(--bordo-transparente); border-color: var(--bordo); color: var(--bordo); border-radius: 12px;">
-                    <i class="bi bi-info-circle-fill me-2"></i>
-                    <strong>Informação:</strong> Este obreiro foi iniciado a partir do processo de sindicância 
-                    do candidato <strong>{{ historico_candidato.candidato_nome }}</strong>.
-                    <a href="/candidato/{{ historico_candidato.candidato_id }}/processo" class="alert-link" style="color: var(--bordo);">
-                        Ver processo completo →
-                    </a>
-                </div>
-                {% else %}
-                <div class="text-center py-4">
-                    <i class="bi bi-archive fs-1 text-muted"></i>
-                    <p class="mt-2 mb-0">Não há histórico de candidato vinculado a este obreiro.</p>
-                    <small class="text-muted">Este obreiro pode ter sido cadastrado diretamente no sistema.</small>
-                </div>
-                {% endif %}
+            <div class="col-md-6">
+                <table class="table table-sm table-borderless">
+                    <tr>
+                        <td class="text-muted" style="width: 140px;">Status da Sindicância:</td>
+                        <td>
+                            {% if historico_candidato.status == 'Aprovado' %}
+                                <span class="badge-mestre">✓ Aprovado</span>
+                            {% elif historico_candidato.status == 'Reprovado' %}
+                                <span class="badge-inativo">✗ Reprovado</span>
+                            {% else %}
+                                <span class="badge" style="background: #f59e0b; color: white;">{{ historico_candidato.status or 'Em análise' }}</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    <tr>
+                        <td class="text-muted">Placet de Iniciação:</td>
+                        <td><code class="bg-light p-1 rounded">{{ historico_candidato.numero_placet or '-' }}</code></td>
+                    </tr>
+                    <tr>
+                        <td class="text-muted">Data de Transformação:</td>
+                        <td>{{ historico_candidato.data_transformacao.strftime('%d/%m/%Y %H:%M') if historico_candidato.data_transformacao else '-' }}</td>
+                    </tr>
+                    <tr>
+                        <td class="text-muted">Votação:</td>
+                        <td>
+                            <small>👍 {{ historico_candidato.votos_positivos or 0 }} positivos | 👎 {{ historico_candidato.votos_negativos or 0 }} negativos</small>
+                        </td>
+                    </tr>
+                </table>
             </div>
         </div>
+        
+        {% if historico_candidato.parecer_final %}
+        <hr class="my-3" style="border-color: rgba(74, 14, 46, 0.15);">
+        <div class="mt-2">
+            <small class="text-muted"><i class="bi bi-chat-text"></i> Parecer Final:</small>
+            <p class="mb-0 small">{{ historico_candidato.parecer_final }}</p>
+        </div>
         {% endif %}
+        
+        <div class="alert mt-3 mb-0" style="background: var(--bordo-transparente); border-color: var(--bordo); color: var(--bordo); border-radius: 12px;">
+            <i class="bi bi-info-circle-fill me-2"></i>
+            <strong>Informação:</strong> Este obreiro foi iniciado a partir do processo de sindicância 
+            do candidato <strong>{{ historico_candidato.candidato_nome }}</strong>.
+            <a href="/candidato/{{ historico_candidato.candidato_id }}/processo" class="alert-link" style="color: var(--bordo);">
+                Ver processo completo →
+            </a>
+        </div>
+    </div>
+</div>
+{% endif %}
 
         <!-- Datas Importantes -->
         <div class="card-bordo-branco shadow-sm mb-4">
