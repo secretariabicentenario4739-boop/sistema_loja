@@ -9,9 +9,10 @@ notificacoes_bp = Blueprint('notificacoes', __name__, url_prefix='/notificacoes'
 
 @notificacoes_bp.route('/candidato/<int:candidato_id>/notificar-iniciacao', methods=['GET', 'POST'])
 def notificar_iniciacao(candidato_id):
-    from flask import session, flash, redirect, url_for, render_template, request
+    from flask import session, flash, redirect, url_for, render_template, request, current_app
     from database import get_db_connection
     from models.notificacoes_gob import NotificacaoIniciacao
+    from services.pdf_service import PDFService
     from datetime import datetime
     
     # Verificação usando sessão
@@ -26,7 +27,8 @@ def notificar_iniciacao(candidato_id):
     # Buscar candidato
     with get_db_connection() as cursor:
         cursor.execute("""
-            SELECT id, nome, email, celular, status, fechado, loja_nome, loja_numero
+            SELECT id, nome, email, celular, status, fechado, 
+                   loja_nome, loja_numero
             FROM candidatos 
             WHERE id = %s
         """, (candidato_id,))
@@ -34,29 +36,48 @@ def notificar_iniciacao(candidato_id):
     
     if not candidato:
         flash('Candidato não encontrado!', 'danger')
-        return redirect('/candidatos')  # ← CORRETO: /candidatos
+        return redirect('/candidatos')
+    
+    # Buscar o Oriente da loja na tabela lojas
+    loja_orient = ''
+    if candidato.get('loja_nome'):
+        with get_db_connection() as cursor:
+            cursor.execute("""
+                SELECT oriente FROM lojas WHERE nome = %s
+            """, (candidato['loja_nome'],))
+            loja = cursor.fetchone()
+            if loja and loja.get('oriente'):
+                loja_orient = loja['oriente']
+                print(f"✅ Oriente encontrado: {loja_orient} para a loja {candidato['loja_nome']}")
+            else:
+                print(f"⚠️ Loja '{candidato['loja_nome']}' não encontrada na tabela lojas")
     
     notificacao = NotificacaoIniciacao.buscar_por_candidato(candidato_id)
     
     if request.method == 'POST':
         acao = request.form.get('acao')
         
+        # Tratar campos de data (se vazio, enviar None)
+        data_sessao = request.form.get('data_sessao') if request.form.get('data_sessao') else None
+        data_iniciacao = request.form.get('data_iniciacao') if request.form.get('data_iniciacao') else None
+        ata_data = request.form.get('ata_data') if request.form.get('ata_data') else None
+        
         dados = {
             'candidato_id': candidato_id,
             'numero_processo': request.form.get('numero_processo') or f"PROC-{candidato_id}-{datetime.now().year}",
             'loja_nome': request.form.get('loja_nome') or candidato.get('loja_nome', ''),
             'loja_numero': request.form.get('loja_numero') or candidato.get('loja_numero', ''),
-            'loja_oriente': request.form.get('loja_oriente', ''),
-            'data_sessao': request.form.get('data_sessao'),
+            'loja_oriente': request.form.get('loja_oriente') or loja_orient,
+            'data_sessao': data_sessao,
             'nome_candidato': request.form.get('nome_candidato') or candidato['nome'],
-            'data_iniciacao': request.form.get('data_iniciacao'),
+            'data_iniciacao': data_iniciacao,
             'hora_iniciacao': request.form.get('hora_iniciacao'),
             'ritual_utilizado': request.form.get('ritual_utilizado'),
-            'numero_obreiros': request.form.get('numero_obreiros_presentes'),
+            'numero_obreiros_presentes': request.form.get('numero_obreiros_presentes'),
             'presidente_comissao': request.form.get('presidente_comissao'),
             'membros_comissao': request.form.get('membros_comissao'),
             'ata_numero': request.form.get('ata_numero'),
-            'ata_data': request.form.get('ata_data'),
+            'ata_data': ata_data,
         }
         
         if notificacao:
@@ -70,16 +91,47 @@ def notificar_iniciacao(candidato_id):
         
         elif acao == 'enviar':
             protocolo = f"GOB-{datetime.now().year}-{candidato_id}-{int(datetime.now().timestamp())}"
-            NotificacaoIniciacao.atualizar_status(id_salvo, 'enviado', protocolo=protocolo, data_envio=datetime.now())
             
-            flash(f'✅ Notificação enviada com sucesso! Protocolo: {protocolo}', 'success')
-            return redirect('/candidatos')  # ← CORRETO: /candidatos
+            try:
+                pdf_service = PDFService()
+                pdf_service.init_app(current_app._get_current_object())
+                
+                dados_pdf = {
+                    'candidato_id': candidato_id,
+                    'loja_nome': dados['loja_nome'],
+                    'loja_numero': dados['loja_numero'],
+                    'loja_oriente': dados['loja_oriente'],
+                    'data_sessao': dados['data_sessao'],
+                    'nome_candidato': dados['nome_candidato'],
+                    'data_iniciacao': dados['data_iniciacao'],
+                    'hora_iniciacao': dados['hora_iniciacao'],
+                    'ritual_utilizado': dados['ritual_utilizado'],
+                    'numero_obreiros': dados['numero_obreiros_presentes'],
+                    'presidente_comissao': dados['presidente_comissao'],
+                    'membros_comissao': dados['membros_comissao'],
+                    'ata_numero': dados['ata_numero'],
+                    'protocolo': protocolo
+                }
+                
+                resultado_pdf = pdf_service.gerar_comunicado_iniciacao(dados_pdf)
+                pdf_url = resultado_pdf['url']
+                
+                NotificacaoIniciacao.atualizar_status(id_salvo, 'enviado', protocolo=protocolo, data_envio=datetime.now(), pdf_url=pdf_url)
+                
+                flash(f'✅ Notificação enviada com sucesso! Protocolo: {protocolo}', 'success')
+                flash(f'📄 PDF gerado: {pdf_url}', 'info')
+                
+            except Exception as e:
+                flash(f'❌ Erro ao gerar PDF: {str(e)}', 'danger')
+                NotificacaoIniciacao.atualizar_status(id_salvo, 'enviado', protocolo=protocolo, data_envio=datetime.now())
+            
+            return redirect('/candidatos')
     
     return render_template('notificacao_iniciacao.html', 
                          candidato=candidato, 
                          notificacao=notificacao,
+                         loja_orient=loja_orient,
                          now=datetime.now())
-
 
 @notificacoes_bp.route('/obreiro/<int:obreiro_id>/notificar-elevacao', methods=['GET', 'POST'])
 def notificar_elevacao(obreiro_id):
