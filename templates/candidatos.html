@@ -722,14 +722,25 @@
                                         </form>
                                         {% endif %}
                                         
-                                        <!-- BOTÃO EMITIR PLACET - APENAS ADMIN (quando aprovado e ainda não é obreiro) -->
-                                        {% if session.tipo == 'admin' and c.fechado == 1 and c.status == 'Aprovado' and not c.obreiro_id %}
-                                        <button type="button" class="btn-icon-primary" 
-                                                onclick="abrirModalEmitirPlacet({{ c.id }}, '{{ c.nome|replace("'", "\\'") }}')"
-                                                title="Emitir Placet">
-                                            <i class="bi bi-file-text-fill"></i>
-                                        </button>
-                                        {% endif %}
+                                       <!-- BOTÃO EMITIR PLACET / NOTIFICAR INICIAÇÃO - APENAS ADMIN -->
+{% if session.tipo == 'admin' and c.fechado == 1 and c.status == 'Aprovado' and not c.obreiro_id %}
+    {% set notif = notificacoes_iniciacao.get(c.id) if notificacoes_iniciacao else None %}
+    {% if notif %}
+    <!-- NOTIFICAÇÃO JÁ ENVIADA - MOSTRA BOTÃO EMITIR PLACET -->
+    <button type="button" class="btn-icon-primary" 
+            onclick="abrirModalEmitirPlacet({{ c.id }}, '{{ c.nome|replace("'", "\\'") }}')"
+            title="Emitir Placet">
+        <i class="bi bi-file-text-fill"></i>
+    </button>
+    {% else %}
+    <!-- NOTIFICAÇÃO NÃO ENVIADA - MOSTRA BOTÃO PARA PREENCHER -->
+    <a href="/notificacoes/candidato/{{ c.id }}/notificar-iniciacao" 
+       class="btn-icon-success" 
+       title="Preencher Notificação de Iniciação">
+        <i class="bi bi-send-fill"></i>
+    </a>
+    {% endif %}
+{% endif %}
                                     </div>
                                 </td>
                             </tr>

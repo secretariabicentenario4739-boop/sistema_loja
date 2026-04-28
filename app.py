@@ -10999,10 +10999,7 @@ def gerenciar_candidatos():
                 agora = datetime.now()
                 
                 # Gerar token único para o candidato
-                # Opção 1: Hash simples
                 token = hashlib.sha256(f"{nome}{agora}{uuid.uuid4()}".encode()).hexdigest()
-                # Opção 2: Token mais curto (8 caracteres) - descomente se preferir
-                # token = str(uuid.uuid4())[:8]
                 
                 cursor.execute("""
                     INSERT INTO candidatos (nome, data_criacao, token_acesso) 
@@ -11066,13 +11063,34 @@ def gerenciar_candidatos():
         candidatos = []
     
     # ============================================
+    # BUSCAR NOTIFICAÇÕES DE INICIAÇÃO
+    # ============================================
+    notificacoes_iniciacao = {}
+    try:
+        cursor.execute("""
+            SELECT candidato_id, status_envio, protocolo_gob, pdf_url
+            FROM notificacoes_iniciacao 
+            WHERE status_envio = 'enviado'
+        """)
+        notificacoes = cursor.fetchall()
+        for n in notificacoes:
+            notificacoes_iniciacao[n['candidato_id']] = {
+                'status': n['status_envio'],
+                'protocolo': n['protocolo_gob'],
+                'pdf_url': n.get('pdf_url')
+            }
+        print(f"📋 Notificações de iniciação enviadas: {len(notificacoes_iniciacao)}")
+    except Exception as e:
+        print(f"Erro ao buscar notificações: {e}")
+    
+    # ============================================
     # CORREÇÃO: Buscar status dos documentos (APENAS OBRIGATÓRIOS)
     # ============================================
     
     documentos_status = {}
     
     try:
-        # Primeiro: Buscar total de documentos OBRIGATÓRIOS
+        # Buscar total de documentos OBRIGATÓRIOS
         cursor.execute("SELECT COUNT(*) as total FROM tipos_documentos_candidato WHERE obrigatorio = 1 AND ativo = 1")
         result = cursor.fetchone()
         total_obrigatorios = result['total'] if result else 0
@@ -11093,7 +11111,7 @@ def gerenciar_candidatos():
                 """, (candidato['id'],))
                 enviados_obrigatorios = cursor.fetchone()['enviados'] or 0
                 
-                # Documentos OPCIONAIS enviados (apenas para exibição, não entra no progresso)
+                # Documentos OPCIONAIS enviados
                 cursor.execute("""
                     SELECT COUNT(DISTINCT dc.tipo_documento_id) as enviados
                     FROM documentos_candidato dc
@@ -11175,6 +11193,7 @@ def gerenciar_candidatos():
         sindicantes_disponiveis = []
     
     # Buscar designações existentes por candidato
+    designados_por_candidato = {}
     try:
         cursor.execute("""
             SELECT candidato_id, sindicante_id 
@@ -11182,7 +11201,6 @@ def gerenciar_candidatos():
         """)
         designacoes = cursor.fetchall()
         
-        designados_por_candidato = {}
         for d in designacoes:
             if d['candidato_id'] not in designados_por_candidato:
                 designados_por_candidato[d['candidato_id']] = []
@@ -11200,6 +11218,7 @@ def gerenciar_candidatos():
                           lojas=lojas,
                           sindicantes_disponiveis=sindicantes_disponiveis,
                           designados_por_candidato=designados_por_candidato,
+                          notificacoes_iniciacao=notificacoes_iniciacao,
                           tipo=session.get("tipo", "admin"))
 
 @app.route("/candidatos/<int:id>/documentos")
