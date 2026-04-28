@@ -17,7 +17,37 @@
         --ouro-claro: #F0D68A;
     }
 
-    /* CARDS BRANCOS COM BORDÔ */
+	/* Ícone dourado */
+	.btn-icon-placet {
+		background: linear-gradient(135deg, #D4AF37, #996515);
+		border: none;
+		color: white;
+		width: 32px;
+		height: 32px;
+		padding: 0;
+		border-radius: 50%;
+		transition: all 0.3s;
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+	}
+
+	.btn-icon-placet:hover {
+		transform: translateY(-2px);
+		box-shadow: 0 5px 15px rgba(212, 175, 55, 0.4);
+		color: white;
+	}
+
+	/* Versão responsiva para mobile */
+	@media (max-width: 768px) {
+		.btn-icon-placet {
+			width: 28px;
+			height: 28px;
+			font-size: 0.75rem;
+		}
+	}
+   
+   /* CARDS BRANCOS COM BORDÔ */
     .card-bordo-branco {
         background: white;
         border: 1px solid rgba(74, 14, 46, 0.15);
@@ -722,25 +752,40 @@
                                         </form>
                                         {% endif %}
                                         
-                                       <!-- BOTÃO EMITIR PLACET / NOTIFICAR INICIAÇÃO - APENAS ADMIN -->
-{% if session.tipo == 'admin' and c.fechado == 1 and c.status == 'Aprovado' and not c.obreiro_id %}
-    {% set notif = notificacoes_iniciacao.get(c.id) if notificacoes_iniciacao else None %}
-    {% if notif %}
-    <!-- NOTIFICAÇÃO JÁ ENVIADA - MOSTRA BOTÃO EMITIR PLACET -->
-    <button type="button" class="btn-icon-primary" 
-            onclick="abrirModalEmitirPlacet({{ c.id }}, '{{ c.nome|replace("'", "\\'") }}')"
-            title="Emitir Placet">
-        <i class="bi bi-file-text-fill"></i>
-    </button>
-    {% else %}
-    <!-- NOTIFICAÇÃO NÃO ENVIADA - MOSTRA BOTÃO PARA PREENCHER -->
-    <a href="/notificacoes/candidato/{{ c.id }}/notificar-iniciacao" 
-       class="btn-icon-success" 
-       title="Preencher Notificação de Iniciação">
-        <i class="bi bi-send-fill"></i>
-    </a>
-    {% endif %}
-{% endif %}
+                                      <!-- BOTÃO EMITIR PLACET / NOTIFICAR INICIAÇÃO - APENAS ADMIN -->
+										{% if session.tipo == 'admin' and c.fechado == 1 and c.status == 'Aprovado' and not c.obreiro_id %}
+											{% set notif = notificacoes_iniciacao.get(c.id) if notificacoes_iniciacao else None %}
+											{% if notif %}
+											<!-- NOTIFICAÇÃO JÁ ENVIADA - MOSTRA BOTÃO EMITIR PLACET E INFO -->
+											<div class="d-flex gap-1">
+												<button type="button" class="btn-icon-placet" 
+														onclick="abrirModalEmitirPlacet({{ c.id }}, '{{ c.nome|replace("'", "\\'") }}')"
+														title="Emitir Placet">
+													<i class="bi bi-trophy-fill"></i>
+												</button>
+												<a href="/notificacoes/historico" 
+												   class="btn-icon-info" 
+												   title="Ver Histórico de Notificações">
+													<i class="bi bi-clock-history"></i>
+												</a>
+											</div>
+											<div class="small text-success mt-1">
+												<i class="bi bi-check-circle-fill"></i> Notificação enviada
+											</div>
+											{% else %}
+											<!-- NOTIFICAÇÃO NÃO ENVIADA - MOSTRA BOTÃO PARA PREENCHER -->
+											<div class="d-flex flex-column align-items-center">
+												<a href="/notificacoes/candidato/{{ c.id }}/notificar-iniciacao" 
+												   class="btn-icon-success" 
+												   title="Preencher Notificação de Iniciação">
+													<i class="bi bi-send-fill"></i>
+												</a>
+												<div class="small text-warning mt-1">
+													<i class="bi bi-exclamation-triangle-fill"></i> Pendente
+												</div>
+											</div>
+											{% endif %}
+										{% endif %}
                                     </div>
                                 </td>
                             </tr>

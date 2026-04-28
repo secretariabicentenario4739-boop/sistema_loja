@@ -12720,6 +12720,20 @@ def visualizar_sindicancia(candidato_id):
             return redirect("/candidatos")
         
         # ============================================
+        # BUSCAR NOTIFICAÇÃO DE INICIAÇÃO
+        # ============================================
+        from models.notificacoes_gob import NotificacaoIniciacao
+        
+        notificacao_iniciacao = NotificacaoIniciacao.buscar_por_candidato(candidato_id)
+        
+        # Adicionar notificação ao objeto candidato para usar no template
+        if notificacao_iniciacao:
+            candidato['notificacao_iniciacao'] = notificacao_iniciacao
+            print(f"✅ Notificação encontrada para candidato {candidato_id}")
+        else:
+            print(f"⚠️ Nenhuma notificação encontrada para candidato {candidato_id}")
+        
+        # ============================================
         # Verificar se o formulário está preenchido
         # ============================================
         formulario_preenchido = False
@@ -12810,6 +12824,20 @@ def visualizar_sindicancia(candidato_id):
                 votos_recebidos = 1
                 percentual_votos = 100
         
+        # Buscar notificações de elevação e exaltação (se for obreiro)
+        notificacao_elevacao = None
+        notificacao_exaltacao = None
+        
+        if candidato.get('obreiro_id'):
+            from models.notificacoes_gob import NotificacaoElevacao, NotificacaoExaltacao
+            notificacao_elevacao = NotificacaoElevacao.buscar_por_candidato(candidato_id)
+            notificacao_exaltacao = NotificacaoExaltacao.buscar_por_candidato(candidato_id)
+            
+            if notificacao_elevacao:
+                candidato['notificacao_elevacao'] = notificacao_elevacao
+            if notificacao_exaltacao:
+                candidato['notificacao_exaltacao'] = notificacao_exaltacao
+        
         return_connection(conn)
         
         return render_template("sindicancia.html", 
@@ -12820,7 +12848,11 @@ def visualizar_sindicancia(candidato_id):
                                votos_recebidos=votos_recebidos,
                                votos_positivos=votos_positivos,
                                votos_negativos=votos_negativos,
-                               percentual_votos=percentual_votos)
+                               percentual_votos=percentual_votos,
+                               notificacao_iniciacao=notificacao_iniciacao,
+                               notificacao_elevacao=notificacao_elevacao,
+                               notificacao_exaltacao=notificacao_exaltacao,
+                               now=datetime.now())
         
     except Exception as e:
         print(f"Erro ao visualizar sindicância: {e}")
@@ -12835,7 +12867,9 @@ def visualizar_sindicancia(candidato_id):
             return_connection(conn)
         
         flash(f"Erro ao carregar sindicância: {str(e)}", "danger")
-        return redirect("/candidatos")        
+        return redirect("/candidatos")
+        
+        
 @app.route("/api/sindicantes-disponiveis/<int:candidato_id>")
 @login_required
 def api_sindicantes_disponiveis(candidato_id):
@@ -12879,28 +12913,83 @@ def api_sindicantes_disponiveis(candidato_id):
 @admin_required
 def fechar_sindicancia_manual(id):
     cursor, conn = get_db()
+    
+    # Buscar todos os pareceres do candidato
     cursor.execute("SELECT parecer FROM sindicancias WHERE candidato_id = %s", (id,))
     pareceres = cursor.fetchall()
+    
     if not pareceres:
         flash("Não é possível fechar: nenhum parecer enviado", "warning")
         return_connection(conn)
         return redirect("/candidatos")
+    
+    # Buscar dados antigos para log
     cursor.execute("SELECT * FROM candidatos WHERE id = %s", (id,))
     dados_antigos = dict(cursor.fetchone())
+    
+    # Contar votos
     positivos = sum(1 for p in pareceres if p["parecer"] == "positivo")
     negativos = len(pareceres) - positivos
-    status = "Aprovado" if positivos > negativos else "Reprovado"
+    total_pareceres = len(pareceres)
+    
+    # ============================================
+    # NOVA LÓGICA DE APROVAÇÃO
+    # ============================================
+    
+    if total_pareceres < 3:
+        flash(f"Não é possível fechar: são necessários no mínimo 3 pareceres. Atualmente: {total_pareceres}/3", "warning")
+        return_connection(conn)
+        return redirect("/candidatos")
+    
+    if positivos >= 3:
+        # Caso 1: 3 ou mais aprovam → APROVADO
+        status = "Aprovado"
+        resultado_final = f"APROVADO por {positivos} votos a favor, {negativos} contra"
+        mensagem = f"✅ Candidato APROVADO! {positivos} votos a favor, {negativos} contra."
+        
+    elif negativos >= 2:
+        # Caso 2: 2 ou mais reprovam → REPROVADO
+        status = "Reprovado"
+        resultado_final = f"REPROVADO por {negativos} votos contra, {positivos} a favor"
+        mensagem = f"❌ Candidato REPROVADO! {negativos} votos contra, {positivos} a favor."
+        
+    else:
+        # Caso 3: Empate (2 aprovam, 1 reprova) ou situação indefinida
+        status = "Em análise"
+        resultado_final = f"EMPATADO - {positivos} votos a favor, {negativos} contra. Aguardando deliberação em reunião."
+        mensagem = f"⚠️ Sindicância empatada! {positivos} votos a favor, {negativos} contra. Aguardando deliberação em reunião."
+        
+        flash(mensagem, "warning")
+        return_connection(conn)
+        return redirect("/candidatos")
+    
     agora = datetime.now()
+    
     cursor.execute("""
         UPDATE candidatos 
-        SET status = %s, fechado = 1, data_fechamento = %s, resultado_final = %s
+        SET status = %s, 
+            fechado = 1, 
+            data_fechamento = %s, 
+            resultado_final = %s
         WHERE id = %s
-    """, (status, agora, f"{positivos} votos positivos, {negativos} negativos", id))
+    """, (status, agora, resultado_final, id))
+    
     conn.commit()
-    registrar_log("fechar_sindicancia_manual", "sindicancia", id, dados_anteriores=dados_antigos, dados_novos={"status": status})
+    
+    registrar_log("fechar_sindicancia_manual", "sindicancia", id, 
+                  dados_anteriores=dados_antigos, 
+                  dados_novos={"status": status, "resultado_final": resultado_final})
+    
     return_connection(conn)
-    flash(f"Sindicância fechada! Resultado: {status}", "success")
+    
+    flash(mensagem, "success")
+    
+    if status == "Aprovado":
+        flash("🎉 O candidato está aprovado! Agora você pode emitir o Placet de Iniciação.", "success")
+    
     return redirect("/candidatos")
+    
+    
 
 @app.route("/minhas_sindicancias")
 @sindicante_required
@@ -13124,52 +13213,6 @@ def editar_parecer_conclusivo(candidato_id, parecer_id):
         flash(f"❌ Erro: {str(e)}", "danger")
         return redirect(f"/sindicancia/{candidato_id}")
         
-@app.route("/sindicancia/<int:candidato_id>/excluir_parecer", methods=["POST"])
-@login_required
-def excluir_parecer_simples(candidato_id):
-    """Sindicante exclui seu voto simples (positivo/negativo)"""
-    if session.get("tipo") != 'sindicante':
-        flash("❌ Apenas sindicantes podem excluir seus próprios votos!", "danger")
-        return redirect("/dashboard")
-    
-    cursor, conn = get_db()
-    
-    try:
-        conn.rollback()
-        
-        usuario_nome = session.get("usuario")
-        
-        # Verificar se o voto existe
-        cursor.execute("""
-            SELECT id FROM sindicancias 
-            WHERE candidato_id = %s AND sindicante = %s
-        """, (candidato_id, usuario_nome))
-        
-        resultado = cursor.fetchone()
-        
-        if not resultado:
-            flash("❌ Você não tem um voto registrado para este candidato!", "warning")
-            return redirect(f"/sindicancia/{candidato_id}")
-        
-        # Excluir o voto
-        cursor.execute("""
-            DELETE FROM sindicancias 
-            WHERE candidato_id = %s AND sindicante = %s
-        """, (candidato_id, usuario_nome))
-        
-        conn.commit()
-        
-        flash("🗑️ Seu voto foi excluído com sucesso! Você pode votar novamente.", "success")
-        
-    except Exception as e:
-        conn.rollback()
-        print(f"Erro ao excluir voto: {str(e)}")
-        flash(f"❌ Erro ao excluir voto: {str(e)}", "danger")
-    
-    finally:
-        return_connection(conn)
-    
-    return redirect(f"/sindicancia/{candidato_id}")    
 
 @app.route("/parecer_conclusivo/<int:id>", methods=["GET"])
 @login_required

@@ -787,54 +787,68 @@
                                 </div>
                                 
                                 <div class="row">
-                                    <!-- ===================================== -->
-                                    <!-- NOTIFICAÇÃO DE INICIAÇÃO - PRINCIPAL -->
-                                    <!-- ===================================== -->
-                                    <div class="col-md-12 mb-3">
-                                        <div class="card h-100 text-center p-3" style="border: 1px solid rgba(74, 14, 46, 0.15); border-radius: 12px;">
-                                            <i class="bi bi-stars fs-1" style="color: var(--bordo);"></i>
-                                            <h6 class="mt-2">Iniciação</h6>
-                                            <p class="small text-muted">
-                                                {% if candidato.notificacao_iniciacao and candidato.notificacao_iniciacao.status_envio == 'enviado' %}
-                                                    <span class="badge bg-success">✓ Notificação Enviada ao GOB</span><br>
-                                                    <small>Protocolo GOB: {{ candidato.notificacao_iniciacao.protocolo_gob[:20] if candidato.notificacao_iniciacao.protocolo_gob else '...' }}</small>
-                                                    <br>
-                                                    <small>Data de Envio: {{ candidato.notificacao_iniciacao.data_envio.strftime('%d/%m/%Y %H:%M') if candidato.notificacao_iniciacao.data_envio else '-' }}</small>
-                                                {% elif candidato.data_iniciacao %}
-                                                    <span class="badge bg-info">✓ Candidato Iniciado</span>
-                                                    <br>
-                                                    <small>Data da Iniciação: {{ candidato.data_iniciacao.strftime('%d/%m/%Y') }}</small>
-                                                    <br>
-                                                    <small class="text-muted">Envie a notificação ao GOB</small>
-                                                {% elif candidato.fechado == 1 %}
-                                                    <span class="badge bg-success">✓ Candidato Aprovado</span>
-                                                    <br>
-                                                    <small>Aguardando data da Iniciação</small>
-                                                    <br>
-                                                    <small>Preencha a notificação após a cerimônia</small>
-                                                {% else %}
-                                                    <span class="badge bg-warning text-dark">⏳ Em análise</span>
-                                                {% endif %}
-                                            </p>
-                                            <div class="mt-auto">
-                                                {% if candidato.fechado == 1 or candidato.status == 'APROVADO' %}
-                                                    <a href="/notificacoes/candidato/{{ candidato.id }}/notificar-iniciacao" 
-                                                       class="btn-bordo w-100">
-                                                        <i class="bi bi-pencil-square"></i> 
-                                                        {% if candidato.notificacao_iniciacao and candidato.notificacao_iniciacao.status_envio == 'enviado' %}
-                                                            Visualizar/Editar Notificação
-                                                        {% else %}
-                                                            Preencher Notificação de Iniciação
-                                                        {% endif %}
-                                                    </a>
-                                                {% else %}
-                                                    <button class="btn-bordo-outline w-100" disabled style="opacity: 0.5; cursor: not-allowed;">
-                                                        <i class="bi bi-clock"></i> Aguarde aprovação da sindicância
-                                                    </button>
-                                                {% endif %}
-                                            </div>
-                                        </div>
-                                    </div>
+                                  <!-- SEÇÃO DE NOTIFICAÇÕES AO GOB - VERSÃO COMPACTA -->
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="card-bordo-branco shadow-sm">
+            <div class="card-header-bordo-primary py-2">
+                <h6 class="mb-0"><i class="bi bi-send"></i> Notificações ao GOB</h6>
+            </div>
+            <div class="card-body p-3">
+                <div class="row g-2">
+                    <!-- Iniciação -->
+                    <div class="col-md-4">
+                        <div class="text-center p-2 border rounded" style="border-color: rgba(74, 14, 46, 0.1) !important;">
+                            <i class="bi bi-stars fs-4" style="color: var(--bordo);"></i>
+                            <div class="fw-bold small">Iniciação</div>
+                            {% if notificacao_iniciacao and notificacao_iniciacao.status_envio == 'enviado' %}
+                                <span class="badge bg-success">✓ Enviada</span>
+                                <a href="/notificacoes/historico" class="btn-bordo-outline w-100 mt-1 py-1" style="font-size: 0.7rem;">Ver</a>
+                            {% elif candidato.fechado == 1 %}
+                                <span class="badge bg-warning text-dark">Pendente</span>
+                                <a href="/notificacoes/candidato/{{ candidato.id }}/notificar-iniciacao" class="btn-bordo w-100 mt-1 py-1" style="font-size: 0.7rem;">Preencher</a>
+                            {% else %}
+                                <span class="badge bg-secondary">Bloqueado</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+                    <!-- Elevação -->
+                    <div class="col-md-4">
+                        <div class="text-center p-2 border rounded" style="border-color: rgba(74, 14, 46, 0.1) !important;">
+                            <i class="bi bi-arrow-up-circle fs-4" style="color: #3b82f6;"></i>
+                            <div class="fw-bold small">Elevação</div>
+                            {% if notificacao_elevacao and notificacao_elevacao.status_envio == 'enviado' %}
+                                <span class="badge bg-success">✓ Enviada</span>
+                            {% elif candidato.data_iniciacao %}
+                                <span class="badge bg-warning text-dark">Pendente</span>
+                            {% else %}
+                                <span class="badge bg-secondary">Bloqueado</span>
+                            {% endif %}
+                            <a href="#" class="btn-bordo-outline w-100 mt-1 py-1 disabled" style="font-size: 0.7rem; opacity: 0.5;">Indisponível</a>
+                        </div>
+                    </div>
+                    
+                    <!-- Exaltação -->
+                    <div class="col-md-4">
+                        <div class="text-center p-2 border rounded" style="border-color: rgba(74, 14, 46, 0.1) !important;">
+                            <i class="bi bi-star fs-4" style="color: var(--ouro);"></i>
+                            <div class="fw-bold small">Exaltação</div>
+                            {% if notificacao_exaltacao and notificacao_exaltacao.status_envio == 'enviado' %}
+                                <span class="badge bg-success">✓ Enviada</span>
+                            {% elif candidato.data_elevacao %}
+                                <span class="badge bg-warning text-dark">Pendente</span>
+                            {% else %}
+                                <span class="badge bg-secondary">Bloqueado</span>
+                            {% endif %}
+                            <a href="#" class="btn-bordo-outline w-100 mt-1 py-1 disabled" style="font-size: 0.7rem; opacity: 0.5;">Indisponível</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
                                     
                                     <!-- ===================================== -->
                                     <!-- NOTIFICAÇÃO DE ELEVAÇÃO - Mostrar apenas se já for Obreiro (Iniciado) -->
