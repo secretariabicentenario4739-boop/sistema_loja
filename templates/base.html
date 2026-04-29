@@ -15,6 +15,113 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Georgia:wght@400;500;600;700&display=swap" rel="stylesheet">
     
     <style>
+	
+	/* Sidebar recolhido - mostrando apenas ícones */
+.sidebar.collapsed {
+    width: var(--sidebar-collapsed-width);
+}
+
+.sidebar.collapsed .logo-text,
+.sidebar.collapsed .logo-area small,
+.sidebar.collapsed .nav-link span,
+.sidebar.collapsed .dropdown-title span,
+.sidebar.collapsed .dropdown-header .dropdown-icon {
+    display: none;
+}
+
+.sidebar.collapsed .dropdown-header {
+    justify-content: center;
+    padding: 10px 0;
+}
+
+.sidebar.collapsed .dropdown-header i:first-child {
+    margin-right: 0;
+}
+
+.sidebar.collapsed .dropdown-content {
+    position: absolute;
+    left: 100%;
+    top: 0;
+    background: white;
+    min-width: 200px;
+    border-radius: 12px;
+    box-shadow: 0 5px 20px rgba(0,0,0,0.15);
+    max-height: 0;
+    overflow: hidden;
+    z-index: 1002;
+}
+
+.sidebar.collapsed .menu-dropdown {
+    position: relative;
+}
+
+.sidebar.collapsed .menu-dropdown:hover .dropdown-content {
+    max-height: 500px;
+    overflow: visible;
+}
+
+.sidebar.collapsed .dropdown-content .nav-link {
+    padding: 10px 15px !important;
+    white-space: nowrap;
+}
+
+.sidebar.collapsed .submenu-content {
+    position: relative;
+    left: 0;
+    background: white;
+    box-shadow: none;
+}
+
+.sidebar.collapsed .submenu:hover .submenu-content {
+    position: absolute;
+    left: 100%;
+    top: 0;
+    background: white;
+    min-width: 200px;
+    border-radius: 8px;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+    z-index: 1003;
+}
+
+/* Menu flutuante */
+.menu-floating {
+    position: fixed;
+    top: 20px;
+    left: 20px;
+    z-index: 1001;
+}
+
+.menu-floating .btn-maconico {
+    width: 45px;
+    height: 45px;
+    border-radius: 50%;
+    padding: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(135deg, var(--bordo), var(--bordo-escuro));
+    border: none;
+    color: white;
+    transition: all 0.3s;
+}
+
+.menu-floating .btn-maconico:hover {
+    transform: scale(1.05);
+    box-shadow: 0 5px 15px rgba(74, 14, 46, 0.3);
+}
+
+/* Responsivo */
+@media (max-width: 768px) {
+    .menu-floating {
+        display: block !important;
+    }
+    .sidebar.collapsed {
+        transform: translateX(-100%);
+    }
+    .sidebar.collapsed.mobile-open {
+        transform: translateX(0);
+    }
+}
     /* ============================================
        CORES DO RITO BRASILEIRO - BORDÔ E DOURADO
        ============================================ */
@@ -709,20 +816,29 @@
     <div class="sidebar-overlay" id="sidebarOverlay"></div>
     
     <div class="sidebar" id="sidebar">
-        <div class="logo-area">
-            <h3>
-                <i class="bi bi-compass-fill"></i>
-                <span class="logo-text">ARLS</span>
-            </h3>
-            <small>Bicentenário</small>
-        </div>
-        
-        <nav class="nav flex-column">
+        <div class="logo-area" id="logoArea" style="cursor: pointer;">
+    <h3>
+        <i class="bi bi-compass-fill"></i>
+        <span class="logo-text">ARLS</span>
+    </h3>
+    <small>Bicentenário</small>
+</div>
+
+<!-- Ícone de menu flutuante (aparece quando o menu está recolhido) -->
+<div class="menu-floating" id="menuFloating" style="display: none; position: fixed; top: 20px; left: 20px; z-index: 1001;">
+    <button class="btn-maconico" onclick="toggleSidebarMenu()" style="width: 45px; height: 45px; border-radius: 50%; padding: 0;">
+        <i class="bi bi-list fs-4"></i>
+    </button>
+</div>
             <!-- Menu Principal -->
             <a class="nav-link" href="/dashboard">
                 <i class="bi bi-speedometer2"></i> <span>Dashboard</span>
             </a>
             
+			<a class="nav-link" href="/calendario">
+			<i class="bi bi-calendar-week"></i> <span>Calendário</span>
+			</a>
+			
             {% if tem_permissao('obreiro.view') %}
             <a class="nav-link" href="/obreiros">
                 <i class="bi bi-person-workspace"></i> <span>Obreiros</span>
@@ -899,9 +1015,7 @@
     <div class="main-content" id="mainContent">
         <div class="top-bar d-flex justify-content-between align-items-center">
             <div>
-                <button class="toggle-sidebar" id="toggleSidebar">
-                    <i class="bi bi-list"></i> Menu
-                </button>
+                
             </div>
             <div class="d-flex align-items-center gap-3 flex-wrap">
                 <!-- SINO DE NOTIFICAÇÕES -->
@@ -994,13 +1108,6 @@
                 mainContent.classList.add('expanded');
             }
             
-            if (toggleBtn) {
-                toggleBtn.addEventListener('click', function() {
-                    sidebar.classList.toggle('collapsed');
-                    mainContent.classList.toggle('expanded');
-                    localStorage.setItem('sidebarCollapsed', sidebar.classList.contains('collapsed'));
-                });
-            }
         }
         
         function closeMobileMenu() {
@@ -1258,6 +1365,59 @@ document.addEventListener('click', function(event) {
         document.querySelectorAll('.submenu-content').forEach(content => {
             content.classList.remove('show');
             content.previousElementSibling.classList.remove('open');
+        });
+    }
+});
+
+// ============================================
+// FUNÇÃO PARA RECOLHER/EXPANDIR O MENU LATERAL
+// ============================================
+function toggleSidebarMenu() {
+    const sidebar = document.getElementById('sidebar');
+    const mainContent = document.getElementById('mainContent');
+    const logoText = document.querySelectorAll('.logo-text');
+    const logoSmall = document.querySelector('.logo-area small');
+    const menuFloating = document.getElementById('menuFloating');
+    
+    // Alternar a classe collapsed
+    sidebar.classList.toggle('collapsed');
+    mainContent.classList.toggle('expanded');
+    
+    // Salvar estado no localStorage
+    const isCollapsed = sidebar.classList.contains('collapsed');
+    localStorage.setItem('sidebarCollapsed', isCollapsed);
+    
+    // Mostrar/esconder ícone flutuante
+    if (isCollapsed) {
+        menuFloating.style.display = 'block';
+    } else {
+        menuFloating.style.display = 'none';
+    }
+}
+
+// Inicializar estado do menu ao carregar
+document.addEventListener('DOMContentLoaded', function() {
+    const sidebar = document.getElementById('sidebar');
+    const mainContent = document.getElementById('mainContent');
+    const menuFloating = document.getElementById('menuFloating');
+    
+    if (sidebar && !isMobile()) {
+        const isCollapsed = localStorage.getItem('sidebarCollapsed') === 'true';
+        if (isCollapsed) {
+            sidebar.classList.add('collapsed');
+            mainContent.classList.add('expanded');
+            if (menuFloating) menuFloating.style.display = 'block';
+        } else {
+            if (menuFloating) menuFloating.style.display = 'none';
+        }
+    }
+    
+    // Adicionar evento de clique no logo
+    const logoArea = document.getElementById('logoArea');
+    if (logoArea) {
+        logoArea.addEventListener('click', function(e) {
+            e.preventDefault();
+            toggleSidebarMenu();
         });
     }
 });

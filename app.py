@@ -995,6 +995,8 @@ def test_connection():
 # ============================================
 from routes.notificacoes_routes import notificacoes_bp
 app.register_blueprint(notificacoes_bp)
+from routes.calendario_routes import calendario_bp
+app.register_blueprint(calendario_bp)
 
 # ============================================
 # CONFIGURAÇÕES INICIAIS DO WHATSAPP
@@ -2390,19 +2392,6 @@ def home():
 def sobre():
     return render_template("public/sobre.html")
 
-@app.route("/calendario")
-def calendario_publico():
-    cursor, conn = get_db()
-    cursor.execute("""
-        SELECT titulo, data, hora_inicio, local 
-        FROM reunioes 
-        WHERE status = 'agendada' AND data >= CURRENT_DATE
-        ORDER BY data ASC
-        LIMIT 10
-    """)
-    eventos = cursor.fetchall()
-    return_connection(conn)
-    return render_template("public/calendario.html", eventos=eventos)
 
 @app.route("/contato")
 def contato():

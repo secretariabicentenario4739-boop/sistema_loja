@@ -483,9 +483,8 @@
     }
 </style>
 {% endblock %}
-
-
 {% block content %}
+
 <div class="container-fluid py-4">
     <div class="container">
         <input type="hidden" id="tokenAcesso" value="{{ candidato.token_acesso }}">
@@ -811,7 +810,9 @@
             </div>
         </div>
 
-        <!-- Informações Adicionais e Links - Só mostra se NÃO for obreiro -->
+        <!-- ========================================== -->
+        <!-- INFORMAÇÕES E LINKS - APENAS PARA CANDIDATOS -->
+        <!-- ========================================== -->
         {% if not is_obreiro %}
         <div class="row mt-4 g-4">
             <div class="col-md-6">
@@ -881,9 +882,14 @@
                 </div>
             </div>
         </div>
+        {% else %}
+        <!-- Mensagem para obreiro -->
+        <div class="alert alert-success mt-4 text-center" style="background: var(--bordo-transparente); border-color: var(--bordo); color: var(--bordo); border-radius: 12px;">
+            <i class="bi bi-check-circle-fill me-2"></i>
+            <strong>Este candidato já foi promovido a obreiro.</strong><br>
+            <small>Os documentos estão disponíveis apenas para consulta.</small>
+        </div>
         {% endif %}
-    </div>
-</div>
 
 <!-- Modais de Upload para cada tipo de documento -->
 {% for tipo in tipos_documentos %}

@@ -1,0 +1,570 @@
+{% extends "base.html" %}
+
+{% block title %}Calendário Maçônico - Loja Bicentenário{% endblock %}
+
+{% block styles %}
+{{ super() }}
+<link href="https://cdn.jsdelivr.net/npm/fullcalendar@5.11.3/main.min.css" rel="stylesheet">
+<link href="https://cdn.jsdelivr.net/npm/@fullcalendar/bootstrap5@5.11.3/main.min.css" rel="stylesheet">
+<style>
+    /* VARIÁVEIS DO RITO BRASILEIRO - COR BORDÔ (VINHO) */
+    :root {
+        --bordo: #4A0E2E;
+        --bordo-escuro: #3A0A24;
+        --bordo-claro: #6B1342;
+        --bordo-suave: #8B4A6B;
+        --ouro: #D4AF37;
+        --ouro-escuro: #996515;
+        --ouro-claro: #F0D68A;
+        --bege-pergaminho: #F5F0E8;
+        --cinza-suave: #E8E0D8;
+        --branco: #FFFFFF;
+    }
+
+    /* Cabeçalho do Calendário */
+    .header-maconico {
+        background: linear-gradient(135deg, var(--bordo-escuro) 0%, var(--bordo) 100%);
+        border-bottom: 2px solid var(--ouro);
+        border-radius: 20px;
+        position: relative;
+        overflow: hidden;
+    }
+    
+    .header-maconico::after {
+        content: '⌂ ⌂ ⊡';
+        position: absolute;
+        bottom: -12px;
+        right: 25px;
+        font-size: 24px;
+        color: var(--ouro);
+        opacity: 0.4;
+        font-family: serif;
+        letter-spacing: 4px;
+    }
+
+    .simbolo-maconico {
+        font-size: 14px;
+        letter-spacing: 6px;
+        color: var(--ouro);
+        text-align: center;
+        margin: 20px 0;
+        font-family: monospace;
+    }
+
+    /* Cards */
+    .card-maconico {
+        background: var(--branco);
+        border: 1px solid rgba(74, 14, 46, 0.12);
+        border-radius: 20px;
+        transition: all 0.4s ease;
+        overflow: hidden;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+    }
+    
+    .card-maconico:hover {
+        transform: translateY(-4px);
+        border-color: var(--bordo);
+        box-shadow: 0 12px 24px rgba(0, 0, 0, 0.08);
+    }
+
+    .card-header-maconico {
+        background: linear-gradient(135deg, var(--bordo), var(--bordo-escuro));
+        color: white;
+        padding: 15px 20px;
+        border-bottom: 2px solid var(--ouro);
+    }
+
+    .card-header-maconico h5 {
+        margin: 0;
+        font-weight: 600;
+    }
+
+    /* Botões */
+    .btn-maconico {
+        background: linear-gradient(135deg, var(--bordo), var(--bordo-escuro));
+        border: none;
+        color: white;
+        border-radius: 30px;
+        padding: 8px 24px;
+        transition: all 0.3s;
+        font-weight: 500;
+    }
+    
+    .btn-maconico:hover {
+        background: linear-gradient(135deg, var(--bordo-claro), var(--bordo));
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(74, 14, 46, 0.3);
+        color: white;
+    }
+
+    .btn-maconico-outline {
+        background: transparent;
+        border: 1px solid var(--bordo);
+        color: var(--bordo);
+        border-radius: 30px;
+        padding: 6px 20px;
+        transition: all 0.3s;
+    }
+    
+    .btn-maconico-outline:hover {
+        background: var(--bordo);
+        color: white;
+    }
+
+    /* FullCalendar Custom */
+    .fc {
+        font-family: 'Inter', sans-serif;
+    }
+    
+    .fc-toolbar-title {
+        font-size: 1.3rem;
+        font-weight: 600;
+        color: var(--bordo);
+    }
+    
+    .fc-button-primary {
+        background: linear-gradient(135deg, var(--bordo), var(--bordo-escuro)) !important;
+        border: none !important;
+        border-radius: 30px !important;
+        padding: 6px 16px !important;
+        font-weight: 500 !important;
+    }
+    
+    .fc-button-primary:hover {
+        background: linear-gradient(135deg, var(--bordo-claro), var(--bordo)) !important;
+        transform: translateY(-1px);
+    }
+    
+    .fc-day-today {
+        background: rgba(212, 175, 55, 0.08) !important;
+    }
+    
+    /* Eventos */
+    .fc-event {
+        border-radius: 12px !important;
+        padding: 4px 8px !important;
+        font-size: 0.85rem !important;
+        cursor: pointer;
+        transition: transform 0.2s;
+        border: none !important;
+    }
+    
+    .fc-event:hover {
+        transform: scale(1.02);
+        filter: brightness(1.05);
+    }
+    
+    .evento-sessao { background: linear-gradient(135deg, #3b82f6, #2563eb) !important; }
+    .evento-aniversario { background: linear-gradient(135deg, #10b981, #059669) !important; }
+    .evento-evento { background: linear-gradient(135deg, var(--ouro), var(--ouro-escuro)) !important; color: var(--bordo) !important; }
+    .evento-prazo { background: linear-gradient(135deg, #ef4444, #dc2626) !important; }
+    .evento-lembrete { background: linear-gradient(135deg, #8b5cf6, #7c3aed) !important; }
+
+    /* Lista de próximos eventos */
+    .eventos-lista {
+        max-height: 500px;
+        overflow-y: auto;
+    }
+    
+    .evento-item {
+        background: white;
+        border: 1px solid rgba(74, 14, 46, 0.1);
+        border-radius: 12px;
+        padding: 12px;
+        margin-bottom: 12px;
+        transition: all 0.2s;
+        cursor: pointer;
+    }
+    
+    .evento-item:hover {
+        transform: translateX(4px);
+        border-color: var(--bordo);
+        box-shadow: 0 2px 8px rgba(74, 14, 46, 0.1);
+    }
+    
+    .evento-icone {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.2rem;
+    }
+    
+    .badge-evento {
+        background: rgba(74, 14, 46, 0.1);
+        color: var(--bordo);
+        padding: 4px 10px;
+        border-radius: 20px;
+        font-size: 0.7rem;
+        font-weight: 600;
+    }
+    
+    /* Stats */
+    .stat-card {
+        background: rgba(74, 14, 46, 0.04);
+        border: 1px solid rgba(74, 14, 46, 0.1);
+        border-radius: 16px;
+        padding: 12px;
+        text-align: center;
+        transition: all 0.3s;
+    }
+    
+    .stat-card:hover {
+        border-color: var(--bordo);
+        transform: translateY(-3px);
+    }
+    
+    .stat-number {
+        font-size: 2rem;
+        font-weight: 700;
+        background: linear-gradient(135deg, var(--bordo), var(--bordo-claro));
+        -webkit-background-clip: text;
+        background-clip: text;
+        color: transparent;
+    }
+    
+    /* Data maçônica */
+    .data-maconica {
+        font-size: 0.85rem;
+        letter-spacing: 1px;
+        font-family: monospace;
+        color: rgba(255,255,255,0.7);
+    }
+    
+    .text-ouro { color: var(--ouro) !important; }
+    
+    @media (max-width: 768px) {
+        .fc-toolbar {
+            flex-direction: column;
+            gap: 12px;
+        }
+        .fc-toolbar-title {
+            font-size: 1rem;
+        }
+        .stat-number {
+            font-size: 1.3rem;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="container">
+        <!-- CABEÇALHO DO RITO BRASILEIRO -->
+        <div class="header-maconico mb-5">
+            <div class="card-body py-4 text-center">
+                <div class="simbolo-maconico mb-2">
+                    <i class="bi bi-easel fs-2 me-2"></i>
+                    <i class="bi bi-compass fs-2 ms-2"></i>
+                </div>
+                
+                <h2 class="fw-bold text-ouro mb-2" style="font-family: 'Georgia', serif; letter-spacing: 3px;">
+                    LOJA BICENTENÁRIO - CEILÂNDIA
+                </h2>
+                
+                <div class="simbolo-maconico my-2">
+                    ✦ ⌒ ✦ ⬜ ✦ ⌒ ✦
+                </div>
+                
+                <h1 class="display-4 fw-bold text-white mb-3">
+                    Calendário Maçônico
+                </h1>
+                
+                <p class="lead text-white-50 mb-2 fst-italic">
+                    Agenda das Sessões, Eventos e Celebrações
+                </p>
+                
+                <p class="data-maconica">
+                    <i class="bi bi-calendar3 me-1"></i> 
+                    A∴L∴ {{ now.year + 4000 }} | {{ now.strftime('%d/%m/%Y') }}
+                </p>
+                
+                <div class="mt-3 d-flex justify-content-center gap-3 flex-wrap">
+                    <span class="badge px-4 py-2" style="background: rgba(255,255,255,0.15); border: 1px solid var(--ouro); color: var(--ouro);">
+                        <i class="bi bi-star-fill me-2"></i>
+                        {{ session.grau_atual|int }}º Grau
+                    </span>
+                    <span class="badge px-4 py-2" style="background: rgba(255,255,255,0.15); border: 1px solid var(--ouro); color: var(--ouro);">
+                        <i class="bi bi-building me-2"></i>
+                        GOB - Rito Brasileiro
+                    </span>
+                </div>
+            </div>
+        </div>
+
+        <div class="row g-4">
+            <!-- Calendário Principal -->
+            <div class="col-lg-8">
+                <div class="card-maconico">
+                    <div class="card-header-maconico">
+                        <h5 class="mb-0">
+                            <i class="bi bi-calendar-week me-2"></i> Agenda da Loja
+                        </h5>
+                    </div>
+                    <div class="card-body p-3 p-md-4">
+                        <div id="calendar"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Sidebar -->
+            <div class="col-lg-4">
+                <!-- Próximos Eventos -->
+                <div class="card-maconico mb-4">
+                    <div class="card-header-maconico py-3">
+                        <h6 class="mb-0">
+                            <i class="bi bi-clock-history me-2"></i> Próximos Eventos
+                        </h6>
+                    </div>
+                    <div class="card-body p-3">
+                        <div id="proximosEventosList" class="eventos-lista">
+                            <div class="text-center py-4">
+                                <div class="spinner-border spinner-border-sm text-primary"></div>
+                                <p class="mt-2 small">Carregando...</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Estatísticas do Mês -->
+                <div class="card-maconico mb-4">
+                    <div class="card-header-maconico py-3">
+                        <h6 class="mb-0">
+                            <i class="bi bi-bar-chart me-2"></i> Estatísticas do Mês
+                        </h6>
+                    </div>
+                    <div class="card-body p-3">
+                        <div class="row g-2 text-center" id="estatisticasMes">
+                            <div class="col-6">
+                                <div class="stat-card">
+                                    <div class="stat-number" id="totalSessoes">0</div>
+                                    <small>Sessões</small>
+                                </div>
+                            </div>
+                            <div class="col-6">
+                                <div class="stat-card">
+                                    <div class="stat-number text-success" id="totalAniversarios">0</div>
+                                    <small>Aniversários</small>
+                                </div>
+                            </div>
+                            <div class="col-6">
+                                <div class="stat-card">
+                                    <div class="stat-number text-warning" id="totalEventos">0</div>
+                                    <small>Eventos</small>
+                                </div>
+                            </div>
+                            <div class="col-6">
+                                <div class="stat-card">
+                                    <div class="stat-number text-danger" id="totalPrazos">0</div>
+                                    <small>Prazos</small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Aniversariantes do Mês -->
+                <div class="card-maconico">
+                    <div class="card-header-maconico py-3">
+                        <h6 class="mb-0">
+                            <i class="bi bi-gift-fill me-2"></i> Aniversariantes do Mês
+                        </h6>
+                    </div>
+                    <div class="card-body p-3">
+                        <div id="aniversariantesList">
+                            <div class="text-center py-4">
+                                <div class="spinner-border spinner-border-sm text-primary"></div>
+                                <p class="mt-2 small">Carregando...</p>
+                            </div>
+                        </div>
+                        <div class="text-center mt-3">
+                            <a href="/obreiros" class="btn-maconico-outline btn-sm">
+                                <i class="bi bi-people"></i> Ver todos
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Botão Voltar -->
+        <div class="text-center mt-4">
+            <a href="/dashboard" class="btn-maconico">
+                <i class="bi bi-arrow-left"></i> Voltar ao Dashboard
+            </a>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/fullcalendar@5.11.3/main.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@fullcalendar/bootstrap5@5.11.3/main.min.js"></script>
+<script>
+let calendar = null;
+
+function mostrarDetalhesEvento(info) {
+    const evento = info.event;
+    const start = evento.start;
+    const allDay = evento.allDay;
+    
+    let dataStr = '';
+    if (allDay) {
+        dataStr = start.toLocaleDateString('pt-BR');
+    } else {
+        dataStr = `${start.toLocaleDateString('pt-BR')} às ${start.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}`;
+    }
+    
+    alert(`📅 ${evento.title}\n📆 Data: ${dataStr}\n${evento.extendedProps.descricao ? `\n📝 ${evento.extendedProps.descricao}` : ''}\n${evento.extendedProps.local ? `\n📍 ${evento.extendedProps.local}` : ''}`);
+}
+
+function carregarProximosEventos() {
+    fetch('/calendario/api/proximos')
+        .then(response => response.json())
+        .then(data => {
+            const container = document.getElementById('proximosEventosList');
+            if (!container) return;
+            
+            if (data.eventos && data.eventos.length > 0) {
+                let html = '';
+                for (const ev of data.eventos) {
+                    const dataEvento = new Date(ev.data_inicio);
+                    const hoje = new Date();
+                    const diasDiff = Math.ceil((dataEvento - hoje) / (1000 * 60 * 60 * 24));
+                    
+                    let badgeText = '';
+                    if (diasDiff === 0) badgeText = 'Hoje';
+                    else if (diasDiff === 1) badgeText = 'Amanhã';
+                    else if (diasDiff < 7) badgeText = `${diasDiff} dias`;
+                    else badgeText = dataEvento.toLocaleDateString('pt-BR');
+                    
+                    let icone = ev.tipo === 'sessao' ? 'bi-building' : 'bi-gift-fill';
+                    let cor = ev.cor || '#4A0E2E';
+                    
+                    html += `
+                        <div class="evento-item">
+                            <div class="d-flex align-items-start gap-3">
+                                <div class="evento-icone" style="background: ${cor}20; color: ${cor};">
+                                    <i class="${icone}"></i>
+                                </div>
+                                <div class="flex-grow-1">
+                                    <div class="d-flex justify-content-between align-items-start">
+                                        <div>
+                                            <strong style="color: var(--bordo);">${ev.titulo}</strong>
+                                            <br>
+                                            <small class="text-muted">
+                                                <i class="bi bi-calendar3"></i> ${badgeText}
+                                                ${ev.horario ? ` • <i class="bi bi-clock"></i> ${ev.horario}` : ''}
+                                            </small>
+                                        </div>
+                                        <span class="badge-evento">${ev.tipo === 'sessao' ? 'Sessão' : 'Aniversário'}</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                }
+                container.innerHTML = html;
+            } else {
+                container.innerHTML = '<div class="text-center py-4 text-muted"><i class="bi bi-calendar-x fs-1"></i><p class="mt-2 small">Nenhum evento próximo</p></div>';
+            }
+        })
+        .catch(error => console.error('Erro:', error));
+}
+
+
+
+function carregarAniversariantes() {
+    fetch('/calendario/api/aniversariantes')
+        .then(response => response.json())
+        .then(data => {
+            const container = document.getElementById('aniversariantesList');
+            if (!container) return;
+            
+            if (data.aniversariantes && data.aniversariantes.length > 0) {
+                let html = '';
+                for (const aniv of data.aniversariantes) {
+                    html += `
+                        <div class="d-flex align-items-center gap-3 p-2 border-bottom">
+                            <div class="rounded-circle bg-success bg-opacity-10 p-2">
+                                <i class="bi bi-gift-fill text-success"></i>
+                            </div>
+                            <div>
+                                <div class="fw-bold" style="color: var(--bordo);">${aniv.nome}</div>
+                                <small class="text-muted">
+                                    <i class="bi bi-calendar-heart"></i> ${aniv.data_nascimento_formatted}
+                                    ${aniv.tipo === 'familiar' ? ' • Familiar' : ' • Obreiro'}
+                                </small>
+                            </div>
+                        </div>
+                    `;
+                }
+                container.innerHTML = html;
+            } else {
+                container.innerHTML = '<div class="text-center py-4 text-muted"><i class="bi bi-emoji-frown fs-1"></i><p class="mt-2 small">Nenhum aniversariante este mês</p></div>';
+            }
+        })
+        .catch(error => console.error('Erro:', error));
+}
+
+function carregarEstatisticas() {
+    const agora = new Date();
+    const ano = agora.getFullYear();
+    const mes = agora.getMonth() + 1;
+    
+    fetch(`/calendario/api/estatisticas?ano=${ano}&mes=${mes}`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                document.getElementById('totalSessoes').textContent = data.sessoes || 0;
+                document.getElementById('totalAniversarios').textContent = data.aniversarios || 0;
+                document.getElementById('totalEventos').textContent = data.eventos || 0;
+                document.getElementById('totalPrazos').textContent = data.prazos || 0;
+            }
+        })
+        .catch(error => console.error('Erro:', error));
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    const calendarEl = document.getElementById('calendar');
+    
+    if (calendarEl) {
+        calendar = new FullCalendar.Calendar(calendarEl, {
+            initialView: 'dayGridMonth',
+            locale: 'pt-br',
+            timeZone: 'local',  // ← Mantenha esta linha
+            eventTimeFormat: { hour: '2-digit', minute: '2-digit', hour12: false },
+            headerToolbar: {
+                left: 'prev,next today',
+                center: 'title',
+                right: 'dayGridMonth,timeGridWeek,listMonth'
+            },
+            buttonText: {
+                today: 'Hoje',
+                month: 'Mês',
+                week: 'Semana',
+                list: 'Lista'
+            },
+            events: '/calendario/api/eventos',
+            eventClick: mostrarDetalhesEvento,
+            height: 'auto',
+            contentHeight: 'auto',
+            themeSystem: 'bootstrap5'
+        });
+        
+        calendar.render();
+        
+        calendar.on('datesSet', function() {
+            carregarProximosEventos();
+            carregarAniversariantes();
+            carregarEstatisticas();
+        });
+    }
+    
+    carregarProximosEventos();
+    carregarAniversariantes();
+    carregarEstatisticas();
+});
+</script>
+{% endblock %}
