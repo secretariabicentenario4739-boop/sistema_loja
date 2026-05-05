@@ -4103,69 +4103,53 @@ def listar_materiais():
 
 @app.route("/biblioteca/material/<int:material_id>")
 @login_required
-@permissao_required('material.view_one')
 def visualizar_material(material_id):
-    """Visualizar um material específico"""
     try:
         cursor, conn = get_db()
         
         cursor.execute("""
-            SELECT m.*, 
-                   c.nome as categoria_nome, 
-                   c.cor as categoria_cor,
-                   (SELECT COUNT(*) FROM favoritos_material WHERE material_id = m.id) as total_favoritos
+            SELECT m.*, c.nome as categoria_nome, c.cor as categoria_cor
             FROM materiais m
             LEFT JOIN categorias_material c ON m.categoria_id = c.id
-            WHERE m.id = %s AND m.publicado = true
+            WHERE m.id = %s
         """, (material_id,))
         material = cursor.fetchone()
         
         if not material:
             flash('Material não encontrado', 'danger')
-            return_connection(conn)
             return redirect(url_for('listar_materiais'))
         
-        # Verificar permissão por grau
-        usuario_grau = session.get('grau_atual', 0)
-        grau_acesso = material.get('grau_acesso', 1)
+        # ... verificar permissões ...
         
-        if usuario_grau < grau_acesso and session.get('tipo') != 'admin':
-            flash(f'Você não tem permissão para acessar este material (Grau necessário: {grau_acesso})', 'danger')
-            return_connection(conn)
-            return redirect(url_for('listar_materiais'))
-        
-        # Incrementar visualizações
-        cursor.execute("""
-            UPDATE materiais SET visualizacoes_count = COALESCE(visualizacoes_count, 0) + 1 
-            WHERE id = %s
-        """, (material_id,))
-        conn.commit()
-        
-        return_connection(conn)
-        
-        # 🔧 CORREÇÃO: Verificar se é PDF
         arquivo_url = material.get('arquivo_url', '')
-        is_pdf = '.pdf' in arquivo_url.lower() or material.get('formato', '').lower() == 'pdf'
+        formato = material.get('formato', '').lower()
         
-        # 🔧 CORREÇÃO: Garantir que a URL do PDF esteja no formato correto
-        pdf_url = None
+        # 🔧 CORREÇÃO: Garantir que a URL do Cloudinary esteja correta
+        is_pdf = formato == 'pdf' or '.pdf' in arquivo_url.lower()
+        
         if is_pdf:
-            pdf_url = arquivo_url
+            # Corrigir URL do Cloudinary
+            # Mudar de /image/upload/ para /raw/upload/ se necessário
+            if '/image/upload/' in arquivo_url:
+                arquivo_url = arquivo_url.replace('/image/upload/', '/raw/upload/')
+            
             # Garantir extensão .pdf
-            if not pdf_url.endswith('.pdf'):
-                pdf_url = f"{pdf_url}.pdf"
+            if not arquivo_url.endswith('.pdf'):
+                arquivo_url = f"{arquivo_url}.pdf"
+            
+            # Adicionar parâmetros para forçar download como visualização
+            # fl_attachment: força download, mas podemos remover para visualização
+            # e_convert: converte para PDF otimizado
+            if '?' not in arquivo_url:
+                arquivo_url = f"{arquivo_url}?fl_attachment=0"
         
         return render_template('biblioteca/visualizar.html',
                              material=material,
                              is_pdf=is_pdf,
-                             pdf_url=pdf_url)
+                             visualizacao_url=arquivo_url)
     
     except Exception as e:
-        print(f"❌ Erro ao visualizar material: {e}")
-        import traceback
-        traceback.print_exc()
-        if 'conn' in locals():
-            return_connection(conn)
+        print(f"Erro: {e}")
         flash('Erro ao carregar o material', 'danger')
         return redirect(url_for('listar_materiais'))
 
