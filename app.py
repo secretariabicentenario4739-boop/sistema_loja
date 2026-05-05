@@ -2108,6 +2108,117 @@ def get_email_config():
             'sender_name': 'Sistema Maçônico'
         }      
 
+import requests
+import io
+from google.oauth2 import service_account
+from googleapiclient.discovery import build
+from googleapiclient.http import MediaFileUpload, MediaIoBaseDownload
+import os
+import pickle
+
+# Configuração do Google Drive
+GOOGLE_DRIVE_FOLDER_ID = "SEU_FOLDER_ID_AQUI"  # ← Substitua pelo ID da pasta principal
+GOOGLE_DRIVE_CAPAS_FOLDER_ID = "SEU_FOLDER_ID_CAPAS"  # ← Substitua
+
+def upload_to_google_drive(arquivo, nome_arquivo, folder_id, mime_type=None):
+    """Faz upload de arquivo para o Google Drive"""
+    try:
+        from google.oauth2.credentials import Credentials
+        from google.auth.transport.requests import Request
+        
+        # Arquivo de credenciais (baixado do Google Cloud Console)
+        creds = None
+        if os.path.exists('token.pickle'):
+            with open('token.pickle', 'rb') as token:
+                creds = pickle.load(token)
+        
+        if not creds or not creds.valid:
+            if creds and creds.expired and creds.refresh_token:
+                creds.refresh(Request())
+            else:
+                flash('Credenciais do Google Drive expiradas!', 'danger')
+                return None
+        
+        service = build('drive', 'v3', credentials=creds)
+        
+        # Salvar arquivo temporariamente
+        temp_path = f"/tmp/{nome_arquivo}"
+        arquivo.save(temp_path)
+        
+        # Metadata do arquivo
+        file_metadata = {
+            'name': nome_arquivo,
+            'parents': [folder_id]
+        }
+        
+        # Detectar MIME type
+        if not mime_type:
+            if nome_arquivo.endswith('.pdf'):
+                mime_type = 'application/pdf'
+            elif nome_arquivo.endswith('.jpg') or nome_arquivo.endswith('.jpeg'):
+                mime_type = 'image/jpeg'
+            elif nome_arquivo.endswith('.png'):
+                mime_type = 'image/png'
+            else:
+                mime_type = 'application/octet-stream'
+        
+        # Upload
+        media = MediaFileUpload(temp_path, mimetype=mime_type, resumable=True)
+        file = service.files().create(body=file_metadata, media_body=media, fields='id, webViewLink, webContentLink').execute()
+        
+        # Tornar público
+        service.permissions().create(
+            fileId=file['id'],
+            body={'type': 'anyone', 'role': 'reader'}
+        ).execute()
+        
+        # Limpar arquivo temporário
+        os.remove(temp_path)
+        
+        # Retornar URL direta para visualização
+        file_id = file['id']
+        direct_url = f"https://drive.google.com/uc?export=view&id={file_id}"
+        embed_url = f"https://drive.google.com/file/d/{file_id}/preview"
+        
+        return {
+            'success': True,
+            'file_id': file_id,
+            'direct_url': direct_url,
+            'embed_url': embed_url,
+            'view_url': file.get('webViewLink')
+        }
+        
+    except Exception as e:
+        print(f"Erro no upload para Google Drive: {e}")
+        return {'success': False, 'error': str(e)}
+
+
+def delete_from_google_drive(file_id):
+    """Remove arquivo do Google Drive"""
+    try:
+        from google.oauth2.credentials import Credentials
+        from google.auth.transport.requests import Request
+        import pickle
+        
+        creds = None
+        if os.path.exists('token.pickle'):
+            with open('token.pickle', 'rb') as token:
+                creds = pickle.load(token)
+        
+        if not creds or not creds.valid:
+            if creds and creds.expired and creds.refresh_token:
+                creds.refresh(Request())
+            else:
+                return False
+        
+        service = build('drive', 'v3', credentials=creds)
+        service.files().delete(fileId=file_id).execute()
+        return True
+        
+    except Exception as e:
+        print(f"Erro ao excluir do Google Drive: {e}")
+        return False
+
 # ============================================
 # AGENDADOR DE TAREFAS (SCHEDULER)
 # ============================================
@@ -3457,14 +3568,13 @@ def exportar_relatorio_excel():
 
     
 # =============================
-# ROTAS DE BIBLIOTECA (CORRIGIDAS)
+# ROTAS DE BIBLIOTECA 
 # =============================
 
 @app.route("/biblioteca/admin/upload", methods=['GET', 'POST'])
 @login_required
-@permissao_required('material.create')
 def upload_material():
-    """Upload de novos materiais para o Cloudinary"""
+    """Upload de novos materiais para o Google Drive"""
     
     if request.method == 'POST':
         # Coletar dados do formulário
@@ -3481,19 +3591,11 @@ def upload_material():
         destaque = request.form.get('destaque') == 'on'
         
         # Validar campos obrigatórios
-        if not titulo:
-            flash('O título é obrigatório', 'danger')
+        if not titulo or not categoria_id or not grau_acesso:
+            flash('Preencha todos os campos obrigatórios', 'danger')
             return redirect(url_for('upload_material'))
         
-        if not categoria_id:
-            flash('A categoria é obrigatória', 'danger')
-            return redirect(url_for('upload_material'))
-        
-        if not grau_acesso:
-            flash('O grau de acesso é obrigatório', 'danger')
-            return redirect(url_for('upload_material'))
-        
-        # Processar arquivos
+        # Processar arquivo
         arquivo = request.files.get('arquivo')
         capa = request.files.get('capa')
         
@@ -3501,7 +3603,7 @@ def upload_material():
             flash('Selecione um arquivo para upload', 'danger')
             return redirect(url_for('upload_material'))
         
-        # Validar tamanho do arquivo (50MB)
+        # Validar tamanho (50MB)
         arquivo.seek(0, 2)
         tamanho_arquivo = arquivo.tell()
         arquivo.seek(0)
@@ -3510,142 +3612,80 @@ def upload_material():
             flash('Arquivo muito grande! O tamanho máximo é 50MB.', 'danger')
             return redirect(url_for('upload_material'))
         
-        # 🔧 CORREÇÃO: Detectar tipo de arquivo para definir resource_type
-        filename = arquivo.filename.lower()
-        is_pdf = filename.endswith('.pdf')
-        is_doc = filename.endswith(('.doc', '.docx'))
-        is_image = filename.endswith(('.jpg', '.jpeg', '.png', '.gif', '.webp'))
-        is_video = filename.endswith(('.mp4', '.avi', '.mov', '.webm'))
-        is_audio = filename.endswith(('.mp3', '.wav', '.ogg', '.m4a'))
-        
-        # 🔧 CORREÇÃO PRINCIPAL: Usar "auto" para PDFs (NÃO "raw"!)
-        if is_pdf:
-            resource_type = "raw"  # ← MUDE DE "raw" PARA "auto"
-            folder = "biblioteca_maconica/materiais"
-            formato = "pdf"
-        elif is_doc:
-            resource_type = "raw"  # Documentos como raw
-            folder = "biblioteca_maconica/documentos"
-            formato = "doc"
-        elif is_video:
-            resource_type = "video"
-            folder = "biblioteca_maconica/videos"
-            formato = "video"
-        elif is_audio:
-            resource_type = "video"  # Áudio como video no Cloudinary
-            folder = "biblioteca_maconica/audios"
-            formato = "audio"
-        else:
-            resource_type = "image"
-            folder = "biblioteca_maconica/imagens"
-            formato = "image"
-        
         try:
             import uuid
             from werkzeug.utils import secure_filename
             
-            # Gerar nome único para o arquivo
+            # Gerar nome único
             nome_base = uuid.uuid4().hex
-            nome_arquivo = f"{nome_base}_{secure_filename(arquivo.filename)}"
+            nome_arquivo_original = secure_filename(arquivo.filename)
+            extensao = nome_arquivo_original.rsplit('.', 1)[1].lower() if '.' in nome_arquivo_original else ''
+            nome_arquivo_gs = f"{nome_base}.{extensao}"
             
-            # 🔧 Configurações de upload
-            upload_options = {
-                "folder": folder,
-                "public_id": nome_base,
-                "resource_type": resource_type,
-                "type": "upload",  # ← Adicione esta linha para garantir que seja público
-                "use_filename": True,
-                "unique_filename": True,
-                "overwrite": True
-            }
+            # Upload para Google Drive
+            folder_id = GOOGLE_DRIVE_FOLDER_ID
+            mime_type = None
             
-            # 🔧 Para PDFs, adicionar formato explicitamente
-            if is_pdf:
-                upload_options["format"] = "pdf"
-                upload_options["flags"] = "attachment"
+            if extensao == 'pdf':
+                mime_type = 'application/pdf'
+            elif extensao in ['jpg', 'jpeg']:
+                mime_type = 'image/jpeg'
+            elif extensao == 'png':
+                mime_type = 'image/png'
             
-            # Adicionar transformações apenas para imagens
-            if resource_type == "image":
-                upload_options["transformation"] = [
-                    {'width': 800, 'height': 600, 'crop': 'limit'},
-                    {'quality': 'auto'}
-                ]
+            resultado = upload_to_google_drive(arquivo, nome_arquivo_gs, folder_id, mime_type)
             
-            print(f"📤 Enviando arquivo: {filename}")
-            print(f"📁 Resource type: {resource_type}")
-            print(f"📂 Folder: {folder}")
+            if not resultado['success']:
+                flash(f'Erro no upload: {resultado.get("error")}', 'danger')
+                return redirect(url_for('upload_material'))
             
-            # Realizar upload
-            upload_result = cloudinary.uploader.upload(
-                arquivo,
-                **upload_options
-            )
-            
-            # URL do arquivo
-            arquivo_url = upload_result.get('secure_url')
-            arquivo_tamanho = upload_result.get('bytes', tamanho_arquivo)
-            arquivo_nome_original = arquivo.filename
+            arquivo_url = resultado['embed_url']  # URL para embed
+            arquivo_direct_url = resultado['direct_url']  # URL direta
+            file_id = resultado['file_id']
             
             # Upload da capa (se houver)
             capa_url = None
             if capa and capa.filename:
-                capa_result = cloudinary.uploader.upload(
-                    capa,
-                    folder="biblioteca_maconica/capas",
-                    resource_type="image",
-                    transformation=[
-                        {'width': 300, 'height': 400, 'crop': 'fill'},
-                        {'quality': 'auto'}
-                    ]
-                )
-                capa_url = capa_result.get('secure_url')
+                capa_nome = secure_filename(capa.filename)
+                capa_nome_gs = f"capa_{nome_base}.{capa_nome.rsplit('.', 1)[1].lower()}"
+                capa_resultado = upload_to_google_drive(capa, capa_nome_gs, GOOGLE_DRIVE_CAPAS_FOLDER_ID)
+                if capa_resultado['success']:
+                    capa_url = capa_resultado['direct_url']
             
             # Inserir no banco
             cursor, conn = get_db()
             
-            # Tratar ano_publicacao
-            ano_publicacao_int = None
-            if ano_publicacao and ano_publicacao.strip():
-                try:
-                    ano_publicacao_int = int(ano_publicacao)
-                except:
-                    pass
+            ano_publicacao_int = int(ano_publicacao) if ano_publicacao and ano_publicacao.strip() else None
             
             cursor.execute("""
                 INSERT INTO materiais (
                     titulo, subtitulo, descricao, tipo, categoria_id, grau_acesso,
                     arquivo_url, arquivo_nome, arquivo_tamanho, formato, capa_url,
                     autor, editora, ano_publicacao, tags, 
-                    destaque, publicado, created_by, created_at, data_publicacao
-                ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, true, %s, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+                    destaque, publicado, created_by, created_at, data_publicacao,
+                    google_drive_file_id
+                ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, true, %s, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, %s)
                 RETURNING id
             """, (
                 titulo, subtitulo, descricao, tipo, categoria_id, grau_acesso,
-                arquivo_url, arquivo_nome_original, arquivo_tamanho, formato, capa_url,
+                arquivo_url, nome_arquivo_original, tamanho_arquivo, extensao, capa_url,
                 autor, editora, ano_publicacao_int, tags,
-                destaque, session['user_id']
+                destaque, session['user_id'], file_id
             ))
             
             material_id = cursor.fetchone()['id']
             conn.commit()
             return_connection(conn)
             
-            registrar_log("criar", "material", material_id, dados_novos={"titulo": titulo})
-            
-            flash(f'✅ Material "{titulo}" enviado com sucesso!', 'success')
+            flash(f'✅ Material "{titulo}" enviado com sucesso para o Google Drive!', 'success')
             return redirect(url_for('visualizar_material', material_id=material_id))
             
-        except cloudinary.exceptions.Error as e:
-            print(f"❌ Erro no Cloudinary: {e}")
-            import traceback
-            traceback.print_exc()
-            flash(f'Erro no envio para a nuvem: {str(e)}', 'danger')
-            return redirect(url_for('upload_material'))
-        
         except Exception as e:
             print(f"❌ Erro no upload: {e}")
             import traceback
             traceback.print_exc()
+            if 'conn' in locals():
+                return_connection(conn)
             flash(f'Erro ao enviar arquivo: {str(e)}', 'danger')
             return redirect(url_for('upload_material'))
     

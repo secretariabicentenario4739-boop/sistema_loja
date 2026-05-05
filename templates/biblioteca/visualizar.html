@@ -2,273 +2,114 @@
 
 {% block title %}{{ material.titulo }} - Biblioteca{% endblock %}
 
+{% block styles %}
+{{ super() }}
+<style>
+    .pdf-viewer {
+        width: 100%;
+        height: 800px;
+        border: none;
+        border-radius: 8px;
+    }
+    
+    .material-actions {
+        display: flex;
+        gap: 15px;
+        justify-content: center;
+        margin-top: 20px;
+        flex-wrap: wrap;
+    }
+    
+    @media (max-width: 768px) {
+        .pdf-viewer {
+            height: 500px;
+        }
+    }
+</style>
+{% endblock %}
+
 {% block content %}
 <div class="container py-4">
-    <!-- Breadcrumb -->
-    <nav aria-label="breadcrumb">
-        <ol class="breadcrumb">
-            <li class="breadcrumb-item"><a href="/biblioteca">Biblioteca</a></li>
-            {% if material.categoria_nome %}
-            <li class="breadcrumb-item"><a href="/biblioteca/categoria/{{ material.categoria_id }}">{{ material.categoria_nome }}</a></li>
-            {% endif %}
-            <li class="breadcrumb-item active">{{ material.titulo }}</li>
-        </ol>
-    </nav>
-
-    <!-- Abas de navegação -->
-    <ul class="nav nav-tabs mb-3" id="viewerTab" role="tablist">
-        <li class="nav-item" role="presentation">
-            <button class="nav-link active" id="read-tab" data-bs-toggle="tab" data-bs-target="#read" type="button" role="tab">
-                <i class="bi bi-book"></i> Modo Leitura
-            </button>
-        </li>
-        <li class="nav-item" role="presentation">
-            <button class="nav-link" id="details-tab" data-bs-toggle="tab" data-bs-target="#details" type="button" role="tab">
-                <i class="bi bi-info-circle"></i> Detalhes e Avaliações
-            </button>
-        </li>
-    </ul>
-
-    <div class="tab-content">
-        <!-- Aba de Leitura - Versão Simples -->
-        <div class="tab-pane fade show active" id="read" role="tabpanel">
-            <div class="card shadow">
-                <div class="card-header bg-white">
-                    <div class="d-flex justify-content-between align-items-center flex-wrap">
-                        <h5 class="mb-0">
-                            <i class="bi bi-book"></i> {{ material.titulo }}
-                            {% if material.autor %}
-                            <small class="text-muted">- {{ material.autor }}</small>
-                            {% endif %}
-                        </h5>
-                        <div class="mt-2 mt-md-0">
-                            <button class="btn btn-sm btn-primary" onclick="baixarPDF()">
-                                <i class="bi bi-download"></i> Baixar PDF
-                            </button>
-                            <button class="btn btn-sm btn-outline-warning" id="btnFavoritarLeitura" onclick="favoritarMaterial()">
-                                <i class="bi bi-star{% if favoritado %}-fill{% endif %}"></i>
-                            </button>
-                        </div>
-                    </div>
-                </div>
-                <div class="card-body p-0">
-                    <div id="documentViewer" style="min-height: 80vh; background: #f5f5f5;">
-                        <div class="d-flex align-items-center justify-content-center h-100" style="min-height: 80vh;">
-                            <div class="text-center">
-                                <i class="bi bi-file-pdf" style="font-size: 5rem; color: #dc3545;"></i>
-                                <h4 class="mt-3">{{ material.titulo }}</h4>
-                                <p class="text-muted">Clique no botão abaixo para visualizar o documento</p>
-                                <button class="btn btn-primary btn-lg mt-2" onclick="abrirPDF()">
-                                    <i class="bi bi-eye"></i> Visualizar PDF
-                                </button>
-                                <button class="btn btn-outline-secondary btn-lg mt-2 ms-2" onclick="baixarPDF()">
-                                    <i class="bi bi-download"></i> Baixar PDF
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                <div class="card-footer bg-white">
-                    <div class="row align-items-center">
-                        <div class="col-md-6">
-                            <small class="text-muted">
-                                <i class="bi bi-file-{{ material.tipo or 'file' }}"></i> 
-                                {{ material.formato or material.tipo or 'Documento'|upper }}
-                                {% if material.num_paginas %}
-                                • {{ material.num_paginas }} páginas
-                                {% endif %}
-                            </small>
-                        </div>
-                        <div class="col-md-6 text-md-end mt-2 mt-md-0">
-                            <div class="btn-group btn-group-sm" role="group">
-                                <button class="btn btn-outline-primary" onclick="abrirPDF()">
-                                    <i class="bi bi-eye"></i> Visualizar
-                                </button>
-                                <button class="btn btn-outline-secondary" onclick="baixarPDF()">
-                                    <i class="bi bi-download"></i> Baixar
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
+    <div class="card shadow-sm">
+        <div class="card-header" style="background: var(--bordo); color: white;">
+            <h4 class="mb-0">
+                <i class="bi bi-file-earmark-text-fill"></i> {{ material.titulo }}
+            </h4>
         </div>
-
-        <!-- Aba de Detalhes (mantenha seu código original aqui) -->
-        <div class="tab-pane fade" id="details" role="tabpanel">
-            <!-- ... seu código existente de detalhes ... -->
+        <div class="card-body">
+            <!-- Informações do material -->
+            <div class="row mb-4">
+                <div class="col-md-8">
+                    {% if material.subtitulo %}
+                        <h6 class="text-muted">{{ material.subtitulo }}</h6>
+                    {% endif %}
+                    <p>{{ material.descricao or 'Sem descrição' }}</p>
+                    
+                    <div class="row mt-3">
+                        <div class="col-md-6">
+                            <small><strong>Autor:</strong> {{ material.autor or 'Não informado' }}</small><br>
+                            <small><strong>Editora:</strong> {{ material.editora or 'Não informada' }}</small>
+                        </div>
+                        <div class="col-md-6">
+                            <small><strong>Ano:</strong> {{ material.ano_publicacao or 'Não informado' }}</small><br>
+                            <small><strong>Tipo:</strong> {{ material.tipo|capitalize }}</small>
+                        </div>
+                    </div>
+                </div>
+                {% if material.capa_url %}
+                <div class="col-md-4 text-center">
+                    <img src="{{ material.capa_url }}" alt="Capa" class="img-fluid rounded shadow-sm" style="max-height: 200px;">
+                </div>
+                {% endif %}
+            </div>
+            
+            <hr>
+            
+            <!-- Visualização do arquivo -->
+            <h5><i class="bi bi-eye-fill"></i> Visualização</h5>
+            
+            {% if material.formato == 'pdf' %}
+                <!-- PDF Viewer do Google Drive -->
+                <iframe class="pdf-viewer" src="{{ material.arquivo_url }}"></iframe>
+                
+                <div class="material-actions">
+                    <a href="{{ material.arquivo_url }}" class="btn-bordo" target="_blank">
+                        <i class="bi bi-box-arrow-up-right"></i> Abrir em nova aba
+                    </a>
+                    <a href="{{ url_for('download_material', material_id=material.id) }}" class="btn-bordo-info">
+                        <i class="bi bi-download"></i> Baixar PDF
+                    </a>
+                    <a href="{{ url_for('listar_materiais') }}" class="btn-bordo-outline">
+                        <i class="bi bi-arrow-left"></i> Voltar
+                    </a>
+                </div>
+                
+            {% elif material.formato in ['jpg', 'jpeg', 'png', 'gif'] %}
+                <!-- Imagem -->
+                <div class="text-center">
+                    <img src="{{ material.arquivo_url }}" alt="{{ material.titulo }}" class="img-fluid rounded shadow-sm" style="max-height: 600px;">
+                </div>
+                <div class="material-actions">
+                    <a href="{{ material.arquivo_url }}" class="btn-bordo" target="_blank">
+                        <i class="bi bi-box-arrow-up-right"></i> Ver imagem original
+                    </a>
+                    <a href="{{ url_for('listar_materiais') }}" class="btn-bordo-outline">
+                        <i class="bi bi-arrow-left"></i> Voltar
+                    </a>
+                </div>
+                
+            {% else %}
+                <!-- Outros tipos de arquivo -->
+                <div class="alert alert-info text-center">
+                    <i class="bi bi-file-earmark-text fs-1"></i>
+                    <h5>Visualização não disponível para este tipo de arquivo</h5>
+                    <p>Clique no botão abaixo para baixar o arquivo</p>
+                    <a href="{{ url_for('download_material', material_id=material.id) }}" class="btn-bordo">
+                        <i class="bi bi-download"></i> Baixar {{ material.formato|upper }}
+                    </a>
+                </div>
+            {% endif %}
         </div>
     </div>
 </div>
-
-<script>
-const materialId = {{ material.id }};
-let arquivoUrl = "{{ material.arquivo_url }}";
-
-// Corrigir URL se necessário
-if (arquivoUrl.includes('.pdf.pdf')) {
-    arquivoUrl = arquivoUrl.replace('.pdf.pdf', '.pdf');
-}
-
-console.log('URL do arquivo:', arquivoUrl);
-
-function abrirPDF() {
-    // Abrir em nova aba
-    window.open(arquivoUrl, '_blank');
-}
-
-function baixarPDF() {
-    // Registrar download
-    registrarDownload();
-    
-    // Criar link para download
-    const link = document.createElement('a');
-    link.href = arquivoUrl;
-    link.download = "{{ material.titulo }}.pdf";
-    link.target = '_blank';
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-}
-
-function registrarDownload() {
-    fetch(`/biblioteca/material/${materialId}/registrar-download`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' }
-    }).catch(error => console.error('Erro ao registrar download:', error));
-}
-
-async function favoritarMaterial() {
-    try {
-        const response = await fetch(`/biblioteca/material/${materialId}/favoritar`, {
-            method: 'POST'
-        });
-        const result = await response.json();
-        
-        const btnLeitura = document.getElementById('btnFavoritarLeitura');
-        const btnDetalhes = document.getElementById('btnFavoritarDetalhes');
-        
-        const starIcon = result.favoritado ? 'bi-star-fill' : 'bi-star';
-        const text = result.favoritado ? ' Favoritado' : ' Favoritar';
-        
-        if (btnLeitura) {
-            btnLeitura.innerHTML = `<i class="bi ${starIcon}"></i>`;
-            btnLeitura.classList.toggle('btn-warning', result.favoritado);
-            btnLeitura.classList.toggle('btn-outline-warning', !result.favoritado);
-        }
-        
-        if (btnDetalhes) {
-            btnDetalhes.innerHTML = `<i class="bi ${starIcon}"></i> ${text}`;
-            btnDetalhes.classList.toggle('btn-warning', result.favoritado);
-            btnDetalhes.classList.toggle('btn-outline-secondary', !result.favoritado);
-        }
-    } catch (error) {
-        console.error('Erro ao favoritar:', error);
-        alert('Erro ao favoritar');
-    }
-}
-
-// Sistema de avaliação
-let notaSelecionada = 0;
-
-if (document.querySelector('.rating')) {
-    document.querySelectorAll('.rating i').forEach(estrela => {
-        estrela.addEventListener('mouseenter', function() {
-            const nota = parseInt(this.dataset.nota);
-            preencherEstrelas(nota);
-        });
-        
-        estrela.addEventListener('mouseleave', function() {
-            preencherEstrelas(notaSelecionada);
-        });
-        
-        estrela.addEventListener('click', function() {
-            notaSelecionada = parseInt(this.dataset.nota);
-            document.getElementById('nota').value = notaSelecionada;
-            preencherEstrelas(notaSelecionada);
-        });
-    });
-}
-
-function preencherEstrelas(nota) {
-    const estrelas = document.querySelectorAll('.rating i');
-    estrelas.forEach((estrela, index) => {
-        if (index < nota) {
-            estrela.classList.remove('bi-star');
-            estrela.classList.add('bi-star-fill');
-        } else {
-            estrela.classList.remove('bi-star-fill');
-            estrela.classList.add('bi-star');
-        }
-    });
-}
-
-const formAvaliacao = document.getElementById('formAvaliacao');
-if (formAvaliacao) {
-    formAvaliacao.addEventListener('submit', async function(e) {
-        e.preventDefault();
-        
-        if (!notaSelecionada) {
-            alert('Por favor, selecione uma nota!');
-            return;
-        }
-        
-        const comentario = document.querySelector('textarea[name="comentario"]').value;
-        
-        try {
-            const response = await fetch(`/biblioteca/material/${materialId}/avaliar`, {
-                method: 'POST',
-                headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({
-                    nota: notaSelecionada,
-                    comentario: comentario
-                })
-            });
-            
-            const result = await response.json();
-            if (result.success) {
-                alert(result.mensagem);
-                location.reload();
-            } else {
-                alert(result.mensagem || 'Erro ao enviar avaliação');
-            }
-        } catch (error) {
-            console.error('Erro:', error);
-            alert('Erro ao enviar avaliação');
-        }
-    });
-}
-
-function confirmarExclusao(materialId, materialTitulo) {
-    if (confirm(`Tem certeza que deseja excluir o material "${materialTitulo}"?\n\n⚠️ Esta ação é irreversível!`)) {
-        const form = document.createElement('form');
-        form.method = 'POST';
-        form.action = `/biblioteca/admin/excluir/${materialId}`;
-        document.body.appendChild(form);
-        form.submit();
-    }
-}
-</script>
-
-<style>
-.rating i {
-    font-size: 1.5rem;
-    margin-right: 5px;
-    transition: all 0.2s;
-}
-
-.rating i:hover {
-    transform: scale(1.1);
-}
-
-.nav-tabs .nav-link {
-    color: #495057;
-    font-weight: 500;
-}
-
-.nav-tabs .nav-link.active {
-    color: #0d6efd;
-    font-weight: 600;
-}
-</style>
 {% endblock %}
