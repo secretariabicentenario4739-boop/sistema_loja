@@ -3462,7 +3462,7 @@ def exportar_relatorio_excel():
 
 @app.route("/biblioteca/admin/upload", methods=['GET', 'POST'])
 @login_required
-#@permissao_required('material.create')
+@permissao_required('material.create')
 def upload_material():
     """Upload de novos materiais para o Cloudinary"""
     
@@ -3520,7 +3520,7 @@ def upload_material():
         
         # 🔧 CORREÇÃO PRINCIPAL: Usar "auto" para PDFs (NÃO "raw"!)
         if is_pdf:
-            resource_type = "auto"  # ← MUDE DE "raw" PARA "auto"
+            resource_type = "raw"  # ← MUDE DE "raw" PARA "auto"
             folder = "biblioteca_maconica/materiais"
             formato = "pdf"
         elif is_doc:
@@ -3552,9 +3552,10 @@ def upload_material():
             upload_options = {
                 "folder": folder,
                 "public_id": nome_base,
+                "resource_type": resource_type,
+                "type": "upload",  # ← Adicione esta linha para garantir que seja público
                 "use_filename": True,
                 "unique_filename": True,
-                "resource_type": resource_type,
                 "overwrite": True
             }
             
@@ -3910,7 +3911,7 @@ def excluir_material(material_id):
     
     try:
         # Buscar material para log
-        cursor.execute("SELECT titulo, arquivo_url FROM materiais WHERE id = %s", (material_id,))
+        cursor.execute("SELECT titulo, arquivo_url, arquivo_nome, formato FROM materiais WHERE id = %s", (material_id,))
         material = cursor.fetchone()
         
         if not material:
@@ -3918,34 +3919,68 @@ def excluir_material(material_id):
             return_connection(conn)
             return redirect(url_for('listar_materiais'))
         
-        # Salvar dados para o log ANTES de excluir
-        dados_anteriores = {
-            'titulo': material['titulo'],
-            'arquivo_url': material['arquivo_url']
-        }
-        
-        # Excluir registros relacionados
-        cursor.execute("DELETE FROM downloads_material WHERE material_id = %s", (material_id,))
-        cursor.execute("DELETE FROM favoritos_material WHERE material_id = %s", (material_id,))
-        cursor.execute("DELETE FROM avaliacoes_material WHERE material_id = %s", (material_id,))
-        
-        # 🔧 Tentar excluir arquivo do Cloudinary
+        # ============================================
+        # 🔧 CORREÇÃO: Excluir arquivo do Cloudinary
+        # ============================================
         try:
             arquivo_url = material.get('arquivo_url', '')
             if 'cloudinary' in arquivo_url:
-                # Extrair public_id da URL
+                # Extrair o public_id corretamente da URL
+                # Exemplo de URL: https://res.cloudinary.com/da57u8plb/raw/upload/v1234567890/pasta/arquivo.pdf
+                # ou: https://res.cloudinary.com/da57u8plb/image/upload/v1234567890/pasta/arquivo.jpg
+                
+                # Remover a parte da URL até /upload/
                 if '/upload/' in arquivo_url:
                     parts = arquivo_url.split('/upload/')
                     if len(parts) > 1:
-                        public_id = parts[1].split('.')[0]
-                        public_id = public_id.split('?')[0]
+                        public_id_with_ext = parts[1]
+                        # Remover parâmetros de consulta (se houver)
+                        public_id_with_ext = public_id_with_ext.split('?')[0]
+                        # Remover a extensão do arquivo (.pdf, .jpg, etc.)
+                        public_id = public_id_with_ext.rsplit('.', 1)[0]
+                        
+                        # Determinar o resource_type baseado no formato ou URL
+                        resource_type = "raw"
+                        if '/image/' in arquivo_url:
+                            resource_type = "image"
+                        elif '/video/' in arquivo_url:
+                            resource_type = "video"
+                        elif material.get('formato') in ['jpg', 'jpeg', 'png', 'gif']:
+                            resource_type = "image"
+                        elif material.get('formato') == 'pdf':
+                            resource_type = "auto"  # Usar "auto" para PDFs
+                        
+                        print(f"🗑️ Tentando excluir do Cloudinary: {public_id} (type: {resource_type})")
+                        
+                        # Tentar excluir com diferentes resource_types
                         try:
-                            cloudinary.uploader.destroy(public_id, resource_type="auto")
-                            print(f"Arquivo removido do Cloudinary: {public_id}")
-                        except Exception as e:
-                            print(f"Erro ao excluir do Cloudinary: {e}")
-        except Exception as e:
-            print(f"Erro ao tentar excluir do Cloudinary (ignorado): {e}")
+                            result = cloudinary.uploader.destroy(public_id, resource_type=resource_type)
+                            print(f"   Resultado: {result}")
+                            if result.get('result') == 'ok':
+                                print(f"✅ Arquivo removido do Cloudinary: {public_id}")
+                            else:
+                                print(f"⚠️ Resultado inesperado: {result}")
+                        except Exception as e1:
+                            # Tentar com resource_type="raw" como fallback
+                            try:
+                                result = cloudinary.uploader.destroy(public_id, resource_type="raw")
+                                print(f"   Fallback raw: {result}")
+                            except Exception as e2:
+                                # Tentar com resource_type="image"
+                                try:
+                                    result = cloudinary.uploader.destroy(public_id, resource_type="image")
+                                    print(f"   Fallback image: {result}")
+                                except Exception as e3:
+                                    print(f"❌ Erro ao excluir do Cloudinary: {e3}")
+        except Exception as cloud_error:
+            print(f"Erro ao processar exclusão do Cloudinary: {cloud_error}")
+        
+        # ============================================
+        # Excluir registros relacionados no banco
+        # ============================================
+        cursor.execute("DELETE FROM downloads_material WHERE material_id = %s", (material_id,))
+        cursor.execute("DELETE FROM favoritos_material WHERE material_id = %s", (material_id,))
+        cursor.execute("DELETE FROM avaliacoes_material WHERE material_id = %s", (material_id,))
         
         # Excluir material do banco
         cursor.execute("DELETE FROM materiais WHERE id = %s", (material_id,))
@@ -3955,7 +3990,7 @@ def excluir_material(material_id):
             acao="excluir",
             entidade="material",
             entidade_id=material_id,
-            dados_anteriores=dados_anteriores,
+            dados_anteriores={'titulo': material['titulo'], 'arquivo_url': material['arquivo_url']},
             dados_novos=None
         )
         
