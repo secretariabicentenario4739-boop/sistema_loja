@@ -695,16 +695,12 @@
                                         <a href="/reunioes/{{ reuniao.id }}" class="btn-icon-info" title="Visualizar">
                                             <i class="bi bi-eye-fill"></i>
                                         </a>
-                                          <!-- NOVO: Visualizar Edital -->
+                                          <!-- Megafone Edital -->
 										<a href="/reunioes/{{ reuniao.id }}/edital" class="btn-icon-secondary" title="Visualizar Edital" target="_blank">
-											<i class="bi bi-file-text-fill"></i>
+											<i class="bi bi-megaphone-fill"></i>
 										</a>
 										
-										<!-- Badge de Edital -->
-										<span class="badge" style="background: linear-gradient(135deg, #996515, #6B4226); color: #D4AF37; margin-left: 5px;">
-											<i class="bi bi-file-text"></i> Edital
-										</span>
-                                        {% if session.tipo == 'admin' %}
+										{% if session.tipo == 'admin' %}
                                             {% if reuniao.status != 'realizada' and reuniao.status != 'cancelada' %}
                                             <a href="/reunioes/{{ reuniao.id }}/editar" class="btn-icon-warning" title="Editar">
                                                 <i class="bi bi-pencil-fill"></i>

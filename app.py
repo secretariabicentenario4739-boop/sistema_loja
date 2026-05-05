@@ -8752,7 +8752,7 @@ def visualizar_edital(reuniao_id):
 @app.route("/reunioes/<int:reuniao_id>/edital/download")
 @login_required
 def baixar_edital(reuniao_id):
-    """Baixar edital em PDF"""
+    """Baixar edital em PDF usando pdfkit + wkhtmltopdf"""
     cursor, conn = get_db()
     
     cursor.execute("SELECT * FROM reunioes WHERE id = %s", (reuniao_id,))
@@ -8782,7 +8782,20 @@ def baixar_edital(reuniao_id):
     import markdown
     html_content = markdown.markdown(edital, extensions=['extra'])
     
+    # Buscar dados da loja
+    loja_nome = ""
+    try:
+        if reuniao.get('loja_id'):
+            cursor.execute("SELECT nome FROM lojas WHERE id = %s", (reuniao['loja_id'],))
+            loja = cursor.fetchone()
+            if loja:
+                loja_nome = loja['nome']
+    except:
+        pass
+    
     # Template para PDF
+    from datetime import datetime
+    
     template_pdf = f"""
     <!DOCTYPE html>
     <html>
@@ -8791,48 +8804,100 @@ def baixar_edital(reuniao_id):
         <title>Edital - {reuniao['titulo']}</title>
         <style>
             body {{
-                font-family: 'Times New Roman', serif;
-                margin: 0;
-                padding: 20mm;
+                font-family: 'Times New Roman', Times, serif;
+                margin: 2cm;
                 line-height: 1.6;
+                font-size: 12pt;
             }}
-            h1, h2 {{
+            h1 {{
                 text-align: center;
+                font-size: 18pt;
                 margin: 20px 0;
+                color: #4A0E2E;
+            }}
+            h2 {{
+                text-align: center;
+                font-size: 16pt;
+                margin: 15px 0;
+                color: #4A0E2E;
+                border-bottom: 1px solid #D4AF37;
+                padding-bottom: 8px;
+            }}
+            .header {{
+                text-align: center;
+                margin-bottom: 30px;
             }}
             .content {{
-                margin-top: 30px;
+                margin-top: 20px;
             }}
             .assinatura {{
                 margin-top: 50px;
                 text-align: right;
             }}
-            @media print {{
-                body {{
-                    margin: 0;
-                    padding: 15mm;
-                }}
+            hr {{
+                margin: 20px 0;
+                border-color: #ccc;
+            }}
+            ul, ol {{
+                margin: 10px 0;
+                padding-left: 25px;
+            }}
+            .box-destaque {{
+                background: #f5f0e8;
+                padding: 10px 15px;
+                border-left: 4px solid #D4AF37;
+                margin: 15px 0;
             }}
         </style>
     </head>
     <body>
+        <div class="header">
+            <h1>EDITAL DE CONVOCAÇÃO</h1>
+            <p><strong>{reuniao['titulo']}</strong></p>
+            <p><strong>{loja_nome or 'ARLS Bicentenário'}</strong></p>
+        </div>
         <div class="content">
             {html_content}
+        </div>
+        <div class="assinatura">
+            <p>_________________________________</p>
+            <p><strong>Secretaria</strong></p>
+            <p><em>Documento gerado em {datetime.now().strftime('%d/%m/%Y %H:%M')}</em></p>
         </div>
     </body>
     </html>
     """
     
     try:
-        from weasyprint import HTML
+        import pdfkit
         import tempfile
+        
+        # Configurar caminho do wkhtmltopdf no Render
+        config = pdfkit.configuration(wkhtmltopdf='/usr/local/bin/wkhtmltopdf')
         
         # Gerar PDF
         with tempfile.NamedTemporaryFile(delete=False, suffix='.pdf') as tmp:
-            HTML(string=template_pdf).write_pdf(tmp.name)
+            pdfkit.from_string(template_pdf, tmp.name, configuration=config, options={
+                'page-size': 'A4',
+                'margin-top': '20mm',
+                'margin-bottom': '20mm',
+                'margin-left': '15mm',
+                'margin-right': '15mm',
+                'encoding': 'UTF-8',
+                'print-media-type': True
+            })
             tmp_path = tmp.name
         
         from flask import send_file
+        
+        # Limpar arquivo após enviar
+        @after_this_request
+        def remove_file(response):
+            try:
+                os.unlink(tmp_path)
+            except Exception as e:
+                print(f"Erro ao remover arquivo temporário: {e}")
+            return response
         
         return send_file(
             tmp_path,
@@ -8841,17 +8906,13 @@ def baixar_edital(reuniao_id):
             mimetype='application/pdf'
         )
         
-    except ImportError:
-        from flask import make_response
-        # Fallback: retornar HTML
-        response = make_response(template_pdf)
-        response.headers['Content-Type'] = 'text/html'
-        response.headers['Content-Disposition'] = f'inline; filename=edital_{reuniao_id}.html'
-        flash("Para gerar PDF, instale: pip install weasyprint", "warning")
-        return response
+    except Exception as e:
+        print(f"Erro ao gerar PDF: {e}")
+        flash(f"Erro ao gerar PDF: {str(e)}. Tentando gerar versão para impressão.", "warning")
+        return redirect(f"/reunioes/{reuniao_id}/edital")
         
     finally:
-        return_connection(conn)    
+        return_connection(conn)
     
 @app.route("/reunioes/<int:id>/presenca", methods=["POST"])
 @admin_required
