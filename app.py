@@ -3462,7 +3462,7 @@ def exportar_relatorio_excel():
 
 @app.route("/biblioteca/admin/upload", methods=['GET', 'POST'])
 @login_required
-@permissao_required('material.create')
+#@permissao_required('material.create')
 def upload_material():
     """Upload de novos materiais para o Cloudinary"""
     
