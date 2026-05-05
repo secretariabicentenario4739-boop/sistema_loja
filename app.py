@@ -995,6 +995,7 @@ def test_connection():
 # ============================================
 from routes.notificacoes_routes import notificacoes_bp
 app.register_blueprint(notificacoes_bp)
+
 from routes.calendario_routes import calendario_bp
 app.register_blueprint(calendario_bp)
 
@@ -1473,6 +1474,149 @@ def usar_token_recuperacao(token):
     cursor.execute("UPDATE password_reset_tokens SET usado = TRUE WHERE token = %s", (token,))
     conn.commit()
     return_connection(conn)
+
+# =============================
+# FUNÇÕES DE EDITAL
+# =============================
+
+# Adicione esta função depois das outras funções auxiliares (por volta da linha 1400)
+
+def gerar_edital(reuniao_id):
+    """Gera um edital em formato markdown/HTML para a reunião"""
+    cursor, conn = get_db()
+    
+    try:
+        # Buscar dados da reunião
+        cursor.execute("""
+            SELECT r.*, l.nome as loja_nome, l.numero as loja_numero, 
+                   l.oriente as loja_oriente, l.endereco as loja_endereco,
+                   l.cidade as loja_cidade, l.uf as loja_uf
+            FROM reunioes r
+            LEFT JOIN lojas l ON r.loja_id = l.id
+            WHERE r.id = %s
+        """, (reuniao_id,))
+        reuniao = cursor.fetchone()
+        
+        if not reuniao:
+            return None
+        
+        # Buscar Venerável Mestre atual
+        cursor.execute("""
+            SELECT u.nome_completo, u.cim_numero
+            FROM ocupacao_cargos oc
+            JOIN usuarios u ON oc.obreiro_id = u.id
+            JOIN cargos c ON oc.cargo_id = c.id
+            WHERE oc.ativo = 1 AND c.nome ILIKE '%venerável%mestre%'
+            ORDER BY oc.data_inicio DESC
+            LIMIT 1
+        """)
+        veneravel = cursor.fetchone()
+        
+        veneravel_nome = veneravel['nome_completo'] if veneravel else 'Venerável Mestre'
+        veneravel_cim = veneravel['cim_numero'] if veneravel else ''
+        
+        # Buscar Secretário atual
+        cursor.execute("""
+            SELECT u.nome_completo, u.cim_numero
+            FROM ocupacao_cargos oc
+            JOIN usuarios u ON oc.obreiro_id = u.id
+            JOIN cargos c ON oc.cargo_id = c.id
+            WHERE oc.ativo = 1 AND c.nome ILIKE '%secret%'
+            ORDER BY oc.data_inicio DESC
+            LIMIT 1
+        """)
+        secretario = cursor.fetchone()
+        
+        secretario_nome = secretario['nome_completo'] if secretario else 'Secretário'
+        secretario_cim = secretario['cim_numero'] if secretario else ''
+        
+        # Determinar o grau por extenso
+        grau_reuniao = reuniao.get('grau', 1)
+        if grau_reuniao == 1:
+            grau_texto = 'Aprendiz'
+        elif grau_reuniao == 2:
+            grau_texto = 'Companheiro'
+        elif grau_reuniao == 3:
+            grau_texto = 'Mestre'
+        else:
+            grau_texto = 'Todos os Graus'
+        
+        # Formatar data
+        data_obj = reuniao['data']
+        data_formatada = data_obj.strftime('%d/%m/%Y')
+        data_extenso = data_obj.strftime('%d/%m/%Y')
+        
+        # Formatar hora
+        hora_formatada = reuniao['hora_inicio'].strftime('%H:%M') if reuniao['hora_inicio'] else '19:30'
+        
+        # Nome da loja
+        loja_nome = reuniao.get('loja_nome', 'ARLS Bicentenário')
+        loja_numero = reuniao.get('loja_numero', '')
+        loja_oriente = reuniao.get('loja_oriente', 'Brasília - DF')
+        
+        loja_completa = f"{loja_nome}"
+        if loja_numero:
+            loja_completa += f", Nº {loja_numero}"
+        if loja_oriente:
+            loja_completa += f" ({loja_oriente})"
+        
+        # Local
+        local = reuniao.get('local', reuniao.get('loja_endereco', 'Templo Maçônico'))
+        
+        # Pauta formatada
+        pauta = reuniao.get('pauta', '')
+        if pauta:
+            # Converter quebras de linha para markdown
+            pauta = pauta.replace('\n', '\n\n')
+        else:
+            pauta = '**Pauta a ser definida durante a sessão**'
+        
+        # Observações
+        observacoes = reuniao.get('observacoes', '')
+        
+        # Conteúdo do edital em markdown
+        edital = f"""GL∴! GL∴! GL∴!
+
+# EDITAL DE CONVOCAÇÃO
+
+De ordem do Venerável Mestre desta Oficina, Irmão **{veneravel_nome}**{f' CIM {veneravel_cim}' if veneravel_cim else ''}, ficam os visitantes convidados e todos os Obreiros do Quadro **CONVOCADOS** para a **Sessão {reuniao.get('tipo', 'Ordinária')} do Grau {grau_texto}**, a ser realizada em **{data_formatada}**, às **{hora_formatada}h**, no **{local}**{f' ({loja_completa})' if loja_completa else ''}, com a seguinte pauta:
+
+---
+
+{pauta}
+
+---
+
+**Previsão de escrutínios secretos conforme necessidade da pauta**
+
+---
+
+## OBSERVAÇÕES IMPORTANTES:
+
+- Pedimos a todos que compareçam com pelo menos 20 minutos antes do horário aprazado.
+- O traje é o ritualístico (paletó e gravata).
+- **LEMBRAMOS QUE OS VALORES DO TRONCO DE BENEFICÊNCIA DEVEM SER SACADOS PARA O DEPÓSITO, EM ESPÉCIE, DURANTE A COLETA!**
+- O Arquiteto e os Aprendizes devem chegar com maior antecedência para montarem o templo.
+{f'- {observacoes}' if observacoes else ''}
+
+---
+
+**Cordialmente,**
+
+{secretario_nome}{f' - CIM {secretario_cim}' if secretario_cim else ''}
+**Secretário**
+"""
+        
+        return_connection(conn)
+        return edital
+        
+    except Exception as e:
+        print(f"Erro ao gerar edital: {e}")
+        import traceback
+        traceback.print_exc()
+        if conn:
+            return_connection(conn)
+        return None
 
 # =============================
 # FUNÇÕES DE NOTIFICAÇÕES
@@ -8214,6 +8358,9 @@ def nova_reuniao():
             return redirect("/reunioes/nova")
         
         try:
+            # ============================================
+            # INSERIR REUNIÃO
+            # ============================================
             cursor.execute("""
                 INSERT INTO reunioes 
                 (titulo, tipo, grau, data, hora_inicio, hora_termino, local, loja_id, pauta, observacoes, criado_por, status)
@@ -8223,6 +8370,27 @@ def nova_reuniao():
                   local, loja_id, pauta, observacoes, session["user_id"]))
             
             reuniao_id = cursor.fetchone()['id']
+            
+            # ============================================
+            # GARANTIR QUE A COLUNA EDITAL EXISTA
+            # ============================================
+            try:
+                cursor.execute("""
+                    ALTER TABLE reunioes ADD COLUMN IF NOT EXISTS edital TEXT
+                """)
+                conn.commit()
+            except Exception as alter_error:
+                print(f"⚠️ Erro ao adicionar coluna edital: {alter_error}")
+            
+            # ============================================
+            # GERAR E SALVAR EDITAL
+            # ============================================
+            edital = gerar_edital(reuniao_id)
+            if edital:
+                cursor.execute("""
+                    UPDATE reunioes SET edital = %s WHERE id = %s
+                """, (edital, reuniao_id))
+            
             conn.commit()
             
             registrar_log("criar", "reuniao", reuniao_id, dados_novos={"titulo": titulo, "data": data, "tipo": tipo})
@@ -8304,6 +8472,10 @@ def nova_reuniao():
                 print(f"Erro no envio de e-mails: {e}")
                 flash("✅ Reunião agendada com sucesso!", "success")
             
+            # Aviso sobre o edital
+            if edital:
+                flash("📄 Edital de convocação gerado automaticamente!", "info")
+            
             return_connection(conn)
             return redirect(f"/reunioes/{reuniao_id}")
             
@@ -8315,10 +8487,9 @@ def nova_reuniao():
             return redirect("/reunioes/nova")
     
     # ============================================
-    # GET - Carregar formulário (CORRIGIDO - sem duplicação)
+    # GET - Carregar formulário
     # ============================================
     
-    # CORREÇÃO: Removido "WHERE ativo = 1" pois a coluna não existe
     cursor.execute("SELECT * FROM tipos_reuniao ORDER BY nome")
     tipos = cursor.fetchall()
     
@@ -8531,6 +8702,156 @@ def excluir_reuniao(id):
     
     return_connection(conn)
     return redirect("/reunioes")
+    
+@app.route("/reunioes/<int:reuniao_id>/edital")
+@login_required
+def visualizar_edital(reuniao_id):
+    """Visualizar edital da reunião em HTML"""
+    cursor, conn = get_db()
+    
+    cursor.execute("""
+        SELECT r.*, l.nome as loja_nome
+        FROM reunioes r
+        LEFT JOIN lojas l ON r.loja_id = l.id
+        WHERE r.id = %s
+    """, (reuniao_id,))
+    reuniao = cursor.fetchone()
+    
+    if not reuniao:
+        flash("Reunião não encontrada!", "danger")
+        return redirect("/reunioes")
+    
+    # Verificar permissão por grau
+    usuario_grau = session.get('grau_atual', 1)
+    reuniao_grau = reuniao.get('grau', 1)
+    
+    if usuario_grau < reuniao_grau and session.get('tipo') != 'admin':
+        flash("Você não tem permissão para visualizar este edital!", "danger")
+        return redirect(f"/reunioes/{reuniao_id}")
+    
+    edital = reuniao.get('edital')
+    if not edital:
+        # Gerar edital se não existir
+        edital = gerar_edital(reuniao_id)
+        if edital:
+            cursor.execute("UPDATE reunioes SET edital = %s WHERE id = %s", (edital, reuniao_id))
+            conn.commit()
+    
+    return_connection(conn)
+    
+    # Converter markdown para HTML
+    import markdown
+    html_content = markdown.markdown(edital or '# Edital não disponível', extensions=['extra'])
+    
+    return render_template("reunioes/edital.html", 
+                          reuniao=reuniao,
+                          edital_html=html_content,
+                          edital_raw=edital)
+
+
+@app.route("/reunioes/<int:reuniao_id>/edital/download")
+@login_required
+def baixar_edital(reuniao_id):
+    """Baixar edital em PDF"""
+    cursor, conn = get_db()
+    
+    cursor.execute("SELECT * FROM reunioes WHERE id = %s", (reuniao_id,))
+    reuniao = cursor.fetchone()
+    
+    if not reuniao:
+        flash("Reunião não encontrada!", "danger")
+        return redirect("/reunioes")
+    
+    # Verificar permissão por grau
+    usuario_grau = session.get('grau_atual', 1)
+    reuniao_grau = reuniao.get('grau', 1)
+    
+    if usuario_grau < reuniao_grau and session.get('tipo') != 'admin':
+        flash("Você não tem permissão para baixar este edital!", "danger")
+        return redirect(f"/reunioes/{reuniao_id}")
+    
+    edital = reuniao.get('edital')
+    if not edital:
+        edital = gerar_edital(reuniao_id)
+    
+    if not edital:
+        flash("Edital não disponível!", "warning")
+        return redirect(f"/reunioes/{reuniao_id}")
+    
+    # Converter markdown para HTML
+    import markdown
+    html_content = markdown.markdown(edital, extensions=['extra'])
+    
+    # Template para PDF
+    template_pdf = f"""
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <meta charset="UTF-8">
+        <title>Edital - {reuniao['titulo']}</title>
+        <style>
+            body {{
+                font-family: 'Times New Roman', serif;
+                margin: 0;
+                padding: 20mm;
+                line-height: 1.6;
+            }}
+            h1, h2 {{
+                text-align: center;
+                margin: 20px 0;
+            }}
+            .content {{
+                margin-top: 30px;
+            }}
+            .assinatura {{
+                margin-top: 50px;
+                text-align: right;
+            }}
+            @media print {{
+                body {{
+                    margin: 0;
+                    padding: 15mm;
+                }}
+            }}
+        </style>
+    </head>
+    <body>
+        <div class="content">
+            {html_content}
+        </div>
+    </body>
+    </html>
+    """
+    
+    try:
+        from weasyprint import HTML
+        import tempfile
+        
+        # Gerar PDF
+        with tempfile.NamedTemporaryFile(delete=False, suffix='.pdf') as tmp:
+            HTML(string=template_pdf).write_pdf(tmp.name)
+            tmp_path = tmp.name
+        
+        from flask import send_file
+        
+        return send_file(
+            tmp_path,
+            as_attachment=True,
+            download_name=f'edital_reuniao_{reuniao["data"].strftime("%Y%m%d")}.pdf',
+            mimetype='application/pdf'
+        )
+        
+    except ImportError:
+        from flask import make_response
+        # Fallback: retornar HTML
+        response = make_response(template_pdf)
+        response.headers['Content-Type'] = 'text/html'
+        response.headers['Content-Disposition'] = f'inline; filename=edital_{reuniao_id}.html'
+        flash("Para gerar PDF, instale: pip install weasyprint", "warning")
+        return response
+        
+    finally:
+        return_connection(conn)    
     
 @app.route("/reunioes/<int:id>/presenca", methods=["POST"])
 @admin_required

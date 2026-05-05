@@ -1,0 +1,429 @@
+{% extends "base.html" %}
+
+{% block title %}Edital - {{ reuniao.titulo }}{% endblock %}
+
+{% block styles %}
+{{ super() }}
+<style>
+    :root {
+        --bordo: #4A0E2E;
+        --bordo-escuro: #3A0A24;
+        --bordo-claro: #6B1342;
+        --bordo-suave: #8B4A6B;
+        --bordo-transparente: rgba(74, 14, 46, 0.08);
+        --bordo-transparente-hover: rgba(74, 14, 46, 0.12);
+        --ouro: #D4AF37;
+        --ouro-escuro: #996515;
+        --ouro-claro: #F0D68A;
+    }
+
+    /* CARD PRINCIPAL */
+    .card-edital {
+        background: white;
+        border: 1px solid rgba(74, 14, 46, 0.15);
+        border-radius: 16px;
+        overflow: hidden;
+        transition: all 0.3s ease;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+    }
+    
+    .card-edital:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 12px 30px rgba(74, 14, 46, 0.15);
+        border-color: var(--bordo);
+    }
+
+    /* CABEÇALHO DO CARD */
+    .card-header-edital {
+        background: linear-gradient(135deg, var(--bordo), var(--bordo-escuro));
+        border-bottom: 3px solid var(--ouro);
+        padding: 20px 25px;
+        color: white;
+    }
+    
+    .card-header-edital h2 {
+        margin: 0;
+        font-size: 1.5rem;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+    }
+    
+    .card-header-edital h2 i {
+        color: var(--ouro);
+        font-size: 2rem;
+    }
+    
+    .card-header-edital .badge-edital {
+        background: var(--ouro-escuro);
+        color: var(--ouro-claro);
+        padding: 6px 14px;
+        border-radius: 30px;
+        font-size: 0.75rem;
+        font-weight: 500;
+        margin-left: 15px;
+    }
+    
+    .info-reuniao {
+        margin-top: 10px;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 20px;
+        font-size: 0.85rem;
+        color: rgba(255, 255, 255, 0.8);
+    }
+    
+    .info-reuniao span {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+    }
+    
+    .info-reuniao i {
+        color: var(--ouro);
+    }
+
+    /* CORPO DO EDITAL */
+    .edital-body {
+        padding: 35px 40px;
+        font-family: 'Times New Roman', Georgia, serif;
+        line-height: 1.8;
+        font-size: 14px;
+        color: #2c2c2c;
+        background: #fffef7;
+    }
+    
+    .edital-body h1 {
+        text-align: center;
+        font-size: 1.6rem;
+        margin: 20px 0 10px;
+        color: var(--bordo);
+        font-weight: 700;
+        letter-spacing: 1px;
+    }
+    
+    .edital-body h2 {
+        font-size: 1.3rem;
+        margin: 25px 0 15px;
+        color: var(--bordo);
+        border-bottom: 2px solid var(--ouro);
+        padding-bottom: 8px;
+        display: inline-block;
+    }
+    
+    .edital-body h3 {
+        font-size: 1.1rem;
+        margin: 20px 0 10px;
+        color: var(--bordo-claro);
+    }
+    
+    .edital-body p {
+        margin-bottom: 12px;
+        text-align: justify;
+    }
+    
+    .edital-body ul, .edital-body ol {
+        margin: 15px 0;
+        padding-left: 30px;
+    }
+    
+    .edital-body li {
+        margin: 8px 0;
+    }
+    
+    .edital-body hr {
+        margin: 25px 0;
+        border: none;
+        height: 1px;
+        background: linear-gradient(90deg, transparent, var(--bordo-suave), transparent);
+    }
+    
+    .edital-body strong {
+        color: var(--bordo);
+    }
+    
+    /* CAIXA DE DESTAQUE */
+    .box-destaque {
+        background: var(--bordo-transparente);
+        border-left: 4px solid var(--ouro);
+        padding: 15px 20px;
+        margin: 20px 0;
+        border-radius: 8px;
+    }
+    
+    .box-destaque p {
+        margin: 0;
+        font-weight: 500;
+    }
+    
+    /* ASSINATURA */
+    .assinatura-edital {
+        margin-top: 50px;
+        padding-top: 30px;
+        border-top: 1px dashed rgba(74, 14, 46, 0.2);
+        text-align: right;
+    }
+    
+    .assinatura-edital p {
+        margin: 5px 0;
+    }
+    
+    .assinatura-edital .nome-assinante {
+        font-weight: 700;
+        color: var(--bordo);
+        font-size: 1rem;
+    }
+    
+    .assinatura-edital .cargo-assinante {
+        font-size: 0.85rem;
+        color: var(--bordo-suave);
+    }
+    
+    /* GRUPO DE BOTÕES */
+    .btn-group-edital {
+        display: flex;
+        gap: 12px;
+        justify-content: flex-end;
+        padding: 20px 25px;
+        background: #f8f9fa;
+        border-top: 1px solid rgba(74, 14, 46, 0.1);
+        flex-wrap: wrap;
+    }
+    
+    /* BOTÕES PADRÃO DO SISTEMA */
+    .btn-bordo {
+        background: linear-gradient(135deg, var(--bordo), var(--bordo-escuro));
+        border: none;
+        color: white;
+        border-radius: 30px;
+        padding: 10px 24px;
+        transition: all 0.3s;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        text-decoration: none;
+        font-weight: 500;
+    }
+    
+    .btn-bordo:hover {
+        background: linear-gradient(135deg, var(--bordo-claro), var(--bordo));
+        transform: translateY(-2px);
+        color: white;
+        box-shadow: 0 5px 15px rgba(74, 14, 46, 0.3);
+    }
+    
+    .btn-bordo-outline {
+        background: transparent;
+        border: 1px solid var(--bordo);
+        color: var(--bordo);
+        border-radius: 30px;
+        padding: 10px 24px;
+        transition: all 0.3s;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        text-decoration: none;
+        font-weight: 500;
+    }
+    
+    .btn-bordo-outline:hover {
+        background: var(--bordo);
+        color: white;
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(74, 14, 46, 0.2);
+    }
+    
+    .btn-bordo-info {
+        background: linear-gradient(135deg, #0ea5e9, #0284c7);
+        border: none;
+        color: white;
+        border-radius: 30px;
+        padding: 10px 24px;
+        transition: all 0.3s;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        text-decoration: none;
+        font-weight: 500;
+    }
+    
+    .btn-bordo-info:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(14, 165, 233, 0.3);
+        color: white;
+    }
+    
+    .btn-bordo-secondary {
+        background: linear-gradient(135deg, #6c757d, #495057);
+        border: none;
+        color: white;
+        border-radius: 30px;
+        padding: 10px 24px;
+        transition: all 0.3s;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        text-decoration: none;
+        font-weight: 500;
+    }
+    
+    .btn-bordo-secondary:hover {
+        background: linear-gradient(135deg, #5a6268, #3d4246);
+        transform: translateY(-2px);
+        color: white;
+        box-shadow: 0 5px 15px rgba(108, 117, 125, 0.3);
+    }
+
+    /* RESPONSIVIDADE */
+    @media (max-width: 768px) {
+        .edital-body {
+            padding: 20px;
+        }
+        
+        .btn-group-edital {
+            justify-content: center;
+            flex-direction: column;
+        }
+        
+        .btn-group-edital .btn-bordo,
+        .btn-group-edital .btn-bordo-outline,
+        .btn-group-edital .btn-bordo-info,
+        .btn-group-edital .btn-bordo-secondary {
+            width: 100%;
+            justify-content: center;
+        }
+        
+        .card-header-edital h2 {
+            font-size: 1.2rem;
+            flex-wrap: wrap;
+        }
+        
+        .info-reuniao {
+            flex-direction: column;
+            gap: 8px;
+        }
+    }
+    
+    @media print {
+        .btn-group-edital, 
+        .card-header-edital .badge-edital,
+        .no-print {
+            display: none !important;
+        }
+        
+        .card-edital {
+            box-shadow: none;
+            border: 1px solid #ddd;
+        }
+        
+        .card-header-edital {
+            background: var(--bordo);
+            -webkit-print-color-adjust: exact;
+            print-color-adjust: exact;
+        }
+        
+        .edital-body {
+            padding: 20px;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="container">
+        <!-- Breadcrumb -->
+        <nav aria-label="breadcrumb" class="mb-4">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="/dashboard" style="color: var(--bordo);">Dashboard</a></li>
+                <li class="breadcrumb-item"><a href="/reunioes" style="color: var(--bordo);">Reuniões</a></li>
+                <li class="breadcrumb-item"><a href="/reunioes/{{ reuniao.id }}" style="color: var(--bordo);">{{ reuniao.titulo|truncate(30) }}</a></li>
+                <li class="breadcrumb-item active" style="color: var(--bordo-suave);" aria-current="page">Edital</li>
+            </ol>
+        </nav>
+
+        <!-- Card Principal -->
+        <div class="card-edital">
+            <div class="card-header-edital">
+                <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+                    <h2>
+                        <i class="bi bi-file-text-fill"></i>
+                        Edital de Convocação
+                        <span class="badge-edital">
+                            <i class="bi bi-calendar-check"></i> Documento Oficial
+                        </span>
+                    </h2>
+                </div>
+                <div class="info-reuniao mt-2">
+                    <span><i class="bi bi-calendar3"></i> {{ reuniao.data.strftime('%d/%m/%Y') if reuniao.data else 'Data não definida' }}</span>
+                    <span><i class="bi bi-clock"></i> {{ reuniao.hora_inicio.strftime('%H:%M') if reuniao.hora_inicio else 'Horário não definido' }}h</span>
+                    <span><i class="bi bi-building"></i> {{ reuniao.local or 'Templo Maçônico' }}</span>
+                    <span><i class="bi bi-tag"></i> {{ reuniao.tipo or 'Reunião' }}</span>
+                </div>
+            </div>
+            
+            <div class="edital-body">
+                {{ edital_html|safe }}
+            </div>
+            
+            <div class="btn-group-edital no-print">
+                <button onclick="window.print()" class="btn-bordo">
+                    <i class="bi bi-printer"></i> Imprimir Edital
+                </button>
+                <a href="{{ url_for('baixar_edital', reuniao_id=reuniao.id) }}" class="btn-bordo-info">
+                    <i class="bi bi-file-pdf-fill"></i> Baixar PDF
+                </a>
+                <a href="{{ url_for('visualizar_reuniao', id=reuniao.id) }}" class="btn-bordo-secondary">
+                    <i class="bi bi-arrow-left"></i> Voltar à Reunião
+                </a>
+            </div>
+        </div>
+        
+        <!-- Cards de Informações Complementares -->
+        <div class="row mt-4">
+            <div class="col-md-4 mb-3">
+                <div class="card-dica shadow-sm">
+                    <div class="card-body text-center p-4">
+                        <i class="bi bi-envelope-paper fs-1" style="color: var(--bordo);"></i>
+                        <h6 class="mt-2" style="color: var(--bordo);">Documento Oficial</h6>
+                        <p class="small text-muted">Este edital é um documento oficial da Loja e deve ser arquivado para registro.</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4 mb-3">
+                <div class="card-dica shadow-sm">
+                    <div class="card-body text-center p-4">
+                        <i class="bi bi-whatsapp fs-1 text-success"></i>
+                        <h6 class="mt-2" style="color: var(--bordo);">Compartilhar</h6>
+                        <p class="small text-muted">Compartilhe este edital com os obreiros via WhatsApp ou E-mail.</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4 mb-3">
+                <div class="card-dica shadow-sm">
+                    <div class="card-body text-center p-4">
+                        <i class="bi bi-clock-history fs-1" style="color: var(--ouro-escuro);"></i>
+                        <h6 class="mt-2" style="color: var(--bordo);">Validade</h6>
+                        <p class="small text-muted">Este edital é válido exclusivamente para a data e horário especificados.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% block scripts %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Adicionar classe para impressão otimizada
+        const printBtn = document.querySelector('.btn-bordo i.bi-printer')?.parentElement;
+        if (printBtn) {
+            printBtn.addEventListener('click', function(e) {
+                e.preventDefault();
+                window.print();
+            });
+        }
+    });
+</script>
+{% endblock %}
+{% endblock %}
