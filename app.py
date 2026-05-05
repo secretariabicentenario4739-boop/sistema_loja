@@ -2108,42 +2108,64 @@ def get_email_config():
             'sender_name': 'Sistema Maçônico'
         }      
 
-import requests
-import io
+# ============================================
+# CONFIGURAÇÃO DO GOOGLE DRIVE (VERSÃO CORRIGIDA)
+# ============================================
+
 from google.oauth2 import service_account
 from googleapiclient.discovery import build
-from googleapiclient.http import MediaFileUpload, MediaIoBaseDownload
+from googleapiclient.http import MediaFileUpload
 import os
-import pickle
+import uuid
+from werkzeug.utils import secure_filename
 
-# Configuração do Google Drive
-GOOGLE_DRIVE_FOLDER_ID = "SEU_FOLDER_ID_AQUI"  # ← Substitua pelo ID da pasta principal
-GOOGLE_DRIVE_CAPAS_FOLDER_ID = "SEU_FOLDER_ID_CAPAS"  # ← Substitua
+# Configuração - SUBSTITUA PELOS SEUS VALORES
+GOOGLE_DRIVE_FOLDER_ID = "1vVAxBX82UoptV_hVdawpjxIehJIMvhC9"  # ID da pasta principal
+GOOGLE_DRIVE_CAPAS_FOLDER_ID = "1QHxAfbTzLnlVOrCkaj7ErxjKbEGBmM04"  # ID da pasta de capas
 
-def upload_to_google_drive(arquivo, nome_arquivo, folder_id, mime_type=None):
-    """Faz upload de arquivo para o Google Drive"""
+# Caminho do arquivo de credenciais (Service Account)
+SERVICE_ACCOUNT_FILE = os.path.join(os.path.dirname(__file__), 'credentials.json')
+
+def get_drive_service():
+    """Obtém serviço do Google Drive usando Service Account"""
     try:
-        from google.oauth2.credentials import Credentials
-        from google.auth.transport.requests import Request
+        # Escopos necessários
+        SCOPES = ['https://www.googleapis.com/auth/drive.file']
         
-        # Arquivo de credenciais (baixado do Google Cloud Console)
-        creds = None
-        if os.path.exists('token.pickle'):
-            with open('token.pickle', 'rb') as token:
-                creds = pickle.load(token)
+        # Autenticação com Service Account
+        credentials = service_account.Credentials.from_service_account_file(
+            SERVICE_ACCOUNT_FILE, scopes=SCOPES
+        )
         
-        if not creds or not creds.valid:
-            if creds and creds.expired and creds.refresh_token:
-                creds.refresh(Request())
-            else:
-                flash('Credenciais do Google Drive expiradas!', 'danger')
-                return None
+        # Construir serviço
+        service = build('drive', 'v3', credentials=credentials)
+        return service
         
-        service = build('drive', 'v3', credentials=creds)
+    except Exception as e:
+        print(f"❌ Erro ao autenticar Google Drive: {e}")
+        return None
+
+
+def upload_to_google_drive(arquivo, nome_arquivo, folder_id):
+    """Faz upload de arquivo para o Google Drive usando Service Account"""
+    temp_path = None
+    try:
+        service = get_drive_service()
+        if not service:
+            return {'success': False, 'error': 'Não foi possível conectar ao Google Drive'}
         
         # Salvar arquivo temporariamente
-        temp_path = f"/tmp/{nome_arquivo}"
+        temp_path = f"/tmp/{uuid.uuid4().hex}_{secure_filename(nome_arquivo)}"
         arquivo.save(temp_path)
+        
+        # Detectar MIME type
+        mime_type = 'application/octet-stream'
+        if nome_arquivo.endswith('.pdf'):
+            mime_type = 'application/pdf'
+        elif nome_arquivo.endswith('.jpg') or nome_arquivo.endswith('.jpeg'):
+            mime_type = 'image/jpeg'
+        elif nome_arquivo.endswith('.png'):
+            mime_type = 'image/png'
         
         # Metadata do arquivo
         file_metadata = {
@@ -2151,74 +2173,63 @@ def upload_to_google_drive(arquivo, nome_arquivo, folder_id, mime_type=None):
             'parents': [folder_id]
         }
         
-        # Detectar MIME type
-        if not mime_type:
-            if nome_arquivo.endswith('.pdf'):
-                mime_type = 'application/pdf'
-            elif nome_arquivo.endswith('.jpg') or nome_arquivo.endswith('.jpeg'):
-                mime_type = 'image/jpeg'
-            elif nome_arquivo.endswith('.png'):
-                mime_type = 'image/png'
-            else:
-                mime_type = 'application/octet-stream'
-        
         # Upload
         media = MediaFileUpload(temp_path, mimetype=mime_type, resumable=True)
-        file = service.files().create(body=file_metadata, media_body=media, fields='id, webViewLink, webContentLink').execute()
+        file = service.files().create(
+            body=file_metadata,
+            media_body=media,
+            fields='id'
+        ).execute()
         
-        # Tornar público
+        file_id = file.get('id')
+        
+        # Tornar público (qualquer pessoa com link pode ver)
         service.permissions().create(
-            fileId=file['id'],
+            fileId=file_id,
             body={'type': 'anyone', 'role': 'reader'}
         ).execute()
         
-        # Limpar arquivo temporário
-        os.remove(temp_path)
-        
-        # Retornar URL direta para visualização
-        file_id = file['id']
-        direct_url = f"https://drive.google.com/uc?export=view&id={file_id}"
+        # URL para embed (visualização)
         embed_url = f"https://drive.google.com/file/d/{file_id}/preview"
+        
+        # URL direta para download
+        direct_url = f"https://drive.google.com/uc?export=download&id={file_id}"
         
         return {
             'success': True,
             'file_id': file_id,
-            'direct_url': direct_url,
             'embed_url': embed_url,
-            'view_url': file.get('webViewLink')
+            'direct_url': direct_url
         }
         
     except Exception as e:
-        print(f"Erro no upload para Google Drive: {e}")
+        print(f"❌ Erro no upload para Google Drive: {e}")
+        import traceback
+        traceback.print_exc()
         return {'success': False, 'error': str(e)}
+        
+    finally:
+        # Limpar arquivo temporário
+        if temp_path and os.path.exists(temp_path):
+            try:
+                os.remove(temp_path)
+            except:
+                pass
 
 
 def delete_from_google_drive(file_id):
     """Remove arquivo do Google Drive"""
     try:
-        from google.oauth2.credentials import Credentials
-        from google.auth.transport.requests import Request
-        import pickle
+        service = get_drive_service()
+        if not service:
+            return False
         
-        creds = None
-        if os.path.exists('token.pickle'):
-            with open('token.pickle', 'rb') as token:
-                creds = pickle.load(token)
-        
-        if not creds or not creds.valid:
-            if creds and creds.expired and creds.refresh_token:
-                creds.refresh(Request())
-            else:
-                return False
-        
-        service = build('drive', 'v3', credentials=creds)
         service.files().delete(fileId=file_id).execute()
         return True
         
     except Exception as e:
         print(f"Erro ao excluir do Google Drive: {e}")
         return False
-
 # ============================================
 # AGENDADOR DE TAREFAS (SCHEDULER)
 # ============================================
