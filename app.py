@@ -3457,7 +3457,7 @@ def exportar_relatorio_excel():
 
     
 # =============================
-# ROTAS DE BIBLIOTECA
+# ROTAS DE BIBLIOTECA (CORRIGIDAS)
 # =============================
 
 @app.route("/biblioteca/admin/upload", methods=['GET', 'POST'])
@@ -3518,13 +3518,13 @@ def upload_material():
         is_video = filename.endswith(('.mp4', '.avi', '.mov', '.webm'))
         is_audio = filename.endswith(('.mp3', '.wav', '.ogg', '.m4a'))
         
-        # Determinar resource_type baseado no arquivo (CRUCIAL!)
+        # 🔧 CORREÇÃO PRINCIPAL: Usar "auto" para PDFs (NÃO "raw"!)
         if is_pdf:
-            resource_type = "raw"  # 🔑 PDF deve ser "raw", NÃO "image"!
+            resource_type = "auto"  # ← MUDE DE "raw" PARA "auto"
             folder = "biblioteca_maconica/materiais"
             formato = "pdf"
         elif is_doc:
-            resource_type = "raw"  # Documentos também como raw
+            resource_type = "raw"  # Documentos como raw
             folder = "biblioteca_maconica/documentos"
             formato = "doc"
         elif is_video:
@@ -3551,12 +3551,17 @@ def upload_material():
             # 🔧 Configurações de upload
             upload_options = {
                 "folder": folder,
-                "public_id": nome_base,  # Usar apenas o UUID como public_id
-                "use_filename": False,
+                "public_id": nome_base,
+                "use_filename": True,
                 "unique_filename": True,
-                "resource_type": resource_type,  # 🔑 Chave da correção!
+                "resource_type": resource_type,
                 "overwrite": True
             }
+            
+            # 🔧 Para PDFs, adicionar formato explicitamente
+            if is_pdf:
+                upload_options["format"] = "pdf"
+                upload_options["flags"] = "attachment"
             
             # Adicionar transformações apenas para imagens
             if resource_type == "image":
@@ -3575,13 +3580,8 @@ def upload_material():
                 **upload_options
             )
             
-            # 🔧 CORREÇÃO: Construir URL corretamente para PDFs
+            # URL do arquivo
             arquivo_url = upload_result.get('secure_url')
-            
-            # Para PDFs, garantir que a URL termine com .pdf
-            if is_pdf and not arquivo_url.endswith('.pdf'):
-                arquivo_url = f"{arquivo_url}.pdf"
-            
             arquivo_tamanho = upload_result.get('bytes', tamanho_arquivo)
             arquivo_nome_original = arquivo.filename
             
@@ -3656,6 +3656,7 @@ def upload_material():
     
     return render_template('biblioteca/upload.html', categorias=categorias)
 
+
 @app.route("/admin/upload-pdf-corrigido", methods=['GET', 'POST'])
 @login_required
 def upload_pdf_corrigido():
@@ -3683,19 +3684,20 @@ def upload_pdf_corrigido():
                 return_connection(conn)
                 return redirect(url_for('upload_pdf_corrigido'))
             
-            # Upload para Cloudinary como RAW
+            # Upload para Cloudinary usando "auto" para PDF
             import uuid
             from werkzeug.utils import secure_filename
             
-            nome_arquivo = f"{uuid.uuid4().hex}_{secure_filename(arquivo.filename)}"
+            nome_base = uuid.uuid4().hex
             
             upload_result = cloudinary.uploader.upload(
                 arquivo,
                 folder="biblioteca_maconica/materiais",
-                public_id=nome_arquivo.replace('.pdf', ''),
-                resource_type="raw",
+                public_id=nome_base,
+                resource_type="auto",  # ← CORRIGIDO: usar "auto"
+                format="pdf",  # ← Adicionar formato explícito
                 use_filename=True,
-                unique_filename=False
+                unique_filename=True
             )
             
             arquivo_url = upload_result.get('secure_url')
@@ -3763,6 +3765,7 @@ def upload_pdf_corrigido():
     </html>
     '''
 
+
 @app.route("/admin/remover-materiais-404", methods=['POST'])
 @login_required
 def remover_materiais_404():
@@ -3802,6 +3805,7 @@ def remover_materiais_404():
         if 'conn' in locals():
             return_connection(conn)
         return jsonify({'error': str(e)}), 500    
+
 
 @app.route("/biblioteca/admin/editar/<int:material_id>", methods=['GET', 'POST'])
 @login_required
@@ -3895,7 +3899,8 @@ def editar_material(material_id):
     return_connection(conn)
     
     return render_template('biblioteca/editar.html', material=material, categorias=categorias)
-    
+
+
 @app.route("/biblioteca/admin/excluir/<int:material_id>", methods=['POST'])
 @login_required
 @permissao_required('material.delete')
@@ -3924,26 +3929,28 @@ def excluir_material(material_id):
         cursor.execute("DELETE FROM favoritos_material WHERE material_id = %s", (material_id,))
         cursor.execute("DELETE FROM avaliacoes_material WHERE material_id = %s", (material_id,))
         
-        # 🔧 Tentar excluir arquivo do Cloudinary (opcional)
+        # 🔧 Tentar excluir arquivo do Cloudinary
         try:
             arquivo_url = material.get('arquivo_url', '')
-            if 'cloudinary' in arquivo_url and '/upload/' in arquivo_url:
-                parts = arquivo_url.split('/upload/')
-                if len(parts) > 1:
-                    public_id = parts[1].split('.')[0]
-                    try:
-                        cloudinary.uploader.destroy(public_id, resource_type="raw")
-                        print(f"Arquivo removido do Cloudinary: {public_id}")
-                    except:
-                        pass
+            if 'cloudinary' in arquivo_url:
+                # Extrair public_id da URL
+                if '/upload/' in arquivo_url:
+                    parts = arquivo_url.split('/upload/')
+                    if len(parts) > 1:
+                        public_id = parts[1].split('.')[0]
+                        public_id = public_id.split('?')[0]
+                        try:
+                            cloudinary.uploader.destroy(public_id, resource_type="auto")
+                            print(f"Arquivo removido do Cloudinary: {public_id}")
+                        except Exception as e:
+                            print(f"Erro ao excluir do Cloudinary: {e}")
         except Exception as e:
-            print(f"Erro ao excluir do Cloudinary (ignorado): {e}")
+            print(f"Erro ao tentar excluir do Cloudinary (ignorado): {e}")
         
         # Excluir material do banco
         cursor.execute("DELETE FROM materiais WHERE id = %s", (material_id,))
         conn.commit()
         
-        # 🔧 CORREÇÃO: Usar dados_anteriores em vez de dados_antigos
         registrar_log(
             acao="excluir",
             entidade="material",
@@ -3965,7 +3972,8 @@ def excluir_material(material_id):
         return_connection(conn)
     
     return redirect(url_for('listar_materiais'))
-    
+
+
 @app.route("/biblioteca/categoria/<int:categoria_id>")
 @login_required
 @permissao_required('material.view')
@@ -4002,8 +4010,8 @@ def materiais_por_categoria(categoria_id):
             return_connection(conn)
         flash('Erro ao carregar a categoria', 'danger')
         return redirect(url_for('listar_materiais'))
-    
-    
+
+
 @app.route("/biblioteca")
 @app.route("/biblioteca/")
 @login_required
@@ -4057,6 +4065,7 @@ def listar_materiais():
         flash('Erro ao carregar a biblioteca. Tente novamente mais tarde.', 'danger')
         return redirect(url_for('dashboard'))
 
+
 @app.route("/biblioteca/material/<int:material_id>")
 @login_required
 @permissao_required('material.view_one')
@@ -4106,11 +4115,7 @@ def visualizar_material(material_id):
         # 🔧 CORREÇÃO: Garantir que a URL do PDF esteja no formato correto
         pdf_url = None
         if is_pdf:
-            # Corrigir URL se necessário
             pdf_url = arquivo_url
-            # Se a URL ainda está como image/upload, converter para raw/upload
-            if '/image/upload/' in pdf_url:
-                pdf_url = pdf_url.replace('/image/upload/', '/raw/upload/')
             # Garantir extensão .pdf
             if not pdf_url.endswith('.pdf'):
                 pdf_url = f"{pdf_url}.pdf"
@@ -4128,6 +4133,7 @@ def visualizar_material(material_id):
             return_connection(conn)
         flash('Erro ao carregar o material', 'danger')
         return redirect(url_for('listar_materiais'))
+
 
 @app.route("/biblioteca/material/<int:material_id>/download")
 @login_required
@@ -4178,7 +4184,6 @@ def download_material(material_id):
         return_connection(conn)
         
         # IMPORTANTE: Redirecionar diretamente para a URL do Cloudinary
-        # Isso funciona se os arquivos forem públicos
         return redirect(arquivo_url)
     
     except Exception as e:
@@ -4189,7 +4194,8 @@ def download_material(material_id):
             return_connection(conn)
         flash('Erro ao baixar o arquivo', 'danger')
         return redirect(url_for('visualizar_material', material_id=material_id))
-        
+
+
 @app.route("/biblioteca/material/<int:material_id>/registrar-download", methods=['POST'])
 @login_required
 def registrar_download_material(material_id):
@@ -4218,7 +4224,7 @@ def registrar_download_material(material_id):
         if 'conn' in locals():
             return_connection(conn)
         return jsonify({'success': False, 'error': str(e)}), 500
-        
+
 
 @app.route("/admin/corrigir-urls-materiais")
 @login_required
@@ -4266,8 +4272,9 @@ def corrigir_urls_materiais():
     except Exception as e:
         if 'conn' in locals():
             return_connection(conn)
-        return jsonify({'error': str(e)}), 500        
-        
+        return jsonify({'error': str(e)}), 500
+
+
 @app.route("/biblioteca/verificar-pdf/<int:material_id>")
 @login_required
 def verificar_pdf(material_id):
