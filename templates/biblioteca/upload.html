@@ -368,10 +368,21 @@
                         </div>
 
                         <div class="mb-3">
-                            <label class="form-label">Arquivo <span class="text-danger">*</span></label>
-                            <input type="file" class="form-control" name="arquivo" accept=".pdf,.doc,.docx,.jpg,.jpeg,.png,.mp4,.mp3" required>
-                            <small class="text-muted">Formatos aceitos: PDF, DOC, DOCX, JPG, PNG, MP4, MP3 (máx 50MB)</small>
-                        </div>
+							<label class="form-label">Link do Google Drive <span class="text-danger">*</span></label>
+							<input type="url" class="form-control" name="google_drive_url" 
+								   placeholder="https://drive.google.com/file/d/SEU_ID/view" required>
+							<small class="text-muted">
+								<i class="bi bi-google"></i> 
+								Cole o link do arquivo no Google Drive (deve estar compartilhado como "Qualquer pessoa com o link")
+							</small>
+						</div>
+
+						<div class="mb-3">
+							<label class="form-label">Link da Capa (opcional)</label>
+							<input type="url" class="form-control" name="capa_drive_url" 
+								   placeholder="https://drive.google.com/file/d/SEU_ID/view">
+							<small class="text-muted">Link da imagem de capa no Google Drive</small>
+						</div>
 
                         <div class="mb-3">
                             <label class="form-label">Capa (imagem)</label>
