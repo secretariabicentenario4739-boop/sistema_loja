@@ -158,36 +158,6 @@
         flex-wrap: wrap;
     }
 
-    /* LOADING OVERLAY */
-    #loadingOverlay {
-        position: fixed;
-        top: 0;
-        left: 0;
-        right: 0;
-        bottom: 0;
-        background: rgba(74, 14, 46, 0.9);
-        z-index: 9999;
-        display: flex;
-        justify-content: center;
-        align-items: center;
-    }
-    
-    .spinner-border-lg {
-        width: 3rem;
-        height: 3rem;
-    }
-    
-    .progress-custom {
-        background: rgba(255, 255, 255, 0.2);
-        border-radius: 30px;
-        overflow: hidden;
-    }
-    
-    .progress-custom .progress-bar {
-        background: linear-gradient(90deg, var(--ouro), var(--ouro-claro));
-        border-radius: 30px;
-    }
-
     /* RESPONSIVIDADE */
     @media (max-width: 768px) {
         .btn-bordo, .btn-bordo-outline, .btn-bordo-primary {
@@ -199,7 +169,6 @@
             padding: 10px 20px;
         }
         
-        /* Cabeçalho responsivo */
         .d-flex.justify-content-between {
             flex-direction: column;
             align-items: flex-start !important;
@@ -219,7 +188,6 @@
             font-size: 1.5rem;
         }
         
-        /* Formulário responsivo */
         .row .col-md-6 {
             margin-bottom: 0.5rem;
         }
@@ -228,7 +196,6 @@
             font-size: 0.875rem;
         }
         
-        /* Botões do formulário */
         .btn-group-mobile {
             flex-direction: column;
             width: 100%;
@@ -238,16 +205,6 @@
         .btn-group-mobile .btn-bordo-outline {
             width: 100%;
             justify-content: center;
-        }
-        
-        /* Loading overlay responsivo */
-        .progress-custom {
-            width: 80%;
-            max-width: 300px;
-        }
-        
-        .modal-body {
-            padding: 1rem;
         }
     }
 
@@ -277,8 +234,8 @@
     <!-- Cabeçalho responsivo -->
     <div class="d-flex justify-content-between align-items-center mb-4">
         <h2>
-            <i class="bi bi-cloud-upload" style="color: var(--bordo);"></i> 
-            <span style="color: var(--bordo);">Upload de Material</span>
+            <i class="bi bi-google" style="color: var(--bordo);"></i> 
+            <span style="color: var(--bordo);">Adicionar Material</span>
         </h2>
         <div class="header-actions">
             <a href="/biblioteca" class="btn-bordo-outline">
@@ -291,10 +248,10 @@
         <div class="col-md-8 mx-auto">
             <div class="card shadow-sm">
                 <div class="card-header">
-                    <h5><i class="bi bi-info-circle me-2"></i> Enviar novo material para a biblioteca</h5>
+                    <h5><i class="bi bi-info-circle me-2"></i> Adicionar material à biblioteca</h5>
                 </div>
                 <div class="card-body p-4">
-                    <form method="POST" enctype="multipart/form-data" id="formUpload">
+                    <form method="POST" id="formUpload">
                         <div class="mb-3">
                             <label class="form-label">Título <span class="text-danger">*</span></label>
                             <input type="text" class="form-control" name="titulo" required>
@@ -358,7 +315,7 @@
 
                             <div class="col-md-6 mb-3">
                                 <label class="form-label">Ano de Publicação</label>
-                                <input type="number" class="form-control" name="ano_publicacao" min="1800" max="2026">
+                                <input type="number" class="form-control" name="ano_publicacao" min="1800" max="2030">
                             </div>
                         </div>
 
@@ -367,27 +324,23 @@
                             <input type="text" class="form-control" name="tags" placeholder="Ex: maçonaria, aprendizado, ritual">
                         </div>
 
+                        <!-- CAMPO PRINCIPAL: LINK DO GOOGLE DRIVE -->
                         <div class="mb-3">
-							<label class="form-label">Link do Google Drive <span class="text-danger">*</span></label>
-							<input type="url" class="form-control" name="google_drive_url" 
-								   placeholder="https://drive.google.com/file/d/SEU_ID/view" required>
-							<small class="text-muted">
-								<i class="bi bi-google"></i> 
-								Cole o link do arquivo no Google Drive (deve estar compartilhado como "Qualquer pessoa com o link")
-							</small>
-						</div>
+                            <label class="form-label">Link do Google Drive <span class="text-danger">*</span></label>
+                            <input type="url" class="form-control" name="google_drive_url" 
+                                   placeholder="https://drive.google.com/file/d/SEU_ID/view" required>
+                            <small class="text-muted">
+                                <i class="bi bi-google"></i> 
+                                Cole o link do arquivo no Google Drive. O arquivo deve estar compartilhado como "Qualquer pessoa com o link"
+                            </small>
+                        </div>
 
-						<div class="mb-3">
-							<label class="form-label">Link da Capa (opcional)</label>
-							<input type="url" class="form-control" name="capa_drive_url" 
-								   placeholder="https://drive.google.com/file/d/SEU_ID/view">
-							<small class="text-muted">Link da imagem de capa no Google Drive</small>
-						</div>
-
+                        <!-- CAMPO OPCIONAL: LINK DA CAPA -->
                         <div class="mb-3">
-                            <label class="form-label">Capa (imagem)</label>
-                            <input type="file" class="form-control" name="capa" accept="image/*">
-                            <small class="text-muted">Imagem para capa do material (JPG, PNG - recomendado 300x400px)</small>
+                            <label class="form-label">Link da Capa (opcional)</label>
+                            <input type="url" class="form-control" name="capa_drive_url" 
+                                   placeholder="https://drive.google.com/file/d/SEU_ID/view">
+                            <small class="text-muted">Link da imagem de capa no Google Drive</small>
                         </div>
 
                         <div class="mb-3 form-check">
@@ -397,15 +350,16 @@
                             </label>
                         </div>
 
-                       <div class="alert alert-bordo-info mb-4">
-							<i class="bi bi-google"></i>
-							<strong>Google Drive:</strong> O material será acessado via Google Drive. Certifique-se de que o link está correto e o arquivo está compartilhado como "Qualquer pessoa com o link".
-						</div>
+                        <div class="alert alert-bordo-info mb-4">
+                            <i class="bi bi-google"></i>
+                            <strong>Google Drive:</strong> O material será acessado via Google Drive. 
+                            Certifique-se de que o link está correto e o arquivo está compartilhado como "Qualquer pessoa com o link".
+                        </div>
 
                         <!-- Botões com layout responsivo -->
                         <div class="btn-group-mobile">
                             <button type="submit" class="btn-bordo-primary" id="btnSubmit">
-                                <i class="bi bi-cloud-upload"></i> Enviar para a Nuvem
+                                <i class="bi bi-check-circle"></i> Adicionar Material
                             </button>
                             <a href="/biblioteca" class="btn-bordo-outline">
                                 <i class="bi bi-x-circle"></i> Cancelar
@@ -418,23 +372,9 @@
     </div>
 </div>
 
-<!-- Loading Overlay -->
-<div id="loadingOverlay" style="display: none;">
-    <div class="text-center text-white">
-        <div class="spinner-border spinner-border-lg" role="status">
-            <span class="visually-hidden">Carregando...</span>
-        </div>
-        <h4 class="mt-3">Enviando para a nuvem...</h4>
-        <p>Aguarde, o arquivo está sendo processado</p>
-        <div class="progress-custom mt-3" style="width: 300px; max-width: 80%; margin: 0 auto;">
-            <div class="progress-bar progress-bar-striped progress-bar-animated" style="width: 100%; height: 8px;"></div>
-        </div>
-    </div>
-</div>
-
 <script>
 // Validação do formulário
-document.querySelector('form').addEventListener('submit', function(e) {
+document.getElementById('formUpload').addEventListener('submit', function(e) {
     const titulo = document.querySelector('input[name="titulo"]').value.trim();
     const tipo = document.querySelector('select[name="tipo"]').value;
     const categoria = document.querySelector('select[name="categoria_id"]').value;
@@ -465,6 +405,19 @@ document.querySelector('form').addEventListener('submit', function(e) {
         document.querySelector('input[name="google_drive_url"]').focus();
         return false;
     }
+    
+    // Validação do formato do link do Google Drive
+    if (!googleDriveUrl.includes('drive.google.com') || !googleDriveUrl.includes('/file/d/')) {
+        e.preventDefault();
+        alert('❌ Por favor, informe um link válido do Google Drive! O link deve ser do tipo: https://drive.google.com/file/d/SEU_ID/view');
+        document.querySelector('input[name="google_drive_url"]').focus();
+        return false;
+    }
+    
+    // Mostrar loading
+    const btnSubmit = document.getElementById('btnSubmit');
+    btnSubmit.disabled = true;
+    btnSubmit.innerHTML = '<i class="bi bi-hourglass-split"></i> Processando...';
 });
 </script>
 {% endblock %}
