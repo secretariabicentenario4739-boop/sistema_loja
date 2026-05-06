@@ -3580,7 +3580,7 @@ def exportar_relatorio_excel():
 @app.route("/biblioteca/admin/upload", methods=['GET', 'POST'])
 @login_required
 def upload_material():
-    """Upload de novos materiais para o Google Drive"""
+    """Adicionar material usando link do Google Drive"""
     
     if request.method == 'POST':
         # Coletar dados do formulário
@@ -3596,6 +3596,10 @@ def upload_material():
         tags = request.form.get('tags')
         destaque = request.form.get('destaque') == 'on'
         
+        # NOVOS CAMPOS: links do Google Drive (NÃO são arquivos!)
+        google_drive_url = request.form.get('google_drive_url')
+        capa_drive_url = request.form.get('capa_drive_url')
+        
         # Validar campos obrigatórios
         if not titulo:
             flash('O título é obrigatório', 'danger')
@@ -3609,114 +3613,79 @@ def upload_material():
             flash('O grau de acesso é obrigatório', 'danger')
             return redirect(url_for('upload_material'))
         
-        # Processar arquivo
-        arquivo = request.files.get('arquivo')
-        capa = request.files.get('capa')
-        
-        if not arquivo or arquivo.filename == '':
-            flash('Selecione um arquivo para upload', 'danger')
+        # Validar link do Google Drive
+        if not google_drive_url:
+            flash('O link do Google Drive é obrigatório', 'danger')
             return redirect(url_for('upload_material'))
         
-        # Validar tamanho (50MB)
-        arquivo.seek(0, 2)
-        tamanho_arquivo = arquivo.tell()
-        arquivo.seek(0)
+        # Extrair o ID do arquivo do link do Google Drive
+        import re
+        file_id = None
+        patterns = [
+            r'https?://drive\.google\.com/file/d/([a-zA-Z0-9_-]+)/view',
+            r'https?://drive\.google\.com/open\?id=([a-zA-Z0-9_-]+)',
+            r'https?://drive\.google\.com/uc\?id=([a-zA-Z0-9_-]+)'
+        ]
         
-        if tamanho_arquivo > 50 * 1024 * 1024:
-            flash('Arquivo muito grande! O tamanho máximo é 50MB.', 'danger')
+        for pattern in patterns:
+            match = re.search(pattern, google_drive_url)
+            if match:
+                file_id = match.group(1)
+                break
+        
+        if not file_id:
+            flash('Link do Google Drive inválido! Use o formato: https://drive.google.com/file/d/SEU_ID/view', 'danger')
             return redirect(url_for('upload_material'))
+        
+        # URL de embed para visualização
+        embed_url = f"https://drive.google.com/file/d/{file_id}/preview"
+        
+        # Processar link da capa (opcional)
+        capa_url = None
+        capa_file_id = None
+        if capa_drive_url:
+            for pattern in patterns:
+                match = re.search(pattern, capa_drive_url)
+                if match:
+                    capa_file_id = match.group(1)
+                    capa_url = f"https://drive.google.com/uc?export=view&id={capa_file_id}"
+                    break
         
         try:
-            import uuid
-            from werkzeug.utils import secure_filename
-            
-            # Gerar nome único
-            nome_base = uuid.uuid4().hex
-            nome_arquivo_original = secure_filename(arquivo.filename)
-            extensao = nome_arquivo_original.rsplit('.', 1)[1].lower() if '.' in nome_arquivo_original else ''
-            nome_arquivo_gs = f"{nome_base}.{extensao}"
-            
-            # Upload do arquivo principal para Google Drive
-            print(f"📤 Enviando arquivo principal: {nome_arquivo_gs}")
-            resultado = upload_to_google_drive(arquivo, nome_arquivo_gs, GOOGLE_DRIVE_FOLDER_ID)
-            
-            if not resultado['success']:
-                flash(f'Erro no upload: {resultado.get("error")}', 'danger')
-                return redirect(url_for('upload_material'))
-            
-            arquivo_url = resultado['embed_url']
-            file_id = resultado['file_id']
-            print(f"✅ Arquivo principal enviado! ID: {file_id}")
-            
-            # Upload da capa (se houver) - CORRIGIDO
-            capa_url = None
-            if capa and capa.filename:
-                capa_nome = secure_filename(capa.filename)
-                capa_extensao = capa_nome.rsplit('.', 1)[1].lower() if '.' in capa_nome else 'jpg'
-                capa_nome_gs = f"capa_{nome_base}.{capa_extensao}"
-                
-                print(f"📤 Enviando capa: {capa_nome_gs}")
-                capa_resultado = upload_to_google_drive(capa, capa_nome_gs, GOOGLE_DRIVE_CAPAS_FOLDER_ID)
-                
-                if capa_resultado['success']:
-                    capa_url = capa_resultado['embed_url']
-                    print(f"✅ Capa enviada!")
-                else:
-                    print(f"⚠️ Erro na capa: {capa_resultado.get('error')}")
-            
-            # Inserir no banco
             cursor, conn = get_db()
             
             ano_publicacao_int = int(ano_publicacao) if ano_publicacao and ano_publicacao.strip() else None
             
-            # Verificar se coluna google_drive_file_id existe
-            try:
-                cursor.execute("""
-                    INSERT INTO materiais (
-                        titulo, subtitulo, descricao, tipo, categoria_id, grau_acesso,
-                        arquivo_url, arquivo_nome, arquivo_tamanho, formato, capa_url,
-                        autor, editora, ano_publicacao, tags, 
-                        destaque, publicado, created_by, created_at, data_publicacao,
-                        google_drive_file_id
-                    ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, true, %s, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, %s)
-                    RETURNING id
-                """, (
+            # Inserir no banco (sem upload de arquivo)
+            cursor.execute("""
+                INSERT INTO materiais (
                     titulo, subtitulo, descricao, tipo, categoria_id, grau_acesso,
-                    arquivo_url, nome_arquivo_original, tamanho_arquivo, extensao, capa_url,
-                    autor, editora, ano_publicacao_int, tags,
-                    destaque, session['user_id'], file_id
-                ))
-            except Exception as db_error:
-                # Se a coluna não existir, inserir sem ela
-                cursor.execute("""
-                    INSERT INTO materiais (
-                        titulo, subtitulo, descricao, tipo, categoria_id, grau_acesso,
-                        arquivo_url, arquivo_nome, arquivo_tamanho, formato, capa_url,
-                        autor, editora, ano_publicacao, tags, 
-                        destaque, publicado, created_by, created_at, data_publicacao
-                    ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, true, %s, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
-                    RETURNING id
-                """, (
-                    titulo, subtitulo, descricao, tipo, categoria_id, grau_acesso,
-                    arquivo_url, nome_arquivo_original, tamanho_arquivo, extensao, capa_url,
-                    autor, editora, ano_publicacao_int, tags,
-                    destaque, session['user_id']
-                ))
+                    arquivo_url, formato, capa_url, autor, editora, 
+                    ano_publicacao, tags, destaque, publicado, 
+                    created_by, created_at, data_publicacao, google_drive_file_id
+                ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, true, %s, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, %s)
+                RETURNING id
+            """, (
+                titulo, subtitulo, descricao, tipo, categoria_id, grau_acesso,
+                embed_url, 'pdf', capa_url, autor, editora,
+                ano_publicacao_int, tags, destaque,
+                session['user_id'], file_id
+            ))
             
             material_id = cursor.fetchone()['id']
             conn.commit()
             return_connection(conn)
             
-            flash(f'✅ Material "{titulo}" enviado com sucesso para o Google Drive!', 'success')
+            flash(f'✅ Material "{titulo}" adicionado com sucesso!', 'success')
             return redirect(url_for('visualizar_material', material_id=material_id))
             
         except Exception as e:
-            print(f"❌ Erro no upload: {e}")
+            print(f"❌ Erro ao salvar: {e}")
             import traceback
             traceback.print_exc()
             if 'conn' in locals():
                 return_connection(conn)
-            flash(f'Erro ao enviar arquivo: {str(e)}', 'danger')
+            flash(f'Erro ao salvar material: {str(e)}', 'danger')
             return redirect(url_for('upload_material'))
     
     # GET - mostrar formulário
