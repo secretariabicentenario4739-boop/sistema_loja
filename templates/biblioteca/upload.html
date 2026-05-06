@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}Upload de Material - Biblioteca{% endblock %}
+{% block title %}Adicionar Material - Biblioteca{% endblock %}
 
 {% block styles %}
 {{ super() }}
@@ -11,27 +11,26 @@
         --bordo-claro: #6B1342;
         --bordo-suave: #8B4A6B;
         --bordo-transparente: rgba(74, 14, 46, 0.08);
-        --bordo-transparente-hover: rgba(74, 14, 46, 0.12);
         --ouro: #D4AF37;
         --ouro-escuro: #996515;
         --ouro-claro: #F0D68A;
     }
 
-    /* BOTÕES DO RITO - VERSÃO MOBILE FRIENDLY */
-    .btn-bordo {
+    .btn-bordo-primary {
         background: linear-gradient(135deg, var(--bordo), var(--bordo-escuro));
         border: none;
         color: white;
         border-radius: 30px;
-        padding: 8px 20px;
+        padding: 12px 28px;
         transition: all 0.3s;
         display: inline-flex;
         align-items: center;
         gap: 8px;
         text-decoration: none;
+        font-weight: 500;
     }
     
-    .btn-bordo:hover {
+    .btn-bordo-primary:hover {
         background: linear-gradient(135deg, var(--bordo-claro), var(--bordo));
         transform: translateY(-2px);
         color: white;
@@ -58,43 +57,14 @@
         box-shadow: 0 5px 15px rgba(74, 14, 46, 0.2);
     }
 
-    .btn-bordo-primary {
-        background: linear-gradient(135deg, var(--bordo), var(--bordo-escuro));
-        border: none;
-        color: white;
-        border-radius: 30px;
-        padding: 12px 28px;
-        transition: all 0.3s;
-        display: inline-flex;
-        align-items: center;
-        gap: 8px;
-        text-decoration: none;
-        font-weight: 500;
-    }
-    
-    .btn-bordo-primary:hover {
-        background: linear-gradient(135deg, var(--bordo-claro), var(--bordo));
-        transform: translateY(-2px);
-        color: white;
-        box-shadow: 0 5px 15px rgba(74, 14, 46, 0.3);
-    }
-
-    /* CARDS */
     .card {
         border-radius: 16px;
         overflow: hidden;
         border: 1px solid rgba(74, 14, 46, 0.15);
-        transition: transform 0.2s, box-shadow 0.2s;
-    }
-    
-    .card:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
     }
     
     .card-header {
         background: linear-gradient(135deg, var(--bordo), var(--bordo-escuro));
-        border-bottom: none;
         color: white;
         padding: 1rem 1.5rem;
     }
@@ -104,7 +74,6 @@
         font-weight: 600;
     }
 
-    /* FORMULÁRIO */
     .form-label {
         color: var(--bordo);
         font-weight: 600;
@@ -115,7 +84,6 @@
         border-radius: 12px;
         border: 1px solid rgba(74, 14, 46, 0.2);
         padding: 0.6rem 1rem;
-        transition: all 0.2s;
     }
     
     .form-control:focus, .form-select:focus {
@@ -124,25 +92,13 @@
         outline: none;
     }
     
-    .form-check-input:checked {
-        background-color: var(--bordo);
-        border-color: var(--bordo);
-    }
-    
-    .form-check-label {
-        color: var(--bordo);
-        font-weight: 500;
-    }
-
-    /* ALERTAS */
     .alert-bordo-info {
-        background: var(--bordo-transparente);
+        background: rgba(74, 14, 46, 0.08);
         border: 1px solid rgba(74, 14, 46, 0.15);
         color: var(--bordo);
         border-radius: 12px;
     }
 
-    /* GRUPO DE AÇÕES DO CABEÇALHO */
     .header-actions {
         display: flex;
         gap: 12px;
@@ -150,7 +106,6 @@
         flex-wrap: wrap;
     }
 
-    /* GRUPO DE BOTÕES */
     .btn-group-mobile {
         display: flex;
         gap: 12px;
@@ -158,72 +113,19 @@
         flex-wrap: wrap;
     }
 
-    /* RESPONSIVIDADE */
     @media (max-width: 768px) {
-        .btn-bordo, .btn-bordo-outline, .btn-bordo-primary {
+        .btn-bordo-primary, .btn-bordo-outline {
             padding: 6px 16px;
             font-size: 0.85rem;
         }
-        
-        .btn-bordo-primary {
-            padding: 10px 20px;
-        }
-        
-        .d-flex.justify-content-between {
-            flex-direction: column;
-            align-items: flex-start !important;
-            gap: 15px;
-        }
-        
-        .header-actions {
-            width: 100%;
-        }
-        
-        .header-actions .btn-bordo-outline {
-            width: 100%;
-            justify-content: center;
-        }
-        
-        h2 {
-            font-size: 1.5rem;
-        }
-        
-        .row .col-md-6 {
-            margin-bottom: 0.5rem;
-        }
-        
-        .form-control, .form-select {
-            font-size: 0.875rem;
-        }
-        
         .btn-group-mobile {
             flex-direction: column;
             width: 100%;
         }
-        
         .btn-group-mobile .btn-bordo-primary,
         .btn-group-mobile .btn-bordo-outline {
             width: 100%;
             justify-content: center;
-        }
-    }
-
-    @media (max-width: 480px) {
-        .btn-bordo, .btn-bordo-outline, .btn-bordo-primary {
-            padding: 5px 12px;
-            font-size: 0.8rem;
-        }
-        
-        .btn-bordo-primary {
-            padding: 8px 16px;
-        }
-        
-        .card-body {
-            padding: 1rem !important;
-        }
-        
-        .card-header {
-            padding: 0.75rem 1rem;
         }
     }
 </style>
@@ -231,7 +133,6 @@
 
 {% block content %}
 <div class="container py-4">
-    <!-- Cabeçalho responsivo -->
     <div class="d-flex justify-content-between align-items-center mb-4">
         <h2>
             <i class="bi bi-google" style="color: var(--bordo);"></i> 
@@ -324,7 +225,6 @@
                             <input type="text" class="form-control" name="tags" placeholder="Ex: maçonaria, aprendizado, ritual">
                         </div>
 
-                        <!-- CAMPO PRINCIPAL: LINK DO GOOGLE DRIVE -->
                         <div class="mb-3">
                             <label class="form-label">Link do Google Drive <span class="text-danger">*</span></label>
                             <input type="url" class="form-control" name="google_drive_url" 
@@ -335,7 +235,6 @@
                             </small>
                         </div>
 
-                        <!-- CAMPO OPCIONAL: LINK DA CAPA -->
                         <div class="mb-3">
                             <label class="form-label">Link da Capa (opcional)</label>
                             <input type="url" class="form-control" name="capa_drive_url" 
@@ -356,7 +255,6 @@
                             Certifique-se de que o link está correto e o arquivo está compartilhado como "Qualquer pessoa com o link".
                         </div>
 
-                        <!-- Botões com layout responsivo -->
                         <div class="btn-group-mobile">
                             <button type="submit" class="btn-bordo-primary" id="btnSubmit">
                                 <i class="bi bi-check-circle"></i> Adicionar Material
@@ -373,7 +271,7 @@
 </div>
 
 <script>
-// Validação do formulário
+// ÚNICA validação - sem NENHUMA referência a arquivo
 document.getElementById('formUpload').addEventListener('submit', function(e) {
     const titulo = document.querySelector('input[name="titulo"]').value.trim();
     const tipo = document.querySelector('select[name="tipo"]').value;
@@ -406,18 +304,17 @@ document.getElementById('formUpload').addEventListener('submit', function(e) {
         return false;
     }
     
-    // Validação do formato do link do Google Drive
     if (!googleDriveUrl.includes('drive.google.com') || !googleDriveUrl.includes('/file/d/')) {
         e.preventDefault();
-        alert('❌ Por favor, informe um link válido do Google Drive! O link deve ser do tipo: https://drive.google.com/file/d/SEU_ID/view');
+        alert('❌ Link inválido! Use o formato: https://drive.google.com/file/d/SEU_ID/view');
         document.querySelector('input[name="google_drive_url"]').focus();
         return false;
     }
     
-    // Mostrar loading
-    const btnSubmit = document.getElementById('btnSubmit');
-    btnSubmit.disabled = true;
-    btnSubmit.innerHTML = '<i class="bi bi-hourglass-split"></i> Processando...';
+    // Desabilita botão após envio
+    const btn = document.getElementById('btnSubmit');
+    btn.disabled = true;
+    btn.innerHTML = '<i class="bi bi-hourglass-split"></i> Processando...';
 });
 </script>
 {% endblock %}
