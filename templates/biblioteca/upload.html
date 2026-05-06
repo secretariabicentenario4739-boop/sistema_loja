@@ -397,10 +397,10 @@
                             </label>
                         </div>
 
-                        <div class="alert alert-bordo-info mb-4">
-                            <i class="bi bi-cloud-upload"></i>
-                            <strong>Armazenamento em Nuvem:</strong> O arquivo será enviado para o Cloudinary e estará disponível globalmente.
-                        </div>
+                       <div class="alert alert-bordo-info mb-4">
+							<i class="bi bi-google"></i>
+							<strong>Google Drive:</strong> O material será acessado via Google Drive. Certifique-se de que o link está correto e o arquivo está compartilhado como "Qualquer pessoa com o link".
+						</div>
 
                         <!-- Botões com layout responsivo -->
                         <div class="btn-group-mobile">
@@ -433,29 +433,12 @@
 </div>
 
 <script>
-document.getElementById('formUpload').addEventListener('submit', function(e) {
-    const arquivo = document.querySelector('input[name="arquivo"]').files[0];
-    if (arquivo) {
-        const maxSize = 50 * 1024 * 1024; // 50MB
-        if (arquivo.size > maxSize) {
-            e.preventDefault();
-            alert('❌ Arquivo muito grande! O tamanho máximo é 50MB.');
-            return false;
-        }
-    }
-    
-    // Mostrar loading
-    document.getElementById('loadingOverlay').style.display = 'flex';
-    document.getElementById('btnSubmit').disabled = true;
-    document.getElementById('btnSubmit').innerHTML = '<i class="bi bi-hourglass-split"></i> Enviando...';
-});
-
 // Validação do formulário
 document.querySelector('form').addEventListener('submit', function(e) {
     const titulo = document.querySelector('input[name="titulo"]').value.trim();
     const tipo = document.querySelector('select[name="tipo"]').value;
     const categoria = document.querySelector('select[name="categoria_id"]').value;
-    const arquivo = document.querySelector('input[name="arquivo"]').files[0];
+    const googleDriveUrl = document.querySelector('input[name="google_drive_url"]').value.trim();
     
     if (!titulo) {
         e.preventDefault();
@@ -476,9 +459,10 @@ document.querySelector('form').addEventListener('submit', function(e) {
         return false;
     }
     
-    if (!arquivo) {
+    if (!googleDriveUrl) {
         e.preventDefault();
-        alert('❌ Por favor, selecione o arquivo para upload!');
+        alert('❌ Por favor, informe o link do Google Drive!');
+        document.querySelector('input[name="google_drive_url"]').focus();
         return false;
     }
 });
