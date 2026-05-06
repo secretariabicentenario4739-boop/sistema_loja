@@ -5,532 +5,111 @@
 {% block styles %}
 {{ super() }}
 <style>
-    :root {
-        --bordo: #4A0E2E;
-        --bordo-escuro: #3A0A24;
-        --bordo-claro: #6B1342;
-        --bordo-suave: #8B4A6B;
-        --ouro: #D4AF37;
-        --ouro-escuro: #996515;
-        --ouro-claro: #F0D68A;
-        --papel: #fdf8f0;
-        --papel-escuro: #e8e0d5;
-        --tinta: #2c2418;
-    }
-
-    /* CONTAINER DO LIVRO */
-    .book-wrapper {
-        background: linear-gradient(135deg, #2a1a0a 0%, #1a0f05 100%);
-        padding: 30px;
-        border-radius: 20px;
-        box-shadow: 0 20px 40px rgba(0,0,0,0.4);
-    }
-
-    /* O LIVRO */
-    .book {
-        max-width: 1200px;
-        margin: 0 auto;
-        background: var(--papel);
-        border-radius: 12px;
-        box-shadow: 0 10px 30px rgba(0,0,0,0.3);
-        overflow: hidden;
-        position: relative;
-    }
-
-    /* CAPA DO LIVRO */
-    .book-cover {
-        background: linear-gradient(135deg, var(--bordo), var(--bordo-escuro));
-        padding: 30px 40px;
-        text-align: center;
-        border-bottom: 4px solid var(--ouro);
-        position: relative;
-    }
-
-    .book-cover h1 {
-        color: var(--ouro);
-        font-size: 2rem;
-        margin-bottom: 10px;
-        font-weight: 700;
-        text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
-    }
-
-    .book-cover .subtitle {
-        color: var(--ouro-claro);
-        font-size: 1rem;
-        font-style: italic;
-    }
-
-    .book-cover .author {
-        margin-top: 15px;
-        padding-top: 10px;
-        border-top: 1px solid var(--ouro);
-        display: inline-block;
-        color: var(--ouro-claro);
-        font-size: 0.9rem;
-    }
-
-    .book-cover .author i {
-        margin-right: 5px;
-    }
-
-    /* FAIXA DE INFORMAÇÕES */
-    .book-info {
-        background: var(--papel-escuro);
-        padding: 12px 25px;
-        display: flex;
-        flex-wrap: wrap;
-        gap: 20px;
-        border-bottom: 1px solid rgba(0,0,0,0.1);
-    }
-
-    .book-info-item {
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        font-size: 0.85rem;
-        color: var(--tinta);
-    }
-
-    .book-info-item i {
-        color: var(--bordo);
-        font-size: 1rem;
-    }
-
-    /* DESCRIÇÃO */
-    .book-description {
-        background: rgba(74, 14, 46, 0.05);
-        padding: 15px 25px;
-        margin: 0;
-        border-left: 4px solid var(--ouro);
-        font-style: italic;
-        color: var(--tinta);
-    }
-
-    /* CONTEÚDO DO LIVRO (PDF) */
-    .book-content {
-        padding: 30px;
-        background: var(--papel);
-        min-height: 600px;
-    }
-
     .pdf-viewer {
         width: 100%;
-        height: 700px;
+        height: 800px;
         border: none;
         border-radius: 8px;
-        background: var(--papel);
-        box-shadow: inset 0 0 10px rgba(0,0,0,0.05);
     }
-
-    /* RODAPÉ DO LIVRO */
-    .book-footer {
-        background: var(--bordo);
-        padding: 15px 25px;
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        flex-wrap: wrap;
-        gap: 15px;
-        border-top: 2px solid var(--ouro);
-    }
-
-    .book-actions {
-        display: flex;
-        gap: 12px;
-        flex-wrap: wrap;
-    }
-
-    .book-btn {
-        background: var(--ouro-escuro);
-        border: none;
-        color: var(--ouro-claro);
-        padding: 8px 18px;
-        border-radius: 30px;
-        cursor: pointer;
-        transition: all 0.3s;
-        display: inline-flex;
-        align-items: center;
-        gap: 8px;
-        text-decoration: none;
-        font-size: 0.85rem;
-        font-weight: 500;
-    }
-
-    .book-btn:hover {
-        background: var(--ouro);
-        color: var(--bordo);
-        transform: translateY(-2px);
-    }
-
-    .book-page-info {
-        background: rgba(255,255,255,0.15);
-        padding: 6px 15px;
-        border-radius: 30px;
-        font-size: 0.85rem;
-        color: var(--ouro-claro);
-    }
-
-    /* MARCADOR DE PÁGINA FLUTUANTE */
-    .floating-bookmark {
-        position: fixed;
-        right: 20px;
-        bottom: 100px;
-        background: var(--ouro-escuro);
-        width: 45px;
-        height: 60px;
-        border-radius: 0 8px 8px 0;
-        cursor: pointer;
-        z-index: 1000;
-        transition: all 0.3s;
-        box-shadow: -2px 2px 10px rgba(0,0,0,0.2);
-        display: flex;
-        align-items: center;
-        justify-content: center;
-    }
-
-    .floating-bookmark:hover {
-        right: 25px;
-        background: var(--ouro);
-    }
-
-    .floating-bookmark i {
-        color: var(--bordo);
-        font-size: 1.5rem;
-    }
-
-    /* MODAL DE COMPARTILHAR */
-    .share-modal {
-        display: none;
-        position: fixed;
-        top: 0;
-        left: 0;
-        right: 0;
-        bottom: 0;
-        background: rgba(0,0,0,0.8);
-        z-index: 2000;
-        align-items: center;
-        justify-content: center;
-    }
-
-    .share-content {
-        background: var(--papel);
-        padding: 30px;
-        border-radius: 16px;
-        max-width: 400px;
-        width: 90%;
-        text-align: center;
-    }
-
-    .share-content h4 {
-        color: var(--bordo);
-        margin-bottom: 20px;
-    }
-
-    .share-buttons {
+    
+    .material-actions {
         display: flex;
         gap: 15px;
         justify-content: center;
+        margin-top: 20px;
         flex-wrap: wrap;
     }
-
-    /* RESPONSIVIDADE */
+    
     @media (max-width: 768px) {
-        .book-wrapper {
-            padding: 15px;
-        }
-        .book-cover {
-            padding: 20px;
-        }
-        .book-cover h1 {
-            font-size: 1.3rem;
-        }
-        .book-content {
-            padding: 15px;
-        }
         .pdf-viewer {
             height: 500px;
         }
-        .book-footer {
-            flex-direction: column;
-        }
-        .floating-bookmark {
-            bottom: 80px;
-            width: 35px;
-            height: 45px;
-        }
-        .floating-bookmark i {
-            font-size: 1rem;
-        }
-    }
-
-    /* MODO TELA CHEIA */
-    .fullscreen-mode {
-        position: fixed;
-        top: 0;
-        left: 0;
-        right: 0;
-        bottom: 0;
-        z-index: 9999;
-        background: #2a1a0a;
-        padding: 20px;
-        overflow: auto;
-    }
-
-    .fullscreen-mode .book {
-        max-width: 1400px;
-        margin: 0 auto;
-    }
-
-    /* ANIMAÇÃO DE CARREGAMENTO */
-    .pdf-loading {
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        height: 700px;
-        background: var(--papel);
-        flex-direction: column;
-        gap: 15px;
-    }
-
-    .spinner {
-        width: 50px;
-        height: 50px;
-        border: 4px solid var(--ouro-escuro);
-        border-top-color: var(--bordo);
-        border-radius: 50%;
-        animation: spin 1s linear infinite;
-    }
-
-    @keyframes spin {
-        to { transform: rotate(360deg); }
     }
 </style>
 {% endblock %}
 
 {% block content %}
 <div class="container py-4">
-    <div class="book-wrapper">
-        <div class="book">
-            <!-- CAPA DO LIVRO -->
-            <div class="book-cover">
-                <h1>
-                    <i class="bi bi-book-half me-2"></i>
-                    {{ material.titulo }}
-                </h1>
-                {% if material.subtitulo %}
-                <div class="subtitle">{{ material.subtitulo }}</div>
-                {% endif %}
-                {% if material.autor %}
-                <div class="author">
-                    <i class="bi bi-pencil"></i> {{ material.autor }}
-                </div>
-                {% endif %}
-            </div>
-
-            <!-- INFORMAÇÕES DO LIVRO -->
-            <div class="book-info">
-                <div class="book-info-item">
-                    <i class="bi bi-building"></i>
-                    <span>{{ material.editora or 'Editora não informada' }}</span>
-                </div>
-                <div class="book-info-item">
-                    <i class="bi bi-calendar"></i>
-                    <span>{{ material.ano_publicacao or 'Ano não informado' }}</span>
-                </div>
-                <div class="book-info-item">
-                    <i class="bi bi-tag"></i>
-                    <span>{{ material.tipo|capitalize }}</span>
-                </div>
-                <div class="book-info-item">
-                    <i class="bi bi-star-fill" style="color: var(--ouro);"></i>
-                    <span>{{ material.grau_acesso }}º Grau</span>
-                </div>
-            </div>
-
-            <!-- DESCRIÇÃO (se houver) -->
-            {% if material.descricao %}
-            <div class="book-description">
-                <i class="bi bi-chat-quote me-2"></i>
-                {{ material.descricao }}
-            </div>
-            {% endif %}
-
-            <!-- CONTEÚDO DO LIVRO (PDF) -->
-            <div class="book-content">
-                <div id="pdfContainer">
-                    <div id="pdfLoading" class="pdf-loading">
-                        <div class="spinner"></div>
-                        <p style="color: var(--bordo);">Abrindo o livro...</p>
+    <div class="card shadow-sm">
+        <div class="card-header" style="background: var(--bordo); color: white;">
+            <h4 class="mb-0">
+                <i class="bi bi-file-earmark-text-fill"></i> {{ material.titulo }}
+            </h4>
+        </div>
+        <div class="card-body">
+            <!-- Informações do material -->
+            <div class="row mb-4">
+                <div class="col-md-8">
+                    {% if material.subtitulo %}
+                        <h6 class="text-muted">{{ material.subtitulo }}</h6>
+                    {% endif %}
+                    <p>{{ material.descricao or 'Sem descrição' }}</p>
+                    
+                    <div class="row mt-3">
+                        <div class="col-md-6">
+                            <small><strong>Autor:</strong> {{ material.autor or 'Não informado' }}</small><br>
+                            <small><strong>Editora:</strong> {{ material.editora or 'Não informada' }}</small>
+                        </div>
+                        <div class="col-md-6">
+                            <small><strong>Ano:</strong> {{ material.ano_publicacao or 'Não informado' }}</small><br>
+                            <small><strong>Tipo:</strong> {{ material.tipo|capitalize }}</small>
+                        </div>
                     </div>
-                    <iframe class="pdf-viewer" 
-                            id="pdfFrame"
-                            src="{{ material.arquivo_url }}"
-                            frameborder="0"
-                            style="display: none;"
-                            onload="document.getElementById('pdfLoading').style.display='none'; this.style.display='block'"
-                            onerror="document.getElementById('pdfLoading').innerHTML='<div style=text-align:center;><i class=bi bi-exclamation-triangle-fill style=font-size:3rem;color:var(--ouro);></i><h4>Não foi possível carregar o PDF</h4><p>Verifique se o arquivo está compartilhado corretamente</p><a href={{ material.arquivo_url }} target=_blank class=book-btn><i class=bi bi-box-arrow-up-right></i> Abrir diretamente</a></div>'">
-                    </iframe>
                 </div>
+                {% if material.capa_url %}
+                <div class="col-md-4 text-center">
+                    <img src="{{ material.capa_url }}" alt="Capa" class="img-fluid rounded shadow-sm" style="max-height: 200px;">
+                </div>
+                {% endif %}
             </div>
-
-            <!-- RODAPÉ DO LIVRO -->
-            <div class="book-footer">
-                <div class="book-actions">
-                    <a href="{{ url_for('listar_materiais') }}" class="book-btn">
-                        <i class="bi bi-book"></i> Biblioteca
+            
+            <hr>
+            
+            <!-- Visualização do arquivo -->
+            <h5><i class="bi bi-eye-fill"></i> Visualização</h5>
+            
+            {% if material.formato == 'pdf' %}
+                <!-- PDF Viewer do Google Drive -->
+                <iframe class="pdf-viewer" src="{{ material.arquivo_url }}"></iframe>
+                
+                <div class="material-actions">
+                    <a href="{{ material.arquivo_url }}" class="btn-bordo" target="_blank">
+                        <i class="bi bi-box-arrow-up-right"></i> Abrir em nova aba
                     </a>
-                    <button class="book-btn" id="fullscreenBtn">
-                        <i class="bi bi-arrows-fullscreen"></i> Tela cheia
-                    </button>
-                </div>
-                <div class="book-page-info" id="pageInfo">
-                    <i class="bi bi-bookmark"></i> 
-                    <span id="pageText">Folheando...</span>
-                </div>
-                <div class="book-actions">
-                    <a href="{{ material.arquivo_url }}" class="book-btn" target="_blank">
-                        <i class="bi bi-box-arrow-up-right"></i> Nova aba
+                    <a href="{{ url_for('download_material', material_id=material.id) }}" class="btn-bordo-info">
+                        <i class="bi bi-download"></i> Baixar PDF
                     </a>
-                    <a href="{{ url_for('download_material', material_id=material.id) }}" class="book-btn">
-                        <i class="bi bi-download"></i> Baixar
+                    <a href="{{ url_for('listar_materiais') }}" class="btn-bordo-outline">
+                        <i class="bi bi-arrow-left"></i> Voltar
                     </a>
-                    <button class="book-btn" id="shareBtn">
-                        <i class="bi bi-share"></i> Compartilhar
-                    </button>
                 </div>
-            </div>
+                
+            {% elif material.formato in ['jpg', 'jpeg', 'png', 'gif'] %}
+                <!-- Imagem -->
+                <div class="text-center">
+                    <img src="{{ material.arquivo_url }}" alt="{{ material.titulo }}" class="img-fluid rounded shadow-sm" style="max-height: 600px;">
+                </div>
+                <div class="material-actions">
+                    <a href="{{ material.arquivo_url }}" class="btn-bordo" target="_blank">
+                        <i class="bi bi-box-arrow-up-right"></i> Ver imagem original
+                    </a>
+                    <a href="{{ url_for('listar_materiais') }}" class="btn-bordo-outline">
+                        <i class="bi bi-arrow-left"></i> Voltar
+                    </a>
+                </div>
+                
+            {% else %}
+                <!-- Outros tipos de arquivo -->
+                <div class="alert alert-info text-center">
+                    <i class="bi bi-file-earmark-text fs-1"></i>
+                    <h5>Visualização não disponível para este tipo de arquivo</h5>
+                    <p>Clique no botão abaixo para baixar o arquivo</p>
+                    <a href="{{ url_for('download_material', material_id=material.id) }}" class="btn-bordo">
+                        <i class="bi bi-download"></i> Baixar {{ material.formato|upper }}
+                    </a>
+                </div>
+            {% endif %}
         </div>
     </div>
 </div>
-
-<!-- MARCADOR DE PÁGINA FLUTUANTE -->
-<div class="floating-bookmark" id="floatingBookmark" title="Marcar página">
-    <i class="bi bi-bookmark-plus-fill"></i>
-</div>
-
-<!-- MODAL DE COMPARTILHAR -->
-<div class="share-modal" id="shareModal">
-    <div class="share-content">
-        <h4><i class="bi bi-share"></i> Compartilhar</h4>
-        <p>{{ material.titulo }}</p>
-        <div class="share-buttons">
-            <button class="book-btn" onclick="shareOnWhatsApp()">
-                <i class="bi bi-whatsapp"></i> WhatsApp
-            </button>
-            <button class="book-btn" onclick="copyLink()">
-                <i class="bi bi-link"></i> Copiar link
-            </button>
-            <button class="book-btn" onclick="closeShareModal()">
-                <i class="bi bi-x"></i> Fechar
-            </button>
-        </div>
-    </div>
-</div>
-
-<script>
-    // Elementos
-    const fullscreenBtn = document.getElementById('fullscreenBtn');
-    const bookWrapper = document.querySelector('.book-wrapper');
-    const floatingBookmark = document.getElementById('floatingBookmark');
-    const shareBtn = document.getElementById('shareBtn');
-    const shareModal = document.getElementById('shareModal');
-    const pdfFrame = document.getElementById('pdfFrame');
-    const pageText = document.getElementById('pageText');
-    
-    let isFullscreen = false;
-    let currentPage = 1;
-
-    // Tela cheia
-    if (fullscreenBtn) {
-        fullscreenBtn.addEventListener('click', () => {
-            if (!isFullscreen) {
-                document.body.classList.add('fullscreen-mode');
-                fullscreenBtn.innerHTML = '<i class="bi bi-fullscreen-exit"></i> Sair';
-                isFullscreen = true;
-            } else {
-                document.body.classList.remove('fullscreen-mode');
-                fullscreenBtn.innerHTML = '<i class="bi bi-arrows-fullscreen"></i> Tela cheia';
-                isFullscreen = false;
-            }
-        });
-    }
-
-    // Tecla ESC
-    document.addEventListener('keydown', (e) => {
-        if (e.key === 'Escape' && isFullscreen) {
-            document.body.classList.remove('fullscreen-mode');
-            fullscreenBtn.innerHTML = '<i class="bi bi-arrows-fullscreen"></i> Tela cheia';
-            isFullscreen = false;
-        }
-    });
-
-    // Marcador de página (salva no localStorage)
-    const savedPage = localStorage.getItem('bookmark_{{ material.id }}');
-    if (savedPage) {
-        currentPage = parseInt(savedPage);
-        pageText.innerText = `Página ${currentPage} salva ✓`;
-        setTimeout(() => {
-            pageText.innerText = 'Folheando...';
-        }, 3000);
-    }
-
-    if (floatingBookmark) {
-        floatingBookmark.addEventListener('click', () => {
-            // Simular marcação de página
-            localStorage.setItem('bookmark_{{ material.id }}', currentPage);
-            floatingBookmark.style.transform = 'scale(1.2)';
-            floatingBookmark.style.backgroundColor = 'var(--ouro)';
-            
-            pageText.innerText = `Página ${currentPage} marcada! ✓`;
-            
-            setTimeout(() => {
-                floatingBookmark.style.transform = '';
-                floatingBookmark.style.backgroundColor = '';
-            }, 500);
-            
-            setTimeout(() => {
-                pageText.innerText = 'Folheando...';
-            }, 3000);
-        });
-    }
-
-    // Compartilhar
-    if (shareBtn) {
-        shareBtn.addEventListener('click', () => {
-            shareModal.style.display = 'flex';
-        });
-    }
-
-    function closeShareModal() {
-        shareModal.style.display = 'none';
-    }
-
-    function shareOnWhatsApp() {
-        const url = encodeURIComponent(window.location.href);
-        const text = encodeURIComponent(`📚 ${document.title}`);
-        window.open(`https://wa.me/?text=${text}%20${url}`, '_blank');
-        closeShareModal();
-    }
-
-    function copyLink() {
-        navigator.clipboard.writeText(window.location.href);
-        alert('✅ Link copiado!');
-        closeShareModal();
-    }
-
-    // Fechar modal clicando fora
-    shareModal.addEventListener('click', (e) => {
-        if (e.target === shareModal) {
-            closeShareModal();
-        }
-    });
-
-    // Simular contagem de páginas (melhoria visual)
-    let pageCount = 1;
-    setInterval(() => {
-        if (pageText.innerText === 'Folheando...') {
-            pageCount = (pageCount % 999) + 1;
-        }
-    }, 5000);
-</script>
 {% endblock %}
