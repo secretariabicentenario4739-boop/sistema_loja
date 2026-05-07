@@ -15,6 +15,8 @@
         --papel: #fef9e8;
     }
 
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
     .library-bg {
         background: linear-gradient(135deg, #1a1a2e 0%, #0f0f1a 100%);
         min-height: 100vh;
@@ -22,10 +24,11 @@
     }
 
     .premium-book {
-        max-width: 1300px;
+        max-width: 1400px;
         margin: 0 auto;
     }
 
+    /* CAPA */
     .premium-cover {
         background: linear-gradient(135deg, #4A0E2E, #2d0a1c);
         border-radius: 12px 12px 0 0;
@@ -38,7 +41,6 @@
         color: var(--ouro);
         font-size: 1.8rem;
         font-family: 'Crimson Pro', serif;
-        margin-bottom: 8px;
     }
 
     .premium-cover .subtitle {
@@ -54,6 +56,7 @@
         color: #F0D68A;
     }
 
+    /* METADADOS */
     .book-metadata {
         background: #e8dcca;
         padding: 10px 25px;
@@ -70,26 +73,9 @@
         color: #2c2418;
     }
 
-    .metadata-item i {
-        color: #4A0E2E;
-    }
+    .metadata-item i { color: #4A0E2E; }
 
-    .book-body {
-        background: #1a1a2e;
-        padding: 20px;
-        min-height: 700px;
-    }
-
-    /* VISUALIZADOR DO GOOGLE DRIVE - URL CORRETA */
-    .pdf-viewer {
-        width: 100%;
-        height: 750px;
-        border: none;
-        border-radius: 8px;
-        background: #fff;
-        box-shadow: 0 4px 20px rgba(0,0,0,0.3);
-    }
-
+    /* TOOLBAR */
     .book-toolbar {
         background: linear-gradient(135deg, #4A0E2E, #3A0A24);
         padding: 12px 25px;
@@ -135,6 +121,22 @@
         font-size: 0.85rem;
     }
 
+    /* VISUALIZADOR - TELA CHEIA PARA MINIATURAS */
+    .book-body {
+        background: #1a1a2e;
+        padding: 20px;
+        min-height: 800px;
+    }
+
+    .pdf-viewer {
+        width: 100%;
+        height: 800px;
+        border: none;
+        border-radius: 8px;
+        background: #fff;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+    }
+
     /* TOAST */
     .toast-notification {
         position: fixed;
@@ -160,9 +162,8 @@
     @media (max-width: 768px) {
         .library-bg { padding: 15px; }
         .premium-cover h1 { font-size: 1.2rem; }
-        .pdf-viewer { height: 500px; }
+        .pdf-viewer { height: 550px; }
         .book-toolbar { flex-direction: column; }
-        .tool-group { justify-content: center; }
     }
 </style>
 {% endblock %}
@@ -182,17 +183,16 @@
             <div class="metadata-item"><i class="bi bi-building"></i> {{ material.editora or 'Editora não informada' }}</div>
             <div class="metadata-item"><i class="bi bi-calendar"></i> {{ material.ano_publicacao or 'Ano não informado' }}</div>
             <div class="metadata-item"><i class="bi bi-star-fill" style="color: var(--ouro);"></i> {{ material.grau_acesso }}º Grau</div>
-            <div class="metadata-item"><i class="bi bi-filetype-pdf"></i> PDF</div>
         </div>
 
-        <!-- BARRA DE FERRAMENTAS -->
+        <!-- TOOLBAR -->
         <div class="book-toolbar">
             <div class="tool-group">
                 <a href="{{ url_for('listar_materiais') }}" class="tool-btn"><i class="bi bi-book"></i> Biblioteca</a>
                 <button id="fullscreenBtn" class="tool-btn"><i class="bi bi-arrows-fullscreen"></i> Tela cheia</button>
             </div>
             <div class="page-info" id="pageInfo">
-                <i class="bi bi-bookmark"></i> <span id="bookStatus">Pronto para leitura</span>
+                <i class="bi bi-bookmark"></i> <span id="bookStatus">Miniaturas disponíveis</span>
             </div>
             <div class="tool-group">
                 <button id="shareBtn" class="tool-btn"><i class="bi bi-share"></i> Compartilhar</button>
@@ -201,11 +201,12 @@
             </div>
         </div>
 
-        <!-- VISUALIZADOR DO PDF -->
+        <!-- VISUALIZADOR GOOGLE DRIVE -->
         <div class="book-body">
-            <div id="loadingArea" style="display: flex; justify-content: center; align-items: center; height: 750px; background: #fef9e8; border-radius: 8px; flex-direction: column; gap: 20px;">
+            <div id="loadingArea" style="display: flex; justify-content: center; align-items: center; height: 800px; background: #fef9e8; border-radius: 8px; flex-direction: column; gap: 20px;">
                 <div style="width: 50px; height: 50px; border: 4px solid #D4AF37; border-top-color: #4A0E2E; border-radius: 50%; animation: spin 1s linear infinite;"></div>
-                <p style="color: #4A0E2E; font-family: 'Crimson Pro';">Carregando documento...</p>
+                <p style="color: #4A0E2E;">Carregando visualizador avançado...</p>
+                <small style="color: #666;">As miniaturas aparecerão ao passar o mouse na lateral</small>
             </div>
             <iframe id="pdfFrame" 
                     class="pdf-viewer" 
@@ -219,17 +220,15 @@
 
 <script>
     // ============================================
-    // FUNÇÃO PARA EXTRAIR ID DO GOOGLE DRIVE
+    // EXTRAIR ID DO GOOGLE DRIVE
     // ============================================
     function extractGoogleDriveId(url) {
         if (!url) return null;
         
-        // Padrões de URL do Google Drive
         const patterns = [
             /\/file\/d\/([a-zA-Z0-9_-]+)/,
             /id=([a-zA-Z0-9_-]+)/,
-            /\/uc\?id=([a-zA-Z0-9_-]+)/,
-            /\/open\?id=([a-zA-Z0-9_-]+)/
+            /\/uc\?id=([a-zA-Z0-9_-]+)/
         ];
         
         for (const pattern of patterns) {
@@ -237,15 +236,17 @@
             if (match) return match[1];
         }
         
-        // Se a URL já é um ID direto
-        if (url.match(/^[a-zA-Z0-9_-]{20,}$/)) return url;
-        
+        if (url.match(/^[a-zA-Z0-9_-]{25,}$/)) return url;
         return null;
     }
     
     // ============================================
-    // CONFIGURAR VISUALIZADOR
+    // SALVAR E RECUPERAR POSIÇÃO
     // ============================================
+    const materialId = {{ material.id }};
+    let isFullscreen = false;
+    
+    // Elementos
     const pdfFrame = document.getElementById('pdfFrame');
     const loadingArea = document.getElementById('loadingArea');
     const fullscreenBtn = document.getElementById('fullscreenBtn');
@@ -253,117 +254,110 @@
     const bookmarkBtn = document.getElementById('bookmarkBtn');
     const bookStatus = document.getElementById('bookStatus');
     
-    let isFullscreen = false;
-    const materialId = {{ material.id }};
-    
-    // Obter URL do PDF
+    // URL do PDF
     let pdfUrl = "{{ material.arquivo_url }}";
     const fileId = extractGoogleDriveId(pdfUrl);
     
-    // Construir URL correta para o iframe
+    // URL do visualizador avançado (com miniaturas)
     let embedUrl = '';
     
     if (fileId) {
-        // URL correta para embed do Google Drive
+        // Modo avançado: permite miniaturas, zoom, etc.
         embedUrl = `https://drive.google.com/file/d/${fileId}/preview`;
-        console.log('✅ ID do arquivo detectado:', fileId);
-        console.log('📄 Embed URL:', embedUrl);
+        console.log('✅ ID detectado:', fileId);
     } else if (pdfUrl.includes('drive.google.com')) {
-        // Tenta extrair de qualquer forma
         embedUrl = pdfUrl.replace('/view', '/preview').replace('?usp=sharing', '');
-        console.log('📄 Embed URL alternativa:', embedUrl);
     } else {
-        // URL direta
         embedUrl = pdfUrl;
-        console.log('📄 URL direta:', embedUrl);
     }
     
-    // Carregar o iframe
-    if (embedUrl) {
+    // Carregar iframe
+    if (embedUrl && fileId) {
         pdfFrame.src = embedUrl;
         
         pdfFrame.onload = function() {
             loadingArea.style.display = 'none';
             pdfFrame.style.display = 'block';
-            bookStatus.innerText = 'Documento carregado';
-            showToast('📖 Documento carregado com sucesso!', 'success');
+            bookStatus.innerText = 'Visualizador pronto | Use as miniaturas na lateral';
+            showToast('📖 Miniaturas disponíveis! Passe o mouse na lateral esquerda', 'success');
+            
+            // Tentar restaurar posição após carregar
+            restorePosition();
         };
         
         pdfFrame.onerror = function() {
             loadingArea.innerHTML = `
                 <div style="text-align: center; padding: 40px;">
                     <i class="bi bi-exclamation-triangle-fill" style="font-size: 3rem; color: #D4AF37;"></i>
-                    <h3 style="color: #4A0E2E; margin-top: 20px;">Erro ao carregar o PDF</h3>
-                    <p style="color: #666;">Verifique se o arquivo está compartilhado no Google Drive como "Qualquer pessoa com o link"</p>
+                    <h3 style="color: #4A0E2E;">Erro ao carregar</h3>
+                    <p>Verifique se o arquivo está compartilhado como "Qualquer pessoa com o link"</p>
                     <div style="margin-top: 20px;">
-                        <a href="${embedUrl}" target="_blank" class="tool-btn" style="background: #4A0E2E; color: white;">
-                            <i class="bi bi-box-arrow-up-right"></i> Abrir diretamente
-                        </a>
-                        <a href="{{ url_for('download_material', material_id=material.id) }}" class="tool-btn">
-                            <i class="bi bi-download"></i> Baixar PDF
-                        </a>
+                        <a href="${embedUrl}" target="_blank" class="tool-btn">Abrir no Google Drive</a>
+                        <a href="{{ url_for('download_material', material_id=material.id) }}" class="tool-btn">Baixar PDF</a>
                     </div>
                 </div>
             `;
-            bookStatus.innerText = 'Erro ao carregar';
         };
     } else {
-        loadingArea.innerHTML = `
-            <div style="text-align: center; padding: 40px;">
-                <i class="bi bi-filetype-pdf" style="font-size: 3rem; color: #D4AF37;"></i>
-                <h3 style="color: #4A0E2E; margin-top: 20px;">PDF disponível para download</h3>
-                <p style="color: #666;">Clique no botão abaixo para baixar o arquivo</p>
-                <a href="{{ url_for('download_material', material_id=material.id) }}" class="tool-btn" style="margin-top: 20px; background: #4A0E2E; color: white;">
-                    <i class="bi bi-download"></i> Baixar PDF
-                </a>
-            </div>
-        `;
-        bookStatus.innerText = 'Download disponível';
+        loadingArea.innerHTML = `<div style="text-align: center;"><h3>Link inválido</h3><a href="{{ url_for('download_material', material_id=material.id) }}" class="tool-btn">Baixar PDF</a></div>`;
     }
     
-    // ========== FUNÇÕES ==========
+    // ============================================
+    // FUNÇÕES
+    // ============================================
     function showToast(message, type = 'info') {
         const toast = document.createElement('div');
         toast.className = 'toast-notification';
         toast.innerHTML = `<i class="bi bi-${type === 'success' ? 'check-circle' : 'bookmark-check'} me-2"></i>${message}`;
         document.body.appendChild(toast);
-        setTimeout(() => toast.remove(), 2500);
+        setTimeout(() => toast.remove(), 3000);
     }
     
-    // Marcador de página
+    // Salvar posição (scroll da página, não do iframe)
     function saveBookmark() {
         const scrollY = window.scrollY;
         const data = {
             scrollY: scrollY,
             date: new Date().toISOString(),
-            url: window.location.href
+            fileId: fileId
         };
         localStorage.setItem(`bookmark_${materialId}`, JSON.stringify(data));
-        showToast('✅ Posição salva! Volte aqui depois', 'success');
-        bookStatus.innerText = 'Posição salva!';
+        showToast('✅ Posição de leitura salva!', 'success');
+        bookStatus.innerText = 'Posição salva ✓';
         setTimeout(() => {
-            bookStatus.innerText = 'Pronto para leitura';
+            bookStatus.innerText = 'Miniaturas disponíveis';
         }, 2000);
     }
     
-    function loadBookmark() {
+    function restorePosition() {
         const saved = localStorage.getItem(`bookmark_${materialId}`);
         if (saved) {
-            const data = JSON.parse(saved);
-            setTimeout(() => {
-                window.scrollTo(0, data.scrollY);
-                showToast('📖 Retomando de onde você parou', 'info');
-                bookStatus.innerText = 'Retomando leitura...';
-                setTimeout(() => {
-                    bookStatus.innerText = 'Pronto para leitura';
-                }, 2000);
-            }, 1000);
+            try {
+                const data = JSON.parse(saved);
+                if (data.scrollY && data.scrollY > 0) {
+                    setTimeout(() => {
+                        window.scrollTo(0, data.scrollY);
+                        showToast('📖 Voltando à página onde você parou', 'info');
+                        bookStatus.innerText = 'Retomando leitura...';
+                        setTimeout(() => {
+                            bookStatus.innerText = 'Miniaturas disponíveis';
+                        }, 2000);
+                    }, 1500);
+                }
+            } catch(e) {}
         }
     }
     
-    if (bookmarkBtn) {
-        bookmarkBtn.addEventListener('click', saveBookmark);
-    }
+    // Salvar posição ao sair
+    window.addEventListener('beforeunload', () => {
+        if (window.scrollY > 100) {
+            localStorage.setItem(`bookmark_${materialId}`, JSON.stringify({
+                scrollY: window.scrollY,
+                date: new Date().toISOString(),
+                fileId: fileId
+            }));
+        }
+    });
     
     // Tela cheia
     function toggleFullscreen() {
@@ -393,11 +387,14 @@
         }
     }
     
-    if (fullscreenBtn) {
-        fullscreenBtn.addEventListener('click', toggleFullscreen);
+    function copyLink() {
+        navigator.clipboard.writeText(window.location.href);
+        showToast('✅ Link copiado!', 'success');
     }
     
-    // Compartilhar
+    // Eventos
+    if (fullscreenBtn) fullscreenBtn.addEventListener('click', toggleFullscreen);
+    if (bookmarkBtn) bookmarkBtn.addEventListener('click', saveBookmark);
     if (shareBtn) {
         shareBtn.addEventListener('click', () => {
             if (navigator.share) {
@@ -412,29 +409,13 @@
         });
     }
     
-    function copyLink() {
-        navigator.clipboard.writeText(window.location.href);
-        showToast('✅ Link copiado!', 'success');
-    }
-    
     // Esc para sair da tela cheia
     document.addEventListener('keydown', (e) => {
-        if (e.key === 'Escape' && isFullscreen) {
-            toggleFullscreen();
-        }
+        if (e.key === 'Escape' && isFullscreen) toggleFullscreen();
+        if ((e.key === 's' || e.key === 'S') && bookmarkBtn) saveBookmark();
     });
     
-    // Carregar marcador
-    loadBookmark();
-    
-    // Salvar posição ao sair
-    window.addEventListener('beforeunload', () => {
-        if (window.scrollY > 0) {
-            localStorage.setItem(`bookmark_${materialId}`, JSON.stringify({
-                scrollY: window.scrollY,
-                date: new Date().toISOString()
-            }));
-        }
-    });
+    // Dica de teclado
+    console.log('💡 Dica: Pressione "S" para marcar a página atual');
 </script>
 {% endblock %}
