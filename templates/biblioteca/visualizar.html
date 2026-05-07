@@ -13,13 +13,6 @@
         --ouro: #D4AF37;
         --ouro-escuro: #996515;
         --papel: #fef9e8;
-        --papel-sombra: #e8dcca;
-    }
-
-    * {
-        margin: 0;
-        padding: 0;
-        box-sizing: border-box;
     }
 
     .library-bg {
@@ -29,18 +22,16 @@
     }
 
     .premium-book {
-        max-width: 1400px;
+        max-width: 1300px;
         margin: 0 auto;
     }
 
-    /* CAPA */
     .premium-cover {
         background: linear-gradient(135deg, #4A0E2E, #2d0a1c);
-        border-radius: 12px 12px 8px 8px;
+        border-radius: 12px 12px 0 0;
         padding: 25px 35px;
         text-align: center;
         border-bottom: 3px solid var(--ouro);
-        box-shadow: 0 20px 40px rgba(0,0,0,0.4);
     }
 
     .premium-cover h1 {
@@ -53,7 +44,6 @@
     .premium-cover .subtitle {
         color: #F0D68A;
         font-style: italic;
-        font-size: 0.9rem;
     }
 
     .premium-cover .author-line {
@@ -62,12 +52,10 @@
         border-top: 1px solid var(--ouro);
         display: inline-block;
         color: #F0D68A;
-        font-size: 0.85rem;
     }
 
-    /* METADADOS */
     .book-metadata {
-        background: var(--papel-sombra);
+        background: #e8dcca;
         padding: 10px 25px;
         display: flex;
         flex-wrap: wrap;
@@ -86,26 +74,22 @@
         color: #4A0E2E;
     }
 
-    /* CONTAINER DO PDF COM VISUALIZADOR AVANÇADO */
     .book-body {
         background: #1a1a2e;
         padding: 20px;
-        min-height: 800px;
-        position: relative;
-        box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+        min-height: 700px;
     }
 
-    /* IFRAME DO GOOGLE DRIVE EM MODO AVANÇADO */
-    .advanced-viewer {
+    /* VISUALIZADOR DO GOOGLE DRIVE - URL CORRETA */
+    .pdf-viewer {
         width: 100%;
-        height: 800px;
+        height: 750px;
         border: none;
-        background: #fff;
         border-radius: 8px;
-        box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+        background: #fff;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.3);
     }
 
-    /* BARRA DE FERRAMENTAS PERSONALIZADA */
     .book-toolbar {
         background: linear-gradient(135deg, #4A0E2E, #3A0A24);
         padding: 12px 25px;
@@ -114,8 +98,6 @@
         align-items: center;
         flex-wrap: wrap;
         gap: 12px;
-        border-top: 2px solid var(--ouro);
-        border-bottom: 1px solid rgba(212,175,55,0.3);
     }
 
     .tool-group {
@@ -125,7 +107,7 @@
     }
 
     .tool-btn {
-        background: var(--ouro-escuro);
+        background: #996515;
         border: none;
         color: #F0D68A;
         padding: 6px 16px;
@@ -140,7 +122,7 @@
     }
 
     .tool-btn:hover {
-        background: var(--ouro);
+        background: #D4AF37;
         color: #4A0E2E;
         transform: translateY(-2px);
     }
@@ -151,140 +133,36 @@
         border-radius: 30px;
         color: #F0D68A;
         font-size: 0.85rem;
-        font-family: monospace;
     }
 
-    /* MARCADOR FLUTUANTE */
-    .floating-tools {
+    /* TOAST */
+    .toast-notification {
         position: fixed;
-        right: 20px;
-        bottom: 100px;
-        display: flex;
-        flex-direction: column;
-        gap: 10px;
-        z-index: 1000;
-    }
-
-    .floating-btn {
-        background: linear-gradient(135deg, var(--ouro), var(--ouro-escuro));
-        width: 50px;
-        height: 50px;
-        border-radius: 50%;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        cursor: pointer;
-        transition: all 0.3s;
-        box-shadow: 0 4px 15px rgba(0,0,0,0.2);
-        border: none;
-    }
-
-    .floating-btn:hover {
-        transform: scale(1.1);
-        background: var(--ouro-claro);
-    }
-
-    .floating-btn i {
-        color: #4A0E2E;
-        font-size: 1.3rem;
-    }
-
-    /* PAINEL DE ANOTAÇÕES */
-    .notes-panel {
-        position: fixed;
-        right: -350px;
-        top: 0;
-        width: 350px;
-        height: 100vh;
-        background: var(--papel);
-        box-shadow: -5px 0 30px rgba(0,0,0,0.3);
-        transition: right 0.3s ease;
-        z-index: 1100;
-        display: flex;
-        flex-direction: column;
-        overflow: hidden;
-    }
-
-    .notes-panel.open {
-        right: 0;
-    }
-
-    .notes-header {
-        background: linear-gradient(135deg, #4A0E2E, #3A0A24);
-        padding: 15px;
-        color: var(--ouro);
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-    }
-
-    .notes-header h4 {
-        margin: 0;
-        font-size: 1.1rem;
-    }
-
-    .notes-body {
-        flex: 1;
-        padding: 15px;
-        overflow-y: auto;
-    }
-
-    .note-item {
-        background: #fff;
-        border-left: 3px solid var(--ouro);
-        padding: 10px;
-        margin-bottom: 10px;
-        border-radius: 8px;
-        box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-    }
-
-    .note-text {
+        bottom: 20px;
+        left: 50%;
+        transform: translateX(-50%);
+        background: #4A0E2E;
+        color: white;
+        padding: 10px 20px;
+        border-radius: 30px;
+        z-index: 2000;
         font-size: 0.85rem;
-        color: #333;
-        margin-bottom: 5px;
+        animation: fadeInOut 2.5s ease;
     }
 
-    .note-meta {
-        font-size: 0.7rem;
-        color: #999;
-    }
-
-    .note-actions {
-        margin-top: 5px;
-        display: flex;
-        gap: 10px;
-    }
-
-    .note-actions button {
-        background: none;
-        border: none;
-        cursor: pointer;
-        font-size: 0.7rem;
-        color: #999;
-    }
-
-    textarea.note-input {
-        width: 100%;
-        border: 1px solid #ddd;
-        border-radius: 8px;
-        padding: 8px;
-        font-size: 0.85rem;
-        resize: vertical;
-        margin-top: 10px;
-    }
-
-    /* MARCAÇÃO DE TEXTO (SIMULADA) */
-    .highlight {
-        background-color: yellow;
+    @keyframes fadeInOut {
+        0% { opacity: 0; transform: translateX(-50%) translateY(20px); }
+        15% { opacity: 1; transform: translateX(-50%) translateY(0); }
+        85% { opacity: 1; transform: translateX(-50%) translateY(0); }
+        100% { opacity: 0; transform: translateX(-50%) translateY(20px); }
     }
 
     @media (max-width: 768px) {
         .library-bg { padding: 15px; }
         .premium-cover h1 { font-size: 1.2rem; }
-        .advanced-viewer { height: 550px; }
-        .floating-tools { bottom: 20px; right: 10px; }
-        .floating-btn { width: 40px; height: 40px; }
-        .notes-panel { width: 100%; right: -100%; }
+        .pdf-viewer { height: 500px; }
+        .book-toolbar { flex-direction: column; }
+        .tool-group { justify-content: center; }
     }
 </style>
 {% endblock %}
@@ -314,19 +192,24 @@
                 <button id="fullscreenBtn" class="tool-btn"><i class="bi bi-arrows-fullscreen"></i> Tela cheia</button>
             </div>
             <div class="page-info" id="pageInfo">
-                <i class="bi bi-bookmark"></i> <span id="bookStatus">Visualização Google</span>
+                <i class="bi bi-bookmark"></i> <span id="bookStatus">Pronto para leitura</span>
             </div>
             <div class="tool-group">
                 <button id="shareBtn" class="tool-btn"><i class="bi bi-share"></i> Compartilhar</button>
+                <button id="bookmarkBtn" class="tool-btn"><i class="bi bi-bookmark-plus"></i> Marcar</button>
                 <a href="{{ url_for('download_material', material_id=material.id) }}" class="tool-btn"><i class="bi bi-download"></i> Baixar</a>
             </div>
         </div>
 
-        <!-- VISUALIZADOR AVANÇADO DO GOOGLE DRIVE -->
+        <!-- VISUALIZADOR DO PDF -->
         <div class="book-body">
-            <iframe class="advanced-viewer" 
-                    id="pdfViewer"
-                    src="https://drive.google.com/file/d/{{ material.google_drive_file_id or extract_file_id(material.arquivo_url) }}/preview?rm=minimal&embedded=true"
+            <div id="loadingArea" style="display: flex; justify-content: center; align-items: center; height: 750px; background: #fef9e8; border-radius: 8px; flex-direction: column; gap: 20px;">
+                <div style="width: 50px; height: 50px; border: 4px solid #D4AF37; border-top-color: #4A0E2E; border-radius: 50%; animation: spin 1s linear infinite;"></div>
+                <p style="color: #4A0E2E; font-family: 'Crimson Pro';">Carregando documento...</p>
+            </div>
+            <iframe id="pdfFrame" 
+                    class="pdf-viewer" 
+                    style="display: none;"
                     frameborder="0"
                     allow="fullscreen">
             </iframe>
@@ -334,80 +217,132 @@
     </div>
 </div>
 
-<!-- FERRAMENTAS FLUTUANTES -->
-<div class="floating-tools">
-    <button class="floating-btn" id="bookmarkBtn" title="Marcar página">
-        <i class="bi bi-bookmark-plus-fill"></i>
-    </button>
-    <button class="floating-btn" id="notesBtn" title="Anotações">
-        <i class="bi bi-pencil-square"></i>
-    </button>
-    <button class="floating-btn" id="searchBtn" title="Pesquisar">
-        <i class="bi bi-search"></i>
-    </button>
-</div>
-
-<!-- PAINEL DE ANOTAÇÕES -->
-<div class="notes-panel" id="notesPanel">
-    <div class="notes-header">
-        <h4><i class="bi bi-journal-bookmark-fill"></i> Minhas Anotações</h4>
-        <button id="closeNotesBtn" style="background: none; border: none; color: var(--ouro); font-size: 1.5rem; cursor: pointer;">&times;</button>
-    </div>
-    <div class="notes-body" id="notesList">
-        <div style="text-align: center; color: #999; padding: 20px;">
-            <i class="bi bi-journal"></i>
-            <p>Nenhuma anotação ainda</p>
-        </div>
-    </div>
-    <div style="padding: 15px; border-top: 1px solid #ddd;">
-        <textarea class="note-input" id="noteInput" rows="3" placeholder="Escreva sua anotação sobre este material..."></textarea>
-        <button id="saveNoteBtn" class="tool-btn" style="margin-top: 10px; width: 100%; justify-content: center;">
-            <i class="bi bi-save"></i> Salvar Anotação
-        </button>
-    </div>
-</div>
-
 <script>
     // ============================================
-    // VISUALIZADOR AVANÇADO COM FERRAMENTAS
+    // FUNÇÃO PARA EXTRAIR ID DO GOOGLE DRIVE
     // ============================================
-    
-    // Extrair ID do arquivo da URL
-    function extractFileId(url) {
-        const match = url.match(/\/file\/d\/([^\/]+)/);
-        return match ? match[1] : '';
+    function extractGoogleDriveId(url) {
+        if (!url) return null;
+        
+        // Padrões de URL do Google Drive
+        const patterns = [
+            /\/file\/d\/([a-zA-Z0-9_-]+)/,
+            /id=([a-zA-Z0-9_-]+)/,
+            /\/uc\?id=([a-zA-Z0-9_-]+)/,
+            /\/open\?id=([a-zA-Z0-9_-]+)/
+        ];
+        
+        for (const pattern of patterns) {
+            const match = url.match(pattern);
+            if (match) return match[1];
+        }
+        
+        // Se a URL já é um ID direto
+        if (url.match(/^[a-zA-Z0-9_-]{20,}$/)) return url;
+        
+        return null;
     }
     
-    // Elementos
+    // ============================================
+    // CONFIGURAR VISUALIZADOR
+    // ============================================
+    const pdfFrame = document.getElementById('pdfFrame');
+    const loadingArea = document.getElementById('loadingArea');
     const fullscreenBtn = document.getElementById('fullscreenBtn');
     const shareBtn = document.getElementById('shareBtn');
     const bookmarkBtn = document.getElementById('bookmarkBtn');
-    const notesBtn = document.getElementById('notesBtn');
-    const searchBtn = document.getElementById('searchBtn');
-    const notesPanel = document.getElementById('notesPanel');
-    const closeNotesBtn = document.getElementById('closeNotesBtn');
-    const saveNoteBtn = document.getElementById('saveNoteBtn');
-    const noteInput = document.getElementById('noteInput');
-    const notesList = document.getElementById('notesList');
     const bookStatus = document.getElementById('bookStatus');
-    const pdfViewer = document.getElementById('pdfViewer');
     
     let isFullscreen = false;
     const materialId = {{ material.id }};
     
-    // ========== MARCAR PÁGINA ==========
+    // Obter URL do PDF
+    let pdfUrl = "{{ material.arquivo_url }}";
+    const fileId = extractGoogleDriveId(pdfUrl);
+    
+    // Construir URL correta para o iframe
+    let embedUrl = '';
+    
+    if (fileId) {
+        // URL correta para embed do Google Drive
+        embedUrl = `https://drive.google.com/file/d/${fileId}/preview`;
+        console.log('✅ ID do arquivo detectado:', fileId);
+        console.log('📄 Embed URL:', embedUrl);
+    } else if (pdfUrl.includes('drive.google.com')) {
+        // Tenta extrair de qualquer forma
+        embedUrl = pdfUrl.replace('/view', '/preview').replace('?usp=sharing', '');
+        console.log('📄 Embed URL alternativa:', embedUrl);
+    } else {
+        // URL direta
+        embedUrl = pdfUrl;
+        console.log('📄 URL direta:', embedUrl);
+    }
+    
+    // Carregar o iframe
+    if (embedUrl) {
+        pdfFrame.src = embedUrl;
+        
+        pdfFrame.onload = function() {
+            loadingArea.style.display = 'none';
+            pdfFrame.style.display = 'block';
+            bookStatus.innerText = 'Documento carregado';
+            showToast('📖 Documento carregado com sucesso!', 'success');
+        };
+        
+        pdfFrame.onerror = function() {
+            loadingArea.innerHTML = `
+                <div style="text-align: center; padding: 40px;">
+                    <i class="bi bi-exclamation-triangle-fill" style="font-size: 3rem; color: #D4AF37;"></i>
+                    <h3 style="color: #4A0E2E; margin-top: 20px;">Erro ao carregar o PDF</h3>
+                    <p style="color: #666;">Verifique se o arquivo está compartilhado no Google Drive como "Qualquer pessoa com o link"</p>
+                    <div style="margin-top: 20px;">
+                        <a href="${embedUrl}" target="_blank" class="tool-btn" style="background: #4A0E2E; color: white;">
+                            <i class="bi bi-box-arrow-up-right"></i> Abrir diretamente
+                        </a>
+                        <a href="{{ url_for('download_material', material_id=material.id) }}" class="tool-btn">
+                            <i class="bi bi-download"></i> Baixar PDF
+                        </a>
+                    </div>
+                </div>
+            `;
+            bookStatus.innerText = 'Erro ao carregar';
+        };
+    } else {
+        loadingArea.innerHTML = `
+            <div style="text-align: center; padding: 40px;">
+                <i class="bi bi-filetype-pdf" style="font-size: 3rem; color: #D4AF37;"></i>
+                <h3 style="color: #4A0E2E; margin-top: 20px;">PDF disponível para download</h3>
+                <p style="color: #666;">Clique no botão abaixo para baixar o arquivo</p>
+                <a href="{{ url_for('download_material', material_id=material.id) }}" class="tool-btn" style="margin-top: 20px; background: #4A0E2E; color: white;">
+                    <i class="bi bi-download"></i> Baixar PDF
+                </a>
+            </div>
+        `;
+        bookStatus.innerText = 'Download disponível';
+    }
+    
+    // ========== FUNÇÕES ==========
+    function showToast(message, type = 'info') {
+        const toast = document.createElement('div');
+        toast.className = 'toast-notification';
+        toast.innerHTML = `<i class="bi bi-${type === 'success' ? 'check-circle' : 'bookmark-check'} me-2"></i>${message}`;
+        document.body.appendChild(toast);
+        setTimeout(() => toast.remove(), 2500);
+    }
+    
+    // Marcador de página
     function saveBookmark() {
         const scrollY = window.scrollY;
-        const page = Math.floor(scrollY / 800) + 1; // Estimativa simples
-        localStorage.setItem(`bookmark_${materialId}`, JSON.stringify({
-            page: page,
+        const data = {
             scrollY: scrollY,
-            date: new Date().toISOString()
-        }));
-        bookStatus.innerText = `Página ${page} salva! ✓`;
-        showToast('✅ Página marcada!', 'success');
+            date: new Date().toISOString(),
+            url: window.location.href
+        };
+        localStorage.setItem(`bookmark_${materialId}`, JSON.stringify(data));
+        showToast('✅ Posição salva! Volte aqui depois', 'success');
+        bookStatus.innerText = 'Posição salva!';
         setTimeout(() => {
-            bookStatus.innerText = 'Visualização Google';
+            bookStatus.innerText = 'Pronto para leitura';
         }, 2000);
     }
     
@@ -417,11 +352,11 @@
             const data = JSON.parse(saved);
             setTimeout(() => {
                 window.scrollTo(0, data.scrollY);
-                showToast(`📖 Retomando da página ${data.page}`, 'info');
-                bookStatus.innerText = `Página ${data.page}`;
+                showToast('📖 Retomando de onde você parou', 'info');
+                bookStatus.innerText = 'Retomando leitura...';
                 setTimeout(() => {
-                    bookStatus.innerText = 'Visualização Google';
-                }, 3000);
+                    bookStatus.innerText = 'Pronto para leitura';
+                }, 2000);
             }, 1000);
         }
     }
@@ -430,107 +365,7 @@
         bookmarkBtn.addEventListener('click', saveBookmark);
     }
     
-    // ========== ANOTAÇÕES ==========
-    function loadNotes() {
-        const notes = JSON.parse(localStorage.getItem(`notes_${materialId}`) || '[]');
-        if (notes.length === 0) {
-            notesList.innerHTML = `
-                <div style="text-align: center; color: #999; padding: 20px;">
-                    <i class="bi bi-journal"></i>
-                    <p>Nenhuma anotação ainda</p>
-                    <small>Adicione suas observações sobre este material</small>
-                </div>
-            `;
-            return;
-        }
-        
-        notesList.innerHTML = notes.reverse().map(note => `
-            <div class="note-item" data-id="${note.id}">
-                <div class="note-text">${escapeHtml(note.text)}</div>
-                <div class="note-meta">${new Date(note.date).toLocaleString()}</div>
-                <div class="note-actions">
-                    <button onclick="deleteNote(${note.id})"><i class="bi bi-trash"></i> Excluir</button>
-                </div>
-            </div>
-        `).join('');
-    }
-    
-    function saveNote() {
-        const text = noteInput.value.trim();
-        if (!text) {
-            showToast('✏️ Digite uma anotação primeiro', 'warning');
-            return;
-        }
-        
-        const notes = JSON.parse(localStorage.getItem(`notes_${materialId}`) || '[]');
-        const newNote = {
-            id: Date.now(),
-            text: text,
-            date: new Date().toISOString(),
-            page: Math.floor(window.scrollY / 800) + 1
-        };
-        notes.push(newNote);
-        localStorage.setItem(`notes_${materialId}`, JSON.stringify(notes));
-        noteInput.value = '';
-        loadNotes();
-        showToast('📝 Anotação salva!', 'success');
-    }
-    
-    function deleteNote(id) {
-        let notes = JSON.parse(localStorage.getItem(`notes_${materialId}`) || '[]');
-        notes = notes.filter(n => n.id !== id);
-        localStorage.setItem(`notes_${materialId}`, JSON.stringify(notes));
-        loadNotes();
-        showToast('🗑️ Anotação removida', 'info');
-    }
-    
-    function escapeHtml(text) {
-        const div = document.createElement('div');
-        div.textContent = text;
-        return div.innerHTML;
-    }
-    
-    // Exportar funções para o escopo global
-    window.deleteNote = deleteNote;
-    
-    if (notesBtn) {
-        notesBtn.addEventListener('click', () => {
-            notesPanel.classList.add('open');
-            loadNotes();
-        });
-    }
-    
-    if (closeNotesBtn) {
-        closeNotesBtn.addEventListener('click', () => {
-            notesPanel.classList.remove('open');
-        });
-    }
-    
-    if (saveNoteBtn) {
-        saveNoteBtn.addEventListener('click', saveNote);
-    }
-    
-    // Fechar painel clicando fora
-    notesPanel.addEventListener('click', (e) => {
-        if (e.target === notesPanel) {
-            notesPanel.classList.remove('open');
-        }
-    });
-    
-    // ========== PESQUISAR ==========
-    if (searchBtn) {
-        searchBtn.addEventListener('click', () => {
-            const searchTerm = prompt('🔍 Pesquisar no documento:', '');
-            if (searchTerm && searchTerm.trim()) {
-                // O iframe não permite busca direta, redireciona para o Google Drive
-                const fileId = extractFileId('{{ material.arquivo_url }}');
-                window.open(`https://drive.google.com/file/d/${fileId}/view?search=${encodeURIComponent(searchTerm)}`, '_blank');
-                showToast('🔎 Abrindo busca no Google Drive...', 'info');
-            }
-        });
-    }
-    
-    // ========== TELA CHEIA ==========
+    // Tela cheia
     function toggleFullscreen() {
         const bg = document.querySelector('.library-bg');
         if (!isFullscreen) {
@@ -562,7 +397,7 @@
         fullscreenBtn.addEventListener('click', toggleFullscreen);
     }
     
-    // ========== COMPARTILHAR ==========
+    // Compartilhar
     if (shareBtn) {
         shareBtn.addEventListener('click', () => {
             if (navigator.share) {
@@ -579,55 +414,23 @@
     
     function copyLink() {
         navigator.clipboard.writeText(window.location.href);
-        showToast('✅ Link copiado para a área de transferência!', 'success');
+        showToast('✅ Link copiado!', 'success');
     }
     
-    // ========== TOAST NOTIFICATION ==========
-    function showToast(message, type = 'info') {
-        const toast = document.createElement('div');
-        toast.style.cssText = `
-            position: fixed;
-            bottom: 20px;
-            left: 50%;
-            transform: translateX(-50%);
-            background: ${type === 'success' ? '#4A0E2E' : type === 'warning' ? '#996515' : '#2c3e50'};
-            color: white;
-            padding: 10px 20px;
-            border-radius: 30px;
-            z-index: 2000;
-            font-size: 0.85rem;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
-            animation: fadeInOut 2.5s ease;
-        `;
-        toast.innerHTML = `<i class="bi bi-${type === 'success' ? 'check-circle' : type === 'warning' ? 'exclamation-triangle' : 'info-circle'} me-2"></i>${message}`;
-        document.body.appendChild(toast);
-        
-        setTimeout(() => {
-            toast.remove();
-        }, 2500);
-    }
-    
-    // Adicionar animação
-    const style = document.createElement('style');
-    style.textContent = `
-        @keyframes fadeInOut {
-            0% { opacity: 0; transform: translateX(-50%) translateY(20px); }
-            15% { opacity: 1; transform: translateX(-50%) translateY(0); }
-            85% { opacity: 1; transform: translateX(-50%) translateY(0); }
-            100% { opacity: 0; transform: translateX(-50%) translateY(20px); }
+    // Esc para sair da tela cheia
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape' && isFullscreen) {
+            toggleFullscreen();
         }
-    `;
-    document.head.appendChild(style);
+    });
     
-    // ========== INICIALIZAÇÃO ==========
+    // Carregar marcador
     loadBookmark();
-    loadNotes();
     
     // Salvar posição ao sair
     window.addEventListener('beforeunload', () => {
         if (window.scrollY > 0) {
             localStorage.setItem(`bookmark_${materialId}`, JSON.stringify({
-                page: Math.floor(window.scrollY / 800) + 1,
                 scrollY: window.scrollY,
                 date: new Date().toISOString()
             }));
@@ -635,12 +438,3 @@
     });
 </script>
 {% endblock %}
-
-{# Adicionar filtro para extrair ID do Google Drive #}
-{% macro extract_file_id(url) %}
-    {% set match = url|regex_match('/file/d/([^/]+)') %}
-    {{ match|default('') }}
-{% endmacro %}
-
-{# Registrar filtro no Jinja2 #}
-{% set _ = app.jinja_env.filters.update({'extract_file_id': extract_file_id}) %}
