@@ -4176,10 +4176,12 @@ def dashboard():
             documentos_recentes = cursor.fetchall()
             
             # =========================================================
-            # CORREÇÃO: CANDIDATOS QUE AINDA NÃO SÃO OBREIROS
+            # CORREÇÃO: BUSCAR TODOS OS CANDIDATOS (INCLUINDO OS QUE JÁ VIRARAM OBREIROS)
             # =========================================================
             cursor.execute("""
                 SELECT c.*, 
+                       u.nome_completo as obreiro_nome,
+                       u.id as obreiro_id_convertido,
                        COALESCE(
                            (SELECT string_agg(s.sindicante, ',') 
                             FROM sindicancias s 
@@ -4187,14 +4189,17 @@ def dashboard():
                            ''
                        ) as sindicantes_enviados
                 FROM candidatos c
-                WHERE c.obreiro_id IS NULL  -- <-- FILTRO: exclui quem já virou obreiro
+                LEFT JOIN usuarios u ON c.obreiro_id = u.id
                 ORDER BY c.data_criacao DESC
             """)
-            candidatos = cursor.fetchall()
+            todos_candidatos = cursor.fetchall()
             
-            # ========== DOCUMENTOS STATUS APENAS PARA ESSES CANDIDATOS ==========
+            # ========== CANDIDATOS ATIVOS (QUE AINDA NÃO SÃO OBREIROS) ==========
+            candidatos_ativos = [c for c in todos_candidatos if c['obreiro_id'] is None]
+            
+            # ========== DOCUMENTOS STATUS APENAS PARA CANDIDATOS ATIVOS ==========
             documentos_status = {}
-            for candidato in candidatos:
+            for candidato in candidatos_ativos:
                 try:
                     cursor.execute("""
                         SELECT COUNT(*) as total
@@ -4224,7 +4229,7 @@ def dashboard():
             sindicantes = cursor.fetchall()
             
             total_sindicantes_ativos = len(sindicantes)
-            total_candidatos = len(candidatos)  # Agora só candidatos que não são obreiros
+            total_candidatos_ativos = len(candidatos_ativos)
             
             # ========== PARECERES CONCLUSIVOS ==========
             pareceres_conclusivos = []
@@ -4259,7 +4264,7 @@ def dashboard():
             ultimos_avisos = cursor.fetchall()
             
             # ============================================
-            # ADMIN VS NÃO-ADMIN (usando apenas candidatos não obreiros)
+            # ADMIN VS NÃO-ADMIN
             # ============================================
             if session["tipo"] == "admin":
                 em_analise = 0
@@ -4270,12 +4275,21 @@ def dashboard():
                 
                 sindicantes_set = {s["usuario"] for s in sindicantes}
                 
-                for c in candidatos:
-                    # Verificar status - usando os campos corretos
+                # CORREÇÃO: Contar TODOS os candidatos (incluindo os que já viraram obreiros)
+                for c in todos_candidatos:
                     status = c.get("status", "")
                     fechado = c.get("fechado", 0)
+                    obreiro_id = c.get("obreiro_id")
                     
-                    if status == "Em análise" and not fechado:
+                    # Verificar se é aprovado:
+                    # 1. Status = "Aprovado" OU
+                    # 2. Já tem obreiro_id (foi transformado em obreiro) OU
+                    # 3. Já foi convertido (obreiro_id_convertido não é nulo)
+                    if status == "Aprovado" or obreiro_id is not None or c.get('obreiro_id_convertido') is not None:
+                        aprovados += 1
+                    elif status == "Reprovado":
+                        reprovados += 1
+                    elif status == "Em análise" and not fechado:
                         em_analise += 1
                         enviados = c["sindicantes_enviados"].split(',') if c["sindicantes_enviados"] else []
                         faltam = [s for s in sindicantes_set if s not in enviados]
@@ -4285,11 +4299,8 @@ def dashboard():
                             dias = (datetime.now() - c["data_criacao"]).days
                             if dias > 7:  # Prazo de 7 dias
                                 prazo_vencido.append(dict(c))
-                    elif status == "Aprovado":
-                        aprovados += 1
-                    elif status == "Reprovado":
-                        reprovados += 1
                 
+                # Buscar próximas reuniões (apenas para admin)
                 cursor.execute("""
                     SELECT id, titulo, data, hora_inicio 
                     FROM reunioes 
@@ -4335,8 +4346,13 @@ def dashboard():
                 """, (session["usuario"],))
                 pareceres_dict = {p["candidato_id"]: p["parecer"] for p in cursor.fetchall()}
                 
-                for c in candidatos:
-                    if c["id"] in pareceres_dict:
+                # CORREÇÃO: Contar TODOS os candidatos para sindicante também
+                for c in todos_candidatos:
+                    obreiro_id = c.get("obreiro_id")
+                    # Se já virou obreiro, considera como aprovado
+                    if obreiro_id is not None or c.get('obreiro_id_convertido') is not None:
+                        aprovados += 1
+                    elif c["id"] in pareceres_dict:
                         if pareceres_dict[c["id"]] == "positivo":
                             aprovados += 1
                         else:
@@ -4344,12 +4360,21 @@ def dashboard():
                     elif not c.get("fechado", 0):
                         em_analise += 1
         
+        # ============================================
+        # DEBUG: Imprimir valores para verificação
+        # ============================================
+        print(f"📊 DASHBOARD - Totais:")
+        print(f"   Total candidatos (todos): {len(todos_candidatos)}")
+        print(f"   Aprovados: {aprovados}")
+        print(f"   Em análise: {em_analise}")
+        print(f"   Reprovados: {reprovados}")
+        
         # Conexão é fechada automaticamente ao sair do with
         
         return render_template(
             "dashboard.html",
             tipo=session["tipo"],
-            total_candidatos=total_candidatos,
+            total_candidatos=total_candidatos_ativos,
             total_sindicantes=total_sindicantes_ativos,
             total_obreiros=total_obreiros,
             mestres=mestres,
@@ -4365,7 +4390,7 @@ def dashboard():
             pendentes=pendentes,
             prazo_vencido=prazo_vencido,
             sindicantes=sindicantes,
-            candidatos=candidatos,
+            candidatos=candidatos_ativos,
             documentos_status=documentos_status,
             pareceres_conclusivos=pareceres_conclusivos,
             ultimos_avisos=ultimos_avisos,
