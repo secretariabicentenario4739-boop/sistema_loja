@@ -36,6 +36,12 @@ from openpyxl.styles import Font, Alignment, PatternFill
 from openpyxl.utils import get_column_letter
 from database import get_db, return_connection, get_db_connection
 from flask_login import LoginManager, login_required, current_user, login_user, logout_user
+from services import auth_permissions as authz
+from services import email_config_service
+from services import grau_service
+from services import notification_service
+from services import resend_service
+from services.scheduler_service import configure_and_start_scheduler
 
 # =============================
 # BLUEPRINT DA BIBLIOTECA
@@ -148,7 +154,8 @@ def require_grau(min_grau):
     def decorator(f):
         @wraps(f)
         def decorated_function(*args, **kwargs):
-            if 'usuario_id' not in session:
+            usuario_id = session.get('user_id') or session.get('usuario_id')
+            if not usuario_id:
                 flash('Faça login para acessar esta página', 'warning')
                 return redirect(url_for('login'))
             
@@ -157,7 +164,7 @@ def require_grau(min_grau):
                 return f(*args, **kwargs)
             
             # Usar cache para buscar grau
-            grau_usuario = _get_grau_usuario(session['usuario_id'])
+            grau_usuario = _get_grau_usuario(usuario_id)
             
             if grau_usuario < min_grau:
                 flash('Você não tem permissão para acessar este conteúdo', 'danger')
@@ -170,7 +177,7 @@ def require_grau(min_grau):
 def login_required(f):
     @wraps(f)
     def decorated_function(*args, **kwargs):
-        if "usuario" not in session:
+        if not session.get("user_id"):
             flash("Faça login para acessar esta página", "warning")
             return redirect("/")
         return f(*args, **kwargs)
@@ -179,7 +186,7 @@ def login_required(f):
 def admin_required(f):
     @wraps(f)
     def decorated_function(*args, **kwargs):
-        if "usuario" not in session or session.get("tipo") != "admin":
+        if not session.get("user_id") or session.get("tipo") != "admin":
             flash("Acesso restrito a administradores", "danger")
             return redirect("/dashboard")
         return f(*args, **kwargs)
@@ -188,7 +195,7 @@ def admin_required(f):
 def sindicante_required(f):
     @wraps(f)
     def decorated_function(*args, **kwargs):
-        if "usuario" not in session or session.get("tipo") != "sindicante":
+        if not session.get("user_id") or session.get("tipo") != "sindicante":
             flash("Acesso restrito a sindicantes", "danger")
             return redirect("/dashboard")
         return f(*args, **kwargs)
@@ -198,7 +205,7 @@ def nivel_required(nivel_minimo):
     def decorator(f):
         @wraps(f)
         def decorated_function(*args, **kwargs):
-            if "usuario" not in session:
+            if not session.get("user_id"):
                 flash("Faça login para acessar esta página", "warning")
                 return redirect("/")
             
@@ -220,7 +227,7 @@ def nivel_ata_required():
     def decorator(f):
         @wraps(f)
         def decorated_function(*args, **kwargs):
-            if "usuario" not in session:
+            if not session.get("user_id"):
                 flash("Faça login para acessar esta página", "warning")
                 return redirect("/")
             
@@ -247,79 +254,17 @@ def nivel_ata_required():
             return f(*args, **kwargs)
         return decorated_function
     return decorator
-    
-    
-def permissao_required(permissao_codigo):
-    def decorator(f):
-        @wraps(f)
-        def decorated_function(*args, **kwargs):
-            if not tem_permissao(permissao_codigo):
-                flash("Você não tem permissão para acessar esta página", "danger")
-                return redirect("/dashboard")
-            return f(*args, **kwargs)
-        return decorated_function
-    return decorator
 
-def tem_permissao(permissao_codigo):
-    """Verifica se o usuário logado tem determinada permissão"""
-    if 'user_id' not in session:
-        return False
-    
-    # Admin tem todas as permissões
-    if session.get('tipo') == 'admin':
-        return True
-    
-    # Mestres (grau >= 3) têm permissão para visualizar obreiros
-    if permissao_codigo == 'obreiro.view' and session.get('grau_atual', 0) >= 3:
-        return True
-    
-    return _verificar_permissao_db(permissao_codigo)
-
-def _verificar_permissao_db(codigo):
-    try:
-        cursor, conn = get_db()
-        cursor.execute("""
-            SELECT permitido
-            FROM permissoes_usuario pu
-            JOIN permissoes p ON pu.permissao_id = p.id
-            WHERE pu.usuario_id = %s AND p.codigo = %s
-        """, (session['user_id'], codigo))
-        result = cursor.fetchone()
-        if result:
-            return_connection(conn)
-            return result['permitido'] == 1
-        grau_atual = session.get('grau_atual', 1)
-        cursor.execute("""
-            SELECT COUNT(*) as total
-            FROM permissoes_grau pg
-            JOIN permissoes p ON pg.permissao_id = p.id
-            WHERE pg.grau_id = %s AND p.codigo = %s
-        """, (grau_atual, codigo))
-        result = cursor.fetchone()
-        return_connection(conn)
-        return result and result['total'] > 0
-    except Exception as e:
-        print(f"Erro ao verificar permissão: {e}")
-        return False    
-
-from functools import wraps
-
-def permissao_required(permissao_chave):
-    """Decorador para verificar permissão"""
-    def decorator(f):
-        @wraps(f)
-        def decorated_function(*args, **kwargs):
-            if 'user_id' not in session:
-                flash("Você precisa estar logado para acessar esta página.", "danger")
-                return redirect(url_for('login'))
-            
-            if verificar_permissao(session['user_id'], permissao_chave):
-                return f(*args, **kwargs)
-            else:
-                flash("Você não tem permissão para acessar esta página.", "danger")
-                return redirect(url_for('dashboard'))
-        return decorated_function
-    return decorator
+# Usa implementação modular de autenticação/permissão
+require_grau = authz.require_grau
+login_required = authz.login_required
+admin_required = authz.admin_required
+sindicante_required = authz.sindicante_required
+nivel_required = authz.nivel_required
+nivel_ata_required = authz.nivel_ata_required
+verificar_permissao = authz.verificar_permissao
+tem_permissao = authz.tem_permissao
+permissao_required = authz.permissao_required
 
 
 # =============================
@@ -1285,93 +1230,20 @@ def enviar_whatsapp(numero, mensagem):
         print(f"Erro ao abrir WhatsApp: {e}")
         return False
 def verificar_permissao(usuario_id, permissao_chave):
-    """Verifica se um usuário tem determinada permissão"""
-    cursor, conn = get_db()
-    
-    # Buscar grau e tipo do usuário
-    cursor.execute("SELECT grau_atual, tipo FROM usuarios WHERE id = %s", (usuario_id,))
-    usuario = cursor.fetchone()
-    
-    if not usuario:
-        return_connection(conn)
-        return False
-    
-    # Admin tem todas as permissões
-    if usuario['tipo'] == 'admin':
-        return_connection(conn)
-        return True
-    
-    # ✅ CORREÇÃO: Para graus >= 3, considerar como Mestre (grau 3)
-    grau_original = usuario['grau_atual']
-    if grau_original >= 3:
-        grau_efetivo = 3  # Mestres (grau 3, 4, 5, 6...) têm as mesmas permissões
-    else:
-        grau_efetivo = grau_original
-    
-    # Buscar permissão pelo chave
-    cursor.execute("SELECT id FROM permissoes WHERE chave = %s", (permissao_chave,))
-    permissao = cursor.fetchone()
-    
-    if not permissao:
-        return_connection(conn)
-        return False
-    
-    permissao_id = permissao['id']
-    
-    # Verificar bloqueio específico do usuário
-    try:
-        cursor.execute("""
-            SELECT permitido FROM permissoes_usuario 
-            WHERE usuario_id = %s AND permissao_id = %s
-        """, (usuario_id, permissao_id))
-        bloqueio = cursor.fetchone()
-        
-        if bloqueio and bloqueio['permitido'] == 0:
-            return_connection(conn)
-            return False
-    except:
-        # Se a coluna não existir, tentar com 'tipo'
-        try:
-            cursor.execute("""
-                SELECT tipo FROM permissoes_usuario 
-                WHERE usuario_id = %s AND permissao_id = %s
-            """, (usuario_id, permissao_id))
-            bloqueio = cursor.fetchone()
-            
-            if bloqueio and bloqueio['tipo'] == 0:
-                return_connection(conn)
-                return False
-        except:
-            pass
-    
-    # Verificar permissão por grau (usando grau efetivo)
-    cursor.execute("""
-        SELECT 1 FROM permissoes_grau 
-        WHERE grau_id = %s AND permissao_id = %s
-    """, (grau_efetivo, permissao_id))
-    tem_permissao = cursor.fetchone() is not None
-    
-    # Verificar permissão extra do usuário
-    if not tem_permissao:
-        try:
-            cursor.execute("""
-                SELECT 1 FROM permissoes_usuario 
-                WHERE usuario_id = %s AND permissao_id = %s AND permitido = 1
-            """, (usuario_id, permissao_id))
-            tem_permissao = cursor.fetchone() is not None
-        except:
-            try:
-                cursor.execute("""
-                    SELECT 1 FROM permissoes_usuario 
-                    WHERE usuario_id = %s AND permissao_id = %s AND tipo = 1
-                """, (usuario_id, permissao_id))
-                tem_permissao = cursor.fetchone() is not None
-            except:
-                pass
-    
-    return_connection(conn)
-    return tem_permissao
-    
+    """Verifica se um usuário tem determinada permissão."""
+    return authz.verificar_permissao(usuario_id, permissao_chave)
+
+
+def tem_permissao(permissao_chave):
+    """Verifica se o usuário logado tem determinada permissão."""
+    return authz.tem_permissao(permissao_chave)
+
+
+def permissao_required(permissao_chave):
+    """Decorador para verificar permissão pela chave da permissão."""
+    return authz.permissao_required(permissao_chave)
+
+
 def enviar_email_iniciacao_com_senha(email, nome, numero_placet, cim_numero, usuario, senha):
     """Envia e-mail de confirmação de iniciação com dados de acesso"""
     assunto = "🎉 Bem-vindo à ARLS Bicentenário - Sua Iniciação foi Registrada!"
@@ -1880,152 +1752,21 @@ def enviar_notificacao_reuniao_lembrete(participante, reuniao):
 
 def verificar_reunioes_e_enviar_notificacoes():
     """Verifica reuniões do dia seguinte e envia notificações"""
-    cursor, conn = get_db()
-    
-    try:
-        hoje = datetime.now().date()
-        amanha = hoje + timedelta(days=1)
-        
-        # Buscar reuniões agendadas para AMANHÃ
-        cursor.execute("""
-            SELECT r.*, l.nome as loja_nome
-            FROM reunioes r
-            LEFT JOIN lojas l ON r.loja_id = l.id
-            WHERE r.status = 'agendada'
-            AND r.data = %s
-            ORDER BY r.hora_inicio
-        """, (amanha,))
-        
-        reunioes_amanha = cursor.fetchall()
-        
-        total_notificados = 0
-        
-        for reuniao in reunioes_amanha:
-            # Buscar participantes que receberão o lembrete
-            cursor.execute("""
-                SELECT u.id, u.nome_completo, u.email, 
-                       COALESCE(nc.dias_antecedencia_reuniao, 1) as dias_antecedencia
-                FROM usuarios u
-                LEFT JOIN notificacoes_config nc ON u.id = nc.usuario_id
-                WHERE u.ativo = 1 
-                AND u.email IS NOT NULL 
-                AND u.email != ''
-            """)
-            participantes = cursor.fetchall()
-            
-            for participante in participantes:
-                # Verificar se o participante quer receber notificações com a antecedência configurada
-                dias_antecedencia = participante.get('dias_antecedencia', 1)
-                if dias_antecedencia >= 1:
-                    enviar_notificacao_reuniao_lembrete(participante, reuniao)
-                    total_notificados += 1
-        
-        return_connection(conn)
-        return {
-            'success': True,
-            'reunioes_amanha': len(reunioes_amanha),
-            'participantes_notificados': total_notificados
-        }
-        
-    except Exception as e:
-        print(f"Erro ao verificar reuniões: {e}")
-        import traceback
-        traceback.print_exc()
-        if conn:
-            return_connection(conn)
-        return {'success': False, 'error': str(e)}
+    return notification_service.verificar_reunioes_e_enviar_notificacoes(
+        get_db,
+        return_connection,
+        enviar_notificacao_reuniao_lembrete,
+    )
 
 def verificar_aniversarios_e_enviar_notificacoes():
     """Verifica aniversários do dia e envia notificações"""
-    cursor, conn = get_db()
-    
-    try:
-        hoje = datetime.now().date()
-        
-        # Buscar obreiros que fazem aniversário hoje
-        cursor.execute("""
-            SELECT u.id, u.nome_completo, u.email, u.telefone,
-                   nc.notificar_aniversario_obreiro
-            FROM usuarios u
-            LEFT JOIN notificacoes_config nc ON u.id = nc.usuario_id
-            WHERE EXTRACT(MONTH FROM u.data_nascimento) = %s
-              AND EXTRACT(DAY FROM u.data_nascimento) = %s
-              AND u.ativo = 1
-              AND u.data_nascimento IS NOT NULL
-        """, (hoje.month, hoje.day))
-        
-        obreiros_aniversariantes = cursor.fetchall()
-        
-        # Buscar familiares que fazem aniversário hoje
-        cursor.execute("""
-            SELECT f.id, f.nome, f.obreiro_id, f.grau_parentesco,
-                   u.nome_completo as obreiro_nome, u.email as obreiro_email,
-                   nc.notificar_aniversario_familiar
-            FROM familiares f
-            JOIN usuarios u ON f.obreiro_id = u.id
-            LEFT JOIN notificacoes_config nc ON u.id = nc.usuario_id
-            WHERE EXTRACT(MONTH FROM f.data_nascimento) = %s
-              AND EXTRACT(DAY FROM f.data_nascimento) = %s
-              AND f.ativo = 1
-              AND f.data_nascimento IS NOT NULL
-        """, (hoje.month, hoje.day))
-        
-        familiares_aniversariantes = cursor.fetchall()
-        
-        # Enviar notificações para obreiros aniversariantes
-        for obreiro in obreiros_aniversariantes:
-            if obreiro.get('notificar_aniversario_obreiro', 1):
-                titulo = f"🎂 Feliz Aniversário, {obreiro['nome_completo']}!"
-                mensagem = f"Neste dia especial, toda a Loja Maçônica celebra sua vida. Que a Sabedoria, Força e Beleza continuem guiando seus passos."
-                
-                registrar_notificacao_sistema(
-                    obreiro['id'], 
-                    titulo, 
-                    mensagem, 
-                    'aniversario_obreiro',
-                    '/obreiros/perfil'
-                )
-                
-                if obreiro.get('email'):
-                    enviar_email_aniversario_obreiro(obreiro['email'], obreiro['nome_completo'])
-        
-        # Enviar notificações para obreiros sobre aniversário de familiares
-        for familiar in familiares_aniversariantes:
-            if familiar.get('notificar_aniversario_familiar', 1):
-                titulo = f"🎂 Aniversário do Familiar: {familiar['nome']}"
-                mensagem = f"Hoje é aniversário de {familiar['nome']} ({familiar['grau_parentesco']}). Que este dia seja repleto de alegria para sua família."
-                
-                registrar_notificacao_sistema(
-                    familiar['obreiro_id'], 
-                    titulo, 
-                    mensagem, 
-                    'aniversario_familiar',
-                    '/familiares'
-                )
-                
-                if familiar.get('obreiro_email'):
-                    enviar_email_aniversario_familiar(
-                        familiar['obreiro_email'], 
-                        familiar['obreiro_nome'], 
-                        familiar['nome'], 
-                        familiar['grau_parentesco']
-                    )
-        
-        return_connection(conn)
-        return {
-            'success': True,
-            'obreiro_aniversariantes': len(obreiros_aniversariantes),
-            'familiar_aniversariantes': len(familiares_aniversariantes)
-        }
-        
-    except Exception as e:
-        print(f"Erro ao verificar aniversários: {e}")
-        import traceback
-        traceback.print_exc()
-        if conn:
-            conn.rollback()
-        return_connection(conn)
-        return {'success': False, 'error': str(e)}
+    return notification_service.verificar_aniversarios_e_enviar_notificacoes(
+        get_db,
+        return_connection,
+        registrar_notificacao_sistema,
+        enviar_email_aniversario_obreiro,
+        enviar_email_aniversario_familiar,
+    )
 
 def enviar_email_aniversario_obreiro(email, nome):
     """Envia e-mail de aniversário para obreiro"""
@@ -2079,34 +1820,7 @@ def enviar_email_aniversario_familiar(email, obreiro_nome, familiar_nome, parent
         
 def get_email_config():
     """Busca a configuração de e-mail ativa do banco"""
-    try:
-        cursor, conn = get_db()
-        cursor.execute("""
-            SELECT sender, sender_name, active 
-            FROM email_config 
-            WHERE active = 1 
-            LIMIT 1
-        """)
-        config = cursor.fetchone()
-        return_connection(conn)
-        
-        if config:
-            return {
-                'sender': config['sender'],
-                'sender_name': config['sender_name'] or 'Sistema Maçônico'
-            }
-        else:
-            # Configuração padrão
-            return {
-                'sender': 'contato@juramelo.com.br',
-                'sender_name': 'Sistema Maçônico'
-            }
-    except Exception as e:
-        print(f"Erro ao buscar config de e-mail: {e}")
-        return {
-            'sender': 'contato@juramelo.com.br',
-            'sender_name': 'Sistema Maçônico'
-        }      
+    return email_config_service.get_email_config(get_db, return_connection)
 
 # ============================================
 # CONFIGURAÇÃO DO GOOGLE DRIVE (VERSÃO CORRIGIDA)
@@ -2229,14 +1943,6 @@ def delete_from_google_drive(file_id):
 # AGENDADOR DE TAREFAS (SCHEDULER)
 # ============================================
 
-from apscheduler.schedulers.background import BackgroundScheduler
-from apscheduler.triggers.cron import CronTrigger
-import atexit
-from datetime import datetime
-
-# Criar scheduler
-scheduler = BackgroundScheduler()
-
 def executar_tarefas_diarias():
     """Executa todas as tarefas diárias: lembretes de reuniões e aniversários"""
     from datetime import datetime
@@ -2289,40 +1995,12 @@ def executar_lembretes_aniversarios():
 # ============================================
 # CONFIGURAR AGENDADORES
 # ============================================
-
-# Opção 1: Executar todas as tarefas diariamente às 08:00
-scheduler.add_job(
-    func=executar_tarefas_diarias,
-    trigger=CronTrigger(hour=8, minute=0),
-    id='tarefas_diarias',
-    replace_existing=True
+scheduler = configure_and_start_scheduler(
+    app,
+    executar_tarefas_diarias,
+    executar_lembretes_reunioes,
+    executar_lembretes_aniversarios,
 )
-
-# Opção 2: Executar lembretes de reuniões também às 18:00 (um dia antes)
-scheduler.add_job(
-    func=executar_lembretes_reunioes,
-    trigger=CronTrigger(hour=18, minute=0),
-    id='lembretes_reunioes_tarde',
-    replace_existing=True
-)
-
-# Opção 3: Executar verificação de aniversários às 06:00
-scheduler.add_job(
-    func=executar_lembretes_aniversarios,
-    trigger=CronTrigger(hour=6, minute=0),
-    id='lembretes_aniversarios',
-    replace_existing=True
-)
-
-# Iniciar scheduler
-scheduler.start()
-print("✅ Scheduler iniciado com sucesso!")
-print("   - Tarefas diárias: 08:00")
-print("   - Lembretes de reuniões: 18:00")
-print("   - Aniversários: 06:00")
-
-# Parar scheduler ao fechar a aplicação
-atexit.register(lambda: scheduler.shutdown())
 
 
 
@@ -2332,62 +2010,8 @@ def diagnostico_email():
     """Rota para diagnosticar problemas de e-mail"""
     if session.get('tipo') != 'admin':
         return "Acesso negado", 403
-    
-    resultados = {}
-    
-    # 1. Verificar configuração do Resend
-    import os
-    import resend
-    
-    resultados['resend_api_key'] = '✅ Configurada' if os.environ.get("RESEND_API_KEY") else '❌ NÃO CONFIGURADA'
-    resultados['resend_key_length'] = len(os.environ.get("RESEND_API_KEY", ''))
-    
-    # 2. Verificar configuração no banco
-    try:
-        cursor, conn = get_db()
-        cursor.execute("SELECT * FROM email_config WHERE active = 1")
-        config = cursor.fetchone()
-        if config:
-            resultados['email_config'] = {
-                'sender': config.get('sender'),
-                'sender_name': config.get('sender_name'),
-                'active': config.get('active')
-            }
-        else:
-            resultados['email_config'] = '❌ Nenhuma configuração ativa no banco'
-        return_connection(conn)
-    except Exception as e:
-        resultados['email_config'] = f'Erro: {str(e)}'
-    
-    # 3. Verificar tabelas necessárias
-    try:
-        cursor, conn = get_db()
-        cursor.execute("SHOW TABLES LIKE 'password_reset_tokens'")
-        tabela_tokens = cursor.fetchone()
-        resultados['tabela_password_reset_tokens'] = '✅ Existe' if tabela_tokens else '❌ NÃO EXISTE'
-        
-        cursor.execute("SHOW TABLES LIKE 'email_logs'")
-        tabela_logs = cursor.fetchone()
-        resultados['tabela_email_logs'] = '✅ Existe' if tabela_logs else '⚠️ Não existe (opcional)'
-        return_connection(conn)
-    except Exception as e:
-        resultados['tabelas'] = f'Erro: {str(e)}'
-    
-    # 4. Testar envio de e-mail simples
-    try:
-        resend.api_key = os.environ.get("RESEND_API_KEY")
-        test_params = {
-            "from": "onboarding@resend.dev",  # Domínio de teste do Resend
-            "to": ["seu-email@teste.com"],  # Substitua por um e-mail real para teste
-            "subject": "Teste Diagnóstico",
-            "html": "<p>Teste</p>"
-        }
-        # Não enviar realmente, apenas verificar se a configuração está OK
-        resultados['resend_config'] = '✅ Configuração OK'
-    except Exception as e:
-        resultados['resend_config'] = f'❌ Erro: {str(e)}'
-    
-    return jsonify(resultados)        
+    resultados = email_config_service.diagnostico_email_data(get_db, return_connection)
+    return jsonify(resultados)
 
 def executar_rotinas_diarias():
     """Executa todas as rotinas diárias (aniversários e lembretes)"""
@@ -2453,156 +2077,24 @@ def pode_ocupar_cargo(obreiro_id, cargo_id):
 # =====================
 
 def get_grau_principal(grau_nivel):
-    """Retorna a classificação principal do grau (para exibição em listas)"""
-    if grau_nivel == 1:
-        return "Aprendiz"
-    elif grau_nivel == 2:
-        return "Companheiro"
-    elif grau_nivel >= 3:
-        return "Mestre"
-    else:
-        return "Mestre"
+    """Retorna a classificação principal do grau (para exibição em listas)."""
+    return grau_service.get_grau_principal(grau_nivel)
 
 def get_grau_detalhado(grau_nivel):
-    """Retorna o nome detalhado do grau (para tooltips)"""
-    grau_map = {
-        1: "Aprendiz",
-        2: "Companheiro",
-        3: "Mestre",
-        4: "Mestre Instalado",
-        5: "Arquiteto Real",
-        6: "Soberano Grande Inspetor Geral",
-        7: "Mestre Perfeito",
-        8: "Eleito dos Nove",
-        9: "Mestre da Maçonaria Real",
-        10: "Cavaleiro Rosa-Cruz",
-        11: "Cavaleiro Kadosch",
-        12: "Grande Escocês",
-    }
-    return grau_map.get(grau_nivel, f"Grau Superior {grau_nivel}")
+    """Retorna o nome detalhado do grau (para tooltips)."""
+    return grau_service.get_grau_detalhado(grau_nivel)
 
 def get_grau_descricao(grau):
-    """Retorna a descrição do grau (mantido para compatibilidade)"""
-    if grau == 1:
-        return "Aprendiz"
-    elif grau == 2:
-        return "Companheiro"
-    elif grau == 3:
-        return "Mestre"
-    elif grau == 4:
-        return "Mestre Instalado"
-    elif grau == 5:
-        return "Mestre Inst. (5°)"
-    elif grau == 6:
-        return "Grau 6 - Superior"
-    elif grau >= 7:
-        return f"Grau Superior {grau}"
-    else:
-        return "Mestre"
+    """Retorna a descrição do grau (mantido para compatibilidade)."""
+    return grau_service.get_grau_descricao(grau)
 
 def get_grau_badge_class(grau_nivel):
-    """Retorna a classe CSS para o badge do grau"""
-    if grau_nivel == 1:
-        return 'bg-secondary'
-    elif grau_nivel == 2:
-        return 'bg-primary'
-    elif grau_nivel == 3:
-        return 'bg-warning text-dark'
-    elif grau_nivel >= 4:
-        return 'bg-info'
-    else:
-        return 'bg-secondary'
+    """Retorna a classe CSS para o badge do grau."""
+    return grau_service.get_grau_badge_class(grau_nivel)
 
 def get_grau_icon(grau_nivel):
-    """Retorna o ícone para o grau"""
-    if grau_nivel == 1 or grau_nivel == 2:
-        return 'bi bi-star'
-    elif grau_nivel >= 3:
-        return 'bi bi-star-fill'
-    else:
-        return 'bi bi-star'
-# =============================
-# FUNÇÕES DE PERMISSÃO
-# =============================
-
-def verificar_permissao(usuario_id, permissao_chave):
-    """Verifica se um usuário tem determinada permissão"""
-    cursor, conn = get_db()
-    
-    try:
-        # Buscar grau e tipo do usuário
-        cursor.execute("SELECT grau_atual, tipo FROM usuarios WHERE id = %s", (usuario_id,))
-        usuario = cursor.fetchone()
-        
-        if not usuario:
-            return_connection(conn)
-            return False
-        
-        # Admin tem todas as permissões
-        if usuario['tipo'] == 'admin':
-            return_connection(conn)
-            return True
-        
-        # Para graus >= 3, considerar como Mestre (grau 3)
-        grau_original = usuario['grau_atual']
-        if grau_original >= 3:
-            grau_efetivo = 3
-        else:
-            grau_efetivo = grau_original
-        
-        # Buscar permissão pelo chave
-        cursor.execute("SELECT id FROM permissoes WHERE chave = %s", (permissao_chave,))
-        permissao = cursor.fetchone()
-        
-        if not permissao:
-            return_connection(conn)
-            return False
-        
-        permissao_id = permissao['id']
-        
-        # Verificar permissão por grau
-        cursor.execute("""
-            SELECT 1 FROM permissoes_grau 
-            WHERE grau_id = %s AND permissao_id = %s
-        """, (grau_efetivo, permissao_id))
-        tem_permissao = cursor.fetchone() is not None
-        
-        return_connection(conn)
-        return tem_permissao
-        
-    except Exception as e:
-        print(f"Erro ao verificar permissão: {e}")
-        if conn:
-            return_connection(conn)
-        return False
-
-
-def tem_permissao(permissao_chave):
-    """Verifica se o usuário logado tem determinada permissão"""
-    if 'user_id' not in session:
-        return False
-    return verificar_permissao(session['user_id'], permissao_chave)
-
-
-def permissao_required(permissao_chave):
-    """Decorador para verificar permissão"""
-    from functools import wraps
-    
-    def decorator(f):
-        @wraps(f)
-        def decorated_function(*args, **kwargs):
-            if 'user_id' not in session:
-                flash("Você precisa estar logado para acessar esta página.", "danger")
-                return redirect(url_for('login'))
-            
-            if tem_permissao(permissao_chave):
-                return f(*args, **kwargs)
-            else:
-                flash("Você não tem permissão para acessar esta página.", "danger")
-                return redirect(url_for('dashboard'))
-        return decorated_function
-    return decorator
-
+    """Retorna o ícone para o grau."""
+    return grau_service.get_grau_icon(grau_nivel)
 # =============================
 # CONTEXTO GLOBAL
 # =============================
@@ -2619,16 +2111,6 @@ def inject_global():
         'get_grau_badge_class': get_grau_badge_class,
         'get_grau_icon': get_grau_icon
     }
-
-@app.context_processor
-def inject_permissions():
-    def tem_permissao(codigo):
-        if 'user_id' not in session:
-            return False
-        if session.get('tipo') == 'admin':
-            return True
-        return _verificar_permissao_db(codigo)
-    return {'tem_permissao': tem_permissao}
 
 @app.template_filter('markdown')
 
@@ -2719,6 +2201,7 @@ def login():
             session['usuario'] = user['usuario']
             session['tipo'] = user['tipo']
             session['grau_atual'] = user['grau_atual']
+            session['nivel_acesso'] = user['grau_atual']
             session['nome_completo'] = user['nome_completo']
             session['user_id'] = user['id']
             
@@ -5433,52 +4916,97 @@ def listar_obreiros():
     """Lista obreiros com filtros por nome, grau, cargo, loja e status"""
     cursor, conn = get_db()
     
-    # ============================================
-    # PERMISSÃO: Todos os obreiros podem visualizar a lista
-    # ============================================
-    
     # Obter parâmetros de filtro
     nome = request.args.get('nome', '').strip()
     grau = request.args.get('grau', '')
     cargo = request.args.get('cargo', '')
     loja = request.args.get('loja', '')
     status = request.args.get('status', 'ativos')
+    ano_filtro = request.args.get('ano', datetime.now().year)
     
-    # Construir query base
+    try:
+        ano_filtro = int(ano_filtro)
+    except:
+        ano_filtro = datetime.now().year
+    
+    # ============================================
+    # QUERY CORRIGIDA - SEM u.created_at
+    # ============================================
     query = """
-        SELECT DISTINCT u.*, 
-               l.nome as loja_nome_completo,
-               l.cidade as loja_cidade,
-               l.uf as loja_uf,
-               u.grau_atual as grau_nivel,
-               (SELECT COUNT(*) FROM ocupacao_cargos oc 
-                WHERE oc.obreiro_id = u.id AND oc.ativo = 1) as total_cargos_ativos,
-               (SELECT string_agg(c.nome, ', ') 
-                FROM ocupacao_cargos oc 
-                JOIN cargos c ON oc.cargo_id = c.id 
-                WHERE oc.obreiro_id = u.id AND oc.ativo = 1 
-                LIMIT 3) as cargos_atuais,
-               (SELECT data_inicio FROM ocupacao_cargos 
-                WHERE obreiro_id = u.id AND ativo = 1 
-                ORDER BY data_inicio DESC LIMIT 1) as data_ultimo_cargo,
-               (SELECT COUNT(*) FROM presenca p 
-                JOIN reunioes r ON p.reuniao_id = r.id 
-                WHERE p.obreiro_id = u.id 
-                AND r.status = 'realizada' 
-                AND EXTRACT(YEAR FROM r.data) = EXTRACT(YEAR FROM CURRENT_DATE)) as presencas_ano,
-               (SELECT COUNT(*) FROM presenca p 
-                JOIN reunioes r ON p.reuniao_id = r.id 
-                WHERE p.obreiro_id = u.id 
-                AND r.status = 'realizada' 
-                AND EXTRACT(YEAR FROM r.data) = EXTRACT(YEAR FROM CURRENT_DATE)
-                AND p.presente = 1) as presencas_confirmadas_ano
+        SELECT DISTINCT 
+            u.id,
+            u.usuario,
+            u.nome_completo,
+            u.nome_maconico,
+            u.email,
+            u.foto,
+            u.ativo,
+            u.grau_atual,
+            u.cim_numero,
+            u.loja_nome,
+            u.loja_numero,
+            u.loja_orient,
+            u.data_iniciacao,
+            l.nome as loja_nome_completo,
+            l.cidade as loja_cidade,
+            l.uf as loja_uf,
+            (SELECT COUNT(*) FROM ocupacao_cargos oc 
+             WHERE oc.obreiro_id = u.id AND oc.ativo = 1) as total_cargos_ativos,
+            (SELECT string_agg(c.nome, ', ') 
+             FROM ocupacao_cargos oc 
+             JOIN cargos c ON oc.cargo_id = c.id 
+             WHERE oc.obreiro_id = u.id AND oc.ativo = 1 
+             LIMIT 3) as cargos_atuais,
+            (SELECT data_inicio FROM ocupacao_cargos 
+             WHERE obreiro_id = u.id AND ativo = 1 
+             ORDER BY data_inicio DESC LIMIT 1) as data_ultimo_cargo,
+            -- Total de reuniões REALIZADAS no ano
+            (
+                SELECT COUNT(DISTINCT r.id)
+                FROM reunioes r
+                WHERE r.status = 'realizada' 
+                AND EXTRACT(YEAR FROM r.data) = %s
+            ) as total_reunioes_ano,
+            -- Presenças confirmadas do obreiro
+            (
+                SELECT COUNT(DISTINCT pr.reuniao_id)
+                FROM presenca_reuniao pr
+                JOIN reunioes r ON pr.reuniao_id = r.id
+                WHERE pr.obreiro_id = u.id 
+                AND pr.presente = TRUE
+                AND r.status = 'realizada'
+                AND EXTRACT(YEAR FROM r.data) = %s
+            ) as presencas_confirmadas_ano,
+            -- Ausências justificadas
+            (
+                SELECT COUNT(DISTINCT pr.reuniao_id)
+                FROM presenca_reuniao pr
+                JOIN reunioes r ON pr.reuniao_id = r.id
+                WHERE pr.obreiro_id = u.id 
+                AND pr.presente = FALSE
+                AND pr.tipo_ausencia IS NOT NULL
+                AND r.status = 'realizada'
+                AND EXTRACT(YEAR FROM r.data) = %s
+            ) as ausencias_justificadas,
+            -- Ausências injustificadas
+            (
+                SELECT COUNT(DISTINCT pr.reuniao_id)
+                FROM presenca_reuniao pr
+                JOIN reunioes r ON pr.reuniao_id = r.id
+                WHERE pr.obreiro_id = u.id 
+                AND pr.presente = FALSE
+                AND (pr.tipo_ausencia IS NULL OR pr.tipo_ausencia = '')
+                AND r.status = 'realizada'
+                AND EXTRACT(YEAR FROM r.data) = %s
+            ) as ausencias_injustificadas
         FROM usuarios u
         LEFT JOIN lojas l ON u.loja_nome = l.nome
         WHERE u.tipo IN ('obreiro', 'admin', 'sindicante')
     """
-    params = []
     
-    # Filtro por nome (nome completo ou usuário)
+    params = [ano_filtro, ano_filtro, ano_filtro, ano_filtro]
+    
+    # Filtro por nome
     if nome:
         query += " AND (u.nome_completo ILIKE %s OR u.usuario ILIKE %s)"
         params.extend([f"%{nome}%", f"%{nome}%"])
@@ -5518,15 +5046,28 @@ def listar_obreiros():
     else:
         query += " AND u.ativo = 1"
     
-    # Ordenação (alfabética por nome completo)
+    # Ordenação
     query += """
         ORDER BY 
+            u.ativo DESC,
+            u.grau_atual DESC,
             u.nome_completo ASC
     """
     
     # Executar query
     cursor.execute(query, params)
     obreiros = cursor.fetchall()
+    
+    # ============================================
+    # CALCULAR TOTAL DE REUNIÕES NO ANO
+    # ============================================
+    cursor.execute("""
+        SELECT COUNT(DISTINCT id) as total 
+        FROM reunioes 
+        WHERE status = 'realizada' 
+        AND EXTRACT(YEAR FROM data) = %s
+    """, (ano_filtro,))
+    total_reunioes_ano = cursor.fetchone()['total'] or 0
     
     # Converter para lista de dicionários
     obreiros_list = []
@@ -5539,11 +5080,21 @@ def listar_obreiros():
         obreiro['grau_badge_class'] = get_grau_badge_class(grau_nivel)
         obreiro['grau_icon'] = get_grau_icon(grau_nivel)
         
-        if obreiro.get('presencas_ano', 0) > 0:
-            percentual = (obreiro.get('presencas_confirmadas_ano', 0) / obreiro.get('presencas_ano', 1)) * 100
+        # Calcular percentual de presença
+        presencas = obreiro.get('presencas_confirmadas_ano', 0)
+        total_reunioes = obreiro.get('total_reunioes_ano', total_reunioes_ano)
+        
+        if total_reunioes > 0:
+            percentual = (presencas / total_reunioes) * 100
             obreiro['percentual_presenca'] = round(percentual, 1)
         else:
             obreiro['percentual_presenca'] = 0
+        
+        # Armazenar dados para o template
+        obreiro['presencas_ano'] = total_reunioes
+        obreiro['presencas_confirmadas_ano'] = presencas
+        obreiro['ausencias_justificadas'] = obreiro.get('ausencias_justificadas', 0)
+        obreiro['ausencias_injustificadas'] = obreiro.get('ausencias_injustificadas', 0)
         
         obreiro['status_class'] = 'table-success' if obreiro['ativo'] == 1 else 'table-secondary'
         obreiro['status_badge'] = 'success' if obreiro['ativo'] == 1 else 'secondary'
@@ -5555,33 +5106,26 @@ def listar_obreiros():
     # ESTATÍSTICAS GERAIS
     # ============================================
     
-    # Total de obreiros (considerando todos os tipos)
     cursor.execute("SELECT COUNT(*) as total FROM usuarios WHERE tipo IN ('obreiro', 'admin', 'sindicante')")
     total_obreiros = cursor.fetchone()['total']
     
-    # Total de ativos
     cursor.execute("SELECT COUNT(*) as total FROM usuarios WHERE tipo IN ('obreiro', 'admin', 'sindicante') AND ativo = 1")
     total_ativos = cursor.fetchone()['total']
     
-    # Total de inativos
     total_inativos = total_obreiros - total_ativos
     
-    # Mestres (grau >= 3)
     cursor.execute("SELECT COUNT(*) as total FROM usuarios WHERE tipo IN ('obreiro', 'admin', 'sindicante') AND ativo = 1 AND grau_atual >= 3")
     mestres = cursor.fetchone()['total']
     
-    # Companheiros (grau = 2)
     cursor.execute("SELECT COUNT(*) as total FROM usuarios WHERE tipo IN ('obreiro', 'admin', 'sindicante') AND ativo = 1 AND grau_atual = 2")
     companheiros = cursor.fetchone()['total']
     
-    # Aprendizes (grau = 1)
     cursor.execute("SELECT COUNT(*) as total FROM usuarios WHERE tipo IN ('obreiro', 'admin', 'sindicante') AND ativo = 1 AND grau_atual = 1")
     aprendizes = cursor.fetchone()['total']
     
-    # Taxa de ativos
     taxa_ativos = (total_ativos / total_obreiros * 100) if total_obreiros > 0 else 0
     
-    # Buscar dados para os filtros (dropdowns)
+    # Dados para os filtros
     cursor.execute("SELECT DISTINCT grau_atual as grau FROM usuarios WHERE grau_atual IS NOT NULL ORDER BY grau_atual")
     graus_raw = cursor.fetchall()
     
@@ -5602,9 +5146,15 @@ def listar_obreiros():
     
     return_connection(conn)
     
-    filtros = {'nome': nome, 'grau': grau, 'cargo': cargo, 'loja': loja, 'status': status}
+    filtros = {
+        'nome': nome, 
+        'grau': grau, 
+        'cargo': cargo, 
+        'loja': loja, 
+        'status': status,
+        'ano': ano_filtro
+    }
     
-    # Estatísticas completas para o template
     estatisticas = {
         'total_obreiros': total_obreiros,
         'total_ativos': total_ativos,
@@ -5614,7 +5164,8 @@ def listar_obreiros():
         'companheiros': companheiros,
         'aprendizes': aprendizes,
         'taxa_ativos': taxa_ativos,
-        'media_presenca': 0  # Pode ser calculado se necessário
+        'total_reunioes_ano': total_reunioes_ano,
+        'ano': ano_filtro
     }
     
     return render_template(
@@ -16579,106 +16130,21 @@ else:
 # FUNÇÃO PRINCIPAL DE ENVIO
 # =============================
 def enviar_email_resend(destinatario, assunto, conteudo_html, conteudo_texto=None):
-    """Envia e-mail usando a API do Resend"""
-    api_key = os.environ.get('RESEND_API_KEY', '')
-    
-    if not api_key:
-        print("❌ RESEND_API_KEY não configurada")
-        return {'success': False, 'message': 'API key não configurada'}
-    
-    # Verificar se o conteúdo HTML não está vazio
-    if not conteudo_html:
-        conteudo_html = "<p>Conteúdo do e-mail não disponível.</p>"
-    
-    url = "https://api.resend.com/emails"
-    
-    headers = {
-        "Authorization": f"Bearer {api_key}",
-        "Content-Type": "application/json"
-    }
-    
-    # IMPORTANTE: Usar domínio verificado (juramelo.com.br)
-    # NÃO usar gmail.com, hotmail.com, etc.
-    from_email = "ARLS Bicentenário <contato@juramelo.com.br>"
-    
-    data = {
-        "from": from_email,
-        "to": [destinatario],
-        "subject": assunto,
-        "html": conteudo_html
-    }
-    
-    if conteudo_texto:
-        data["text"] = conteudo_texto
-    
-    print(f"📧 Enviando e-mail para: {destinatario}")
-    print(f"📧 Assunto: {assunto}")
-    print(f"📧 From: {from_email}")
-    
-    try:
-        response = requests.post(url, headers=headers, json=data)
-        print(f"📧 Resposta Status: {response.status_code}")
-        
-        if response.status_code == 200:
-            result = response.json()
-            return {'success': True, 'message': 'E-mail enviado com sucesso', 'id': result.get('id')}
-        else:
-            return {'success': False, 'message': f'Erro {response.status_code}: {response.text}'}
-    except Exception as e:
-        print(f"❌ Exceção: {e}")
-        return {'success': False, 'message': str(e)}
+    """Envia e-mail usando a API do Resend."""
+    return resend_service.enviar_email_resend(destinatario, assunto, conteudo_html, conteudo_texto)
 
 
 # =============================
 # FUNÇÃO DE ENVIO PARA REUNIÕES (ÚNICA)
 # =============================
 def enviar_email_reuniao(destinatario, nome_destinatario, dados_reuniao):
-    """Envia e-mail de convocação para reunião via Resend usando templates"""
-    
-    reuniao_id = dados_reuniao.get('id', '')
-    assunto = f"📅 Convite: {dados_reuniao.get('titulo', 'Nova Reunião')} - ARLS Bicentenário"
-    
-    # Formatar horário
-    hora_termino = dados_reuniao.get('hora_termino')
-    horario = dados_reuniao.get('hora_inicio')
-    if hora_termino:
-        horario = f"{dados_reuniao.get('hora_inicio')} às {hora_termino}"
-    
-    dados_reuniao['horario_formatado'] = horario
-    link_reuniao = f"https://www.juramelo.com.br/reunioes/{reuniao_id}" if reuniao_id else "#"
-    dados_reuniao['link_reuniao'] = link_reuniao
-    
-    # Carrega o template HTML
-    try:
-        html_content = render_template('email/reuniao_agendada.html', 
-                                       nome=nome_destinatario, 
-                                       reuniao=dados_reuniao)
-    except Exception as e:
-        print(f"Erro ao carregar template HTML: {e}")
-        html_content = gerar_html_fallback(nome_destinatario, dados_reuniao)
-    
-    # Envia o e-mail via Resend
-    return enviar_email_resend(destinatario, assunto, html_content)
+    """Envia e-mail de convocação para reunião via Resend usando templates."""
+    return resend_service.enviar_email_reuniao(destinatario, nome_destinatario, dados_reuniao)
 
 
 def gerar_html_fallback(nome_destinatario, dados_reuniao):
-    """Fallback em caso de erro no template"""
-    return f"""
-    <!DOCTYPE html>
-    <html>
-    <head><meta charset="UTF-8"></head>
-    <body>
-        <h2>Olá {nome_destinatario},</h2>
-        <p>Você foi convidado para uma reunião:</p>
-        <p><strong>{dados_reuniao.get('titulo')}</strong></p>
-        <p>📅 Data: {dados_reuniao.get('data')}</p>
-        <p>⏰ Horário: {dados_reuniao.get('horario_formatado')}</p>
-        <p>📍 Local: {dados_reuniao.get('local')}</p>
-        <p>🔗 Link: <a href="{dados_reuniao.get('link_reuniao')}">Ver detalhes</a></p>
-        <p>Atenciosamente,<br>Secretaria do Sistema Maçônico</p>
-    </body>
-    </html>
-    """
+    """Fallback em caso de erro no template."""
+    return resend_service.gerar_html_fallback(nome_destinatario, dados_reuniao)
 
 
 # =============================
@@ -16687,41 +16153,13 @@ def gerar_html_fallback(nome_destinatario, dados_reuniao):
 @app.route("/config/email", methods=["GET", "POST"])
 @admin_required
 def config_email():
-    cursor, conn = get_db()
-    
     if request.method == "POST":
-        server = request.form.get("server", "")
-        port = request.form.get("port", "")
-        use_tls = 1 if request.form.get("use_tls") else 0
-        username = request.form.get("username", "")
-        password = request.form.get("password", "")
-        sender = request.form.get("sender", EMAIL_FROM_DEFAULT)
-        sender_name = request.form.get("sender_name", "Sistema Maçônico")
-        active = 1 if request.form.get("active") else 0
-        
-        if not sender:
-            flash("Preencha o e-mail remetente", "danger")
-        else:
-            try:
-                if active:
-                    cursor.execute("UPDATE email_settings SET active = 0")
-                
-                cursor.execute("""
-                    INSERT INTO email_settings 
-                    (server, port, use_tls, username, password, sender, sender_name, active)
-                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
-                """, (server, port, use_tls, username, password, sender, sender_name, active))
-                
-                conn.commit()
-                flash("Configuração de e-mail salva com sucesso! (Usando Resend)", "success")
-            except Exception as e:
-                flash(f"Erro ao salvar configuração: {str(e)}", "danger")
-                conn.rollback()
-    
-    cursor.execute("SELECT * FROM email_settings WHERE active = 1 ORDER BY id DESC LIMIT 1")
-    config = cursor.fetchone()
-    return_connection(conn)
-    
+        resultado = email_config_service.salvar_config_email(
+            get_db, return_connection, request.form, EMAIL_FROM_DEFAULT
+        )
+        flash(resultado["message"], resultado["category"])
+
+    config = email_config_service.carregar_config_email_ativa(get_db, return_connection)
     return render_template("admin/config_email.html", config=config)
 
 
@@ -16742,42 +16180,8 @@ def testar_email():
         return redirect("/config/email")
     
     assunto = "✅ Teste de Configuração - ARLS Bicentenário"
-    
-    dados_template = {
-        'nome': 'Irmão',
-        'remetente': 'contato@juramelo.com.br',
-        'nome_remetente': 'ARLS Bicentenário',
-        'data_hora': datetime.now().strftime('%d/%m/%Y %H:%M:%S'),
-        'ano': datetime.now().year
-    }
-    
-    # DEBUG: Verificar se o arquivo do template existe
-    import os
-    template_path = os.path.join('templates', 'email', 'teste.html')
-    print(f"🔍 Verificando template em: {template_path}")
-    print(f"📁 Arquivo existe? {os.path.exists(template_path)}")
-    
-    try:
-        conteudo_html = render_template('email/teste.html', **dados_template)
-        print(f"✅ Template carregado com sucesso! Tamanho: {len(conteudo_html)} caracteres")
-        print(f"📧 Primeiros 200 caracteres do HTML: {conteudo_html[:200]}...")
-    except Exception as e:
-        print(f"❌ Erro ao carregar template: {e}")
-        import traceback
-        traceback.print_exc()
-        # Fallback
-        conteudo_html = f"""
-        <!DOCTYPE html>
-        <html>
-        <head><meta charset="UTF-8"></head>
-        <body>
-            <h2>✅ Teste de E-mail</h2>
-            <p>Olá, esta é uma mensagem de teste do Sistema Maçônico.</p>
-            <p>Data: {dados_template['data_hora']}</p>
-        </body>
-        </html>
-        """
-    
+    conteudo_html = email_config_service.montar_email_teste_html(render_template)
+
     resultado = enviar_email_resend(
         destinatario=email_teste,
         assunto=assunto,
