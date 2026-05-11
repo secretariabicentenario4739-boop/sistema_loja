@@ -12090,118 +12090,6 @@ def visualizar_processo_candidato(candidato_id):
         flash(f"Erro ao carregar processo: {str(e)}", "danger")
         return redirect("/candidatos")
 
-#atualizar o banco
-
-@app.route("/admin/verificar-tabelas-sistema")
-@login_required
-def verificar_tabelas_sistema():
-    """Verifica apenas as tabelas do sistema de candidatos/obreiros"""
-    if session.get('tipo') != 'admin':
-        return "Acesso negado", 403
-    
-    html = """
-    <!DOCTYPE html>
-    <html>
-    <head>
-        <title>Verificação de Tabelas do Sistema</title>
-        <style>
-            body { font-family: Arial, sans-serif; margin: 20px; }
-            .existe { color: green; font-weight: bold; }
-            .nao-existe { color: red; font-weight: bold; }
-            table { border-collapse: collapse; width: 100%; margin-top: 20px; }
-            th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
-            th { background-color: #f2f2f2; }
-        </style>
-    </head>
-    <body>
-        <h1>Verificação de Tabelas do Sistema</h1>
-    """
-    
-    try:
-        cursor, conn = get_db()
-        
-        # Tabelas que realmente precisamos
-        tabelas = [
-            'candidatos',
-            'usuarios', 
-            'lojas',
-            'pareceres_conclusivos',
-            'sindicantes_candidato',
-            'placet_iniciacao',
-            'fluxo_iniciacao',
-            'votacao_candidato',
-            'leituras_loja',
-            'historico_graus',
-            'password_reset_tokens',
-            'email_logs'
-        ]
-        
-        html += '<table>'
-        html += '<tr><th>Tabela</th><th>Status</th><th>Registros</th></tr>'
-        
-        for tabela in tabelas:
-            try:
-                # Verificar se a tabela existe
-                cursor.execute("""
-                    SELECT EXISTS (
-                        SELECT FROM information_schema.tables 
-                        WHERE table_schema = 'public' 
-                        AND table_name = %s
-                    )
-                """, (tabela,))
-                existe = cursor.fetchone()[0]
-                
-                # Contar registros se existir
-                registros = 0
-                if existe:
-                    try:
-                        cursor.execute(f"SELECT COUNT(*) as total FROM {tabela}")
-                        result = cursor.fetchone()
-                        registros = result[0] if result else 0
-                    except Exception as e:
-                        registros = f"Erro: {str(e)[:30]}"
-                
-                status = "✅ Existe" if existe else "❌ NÃO EXISTE"
-                status_class = "existe" if existe else "nao-existe"
-                
-                html += f"""
-                    <tr>
-                        <td><strong>{tabela}</strong></td>
-                        <td class="{status_class}">{status}</td>
-                        <td>{registros}</td>
-                    </tr>
-                """
-            except Exception as e:
-                html += f"""
-                    <tr>
-                        <td><strong>{tabela}</strong></td>
-                        <td class="nao-existe">❌ Erro ao verificar</td>
-                        <td>{str(e)[:50]}</td>
-                    </tr>
-                """
-        
-        html += '</table>'
-        
-        # Verificar tabelas faltantes
-        html += """
-        <div style="margin-top: 30px;">
-            <h3>Ações:</h3>
-            <ul>
-                <li><a href="/admin/criar-tabelas-sistema">Criar tabelas faltantes</a></li>
-                <li><a href="/dashboard">Voltar ao Dashboard</a></li>
-            </ul>
-        </div>
-        """
-        
-        return_connection(conn)
-        
-    except Exception as e:
-        html += f'<p style="color:red">❌ Erro na conexão: {str(e)}</p>'
-    
-    html += '</body></html>'
-    return html
-        
-  
 
 # =============================
 # ROTAS DE CANDIDATOS E SINDICÂNCIA
@@ -12451,7 +12339,7 @@ def admin_designar_sindicantes():
                           sindicantes=sindicantes, 
                           documentos_status=documentos_status,
                           lojas=lojas,
-                          tipo=session.get("tipo", "admin"))
+                          tipo=session.get("tipo", "admin"))                       
 
 @app.route("/candidatos/excluir/<int:id>", methods=["POST"])
 def excluir_candidato(id):
@@ -13392,6 +13280,178 @@ def salvar_parecer_conclusivo(id):
         # ============================================
         # VERIFICAR SE TODOS OS SINDICANTES JÁ VOTARAM
         # ============================================
+        
+        # Total de sindicantes ativos
+        cursor.execute("SELECT COUNT(*) as total FROM usuarios WHERE tipo = 'sindicante' AND ativo = 1")
+        total_sindicantes = cursor.fetchone()["total"]
+        
+        # Total de pareceres conclusivos já emitidos
+        cursor.execute("SELECT COUNT(*) as votos FROM pareceres_conclusivos WHERE candidato_id = %s", (id,))
+        votos = cursor.fetchone()["votos"]
+        
+        # Se todos já votaram, encerrar a sindicância
+        if votos >= total_sindicantes and total_sindicantes > 0:
+            # Calcular resultado
+            cursor.execute("""
+                SELECT 
+                    COUNT(CASE WHEN conclusao = 'APROVADO' THEN 1 END) as positivos,
+                    COUNT(CASE WHEN conclusao = 'REPROVADO' THEN 1 END) as negativos
+                FROM pareceres_conclusivos 
+                WHERE candidato_id = %s
+            """, (id,))
+            res = cursor.fetchone()
+            
+            positivos = res["positivos"] if res else 0
+            negativos = res["negativos"] if res else 0
+            
+            status = "Aprovado" if positivos > negativos else "Reprovado"
+            agora_fechamento = datetime.now()
+            
+            cursor.execute("""
+                UPDATE candidatos 
+                SET status = %s, fechado = 1, data_fechamento = %s, resultado_final = %s
+                WHERE id = %s
+            """, (status, agora_fechamento, f"{positivos} votos positivos, {negativos} negativos", id))
+            
+            conn.commit()
+            registrar_log("fechar_sindicancia", "sindicancia", id, dados_novos={"status": status})
+            flash(f"🎉 Sindicância encerrada! Resultado: {status}", "success")
+        else:
+            flash("Parecer conclusivo salvo com sucesso!", "success")
+        
+    except Exception as e:
+        conn.rollback()
+        print(f"Erro ao salvar parecer: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        flash(f"Erro ao salvar parecer: {str(e)}", "danger")
+    
+    finally:
+        return_connection(conn)
+    
+    return redirect(f"/sindicancia/{id}")
+        
+# ============================================
+# ROTAS PARA DOCUMENTOS DO PARECER CONCLUSIVO
+# ============================================
+
+@app.route("/parecer/<int:candidato_id>/upload-documentos", methods=['POST'])
+@login_required
+def upload_documentos_parecer(candidato_id):
+    """Upload de documentos anexos ao parecer conclusivo"""
+    if session.get('tipo') not in ['admin', 'sindicante']:
+        return jsonify({'success': False, 'error': 'Permissão negada'}), 403
+    
+    if 'documentos[]' not in request.files:
+        return jsonify({'success': False, 'error': 'Nenhum arquivo enviado'}), 400
+    
+    arquivos = request.files.getlist('documentos[]')
+    documentos_upload = []
+    
+    for arquivo in arquivos:
+        if arquivo and arquivo.filename:
+            # Validar extensão
+            extensao = arquivo.filename.rsplit('.', 1)[1].lower() if '.' in arquivo.filename else ''
+            allowed = ['pdf', 'jpg', 'jpeg', 'png', 'doc', 'docx']
+            
+            if extensao not in allowed:
+                continue
+            
+            # Upload para Cloudinary
+            try:
+                import cloudinary.uploader
+                import uuid
+                from werkzeug.utils import secure_filename
+                
+                nome_base = uuid.uuid4().hex
+                nome_arquivo = secure_filename(arquivo.filename)
+                nome_publico = f"{nome_base}_{nome_arquivo}"
+                
+                upload_result = cloudinary.uploader.upload(
+                    arquivo,
+                    folder=f"pareceres/candidato_{candidato_id}",
+                    resource_type="auto",
+                    public_id=nome_publico,
+                    use_filename=True,
+                    unique_filename=True
+                )
+                
+                url_arquivo = upload_result.get('secure_url')
+                public_id = upload_result.get('public_id')
+                tamanho = upload_result.get('bytes', 0)
+                
+                cursor, conn = get_db()
+                cursor.execute("""
+                    INSERT INTO documentos_parecer (candidato_id, sindicante_id, nome_arquivo, caminho_arquivo, public_id, tipo_arquivo, tamanho)
+                    VALUES (%s, %s, %s, %s, %s, %s, %s)
+                """, (candidato_id, session['user_id'], nome_arquivo, url_arquivo, public_id, extensao, tamanho))
+                conn.commit()
+                return_connection(conn)
+                
+                documentos_upload.append({'success': True, 'nome': nome_arquivo})
+                
+            except Exception as e:
+                print(f"Erro no upload: {e}")
+                continue
+    
+    if documentos_upload:
+        return jsonify({'success': True, 'message': f'{len(documentos_upload)} documento(s) enviado(s)'})
+    else:
+        return jsonify({'success': False, 'error': 'Nenhum arquivo válido enviado'}), 400
+
+
+@app.route("/parecer/<int:candidato_id>/documentos")
+@login_required
+def listar_documentos_parecer(candidato_id):
+    """Lista documentos anexados ao parecer"""
+    try:
+        cursor, conn = get_db()
+        cursor.execute("""
+            SELECT id, nome_arquivo, caminho_arquivo, tipo_arquivo, tamanho, data_upload
+            FROM documentos_parecer
+            WHERE candidato_id = %s
+            ORDER BY data_upload DESC
+        """, (candidato_id,))
+        documentos = cursor.fetchall()
+        return_connection(conn)
+        
+        return jsonify({'success': True, 'documentos': [dict(d) for d in documentos]})
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+
+@app.route("/parecer/documento/<int:doc_id>/remover", methods=['DELETE'])
+@login_required
+def remover_documento_parecer(doc_id):
+    """Remove documento anexado ao parecer"""
+    if session.get('tipo') not in ['admin', 'sindicante']:
+        return jsonify({'success': False, 'error': 'Permissão negada'}), 403
+    
+    try:
+        cursor, conn = get_db()
+        
+        cursor.execute("SELECT public_id FROM documentos_parecer WHERE id = %s", (doc_id,))
+        doc = cursor.fetchone()
+        
+        if doc and doc.get('public_id'):
+            try:
+                import cloudinary.uploader
+                cloudinary.uploader.destroy(doc['public_id'], resource_type="raw")
+            except Exception as e:
+                print(f"Erro ao remover do Cloudinary: {e}")
+        
+        cursor.execute("DELETE FROM documentos_parecer WHERE id = %s", (doc_id,))
+        conn.commit()
+        return_connection(conn)
+        
+        return jsonify({'success': True})
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500        
+        
+        
+# ============================================
+# VERIFICAR SE TODOS OS SINDICANTES JÁ VOTARAM
+# ============================================
         
         # Total de sindicantes ativos
         cursor.execute("SELECT COUNT(*) as total FROM usuarios WHERE tipo = 'sindicante' AND ativo = 1")

@@ -2,6 +2,102 @@
 
 {% block title %}Parecer Conclusivo - {{ candidato.nome }}{% endblock %}
 
+{% block styles %}
+{{ super() }}
+<style>
+    .card {
+        border-radius: 10px;
+        overflow: hidden;
+    }
+    .card-header {
+        font-weight: 600;
+    }
+    .info-item {
+        border-bottom: 1px solid #eee;
+        padding-bottom: 8px;
+    }
+    .info-label {
+        font-size: 0.75rem;
+    }
+    .info-value {
+        font-size: 0.9rem;
+    }
+    .form-control:focus, .form-select:focus {
+        border-color: #0d6efd;
+        box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.25);
+    }
+    textarea {
+        font-family: monospace;
+        font-size: 14px;
+    }
+    .documento-card {
+        background: #f8f9fa;
+        border-radius: 8px;
+        padding: 10px;
+        margin-bottom: 10px;
+        transition: all 0.3s;
+    }
+    .documento-card:hover {
+        background: #e9ecef;
+        transform: translateX(5px);
+    }
+    .documento-card .documento-nome {
+        font-size: 0.85rem;
+        font-weight: 500;
+        word-break: break-all;
+    }
+    .documento-card .documento-tamanho {
+        font-size: 0.7rem;
+        color: #6c757d;
+    }
+    .documento-card i {
+        font-size: 1.5rem;
+        margin-right: 10px;
+    }
+    .upload-area {
+        border: 2px dashed #dee2e6;
+        border-radius: 8px;
+        padding: 20px;
+        text-align: center;
+        cursor: pointer;
+        transition: all 0.3s;
+    }
+    .upload-area:hover {
+        border-color: #0d6efd;
+        background: rgba(13, 110, 253, 0.05);
+    }
+    .upload-area.dragover {
+        border-color: #28a745;
+        background: rgba(40, 167, 69, 0.05);
+    }
+    .progress {
+        height: 5px;
+        border-radius: 10px;
+        margin-top: 10px;
+    }
+    .btn-documento {
+        background: #0d6efd;
+        color: white;
+        border: none;
+        padding: 4px 10px;
+        border-radius: 20px;
+        font-size: 0.7rem;
+        cursor: pointer;
+        transition: all 0.3s;
+    }
+    .btn-documento:hover {
+        background: #0b5ed7;
+        transform: scale(1.05);
+    }
+    .btn-documento-danger {
+        background: #dc3545;
+    }
+    .btn-documento-danger:hover {
+        background: #bb2d3b;
+    }
+</style>
+{% endblock %}
+
 {% block content %}
 <div class="container-fluid py-4">
     <div class="container">
@@ -35,7 +131,7 @@
                         <h5 class="mb-0"><i class="bi bi-pencil-square"></i> Emitir Parecer Conclusivo</h5>
                     </div>
                     <div class="card-body">
-                        <form method="POST" action="/salvar_parecer_conclusivo/{{ candidato.id }}">
+                        <form method="POST" action="/salvar_parecer_conclusivo/{{ candidato.id }}" id="formParecer">
                             <!-- Dados do Sindicante -->
                             <div class="card mb-3">
                                 <div class="card-header bg-light">
@@ -214,7 +310,7 @@
 
             <div class="col-md-4">
                 <!-- Card de Informações -->
-                <div class="card shadow">
+                <div class="card shadow mb-3">
                     <div class="card-header bg-info text-white">
                         <h5 class="mb-0"><i class="bi bi-info-circle"></i> Informações</h5>
                     </div>
@@ -247,6 +343,80 @@
                                 <li>Justifique sua conclusão</li>
                                 <li>O parecer será arquivado para consulta futura</li>
                             </ul>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- NOVO CARD: Documentos Anexados -->
+                <div class="card shadow">
+                    <div class="card-header bg-success text-white">
+                        <h5 class="mb-0"><i class="bi bi-paperclip"></i> Documentos Anexados</h5>
+                    </div>
+                    <div class="card-body">
+                        <!-- Lista de documentos existentes -->
+                        <div id="listaDocumentos">
+                            {% if documentos_anexados %}
+                                {% for doc in documentos_anexados %}
+                                <div class="documento-card" id="doc-{{ doc.id }}">
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <div class="d-flex align-items-center">
+                                            {% if doc.tipo_arquivo in ['jpg', 'jpeg', 'png', 'gif'] %}
+                                                <i class="bi bi-file-image text-primary"></i>
+                                            {% elif doc.tipo_arquivo == 'pdf' %}
+                                                <i class="bi bi-file-pdf text-danger"></i>
+                                            {% elif doc.tipo_arquivo in ['doc', 'docx'] %}
+                                                <i class="bi bi-file-word text-primary"></i>
+                                            {% else %}
+                                                <i class="bi bi-file-earmark text-secondary"></i>
+                                            {% endif %}
+                                            <div>
+                                                <div class="documento-nome">{{ doc.nome_arquivo or doc.nome or 'Documento' }}</div>
+                                                <div class="documento-tamanho">
+                                                    {% if doc.tamanho %}
+                                                        {{ (doc.tamanho / 1024)|round(1) }} KB
+                                                    {% else %}
+                                                        -
+                                                    {% endif %}
+                                                    • {{ doc.data_upload.strftime('%d/%m/%Y') if doc.data_upload else '' }}
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div>
+                                            <a href="{{ doc.caminho_arquivo or doc.url }}" class="btn-documento" target="_blank" title="Visualizar">
+                                                <i class="bi bi-eye"></i>
+                                            </a>
+                                            <button type="button" class="btn-documento btn-documento-danger" onclick="removerDocumento({{ doc.id }}, '{{ doc.nome_arquivo }}')" title="Remover">
+                                                <i class="bi bi-trash"></i>
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            {% else %}
+                                <div class="text-center text-muted py-3" id="semDocumentosMsg">
+                                    <i class="bi bi-folder2-open" style="font-size: 2rem;"></i>
+                                    <p class="mt-2 mb-0">Nenhum documento anexado ainda</p>
+                                    <small>Clique na área abaixo para adicionar</small>
+                                </div>
+                            {% endif %}
+                        </div>
+
+                        <!-- Área de upload -->
+                        <div class="upload-area mt-3" id="uploadArea">
+                            <i class="bi bi-cloud-upload" style="font-size: 2rem; color: #6c757d;"></i>
+                            <p class="mb-0 mt-2">
+                                <strong>Clique ou arraste arquivos aqui</strong>
+                            </p>
+                            <small class="text-muted">PDF, JPEG, PNG, DOC, DOCX (máx. 10MB)</small>
+                            <input type="file" id="fileInput" style="display: none;" multiple accept=".pdf,.jpg,.jpeg,.png,.doc,.docx">
+                            <div class="progress mt-2" id="uploadProgress" style="display: none;">
+                                <div class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" style="width: 0%;"></div>
+                            </div>
+                        </div>
+
+                        <div class="alert alert-warning mt-3 small mb-0">
+                            <i class="bi bi-exclamation-triangle"></i>
+                            <strong>Nota:</strong> Os documentos anexados serão enviados junto com o parecer e ficarão disponíveis para consulta.
                         </div>
                     </div>
                 </div>
@@ -288,34 +458,200 @@
             this.closest('.fonte-row').remove();
         });
     });
+
+    // ============================================
+    // UPLOAD DE DOCUMENTOS
+    // ============================================
+    const uploadArea = document.getElementById('uploadArea');
+    const fileInput = document.getElementById('fileInput');
+    const listaDocumentos = document.getElementById('listaDocumentos');
+    const semDocumentosMsg = document.getElementById('semDocumentosMsg');
+    const candidatoId = {{ candidato.id }};
+    
+    // Abrir seletor de arquivo ao clicar na área
+    uploadArea.addEventListener('click', () => {
+        fileInput.click();
+    });
+    
+    // Drag & Drop
+    uploadArea.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        uploadArea.classList.add('dragover');
+    });
+    
+    uploadArea.addEventListener('dragleave', (e) => {
+        e.preventDefault();
+        uploadArea.classList.remove('dragover');
+    });
+    
+    uploadArea.addEventListener('drop', (e) => {
+        e.preventDefault();
+        uploadArea.classList.remove('dragover');
+        const files = e.dataTransfer.files;
+        if (files.length > 0) {
+            uploadDocumentos(files);
+        }
+    });
+    
+    // Selecionar arquivos
+    fileInput.addEventListener('change', (e) => {
+        if (e.target.files.length > 0) {
+            uploadDocumentos(e.target.files);
+        }
+    });
+    
+    function uploadDocumentos(files) {
+        const formData = new FormData();
+        
+        for (let i = 0; i < files.length; i++) {
+            const file = files[i];
+            const extensao = file.name.split('.').pop().toLowerCase();
+            const extensoesPermitidas = ['pdf', 'jpg', 'jpeg', 'png', 'doc', 'docx'];
+            
+            if (!extensoesPermitidas.includes(extensao)) {
+                alert(`❌ Arquivo "${file.name}" não permitido. Use: PDF, JPG, JPEG, PNG, DOC, DOCX`);
+                continue;
+            }
+            
+            if (file.size > 10 * 1024 * 1024) {
+                alert(`❌ Arquivo "${file.name}" excede 10MB`);
+                continue;
+            }
+            
+            formData.append('documentos[]', file);
+        }
+        
+        if (formData.getAll('documentos[]').length === 0) return;
+        
+        const progressBar = document.getElementById('uploadProgress');
+        const progressBarInner = progressBar.querySelector('.progress-bar');
+        progressBar.style.display = 'block';
+        progressBarInner.style.width = '0%';
+        
+        fetch(`/parecer/{{ candidato.id }}/upload-documentos`, {
+            method: 'POST',
+            body: formData
+        })
+        .then(response => response.json())
+        .then(data => {
+            progressBarInner.style.width = '100%';
+            setTimeout(() => {
+                progressBar.style.display = 'none';
+                progressBarInner.style.width = '0%';
+            }, 500);
+            
+            if (data.success) {
+                // Recarregar a lista de documentos
+                carregarDocumentos();
+                alert(`✅ ${data.message || 'Documentos enviados com sucesso!'}`);
+            } else {
+                alert(`❌ Erro: ${data.error}`);
+            }
+        })
+        .catch(error => {
+            progressBar.style.display = 'none';
+            alert(`❌ Erro no upload: ${error.message}`);
+        });
+    }
+    
+    function carregarDocumentos() {
+        fetch(`/parecer/{{ candidato.id }}/documentos`)
+            .then(response => response.json())
+            .then(data => {
+                if (data.success && data.documentos && data.documentos.length > 0) {
+                    listaDocumentos.innerHTML = '';
+                    data.documentos.forEach(doc => {
+                        const extensao = doc.tipo_arquivo || (doc.nome_arquivo || '').split('.').pop().toLowerCase();
+                        let icone = '';
+                        let corIcone = '';
+                        
+                        if (extensao === 'pdf') {
+                            icone = 'bi-file-pdf';
+                            corIcone = 'text-danger';
+                        } else if (extensao === 'jpg' || extensao === 'jpeg' || extensao === 'png') {
+                            icone = 'bi-file-image';
+                            corIcone = 'text-primary';
+                        } else if (extensao === 'doc' || extensao === 'docx') {
+                            icone = 'bi-file-word';
+                            corIcone = 'text-primary';
+                        } else {
+                            icone = 'bi-file-earmark';
+                            corIcone = 'text-secondary';
+                        }
+                        
+                        const tamanho = doc.tamanho ? `${(doc.tamanho / 1024).toFixed(1)} KB` : '-';
+                        const dataUpload = doc.data_upload ? new Date(doc.data_upload).toLocaleDateString('pt-BR') : '';
+                        
+                        const docElement = document.createElement('div');
+                        docElement.className = 'documento-card';
+                        docElement.id = `doc-${doc.id}`;
+                        docElement.innerHTML = `
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div class="d-flex align-items-center">
+                                    <i class="bi ${icone} ${corIcone}" style="font-size: 1.5rem; margin-right: 10px;"></i>
+                                    <div>
+                                        <div class="documento-nome">${doc.nome_arquivo || 'Documento'}</div>
+                                        <div class="documento-tamanho">${tamanho} • ${dataUpload}</div>
+                                    </div>
+                                </div>
+                                <div>
+                                    <a href="${doc.caminho_arquivo || doc.url}" class="btn-documento" target="_blank" title="Visualizar">
+                                        <i class="bi bi-eye"></i>
+                                    </a>
+                                    <button type="button" class="btn-documento btn-documento-danger" onclick="removerDocumento(${doc.id}, '${doc.nome_arquivo}')" title="Remover">
+                                        <i class="bi bi-trash"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        `;
+                        listaDocumentos.appendChild(docElement);
+                    });
+                } else {
+                    listaDocumentos.innerHTML = `
+                        <div class="text-center text-muted py-3">
+                            <i class="bi bi-folder2-open" style="font-size: 2rem;"></i>
+                            <p class="mt-2 mb-0">Nenhum documento anexado ainda</p>
+                            <small>Clique na área para adicionar</small>
+                        </div>
+                    `;
+                }
+            })
+            .catch(error => {
+                console.error('Erro ao carregar documentos:', error);
+            });
+    }
+    
+    function removerDocumento(docId, nomeArquivo) {
+        if (confirm(`⚠️ ATENÇÃO!\n\nDeseja remover o documento "${nomeArquivo}"?\n\nEsta ação não pode ser desfeita.`)) {
+            fetch(`/parecer/documento/${docId}/remover`, {
+                method: 'DELETE',
+                headers: { 'Content-Type': 'application/json' }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    const docElement = document.getElementById(`doc-${docId}`);
+                    if (docElement) docElement.remove();
+                    
+                    const remainingDocs = document.querySelectorAll('#listaDocumentos .documento-card');
+                    if (remainingDocs.length === 0) {
+                        listaDocumentos.innerHTML = `
+                            <div class="text-center text-muted py-3" id="semDocumentosMsg">
+                                <i class="bi bi-folder2-open" style="font-size: 2rem;"></i>
+                                <p class="mt-2 mb-0">Nenhum documento anexado ainda</p>
+                                <small>Clique na área para adicionar</small>
+                            </div>
+                        `;
+                    }
+                    alert(`✅ Documento removido com sucesso!`);
+                } else {
+                    alert(`❌ Erro: ${data.error}`);
+                }
+            })
+            .catch(error => {
+                alert(`❌ Erro ao remover documento: ${error.message}`);
+            });
+        }
+    }
 </script>
-
-<style>
-    .card {
-        border-radius: 10px;
-        overflow: hidden;
-    }
-    .card-header {
-        font-weight: 600;
-    }
-    .info-item {
-        border-bottom: 1px solid #eee;
-        padding-bottom: 8px;
-    }
-    .info-label {
-        font-size: 0.75rem;
-    }
-    .info-value {
-        font-size: 0.9rem;
-    }
-    .form-control:focus, .form-select:focus {
-        border-color: #0d6efd;
-        box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.25);
-    }
-    textarea {
-        font-family: monospace;
-        font-size: 14px;
-    }
-</style>
-
 {% endblock %}
