@@ -13367,16 +13367,24 @@ def upload_documentos_parecer(candidato_id):
                 nome_arquivo = secure_filename(arquivo.filename)
                 nome_publico = f"{nome_base}_{nome_arquivo}"
                 
+                # Para PDFs, usar resource_type="raw" ou "auto"
+                resource_type = "auto" if extensao == 'pdf' else "image"
+                
                 upload_result = cloudinary.uploader.upload(
                     arquivo,
                     folder=f"pareceres/candidato_{candidato_id}",
-                    resource_type="auto",
+                    resource_type=resource_type,
                     public_id=nome_publico,
                     use_filename=True,
                     unique_filename=True
                 )
                 
                 url_arquivo = upload_result.get('secure_url')
+                
+                # Corrigir URL para PDFs
+                if extensao == 'pdf' and not url_arquivo.endswith('.pdf'):
+                    url_arquivo = f"{url_arquivo}.pdf"
+                
                 public_id = upload_result.get('public_id')
                 tamanho = upload_result.get('bytes', 0)
                 
@@ -13398,6 +13406,60 @@ def upload_documentos_parecer(candidato_id):
         return jsonify({'success': True, 'message': f'{len(documentos_upload)} documento(s) enviado(s)'})
     else:
         return jsonify({'success': False, 'error': 'Nenhum arquivo válido enviado'}), 400
+        
+@app.route("/parecer/<int:candidato_id>/adicionar-link", methods=['POST'])
+@login_required
+def adicionar_link_parecer(candidato_id):
+    """Adiciona link do Google Drive ao parecer"""
+    if session.get('tipo') not in ['admin', 'sindicante']:
+        return jsonify({'success': False, 'error': 'Permissão negada'}), 403
+    
+    data = request.get_json()
+    url = data.get('url')
+    nome_arquivo = data.get('nome_arquivo', 'Documento Google Drive')
+    file_id = data.get('file_id')
+    
+    if not url:
+        return jsonify({'success': False, 'error': 'URL é obrigatória'}), 400
+    
+    try:
+        cursor, conn = get_db()
+        cursor.execute("""
+            INSERT INTO documentos_parecer (candidato_id, sindicante_id, nome_arquivo, caminho_arquivo, public_id, tipo_arquivo, tamanho)
+            VALUES (%s, %s, %s, %s, %s, %s, %s)
+        """, (candidato_id, session['user_id'], nome_arquivo, url, file_id, 'pdf', 0))
+        conn.commit()
+        return_connection(conn)
+        
+        return jsonify({'success': True, 'message': 'Link adicionado com sucesso'})
+    except Exception as e:
+        print(f"Erro ao adicionar link: {e}")
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@app.route("/parecer/adicionar-referencia", methods=['POST'])
+@login_required
+def adicionar_referencia_documento():
+    """Salva referência do documento enviado para o Google Drive"""
+    if session.get('tipo') not in ['admin', 'sindicante']:
+        return jsonify({'success': False, 'error': 'Permissão negada'}), 403
+    
+    data = request.get_json()
+    candidato_id = data.get('candidato_id')
+    file_id = data.get('file_id')
+    nome_arquivo = data.get('nome_arquivo')
+    url = data.get('url')
+    
+    try:
+        cursor, conn = get_db()
+        cursor.execute("""
+            INSERT INTO documentos_parecer (candidato_id, sindicante_id, nome_arquivo, caminho_arquivo, public_id, tipo_arquivo, tamanho)
+            VALUES (%s, %s, %s, %s, %s, %s, %s)
+        """, (candidato_id, session['user_id'], nome_arquivo, url, file_id, 'pdf', 0))
+        conn.commit()
+        return_connection(conn)
+        return jsonify({'success': True})
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500        
 
 
 @app.route("/parecer/<int:candidato_id>/documentos")
@@ -13415,8 +13477,21 @@ def listar_documentos_parecer(candidato_id):
         documentos = cursor.fetchall()
         return_connection(conn)
         
-        return jsonify({'success': True, 'documentos': [dict(d) for d in documentos]})
+        # Converter para lista de dicionários
+        documentos_list = []
+        for doc in documentos:
+            documentos_list.append({
+                'id': doc['id'],
+                'nome_arquivo': doc['nome_arquivo'],
+                'caminho_arquivo': doc['caminho_arquivo'],
+                'tipo_arquivo': doc['tipo_arquivo'],
+                'tamanho': doc['tamanho'],
+                'data_upload': doc['data_upload'].isoformat() if doc['data_upload'] else None
+            })
+        
+        return jsonify({'success': True, 'documentos': documentos_list})
     except Exception as e:
+        print(f"Erro ao listar documentos: {e}")
         return jsonify({'success': False, 'error': str(e)}), 500
 
 

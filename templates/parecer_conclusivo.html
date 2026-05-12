@@ -95,6 +95,34 @@
     .btn-documento-danger:hover {
         background: #bb2d3b;
     }
+    .btn-google-auth {
+        background: #4285f4;
+        color: white;
+        border: none;
+        padding: 10px 20px;
+        border-radius: 5px;
+        margin-bottom: 15px;
+        width: 100%;
+        font-weight: 500;
+    }
+    .btn-google-auth:hover {
+        background: #3367d6;
+    }
+    .auth-status {
+        font-size: 0.8rem;
+        margin-bottom: 10px;
+        padding: 5px;
+        border-radius: 5px;
+        text-align: center;
+    }
+    .auth-status.authenticated {
+        background: #d4edda;
+        color: #155724;
+    }
+    .auth-status.unauthenticated {
+        background: #f8d7da;
+        color: #721c24;
+    }
 </style>
 {% endblock %}
 
@@ -347,42 +375,39 @@
                     </div>
                 </div>
 
-                <!-- NOVO CARD: Documentos Anexados -->
+                <!-- CARD: Documentos Anexados (Upload Direto Google Drive) -->
                 <div class="card shadow">
                     <div class="card-header bg-success text-white">
-                        <h5 class="mb-0"><i class="bi bi-paperclip"></i> Documentos Anexados</h5>
+                        <h5 class="mb-0"><i class="bi bi-google"></i> Documentos Anexados</h5>
                     </div>
                     <div class="card-body">
+                        <!-- Status da autenticação -->
+                        <div id="authStatus" class="auth-status unauthenticated d-none">
+                            <i class="bi bi-google"></i> Conecte-se ao Google Drive para enviar arquivos
+                        </div>
+                        
+                        <!-- Botão de autenticação -->
+                        <button id="authButton" class="btn-google-auth" onclick="authenticate()">
+                            <i class="bi bi-google"></i> Conectar com Google Drive
+                        </button>
+
                         <!-- Lista de documentos existentes -->
-                        <div id="listaDocumentos">
+                        <div id="listaDocumentos" style="margin-top: 15px;">
                             {% if documentos_anexados %}
                                 {% for doc in documentos_anexados %}
                                 <div class="documento-card" id="doc-{{ doc.id }}">
                                     <div class="d-flex justify-content-between align-items-center">
                                         <div class="d-flex align-items-center">
-                                            {% if doc.tipo_arquivo in ['jpg', 'jpeg', 'png', 'gif'] %}
-                                                <i class="bi bi-file-image text-primary"></i>
-                                            {% elif doc.tipo_arquivo == 'pdf' %}
-                                                <i class="bi bi-file-pdf text-danger"></i>
-                                            {% elif doc.tipo_arquivo in ['doc', 'docx'] %}
-                                                <i class="bi bi-file-word text-primary"></i>
-                                            {% else %}
-                                                <i class="bi bi-file-earmark text-secondary"></i>
-                                            {% endif %}
+                                            <i class="bi bi-file-pdf text-danger"></i>
                                             <div>
-                                                <div class="documento-nome">{{ doc.nome_arquivo or doc.nome or 'Documento' }}</div>
+                                                <div class="documento-nome">{{ doc.nome_arquivo or 'Documento' }}</div>
                                                 <div class="documento-tamanho">
-                                                    {% if doc.tamanho %}
-                                                        {{ (doc.tamanho / 1024)|round(1) }} KB
-                                                    {% else %}
-                                                        -
-                                                    {% endif %}
-                                                    • {{ doc.data_upload.strftime('%d/%m/%Y') if doc.data_upload else '' }}
+                                                    {{ doc.data_upload.strftime('%d/%m/%Y') if doc.data_upload else '' }}
                                                 </div>
                                             </div>
                                         </div>
                                         <div>
-                                            <a href="{{ doc.caminho_arquivo or doc.url }}" class="btn-documento" target="_blank" title="Visualizar">
+                                            <a href="{{ doc.caminho_arquivo }}" class="btn-documento" target="_blank" title="Visualizar">
                                                 <i class="bi bi-eye"></i>
                                             </a>
                                             <button type="button" class="btn-documento btn-documento-danger" onclick="removerDocumento({{ doc.id }}, '{{ doc.nome_arquivo }}')" title="Remover">
@@ -396,13 +421,13 @@
                                 <div class="text-center text-muted py-3" id="semDocumentosMsg">
                                     <i class="bi bi-folder2-open" style="font-size: 2rem;"></i>
                                     <p class="mt-2 mb-0">Nenhum documento anexado ainda</p>
-                                    <small>Clique na área abaixo para adicionar</small>
+                                    <small>Conecte-se e envie arquivos abaixo</small>
                                 </div>
                             {% endif %}
                         </div>
 
-                        <!-- Área de upload -->
-                        <div class="upload-area mt-3" id="uploadArea">
+                        <!-- Área de upload (aparece após autenticação) -->
+                        <div id="uploadArea" class="upload-area mt-3" style="display: none;">
                             <i class="bi bi-cloud-upload" style="font-size: 2rem; color: #6c757d;"></i>
                             <p class="mb-0 mt-2">
                                 <strong>Clique ou arraste arquivos aqui</strong>
@@ -416,7 +441,7 @@
 
                         <div class="alert alert-warning mt-3 small mb-0">
                             <i class="bi bi-exclamation-triangle"></i>
-                            <strong>Nota:</strong> Os documentos anexados serão enviados junto com o parecer e ficarão disponíveis para consulta.
+                            <strong>Nota:</strong> Os arquivos serão enviados diretamente para o Google Drive da Loja.
                         </div>
                     </div>
                 </div>
@@ -425,233 +450,308 @@
     </div>
 </div>
 
+<script src="https://accounts.google.com/gsi/client"></script>
+<script src="https://apis.google.com/js/api.js"></script>
 <script>
-    let fonteCount = {{ fontes_existentes|length + 1 if fontes_existentes else 1 }};
-    
-    function adicionarFonte() {
-        fonteCount++;
-        const container = document.getElementById('fontes-container');
-        const row = document.createElement('div');
-        row.className = 'row mb-2 fonte-row';
-        row.innerHTML = `
-            <div class="col-md-5">
-                <input type="text" class="form-control" name="fonte_nome_${fonteCount}" placeholder="Nome da fonte">
-            </div>
-            <div class="col-md-6">
-                <input type="text" class="form-control" name="fonte_info_${fonteCount}" placeholder="Informação obtida">
-            </div>
-            <div class="col-md-1">
-                <button type="button" class="btn btn-danger btn-sm remove-fonte">
-                    <i class="bi bi-trash"></i>
-                </button>
-            </div>
-        `;
-        container.appendChild(row);
-        
-        row.querySelector('.remove-fonte').addEventListener('click', function() {
-            row.remove();
-        });
-    }
-    
-    document.querySelectorAll('.remove-fonte').forEach(btn => {
-        btn.addEventListener('click', function() {
-            this.closest('.fonte-row').remove();
-        });
-    });
-
     // ============================================
-    // UPLOAD DE DOCUMENTOS
+    // CONFIGURAÇÃO DO GOOGLE DRIVE - FRONTEND (CORRIGIDO)
     // ============================================
+    
+    // ⚠️ SUAS CREDENCIAIS
+    const CLIENT_ID = '774638699747-bnabslukbo9g45nfsb86lmnn7vcbsi3d.apps.googleusercontent.com';
+    const API_KEY = 'AIzaSyAYbGAcGV7oYFdmAamopZew17PV7JZJGdA';
+    const FOLDER_ID = '1ojyJx2qltCIcskK37BZcslJE6MQ_fa_J';
+    
+    const SCOPES = 'https://www.googleapis.com/auth/drive.file';
+    
+    let tokenClient;
+    let accessToken = null;
+    let isAuthenticated = false;
+    let gapiReady = false;
+    
+    // Elementos DOM
+    const authButton = document.getElementById('authButton');
+    const authStatus = document.getElementById('authStatus');
     const uploadArea = document.getElementById('uploadArea');
     const fileInput = document.getElementById('fileInput');
     const listaDocumentos = document.getElementById('listaDocumentos');
-    const semDocumentosMsg = document.getElementById('semDocumentosMsg');
     const candidatoId = {{ candidato.id }};
     
-    // Abrir seletor de arquivo ao clicar na área
-    uploadArea.addEventListener('click', () => {
-        fileInput.click();
-    });
-    
-    // Drag & Drop
-    uploadArea.addEventListener('dragover', (e) => {
-        e.preventDefault();
-        uploadArea.classList.add('dragover');
-    });
-    
-    uploadArea.addEventListener('dragleave', (e) => {
-        e.preventDefault();
-        uploadArea.classList.remove('dragover');
-    });
-    
-    uploadArea.addEventListener('drop', (e) => {
-        e.preventDefault();
-        uploadArea.classList.remove('dragover');
-        const files = e.dataTransfer.files;
-        if (files.length > 0) {
-            uploadDocumentos(files);
+    // Função para mostrar status
+    function showStatus(message, isError = false) {
+        if (authStatus) {
+            authStatus.className = isError ? 'auth-status unauthenticated' : 'auth-status authenticated';
+            authStatus.innerHTML = `<i class="bi bi-${isError ? 'exclamation-triangle' : 'check-circle'}"></i> ${message}`;
+            authStatus.classList.remove('d-none');
+            setTimeout(() => {
+                if (authStatus) authStatus.classList.add('d-none');
+            }, 5000);
         }
-    });
+        console.log(`${isError ? '❌' : '✅'} ${message}`);
+    }
     
-    // Selecionar arquivos
-    fileInput.addEventListener('change', (e) => {
-        if (e.target.files.length > 0) {
-            uploadDocumentos(e.target.files);
+    // Inicializar API do Google
+    function initGoogleApi() {
+        console.log('🔄 Inicializando Google API...');
+        
+        // Verificar se as bibliotecas carregaram
+        if (typeof gapi === 'undefined') {
+            console.error('❌ GAPI não carregou. Recarregue a página.');
+            showStatus('Erro: Biblioteca do Google não carregou. Recarregue a página.', true);
+            return;
         }
-    });
+        
+        if (typeof google === 'undefined' || !google.accounts) {
+            console.error('❌ Google Accounts não carregou.');
+            showStatus('Erro: Autenticação do Google não carregou.', true);
+            return;
+        }
+        
+        gapi.load('client', () => {
+            console.log('✅ GAPI client carregado');
+            gapi.client.init({
+                apiKey: API_KEY,
+                discoveryDocs: ['https://www.googleapis.com/discovery/v1/apis/drive/v3/rest']
+            }).then(() => {
+                console.log('✅ GAPI client inicializado');
+                gapiReady = true;
+            }).catch(err => {
+                console.error('❌ Erro GAPI:', err);
+                showStatus('Erro ao inicializar API: ' + err.message, true);
+            });
+        });
+        
+        // Inicializar Token Client
+        try {
+            tokenClient = google.accounts.oauth2.initTokenClient({
+                client_id: CLIENT_ID,
+                scope: SCOPES,
+                callback: (tokenResponse) => {
+                    console.log('✅ Token recebido');
+                    if (tokenResponse.access_token) {
+                        accessToken = tokenResponse.access_token;
+                        isAuthenticated = true;
+                        if (authButton) authButton.style.display = 'none';
+                        if (uploadArea) uploadArea.style.display = 'block';
+                        showStatus('✓ Conectado ao Google Drive com sucesso!', false);
+                        carregarDocumentos();
+                    } else if (tokenResponse.error) {
+                        console.error('❌ Erro token:', tokenResponse.error);
+                        showStatus('Erro na autenticação: ' + tokenResponse.error, true);
+                    }
+                }
+            });
+            console.log('✅ Token Client inicializado');
+        } catch (err) {
+            console.error('❌ Erro tokenClient:', err);
+            showStatus('Erro ao configurar autenticação', true);
+        }
+    }
     
-    function uploadDocumentos(files) {
-        const formData = new FormData();
+    // Autenticar usuário
+    function authenticate() {
+        console.log('🔑 Solicitando autenticação...');
+        
+        if (!tokenClient) {
+            showStatus('Autenticação não configurada. Recarregue a página.', true);
+            return;
+        }
+        
+        if (accessToken) {
+            showStatus('Você já está conectado!', false);
+            return;
+        }
+        
+        try {
+            tokenClient.requestAccessToken({ prompt: 'consent' });
+        } catch (err) {
+            console.error('❌ Erro auth:', err);
+            showStatus('Erro ao conectar: ' + err.message, true);
+        }
+    }
+    
+    // Upload direto para Google Drive
+    async function uploadToGoogleDrive(file, nomeArquivo) {
+        if (!accessToken || !isAuthenticated) {
+            showStatus('Por favor, conecte-se ao Google Drive primeiro', true);
+            authenticate();
+            // Aguardar autenticação
+            await new Promise(resolve => setTimeout(resolve, 3000));
+            if (!accessToken) {
+                return { success: false, error: 'Não autenticado' };
+            }
+        }
+        
+        const metadata = { name: nomeArquivo, parents: [FOLDER_ID] };
+        const form = new FormData();
+        form.append('metadata', new Blob([JSON.stringify(metadata)], { type: 'application/json' }));
+        form.append('file', file);
+        
+        try {
+            const response = await fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart', {
+                method: 'POST',
+                headers: { 'Authorization': `Bearer ${accessToken}` },
+                body: form
+            });
+            
+            const result = await response.json();
+            
+            if (result.id) {
+                // Tornar público
+                await fetch(`https://www.googleapis.com/drive/v3/files/${result.id}/permissions`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${accessToken}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ type: 'anyone', role: 'reader' })
+                });
+                return { success: true, fileId: result.id, embedUrl: `https://drive.google.com/file/d/${result.id}/preview` };
+            }
+            return { success: false, error: result.error };
+        } catch (err) {
+            return { success: false, error: err.message };
+        }
+    }
+    
+    // Salvar referência no sistema
+    async function salvarReferenciaDocumento(fileId, nomeArquivo, embedUrl) {
+        const response = await fetch('/parecer/adicionar-referencia', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                candidato_id: candidatoId,
+                file_id: fileId,
+                nome_arquivo: nomeArquivo,
+                url: embedUrl
+            })
+        });
+        return response.json();
+    }
+    
+    // Upload de múltiplos arquivos
+    async function uploadDocumentos(files) {
+        const progressBar = document.getElementById('uploadProgress');
+        const progressBarInner = progressBar?.querySelector('.progress-bar');
+        let uploaded = 0;
         
         for (let i = 0; i < files.length; i++) {
             const file = files[i];
             const extensao = file.name.split('.').pop().toLowerCase();
-            const extensoesPermitidas = ['pdf', 'jpg', 'jpeg', 'png', 'doc', 'docx'];
             
-            if (!extensoesPermitidas.includes(extensao)) {
-                alert(`❌ Arquivo "${file.name}" não permitido. Use: PDF, JPG, JPEG, PNG, DOC, DOCX`);
+            if (!['pdf', 'jpg', 'jpeg', 'png', 'doc', 'docx'].includes(extensao)) {
+                alert(`❌ "${file.name}" não permitido`);
                 continue;
             }
             
             if (file.size > 10 * 1024 * 1024) {
-                alert(`❌ Arquivo "${file.name}" excede 10MB`);
+                alert(`❌ "${file.name}" excede 10MB`);
                 continue;
             }
             
-            formData.append('documentos[]', file);
+            if (progressBar) {
+                progressBar.style.display = 'block';
+                if (progressBarInner) progressBarInner.style.width = `${(i / files.length) * 100}%`;
+            }
+            
+            const nomeArquivo = `candidato_${candidatoId}_${Date.now()}_${file.name}`;
+            const resultado = await uploadToGoogleDrive(file, nomeArquivo);
+            
+            if (resultado.success) {
+                const salvar = await salvarReferenciaDocumento(resultado.fileId, file.name, resultado.embedUrl);
+                if (salvar.success) uploaded++;
+                else alert(`⚠️ Arquivo enviado mas não registrado: ${file.name}`);
+            } else {
+                alert(`❌ Erro ao enviar "${file.name}": ${resultado.error}`);
+            }
         }
         
-        if (formData.getAll('documentos[]').length === 0) return;
-        
-        const progressBar = document.getElementById('uploadProgress');
-        const progressBarInner = progressBar.querySelector('.progress-bar');
-        progressBar.style.display = 'block';
-        progressBarInner.style.width = '0%';
-        
-        fetch(`/parecer/{{ candidato.id }}/upload-documentos`, {
-            method: 'POST',
-            body: formData
-        })
-        .then(response => response.json())
-        .then(data => {
-            progressBarInner.style.width = '100%';
-            setTimeout(() => {
-                progressBar.style.display = 'none';
-                progressBarInner.style.width = '0%';
-            }, 500);
-            
-            if (data.success) {
-                // Recarregar a lista de documentos
-                carregarDocumentos();
-                alert(`✅ ${data.message || 'Documentos enviados com sucesso!'}`);
-            } else {
-                alert(`❌ Erro: ${data.error}`);
-            }
-        })
-        .catch(error => {
-            progressBar.style.display = 'none';
-            alert(`❌ Erro no upload: ${error.message}`);
-        });
+        if (progressBar) progressBar.style.display = 'none';
+        if (uploaded > 0) {
+            carregarDocumentos();
+            alert(`✅ ${uploaded} documento(s) enviado(s)!`);
+        }
     }
     
+    // Carregar lista de documentos
     function carregarDocumentos() {
         fetch(`/parecer/{{ candidato.id }}/documentos`)
             .then(response => response.json())
             .then(data => {
-                if (data.success && data.documentos && data.documentos.length > 0) {
-                    listaDocumentos.innerHTML = '';
-                    data.documentos.forEach(doc => {
-                        const extensao = doc.tipo_arquivo || (doc.nome_arquivo || '').split('.').pop().toLowerCase();
-                        let icone = '';
-                        let corIcone = '';
-                        
-                        if (extensao === 'pdf') {
-                            icone = 'bi-file-pdf';
-                            corIcone = 'text-danger';
-                        } else if (extensao === 'jpg' || extensao === 'jpeg' || extensao === 'png') {
-                            icone = 'bi-file-image';
-                            corIcone = 'text-primary';
-                        } else if (extensao === 'doc' || extensao === 'docx') {
-                            icone = 'bi-file-word';
-                            corIcone = 'text-primary';
-                        } else {
-                            icone = 'bi-file-earmark';
-                            corIcone = 'text-secondary';
-                        }
-                        
-                        const tamanho = doc.tamanho ? `${(doc.tamanho / 1024).toFixed(1)} KB` : '-';
-                        const dataUpload = doc.data_upload ? new Date(doc.data_upload).toLocaleDateString('pt-BR') : '';
-                        
-                        const docElement = document.createElement('div');
-                        docElement.className = 'documento-card';
-                        docElement.id = `doc-${doc.id}`;
-                        docElement.innerHTML = `
-                            <div class="d-flex justify-content-between align-items-center">
-                                <div class="d-flex align-items-center">
-                                    <i class="bi ${icone} ${corIcone}" style="font-size: 1.5rem; margin-right: 10px;"></i>
+                if (listaDocumentos) {
+                    if (data.success && data.documentos?.length > 0) {
+                        listaDocumentos.innerHTML = data.documentos.map(doc => `
+                            <div class="documento-card" id="doc-${doc.id}">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <div class="d-flex align-items-center">
+                                        <i class="bi bi-file-pdf text-danger" style="font-size: 1.5rem; margin-right: 10px;"></i>
+                                        <div>
+                                            <div class="documento-nome">${escapeHtml(doc.nome_arquivo || 'Documento')}</div>
+                                            <div class="documento-tamanho">${doc.data_upload ? new Date(doc.data_upload).toLocaleDateString('pt-BR') : ''}</div>
+                                        </div>
+                                    </div>
                                     <div>
-                                        <div class="documento-nome">${doc.nome_arquivo || 'Documento'}</div>
-                                        <div class="documento-tamanho">${tamanho} • ${dataUpload}</div>
+                                        <a href="${doc.caminho_arquivo}" class="btn-documento" target="_blank"><i class="bi bi-eye"></i></a>
+                                        <button class="btn-documento btn-documento-danger" onclick="removerDocumento(${doc.id}, '${escapeHtml(doc.nome_arquivo)}')"><i class="bi bi-trash"></i></button>
                                     </div>
                                 </div>
-                                <div>
-                                    <a href="${doc.caminho_arquivo || doc.url}" class="btn-documento" target="_blank" title="Visualizar">
-                                        <i class="bi bi-eye"></i>
-                                    </a>
-                                    <button type="button" class="btn-documento btn-documento-danger" onclick="removerDocumento(${doc.id}, '${doc.nome_arquivo}')" title="Remover">
-                                        <i class="bi bi-trash"></i>
-                                    </button>
-                                </div>
                             </div>
-                        `;
-                        listaDocumentos.appendChild(docElement);
-                    });
-                } else {
-                    listaDocumentos.innerHTML = `
-                        <div class="text-center text-muted py-3">
-                            <i class="bi bi-folder2-open" style="font-size: 2rem;"></i>
-                            <p class="mt-2 mb-0">Nenhum documento anexado ainda</p>
-                            <small>Clique na área para adicionar</small>
-                        </div>
-                    `;
+                        `).join('');
+                    } else {
+                        listaDocumentos.innerHTML = `<div class="text-center text-muted py-3"><i class="bi bi-folder2-open" style="font-size: 2rem;"></i><p>Nenhum documento anexado</p></div>`;
+                    }
                 }
             })
-            .catch(error => {
-                console.error('Erro ao carregar documentos:', error);
-            });
+            .catch(err => console.error('Erro:', err));
     }
     
-    function removerDocumento(docId, nomeArquivo) {
-        if (confirm(`⚠️ ATENÇÃO!\n\nDeseja remover o documento "${nomeArquivo}"?\n\nEsta ação não pode ser desfeita.`)) {
-            fetch(`/parecer/documento/${docId}/remover`, {
-                method: 'DELETE',
-                headers: { 'Content-Type': 'application/json' }
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    const docElement = document.getElementById(`doc-${docId}`);
-                    if (docElement) docElement.remove();
-                    
-                    const remainingDocs = document.querySelectorAll('#listaDocumentos .documento-card');
-                    if (remainingDocs.length === 0) {
-                        listaDocumentos.innerHTML = `
-                            <div class="text-center text-muted py-3" id="semDocumentosMsg">
-                                <i class="bi bi-folder2-open" style="font-size: 2rem;"></i>
-                                <p class="mt-2 mb-0">Nenhum documento anexado ainda</p>
-                                <small>Clique na área para adicionar</small>
-                            </div>
-                        `;
-                    }
-                    alert(`✅ Documento removido com sucesso!`);
-                } else {
-                    alert(`❌ Erro: ${data.error}`);
-                }
-            })
-            .catch(error => {
-                alert(`❌ Erro ao remover documento: ${error.message}`);
-            });
+    function escapeHtml(text) { return text ? text.replace(/[&<>]/g, function(m){return m==='&'?'&amp;':m==='<'?'&lt;':m==='>'?'&gt;':m;}) : ''; }
+    
+    // Remover documento (global para o onclick)
+    window.removerDocumento = function(docId, nomeArquivo) {
+        if (confirm(`Remover "${nomeArquivo}"?`)) {
+            fetch(`/parecer/documento/${docId}/remover`, { method: 'DELETE' })
+                .then(r => r.json())
+                .then(data => {
+                    if (data.success) { carregarDocumentos(); alert('✅ Removido!'); }
+                    else alert('❌ Erro: ' + data.error);
+                });
         }
+    };
+    
+    // Eventos
+    if (uploadArea) {
+        uploadArea.onclick = () => fileInput?.click();
+        uploadArea.ondragover = (e) => { e.preventDefault(); uploadArea.classList.add('dragover'); };
+        uploadArea.ondragleave = () => uploadArea.classList.remove('dragover');
+        uploadArea.ondrop = (e) => {
+            e.preventDefault();
+            uploadArea.classList.remove('dragover');
+            if (e.dataTransfer.files.length) uploadDocumentos(e.dataTransfer.files);
+        };
     }
+    
+    if (fileInput) fileInput.onchange = (e) => { if (e.target.files.length) uploadDocumentos(e.target.files); };
+    if (authButton) authButton.onclick = authenticate;
+    
+    // Inicializar
+    initGoogleApi();
+    
+    // Fontes de referência
+    let fonteCount = {{ fontes_existentes|length + 1 if fontes_existentes else 1 }};
+    window.adicionarFonte = function() {
+        fonteCount++;
+        const container = document.getElementById('fontes-container');
+        if (container) {
+            const row = document.createElement('div');
+            row.className = 'row mb-2 fonte-row';
+            row.innerHTML = `
+                <div class="col-md-5"><input type="text" class="form-control" name="fonte_nome_${fonteCount}" placeholder="Nome da fonte"></div>
+                <div class="col-md-6"><input type="text" class="form-control" name="fonte_info_${fonteCount}" placeholder="Informação obtida"></div>
+                <div class="col-md-1"><button type="button" class="btn btn-danger btn-sm remove-fonte" onclick="this.closest('.fonte-row').remove()"><i class="bi bi-trash"></i></button></div>
+            `;
+            container.appendChild(row);
+        }
+    };
 </script>
 {% endblock %}
