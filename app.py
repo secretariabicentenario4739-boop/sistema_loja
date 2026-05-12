@@ -11038,7 +11038,7 @@ def gerenciar_candidatos():
         return redirect("/candidatos")
     
     # ============================================
-    # GET - Buscar candidatos (APENAS NÃO OBREIROS)
+    # 1. Buscar TODOS os candidatos (para estatísticas)
     # ============================================
     
     try:
@@ -11047,32 +11047,180 @@ def gerenciar_candidatos():
         pass
     
     try:
+        # Query para TODOS os candidatos (incluindo os que viraram obreiros)
         cursor.execute("""
             SELECT 
                 c.*,
-                COALESCE(pc.total_votos, 0) as total_votos,
-                COALESCE(pc.votos_positivos, 0) as votos_positivos,
-                COALESCE(pc.votos_negativos, 0) as votos_negativos,
-                (SELECT COUNT(*) FROM usuarios WHERE tipo = 'sindicante' AND ativo = 1) as total_sindicantes
+                COALESCE(s.votos_positivos, 0) as votos_positivos_simples,
+                COALESCE(s.votos_negativos, 0) as votos_negativos_simples,
+                COALESCE(s.total_votos_simples, 0) as total_votos_simples,
+                COALESCE(pc.votos_positivos, 0) as votos_positivos_conclusivos,
+                COALESCE(pc.votos_negativos, 0) as votos_negativos_conclusivos,
+                COALESCE(pc.total_votos_conclusivos, 0) as total_votos_conclusivos,
+                (SELECT COUNT(*) FROM usuarios WHERE tipo = 'sindicante' AND ativo = 1 AND grau_atual >= 3) as total_sindicantes
             FROM candidatos c
             LEFT JOIN (
                 SELECT 
                     candidato_id,
-                    COUNT(*) as total_votos,
+                    COUNT(CASE WHEN parecer = 'positivo' THEN 1 END) as votos_positivos,
+                    COUNT(CASE WHEN parecer = 'negativo' THEN 1 END) as votos_negativos,
+                    COUNT(*) as total_votos_simples
+                FROM sindicancias
+                GROUP BY candidato_id
+            ) s ON c.id = s.candidato_id
+            LEFT JOIN (
+                SELECT 
+                    candidato_id,
                     COUNT(CASE WHEN conclusao = 'APROVADO' THEN 1 END) as votos_positivos,
-                    COUNT(CASE WHEN conclusao = 'REPROVADO' THEN 1 END) as votos_negativos
+                    COUNT(CASE WHEN conclusao = 'REPROVADO' THEN 1 END) as votos_negativos,
+                    COUNT(*) as total_votos_conclusivos
+                FROM pareceres_conclusivos
+                GROUP BY candidato_id
+            ) pc ON c.id = pc.candidato_id
+            ORDER BY c.data_criacao DESC
+        """)
+        todos_candidatos_raw = cursor.fetchall()
+        
+        # Processar todos os candidatos para estatísticas
+        todos_candidatos = []
+        for c in todos_candidatos_raw:
+            candidato = dict(c)
+            
+            votos_positivos = (candidato.get('votos_positivos_simples', 0) + 
+                              candidato.get('votos_positivos_conclusivos', 0))
+            votos_negativos = (candidato.get('votos_negativos_simples', 0) + 
+                              candidato.get('votos_negativos_conclusivos', 0))
+            total_votos = (candidato.get('total_votos_simples', 0) + 
+                          candidato.get('total_votos_conclusivos', 0))
+            
+            candidato['votos_positivos'] = votos_positivos
+            candidato['votos_negativos'] = votos_negativos
+            candidato['total_votos'] = total_votos
+            
+            if candidato.get('fechado') is None:
+                candidato['fechado'] = 0
+            
+            todos_candidatos.append(candidato)
+            
+    except Exception as e:
+        print(f"Erro ao buscar candidatos: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        conn.rollback()
+        todos_candidatos = []
+    
+    # ============================================
+    # 2. Buscar APENAS candidatos NÃO OBREIROS (para a tabela)
+    # ============================================
+    
+    try:
+        cursor.execute("""
+            SELECT 
+                c.*,
+                COALESCE(s.votos_positivos, 0) as votos_positivos_simples,
+                COALESCE(s.votos_negativos, 0) as votos_negativos_simples,
+                COALESCE(s.total_votos_simples, 0) as total_votos_simples,
+                COALESCE(pc.votos_positivos, 0) as votos_positivos_conclusivos,
+                COALESCE(pc.votos_negativos, 0) as votos_negativos_conclusivos,
+                COALESCE(pc.total_votos_conclusivos, 0) as total_votos_conclusivos,
+                (SELECT COUNT(*) FROM usuarios WHERE tipo = 'sindicante' AND ativo = 1 AND grau_atual >= 3) as total_sindicantes
+            FROM candidatos c
+            LEFT JOIN (
+                SELECT 
+                    candidato_id,
+                    COUNT(CASE WHEN parecer = 'positivo' THEN 1 END) as votos_positivos,
+                    COUNT(CASE WHEN parecer = 'negativo' THEN 1 END) as votos_negativos,
+                    COUNT(*) as total_votos_simples
+                FROM sindicancias
+                GROUP BY candidato_id
+            ) s ON c.id = s.candidato_id
+            LEFT JOIN (
+                SELECT 
+                    candidato_id,
+                    COUNT(CASE WHEN conclusao = 'APROVADO' THEN 1 END) as votos_positivos,
+                    COUNT(CASE WHEN conclusao = 'REPROVADO' THEN 1 END) as votos_negativos,
+                    COUNT(*) as total_votos_conclusivos
                 FROM pareceres_conclusivos
                 GROUP BY candidato_id
             ) pc ON c.id = pc.candidato_id
             WHERE c.obreiro_id IS NULL
             ORDER BY c.data_criacao DESC
         """)
-        candidatos = cursor.fetchall()
+        candidatos_raw = cursor.fetchall()
         
+        candidatos_list = []
+        for c in candidatos_raw:
+            candidato = dict(c)
+            
+            votos_positivos = (candidato.get('votos_positivos_simples', 0) + 
+                              candidato.get('votos_positivos_conclusivos', 0))
+            votos_negativos = (candidato.get('votos_negativos_simples', 0) + 
+                              candidato.get('votos_negativos_conclusivos', 0))
+            total_votos = (candidato.get('total_votos_simples', 0) + 
+                          candidato.get('total_votos_conclusivos', 0))
+            
+            candidato['votos_positivos'] = votos_positivos
+            candidato['votos_negativos'] = votos_negativos
+            candidato['total_votos'] = total_votos
+            
+            if candidato.get('fechado') is None:
+                candidato['fechado'] = 0
+            
+            candidatos_list.append(candidato)
+            
     except Exception as e:
-        print(f"Erro ao buscar candidatos: {str(e)}")
+        print(f"Erro ao buscar candidatos não obreiros: {str(e)}")
+        import traceback
+        traceback.print_exc()
         conn.rollback()
-        candidatos = []
+        candidatos_list = []
+    
+    # ============================================
+    # CALCULAR ESTATÍSTICAS (baseado em TODOS os candidatos)
+    # ============================================
+    
+    total_candidatos_ativos = len(candidatos_list)  # Apenas NÃO obreiros
+    em_analise = 0
+    aprovados = 0
+    reprovados = 0
+    
+    total_sindicantes = 0
+    if todos_candidatos:
+        total_sindicantes = todos_candidatos[0].get('total_sindicantes', 0)
+    
+    for c in todos_candidatos:
+        status = c.get('status', '')
+        fechado = c.get('fechado', 0)
+        obreiro_id = c.get('obreiro_id')
+        votos_positivos = c.get('votos_positivos', 0)
+        votos_negativos = c.get('votos_negativos', 0)
+        total_votos = c.get('total_votos', 0)
+        
+        # Se já é obreiro, NÃO conta em nenhuma categoria de candidato (já foi transformado)
+        if obreiro_id is not None:
+            # Não adiciona em nenhuma contagem - já é obreiro
+            pass
+        elif status == 'Aprovado' and obreiro_id is None:
+            aprovados += 1
+        elif status == 'Reprovado':
+            reprovados += 1
+        elif fechado == 1 and status == 'Aprovado' and obreiro_id is None:
+            aprovados += 1
+        elif fechado == 1 and status == 'Reprovado':
+            reprovados += 1
+        elif fechado == 0 and status != 'Reprovado':
+            # Verificar se já teve todos os votos (votação concluída)
+            if total_votos >= total_sindicantes and total_sindicantes > 0:
+                if votos_positivos > votos_negativos:
+                    aprovados += 1
+                elif votos_negativos >= votos_positivos:
+                    reprovados += 1
+                else:
+                    em_analise += 1
+            else:
+                em_analise += 1
+        else:
+            em_analise += 1
     
     # ============================================
     # BUSCAR NOTIFICAÇÕES DE INICIAÇÃO
@@ -11096,23 +11244,18 @@ def gerenciar_candidatos():
         print(f"Erro ao buscar notificações: {e}")
     
     # ============================================
-    # CORREÇÃO: Buscar status dos documentos (APENAS OBRIGATÓRIOS)
+    # BUSCAR STATUS DOS DOCUMENTOS
     # ============================================
     
     documentos_status = {}
     
     try:
-        # Buscar total de documentos OBRIGATÓRIOS
         cursor.execute("SELECT COUNT(*) as total FROM tipos_documentos_candidato WHERE obrigatorio = 1 AND ativo = 1")
         result = cursor.fetchone()
         total_obrigatorios = result['total'] if result else 0
         
-        print(f"📊 Total de documentos obrigatórios no sistema: {total_obrigatorios}")
-        
-        # Para cada candidato, calcular documentos enviados (apenas obrigatórios)
-        for candidato in candidatos:
+        for candidato in candidatos_list:
             try:
-                # Documentos OBRIGATÓRIOS enviados (status diferente de rejeitado)
                 cursor.execute("""
                     SELECT COUNT(DISTINCT dc.tipo_documento_id) as enviados
                     FROM documentos_candidato dc
@@ -11123,7 +11266,6 @@ def gerenciar_candidatos():
                 """, (candidato['id'],))
                 enviados_obrigatorios = cursor.fetchone()['enviados'] or 0
                 
-                # Documentos OPCIONAIS enviados
                 cursor.execute("""
                     SELECT COUNT(DISTINCT dc.tipo_documento_id) as enviados
                     FROM documentos_candidato dc
@@ -11142,8 +11284,6 @@ def gerenciar_candidatos():
                     'enviados_opcionais': enviados_opcionais
                 }
                 
-                print(f"📄 Candidato {candidato['nome'][:30]}: Obrigatórios {enviados_obrigatorios}/{total_obrigatorios}, Opcionais: {enviados_opcionais}")
-                
             except Exception as e:
                 print(f"Erro ao processar documentos do candidato {candidato['id']}: {e}")
                 documentos_status[candidato['id']] = {
@@ -11156,9 +11296,7 @@ def gerenciar_candidatos():
                 
     except Exception as e:
         print(f"Erro ao buscar status dos documentos: {str(e)}")
-        import traceback
-        traceback.print_exc()
-        for candidato in candidatos:
+        for candidato in candidatos_list:
             documentos_status[candidato['id']] = {
                 'total': 0,
                 'enviados': 0,
@@ -11191,7 +11329,7 @@ def gerenciar_candidatos():
         print(f"Erro ao buscar lojas: {str(e)}")
         lojas = []
     
-    # Buscar sindicantes disponíveis (para o modal de designação)
+    # Buscar sindicantes disponíveis
     try:
         cursor.execute("""
             SELECT id, usuario, nome_completo, cim_numero 
@@ -11204,7 +11342,7 @@ def gerenciar_candidatos():
         print(f"Erro ao buscar sindicantes disponíveis: {str(e)}")
         sindicantes_disponiveis = []
     
-    # Buscar designações existentes por candidato
+    # Buscar designações existentes
     designados_por_candidato = {}
     try:
         cursor.execute("""
@@ -11224,14 +11362,20 @@ def gerenciar_candidatos():
     return_connection(conn)
     
     return render_template("candidatos.html", 
-                          candidatos=candidatos, 
+                          candidatos=candidatos_list,
                           sindicantes=sindicantes, 
                           documentos_status=documentos_status,
                           lojas=lojas,
                           sindicantes_disponiveis=sindicantes_disponiveis,
                           designados_por_candidato=designados_por_candidato,
                           notificacoes_iniciacao=notificacoes_iniciacao,
-                          tipo=session.get("tipo", "admin"))
+                          tipo=session.get("tipo", "admin"),
+                          estatisticas_cards={
+                              'total_candidatos': total_candidatos_ativos,
+                              'em_analise': em_analise,
+                              'aprovados': aprovados,
+                              'reprovados': reprovados
+                          })
 
 @app.route("/candidatos/<int:id>/documentos")
 @login_required
